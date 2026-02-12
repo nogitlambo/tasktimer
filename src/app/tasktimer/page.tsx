@@ -1,3 +1,5 @@
+import "./styles/tasktimer.css";
+
 export default function TaskTimerPage() {
   return (
     <main style={{ padding: 24 }}>
@@ -6,3 +8,4 @@ export default function TaskTimerPage() {
     </main>
   );
 }
+
