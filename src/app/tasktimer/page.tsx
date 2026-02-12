@@ -1,26 +1,37 @@
-import "./styles/tasktimer.css";
+"use client";
+
+import { useEffect } from "react";
+import { initTaskTimerClient } from "./tasktimerClient";
 
 export default function TaskTimerPage() {
+  useEffect(() => {
+    const cleanup = initTaskTimerClient();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, []);
+
   return (
     <>
-      {/* Main app */}
       <div className="app">
-        <div
-          id="menuIcon"
-          className="menuIcon"
-          title="Menu"
-          aria-label="Menu"
-        >
+        <div className="menuIcon" id="menuIcon" aria-label="Menu" title="Menu">
           ☰
         </div>
 
         <div className="topbar">
           <button
-            id="openAddTaskBtn"
             className="btn btn-accent topbarBtn"
+            id="openAddTaskBtn"
             type="button"
           >
             ＋ Add Task
+          </button>
+          <button
+            className="btn btn-warn topbarBtn"
+            id="resetAllBtn"
+            type="button"
+          >
+            Reset All
           </button>
         </div>
 
@@ -28,404 +39,354 @@ export default function TaskTimerPage() {
         <div className="deadArea" />
       </div>
 
-      {/* History screen */}
-      <div id="historyScreen" className="historyScreen" aria-hidden="true">
+      <div className="historyScreen" id="historyScreen" aria-hidden="true">
         <div className="historyTop">
           <button
-            id="historyBackBtn"
             className="historyNavBtn"
+            id="historyBackBtn"
             type="button"
-            title="Back"
             aria-label="Back"
+            title="Back"
           >
             ←
           </button>
-
-          <h2 id="historyTitle" className="historyTitle">
+          <h2 className="historyTitle" id="historyTitle">
             History
           </h2>
-
           <button
-            id="historyOlderBtn"
             className="historyNavBtn"
+            id="historyOlderBtn"
             type="button"
-            title="Older"
             aria-label="Older"
+            title="Older"
           >
             ←
           </button>
         </div>
 
         <div className="historyPanel">
-          <div className="historyMeta">
-            <div id="historyRangeText">Showing 0 entries</div>
+          <div className="historySub">
+            <button
+              className="historyNavBtn"
+              id="historyNewerBtn"
+              type="button"
+              aria-label="Newer"
+              title="Newer"
+            >
+              →
+            </button>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div className="historyRangeText" id="historyRangeText" />
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <button
-                id="historyDeleteBtn"
                 className="historyNavBtn"
+                id="historyEditBtn"
                 type="button"
-                title="Delete"
-                aria-label="Delete"
+                aria-label="Edit"
+                title="Edit"
+              >
+                ✎
+              </button>
+              <button
+                className="historyNavBtn"
+                id="historyDeleteBtn"
+                type="button"
+                aria-label="Delete selected"
+                title="Delete selected"
                 disabled
               >
                 🗑
               </button>
-
-              <button
-                id="historyNewerBtn"
-                className="historyNavBtn"
-                type="button"
-                title="Newer"
-                aria-label="Newer"
-              >
-                →
-              </button>
             </div>
           </div>
 
-          <div id="historyCanvasWrap" className="historyCanvasWrap">
+          <div className="historyBest" id="historyBest" />
+
+          <div className="historyCanvasWrap" id="historyCanvasWrap">
             <canvas id="historyChart" />
           </div>
 
-          <div className="historyHint">
-            Swipe left for older entries. Tap ← for older pages.
-          </div>
-
-          <div id="historyBest" className="historyBest" />
+          <div className="historyTrashRow" id="historyTrashRow" />
         </div>
       </div>
 
-      {/* History Manager screen */}
       <div
+        className="historyManagerScreen"
         id="historyManagerScreen"
-        className="historyScreen"
         aria-hidden="true"
         style={{ display: "none" }}
       >
-        <div className="historyTop">
+        <div className="historyManagerTop">
           <button
-            id="historyManagerBackBtn"
             className="historyNavBtn"
+            id="historyManagerBackBtn"
             type="button"
-            title="Back"
             aria-label="Back"
+            title="Back"
           >
             ←
           </button>
-
-          <h2 className="historyTitle">History Manager</h2>
+          <h2 className="historyManagerTitle">History Manager</h2>
+          <div style={{ width: "40px" }} />
         </div>
 
-        <div className="hmPanel">
-          <div className="hmHint">
-            Expand a task to view and delete individual log entries.
-          </div>
-          <div id="hmList" className="hmList" />
+        <div className="historyManagerPanel">
+          <div className="hmList" id="hmList" />
         </div>
       </div>
 
-      {/* Menu overlay */}
-      <div id="menuOverlay" className="overlay full" aria-hidden="true">
+      <div className="overlay" id="addTaskOverlay">
+        <div className="modal">
+          <h2>Add Task</h2>
+          <form id="addTaskForm">
+            <input id="addTaskName" type="text" placeholder="Task name..." />
+            <button className="btn btn-accent" type="submit">
+              Add
+            </button>
+          </form>
+          <div className="footerBtns">
+            <button
+              className="btn btn-ghost"
+              id="addTaskCancelBtn"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="overlay full" id="menuOverlay">
         <div className="modal">
           <h2>Menu</h2>
 
           <button
             className="btn btn-ghost menuItem"
-            data-menu="about"
             type="button"
-            style={{ width: "100%", margin: "6px 0" }}
-          >
-            About TaskTimer
-          </button>
-
-          <button
-            className="btn btn-ghost menuItem"
-            data-menu="howto"
-            type="button"
-            style={{ width: "100%", margin: "6px 0" }}
-          >
-            How To Use
-          </button>
-
-          <button
-            className="btn btn-ghost menuItem"
-            data-menu="appearance"
-            type="button"
-            style={{ width: "100%", margin: "6px 0" }}
-          >
-            Appearance
-          </button>
-
-          <button
-            id="historyManagerBtn"
-            className="btn btn-ghost menuItem"
             data-menu="historyManager"
-            type="button"
+            id="historyManagerBtn"
             style={{ width: "100%", margin: "6px 0" }}
           >
-            History Manager
+            🗂 History Manager
           </button>
 
           <button
+            className="btn btn-ghost menuItem"
+            type="button"
+            data-menu="about"
+            style={{ width: "100%", margin: "6px 0" }}
+          >
+            ℹ About
+          </button>
+
+          <button
+            className="btn btn-ghost menuItem"
+            type="button"
+            data-menu="howto"
+            style={{ width: "100%", margin: "6px 0" }}
+          >
+            ❓ How to use
+          </button>
+
+          <button
+            className="btn btn-ghost menuItem"
+            type="button"
+            data-menu="appearance"
+            style={{ width: "100%", margin: "6px 0" }}
+          >
+            🎨 Appearance
+          </button>
+
+          <button
+            className="btn btn-ghost menuItem"
+            type="button"
+            data-menu="contact"
+            style={{ width: "100%", margin: "6px 0" }}
+          >
+            ✉ Contact
+          </button>
+
+          <div className="menuDivider" />
+
+          <button
+            className="btn btn-accent"
             id="exportBtn"
-            className="btn btn-ghost"
             type="button"
             style={{ width: "100%", margin: "6px 0" }}
           >
-            Export Backup
+            Export backup
           </button>
 
           <button
+            className="btn btn-accent"
             id="importBtn"
-            className="btn btn-ghost"
             type="button"
             style={{ width: "100%", margin: "6px 0" }}
           >
-            Import Backup
+            Import backup
           </button>
 
           <input
-            id="importFile"
             type="file"
+            id="importFile"
             accept="application/json"
             style={{ display: "none" }}
           />
 
-          <button
-            className="btn btn-ghost menuItem"
-            data-menu="contact"
-            type="button"
-            style={{ width: "100%", margin: "6px 0" }}
-          >
-            Contact
-          </button>
-
-          <button
-            id="resetAllBtn"
-            className="btn btn-warn"
-            type="button"
-            style={{ width: "100%", margin: "10px 0 6px" }}
-          >
-            ⟳ Reset All
-          </button>
-
           <div className="footerBtns">
-            <button
-              id="closeMenuBtn"
-              className="btn btn-warn"
-              type="button"
-            >
+            <button className="btn btn-ghost" id="closeMenuBtn" type="button">
               Close
             </button>
           </div>
         </div>
       </div>
 
-      {/* Add Task overlay */}
-      <div id="addTaskOverlay" className="overlay">
+      <div className="overlay full" id="aboutOverlay">
         <div className="modal">
-          <h2>Add Task</h2>
-
-          <form
-            id="addTaskForm"
-            autoComplete="off"
-            style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}
-          >
-            <input
-              id="addTaskName"
-              type="text"
-              placeholder="Task name..."
-            />
-
-            <div className="footerBtns" style={{ justifyContent: "center" }}>
-              <button
-                id="addTaskCancelBtn"
-                className="btn btn-ghost"
-                type="button"
-              >
-                Cancel
-              </button>
-
-              <button
-                id="addTaskConfirmBtn"
-                className="btn btn-accent"
-                type="submit"
-              >
-                Add
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* About overlay (placeholder shell) */}
-      <div id="aboutOverlay" className="overlay">
-        <div className="modal">
-          <h2>About TaskTimer</h2>
-          <div style={{ textAlign: "left", maxHeight: "60vh", overflow: "auto", lineHeight: 1.35 }}>
-            <p>Placeholder content. Paste the original About HTML here next.</p>
-          </div>
+          <h2>About</h2>
+          <p>
+            TaskTimer is a simple task timer with per-task history logging and a
+            lightweight weekly view.
+          </p>
           <div className="footerBtns">
-            <button className="btn btn-accent closePopup" type="button">
+            <button className="btn btn-ghost closePopup" type="button">
               Close
             </button>
           </div>
         </div>
       </div>
 
-      {/* How To overlay (placeholder shell) */}
-      <div id="howtoOverlay" className="overlay">
+      <div className="overlay full" id="howtoOverlay">
         <div className="modal">
-          <h2>How To Use</h2>
-          <div style={{ textAlign: "left", maxHeight: "60vh", overflow: "auto", lineHeight: 1.35 }}>
-            <p>Placeholder content. Paste the original How To HTML here next.</p>
-          </div>
+          <h2>How to use</h2>
+
+          <p>
+            Use Start and Stop to control a timer. Reset logs a completed session
+            to History when enabled.
+          </p>
+
           <div className="footerBtns">
-            <button className="btn btn-accent closePopup" type="button">
+            <button className="btn btn-ghost closePopup" type="button">
               Close
             </button>
           </div>
         </div>
       </div>
 
-      {/* Appearance overlay (placeholder shell) */}
-      <div id="appearanceOverlay" className="overlay">
+      <div className="overlay full" id="appearanceOverlay">
         <div className="modal">
           <h2>Appearance</h2>
-          <div style={{ textAlign: "left", maxHeight: "60vh", overflow: "auto", lineHeight: 1.35 }}>
-            <p>Placeholder content. Paste the original Appearance HTML here next.</p>
-          </div>
+
+          <p>Appearance options will be wired up in the React refactor.</p>
+
           <div className="footerBtns">
-            <button className="btn btn-accent closePopup" type="button">
+            <button className="btn btn-ghost closePopup" type="button">
               Close
             </button>
           </div>
         </div>
       </div>
 
-      {/* Contact overlay (placeholder shell) */}
-      <div id="contactOverlay" className="overlay">
+      <div className="overlay full" id="contactOverlay">
         <div className="modal">
           <h2>Contact</h2>
-          <div style={{ textAlign: "left", maxHeight: "60vh", overflow: "auto", lineHeight: 1.35 }}>
-            <p>Placeholder content. Paste the original Contact HTML here next.</p>
-          </div>
+
+          <p>Contact details will be wired up in the React refactor.</p>
+
           <div className="footerBtns">
-            <button className="btn btn-accent closePopup" type="button">
+            <button className="btn btn-ghost closePopup" type="button">
               Close
             </button>
           </div>
         </div>
       </div>
 
-      {/* Edit overlay */}
-      <div id="editOverlay" className="overlay">
+      <div className="overlay" id="editOverlay">
         <div className="modal">
           <h2>Edit Task</h2>
 
           <div className="field">
-            <label>Task Name</label>
-            <input id="editName" type="text" />
+            <label htmlFor="editName">Task name</label>
+            <input type="text" id="editName" />
           </div>
 
-          <div className="field">
-            <label>Override Elapsed Time</label>
-
-            <div className="row2">
-              <div className="field" style={{ margin: 0 }}>
-                <label style={{ textTransform: "none", letterSpacing: 0 }}>
-                  Hours
-                </label>
-                <input id="editH" type="number" min={0} step={1} />
-              </div>
-
-              <div className="field" style={{ margin: 0 }}>
-                <label style={{ textTransform: "none", letterSpacing: 0 }}>
-                  Minutes
-                </label>
-                <input id="editM" type="number" min={0} max={59} step={1} />
-              </div>
+          <div className="row2">
+            <div className="field">
+              <label htmlFor="editH">Hours</label>
+              <input type="number" id="editH" min="0" />
             </div>
-
-            <div className="field" style={{ marginTop: 10 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>
-                Seconds
-              </label>
-              <input id="editS" type="number" min={0} max={59} step={1} />
+            <div className="field">
+              <label htmlFor="editM">Minutes</label>
+              <input type="number" id="editM" min="0" max="59" />
             </div>
           </div>
 
           <div className="field">
-            <label>Task Order</label>
-            <input id="editOrder" type="number" min={1} step={1} />
+            <label htmlFor="editS">Seconds</label>
+            <input type="number" id="editS" min="0" max="59" />
+          </div>
+
+          <div className="field">
+            <label htmlFor="editOrder">Order</label>
+            <input type="number" id="editOrder" min="1" />
           </div>
 
           <div className="toggleRow">
             <span>Milestones</span>
-            <div
-              id="msToggle"
-              className="switch"
-              role="switch"
-              aria-checked="false"
-            />
+            <div className="switch" id="msToggle" role="switch" aria-checked="false" />
           </div>
 
-          <div id="msArea" className="milestones">
-            <div id="msList" />
-            <button
-              id="addMsBtn"
-              className="btn btn-ghost"
-              type="button"
-              style={{ width: "100%", marginTop: 10 }}
-            >
-              ＋ Add Milestone
+          <div className="milestones" id="msArea">
+            <div className="msList" id="msList" />
+            <button className="btn btn-ghost" id="addMsBtn" type="button">
+              + Add milestone
             </button>
           </div>
 
           <div className="footerBtns">
-            <button id="cancelEditBtn" className="btn btn-ghost" type="button">
+            <button className="btn btn-ghost" id="cancelEditBtn" type="button">
               Cancel
             </button>
-            <button id="saveEditBtn" className="btn btn-accent" type="button">
+            <button className="btn btn-accent" id="saveEditBtn" type="button">
               Save
             </button>
           </div>
         </div>
       </div>
 
-      {/* Confirm overlay */}
-      <div id="confirmOverlay" className="overlay">
+      <div className="overlay" id="confirmOverlay">
         <div className="modal">
           <h2 id="confirmTitle">Confirm</h2>
-          <div id="confirmText" className="confirmText" />
+          <p id="confirmText">Are you sure?</p>
 
-          <div
-            id="confirmChkRow"
-            className="chkRow"
-            style={{ display: "none" }}
-          >
-            <input id="confirmDeleteAll" type="checkbox" />
-            <label id="confirmChkLabel" htmlFor="confirmDeleteAll">
+          <div className="confirmChkRow" id="confirmChkRow" style={{ display: "none" }}>
+            <label className="confirmChkLabel" id="confirmChkLabel">
               Also delete all tasks
             </label>
+            <input className="confirmChk" id="confirmDeleteAll" type="checkbox" />
           </div>
 
-          <div className="confirmBtns">
-            <button id="confirmCancelBtn" className="btn btn-ghost" type="button">
+          <div className="confirmChkRow" id="confirmChkRow2" style={{ display: "none" }}>
+            <label className="confirmChkLabel" id="confirmChkLabel2">
+              Log eligible sessions to History
+            </label>
+            <input className="confirmChk" id="confirmLogChk" type="checkbox" />
+          </div>
+
+          <div className="footerBtns">
+            <button className="btn btn-ghost" id="confirmCancelBtn" type="button">
               Cancel
             </button>
-
             <button
-              id="confirmAltBtn"
               className="btn btn-warn"
+              id="confirmAltBtn"
               type="button"
               style={{ display: "none" }}
             >
               Alt
             </button>
-
-            <button id="confirmOkBtn" className="btn btn-accent" type="button">
+            <button className="btn btn-accent" id="confirmOkBtn" type="button">
               OK
             </button>
           </div>
