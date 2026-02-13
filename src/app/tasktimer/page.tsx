@@ -132,9 +132,25 @@ export default function TaskTimerPage() {
               About
             </button>
 
+<<<<<<< ours
+<<<<<<< ours
             <button className="menuItem" data-menu="howto" type="button">
               How To
             </button>
+=======
+          <button
+            className="btn btn-ghost menuItem"
+            type="button"
+            data-menu="login"
+            style={{ width: "100%", margin: "6px 0" }}
+          >
+            🔐 Login
+          </button>
+
+=======
+>>>>>>> theirs
+          <div className="menuDivider" />
+>>>>>>> theirs
 
             <button className="menuItem" data-menu="appearance" type="button">
               Appearance
@@ -268,7 +284,27 @@ export default function TaskTimerPage() {
         </div>
       </div>
 
+<<<<<<< ours
+<<<<<<< ours
       {/* Edit overlay */}
+=======
+      <div className="overlay full" id="loginOverlay">
+        <div className="modal">
+          <h2>Login</h2>
+
+          <p>Login will be wired up in the React refactor.</p>
+
+          <div className="footerBtns">
+            <button className="btn btn-ghost closePopup" type="button">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+>>>>>>> theirs
+=======
+>>>>>>> theirs
       <div className="overlay" id="editOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="Edit Task">
           <h2>Edit Task</h2>
