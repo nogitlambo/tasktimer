@@ -34,8 +34,9 @@ export default function TaskTimerPage() {
               Reset All
             </button>
 
-            <button className="menuIcon" id="menuIcon" type="button" aria-label="Menu" title="Menu">
-              Menu</button>
+            <button className="menuIcon" id="menuIcon" type="button" aria-label="Settings" title="Settings">
+              ⚙
+            </button>
           </div>
         </div>
 
@@ -111,7 +112,9 @@ export default function TaskTimerPage() {
       <div className="overlay" id="menuOverlay">
         <div className="menu" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="menuHead">
-            <div className="menuTitle">Menu</div>
+            <div className="menuTitle" aria-label="Task Timer Settings">
+              Task Timer Settings
+            </div>
             <button className="iconBtn" id="closeMenuBtn" type="button" aria-label="Close menu">
               Close</button>
           </div>
