@@ -1,16 +1,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./types";
+import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
+import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
+import { sortMilestones } from "./lib/milestones";
+import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
+import {
+  STORAGE_KEY,
+  HISTORY_KEY,
+  DELETED_META_KEY,
+  loadTasks,
+  saveTasks,
+  loadHistory,
+  saveHistory,
+  loadDeletedMeta,
+  saveDeletedMeta,
+  cleanupHistory,
+} from "./lib/storage";
+
 export type TaskTimerClientHandle = {
   destroy: () => void;
 };
 
 export function initTaskTimerClient(): TaskTimerClientHandle {
-  // Guard: this must only run in the browser
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
   }
 
-  // Track listeners so we can remove them on unmount (Next dev Fast Refresh friendly)
   const listeners: Array<{
     el: EventTarget;
     type: string;
@@ -39,7 +55,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (tickTimeout != null) window.clearTimeout(tickTimeout);
     if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
 
-    // Remove all listeners we registered
     for (const l of listeners) {
       try {
         l.el.removeEventListener(l.type, l.fn, l.opts as any);
@@ -49,24 +64,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   };
 
-  // Everything below is your existing script, moved inside initTaskTimerClient()
-  // with small safety changes:
-  // - Uses `on(...)` for event binding so we can clean up.
-  // - Avoids duplicate function name collisions (escapeHtml is defined twice in your script).
-  // - Uses `destroyed` to stop the tick loop.
-
-  const STORAGE_KEY = "taskticker_tasks_v1";
-  const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
-  const HISTORY_KEY = "taskticker_history_v1";
-
-  let deletedTaskMeta: Record<string, any> = {};
-  let tasks: any[] = [];
+  let deletedTaskMeta: DeletedTaskMeta = {};
+  let tasks: Task[] = [];
   let editIndex: number | null = null;
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
 
-  let historyByTaskId: Record<string, any[]> = {};
+  let historyByTaskId: HistoryByTaskId = {};
   let historyTaskId: string | null = null;
   let historyPage = 0;
   let historyEditMode = false;
@@ -123,7 +128,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     confirmAltBtn: document.getElementById("confirmAltBtn"),
     confirmChkLabel: document.getElementById("confirmChkLabel"),
 
-    // Optional elements (present in some builds)
     confirmChkRow2: document.getElementById("confirmChkRow2"),
     confirmChkLabel2: document.getElementById("confirmChkLabel2"),
     confirmLogChk: document.getElementById("confirmLogChk") as HTMLInputElement | null,
@@ -142,106 +146,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     historyTrashRow: document.getElementById("historyTrashRow"),
   };
 
-  function nowMs() {
-    return Date.now();
-  }
-
-  function loadDeletedMeta() {
-    try {
-      deletedTaskMeta = JSON.parse(localStorage.getItem(DELETED_META_KEY) || "{}") || {};
-    } catch {
-      deletedTaskMeta = {};
-    }
-  }
-
-  function saveDeletedMeta() {
-    try {
-      localStorage.setItem(DELETED_META_KEY, JSON.stringify(deletedTaskMeta || {}));
-    } catch {
-      // ignore
-    }
-  }
-
-  function cryptoRandomId() {
-    try {
-      const arr = new Uint32Array(2);
-      (globalThis.crypto as Crypto).getRandomValues(arr);
-      return arr[0].toString(16) + arr[1].toString(16);
-    } catch {
-      return Math.random().toString(16).slice(2);
-    }
-  }
-
-  function makeTask(name: string, order?: number) {
+  function makeTask(name: string, order?: number): Task {
     return {
       id: cryptoRandomId(),
       name,
       order: order || 1,
       accumulatedMs: 0,
       running: false,
-      startMs: null as number | null,
+      startMs: null,
       collapsed: false,
       milestonesEnabled: false,
-      milestones: [] as Array<{ hours: number; description: string }>,
+      milestones: [],
       hasStarted: false,
     };
   }
 
-  function defaultTasks() {
+  function defaultTasks(): Task[] {
     return [makeTask("Exercise", 1), makeTask("Study", 2), makeTask("Meditation", 3)];
   }
 
   function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        tasks = defaultTasks();
-        save();
-        return;
-      }
-      tasks = JSON.parse(raw) || defaultTasks();
-      if (!Array.isArray(tasks) || tasks.length === 0) tasks = defaultTasks();
-    } catch {
+    const loaded = loadTasks();
+    if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
       tasks = defaultTasks();
+      saveTasks(tasks);
+      return;
     }
+    tasks = loaded;
   }
 
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    saveTasks(tasks);
   }
 
-  function loadHistory() {
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      historyByTaskId = raw ? JSON.parse(raw) : {};
-      if (!historyByTaskId || typeof historyByTaskId !== "object") historyByTaskId = {};
-    } catch {
-      historyByTaskId = {};
-    }
-  }
-
-  function saveHistory() {
-    try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(historyByTaskId || {}));
-    } catch {
-      // ignore
-    }
-  }
-
-  function cleanupHistory() {
-    const cutoff = nowMs() - 120 * 24 * 60 * 60 * 1000;
-    let changed = false;
-
-    Object.keys(historyByTaskId || {}).forEach((taskId) => {
-      const arr = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
-      const next = arr.filter((x) => (x && typeof x.ts === "number" ? x.ts : 0) >= cutoff);
-      if (next.length !== arr.length) {
-        historyByTaskId[taskId] = next;
-        changed = true;
-      }
-    });
-
-    if (changed) saveHistory();
+  function loadHistoryIntoMemory() {
+    historyByTaskId = loadHistory();
+    historyByTaskId = cleanupHistory(historyByTaskId);
+    saveHistory(historyByTaskId);
   }
 
   function safeJsonParse(str: string) {
@@ -250,10 +191,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     } catch {
       return null;
     }
-  }
-
-  function formatTwo(n: number) {
-    return n < 10 ? "0" + n : "" + n;
   }
 
   function downloadTextFile(filename: string, text: string) {
@@ -293,11 +230,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     closeOverlay(els.menuOverlay as HTMLElement | null);
   }
 
-  function sortMilestones(msArr: any[]) {
-    return (msArr || []).slice().sort((a, b) => (+a.hours || 0) - (+b.hours || 0));
-  }
-
-  function normalizeImportedTask(t: any) {
+  function normalizeImportedTask(t: any): Task {
     const out = makeTask(String(t.name || "Task"), 1);
     out.id = String(t.id || cryptoRandomId());
     out.order = Number.isFinite(+t.order) ? +t.order : 1;
@@ -370,8 +303,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     save();
-    saveHistory();
-    cleanupHistory();
+    saveHistory(historyByTaskId);
+    historyByTaskId = cleanupHistory(historyByTaskId);
+    saveHistory(historyByTaskId);
     render();
 
     return { ok: true, msg: `Imported ${added} task(s).` };
@@ -391,53 +325,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     reader.readAsText(file);
   }
 
-  function getElapsedMs(t: any) {
-    if (t.running && t.startMs) {
-      return (t.accumulatedMs || 0) + (nowMs() - t.startMs);
-    }
+  function getElapsedMs(t: Task) {
+    if (t.running && t.startMs) return (t.accumulatedMs || 0) + (nowMs() - t.startMs);
     return t.accumulatedMs || 0;
   }
 
-  function getTaskElapsedMs(t: any) {
-    if (!t) return 0;
+  function getTaskElapsedMs(t: Task) {
     const runMs = t.running && typeof t.startMs === "number" ? Math.max(0, nowMs() - t.startMs) : 0;
     return Math.max(0, (t.accumulatedMs || 0) + runMs);
   }
 
-  function canLogSession(t: any) {
-    if (!t) return false;
+  function canLogSession(t: Task) {
     if (!t.hasStarted) return false;
-    const ms = getTaskElapsedMs(t);
-    return ms > 0;
+    return getTaskElapsedMs(t) > 0;
   }
 
-  function formatTime(ms: number) {
-    const totalSec = Math.floor(ms / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    const hh = String(h).padStart(2, "0");
-    const mm = String(m).padStart(2, "0");
-    const ss = String(s).padStart(2, "0");
-    return `${hh}:${mm}:${ss}`;
-  }
-
-  function formatDateTime(ts: number) {
-    const d = new Date(ts);
-    try {
-      return d.toLocaleString(undefined, {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return d.toLocaleString();
-    }
-  }
-
-  // Escape used in the task list renderer
   function escapeHtmlUI(str: any) {
     return String(str ?? "")
       .replaceAll("&", "&amp;")
@@ -447,59 +349,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       .replaceAll("'", "&#039;");
   }
 
-  function lerp(a: number, b: number, t: number) {
-    return a + (b - a) * t;
-  }
-
-  function pctToEndColor(pct: number) {
-    const p = Math.max(0, Math.min(100, pct || 0));
-    const g = { r: 12, g: 245, b: 127 };
-    const o = { r: 255, g: 140, b: 0 };
-    const rC = { r: 255, g: 59, b: 48 };
-    let c1: any, c2: any, tt: number;
-    if (p <= 50) {
-      c1 = g;
-      c2 = o;
-      tt = p / 50;
-    } else {
-      c1 = o;
-      c2 = rC;
-      tt = (p - 50) / 50;
-    }
-    const rr = Math.round(lerp(c1.r, c2.r, tt));
-    const gg = Math.round(lerp(c1.g, c2.g, tt));
-    const bb = Math.round(lerp(c1.b, c2.b, tt));
-    return `rgb(${rr},${gg},${bb})`;
-  }
-
-  function fillBackgroundForPct(pct: number) {
-    return pctToEndColor(pct);
-  }
-
-  function sessionColorForTaskMs(t: any, elapsedMs: number) {
-    try {
-      const ms = Math.max(0, elapsedMs || 0);
-      const elapsedSec = ms / 1000;
-
-      const hasMilestones =
-        t && t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
-      if (!hasMilestones) return pctToEndColor(0);
-
-      const msSorted = sortMilestones(t.milestones);
-      const maxHours = Math.max(...msSorted.map((m: any) => +m.hours || 0), 0);
-      const maxSec = Math.max(maxHours * 3600, 1);
-      const pct = Math.min((elapsedSec / maxSec) * 100, 100);
-      return fillBackgroundForPct(pct);
-    } catch {
-      return pctToEndColor(0);
-    }
-  }
-
   function appendHistory(taskId: string, entry: any) {
     if (!taskId) return;
     if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
     historyByTaskId[taskId].push(entry);
-    saveHistory();
+    saveHistory(historyByTaskId);
   }
 
   function openOverlay(overlay: HTMLElement | null) {
@@ -562,13 +416,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
   }
 
-  function renderMilestoneEditor(t: any) {
+  function renderMilestoneEditor(t: Task) {
     if (!els.msList) return;
     els.msList.innerHTML = "";
 
     const ms = sortMilestones(t.milestones || []);
 
-    ms.forEach((m: any, idx: number) => {
+    ms.forEach((m, idx) => {
       const row = document.createElement("div");
       row.className = "msRow";
       (row as any).dataset.msIndex = String(idx);
@@ -592,7 +446,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
       on(desc, "input", (e: any) => {
-        m.description = e?.target?.value;
+        m.description = e?.target?.value || "";
         t.milestones = ms;
       });
 
@@ -615,13 +469,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
     els.taskList.innerHTML = "";
 
-    tasks.forEach((t: any, index: number) => {
+    tasks.forEach((t, index) => {
       const elapsedMs = getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
 
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
       const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-      const maxHours = hasMilestones ? Math.max(...msSorted.map((m: any) => +m.hours || 0), 0) : 0;
+      const maxHours = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
       const maxSec = Math.max(maxHours * 3600, 1);
       const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
@@ -638,7 +492,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <div class="mkLine" style="left:0%"></div>
           <div class="mkTime mkAch mkEdgeL" style="left:0%">0h</div>`;
 
-        msSorted.forEach((m: any) => {
+        msSorted.forEach((m) => {
           const hrs = +m.hours || 0;
           const left = Math.min((hrs / (maxHours || 1)) * 100, 100);
           const reached = elapsedSec >= hrs * 3600;
@@ -717,11 +571,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     render();
   }
 
-  function getHistoryForTask(taskId: string) {
-    const arr = Array.isArray((historyByTaskId as any)?.[taskId]) ? historyByTaskId[taskId] : [];
-    return arr.slice().sort((a: any, b: any) => (a.ts || 0) - (b.ts || 0));
-  }
-
   function openHistory(i: number) {
     const t = tasks[i];
     if (!t) return;
@@ -743,6 +592,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     historyTaskId = null;
     historyPage = 0;
+  }
+
+  function getHistoryForTask(taskId: string) {
+    const arr = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+    return arr.slice().sort((a: any, b: any) => (a.ts || 0) - (b.ts || 0));
   }
 
   function historyPageSize() {
@@ -826,9 +680,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     const maxMs = Math.max(...entries.map((e) => e.ms || 0), 1);
-    const slots = 7;
     const gap = Math.max(10, Math.floor(innerW * 0.03));
-    const barW = Math.max(22, Math.floor((innerW - gap * (slots - 1)) / slots));
+    const barW = Math.max(22, Math.floor((innerW - gap * (7 - 1)) / 7));
 
     ctx.textAlign = "center";
 
@@ -953,9 +806,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function resetAll() {
     const eligibleTasks = tasks.filter((t) => canLogSession(t));
-    const msg = "Reset all timers?";
 
-    confirm("Reset All", msg, {
+    confirm("Reset All", "Reset all timers?", {
       okLabel: "Reset",
       checkboxLabel: "Also delete all tasks",
       checkboxChecked: false,
@@ -977,7 +829,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         if (alsoDelete) {
           tasks = [];
           historyByTaskId = {};
-          saveHistory();
+          saveHistory(historyByTaskId);
         } else {
           tasks.forEach((t) => {
             t.accumulatedMs = 0;
@@ -1034,8 +886,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const newMs = (hh * 3600 + mm * 60 + ss) * 1000;
 
       t.accumulatedMs = newMs;
-      if (t.running) t.startMs = nowMs();
-      else t.startMs = null;
+      t.startMs = t.running ? nowMs() : null;
 
       const order = Math.max(1, parseInt(els.editOrder?.value || "1", 10) || 1);
       t.order = order;
@@ -1048,10 +899,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
     editIndex = null;
-  }
-
-  function escapeRegExp(s: string) {
-    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   function nextDuplicateName(originalName: string) {
@@ -1072,12 +919,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return root + " " + (maxN + 1);
   }
 
-  function newTaskId() {
-    const c = globalThis.crypto as Crypto | undefined;
-    if (c && "randomUUID" in c) return (c as any).randomUUID();
-    return "t_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
-  }
-
   function duplicateTask(i: number) {
     const t = tasks[i];
     if (!t) return;
@@ -1095,7 +936,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const h = historyByTaskId && historyByTaskId[t.id] ? JSON.parse(JSON.stringify(historyByTaskId[t.id])) : [];
     historyByTaskId[newId] = h;
 
-    saveHistory();
+    saveHistory(historyByTaskId);
     save();
     render();
   }
@@ -1116,14 +957,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
         if (deleteHistory) {
           if (historyByTaskId && historyByTaskId[t.id]) delete historyByTaskId[t.id];
-          if (deletedTaskMeta && deletedTaskMeta[t.id]) delete deletedTaskMeta[t.id];
-          saveHistory();
-          saveDeletedMeta();
+          if (deletedTaskMeta && (deletedTaskMeta as any)[t.id]) delete (deletedTaskMeta as any)[t.id];
+          saveHistory(historyByTaskId);
+
+          if (deletedTaskMeta && (deletedTaskMeta as any)[t.id]) delete (deletedTaskMeta as any)[t.id];
+          saveDeletedMeta(deletedTaskMeta);
         } else {
-          deletedTaskMeta = deletedTaskMeta || {};
-          deletedTaskMeta[t.id] = { name: t.name, color: t.color || null, deletedAt: nowMs() };
-          saveDeletedMeta();
-          saveHistory();
+          deletedTaskMeta = deletedTaskMeta || ({} as DeletedTaskMeta);
+          (deletedTaskMeta as any)[t.id] = { name: t.name, color: t.color || null, deletedAt: nowMs() };
+          saveDeletedMeta(deletedTaskMeta);
+          saveHistory(historyByTaskId);
         }
 
         save();
@@ -1134,24 +977,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
   }
 
-  // History Manager helpers
   function getTaskMetaForHistoryId(taskId: string) {
     const t = tasks.find((x) => x.id === taskId);
-    if (t) return { name: t.name, color: t.color, deleted: false };
+    if (t) return { name: t.name, color: (t as any).color, deleted: false };
 
     const dm = deletedTaskMeta && (deletedTaskMeta as any)[taskId];
     if (dm) return { name: dm.name || "Deleted Task", color: dm.color || null, deleted: true };
 
     const arr = historyByTaskId && historyByTaskId[taskId];
     if (arr && arr.length) {
-      const e = arr[arr.length - 1];
+      const e = arr[arr.length - 1] as any;
       return { name: e.name || "Deleted Task", color: e.color || null, deleted: true };
     }
 
     return { name: "Deleted Task", color: null, deleted: true };
   }
 
-  // Escape used inside History Manager table HTML (your original second escapeHtml)
   function escapeHtmlHM(str: any) {
     return String(str || "").replace(/[&<>"']/g, (s) => {
       const map: any = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -1290,9 +1131,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (map[which]) openOverlay(map[which]);
   }
 
-  // Event delegation and wiring
   function wireEvents() {
-    // Add Task modal
     const openAddTaskModal = () => {
       openOverlay(els.addTaskOverlay as HTMLElement | null);
       setTimeout(() => {
@@ -1326,7 +1165,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       render();
     });
 
-    // Task list delegation
     on(els.taskList, "click", (e: any) => {
       const taskEl = e.target?.closest?.(".task");
       if (!taskEl) return;
@@ -1350,7 +1188,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.resetAllBtn, "click", resetAll);
 
-    // History screen events
     on(els.historyBackBtn, "click", closeHistory);
 
     on(els.historyEditBtn, "click", () => {
@@ -1381,8 +1218,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           const all2 = getHistoryForTask(historyTaskId);
           if (historySelectedAbsIndex! >= 0 && historySelectedAbsIndex! < all2.length) {
             all2.splice(historySelectedAbsIndex!, 1);
-            historyByTaskId[historyTaskId] = all2;
-            saveHistory();
+            historyByTaskId[historyTaskId] = all2 as any;
+            saveHistory(historyByTaskId);
 
             const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize()) - 1);
             historyPage = Math.min(historyPage, maxPage);
@@ -1393,7 +1230,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       });
     });
 
-    // Tap a bar to select it for deletion
     on(els.historyCanvas, "click", (ev: any) => {
       if (!els.historyCanvas) return;
 
@@ -1424,7 +1260,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       renderHistory();
     });
 
-    // Swipe left/right on chart area for paging
     let touchStartX: number | null = null;
     let touchStartY: number | null = null;
     const wrap = els.historyCanvasWrap as HTMLElement | null;
@@ -1476,7 +1311,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if ((els.historyScreen as HTMLElement | null)?.style.display === "block") renderHistory();
     });
 
-    // Menu
     on(els.menuIcon, "click", () => openOverlay(els.menuOverlay as HTMLElement | null));
     on(els.closeMenuBtn, "click", () => closeOverlay(els.menuOverlay as HTMLElement | null));
 
@@ -1484,7 +1318,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
     });
 
-    // Backup export/import
     on(els.exportBtn, "click", exportBackup);
     on(els.importBtn, "click", () => els.importFile?.click());
 
@@ -1501,7 +1334,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       });
     });
 
-    // Edit modal
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
 
@@ -1532,7 +1364,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       renderMilestoneEditor(t);
     });
 
-    // Confirm modal
     on(els.confirmCancelBtn, "click", closeConfirm);
     on(els.confirmAltBtn, "click", () => {
       if (typeof confirmActionAlt === "function") confirmActionAlt();
@@ -1542,7 +1373,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else closeConfirm();
     });
 
-    // History Manager events
     on(els.historyManagerBtn, "click", () => openPopup("historyManager"));
     on(els.historyManagerBackBtn, "click", () => {
       closeHistoryManager();
@@ -1566,21 +1396,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         okLabel: "Delete",
         cancelLabel: "Cancel",
         onOk: () => {
-          loadHistory();
+          historyByTaskId = loadHistory();
           const orig = historyByTaskId[taskId] || [];
           const pos = orig.findIndex(
             (e: any) => e.ts === ts && e.ms === ms && String(e.name || "") === String(name || "")
           );
+
           if (pos !== -1) {
             orig.splice(pos, 1);
             historyByTaskId[taskId] = orig;
-            saveHistory();
+            saveHistory(historyByTaskId);
 
             if (orig.length === 0 && deletedTaskMeta && (deletedTaskMeta as any)[taskId]) {
               delete (deletedTaskMeta as any)[taskId];
-              saveDeletedMeta();
+              saveDeletedMeta(deletedTaskMeta);
             }
           }
+
           renderHistoryManager();
           closeConfirm();
         },
@@ -1591,6 +1423,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function tick() {
     if (destroyed) return;
+
     if (!els.taskList) {
       tickRaf = window.requestAnimationFrame(() => {
         tickTimeout = window.setTimeout(tick, 200);
@@ -1609,7 +1442,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
         const msSorted = sortMilestones(t.milestones);
-        const maxHours = Math.max(...msSorted.map((m: any) => +m.hours || 0), 0) || 1;
+        const maxHours = Math.max(...msSorted.map((m) => +m.hours || 0), 0) || 1;
         const maxSec = maxHours * 3600;
         const pct = Math.min((getElapsedMs(t) / 1000 / maxSec) * 100, 100);
 
@@ -1638,9 +1471,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   // Init
-  loadDeletedMeta();
-  loadHistory();
-  cleanupHistory();
+  deletedTaskMeta = loadDeletedMeta();
+  loadHistoryIntoMemory();
   load();
   wireEvents();
   render();

@@ -5,11 +5,9 @@ import { initTaskTimerClient } from "./tasktimerClient";
 
 export default function TaskTimerPage() {
   useEffect(() => {
-    const cleanup = initTaskTimerClient();
-    return () => {
-      if (typeof cleanup === "function") cleanup();
-    };
-  }, []);
+  const h = initTaskTimerClient();
+  return () => h.destroy();
+}, []);
 
   return (
     <>
