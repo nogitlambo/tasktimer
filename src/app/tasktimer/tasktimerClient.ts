@@ -733,6 +733,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     const maxMs = Math.max(...entries.map((e) => e.ms || 0), 1);
+    const historyTask =
+      historyTaskId != null ? tasks.find((task) => String(task.id || "") === String(historyTaskId)) : null;
+    const milestoneMs =
+      historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
+        ? sortMilestones(historyTask.milestones)
+            .map((m) => Math.max(0, (+m.hours || 0) * 3600 * 1000))
+            .filter((ms, i, arr) => ms > 0 && arr.indexOf(ms) === i)
+        : [];
     const gap = Math.max(10, Math.floor(innerW * 0.03));
     const barW = Math.max(22, Math.floor((innerW - gap * (7 - 1)) / 7));
 
@@ -755,6 +763,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.fillRect(x, y, barW, bh);
       ctx.restore();
 
+      if (milestoneMs.length) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,.72)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 2]);
+        for (const goalMs of milestoneMs) {
+          const markerRatio = Math.max(0, Math.min(1, goalMs / maxMs));
+          const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x + 1, markerY);
+          ctx.lineTo(x + barW - 1, markerY);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = "rgba(255,255,255,.95)";
+          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`${Math.round(goalMs / 3600000)}h`, x + barW / 2, markerY);
+          ctx.setLineDash([3, 2]);
+        }
+        ctx.restore();
+      }
+
       historyBarRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
 
       if (historySelectedRelIndex === idx) {
@@ -765,10 +797,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.restore();
       }
 
-      ctx.fillStyle = "rgba(255,255,255,.85)";
-      ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText(formatTime(ms), x + barW / 2, y - 6);
-
       ctx.fillStyle = "rgba(255,255,255,.65)";
       ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
 
@@ -778,8 +806,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const hh = formatTwo(d.getHours());
       const mi = formatTwo(d.getMinutes());
 
-      ctx.fillText(`${dd}/${mm}`, x + barW / 2, padT + innerH + 22);
-      ctx.fillText(`${hh}:${mi}`, x + barW / 2, padT + innerH + 38);
+      ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, x + barW / 2, padT + innerH + 22);
+      ctx.fillStyle = "rgb(0,207,200)";
+      ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.fillText(formatTime(ms), x + barW / 2, padT + innerH + 39);
     }
   }
 
