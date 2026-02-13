@@ -19,10 +19,7 @@ export default function TaskTimerPage() {
       <div className="wrap" id="app" aria-label="TaskTimer App">
         <div className="topbar">
           <div className="brand">
-            <div className="logo" aria-hidden="true">
-              <span>T</span>
-            </div>
-            <div>TaskTimer</div>
+            <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
           </div>
 
           <div className="controls">
