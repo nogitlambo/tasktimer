@@ -1,4 +1,4 @@
-// src/app/tasktimer/page.tsx
+﻿// src/app/tasktimer/page.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -47,7 +47,7 @@ export default function TaskTimerPage() {
           <div className="historyTop">
             <div className="historyMeta">
               <button className="btn btn-ghost small" id="historyBackBtn" type="button">
-                <- Back</button>
+                Back</button>
               <div className="historyTitle" id="historyTitle">
                 History
               </div>
@@ -87,9 +87,9 @@ export default function TaskTimerPage() {
 
             <div className="historyMeta">
               <button className="btn btn-ghost small" id="historyOlderBtn" type="button">
-                <- Older</button>
+                Older</button>
               <button className="btn btn-ghost small" id="historyNewerBtn" type="button">
-                Newer -></button>
+                Newer</button>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export default function TaskTimerPage() {
           <div className="hmHead">
             <div className="hmTitle">History Manager</div>
             <button className="btn btn-ghost small" id="historyManagerBackBtn" type="button">
-              <- Back</button>
+              Back</button>
           </div>
           <div className="hmList" id="hmList" />
         </section>
@@ -360,3 +360,4 @@ export default function TaskTimerPage() {
     </>
   );
 }
+
