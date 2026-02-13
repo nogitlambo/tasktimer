@@ -35,8 +35,7 @@ export default function TaskTimerPage() {
             </button>
 
             <button className="menuIcon" id="menuIcon" type="button" aria-label="Menu" title="Menu">
-              ☰
-            </button>
+              Menu</button>
           </div>
         </div>
 
@@ -48,8 +47,7 @@ export default function TaskTimerPage() {
           <div className="historyTop">
             <div className="historyMeta">
               <button className="btn btn-ghost small" id="historyBackBtn" type="button">
-                ← Back
-              </button>
+                <- Back</button>
               <div className="historyTitle" id="historyTitle">
                 History
               </div>
@@ -63,8 +61,7 @@ export default function TaskTimerPage() {
                 aria-label="Toggle edit mode"
                 title="Edit mode"
               >
-                ✎
-              </button>
+                Edit</button>
 
               <button
                 className="btn btn-warn small historyDeleteBtn"
@@ -90,11 +87,9 @@ export default function TaskTimerPage() {
 
             <div className="historyMeta">
               <button className="btn btn-ghost small" id="historyOlderBtn" type="button">
-                ← Older
-              </button>
+                <- Older</button>
               <button className="btn btn-ghost small" id="historyNewerBtn" type="button">
-                Newer →
-              </button>
+                Newer -></button>
             </div>
           </div>
 
@@ -106,8 +101,7 @@ export default function TaskTimerPage() {
           <div className="hmHead">
             <div className="hmTitle">History Manager</div>
             <button className="btn btn-ghost small" id="historyManagerBackBtn" type="button">
-              ← Back
-            </button>
+              <- Back</button>
           </div>
           <div className="hmList" id="hmList" />
         </section>
@@ -119,8 +113,7 @@ export default function TaskTimerPage() {
           <div className="menuHead">
             <div className="menuTitle">Menu</div>
             <button className="iconBtn" id="closeMenuBtn" type="button" aria-label="Close menu">
-              ✕
-            </button>
+              Close</button>
           </div>
 
           <div className="menuList">
@@ -212,21 +205,21 @@ export default function TaskTimerPage() {
           <h2>How To</h2>
           <div style={{ color: "rgba(255,255,255,.72)", lineHeight: 1.5 }}>
             <p>
-              <b>Tracking:</b> Use ▶ to start, ■ to stop, and ⟳ to reset. Reset can optionally log a history entry.
+              <b>Tracking:</b> Use Start to start, Stop to stop, and Reset to reset. Reset can optionally log a history entry.
             </p>
             <p>
-              <b>History:</b> Use 📊 on a task to view the last 7 days. Use the arrows to page older entries.
+              <b>History:</b> Use Chart on a task to view the last 7 days. Use the arrows to page older entries.
             </p>
             <p>
               <b>Backup:</b> Use Export Backup to save your data. Use Import Backup to merge a saved backup back into
               the app.
             </p>
             <p>
-              <b>Editing:</b> Use ✎ to edit a task’s name, total time, milestones, and appearance options. Manual time
+              <b>Editing:</b> Use Edit to edit a task's name, total time, milestones, and appearance options. Manual time
               changes do not create a history entry until you reset.
             </p>
             <p>
-              <b>Deleting:</b> Use 🗑 to delete a task. You can optionally clear that task’s history during deletion.
+              <b>Deleting:</b> Use Delete to delete a task. You can optionally clear that task's history during deletion.
             </p>
             <p>
               <b>Milestones:</b> Enable milestones in Edit to show progress markers for hours and descriptions.
@@ -315,7 +308,7 @@ export default function TaskTimerPage() {
               type="button"
               style={{ width: "100%", marginTop: 10 }}
             >
-              ＋ Add Milestone
+              + Add Milestone
             </button>
           </div>
 
