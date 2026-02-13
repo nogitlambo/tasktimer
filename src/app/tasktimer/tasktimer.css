@@ -63,9 +63,7 @@ body{
   width:auto;
   max-width:440px;
   object-fit:contain;
-  transform: scale(4);
-  transform-origin:left center;
-  margin-left:-48px;
+  margin-left:0;
   align-self:center;
 }
 .logo{
