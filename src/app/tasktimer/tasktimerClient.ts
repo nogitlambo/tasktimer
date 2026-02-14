@@ -482,6 +482,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const taskEl = document.createElement("div");
       taskEl.className = "task" + (t.collapsed ? " collapsed" : "");
       (taskEl as any).dataset.index = String(index);
+      (taskEl as any).dataset.taskId = String(t.id || "");
 
       const collapseIcon = t.collapsed ? "►" : "▼";
 
@@ -519,6 +520,34 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           </div>`;
       }
 
+      const showHistory = historyTaskId === t.id;
+      const historyHTML = showHistory
+        ? `
+          <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
+            <div class="historyTop">
+              <div class="historyMeta">
+                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}</div>
+              </div>
+              <div class="historyMeta">
+                <button class="btn btn-ghost small" type="button" data-history-action="close">Close</button>
+              </div>
+            </div>
+            <div class="historyCanvasWrap">
+              <canvas class="historyChartInline"></canvas>
+            </div>
+            <div class="historyTrashRow"></div>
+            <div class="historyRangeRow">
+              <div class="historyMeta historyRangeText">&nbsp;</div>
+              <div class="historyMeta">
+                <button class="btn btn-ghost small" type="button" data-history-action="older">Older</button>
+                <button class="btn btn-ghost small" type="button" data-history-action="newer">Newer</button>
+              </div>
+            </div>
+            <div class="historyBest"></div>
+          </section>
+        `
+        : "";
+
       taskEl.innerHTML = `
         <div class="row">
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
@@ -535,12 +564,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           </div>
         </div>
         ${progressHTML}
+        ${historyHTML}
       `;
 
       els.taskList!.appendChild(taskEl);
     });
 
     save();
+    if (historyTaskId) renderHistory();
   }
 
   function startTask(i: number) {
@@ -574,24 +605,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function openHistory(i: number) {
     const t = tasks[i];
     if (!t) return;
+    if (historyTaskId === t.id) {
+      closeHistory();
+      return;
+    }
     historyTaskId = t.id;
     historyPage = 0;
-
-    if (els.historyTitle) els.historyTitle.textContent = `History: ${t.name}`;
-    if (els.historyScreen) {
-      (els.historyScreen as HTMLElement).style.display = "block";
-      (els.historyScreen as HTMLElement).setAttribute("aria-hidden", "false");
-    }
-    renderHistory();
+    historyEditMode = false;
+    render();
   }
 
   function closeHistory() {
-    if (els.historyScreen) {
-      (els.historyScreen as HTMLElement).style.display = "none";
-      (els.historyScreen as HTMLElement).setAttribute("aria-hidden", "true");
-    }
     historyTaskId = null;
     historyPage = 0;
+    historyEditMode = false;
+    render();
   }
 
   function getHistoryForTask(taskId: string) {
@@ -600,23 +628,48 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function historyPageSize() {
-    try {
-      return window.matchMedia && window.matchMedia("(min-width: 900px)").matches ? 14 : 7;
-    } catch {
-      return 7;
-    }
+    return 7;
   }
 
-  function renderHistoryTrashRow(slice: any[], absStartIndex: number) {
-    if (!els.historyTrashRow) return;
+  type HistoryUI = {
+    root: HTMLElement;
+    canvasWrap: HTMLElement | null;
+    canvas: HTMLCanvasElement | null;
+    rangeText: HTMLElement | null;
+    olderBtn: HTMLButtonElement | null;
+    newerBtn: HTMLButtonElement | null;
+    best: HTMLElement | null;
+    trashRow: HTMLElement | null;
+    deleteBtn: HTMLButtonElement | null;
+  };
+
+  function getHistoryUi(): HistoryUI | null {
+    if (!historyTaskId || !els.taskList) return null;
+    const root = els.taskList.querySelector(`.task[data-task-id="${historyTaskId}"] .historyInline`) as HTMLElement | null;
+    if (!root) return null;
+    return {
+      root,
+      canvasWrap: root.querySelector(".historyCanvasWrap"),
+      canvas: root.querySelector(".historyChartInline"),
+      rangeText: root.querySelector(".historyRangeText"),
+      olderBtn: root.querySelector('[data-history-action="older"]'),
+      newerBtn: root.querySelector('[data-history-action="newer"]'),
+      best: root.querySelector(".historyBest"),
+      trashRow: root.querySelector(".historyTrashRow"),
+      deleteBtn: root.querySelector('[data-history-action="delete"]'),
+    };
+  }
+
+  function renderHistoryTrashRow(slice: any[], absStartIndex: number, ui: HistoryUI) {
+    if (!ui.trashRow) return;
 
     if (!historyEditMode) {
-      (els.historyTrashRow as HTMLElement).style.display = "none";
-      els.historyTrashRow.innerHTML = "";
+      ui.trashRow.style.display = "none";
+      ui.trashRow.innerHTML = "";
       return;
     }
 
-    (els.historyTrashRow as HTMLElement).style.display = "flex";
+    ui.trashRow.style.display = "flex";
 
     const pageSize = historyPageSize();
     const buttons: string[] = [];
@@ -633,12 +686,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       );
     }
 
-    els.historyTrashRow.innerHTML = buttons.join("");
+    ui.trashRow.innerHTML = buttons.join("");
   }
 
-  function drawHistoryChart(entries: any[], absStartIndex: number) {
-    const canvas = els.historyCanvas;
-    const wrap = els.historyCanvasWrap as HTMLElement | null;
+  function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI) {
+    const canvas = ui.canvas;
+    const wrap = ui.canvasWrap;
     if (!canvas || !wrap) return;
 
     const rect = wrap.getBoundingClientRect();
@@ -680,6 +733,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     const maxMs = Math.max(...entries.map((e) => e.ms || 0), 1);
+    const historyTask =
+      historyTaskId != null ? tasks.find((task) => String(task.id || "") === String(historyTaskId)) : null;
+    const milestoneMs =
+      historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
+        ? sortMilestones(historyTask.milestones)
+            .map((m) => Math.max(0, (+m.hours || 0) * 3600 * 1000))
+            .filter((ms, i, arr) => ms > 0 && arr.indexOf(ms) === i)
+        : [];
     const gap = Math.max(10, Math.floor(innerW * 0.03));
     const barW = Math.max(22, Math.floor((innerW - gap * (7 - 1)) / 7));
 
@@ -702,6 +763,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.fillRect(x, y, barW, bh);
       ctx.restore();
 
+      if (milestoneMs.length) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,.72)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 2]);
+        for (const goalMs of milestoneMs) {
+          const markerRatio = Math.max(0, Math.min(1, goalMs / maxMs));
+          const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x + 1, markerY);
+          ctx.lineTo(x + barW - 1, markerY);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = "rgba(255,255,255,.95)";
+          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`${Math.round(goalMs / 3600000)}h`, x + barW / 2, markerY);
+          ctx.setLineDash([3, 2]);
+        }
+        ctx.restore();
+      }
+
       historyBarRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
 
       if (historySelectedRelIndex === idx) {
@@ -712,10 +797,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.restore();
       }
 
-      ctx.fillStyle = "rgba(255,255,255,.85)";
-      ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText(formatTime(ms), x + barW / 2, y - 6);
-
       ctx.fillStyle = "rgba(255,255,255,.65)";
       ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
 
@@ -725,13 +806,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const hh = formatTwo(d.getHours());
       const mi = formatTwo(d.getMinutes());
 
-      ctx.fillText(`${dd}/${mm}`, x + barW / 2, padT + innerH + 22);
-      ctx.fillText(`${hh}:${mi}`, x + barW / 2, padT + innerH + 38);
+      ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, x + barW / 2, padT + innerH + 22);
+      ctx.fillStyle = "rgb(0,207,200)";
+      ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.fillText(formatTime(ms), x + barW / 2, padT + innerH + 39);
     }
   }
 
   function renderHistory() {
     if (!historyTaskId) return;
+    const ui = getHistoryUi();
+    if (!ui) return;
 
     const all = getHistoryForTask(historyTaskId);
     const total = all.length;
@@ -744,30 +829,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
     if (historyPage > maxPage) historyPage = maxPage;
 
-    if (els.historyRangeText) {
-      if (total === 0) els.historyRangeText.textContent = "No entries yet";
-      else els.historyRangeText.textContent = `Showing ${slice.length} of ${total} entries`;
+    if (ui.rangeText) {
+      if (total === 0) ui.rangeText.textContent = "No entries yet";
+      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries`;
     }
 
-    if (els.historyOlderBtn) els.historyOlderBtn.disabled = start <= 0;
-    if (els.historyNewerBtn) els.historyNewerBtn.disabled = end >= total;
+    if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
+    if (ui.newerBtn) ui.newerBtn.disabled = end >= total;
 
     historySelectedAbsIndex = null;
     historySelectedRelIndex = null;
-    if (els.historyDeleteBtn) els.historyDeleteBtn.disabled = true;
+    if (ui.deleteBtn) ui.deleteBtn.disabled = true;
 
-    drawHistoryChart(slice, start);
-    renderHistoryTrashRow(slice, start);
+    drawHistoryChart(slice, start, ui);
+    renderHistoryTrashRow(slice, start, ui);
 
-    if (els.historyBest) {
+    if (ui.best) {
       if (total === 0) {
-        els.historyBest.textContent = "";
+        ui.best.textContent = "";
       } else {
         let best = all[0];
         for (let i = 1; i < all.length; i++) {
           if ((all[i].ms || 0) > (best.ms || 0)) best = all[i];
         }
-        els.historyBest.textContent = `All-time best: ${formatTime(best.ms || 0)} on ${formatDateTime(best.ts)}`;
+        ui.best.textContent = `All-time best: ${formatTime(best.ms || 0)} on ${formatDateTime(best.ts)}`;
       }
     }
   }
@@ -1188,26 +1273,32 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.resetAllBtn, "click", resetAll);
 
-    on(els.historyBackBtn, "click", closeHistory);
+    on(els.taskList, "click", (ev: any) => {
+      const btn = ev.target?.closest?.("[data-history-action]");
+      const action = btn?.getAttribute?.("data-history-action");
+      if (!action) return;
 
-    on(els.historyEditBtn, "click", () => {
-      historyEditMode = !historyEditMode;
-      els.historyEditBtn?.classList.toggle("isOn", historyEditMode);
-      renderHistory();
-    });
+      if (action === "close") {
+        closeHistory();
+        return;
+      }
+      if (action === "edit") {
+        historyEditMode = !historyEditMode;
+        renderHistory();
+        return;
+      }
+      if (action === "older") {
+        historyPage += 1;
+        renderHistory();
+        return;
+      }
+      if (action === "newer") {
+        historyPage = Math.max(0, historyPage - 1);
+        renderHistory();
+        return;
+      }
+      if (action !== "delete" || historySelectedAbsIndex == null || !historyTaskId) return;
 
-    on(els.historyOlderBtn, "click", () => {
-      historyPage += 1;
-      renderHistory();
-    });
-
-    on(els.historyNewerBtn, "click", () => {
-      historyPage = Math.max(0, historyPage - 1);
-      renderHistory();
-    });
-
-    on(els.historyDeleteBtn, "click", () => {
-      if (historySelectedAbsIndex == null || !historyTaskId) return;
       const all = getHistoryForTask(historyTaskId);
       const e = all[historySelectedAbsIndex];
       if (!e) return;
@@ -1230,10 +1321,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       });
     });
 
-    on(els.historyCanvas, "click", (ev: any) => {
-      if (!els.historyCanvas) return;
+    on(els.taskList, "click", (ev: any) => {
+      const canvas = ev.target?.closest?.(".historyChartInline") as HTMLCanvasElement | null;
+      if (!canvas) return;
 
-      const rect = els.historyCanvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
       const x = ev.clientX - rect.left;
       const y = ev.clientY - rect.top;
 
@@ -1250,11 +1342,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (hit) {
         historySelectedRelIndex = hit.rel;
         historySelectedAbsIndex = hit.abs;
-        if (els.historyDeleteBtn) els.historyDeleteBtn.disabled = false;
+        const ui = getHistoryUi();
+        if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
       } else {
         historySelectedRelIndex = null;
         historySelectedAbsIndex = null;
-        if (els.historyDeleteBtn) els.historyDeleteBtn.disabled = true;
+        const ui = getHistoryUi();
+        if (ui?.deleteBtn) ui.deleteBtn.disabled = true;
       }
 
       renderHistory();
@@ -1262,12 +1356,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     let touchStartX: number | null = null;
     let touchStartY: number | null = null;
-    const wrap = els.historyCanvasWrap as HTMLElement | null;
+    let touchWrap: HTMLElement | null = null;
 
     on(
-      wrap,
+      els.taskList,
       "touchstart",
       (e: any) => {
+        touchWrap = e.target?.closest?.(".historyCanvasWrap") || null;
+        if (!touchWrap) return;
         if (!e.touches || !e.touches.length) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
@@ -1276,9 +1372,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     );
 
     on(
-      wrap,
+      els.taskList,
       "touchend",
       (e: any) => {
+        if (!touchWrap) return;
         if (touchStartX === null || touchStartY === null) return;
         const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
         if (!t) return;
@@ -1288,17 +1385,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
         touchStartX = null;
         touchStartY = null;
+        touchWrap = null;
 
         if (Math.abs(dx) < 40) return;
         if (Math.abs(dy) > 60) return;
 
         if (dx < 0) {
-          if (!els.historyOlderBtn?.disabled) {
+          const ui = getHistoryUi();
+          if (!ui?.olderBtn?.disabled) {
             historyPage += 1;
             renderHistory();
           }
         } else {
-          if (!els.historyNewerBtn?.disabled) {
+          const ui = getHistoryUi();
+          if (!ui?.newerBtn?.disabled) {
             historyPage = Math.max(0, historyPage - 1);
             renderHistory();
           }
@@ -1308,7 +1408,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     );
 
     on(window, "resize", () => {
-      if ((els.historyScreen as HTMLElement | null)?.style.display === "block") renderHistory();
+      if (historyTaskId) renderHistory();
     });
 
     on(els.menuIcon, "click", () => openOverlay(els.menuOverlay as HTMLElement | null));
