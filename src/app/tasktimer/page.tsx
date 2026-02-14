@@ -273,20 +273,19 @@ export default function TaskTimerPage() {
 
           <div className="field">
             <label>Override Elapsed Time</label>
-            <div className="row2">
+            <div className="row3 overrideElapsedRow">
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ textTransform: "none", letterSpacing: 0 }}>Hours</label>
-                <input type="number" id="editH" min={0} step={1} />
+                <input type="number" id="editH" min={0} max={23} step={1} readOnly />
               </div>
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ textTransform: "none", letterSpacing: 0 }}>Minutes</label>
-                <input type="number" id="editM" min={0} max={59} step={1} />
+                <input type="number" id="editM" min={0} max={59} step={1} readOnly />
               </div>
-            </div>
-
-            <div className="field" style={{ marginTop: 10 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>Seconds</label>
-              <input type="number" id="editS" min={0} max={59} step={1} />
+              <div className="field" style={{ margin: 0 }}>
+                <label style={{ textTransform: "none", letterSpacing: 0 }}>Seconds</label>
+                <input type="number" id="editS" min={0} max={59} step={1} readOnly />
+              </div>
             </div>
           </div>
 
@@ -318,6 +317,39 @@ export default function TaskTimerPage() {
             </button>
             <button className="btn btn-accent" id="saveEditBtn" type="button">
               Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Number pad overlay for edit elapsed fields */}
+      <div className="overlay" id="elapsedPadOverlay">
+        <div className="modal elapsedPadModal" role="dialog" aria-modal="true" aria-label="Enter Time Value">
+          <h2 id="elapsedPadTitle">Enter Value</h2>
+          <div className="elapsedPadDisplay" id="elapsedPadDisplay">
+            0
+          </div>
+          <div className="elapsedPadError" id="elapsedPadError" aria-live="polite" />
+          <div className="elapsedPadGrid" id="elapsedPadGrid">
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="1">1</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="2">2</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="3">3</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="4">4</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="5">5</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="6">6</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="7">7</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="8">8</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="9">9</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-action="clear">Clear</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="0">0</button>
+            <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-action="back">Back</button>
+          </div>
+          <div className="footerBtns">
+            <button className="btn btn-ghost" id="elapsedPadCancelBtn" type="button">
+              Cancel
+            </button>
+            <button className="btn btn-accent" id="elapsedPadDoneBtn" type="button">
+              Done
             </button>
           </div>
         </div>

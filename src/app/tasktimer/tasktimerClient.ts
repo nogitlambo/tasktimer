@@ -78,6 +78,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let historyBarRects: Array<any> = [];
   let historySelectedAbsIndex: number | null = null;
   let historySelectedRelIndex: number | null = null;
+  let elapsedPadTarget: HTMLInputElement | null = null;
+  let elapsedPadDraft = "";
+  let elapsedPadOriginal = "";
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -117,6 +120,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addMsBtn: document.getElementById("addMsBtn"),
     cancelEditBtn: document.getElementById("cancelEditBtn"),
     saveEditBtn: document.getElementById("saveEditBtn"),
+    elapsedPadOverlay: document.getElementById("elapsedPadOverlay"),
+    elapsedPadTitle: document.getElementById("elapsedPadTitle"),
+    elapsedPadDisplay: document.getElementById("elapsedPadDisplay"),
+    elapsedPadError: document.getElementById("elapsedPadError"),
+    elapsedPadCancelBtn: document.getElementById("elapsedPadCancelBtn"),
+    elapsedPadDoneBtn: document.getElementById("elapsedPadDoneBtn"),
 
     confirmOverlay: document.getElementById("confirmOverlay"),
     confirmTitle: document.getElementById("confirmTitle"),
@@ -964,7 +973,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (saveChanges && t) {
       t.name = (els.editName?.value || "").trim() || t.name;
 
-      const hh = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
+      const hh = Math.min(23, Math.max(0, parseInt(els.editH?.value || "0", 10) || 0));
       const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
       const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
 
@@ -983,7 +992,98 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
+    closeElapsedPad(false);
     editIndex = null;
+  }
+
+  function elapsedPadLabelForInput(input: HTMLInputElement | null) {
+    if (!input) return "Value";
+    if (input === els.editH) return "Hours";
+    if (input === els.editM) return "Minutes";
+    if (input === els.editS) return "Seconds";
+    return "Value";
+  }
+
+  function elapsedPadRangeForInput(input: HTMLInputElement | null) {
+    if (input === els.editH) return { min: 0, max: 23 };
+    if (input === els.editM || input === els.editS) return { min: 0, max: 59 };
+    return { min: 0, max: 59 };
+  }
+
+  function elapsedPadErrorTextForInput(input: HTMLInputElement | null) {
+    const range = elapsedPadRangeForInput(input);
+    return `Enter a number within the range ${range.min}-${range.max}`;
+  }
+
+  function clearElapsedPadError() {
+    if (els.elapsedPadError) els.elapsedPadError.textContent = "";
+  }
+
+  function setElapsedPadError(msg: string) {
+    if (els.elapsedPadError) els.elapsedPadError.textContent = msg;
+  }
+
+  function elapsedPadValidatedValue(raw: string, input: HTMLInputElement | null) {
+    const parsed = parseInt(raw || "", 10);
+    const range = elapsedPadRangeForInput(input);
+    if (!Number.isFinite(parsed) || isNaN(parsed)) return null;
+    if (parsed < range.min || parsed > range.max) return null;
+    return String(parsed);
+  }
+
+  function renderElapsedPadDisplay() {
+    if (!els.elapsedPadDisplay) return;
+    const text = (elapsedPadDraft || "0").replace(/^0+(?=\d)/, "") || "0";
+    els.elapsedPadDisplay.textContent = text;
+  }
+
+  function openElapsedPad(input: HTMLInputElement | null) {
+    if (!input || !els.elapsedPadOverlay) return;
+    elapsedPadTarget = input;
+    elapsedPadOriginal = input.value || "0";
+    elapsedPadDraft = elapsedPadOriginal;
+    if (els.elapsedPadTitle) els.elapsedPadTitle.textContent = `Enter ${elapsedPadLabelForInput(input)}`;
+    clearElapsedPadError();
+    renderElapsedPadDisplay();
+    (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
+  }
+
+  function closeElapsedPad(applyValue: boolean) {
+    if (applyValue && elapsedPadTarget) {
+      const valid = elapsedPadValidatedValue(elapsedPadDraft, elapsedPadTarget);
+      if (valid == null) {
+        setElapsedPadError(elapsedPadErrorTextForInput(elapsedPadTarget));
+        return;
+      }
+      elapsedPadTarget.value = valid;
+    } else if (!applyValue && elapsedPadTarget) {
+      elapsedPadTarget.value = elapsedPadOriginal;
+    }
+    clearElapsedPadError();
+    if (els.elapsedPadOverlay) (els.elapsedPadOverlay as HTMLElement).style.display = "none";
+    elapsedPadTarget = null;
+    elapsedPadDraft = "";
+    elapsedPadOriginal = "";
+  }
+
+  function padAppendDigit(digit: string) {
+    clearElapsedPadError();
+    const next = `${elapsedPadDraft || ""}${digit}`.replace(/^0+(?=\d)/, "");
+    elapsedPadDraft = next.slice(0, 6) || "0";
+    renderElapsedPadDisplay();
+  }
+
+  function padBackspace() {
+    clearElapsedPadError();
+    const next = (elapsedPadDraft || "").slice(0, -1);
+    elapsedPadDraft = next || "0";
+    renderElapsedPadDisplay();
+  }
+
+  function padClear() {
+    clearElapsedPadError();
+    elapsedPadDraft = "0";
+    renderElapsedPadDisplay();
   }
 
   function nextDuplicateName(originalName: string) {
@@ -1436,6 +1536,46 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
+    on(els.editH, "click", (e: any) => {
+      e.preventDefault();
+      openElapsedPad(els.editH);
+    });
+    on(els.editM, "click", (e: any) => {
+      e.preventDefault();
+      openElapsedPad(els.editM);
+    });
+    on(els.editS, "click", (e: any) => {
+      e.preventDefault();
+      openElapsedPad(els.editS);
+    });
+    on(els.editH, "focus", () => openElapsedPad(els.editH));
+    on(els.editM, "focus", () => openElapsedPad(els.editM));
+    on(els.editS, "focus", () => openElapsedPad(els.editS));
+
+    on(els.elapsedPadOverlay, "click", (e: any) => {
+      if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
+    });
+    on(els.elapsedPadCancelBtn, "click", () => closeElapsedPad(false));
+    on(els.elapsedPadDoneBtn, "click", () => closeElapsedPad(true));
+
+    document.querySelectorAll(".elapsedPadKey").forEach((btn) => {
+      on(btn, "click", () => {
+        const el = btn as HTMLElement;
+        const digit = el.getAttribute("data-pad-digit");
+        const action = el.getAttribute("data-pad-action");
+        if (digit != null) {
+          padAppendDigit(digit);
+          return;
+        }
+        if (action === "back") {
+          padBackspace();
+          return;
+        }
+        if (action === "clear") {
+          padClear();
+        }
+      });
+    });
 
     on(els.msToggle, "click", () => {
       if (editIndex == null) return;

@@ -276,6 +276,45 @@ input[type="text"]:focus, input[type="number"]:focus{
   display:flex;
   gap:10px;
 }
+.row3{
+  display:flex;
+  gap:10px;
+}
+.row3 > .field{
+  flex:1;
+}
+.elapsedPadModal{
+  width:min(360px, 100%);
+}
+.elapsedPadDisplay{
+  margin-top: 4px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+  font-size: 26px;
+  font-weight: 900;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.elapsedPadError{
+  min-height: 18px;
+  margin: -2px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+.elapsedPadGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:10px;
+}
+.elapsedPadKey{
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-size: 16px;
+}
 .toggleRow{
   display:flex;
   justify-content:space-between;
