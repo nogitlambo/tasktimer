@@ -168,7 +168,7 @@ body{
 .progressRow{ margin-top:12px; }
 .progressWrap{
   width:100%;
-  padding:10px 10px 12px;
+  padding:10px 10px 56px;
   border-radius: 12px;
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
@@ -177,7 +177,7 @@ body{
   position:relative;
   height:18px;
   border-radius: 999px;
-  overflow:hidden;
+  overflow:visible;
   background: rgba(0,0,0,.25);
   border:1px solid rgba(255,255,255,.08);
 }
@@ -354,6 +354,33 @@ input[type="text"]:focus, input[type="number"]:focus{
   border:1px solid rgba(255,255,255,.08);
 }
 .milestones.on{ display:block; }
+.unitRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+  padding:8px 8px;
+  border-radius:10px;
+  background: rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);
+}
+.unitRow > span{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.4px;
+  color: rgba(255,255,255,.62);
+  text-transform:uppercase;
+}
+.unitButtons{
+  display:flex;
+  gap:8px;
+}
+.unitBtn.isOn{
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  color:#06110b;
+  border-color: rgba(0,207,200,.35);
+}
 
 .msRow{
   display:flex;

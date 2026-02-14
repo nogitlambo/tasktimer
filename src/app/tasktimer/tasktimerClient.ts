@@ -79,6 +79,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let historySelectedAbsIndex: number | null = null;
   let historySelectedRelIndex: number | null = null;
   let elapsedPadTarget: HTMLInputElement | null = null;
+  let elapsedPadMilestoneRef: { task: Task; milestone: { hours: number; description: string }; ms: Task["milestones"] } | null = null;
   let elapsedPadDraft = "";
   let elapsedPadOriginal = "";
 
@@ -110,12 +111,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     editOverlay: document.getElementById("editOverlay"),
     editName: document.getElementById("editName") as HTMLInputElement | null,
+    editD: document.getElementById("editD") as HTMLInputElement | null,
     editH: document.getElementById("editH") as HTMLInputElement | null,
     editM: document.getElementById("editM") as HTMLInputElement | null,
     editS: document.getElementById("editS") as HTMLInputElement | null,
-    editOrder: document.getElementById("editOrder") as HTMLInputElement | null,
     msToggle: document.getElementById("msToggle"),
     msArea: document.getElementById("msArea"),
+    msUnitRow: document.getElementById("msUnitRow"),
+    msUnitDay: document.getElementById("msUnitDay"),
+    msUnitHour: document.getElementById("msUnitHour"),
     msList: document.getElementById("msList"),
     addMsBtn: document.getElementById("addMsBtn"),
     cancelEditBtn: document.getElementById("cancelEditBtn"),
@@ -165,6 +169,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       startMs: null,
       collapsed: false,
       milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
       milestones: [],
       hasStarted: false,
     };
@@ -182,6 +187,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     tasks = loaded;
+    tasks.forEach((t) => {
+      if (t.milestoneTimeUnit !== "day" && t.milestoneTimeUnit !== "hour") t.milestoneTimeUnit = "hour";
+    });
   }
 
   function save() {
@@ -248,6 +256,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.startMs = null;
     out.collapsed = !!t.collapsed;
     out.milestonesEnabled = !!t.milestonesEnabled;
+    out.milestoneTimeUnit = t.milestoneTimeUnit === "day" ? "day" : "hour";
     out.milestones = Array.isArray(t.milestones)
       ? t.milestones.map((m: any) => ({
           hours: Number.isFinite(+m.hours) ? +m.hours : 0,
@@ -425,11 +434,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
   }
 
+  function milestoneUnitSec(t: Task | null | undefined): number {
+    return t && t.milestoneTimeUnit === "day" ? 86400 : 3600;
+  }
+
+  function milestoneUnitSuffix(t: Task | null | undefined): string {
+    return t && t.milestoneTimeUnit === "day" ? "d" : "h";
+  }
+
+  function setMilestoneUnitUi(unit: "day" | "hour") {
+    els.msUnitDay?.classList.toggle("isOn", unit === "day");
+    els.msUnitHour?.classList.toggle("isOn", unit === "hour");
+  }
+
+  function isEditMilestoneUnitDay(): boolean {
+    if (editIndex == null) return false;
+    const t = tasks[editIndex];
+    return !!t && t.milestoneTimeUnit === "day";
+  }
+
   function renderMilestoneEditor(t: Task) {
     if (!els.msList) return;
     els.msList.innerHTML = "";
 
-    const ms = sortMilestones(t.milestones || []);
+    const ms = (t.milestones || []).slice();
 
     ms.forEach((m, idx) => {
       const row = document.createElement("div");
@@ -437,20 +465,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (row as any).dataset.msIndex = String(idx);
 
       row.innerHTML = `
-        <div class="pill">${escapeHtmlUI(String(+m.hours || 0))}h</div>
+        <div class="pill">${escapeHtmlUI(String(+m.hours || 0))}${milestoneUnitSuffix(t)}</div>
         <input type="text" value="${escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" title="Remove" data-action="rmMs">✕</button>
       `;
 
       const pill = row.querySelector(".pill");
       on(pill, "click", () => {
-        const val = window.prompt("Milestone hours (number)", String(+m.hours || 0));
-        if (val === null) return;
-        const hrs = Math.max(0, Number(val));
-        if (!Number.isFinite(hrs)) return;
-        m.hours = hrs;
-        t.milestones = sortMilestones(ms);
-        renderMilestoneEditor(t);
+        openElapsedPadForMilestone(t, m as { hours: number; description: string }, ms);
       });
 
       const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
@@ -484,8 +506,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
       const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-      const maxHours = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-      const maxSec = Math.max(maxHours * 3600, 1);
+      const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
+      const maxSec = Math.max(maxValue * milestoneUnitSec(t), 1);
       const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
@@ -498,16 +520,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       let progressHTML = "";
       if (hasMilestones) {
         let markers = "";
+        const unitSuffix = milestoneUnitSuffix(t);
         markers += `
           <div class="mkLine" style="left:0%"></div>
-          <div class="mkTime mkAch mkEdgeL" style="left:0%">0h</div>`;
+          <div class="mkTime mkAch mkEdgeL" style="left:0%">0${unitSuffix}</div>`;
 
         msSorted.forEach((m) => {
-          const hrs = +m.hours || 0;
-          const left = Math.min((hrs / (maxHours || 1)) * 100, 100);
-          const reached = elapsedSec >= hrs * 3600;
+          const val = +m.hours || 0;
+          const left = Math.min((val / (maxValue || 1)) * 100, 100);
+          const reached = elapsedSec >= val * milestoneUnitSec(t);
           const cls = reached ? "mkAch" : "mkPend";
-          const label = `${hrs}h`;
+          const label = `${val}${unitSuffix}`;
           const desc = (m.description || "").trim();
           const edgeCls = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
           const leftPos = edgeCls === "mkEdgeL" ? 0 : edgeCls === "mkEdgeR" ? 100 : left;
@@ -747,8 +770,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const milestoneMs =
       historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
         ? sortMilestones(historyTask.milestones)
-            .map((m) => Math.max(0, (+m.hours || 0) * 3600 * 1000))
-            .filter((ms, i, arr) => ms > 0 && arr.indexOf(ms) === i)
+            .map((m) => ({ value: +m.hours || 0, ms: Math.max(0, (+m.hours || 0) * milestoneUnitSec(historyTask) * 1000) }))
+            .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
         : [];
     const gap = Math.max(10, Math.floor(innerW * 0.03));
     const barW = Math.max(22, Math.floor((innerW - gap * (7 - 1)) / 7));
@@ -777,7 +800,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.strokeStyle = "rgba(255,255,255,.72)";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 2]);
-        for (const goalMs of milestoneMs) {
+        for (const goal of milestoneMs) {
+          const goalMs = goal.ms;
           const markerRatio = Math.max(0, Math.min(1, goalMs / maxMs));
           const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
           ctx.beginPath();
@@ -790,7 +814,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(`${Math.round(goalMs / 3600000)}h`, x + barW / 2, markerY);
+          ctx.fillText(`${goal.value}${milestoneUnitSuffix(historyTask || undefined)}`, x + barW / 2, markerY);
           ctx.setLineDash([3, 2]);
         }
         ctx.restore();
@@ -949,18 +973,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const elapsedMs = getElapsedMs(t);
     const totalSec = Math.floor(elapsedMs / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
+    const d = Math.floor(totalSec / 86400);
+    const remAfterDays = totalSec % 86400;
+    const h = Math.floor(remAfterDays / 3600);
+    const m = Math.floor((remAfterDays % 3600) / 60);
+    const s = remAfterDays % 60;
 
+    if (els.editD) els.editD.value = String(d);
     if (els.editH) els.editH.value = String(h);
     if (els.editM) els.editM.value = String(m);
     if (els.editS) els.editS.value = String(s);
-    if (els.editOrder) els.editOrder.value = String(t.order || i + 1);
 
     els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
     els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
     els.msArea?.classList.toggle("on", !!t.milestonesEnabled);
+    setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : "hour");
 
     renderMilestoneEditor(t);
 
@@ -973,17 +1000,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (saveChanges && t) {
       t.name = (els.editName?.value || "").trim() || t.name;
 
-      const hh = Math.min(23, Math.max(0, parseInt(els.editH?.value || "0", 10) || 0));
+      const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
+      const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
+      const hh = isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
       const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
       const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
 
-      const newMs = (hh * 3600 + mm * 60 + ss) * 1000;
+      const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
 
       t.accumulatedMs = newMs;
       t.startMs = t.running ? nowMs() : null;
-
-      const order = Math.max(1, parseInt(els.editOrder?.value || "1", 10) || 1);
-      t.order = order;
 
       t.milestones = sortMilestones(t.milestones);
 
@@ -998,6 +1024,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function elapsedPadLabelForInput(input: HTMLInputElement | null) {
     if (!input) return "Value";
+    if (input === els.editD) return "Days";
     if (input === els.editH) return "Hours";
     if (input === els.editM) return "Minutes";
     if (input === els.editS) return "Seconds";
@@ -1005,13 +1032,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function elapsedPadRangeForInput(input: HTMLInputElement | null) {
-    if (input === els.editH) return { min: 0, max: 23 };
+    if (input === els.editD) return { min: 0, max: Number.POSITIVE_INFINITY };
+    if (input === els.editH) {
+      return isEditMilestoneUnitDay()
+        ? { min: 0, max: 23 }
+        : { min: 0, max: Number.POSITIVE_INFINITY };
+    }
     if (input === els.editM || input === els.editS) return { min: 0, max: 59 };
     return { min: 0, max: 59 };
   }
 
   function elapsedPadErrorTextForInput(input: HTMLInputElement | null) {
     const range = elapsedPadRangeForInput(input);
+    if (!Number.isFinite(range.max)) return `Enter a number greater than or equal to ${range.min}`;
     return `Enter a number within the range ${range.min}-${range.max}`;
   }
 
@@ -1039,6 +1072,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function openElapsedPad(input: HTMLInputElement | null) {
     if (!input || !els.elapsedPadOverlay) return;
+    elapsedPadMilestoneRef = null;
     elapsedPadTarget = input;
     elapsedPadOriginal = input.value || "0";
     elapsedPadDraft = elapsedPadOriginal;
@@ -1048,20 +1082,57 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
   }
 
+  function openElapsedPadForMilestone(
+    task: Task,
+    milestone: { hours: number; description: string },
+    ms: Task["milestones"]
+  ) {
+    if (!els.elapsedPadOverlay) return;
+    elapsedPadTarget = null;
+    elapsedPadMilestoneRef = { task, milestone, ms };
+    elapsedPadOriginal = String(+milestone.hours || 0);
+    elapsedPadDraft = elapsedPadOriginal;
+    if (els.elapsedPadTitle) {
+      els.elapsedPadTitle.textContent =
+        task.milestoneTimeUnit === "day" ? "Enter Milestone Days" : "Enter Milestone Hours";
+    }
+    clearElapsedPadError();
+    renderElapsedPadDisplay();
+    (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
+  }
+
   function closeElapsedPad(applyValue: boolean) {
-    if (applyValue && elapsedPadTarget) {
-      const valid = elapsedPadValidatedValue(elapsedPadDraft, elapsedPadTarget);
+    if (applyValue && (elapsedPadTarget || elapsedPadMilestoneRef)) {
+      const valid =
+        elapsedPadMilestoneRef && !elapsedPadTarget
+          ? (() => {
+              const parsed = parseInt(elapsedPadDraft || "", 10);
+              if (!Number.isFinite(parsed) || isNaN(parsed) || parsed < 0) return null;
+              return String(parsed);
+            })()
+          : elapsedPadValidatedValue(elapsedPadDraft, elapsedPadTarget);
       if (valid == null) {
-        setElapsedPadError(elapsedPadErrorTextForInput(elapsedPadTarget));
+        setElapsedPadError(
+          elapsedPadMilestoneRef && !elapsedPadTarget
+            ? "Enter a valid number"
+            : elapsedPadErrorTextForInput(elapsedPadTarget)
+        );
         return;
       }
-      elapsedPadTarget.value = valid;
+      if (elapsedPadTarget) {
+        elapsedPadTarget.value = valid;
+      } else if (elapsedPadMilestoneRef) {
+        elapsedPadMilestoneRef.milestone.hours = Number(valid);
+        elapsedPadMilestoneRef.task.milestones = elapsedPadMilestoneRef.ms;
+        renderMilestoneEditor(elapsedPadMilestoneRef.task);
+      }
     } else if (!applyValue && elapsedPadTarget) {
       elapsedPadTarget.value = elapsedPadOriginal;
     }
     clearElapsedPadError();
     if (els.elapsedPadOverlay) (els.elapsedPadOverlay as HTMLElement).style.display = "none";
     elapsedPadTarget = null;
+    elapsedPadMilestoneRef = null;
     elapsedPadDraft = "";
     elapsedPadOriginal = "";
   }
@@ -1536,6 +1607,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
+    on(els.editD, "click", (e: any) => {
+      e.preventDefault();
+      openElapsedPad(els.editD);
+    });
     on(els.editH, "click", (e: any) => {
       e.preventDefault();
       openElapsedPad(els.editH);
@@ -1548,6 +1623,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       e.preventDefault();
       openElapsedPad(els.editS);
     });
+    on(els.editD, "focus", () => openElapsedPad(els.editD));
     on(els.editH, "focus", () => openElapsedPad(els.editH));
     on(els.editM, "focus", () => openElapsedPad(els.editM));
     on(els.editS, "focus", () => openElapsedPad(els.editS));
@@ -1593,14 +1669,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     });
 
+    on(els.msUnitDay, "click", () => {
+      if (editIndex == null) return;
+      const t = tasks[editIndex];
+      if (!t) return;
+      t.milestoneTimeUnit = "day";
+      setMilestoneUnitUi("day");
+      renderMilestoneEditor(t);
+    });
+    on(els.msUnitHour, "click", () => {
+      if (editIndex == null) return;
+      const t = tasks[editIndex];
+      if (!t) return;
+      t.milestoneTimeUnit = "hour";
+      setMilestoneUnitUi("hour");
+      renderMilestoneEditor(t);
+    });
+
     on(els.addMsBtn, "click", () => {
       if (editIndex == null) return;
       const t = tasks[editIndex];
       if (!t) return;
 
       t.milestones = t.milestones || [];
-      t.milestones.push({ hours: 24, description: "" });
-      t.milestones = sortMilestones(t.milestones);
+      t.milestones.push({ hours: 0, description: "" });
       renderMilestoneEditor(t);
     });
 
@@ -1682,8 +1774,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
         const msSorted = sortMilestones(t.milestones);
-        const maxHours = Math.max(...msSorted.map((m) => +m.hours || 0), 0) || 1;
-        const maxSec = maxHours * 3600;
+        const maxValue = Math.max(...msSorted.map((m) => +m.hours || 0), 0) || 1;
+        const maxSec = maxValue * milestoneUnitSec(t);
         const pct = Math.min((getElapsedMs(t) / 1000 / maxSec) * 100, 100);
 
         const fill = node.querySelector(".progressFill") as HTMLElement | null;
@@ -1697,8 +1789,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
         mkTimes.forEach((mt) => {
           const txt = (mt.textContent || "").trim();
-          const hrs = parseFloat(txt.replace("h", "")) || 0;
-          const reached = elapsedSec >= hrs * 3600;
+          const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
+          const reached = elapsedSec >= v * milestoneUnitSec(t);
           mt.classList.toggle("mkAch", reached);
           mt.classList.toggle("mkPend", !reached);
         });

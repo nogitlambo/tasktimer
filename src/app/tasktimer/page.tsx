@@ -275,8 +275,12 @@ export default function TaskTimerPage() {
             <label>Override Elapsed Time</label>
             <div className="row3 overrideElapsedRow">
               <div className="field" style={{ margin: 0 }}>
+                <label style={{ textTransform: "none", letterSpacing: 0 }}>Days</label>
+                <input type="number" id="editD" min={0} step={1} readOnly />
+              </div>
+              <div className="field" style={{ margin: 0 }}>
                 <label style={{ textTransform: "none", letterSpacing: 0 }}>Hours</label>
-                <input type="number" id="editH" min={0} max={23} step={1} readOnly />
+                <input type="number" id="editH" min={0} step={1} readOnly />
               </div>
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ textTransform: "none", letterSpacing: 0 }}>Minutes</label>
@@ -289,17 +293,23 @@ export default function TaskTimerPage() {
             </div>
           </div>
 
-          <div className="field">
-            <label>Task Order</label>
-            <input type="number" id="editOrder" min={1} step={1} />
-          </div>
-
           <div className="toggleRow">
             <span>Milestones</span>
             <div className="switch" id="msToggle" role="switch" aria-checked="false" />
           </div>
 
           <div className="milestones" id="msArea">
+            <div className="unitRow" id="msUnitRow">
+              <span>Milestone Time Format</span>
+              <div className="unitButtons">
+                <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
+                  Day
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
+                  Hour
+                </button>
+              </div>
+            </div>
             <div id="msList" />
             <button
               className="btn btn-ghost"

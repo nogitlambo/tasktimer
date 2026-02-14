@@ -46,8 +46,9 @@ export function sessionColorForTaskMs(t: Task, elapsedMs: number): string {
     if (!hasMilestones) return pctToEndColor(0);
 
     const msSorted = sortMilestones(t.milestones);
-    const maxHours = Math.max(...msSorted.map((m) => +m.hours || 0), 0);
-    const maxSec = Math.max(maxHours * 3600, 1);
+    const maxValue = Math.max(...msSorted.map((m) => +m.hours || 0), 0);
+    const unitSec = t.milestoneTimeUnit === "day" ? 86400 : 3600;
+    const maxSec = Math.max(maxValue * unitSec, 1);
     const pct = Math.min((elapsedSec / maxSec) * 100, 100);
     return fillBackgroundForPct(pct);
   } catch {
