@@ -78,8 +78,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let historyBarRects: Array<any> = [];
   let historySelectedAbsIndex: number | null = null;
   let historySelectedRelIndex: number | null = null;
+  let addTaskMilestonesEnabled = false;
+  let addTaskMilestoneTimeUnit: "day" | "hour" = "hour";
+  let addTaskMilestones: Task["milestones"] = [];
   let elapsedPadTarget: HTMLInputElement | null = null;
-  let elapsedPadMilestoneRef: { task: Task; milestone: { hours: number; description: string }; ms: Task["milestones"] } | null = null;
+  let elapsedPadMilestoneRef: {
+    task: Task;
+    milestone: { hours: number; description: string };
+    ms: Task["milestones"];
+    onApplied?: () => void;
+  } | null = null;
   let elapsedPadDraft = "";
   let elapsedPadOriginal = "";
 
@@ -89,6 +97,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskOverlay: document.getElementById("addTaskOverlay"),
     addTaskForm: document.getElementById("addTaskForm"),
     addTaskName: document.getElementById("addTaskName") as HTMLInputElement | null,
+    addTaskError: document.getElementById("addTaskError"),
+    addTaskMsToggle: document.getElementById("addTaskMsToggle"),
+    addTaskMsUnitRow: document.getElementById("addTaskMsUnitRow"),
+    addTaskMsUnitDay: document.getElementById("addTaskMsUnitDay"),
+    addTaskMsUnitHour: document.getElementById("addTaskMsUnitHour"),
+    addTaskAddMsBtn: document.getElementById("addTaskAddMsBtn") as HTMLButtonElement | null,
+    addTaskMsArea: document.getElementById("addTaskMsArea"),
+    addTaskMsList: document.getElementById("addTaskMsList"),
     addTaskCancelBtn: document.getElementById("addTaskCancelBtn"),
     resetAllBtn: document.getElementById("resetAllBtn"),
 
@@ -447,6 +463,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.msUnitHour?.classList.toggle("isOn", unit === "hour");
   }
 
+  function setAddTaskMilestoneUnitUi(unit: "day" | "hour") {
+    els.addTaskMsUnitDay?.classList.toggle("isOn", unit === "day");
+    els.addTaskMsUnitHour?.classList.toggle("isOn", unit === "hour");
+  }
+
   function isEditMilestoneUnitDay(): boolean {
     if (editIndex == null) return false;
     const t = tasks[editIndex];
@@ -492,6 +513,48 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     t.milestones = ms;
+  }
+
+  function renderAddTaskMilestoneEditor() {
+    if (!els.addTaskMsList) return;
+    els.addTaskMsList.innerHTML = "";
+
+    const ms = (addTaskMilestones || []).slice();
+    const tempTask = { milestoneTimeUnit: addTaskMilestoneTimeUnit, milestones: ms } as Task;
+
+    ms.forEach((m, idx) => {
+      const row = document.createElement("div");
+      row.className = "msRow";
+      (row as any).dataset.msIndex = String(idx);
+
+      row.innerHTML = `
+        <div class="pill">${escapeHtmlUI(String(+m.hours || 0))}${milestoneUnitSuffix(tempTask)}</div>
+        <input type="text" value="${escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
+        <button type="button" title="Remove" data-action="rmMs">x</button>
+      `;
+
+      const pill = row.querySelector(".pill");
+      on(pill, "click", () => {
+        openElapsedPadForMilestone(tempTask, m as { hours: number; description: string }, ms, renderAddTaskMilestoneEditor);
+      });
+
+      const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
+      on(desc, "input", (e: any) => {
+        m.description = e?.target?.value || "";
+        addTaskMilestones = ms;
+      });
+
+      const rm = row.querySelector('[data-action="rmMs"]');
+      on(rm, "click", () => {
+        ms.splice(idx, 1);
+        addTaskMilestones = ms;
+        renderAddTaskMilestoneEditor();
+      });
+
+      els.addTaskMsList!.appendChild(row);
+    });
+
+    addTaskMilestones = ms;
   }
 
   function render() {
@@ -1085,11 +1148,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function openElapsedPadForMilestone(
     task: Task,
     milestone: { hours: number; description: string },
-    ms: Task["milestones"]
+    ms: Task["milestones"],
+    onApplied?: () => void
   ) {
     if (!els.elapsedPadOverlay) return;
     elapsedPadTarget = null;
-    elapsedPadMilestoneRef = { task, milestone, ms };
+    elapsedPadMilestoneRef = { task, milestone, ms, onApplied };
     elapsedPadOriginal = String(+milestone.hours || 0);
     elapsedPadDraft = elapsedPadOriginal;
     if (els.elapsedPadTitle) {
@@ -1124,7 +1188,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       } else if (elapsedPadMilestoneRef) {
         elapsedPadMilestoneRef.milestone.hours = Number(valid);
         elapsedPadMilestoneRef.task.milestones = elapsedPadMilestoneRef.ms;
-        renderMilestoneEditor(elapsedPadMilestoneRef.task);
+        if (elapsedPadMilestoneRef.onApplied) elapsedPadMilestoneRef.onApplied();
+        else renderMilestoneEditor(elapsedPadMilestoneRef.task);
       }
     } else if (!applyValue && elapsedPadTarget) {
       elapsedPadTarget.value = elapsedPadOriginal;
@@ -1388,7 +1453,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function wireEvents() {
+    const setAddTaskError = (msg: string) => {
+      if (els.addTaskError) els.addTaskError.textContent = msg;
+    };
+
+    const syncAddTaskMilestonesUi = () => {
+      els.addTaskMsToggle?.classList.toggle("on", addTaskMilestonesEnabled);
+      els.addTaskMsToggle?.setAttribute("aria-checked", String(addTaskMilestonesEnabled));
+      els.addTaskMsArea?.classList.toggle("on", addTaskMilestonesEnabled);
+      setAddTaskMilestoneUnitUi(addTaskMilestoneTimeUnit);
+    };
+
+    const resetAddTaskMilestones = () => {
+      addTaskMilestonesEnabled = false;
+      addTaskMilestoneTimeUnit = "hour";
+      addTaskMilestones = [];
+      if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
+      syncAddTaskMilestonesUi();
+    };
+
     const openAddTaskModal = () => {
+      resetAddTaskMilestones();
+      setAddTaskError("");
       openOverlay(els.addTaskOverlay as HTMLElement | null);
       setTimeout(() => {
         try {
@@ -1402,6 +1488,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const closeAddTaskModal = () => {
       closeOverlay(els.addTaskOverlay as HTMLElement | null);
       if (els.addTaskName) els.addTaskName.value = "";
+      setAddTaskError("");
+      resetAddTaskMilestones();
     };
 
     on(els.openAddTaskBtn, "click", openAddTaskModal);
@@ -1410,12 +1498,47 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (e.target === els.addTaskOverlay) closeAddTaskModal();
     });
 
+    on(els.addTaskMsToggle, "click", () => {
+      addTaskMilestonesEnabled = !addTaskMilestonesEnabled;
+      syncAddTaskMilestonesUi();
+    });
+
+    on(els.addTaskMsUnitDay, "click", () => {
+      addTaskMilestoneTimeUnit = "day";
+      setAddTaskMilestoneUnitUi("day");
+      renderAddTaskMilestoneEditor();
+    });
+
+    on(els.addTaskMsUnitHour, "click", () => {
+      addTaskMilestoneTimeUnit = "hour";
+      setAddTaskMilestoneUnitUi("hour");
+      renderAddTaskMilestoneEditor();
+    });
+
+    on(els.addTaskName, "input", () => {
+      if ((els.addTaskName?.value || "").trim()) setAddTaskError("");
+    });
+
+    on(els.addTaskAddMsBtn, "click", () => {
+      if (!addTaskMilestonesEnabled) return;
+      addTaskMilestones.push({ hours: 0, description: "" });
+      renderAddTaskMilestoneEditor();
+    });
+
     on(els.addTaskForm, "submit", (e: any) => {
       e.preventDefault();
       const name = (els.addTaskName?.value || "").trim();
-      if (!name) return;
+      if (!name) {
+        setAddTaskError("Task name is required");
+        return;
+      }
+      setAddTaskError("");
       const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
-      tasks.push(makeTask(name, nextOrder));
+      const newTask = makeTask(name, nextOrder);
+      newTask.milestonesEnabled = addTaskMilestonesEnabled;
+      newTask.milestoneTimeUnit = addTaskMilestoneTimeUnit;
+      newTask.milestones = sortMilestones(addTaskMilestones.slice());
+      tasks.push(newTask);
       closeAddTaskModal();
       save();
       render();

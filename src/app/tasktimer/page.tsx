@@ -160,6 +160,32 @@ export default function TaskTimerPage() {
             style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}
           >
             <input id="addTaskName" type="text" placeholder="Task name..." />
+            <div
+              id="addTaskError"
+              aria-live="polite"
+              style={{ color: "#ff5c6a", fontSize: 13, fontWeight: 700, minHeight: 18 }}
+            />
+            <div className="toggleRow" style={{ marginTop: 0 }}>
+              <span>Time Checkpoints</span>
+              <div className="switch" id="addTaskMsToggle" role="switch" aria-checked="false" />
+            </div>
+            <div className="milestones" id="addTaskMsArea">
+              <div className="unitRow" id="addTaskMsUnitRow">
+                <span>Time Format</span>
+                <div className="unitButtons">
+                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
+                    Day
+                  </button>
+                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
+                    Hour
+                  </button>
+                </div>
+              </div>
+              <div id="addTaskMsList" />
+              <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+                + Add Marker
+              </button>
+            </div>
 
             <div className="footerBtns" style={{ justifyContent: "center" }}>
               <button className="btn btn-ghost" id="addTaskCancelBtn" type="button">
@@ -294,13 +320,13 @@ export default function TaskTimerPage() {
           </div>
 
           <div className="toggleRow">
-            <span>Milestones</span>
+            <span>Time Checkpoints</span>
             <div className="switch" id="msToggle" role="switch" aria-checked="false" />
           </div>
 
           <div className="milestones" id="msArea">
             <div className="unitRow" id="msUnitRow">
-              <span>Milestone Time Format</span>
+              <span>Time Format</span>
               <div className="unitButtons">
                 <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
                   Day
@@ -317,7 +343,7 @@ export default function TaskTimerPage() {
               type="button"
               style={{ width: "100%", marginTop: 10 }}
             >
-              + Add Milestone
+              + Add Marker
             </button>
           </div>
 
