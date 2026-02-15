@@ -34,6 +34,9 @@ body{
   padding:28px 16px;
   line-height:1.45;
 }
+.modalSubtext{
+  color: var(--muted);
+}
 
 /* App shell */
 .wrap{
@@ -352,6 +355,9 @@ input[type="text"]:focus, input[type="number"]:focus{
   border-radius: 12px;
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
+}
+#themeToggleRow{
+  cursor:pointer;
 }
 .switch{
   width:52px;height:28px;
@@ -686,3 +692,106 @@ input[type="text"]:focus, input[type="number"]:focus{
   background: rgba(255,255,255,.06);
 }
 .aboutText{ color: rgba(255,255,255,.70); line-height:1.45; }
+
+body[data-theme="light"]{
+  --bg:#f6f4ee;
+  --panel:#fcfaf4;
+  --card:#f7f3ea;
+  --text:#111111;
+  --muted:rgba(0,0,0,.72);
+  --shadow:0 14px 40px rgba(0,0,0,.12);
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(0,207,200,.08), transparent 60%),
+              radial-gradient(900px 600px at 80% 90%, rgba(0,207,200,.06), transparent 55%),
+              var(--bg);
+}
+body[data-theme="light"] .wrap{
+  background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.6) 50%),
+              rgba(246,244,238,.98);
+  border-color: rgba(0,0,0,.14);
+}
+body[data-theme="light"] .topbar{
+  background: rgba(255,255,255,.72);
+  border-bottom-color: rgba(0,0,0,.12);
+}
+body[data-theme="light"] .task,
+body[data-theme="light"] .progressWrap,
+body[data-theme="light"] .modal,
+body[data-theme="light"] .menu,
+body[data-theme="light"] .historyInline,
+body[data-theme="light"] .historyCanvasWrap,
+body[data-theme="light"] .milestones,
+body[data-theme="light"] .toggleRow,
+body[data-theme="light"] .chkRow,
+body[data-theme="light"] .unitRow,
+body[data-theme="light"] .hmGroup,
+body[data-theme="light"] .hmEmpty{
+  background: rgba(255,255,255,.78);
+  border-color: rgba(0,0,0,.15);
+}
+body[data-theme="light"] .overlay{
+  background: rgba(0,0,0,.22);
+}
+body[data-theme="light"] .btn,
+body[data-theme="light"] .iconBtn,
+body[data-theme="light"] .menuIcon,
+body[data-theme="light"] .menuItem{
+  color:#111111;
+  border-color: rgba(0,0,0,.38);
+  background: rgba(255,255,255,.8);
+}
+body[data-theme="light"] .historyTrashBtn,
+body[data-theme="light"] .hmDelBtn,
+body[data-theme="light"] .msRow button{
+  border-color: rgba(0,0,0,.38);
+}
+body[data-theme="light"] .switch{
+  background: rgba(255,255,255,.9);
+  border-color: rgba(0,0,0,.35);
+}
+body[data-theme="light"] .switch::after{
+  background: #111111;
+}
+body[data-theme="light"] .switch.on{
+  background: rgba(0,0,0,.08);
+  border-color: rgba(0,0,0,.45);
+}
+body[data-theme="light"] .switch.on::after{
+  background: #111111;
+}
+body[data-theme="light"] .btn-ghost{
+  background: rgba(255,255,255,.6);
+}
+body[data-theme="light"] .btn-accent{
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  color:#06110b;
+  border-color: rgba(0,207,200,.35);
+}
+body[data-theme="light"] .btn-warn{
+  color:#3a0000;
+}
+body[data-theme="light"] .time,
+body[data-theme="light"] .historyMeta,
+body[data-theme="light"] .confirmText,
+body[data-theme="light"] .aboutText,
+body[data-theme="light"] label,
+body[data-theme="light"] .unitRow > span,
+body[data-theme="light"] .mkTime,
+body[data-theme="light"] .mkDesc,
+body[data-theme="light"] .hmCount{
+  color: rgba(0,0,0,.72) !important;
+}
+body[data-theme="light"] .unitBtn.isOn{
+  background: linear-gradient(180deg, var(--accent), var(--accent2)) !important;
+  color:#06110b !important;
+  border-color: rgba(0,207,200,.35) !important;
+}
+body[data-theme="light"] .progressTrack{
+  background: rgba(0,0,0,.08);
+  border-color: rgba(0,0,0,.12);
+}
+body[data-theme="light"] input[type="text"],
+body[data-theme="light"] input[type="number"]{
+  color:#111111;
+  background: rgba(255,255,255,.9);
+  border-color: rgba(0,0,0,.2);
+}

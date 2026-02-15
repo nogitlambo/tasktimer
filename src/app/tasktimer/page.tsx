@@ -112,8 +112,6 @@ export default function TaskTimerPage() {
             <div className="menuTitle" aria-label="Task Timer Settings">
               Task Timer Settings
             </div>
-            <button className="iconBtn" id="closeMenuBtn" type="button" aria-label="Close menu">
-              Close</button>
           </div>
 
           <div className="menuList">
@@ -146,6 +144,12 @@ export default function TaskTimerPage() {
             </button>
 
             <input id="importFile" type="file" accept="application/json" style={{ display: "none" }} />
+          </div>
+
+          <div className="footerBtns">
+            <button className="btn btn-accent" id="closeMenuBtn" type="button" aria-label="Close menu">
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -229,7 +233,7 @@ export default function TaskTimerPage() {
       <div className="overlay" id="howtoOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="How To">
           <h2>How To</h2>
-          <div style={{ color: "rgba(255,255,255,.72)", lineHeight: 1.5 }}>
+          <div className="modalSubtext" style={{ lineHeight: 1.5 }}>
             <p>
               <b>Tracking:</b> Use Start to start, Stop to stop, and Reset to reset. Reset can optionally log a history entry.
             </p>
@@ -265,7 +269,10 @@ export default function TaskTimerPage() {
       <div className="overlay" id="appearanceOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="Appearance">
           <h2>Appearance</h2>
-          <p style={{ color: "rgba(255,255,255,.72)" }}>Coming soon...</p>
+          <div className="toggleRow" id="themeToggleRow">
+            <span>Toggle between light and dark mode</span>
+            <button className="switch on" id="themeToggle" type="button" role="switch" aria-checked="true" />
+          </div>
           <div className="footerBtns">
             <button className="btn btn-accent closePopup" type="button">
               Close
@@ -278,7 +285,7 @@ export default function TaskTimerPage() {
       <div className="overlay" id="contactOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="Contact">
           <h2>Contact</h2>
-          <p style={{ color: "rgba(255,255,255,.72)" }}>Coming soon...</p>
+          <p className="modalSubtext">Coming soon...</p>
           <div className="footerBtns">
             <button className="btn btn-accent closePopup" type="button">
               Close

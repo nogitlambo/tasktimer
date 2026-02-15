@@ -70,14 +70,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
+  const THEME_KEY = `${STORAGE_KEY}:theme`;
+  let themeMode: "light" | "dark" = "dark";
 
   let historyByTaskId: HistoryByTaskId = {};
-  let historyTaskId: string | null = null;
-  let historyPage = 0;
-  let historyEditMode = false;
-  let historyBarRects: Array<any> = [];
-  let historySelectedAbsIndex: number | null = null;
-  let historySelectedRelIndex: number | null = null;
+  const openHistoryTaskIds = new Set<string>();
+  type HistoryViewState = {
+    page: number;
+    editMode: boolean;
+    barRects: Array<any>;
+    selectedAbsIndex: number | null;
+    selectedRelIndex: number | null;
+  };
+  const historyViewByTaskId: Record<string, HistoryViewState> = {};
   let addTaskMilestonesEnabled = false;
   let addTaskMilestoneTimeUnit: "day" | "hour" = "hour";
   let addTaskMilestones: Task["milestones"] = [];
@@ -119,6 +124,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     aboutOverlay: document.getElementById("aboutOverlay"),
     howtoOverlay: document.getElementById("howtoOverlay"),
     appearanceOverlay: document.getElementById("appearanceOverlay"),
+    themeToggleRow: document.getElementById("themeToggleRow"),
+    themeToggle: document.getElementById("themeToggle"),
     contactOverlay: document.getElementById("contactOverlay"),
 
     exportBtn: document.getElementById("exportBtn"),
@@ -562,6 +569,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
     els.taskList.innerHTML = "";
+    const activeTaskIds = new Set(tasks.map((t) => String(t.id || "")));
+    for (const taskId of Array.from(openHistoryTaskIds)) {
+      if (!activeTaskIds.has(taskId)) {
+        openHistoryTaskIds.delete(taskId);
+        delete historyViewByTaskId[taskId];
+      }
+    }
 
     tasks.forEach((t, index) => {
       const elapsedMs = getElapsedMs(t);
@@ -615,7 +629,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           </div>`;
       }
 
-      const showHistory = historyTaskId === t.id;
+      const taskId = String(t.id || "");
+      const showHistory = openHistoryTaskIds.has(taskId);
       const historyHTML = showHistory
         ? `
           <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
@@ -666,7 +681,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     save();
-    if (historyTaskId) renderHistory();
+    for (const taskId of openHistoryTaskIds) {
+      renderHistory(taskId);
+    }
   }
 
   function startTask(i: number) {
@@ -700,20 +717,24 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function openHistory(i: number) {
     const t = tasks[i];
     if (!t) return;
-    if (historyTaskId === t.id) {
-      closeHistory();
+    const taskId = String(t.id || "");
+    if (openHistoryTaskIds.has(taskId)) {
+      closeHistory(taskId);
       return;
     }
-    historyTaskId = t.id;
-    historyPage = 0;
-    historyEditMode = false;
+    openHistoryTaskIds.add(taskId);
+    ensureHistoryViewState(taskId);
     render();
   }
 
-  function closeHistory() {
-    historyTaskId = null;
-    historyPage = 0;
-    historyEditMode = false;
+  function closeHistory(taskId?: string) {
+    if (taskId) {
+      openHistoryTaskIds.delete(taskId);
+      delete historyViewByTaskId[taskId];
+    } else {
+      openHistoryTaskIds.clear();
+      Object.keys(historyViewByTaskId).forEach((k) => delete historyViewByTaskId[k]);
+    }
     render();
   }
 
@@ -724,6 +745,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function historyPageSize() {
     return 7;
+  }
+
+  function ensureHistoryViewState(taskId: string): HistoryViewState {
+    const existing = historyViewByTaskId[taskId];
+    if (existing) return existing;
+    const created: HistoryViewState = {
+      page: 0,
+      editMode: false,
+      barRects: [],
+      selectedAbsIndex: null,
+      selectedRelIndex: null,
+    };
+    historyViewByTaskId[taskId] = created;
+    return created;
   }
 
   type HistoryUI = {
@@ -738,9 +773,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     deleteBtn: HTMLButtonElement | null;
   };
 
-  function getHistoryUi(): HistoryUI | null {
-    if (!historyTaskId || !els.taskList) return null;
-    const root = els.taskList.querySelector(`.task[data-task-id="${historyTaskId}"] .historyInline`) as HTMLElement | null;
+  function getHistoryUi(taskId: string): HistoryUI | null {
+    if (!els.taskList) return null;
+    const root = els.taskList.querySelector(`.task[data-task-id="${taskId}"] .historyInline`) as HTMLElement | null;
     if (!root) return null;
     return {
       root,
@@ -757,8 +792,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function renderHistoryTrashRow(slice: any[], absStartIndex: number, ui: HistoryUI) {
     if (!ui.trashRow) return;
+    const taskId = ui.root.closest(".task")?.getAttribute("data-task-id") || "";
+    const state = ensureHistoryViewState(taskId);
 
-    if (!historyEditMode) {
+    if (!state.editMode) {
       ui.trashRow.style.display = "none";
       ui.trashRow.innerHTML = "";
       return;
@@ -784,10 +821,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     ui.trashRow.innerHTML = buttons.join("");
   }
 
-  function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI) {
+  function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
     if (!canvas || !wrap) return;
+    const state = ensureHistoryViewState(taskId);
 
     const rect = wrap.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -817,7 +855,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     ctx.lineTo(padL + innerW, padT + innerH + 0.5);
     ctx.stroke();
 
-    historyBarRects = [];
+    state.barRects = [];
 
     if (!entries || !entries.length) {
       ctx.fillStyle = "rgba(255,255,255,.55)";
@@ -828,8 +866,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     const maxMs = Math.max(...entries.map((e) => e.ms || 0), 1);
-    const historyTask =
-      historyTaskId != null ? tasks.find((task) => String(task.id || "") === String(historyTaskId)) : null;
+    const historyTask = tasks.find((task) => String(task.id || "") === taskId) || null;
     const milestoneMs =
       historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
         ? sortMilestones(historyTask.milestones)
@@ -883,9 +920,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.restore();
       }
 
-      historyBarRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
+      state.barRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
 
-      if (historySelectedRelIndex === idx) {
+      if (state.selectedRelIndex === idx) {
         ctx.save();
         ctx.strokeStyle = "rgba(255,255,255,.9)";
         ctx.lineWidth = 2;
@@ -909,21 +946,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
-  function renderHistory() {
-    if (!historyTaskId) return;
-    const ui = getHistoryUi();
+  function renderHistory(taskId: string) {
+    if (!taskId) return;
+    const ui = getHistoryUi(taskId);
     if (!ui) return;
+    const state = ensureHistoryViewState(taskId);
 
-    const all = getHistoryForTask(historyTaskId);
+    const all = getHistoryForTask(taskId);
     const total = all.length;
     const pageSize = historyPageSize();
 
-    const end = Math.max(0, total - historyPage * pageSize);
+    const end = Math.max(0, total - state.page * pageSize);
     const start = Math.max(0, end - pageSize);
     const slice = all.slice(start, end);
 
     const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-    if (historyPage > maxPage) historyPage = maxPage;
+    if (state.page > maxPage) state.page = maxPage;
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
@@ -933,11 +971,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
     if (ui.newerBtn) ui.newerBtn.disabled = end >= total;
 
-    historySelectedAbsIndex = null;
-    historySelectedRelIndex = null;
+    state.selectedAbsIndex = null;
+    state.selectedRelIndex = null;
     if (ui.deleteBtn) ui.deleteBtn.disabled = true;
 
-    drawHistoryChart(slice, start, ui);
+    drawHistoryChart(slice, start, ui, taskId);
     renderHistoryTrashRow(slice, start, ui);
 
     if (ui.best) {
@@ -1452,6 +1490,36 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (map[which]) openOverlay(map[which]);
   }
 
+  function applyTheme(mode: "light" | "dark") {
+    themeMode = mode;
+    const body = document.body;
+    body.setAttribute("data-theme", mode);
+    const isDark = mode === "dark";
+    els.themeToggle?.classList.toggle("on", isDark);
+    els.themeToggle?.setAttribute("aria-checked", String(isDark));
+  }
+
+  function loadThemePreference() {
+    let mode: "light" | "dark" = "dark";
+    try {
+      const raw = localStorage.getItem(THEME_KEY);
+      if (raw === "light" || raw === "dark") mode = raw;
+    } catch {
+      // ignore
+    }
+    applyTheme(mode);
+  }
+
+  function toggleThemeMode() {
+    const next: "light" | "dark" = themeMode === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // ignore
+    }
+  }
+
   function wireEvents() {
     const setAddTaskError = (msg: string) => {
       if (els.addTaskError) els.addTaskError.textContent = msg;
@@ -1571,44 +1639,48 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const btn = ev.target?.closest?.("[data-history-action]");
       const action = btn?.getAttribute?.("data-history-action");
       if (!action) return;
+      const taskEl = btn?.closest?.(".task") as HTMLElement | null;
+      const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+      if (!taskId) return;
+      const state = ensureHistoryViewState(taskId);
 
       if (action === "close") {
-        closeHistory();
+        closeHistory(taskId);
         return;
       }
       if (action === "edit") {
-        historyEditMode = !historyEditMode;
-        renderHistory();
+        state.editMode = !state.editMode;
+        renderHistory(taskId);
         return;
       }
       if (action === "older") {
-        historyPage += 1;
-        renderHistory();
+        state.page += 1;
+        renderHistory(taskId);
         return;
       }
       if (action === "newer") {
-        historyPage = Math.max(0, historyPage - 1);
-        renderHistory();
+        state.page = Math.max(0, state.page - 1);
+        renderHistory(taskId);
         return;
       }
-      if (action !== "delete" || historySelectedAbsIndex == null || !historyTaskId) return;
+      if (action !== "delete" || state.selectedAbsIndex == null) return;
 
-      const all = getHistoryForTask(historyTaskId);
-      const e = all[historySelectedAbsIndex];
+      const all = getHistoryForTask(taskId);
+      const e = all[state.selectedAbsIndex];
       if (!e) return;
 
       confirm("Delete Log Entry", `Delete this entry (${formatTime(e.ms || 0)})?`, {
         okLabel: "Delete",
         onOk: () => {
-          const all2 = getHistoryForTask(historyTaskId);
-          if (historySelectedAbsIndex! >= 0 && historySelectedAbsIndex! < all2.length) {
-            all2.splice(historySelectedAbsIndex!, 1);
-            historyByTaskId[historyTaskId] = all2 as any;
+          const all2 = getHistoryForTask(taskId);
+          if (state.selectedAbsIndex! >= 0 && state.selectedAbsIndex! < all2.length) {
+            all2.splice(state.selectedAbsIndex!, 1);
+            historyByTaskId[taskId] = all2 as any;
             saveHistory(historyByTaskId);
 
             const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize()) - 1);
-            historyPage = Math.min(historyPage, maxPage);
-            renderHistory();
+            state.page = Math.min(state.page, maxPage);
+            renderHistory(taskId);
           }
           closeConfirm();
         },
@@ -1618,14 +1690,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.taskList, "click", (ev: any) => {
       const canvas = ev.target?.closest?.(".historyChartInline") as HTMLCanvasElement | null;
       if (!canvas) return;
+      const taskEl = canvas.closest(".task") as HTMLElement | null;
+      const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+      if (!taskId) return;
+      const state = ensureHistoryViewState(taskId);
 
       const rect = canvas.getBoundingClientRect();
       const x = ev.clientX - rect.left;
       const y = ev.clientY - rect.top;
 
       let hit: any = null;
-      for (let i = 0; i < historyBarRects.length; i++) {
-        const r = historyBarRects[i];
+      for (let i = 0; i < state.barRects.length; i++) {
+        const r = state.barRects[i];
         if (!r) continue;
         if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
           hit = { rel: i, abs: r.absIndex };
@@ -1634,18 +1710,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
 
       if (hit) {
-        historySelectedRelIndex = hit.rel;
-        historySelectedAbsIndex = hit.abs;
-        const ui = getHistoryUi();
+        state.selectedRelIndex = hit.rel;
+        state.selectedAbsIndex = hit.abs;
+        const ui = getHistoryUi(taskId);
         if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
       } else {
-        historySelectedRelIndex = null;
-        historySelectedAbsIndex = null;
-        const ui = getHistoryUi();
+        state.selectedRelIndex = null;
+        state.selectedAbsIndex = null;
+        const ui = getHistoryUi(taskId);
         if (ui?.deleteBtn) ui.deleteBtn.disabled = true;
       }
 
-      renderHistory();
+      renderHistory(taskId);
     });
 
     let touchStartX: number | null = null;
@@ -1679,22 +1755,27 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
         touchStartX = null;
         touchStartY = null;
+        const currentWrap = touchWrap;
         touchWrap = null;
 
         if (Math.abs(dx) < 40) return;
         if (Math.abs(dy) > 60) return;
 
+        const taskId = currentWrap?.closest(".task")?.getAttribute("data-task-id") || "";
+        if (!taskId) return;
+        const state = ensureHistoryViewState(taskId);
+
         if (dx < 0) {
-          const ui = getHistoryUi();
+          const ui = getHistoryUi(taskId);
           if (!ui?.olderBtn?.disabled) {
-            historyPage += 1;
-            renderHistory();
+            state.page += 1;
+            renderHistory(taskId);
           }
         } else {
-          const ui = getHistoryUi();
+          const ui = getHistoryUi(taskId);
           if (!ui?.newerBtn?.disabled) {
-            historyPage = Math.max(0, historyPage - 1);
-            renderHistory();
+            state.page = Math.max(0, state.page - 1);
+            renderHistory(taskId);
           }
         }
       },
@@ -1702,11 +1783,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     );
 
     on(window, "resize", () => {
-      if (historyTaskId) renderHistory();
+      for (const taskId of openHistoryTaskIds) {
+        renderHistory(taskId);
+      }
     });
 
     on(els.menuIcon, "click", () => openOverlay(els.menuOverlay as HTMLElement | null));
     on(els.closeMenuBtn, "click", () => closeOverlay(els.menuOverlay as HTMLElement | null));
+    on(els.themeToggle, "click", toggleThemeMode);
+    on(els.themeToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#themeToggle")) return;
+      toggleThemeMode();
+    });
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
@@ -1929,6 +2017,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   deletedTaskMeta = loadDeletedMeta();
   loadHistoryIntoMemory();
   load();
+  loadThemePreference();
   wireEvents();
   render();
   tick();
