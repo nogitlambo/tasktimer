@@ -81,6 +81,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     barRects: Array<any>;
     selectedAbsIndex: number | null;
     selectedRelIndex: number | null;
+    slideDir: "left" | "right" | null;
   };
   const historyViewByTaskId: Record<string, HistoryViewState> = {};
   let addTaskMilestonesEnabled = false;
@@ -642,6 +643,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 <button class="btn btn-ghost small" type="button" data-history-action="close">Close</button>
               </div>
             </div>
+            <div class="historySwipeHint">Swipe right/left to view older/newer entries</div>
             <div class="historyCanvasWrap">
               <canvas class="historyChartInline"></canvas>
             </div>
@@ -649,8 +651,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             <div class="historyRangeRow">
               <div class="historyMeta historyRangeText">&nbsp;</div>
               <div class="historyMeta">
-                <button class="btn btn-ghost small" type="button" data-history-action="older">Older</button>
-                <button class="btn btn-ghost small" type="button" data-history-action="newer">Newer</button>
+                <button class="btn btn-ghost small" type="button" data-history-action="export">Export</button>
+                <button class="btn btn-ghost small" type="button" data-history-action="analyse">Analyse</button>
+                <button class="btn btn-ghost small" type="button" data-history-action="manage">Manage</button>
               </div>
             </div>
             <div class="historyBest"></div>
@@ -756,6 +759,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       barRects: [],
       selectedAbsIndex: null,
       selectedRelIndex: null,
+      slideDir: null,
     };
     historyViewByTaskId[taskId] = created;
     return created;
@@ -841,18 +845,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     ctx.clearRect(0, 0, w, h);
 
     const padL = 12;
+    const markerLabelPadR = 42;
     const padR = 12;
     const padT = 14;
     const padB = 54;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
+    const labelGutterW = markerLabelPadR;
+    const plotW = Math.max(140, innerW - labelGutterW);
+    const plotRight = padL + plotW;
 
     ctx.strokeStyle = "rgba(255,255,255,.20)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padL, padT + innerH + 0.5);
-    ctx.lineTo(padL + innerW, padT + innerH + 0.5);
+    ctx.lineTo(plotRight, padT + innerH + 0.5);
     ctx.stroke();
 
     state.barRects = [];
@@ -865,7 +873,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
 
-    const maxMs = Math.max(...entries.map((e) => e.ms || 0), 1);
+    const maxEntryMs = Math.max(...entries.map((e) => e.ms || 0), 1);
     const historyTask = tasks.find((task) => String(task.id || "") === taskId) || null;
     const milestoneMs =
       historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
@@ -873,17 +881,54 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             .map((m) => ({ value: +m.hours || 0, ms: Math.max(0, (+m.hours || 0) * milestoneUnitSec(historyTask) * 1000) }))
             .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
         : [];
-    const gap = Math.max(10, Math.floor(innerW * 0.03));
-    const barW = Math.max(22, Math.floor((innerW - gap * (7 - 1)) / 7));
+    const maxGoalMs = milestoneMs.length ? Math.max(...milestoneMs.map((m) => m.ms || 0), 0) : 0;
+    const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
+    const gap = Math.max(8, Math.floor(plotW * 0.03));
+    const barW = Math.max(16, Math.floor((plotW - gap * (7 - 1)) / 7));
 
     ctx.textAlign = "center";
+
+    if (milestoneMs.length) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.5)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+
+      const sortedGoals = milestoneMs.slice().sort((a, b) => b.ms - a.ms);
+      const drawnLabelY: number[] = [];
+      const minLabelGap = 11;
+
+      for (const goal of sortedGoals) {
+        const markerRatio = Math.max(0, Math.min(1, goal.ms / scaleMaxMs));
+        const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
+
+        ctx.beginPath();
+        ctx.moveTo(padL, markerY);
+        ctx.lineTo(plotRight, markerY);
+        ctx.stroke();
+
+        const tooClose = drawnLabelY.some((y) => Math.abs(y - markerY) < minLabelGap);
+        if (tooClose) continue;
+        drawnLabelY.push(markerY);
+
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${goal.value}${milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
+        ctx.setLineDash([4, 3]);
+      }
+      ctx.restore();
+      ctx.textAlign = "center";
+    }
 
     for (let idx = 0; idx < 7; idx++) {
       const e = entries[idx];
       if (!e) continue;
 
       const ms = Math.max(0, e.ms || 0);
-      const ratio = ms / maxMs;
+      const ratio = ms / scaleMaxMs;
       const bh = Math.max(2, Math.floor(innerH * ratio));
 
       const x = padL + idx * (barW + gap);
@@ -894,31 +939,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.fillStyle = e.color || "rgb(0,207,200)";
       ctx.fillRect(x, y, barW, bh);
       ctx.restore();
-
-      if (milestoneMs.length) {
-        ctx.save();
-        ctx.strokeStyle = "rgba(255,255,255,.72)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 2]);
-        for (const goal of milestoneMs) {
-          const goalMs = goal.ms;
-          const markerRatio = Math.max(0, Math.min(1, goalMs / maxMs));
-          const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
-          ctx.beginPath();
-          ctx.moveTo(x + 1, markerY);
-          ctx.lineTo(x + barW - 1, markerY);
-          ctx.stroke();
-
-          ctx.setLineDash([]);
-          ctx.fillStyle = "rgba(255,255,255,.95)";
-          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(`${goal.value}${milestoneUnitSuffix(historyTask || undefined)}`, x + barW / 2, markerY);
-          ctx.setLineDash([3, 2]);
-        }
-        ctx.restore();
-      }
 
       state.barRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
 
@@ -974,6 +994,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     state.selectedAbsIndex = null;
     state.selectedRelIndex = null;
     if (ui.deleteBtn) ui.deleteBtn.disabled = true;
+
+    if (ui.canvasWrap && state.slideDir) {
+      ui.canvasWrap.classList.remove("slideFromLeft", "slideFromRight");
+      void ui.canvasWrap.offsetWidth;
+      ui.canvasWrap.classList.add(state.slideDir === "left" ? "slideFromRight" : "slideFromLeft");
+      state.slideDir = null;
+    }
 
     drawHistoryChart(slice, start, ui, taskId);
     renderHistoryTrashRow(slice, start, ui);
@@ -1654,11 +1681,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         return;
       }
       if (action === "older") {
+        state.slideDir = "left";
         state.page += 1;
         renderHistory(taskId);
         return;
       }
       if (action === "newer") {
+        state.slideDir = "right";
         state.page = Math.max(0, state.page - 1);
         renderHistory(taskId);
         return;
@@ -1724,19 +1753,57 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       renderHistory(taskId);
     });
 
-    let touchStartX: number | null = null;
-    let touchStartY: number | null = null;
-    let touchWrap: HTMLElement | null = null;
+    let swipeStartX: number | null = null;
+    let swipeStartY: number | null = null;
+    let swipeWrap: HTMLElement | null = null;
+    let swipePointerId: number | null = null;
+
+    const runHistorySwipe = (endX: number, endY: number) => {
+      if (!swipeWrap) return;
+      if (swipeStartX === null || swipeStartY === null) return;
+
+      const dx = endX - swipeStartX;
+      const dy = endY - swipeStartY;
+
+      swipeStartX = null;
+      swipeStartY = null;
+      const currentWrap = swipeWrap;
+      swipeWrap = null;
+      swipePointerId = null;
+
+      if (Math.abs(dx) < 40) return;
+      if (Math.abs(dy) > 60) return;
+
+      const taskId = currentWrap?.closest(".task")?.getAttribute("data-task-id") || "";
+      if (!taskId) return;
+      const state = ensureHistoryViewState(taskId);
+
+      if (dx < 0) {
+        const ui = getHistoryUi(taskId);
+        if (!ui?.olderBtn?.disabled) {
+          state.slideDir = "left";
+          state.page += 1;
+          renderHistory(taskId);
+        }
+      } else {
+        const ui = getHistoryUi(taskId);
+        if (!ui?.newerBtn?.disabled) {
+          state.slideDir = "right";
+          state.page = Math.max(0, state.page - 1);
+          renderHistory(taskId);
+        }
+      }
+    };
 
     on(
       els.taskList,
       "touchstart",
       (e: any) => {
-        touchWrap = e.target?.closest?.(".historyCanvasWrap") || null;
-        if (!touchWrap) return;
+        swipeWrap = e.target?.closest?.(".historyCanvasWrap") || null;
+        if (!swipeWrap) return;
         if (!e.touches || !e.touches.length) return;
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
       },
       { passive: true }
     );
@@ -1745,42 +1812,41 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.taskList,
       "touchend",
       (e: any) => {
-        if (!touchWrap) return;
-        if (touchStartX === null || touchStartY === null) return;
         const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
         if (!t) return;
-
-        const dx = t.clientX - touchStartX;
-        const dy = t.clientY - touchStartY;
-
-        touchStartX = null;
-        touchStartY = null;
-        const currentWrap = touchWrap;
-        touchWrap = null;
-
-        if (Math.abs(dx) < 40) return;
-        if (Math.abs(dy) > 60) return;
-
-        const taskId = currentWrap?.closest(".task")?.getAttribute("data-task-id") || "";
-        if (!taskId) return;
-        const state = ensureHistoryViewState(taskId);
-
-        if (dx < 0) {
-          const ui = getHistoryUi(taskId);
-          if (!ui?.olderBtn?.disabled) {
-            state.page += 1;
-            renderHistory(taskId);
-          }
-        } else {
-          const ui = getHistoryUi(taskId);
-          if (!ui?.newerBtn?.disabled) {
-            state.page = Math.max(0, state.page - 1);
-            renderHistory(taskId);
-          }
-        }
+        runHistorySwipe(t.clientX, t.clientY);
       },
       { passive: true }
     );
+
+    on(els.taskList, "touchcancel", () => {
+      swipeStartX = null;
+      swipeStartY = null;
+      swipeWrap = null;
+      swipePointerId = null;
+    });
+
+    on(els.taskList, "pointerdown", (e: any) => {
+      const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
+      if (!wrap) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      swipeWrap = wrap;
+      swipePointerId = typeof e.pointerId === "number" ? e.pointerId : null;
+      swipeStartX = e.clientX;
+      swipeStartY = e.clientY;
+    });
+
+    on(els.taskList, "pointerup", (e: any) => {
+      if (swipePointerId != null && e.pointerId !== swipePointerId) return;
+      runHistorySwipe(e.clientX, e.clientY);
+    });
+
+    on(els.taskList, "pointercancel", () => {
+      swipeStartX = null;
+      swipeStartY = null;
+      swipeWrap = null;
+      swipePointerId = null;
+    });
 
     on(window, "resize", () => {
       for (const taskId of openHistoryTaskIds) {
