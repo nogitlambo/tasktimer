@@ -6,6 +6,13 @@ import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
 import {
+  ADD_TASK_PRESET_NAMES,
+  filterTaskNameOptions,
+  parseRecentCustomTaskNames,
+  rememberRecentCustomTaskName,
+} from "./lib/addTaskNames";
+import { computeFocusInsights } from "./lib/focusInsights";
+import {
   STORAGE_KEY,
   HISTORY_KEY,
   DELETED_META_KEY,
@@ -76,7 +83,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let confirmActionAlt: null | (() => void) = null;
   const THEME_KEY = `${STORAGE_KEY}:theme`;
   const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
-  const ADD_TASK_PRESET_NAMES = ["Exercise", "Meditation", "Reading", "Running", "Study", "Walking", "Workout"];
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
 
@@ -773,25 +779,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     stopBtn.style.display = isRunning ? "inline-flex" : "none";
   }
 
-  function localDayKey(ts: number): string {
-    const d = new Date(ts);
-    return `${d.getFullYear()}-${formatTwo(d.getMonth() + 1)}-${formatTwo(d.getDate())}`;
-  }
-
-  function startOfTodayMs(): number {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-  }
-
-  function startOfWeekMs(refMs: number): number {
-    const d = new Date(refMs);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay(); // 0 Sunday ... 6 Saturday
-    d.setDate(d.getDate() - day);
-    return d.getTime();
-  }
-
   function formatSignedDelta(ms: number): string {
     if (!Number.isFinite(ms)) return "--";
     const sign = ms > 0 ? "+" : ms < 0 ? "-" : "";
@@ -801,61 +788,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function updateFocusInsights(t: Task) {
     const taskId = String(t.id || "");
     const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-    const valid = entries.filter((e: any) => Number.isFinite(+e?.ms) && Number.isFinite(+e?.ts));
-
-    const bestMs = valid.length ? Math.max(...valid.map((e: any) => Math.max(0, +e.ms || 0))) : 0;
-    if (els.focusInsightBest) els.focusInsightBest.textContent = bestMs > 0 ? formatTime(bestMs) : "--";
-
-    const byDate = new Map<string, number>();
-    const byWeekday = new Array<number>(7).fill(0);
-    valid.forEach((e: any) => {
-      const ts = +e.ts || 0;
-      const ms = Math.max(0, +e.ms || 0);
-      const key = localDayKey(ts);
-      byDate.set(key, (byDate.get(key) || 0) + ms);
-      const wd = new Date(ts).getDay();
-      byWeekday[wd] += ms;
-    });
+    const insights = computeFocusInsights(entries as Array<{ ts: number; ms: number }>, nowMs());
+    if (els.focusInsightBest) els.focusInsightBest.textContent = insights.bestMs > 0 ? formatTime(insights.bestMs) : "--";
 
     if (els.focusInsightWeekday) {
-      if (byDate.size < 14) {
+      if (!insights.hasWeekdayEnoughDays || !insights.weekdayName) {
         els.focusInsightWeekday.textContent = "Need at least 14 logged days";
         els.focusInsightWeekday.classList.add("is-empty");
       } else {
-        const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        let bestW = 0;
-        for (let i = 1; i < 7; i += 1) {
-          if (byWeekday[i] > byWeekday[bestW]) bestW = i;
-        }
-        els.focusInsightWeekday.textContent = `${weekdayNames[bestW]} (${formatTime(byWeekday[bestW])})`;
+        els.focusInsightWeekday.textContent = `${insights.weekdayName} (${formatTime(insights.weekdayTotalMs)})`;
         els.focusInsightWeekday.classList.remove("is-empty");
       }
     }
-
-    const todayStart = startOfTodayMs();
-    const yesterdayStart = todayStart - 86400000;
-    const now = nowMs();
-    let todayMs = 0;
-    let yesterdayMs = 0;
-    valid.forEach((e: any) => {
-      const ts = +e.ts || 0;
-      const ms = Math.max(0, +e.ms || 0);
-      if (ts >= todayStart && ts < now + 1) todayMs += ms;
-      else if (ts >= yesterdayStart && ts < todayStart) yesterdayMs += ms;
-    });
-    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = formatSignedDelta(todayMs - yesterdayMs);
-
-    const weekStart = startOfWeekMs(now);
-    const prevWeekStart = weekStart - 7 * 86400000;
-    let thisWeekMs = 0;
-    let lastWeekMs = 0;
-    valid.forEach((e: any) => {
-      const ts = +e.ts || 0;
-      const ms = Math.max(0, +e.ms || 0);
-      if (ts >= weekStart && ts <= now) thisWeekMs += ms;
-      else if (ts >= prevWeekStart && ts < weekStart) lastWeekMs += ms;
-    });
-    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = formatSignedDelta(thisWeekMs - lastWeekMs);
+    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = formatSignedDelta(insights.todayDeltaMs);
+    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = formatSignedDelta(insights.weekDeltaMs);
   }
 
   function toggleCollapse(i: number) {
@@ -1894,34 +1840,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     applyTheme(mode);
   }
 
-  function nameKey(s: string): string {
-    return String(s || "").trim().toLowerCase();
-  }
-
-  function isPresetTaskName(name: string): boolean {
-    const k = nameKey(name);
-    return ADD_TASK_PRESET_NAMES.some((x) => nameKey(x) === k);
-  }
-
   function loadAddTaskCustomNames() {
     try {
       const raw = localStorage.getItem(ADD_TASK_CUSTOM_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(arr)) {
-        addTaskCustomNames = [];
-        return;
-      }
-      const dedup: string[] = [];
-      const seen = new Set<string>();
-      arr.forEach((v: any) => {
-        const t = String(v || "").trim();
-        if (!t) return;
-        const k = nameKey(t);
-        if (seen.has(k)) return;
-        seen.add(k);
-        dedup.push(t);
-      });
-      addTaskCustomNames = dedup.slice(0, 5);
+      addTaskCustomNames = parseRecentCustomTaskNames(raw, 5);
     } catch {
       addTaskCustomNames = [];
     }
@@ -1936,10 +1858,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function rememberCustomTaskName(name: string) {
-    const t = String(name || "").trim();
-    if (!t || isPresetTaskName(t)) return;
-    const k = nameKey(t);
-    addTaskCustomNames = [t, ...addTaskCustomNames.filter((x) => nameKey(x) !== k)].slice(0, 5);
+    addTaskCustomNames = rememberRecentCustomTaskName(name, addTaskCustomNames, ADD_TASK_PRESET_NAMES, 5);
     saveAddTaskCustomNames();
   }
 
@@ -1949,10 +1868,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function renderAddTaskNameMenu(filterText = "") {
-    const q = nameKey(filterText);
-    const match = (s: string) => !q || nameKey(s).includes(q);
-    const custom = addTaskCustomNames.filter(match).slice(0, 5);
-    const presets = ADD_TASK_PRESET_NAMES.filter(match);
+    const { custom, presets } = filterTaskNameOptions(addTaskCustomNames, ADD_TASK_PRESET_NAMES, filterText);
 
     if (els.addTaskNameCustomList) {
       els.addTaskNameCustomList.innerHTML = custom
