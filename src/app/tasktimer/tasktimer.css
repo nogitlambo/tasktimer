@@ -166,9 +166,9 @@ body{
 }
 .task.collapsed .progressRow{ display:none; }
 .row{
-  display:flex;
+  display:grid;
+  grid-template-columns: minmax(140px, 1fr) auto minmax(220px, 1fr);
   align-items:center;
-  justify-content:space-between;
   gap:14px;
 }
 .name{
@@ -178,6 +178,7 @@ body{
   letter-spacing:.24em;
   line-height:1.3;
   cursor:pointer;
+  justify-self:start;
 }
 .time{
   font-variant-numeric: tabular-nums;
@@ -189,6 +190,7 @@ body{
   align-items:center;
   gap:0;
   white-space:nowrap;
+  justify-self:center;
 }
 .timePanel{
   height:50px;
@@ -237,6 +239,55 @@ body{
   gap:8px;
   flex-wrap:wrap;
   justify-content:flex-end;
+  justify-self:end;
+}
+.taskMenu{
+  position:relative;
+}
+.taskMenu > summary{
+  list-style:none;
+}
+.taskMenu > summary::-webkit-details-marker{
+  display:none;
+}
+.taskMenuBtn{
+  font-size:18px;
+  line-height:1;
+}
+.taskMenuList{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  min-width:188px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(10,16,28,.96);
+  box-shadow: 0 8px 20px rgba(0,0,0,.32);
+  z-index:10;
+}
+.task:last-child .taskMenuList{
+  top:auto;
+  bottom:calc(100% + 6px);
+}
+.taskMenuItem{
+  width:100%;
+  text-align:left;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color:var(--text);
+  padding:8px 10px;
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.taskMenuItem:hover{
+  background: rgba(255,255,255,.1);
 }
 
 /* Progress row */

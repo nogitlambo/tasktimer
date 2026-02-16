@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
@@ -526,7 +526,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       row.innerHTML = `
         <div class="pill">${escapeHtmlUI(String(+m.hours || 0))}${milestoneUnitSuffix(t)}</div>
         <input type="text" value="${escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
-        <button type="button" title="Remove" data-action="rmMs">✕</button>
+        <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
 
       const pill = row.querySelector(".pill");
@@ -623,7 +623,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (taskEl as any).dataset.index = String(index);
       (taskEl as any).dataset.taskId = String(t.id || "");
 
-      const collapseIcon = t.collapsed ? "►" : "▼";
+      const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
 
       let progressHTML = "";
       if (hasMilestones) {
@@ -696,14 +696,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
           <div class="time">${formatMainTaskElapsedHtml(elapsedMs)}</div>
           <div class="actions">
-            <button class="iconBtn play" data-action="start" title="Start">▶</button>
-            <button class="iconBtn stop" data-action="stop" title="Stop">■</button>
-            <button class="iconBtn" data-action="reset" title="Reset">⟳</button>
-            <button class="iconBtn" data-action="edit" title="Edit">✎</button>
-            <button class="iconBtn" data-action="history" title="History">📊</button>
-            <button class="iconBtn" data-action="duplicate" title="Duplicate">⧉</button>
-            <button class="iconBtn" data-action="delete" title="Delete">🗑</button>
-            <button class="iconBtn" data-action="collapse" title="Collapse">${escapeHtmlUI(collapseIcon)}</button>
+            ${
+              t.running
+                ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
+                : '<button class="btn btn-accent small" data-action="start" title="Start">Start</button>'
+            }
+            <button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>
+            <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
+            <button class="iconBtn" data-action="history" title="History">&#128202;</button>
+            <details class="taskMenu">
+              <summary class="iconBtn taskMenuBtn" title="More actions" aria-label="More actions">&#8942;</summary>
+              <div class="taskMenuList">
+                <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
+                <button class="taskMenuItem" data-action="delete" title="Delete" type="button">Delete</button>
+                <button class="taskMenuItem" data-action="collapse" title="${escapeHtmlUI(collapseLabel)}" type="button">${escapeHtmlUI(collapseLabel)}</button>
+              </div>
+            </details>
           </div>
         </div>
         ${progressHTML}
@@ -947,7 +955,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       buttons.push(
         `<button class="historyTrashBtn" type="button" data-abs="${absIndex}" ${
           disabled ? "disabled" : ""
-        } aria-label="Delete log" title="Delete log">🗑</button>`
+        } aria-label="Delete log" title="Delete log">&#128465;</button>`
       );
     }
 
@@ -1573,7 +1581,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 <td style="text-align:right;">
                   <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
               key
-            )}" aria-label="Delete log" title="Delete log">🗑</button>
+            )}" aria-label="Delete log" title="Delete log">&#128465;</button>
                 </td>
               </tr>
             `;
@@ -2000,9 +2008,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else if (action === "duplicate") duplicateTask(i);
       else if (action === "editName") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
+
+      const menu = btn.closest?.(".taskMenu") as HTMLDetailsElement | null;
+      if (menu && menu.open) menu.open = false;
     });
 
     on(els.resetAllBtn, "click", resetAll);
+
+    on(document, "click", (ev: any) => {
+      const insideMenu = ev.target?.closest?.(".taskMenu");
+      if (insideMenu) return;
+      document.querySelectorAll(".taskMenu[open]").forEach((el) => {
+        (el as HTMLDetailsElement).open = false;
+      });
+    });
 
     on(els.taskList, "click", (ev: any) => {
       const btn = ev.target?.closest?.("[data-history-action]");
@@ -2473,3 +2492,4 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   return { destroy };
 }
+
