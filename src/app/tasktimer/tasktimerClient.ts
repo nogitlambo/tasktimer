@@ -1719,10 +1719,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const parts = formatMainTaskElapsed(ms).split(" ");
     return `
       <span class="timePanel">
-        <span class="timeChunk"><span class="timeBoxValue">${parts[0]}</span><span class="timeBoxLabel">D</span></span>
-        <span class="timeChunk"><span class="timeBoxValue">${parts[1]}</span><span class="timeBoxLabel">H</span></span>
-        <span class="timeChunk"><span class="timeBoxValue">${parts[2]}</span><span class="timeBoxLabel">M</span></span>
-        <span class="timeChunk"><span class="timeBoxValue">${parts[3]}</span><span class="timeBoxLabel">S</span></span>
+        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
+        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[1]}</span><span class="timeBoxUnit">H</span></span></span>
+        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[2]}</span><span class="timeBoxUnit">M</span></span></span>
+        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[3]}</span><span class="timeBoxUnit">S</span></span></span>
       </span>
     `;
   }

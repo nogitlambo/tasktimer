@@ -18,6 +18,7 @@
   --space-4:20px;
   --font: "Manrope", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-tight: "Sora", "Avenir Next", "Segoe UI Variable", "Segoe UI", sans-serif;
+  --font-sevenseg: "DSEG7 Classic", "Digital Numbers", "Digital-7 Mono", "OCR A Std", monospace;
 }
 *{box-sizing:border-box}
 body{
@@ -174,14 +175,15 @@ body{
   font-family:var(--font-tight);
   font-weight:700;
   font-size:17px;
+  letter-spacing:.24em;
   line-height:1.3;
   cursor:pointer;
 }
 .time{
   font-variant-numeric: tabular-nums;
-  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-family: var(--font-sevenseg);
   font-weight:700;
-  letter-spacing:.01em;
+  letter-spacing:.04em;
   color:#46f4ff;
   display:flex;
   align-items:center;
@@ -202,31 +204,32 @@ body{
   font-variant-numeric: tabular-nums;
 }
 .timeChunk{
-  width:46px;
+  width:auto;
+  min-width:62px;
   display:flex;
-  flex-direction:column;
+  flex-direction:row;
   align-items:center;
   justify-content:center;
 }
 .timeBoxValue{
-  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-family: var(--font-sevenseg);
   font-size:23px;
   line-height:1;
   font-weight:700;
-  letter-spacing:.01em;
+  letter-spacing:.04em;
   color:#46f4ff;
-  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
   font-feature-settings: "tnum" 1;
+  display:inline-flex;
+  align-items:flex-end;
+  gap:1px;
 }
-.timeBoxLabel{
-  margin-top:2px;
-  font-size:16px;
+.timeBoxUnit{
+  font-size:11px;
   line-height:1;
-  letter-spacing:.08em;
   opacity:.95;
-  color: rgba(130,245,255,.96);
-  text-shadow: 0 0 6px rgba(0,210,255,.55);
+  transform: translateY(-1px);
 }
 .actions{
   display:flex;
@@ -914,12 +917,12 @@ input[type="text"]:focus, input[type="number"]:focus{
   text-transform:uppercase;
 }
 .focusDialTime{
-  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-family: var(--font-sevenseg);
   font-size:clamp(30px, 7.4vw, 76px);
   font-weight:700;
-  letter-spacing:.01em;
+  letter-spacing:.04em;
   color:#46f4ff;
-  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
   font-variant-numeric: tabular-nums;
   line-height:1;
@@ -929,12 +932,12 @@ input[type="text"]:focus, input[type="number"]:focus{
   overflow:hidden;
 }
 .focusDialDays{
-  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-family: var(--font-sevenseg);
   font-size:clamp(20px, 2.8vw, 30px);
   font-weight:700;
-  letter-spacing:.01em;
+  letter-spacing:.04em;
   color:#46f4ff;
-  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
   text-transform:uppercase;
 }
