@@ -144,6 +144,33 @@ export default function TaskTimerPage() {
               </div>
             </div>
           </div>
+          <div className="focusInsights" id="focusInsights">
+            <div className="focusInsightsTitle">Quick Stats</div>
+            <div className="focusInsightRow">
+              <span className="focusInsightLabel">Highest logged time</span>
+              <span className="focusInsightValue" id="focusInsightBest">
+                --
+              </span>
+            </div>
+            <div className="focusInsightRow">
+              <span className="focusInsightLabel">Top productivity weekday</span>
+              <span className="focusInsightValue" id="focusInsightWeekday">
+                Need at least 14 logged days
+              </span>
+            </div>
+            <div className="focusInsightRow">
+              <span className="focusInsightLabel">Today vs yesterday</span>
+              <span className="focusInsightValue" id="focusInsightTodayDelta">
+                --
+              </span>
+            </div>
+            <div className="focusInsightRow">
+              <span className="focusInsightLabel">This week vs last week</span>
+              <span className="focusInsightValue" id="focusInsightWeekDelta">
+                --
+              </span>
+            </div>
+          </div>
         </section>
       </div>
 

@@ -134,6 +134,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     focusTimerClock: document.getElementById("focusTimerClock"),
     focusStartBtn: document.getElementById("focusStartBtn") as HTMLButtonElement | null,
     focusStopBtn: document.getElementById("focusStopBtn") as HTMLButtonElement | null,
+    focusInsightBest: document.getElementById("focusInsightBest"),
+    focusInsightWeekday: document.getElementById("focusInsightWeekday"),
+    focusInsightTodayDelta: document.getElementById("focusInsightTodayDelta"),
+    focusInsightWeekDelta: document.getElementById("focusInsightWeekDelta"),
     hmList: document.getElementById("hmList"),
     closeMenuBtn: document.getElementById("closeMenuBtn"),
 
@@ -747,6 +751,91 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const isRunning = !!t.running;
     startBtn.style.display = isRunning ? "none" : "inline-flex";
     stopBtn.style.display = isRunning ? "inline-flex" : "none";
+  }
+
+  function localDayKey(ts: number): string {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${formatTwo(d.getMonth() + 1)}-${formatTwo(d.getDate())}`;
+  }
+
+  function startOfTodayMs(): number {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function startOfWeekMs(refMs: number): number {
+    const d = new Date(refMs);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay(); // 0 Sunday ... 6 Saturday
+    d.setDate(d.getDate() - day);
+    return d.getTime();
+  }
+
+  function formatSignedDelta(ms: number): string {
+    if (!Number.isFinite(ms)) return "--";
+    const sign = ms > 0 ? "+" : ms < 0 ? "-" : "";
+    return `${sign}${formatTime(Math.abs(ms))}`;
+  }
+
+  function updateFocusInsights(t: Task) {
+    const taskId = String(t.id || "");
+    const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+    const valid = entries.filter((e: any) => Number.isFinite(+e?.ms) && Number.isFinite(+e?.ts));
+
+    const bestMs = valid.length ? Math.max(...valid.map((e: any) => Math.max(0, +e.ms || 0))) : 0;
+    if (els.focusInsightBest) els.focusInsightBest.textContent = bestMs > 0 ? formatTime(bestMs) : "--";
+
+    const byDate = new Map<string, number>();
+    const byWeekday = new Array<number>(7).fill(0);
+    valid.forEach((e: any) => {
+      const ts = +e.ts || 0;
+      const ms = Math.max(0, +e.ms || 0);
+      const key = localDayKey(ts);
+      byDate.set(key, (byDate.get(key) || 0) + ms);
+      const wd = new Date(ts).getDay();
+      byWeekday[wd] += ms;
+    });
+
+    if (els.focusInsightWeekday) {
+      if (byDate.size < 14) {
+        els.focusInsightWeekday.textContent = "Need at least 14 logged days";
+        els.focusInsightWeekday.classList.add("is-empty");
+      } else {
+        const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        let bestW = 0;
+        for (let i = 1; i < 7; i += 1) {
+          if (byWeekday[i] > byWeekday[bestW]) bestW = i;
+        }
+        els.focusInsightWeekday.textContent = `${weekdayNames[bestW]} (${formatTime(byWeekday[bestW])})`;
+        els.focusInsightWeekday.classList.remove("is-empty");
+      }
+    }
+
+    const todayStart = startOfTodayMs();
+    const yesterdayStart = todayStart - 86400000;
+    const now = nowMs();
+    let todayMs = 0;
+    let yesterdayMs = 0;
+    valid.forEach((e: any) => {
+      const ts = +e.ts || 0;
+      const ms = Math.max(0, +e.ms || 0);
+      if (ts >= todayStart && ts < now + 1) todayMs += ms;
+      else if (ts >= yesterdayStart && ts < todayStart) yesterdayMs += ms;
+    });
+    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = formatSignedDelta(todayMs - yesterdayMs);
+
+    const weekStart = startOfWeekMs(now);
+    const prevWeekStart = weekStart - 7 * 86400000;
+    let thisWeekMs = 0;
+    let lastWeekMs = 0;
+    valid.forEach((e: any) => {
+      const ts = +e.ts || 0;
+      const ms = Math.max(0, +e.ms || 0);
+      if (ts >= weekStart && ts <= now) thisWeekMs += ms;
+      else if (ts >= prevWeekStart && ts < weekStart) lastWeekMs += ms;
+    });
+    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = formatSignedDelta(thisWeekMs - lastWeekMs);
   }
 
   function toggleCollapse(i: number) {
@@ -1552,6 +1641,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     focusCheckpointSig = "";
     updateFocusDial(t);
     syncFocusRunButtons(t);
+    updateFocusInsights(t);
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
@@ -1577,6 +1667,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).style.display = "block";
     focusCheckpointSig = "";
     syncFocusRunButtons(null);
+    if (els.focusInsightBest) els.focusInsightBest.textContent = "--";
+    if (els.focusInsightWeekday) {
+      els.focusInsightWeekday.textContent = "Need at least 14 logged days";
+      els.focusInsightWeekday.classList.add("is-empty");
+    }
+    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = "--";
+    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = "--";
   }
 
   function hasFocusCheckpoints(t: Task): boolean {
@@ -1641,6 +1738,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     if (els.focusTimerClock) els.focusTimerClock.textContent = f.clockText;
     syncFocusRunButtons(t);
+    updateFocusInsights(t);
 
     const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
     syncFocusCheckpointToggle(t);

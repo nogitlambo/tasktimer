@@ -859,6 +859,49 @@ input[type="text"]:focus, input[type="number"]:focus{
   text-shadow: 0 0 8px rgba(0,220,255,.8);
   text-transform:uppercase;
 }
+.focusInsights{
+  width:min(82vw, 620px);
+  margin: 60px auto 0;
+  padding: 12px 14px;
+  border:1px solid rgba(255,255,255,.1);
+  background: rgba(9,18,33,.45);
+  box-shadow: inset 0 0 16px rgba(0,180,255,.08);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.focusInsightsTitle{
+  margin-bottom:8px;
+  color: rgba(228,244,255,.95);
+  font-family:var(--font-tight);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.focusInsightRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding: 6px 0;
+}
+.focusInsightLabel{
+  color: rgba(182,225,240,.88);
+  font-size:12px;
+  letter-spacing:.03em;
+}
+.focusInsightValue{
+  color: rgba(230,245,255,.96);
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:700;
+  text-align:right;
+}
+.focusInsightValue.is-empty{
+  color: rgba(150,165,185,.88);
+  font-style: italic;
+  font-weight:600;
+}
 .focusTaskTitle{
   margin-top:12px;
   margin-bottom:30px;
