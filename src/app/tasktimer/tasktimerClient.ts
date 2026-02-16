@@ -67,6 +67,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let deletedTaskMeta: DeletedTaskMeta = {};
   let tasks: Task[] = [];
   let editIndex: number | null = null;
+  let focusCheckpointSig = "";
+  let focusModeTaskName = "";
+  let focusShowCheckpoints = true;
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
@@ -74,6 +77,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let themeMode: "light" | "dark" = "dark";
 
   let historyByTaskId: HistoryByTaskId = {};
+  let focusModeTaskId: string | null = null;
   const openHistoryTaskIds = new Set<string>();
   type HistoryViewState = {
     page: number;
@@ -85,7 +89,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   };
   const historyViewByTaskId: Record<string, HistoryViewState> = {};
   let addTaskMilestonesEnabled = false;
-  let addTaskMilestoneTimeUnit: "day" | "hour" = "hour";
+  let addTaskMilestoneTimeUnit: "day" | "hour" | "minute" = "hour";
   let addTaskMilestones: Task["milestones"] = [];
   let elapsedPadTarget: HTMLInputElement | null = null;
   let elapsedPadMilestoneRef: {
@@ -108,6 +112,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskMsUnitRow: document.getElementById("addTaskMsUnitRow"),
     addTaskMsUnitDay: document.getElementById("addTaskMsUnitDay"),
     addTaskMsUnitHour: document.getElementById("addTaskMsUnitHour"),
+    addTaskMsUnitMinute: document.getElementById("addTaskMsUnitMinute"),
     addTaskAddMsBtn: document.getElementById("addTaskAddMsBtn") as HTMLButtonElement | null,
     addTaskMsArea: document.getElementById("addTaskMsArea"),
     addTaskMsList: document.getElementById("addTaskMsList"),
@@ -119,6 +124,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     historyManagerScreen: document.getElementById("historyManagerScreen"),
     historyManagerBtn: document.getElementById("historyManagerBtn"),
     historyManagerBackBtn: document.getElementById("historyManagerBackBtn"),
+    focusModeScreen: document.getElementById("focusModeScreen"),
+    focusModeBackBtn: document.getElementById("focusModeBackBtn"),
+    focusDial: document.getElementById("focusDial"),
+    focusCheckpointRing: document.getElementById("focusCheckpointRing"),
+    focusCheckpointToggle: document.getElementById("focusCheckpointToggle"),
+    focusTaskName: document.getElementById("focusTaskName"),
+    focusTimerDays: document.getElementById("focusTimerDays"),
+    focusTimerClock: document.getElementById("focusTimerClock"),
     hmList: document.getElementById("hmList"),
     closeMenuBtn: document.getElementById("closeMenuBtn"),
 
@@ -144,6 +157,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     msUnitRow: document.getElementById("msUnitRow"),
     msUnitDay: document.getElementById("msUnitDay"),
     msUnitHour: document.getElementById("msUnitHour"),
+    msUnitMinute: document.getElementById("msUnitMinute"),
     msList: document.getElementById("msList"),
     addMsBtn: document.getElementById("addMsBtn"),
     cancelEditBtn: document.getElementById("cancelEditBtn"),
@@ -212,7 +226,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     tasks = loaded;
     tasks.forEach((t) => {
-      if (t.milestoneTimeUnit !== "day" && t.milestoneTimeUnit !== "hour") t.milestoneTimeUnit = "hour";
+      if (t.milestoneTimeUnit !== "day" && t.milestoneTimeUnit !== "hour" && t.milestoneTimeUnit !== "minute") {
+        t.milestoneTimeUnit = "hour";
+      }
     });
   }
 
@@ -280,7 +296,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.startMs = null;
     out.collapsed = !!t.collapsed;
     out.milestonesEnabled = !!t.milestonesEnabled;
-    out.milestoneTimeUnit = t.milestoneTimeUnit === "day" ? "day" : "hour";
+    out.milestoneTimeUnit = t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     out.milestones = Array.isArray(t.milestones)
       ? t.milestones.map((m: any) => ({
           hours: Number.isFinite(+m.hours) ? +m.hours : 0,
@@ -459,21 +475,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function milestoneUnitSec(t: Task | null | undefined): number {
-    return t && t.milestoneTimeUnit === "day" ? 86400 : 3600;
+    if (!t) return 3600;
+    if (t.milestoneTimeUnit === "day") return 86400;
+    if (t.milestoneTimeUnit === "minute") return 60;
+    return 3600;
   }
 
   function milestoneUnitSuffix(t: Task | null | undefined): string {
-    return t && t.milestoneTimeUnit === "day" ? "d" : "h";
+    if (!t) return "h";
+    if (t.milestoneTimeUnit === "day") return "d";
+    if (t.milestoneTimeUnit === "minute") return "m";
+    return "h";
   }
 
-  function setMilestoneUnitUi(unit: "day" | "hour") {
+  function setMilestoneUnitUi(unit: "day" | "hour" | "minute") {
     els.msUnitDay?.classList.toggle("isOn", unit === "day");
     els.msUnitHour?.classList.toggle("isOn", unit === "hour");
+    els.msUnitMinute?.classList.toggle("isOn", unit === "minute");
   }
 
-  function setAddTaskMilestoneUnitUi(unit: "day" | "hour") {
+  function setAddTaskMilestoneUnitUi(unit: "day" | "hour" | "minute") {
     els.addTaskMsUnitDay?.classList.toggle("isOn", unit === "day");
     els.addTaskMsUnitHour?.classList.toggle("isOn", unit === "hour");
+    els.addTaskMsUnitMinute?.classList.toggle("isOn", unit === "minute");
   }
 
   function isEditMilestoneUnitDay(): boolean {
@@ -664,7 +688,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       taskEl.innerHTML = `
         <div class="row">
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
-          <div class="time">${formatTime(elapsedMs)}</div>
+          <div class="time">${formatMainTaskElapsedHtml(elapsedMs)}</div>
           <div class="actions">
             <button class="iconBtn play" data-action="start" title="Start">▶</button>
             <button class="iconBtn stop" data-action="stop" title="Stop">■</button>
@@ -1115,7 +1139,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
     els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
     els.msArea?.classList.toggle("on", !!t.milestonesEnabled);
-    setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : "hour");
+    setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
 
     renderMilestoneEditor(t);
 
@@ -1223,7 +1247,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     elapsedPadDraft = elapsedPadOriginal;
     if (els.elapsedPadTitle) {
       els.elapsedPadTitle.textContent =
-        task.milestoneTimeUnit === "day" ? "Enter Milestone Days" : "Enter Milestone Hours";
+        task.milestoneTimeUnit === "day"
+          ? "Enter Milestone Days"
+          : task.milestoneTimeUnit === "minute"
+            ? "Enter Milestone Minutes"
+            : "Enter Milestone Hours";
     }
     clearElapsedPadError();
     renderElapsedPadDisplay();
@@ -1499,6 +1527,183 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function openFocusMode(i: number) {
+    const t = tasks[i];
+    if (!t) return;
+    focusModeTaskId = t.id;
+    focusModeTaskName = (t.name || "").trim();
+    if (els.focusTaskName) els.focusTaskName.textContent = focusModeTaskName || "Task";
+    focusCheckpointSig = "";
+    updateFocusDial(t);
+    if (els.focusModeScreen) {
+      (els.focusModeScreen as HTMLElement).style.display = "block";
+      (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
+    }
+  }
+
+  function closeFocusMode() {
+    focusModeTaskId = null;
+    focusModeTaskName = "";
+    focusShowCheckpoints = true;
+    if (els.focusModeScreen) {
+      (els.focusModeScreen as HTMLElement).style.display = "none";
+      (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "true");
+    }
+    if (els.focusTaskName) els.focusTaskName.textContent = "Task";
+    if (els.focusTimerDays) els.focusTimerDays.textContent = "00d";
+    if (els.focusTimerClock) els.focusTimerClock.textContent = "00:00:00";
+    if (els.focusDial) {
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress", "0%");
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", fillBackgroundForPct(0));
+    }
+    if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).innerHTML = "";
+    if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).style.display = "block";
+    focusCheckpointSig = "";
+  }
+
+  function hasFocusCheckpoints(t: Task): boolean {
+    return !!(t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.some((m) => (+m.hours || 0) > 0));
+  }
+
+  function syncFocusCheckpointToggle(t: Task) {
+    const hasCp = hasFocusCheckpoints(t);
+    const effectiveOn = hasCp ? focusShowCheckpoints : false;
+    if (els.focusCheckpointToggle) {
+      els.focusCheckpointToggle.classList.toggle("on", effectiveOn);
+      els.focusCheckpointToggle.setAttribute("aria-checked", String(effectiveOn));
+      els.focusCheckpointToggle.classList.toggle("opaque", !hasCp);
+    }
+    if (els.focusCheckpointRing) {
+      (els.focusCheckpointRing as HTMLElement).style.display = effectiveOn ? "block" : "none";
+    }
+  }
+
+  function formatFocusElapsed(ms: number): { daysText: string; clockText: string; showDays: boolean } {
+    const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    return {
+      daysText: `${formatTwo(days)}d`,
+      clockText: `${formatTwo(hours)}:${formatTwo(minutes)}:${formatTwo(seconds)}`,
+      showDays: days >= 1,
+    };
+  }
+
+  function formatMainTaskElapsed(ms: number): string {
+    const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    return `${formatTwo(days)} ${formatTwo(hours)} ${formatTwo(minutes)} ${formatTwo(seconds)}`;
+  }
+
+  function formatMainTaskElapsedHtml(ms: number): string {
+    const parts = formatMainTaskElapsed(ms).split(" ");
+    return `
+      <span class="timePanel">
+        <span class="timeChunk"><span class="timeBoxValue">${parts[0]}</span><span class="timeBoxLabel">D</span></span>
+        <span class="timeChunk"><span class="timeBoxValue">${parts[1]}</span><span class="timeBoxLabel">H</span></span>
+        <span class="timeChunk"><span class="timeBoxValue">${parts[2]}</span><span class="timeBoxLabel">M</span></span>
+        <span class="timeChunk"><span class="timeBoxValue">${parts[3]}</span><span class="timeBoxLabel">S</span></span>
+      </span>
+    `;
+  }
+
+  function updateFocusDial(t: Task) {
+    const elapsedMs = getElapsedMs(t);
+    const elapsedSec = elapsedMs / 1000;
+    if (els.focusTaskName) els.focusTaskName.textContent = (t.name || "").trim() || focusModeTaskName || "Task";
+    const f = formatFocusElapsed(elapsedMs);
+    if (els.focusTimerDays) {
+      els.focusTimerDays.textContent = f.daysText;
+      (els.focusTimerDays as HTMLElement).style.display = f.showDays ? "block" : "none";
+    }
+    if (els.focusTimerClock) els.focusTimerClock.textContent = f.clockText;
+
+    const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
+    syncFocusCheckpointToggle(t);
+    const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
+    const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
+    const maxSec = Math.max(maxValue * milestoneUnitSec(t), 1);
+    const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
+    if (els.focusDial) {
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress", `${pct}%`);
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", fillBackgroundForPct(pct));
+    }
+
+    if (!els.focusCheckpointRing) return;
+    if (!hasMilestones || maxValue <= 0) {
+      (els.focusCheckpointRing as HTMLElement).innerHTML = "";
+      focusCheckpointSig = "";
+      return;
+    }
+
+    const dialPx = Math.max(1, Math.round((els.focusDial as HTMLElement | null)?.getBoundingClientRect().width || 0));
+    const sig = `${t.milestoneTimeUnit || "hour"}|${dialPx}|${msSorted.map((m) => `${+m.hours || 0}:${m.description || ""}`).join(",")}`;
+    if (sig !== focusCheckpointSig) {
+      const checkpoints = msSorted
+        .filter((m) => (+m.hours || 0) > 0)
+        .map((m) => ({
+          value: +m.hours || 0,
+          secTarget: (+m.hours || 0) * milestoneUnitSec(t),
+          desc: (m.description || "").trim(),
+        }));
+      const totalSpanSec = checkpoints.length ? Math.max(checkpoints[checkpoints.length - 1].secTarget, 1) : 1;
+
+      const dialRadiusPx = dialPx / 2;
+      const ringInsetPx = 26;
+      const ringRadiusPx = Math.max(0, dialRadiusPx - ringInsetPx);
+      const markerRadiusPx = Math.max(0, ringRadiusPx * 0.82);
+      const labelRadiusPx = dialRadiusPx + 18;
+
+      const dots = msSorted
+        .filter((m) => (+m.hours || 0) > 0)
+        .map((m) => {
+          const v = +m.hours || 0;
+          const secTarget = v * milestoneUnitSec(t);
+          const ratioFromStart = Math.max(0, Math.min(1, secTarget / totalSpanSec));
+          const angle = -90 + ratioFromStart * 360;
+          const rad = (angle * Math.PI) / 180;
+          const mx = Math.cos(rad) * markerRadiusPx;
+          const my = Math.sin(rad) * markerRadiusPx;
+          const isRight = Math.cos(rad) >= 0;
+          const labelYOffset = my >= 0 ? 12 : -12;
+          const ly = my + labelYOffset;
+          const minAbsX = Math.sqrt(Math.max(0, labelRadiusPx * labelRadiusPx - ly * ly));
+          const lx = (isRight ? minAbsX : -minAbsX) + (isRight ? 12 : -12);
+          const connectorEndX = isRight ? lx : lx;
+          const connectorEndY = ly;
+          const dx = connectorEndX - mx;
+          const dy = connectorEndY - my;
+          const cl = Math.max(0, Math.sqrt(dx * dx + dy * dy));
+          const ca = (Math.atan2(dy, dx) * 180) / Math.PI;
+          const title = `${v}${milestoneUnitSuffix(t)}`;
+          const desc = (m.description || "").trim();
+          const lineText = desc ? `${title} - ${desc}` : title;
+          return `
+            <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px" data-seconds="${secTarget}"></div>
+            <div class="focusCheckpointConnector" style="--cxpx:${mx}px;--cypx:${my}px;--cl:${cl}px;--ca:${ca}deg" data-seconds="${secTarget}"></div>
+            <div class="focusCheckpointLabel ${isRight ? "right" : "left"}" style="--lxpx:${lx}px;--lypx:${ly}px" data-seconds="${secTarget}">
+              <span class="focusCheckpointLabelTitle">${escapeHtmlUI(lineText)}</span>
+            </div>
+          `;
+        })
+        .join("");
+      (els.focusCheckpointRing as HTMLElement).innerHTML = dots;
+      focusCheckpointSig = sig;
+    }
+
+    (els.focusCheckpointRing as HTMLElement)
+      .querySelectorAll(".focusCheckpointMark, .focusCheckpointLabel, .focusCheckpointConnector")
+      .forEach((dot) => {
+      const secTarget = Number((dot as HTMLElement).dataset.seconds || "0");
+      (dot as HTMLElement).classList.toggle("reached", elapsedSec >= secTarget);
+      });
+  }
+
   function openPopup(which: string) {
     if (which === "historyManager") {
       openHistoryManager();
@@ -1609,6 +1814,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       setAddTaskMilestoneUnitUi("hour");
       renderAddTaskMilestoneEditor();
     });
+    on(els.addTaskMsUnitMinute, "click", () => {
+      addTaskMilestoneTimeUnit = "minute";
+      setAddTaskMilestoneUnitUi("minute");
+      renderAddTaskMilestoneEditor();
+    });
 
     on(els.addTaskName, "input", () => {
       if ((els.addTaskName?.value || "").trim()) setAddTaskError("");
@@ -1656,7 +1866,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else if (action === "edit") openEdit(i);
       else if (action === "history") openHistory(i);
       else if (action === "duplicate") duplicateTask(i);
-      else if (action === "editName") openEdit(i);
+      else if (action === "editName") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
     });
 
@@ -1962,6 +2172,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       setMilestoneUnitUi("hour");
       renderMilestoneEditor(t);
     });
+    on(els.msUnitMinute, "click", () => {
+      if (editIndex == null) return;
+      const t = tasks[editIndex];
+      if (!t) return;
+      t.milestoneTimeUnit = "minute";
+      setMilestoneUnitUi("minute");
+      renderMilestoneEditor(t);
+    });
 
     on(els.addMsBtn, "click", () => {
       if (editIndex == null) return;
@@ -1986,6 +2204,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.historyManagerBackBtn, "click", () => {
       closeHistoryManager();
       openOverlay(els.menuOverlay as HTMLElement | null);
+    });
+    on(els.focusModeBackBtn, "click", closeFocusMode);
+    on(els.focusCheckpointToggle, "click", () => {
+      if (!focusModeTaskId) return;
+      const t = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
+      if (!t) return;
+      if (!hasFocusCheckpoints(t)) {
+        syncFocusCheckpointToggle(t);
+        return;
+      }
+      focusShowCheckpoints = !focusShowCheckpoints;
+      syncFocusCheckpointToggle(t);
     });
 
     on(els.hmList, "click", (ev: any) => {
@@ -2047,7 +2277,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!t) return;
 
       const timeEl = node.querySelector(".time");
-      if (timeEl) timeEl.textContent = formatTime(getElapsedMs(t));
+      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(getElapsedMs(t));
 
       if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
         const msSorted = sortMilestones(t.milestones);
@@ -2073,6 +2303,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         });
       }
     });
+
+    if (focusModeTaskId) {
+      const ft = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
+      if (ft) {
+        updateFocusDial(ft);
+      } else if (els.focusTaskName && focusModeTaskName) {
+        els.focusTaskName.textContent = focusModeTaskName;
+      }
+    }
 
     tickRaf = window.requestAnimationFrame(() => {
       tickTimeout = window.setTimeout(tick, 200);

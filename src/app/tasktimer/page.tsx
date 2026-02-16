@@ -27,10 +27,6 @@ export default function TaskTimerPage() {
               + Add Task
             </button>
 
-            <button className="btn btn-ghost" id="resetAllBtn" type="button">
-              Reset All
-            </button>
-
             <button className="menuIcon" id="menuIcon" type="button" aria-label="Settings" title="Settings">
               ⚙
             </button>
@@ -103,6 +99,42 @@ export default function TaskTimerPage() {
           </div>
           <div className="hmList" id="hmList" />
         </section>
+
+        {/* Focus Mode screen */}
+        <section id="focusModeScreen" aria-hidden="true">
+          <div className="focusModeHead">
+            <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+              Back
+            </button>
+            <div className="focusModeTitle">Focus Mode</div>
+            <div className="focusModeHeadSpacer" aria-hidden="true" />
+          </div>
+          <div className="focusTaskTitle" id="focusTaskName">
+            TASKTIMER
+          </div>
+          <div className="focusDialWrap">
+            <div className="focusDialPanel">
+              <div className="focusDial" id="focusDial">
+                <div className="focusDialOuter" aria-hidden="true" />
+                <div className="focusDialProgress" aria-hidden="true" />
+                <div className="focusCheckpointRing" id="focusCheckpointRing" aria-hidden="true" />
+                <div className="focusDialInner" aria-hidden="true" />
+                <div className="focusDialCenter">
+                  <div className="focusDialDays" id="focusTimerDays">
+                    00d
+                  </div>
+                  <div className="focusDialTime" id="focusTimerClock">
+                    00:00:00
+                  </div>
+                </div>
+              </div>
+              <div className="focusCheckpointToggleRow">
+                <span>Show checkpoints</span>
+                <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Menu overlay */}
@@ -115,6 +147,22 @@ export default function TaskTimerPage() {
           </div>
 
           <div className="menuList">
+            <button className="menuItem" id="signUpBtn" type="button">
+              Sign Up
+            </button>
+
+            <div className="menuDivider" role="separator" aria-hidden="true" />
+
+            <button className="menuItem" id="signInEmailBtn" type="button">
+              Sign in with email
+            </button>
+
+            <button className="menuItem" id="signInGoogleBtn" type="button">
+              Sign in with Google
+            </button>
+
+            <div className="menuDivider" role="separator" aria-hidden="true" />
+
             <button className="menuItem" data-menu="historyManager" id="historyManagerBtn" type="button">
               History Manager
             </button>
@@ -141,6 +189,10 @@ export default function TaskTimerPage() {
 
             <button className="menuItem" id="importBtn" type="button">
               Import Backup
+            </button>
+
+            <button className="menuItem" id="resetAllBtn" type="button">
+              Reset All
             </button>
 
             <input id="importFile" type="file" accept="application/json" style={{ display: "none" }} />
@@ -175,7 +227,7 @@ export default function TaskTimerPage() {
             </div>
             <div className="milestones" id="addTaskMsArea">
               <div className="unitRow" id="addTaskMsUnitRow">
-                <span>Time Format</span>
+                <span>Checkpoint Time Format</span>
                 <div className="unitButtons">
                   <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
                     Day
@@ -183,11 +235,14 @@ export default function TaskTimerPage() {
                   <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
                     Hour
                   </button>
+                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
+                    Minute
+                  </button>
                 </div>
               </div>
               <div id="addTaskMsList" />
               <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-                + Add Marker
+                + Add Timer Checkpoint
               </button>
             </div>
 
@@ -333,13 +388,16 @@ export default function TaskTimerPage() {
 
           <div className="milestones" id="msArea">
             <div className="unitRow" id="msUnitRow">
-              <span>Time Format</span>
+              <span>Checkpoint Time Format</span>
               <div className="unitButtons">
                 <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
                   Day
                 </button>
                 <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
                   Hour
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
+                  Minute
                 </button>
               </div>
             </div>
@@ -350,7 +408,7 @@ export default function TaskTimerPage() {
               type="button"
               style={{ width: "100%", marginTop: 10 }}
             >
-              + Add Marker
+              + Add Timer Checkpoint
             </button>
           </div>
 

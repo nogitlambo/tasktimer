@@ -179,10 +179,54 @@ body{
 }
 .time{
   font-variant-numeric: tabular-nums;
-  font-family:var(--font-tight);
+  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
   font-weight:700;
-  letter-spacing:.4px;
-  color: rgba(255,255,255,.92);
+  letter-spacing:.01em;
+  color:#46f4ff;
+  display:flex;
+  align-items:center;
+  gap:0;
+  white-space:nowrap;
+}
+.timePanel{
+  height:50px;
+  padding:8px 16px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  border-radius:10px;
+  border:1px solid rgba(70,235,255,.28);
+  background: linear-gradient(180deg, rgba(2,20,24,.65), rgba(1,14,18,.55));
+  box-shadow: inset 0 0 10px rgba(0,240,255,.12), 0 0 8px rgba(0,180,255,.22);
+  font-variant-numeric: tabular-nums;
+}
+.timeChunk{
+  width:46px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.timeBoxValue{
+  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-size:23px;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:.01em;
+  color:#46f4ff;
+  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  filter: saturate(1.12);
+  font-feature-settings: "tnum" 1;
+}
+.timeBoxLabel{
+  margin-top:2px;
+  font-size:16px;
+  line-height:1;
+  letter-spacing:.08em;
+  opacity:.95;
+  color: rgba(130,245,255,.96);
+  text-shadow: 0 0 6px rgba(0,210,255,.55);
 }
 .actions{
   display:flex;
@@ -493,6 +537,11 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .menuTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 .menuList{ display:flex; flex-direction:column; gap:10px; }
+.menuDivider{
+  height:1px;
+  margin:2px 2px 4px;
+  background: rgba(255,255,255,.14);
+}
 .menuItem{
   width:100%;
   text-align:left;
@@ -506,6 +555,9 @@ input[type="text"]:focus, input[type="number"]:focus{
   font-size:13px;
   font-weight:700;
   letter-spacing:.1px;
+}
+#resetAllBtn{
+  color:#ff4d4d;
 }
 .menuItem:hover{ background: rgba(255,255,255,.08); }
 
@@ -613,6 +665,215 @@ input[type="text"]:focus, input[type="number"]:focus{
 #historyManagerScreen{
   display:none;
   padding:18px;
+}
+.focusModeHead{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:12px;
+}
+.focusModeTitle{
+  text-align:center;
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:700;
+  letter-spacing:.15px;
+}
+.focusModeHeadSpacer{
+  width:66px;
+}
+.focusDialWrap{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  min-height: 0;
+  padding:14px 8px 24px;
+}
+.focusDialPanel{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+}
+.focusCheckpointToggleRow{
+  width:min(82vw, 520px);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+}
+.focusCheckpointToggleRow > span{
+  font-size:12px;
+  letter-spacing:.04em;
+  color: rgba(190,240,255,.9);
+  text-transform:uppercase;
+}
+#focusCheckpointToggle.opaque{
+  opacity:1;
+  background: rgba(95,105,122,.95);
+  border-color: rgba(145,155,175,.95);
+  cursor:not-allowed;
+}
+#focusCheckpointToggle.opaque::after{
+  background: rgba(235,240,255,.95);
+}
+.focusDial{
+  position:relative;
+  width:min(82vw, 520px);
+  aspect-ratio:1/1;
+  border-radius:50%;
+  --focus-progress: 0%;
+  --focus-progress-color: rgba(0,238,255,1);
+  --focus-marker-radius: 42%;
+}
+.focusDialOuter{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border:4px solid rgba(0,233,255,.95);
+  box-shadow: 0 0 14px rgba(0,233,255,.8), 0 0 42px rgba(0,174,255,.5);
+}
+.focusDialProgress{
+  position:absolute;
+  inset:26px;
+  border-radius:50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--focus-progress-color) 0 var(--focus-progress),
+    rgba(255,255,255,.12) var(--focus-progress) 100%
+  );
+  box-shadow: 0 0 12px rgba(0,220,255,.35), inset 0 0 16px rgba(0,210,255,.28);
+  -webkit-mask: radial-gradient(circle at center, transparent 62%, #000 64%);
+  mask: radial-gradient(circle at center, transparent 62%, #000 64%);
+}
+.focusCheckpointRing{
+  position:absolute;
+  inset:26px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:3;
+}
+.focusCheckpointMark{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:4px;
+  height:4px;
+  margin:-2px 0 0 -2px;
+  border-radius:50%;
+  background: rgba(224,232,242,.82);
+  box-shadow: 0 0 3px rgba(190,205,224,.38);
+  transform: translate(var(--mxpx, 0px), var(--mypx, 0px));
+}
+.focusCheckpointMark.reached{
+  background: rgba(236,244,255,.96);
+  box-shadow: 0 0 5px rgba(205,228,255,.6);
+}
+.focusCheckpointConnector{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width: var(--cl, 0px);
+  height:1px;
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 0 4px rgba(255,255,255,.4);
+  transform: translate(var(--cxpx, 0px), var(--cypx, 0px)) rotate(var(--ca, 0deg));
+  transform-origin: 0 50%;
+}
+.focusCheckpointLabel{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform: translate(var(--lxpx, 0px), var(--lypx, 0px)) translateY(-50%);
+  white-space:nowrap;
+  display:block;
+  min-width:0;
+  color: rgba(195,205,220,.9);
+  text-shadow: 0 0 4px rgba(130,145,170,.35);
+  font-family:var(--font-tight);
+  font-size:11px;
+  line-height:1.1;
+  letter-spacing:.02em;
+  pointer-events:none;
+  text-align:left;
+}
+.focusCheckpointLabel.left{
+  transform: translate(var(--lxpx, 0px), var(--lypx, 0px)) translate(-100%, -50%);
+  text-align:right;
+}
+.focusCheckpointLabel.reached{
+  color: rgba(220,232,246,.98);
+}
+.focusCheckpointLabelTitle{ font-weight:700; }
+.focusCheckpointLabelDesc{ opacity:.9; }
+.focusDialInner{
+  position:absolute;
+  inset:74px;
+  border-radius:50%;
+  border:3px solid rgba(0,210,255,.55);
+  box-shadow: inset 0 0 40px rgba(0,130,255,.15);
+}
+.focusDialCenter{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.focusDialLabel{
+  font-family:var(--font-tight);
+  font-size:clamp(14px, 1.8vw, 20px);
+  letter-spacing:.24em;
+  color: rgba(63,233,255,.95);
+  text-shadow: 0 0 8px rgba(0,220,255,.8);
+  text-transform:uppercase;
+}
+.focusTaskTitle{
+  margin-top:12px;
+  text-align:center;
+  font-family:var(--font-tight);
+  font-size:clamp(14px, 1.8vw, 20px);
+  letter-spacing:.24em;
+  color: rgba(63,233,255,.95);
+  text-shadow: 0 0 8px rgba(0,220,255,.8);
+  text-transform:uppercase;
+}
+.focusDialTime{
+  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-size:clamp(30px, 7.4vw, 76px);
+  font-weight:700;
+  letter-spacing:.01em;
+  color:#46f4ff;
+  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  filter: saturate(1.12);
+  font-variant-numeric: tabular-nums;
+  line-height:1;
+  max-width:82%;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.focusDialDays{
+  font-family: "Digital-7 Mono", "DS-Digital", "Orbitron", "Share Tech Mono", monospace;
+  font-size:clamp(20px, 2.8vw, 30px);
+  font-weight:700;
+  letter-spacing:.01em;
+  color:#46f4ff;
+  text-shadow: 0 0 3px rgba(110,255,255,.95), 0 0 10px rgba(0,210,255,.82), 0 0 18px rgba(0,150,255,.55);
+  filter: saturate(1.12);
+  text-transform:uppercase;
+}
+#focusModeScreen{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:90;
+  padding:18px 16px;
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(0,207,200,.12), transparent 60%),
+              radial-gradient(900px 600px at 80% 90%, rgba(0,207,200,.08), transparent 55%),
+              var(--bg);
 }
 .hmHead{
   display:flex;

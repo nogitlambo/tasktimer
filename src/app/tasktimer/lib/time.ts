@@ -7,14 +7,16 @@ export function formatTwo(n: number): string {
 }
 
 export function formatTime(ms: number): string {
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
+  const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  const dd = String(d).padStart(2, "0");
   const hh = String(h).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
   const ss = String(s).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
+  return `${dd}:${hh}:${mm}:${ss}`;
 }
 
 export function formatDateTime(ts: number): string {

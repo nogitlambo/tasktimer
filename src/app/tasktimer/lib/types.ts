@@ -12,7 +12,7 @@ export type Task = {
   startMs: number | null;
   collapsed: boolean;
   milestonesEnabled: boolean;
-  milestoneTimeUnit?: "day" | "hour";
+  milestoneTimeUnit?: "day" | "hour" | "minute";
   milestones: Milestone[];
   hasStarted: boolean;
   color?: string | null;
