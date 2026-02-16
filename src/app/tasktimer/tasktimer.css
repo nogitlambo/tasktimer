@@ -687,7 +687,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   justify-content:center;
   align-items:flex-start;
   min-height: 0;
-  padding:14px 8px 24px;
+  padding:44px 8px 24px;
 }
 .focusDialPanel{
   display:flex;
@@ -695,10 +695,15 @@ input[type="text"]:focus, input[type="number"]:focus{
   align-items:center;
   gap:14px;
 }
+.focusCheckpointToggleTop{
+  position:absolute;
+  top:18px;
+  right:16px;
+  z-index:2;
+}
 .focusCheckpointToggleRow{
-  width:min(82vw, 520px);
   display:flex;
-  justify-content:center;
+  justify-content:flex-end;
   align-items:center;
   gap:10px;
 }
@@ -757,13 +762,14 @@ input[type="text"]:focus, input[type="number"]:focus{
   position:absolute;
   top:50%;
   left:50%;
-  width:4px;
-  height:4px;
-  margin:-2px 0 0 -2px;
-  border-radius:50%;
-  background: rgba(224,232,242,.82);
-  box-shadow: 0 0 3px rgba(190,205,224,.38);
-  transform: translate(var(--mxpx, 0px), var(--mypx, 0px));
+  width:var(--mlpx, 12px);
+  height:2px;
+  margin:-1px 0 0 0;
+  border-radius:2px;
+  background: rgba(132,146,166,.72);
+  box-shadow: 0 0 2px rgba(90,105,128,.32);
+  transform: translate(var(--mxpx, 0px), var(--mypx, 0px)) rotate(var(--madeg, 0deg));
+  transform-origin: 0 50%;
 }
 .focusCheckpointMark.reached{
   background: rgba(236,244,255,.96);
@@ -775,10 +781,14 @@ input[type="text"]:focus, input[type="number"]:focus{
   left:50%;
   width: var(--cl, 0px);
   height:1px;
-  background: rgba(255,255,255,.95);
-  box-shadow: 0 0 4px rgba(255,255,255,.4);
+  background: rgba(138,150,170,.82);
+  box-shadow: 0 0 2px rgba(90,105,128,.32);
   transform: translate(var(--cxpx, 0px), var(--cypx, 0px)) rotate(var(--ca, 0deg));
   transform-origin: 0 50%;
+}
+.focusCheckpointConnector.reached{
+  background: rgba(240,248,255,.98);
+  box-shadow: 0 0 5px rgba(220,235,255,.5);
 }
 .focusCheckpointLabel{
   position:absolute;
@@ -788,8 +798,8 @@ input[type="text"]:focus, input[type="number"]:focus{
   white-space:nowrap;
   display:block;
   min-width:0;
-  color: rgba(195,205,220,.9);
-  text-shadow: 0 0 4px rgba(130,145,170,.35);
+  color: rgba(132,146,166,.9);
+  text-shadow: 0 0 2px rgba(85,100,124,.3);
   font-family:var(--font-tight);
   font-size:11px;
   line-height:1.1;
@@ -822,6 +832,25 @@ input[type="text"]:focus, input[type="number"]:focus{
   justify-content:center;
   gap:8px;
 }
+.focusDialControls{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+}
+#focusStartBtn,
+#focusStopBtn{
+  min-width:88px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-weight:700;
+}
+#focusStopBtn{
+  color:#ff4d4d;
+}
 .focusDialLabel{
   font-family:var(--font-tight);
   font-size:clamp(14px, 1.8vw, 20px);
@@ -832,6 +861,7 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .focusTaskTitle{
   margin-top:12px;
+  margin-bottom:30px;
   text-align:center;
   font-family:var(--font-tight);
   font-size:clamp(14px, 1.8vw, 20px);

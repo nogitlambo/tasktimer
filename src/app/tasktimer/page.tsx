@@ -109,6 +109,12 @@ export default function TaskTimerPage() {
             <div className="focusModeTitle">Focus Mode</div>
             <div className="focusModeHeadSpacer" aria-hidden="true" />
           </div>
+          <div className="focusCheckpointToggleTop">
+            <div className="focusCheckpointToggleRow">
+              <span>Show checkpoints</span>
+              <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+          </div>
           <div className="focusTaskTitle" id="focusTaskName">
             TASKTIMER
           </div>
@@ -126,11 +132,15 @@ export default function TaskTimerPage() {
                   <div className="focusDialTime" id="focusTimerClock">
                     00:00:00
                   </div>
+                  <div className="focusDialControls">
+                    <button className="btn btn-accent small" id="focusStartBtn" type="button">
+                      Start
+                    </button>
+                    <button className="btn btn-warn small" id="focusStopBtn" type="button">
+                      Stop
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="focusCheckpointToggleRow">
-                <span>Show checkpoints</span>
-                <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
               </div>
             </div>
           </div>

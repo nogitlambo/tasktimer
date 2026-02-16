@@ -132,6 +132,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     focusTaskName: document.getElementById("focusTaskName"),
     focusTimerDays: document.getElementById("focusTimerDays"),
     focusTimerClock: document.getElementById("focusTimerClock"),
+    focusStartBtn: document.getElementById("focusStartBtn") as HTMLButtonElement | null,
+    focusStopBtn: document.getElementById("focusStopBtn") as HTMLButtonElement | null,
     hmList: document.getElementById("hmList"),
     closeMenuBtn: document.getElementById("closeMenuBtn"),
 
@@ -731,6 +733,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     t.startMs = null;
     save();
     render();
+  }
+
+  function syncFocusRunButtons(t?: Task | null) {
+    const startBtn = els.focusStartBtn;
+    const stopBtn = els.focusStopBtn;
+    if (!startBtn || !stopBtn) return;
+    if (!t) {
+      startBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+      return;
+    }
+    const isRunning = !!t.running;
+    startBtn.style.display = isRunning ? "none" : "inline-flex";
+    stopBtn.style.display = isRunning ? "inline-flex" : "none";
   }
 
   function toggleCollapse(i: number) {
@@ -1535,6 +1551,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.focusTaskName) els.focusTaskName.textContent = focusModeTaskName || "Task";
     focusCheckpointSig = "";
     updateFocusDial(t);
+    syncFocusRunButtons(t);
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
@@ -1559,6 +1576,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).innerHTML = "";
     if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).style.display = "block";
     focusCheckpointSig = "";
+    syncFocusRunButtons(null);
   }
 
   function hasFocusCheckpoints(t: Task): boolean {
@@ -1622,6 +1640,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (els.focusTimerDays as HTMLElement).style.display = f.showDays ? "block" : "none";
     }
     if (els.focusTimerClock) els.focusTimerClock.textContent = f.clockText;
+    syncFocusRunButtons(t);
 
     const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
     syncFocusCheckpointToggle(t);
@@ -1644,47 +1663,62 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const dialPx = Math.max(1, Math.round((els.focusDial as HTMLElement | null)?.getBoundingClientRect().width || 0));
     const sig = `${t.milestoneTimeUnit || "hour"}|${dialPx}|${msSorted.map((m) => `${+m.hours || 0}:${m.description || ""}`).join(",")}`;
     if (sig !== focusCheckpointSig) {
-      const checkpoints = msSorted
-        .filter((m) => (+m.hours || 0) > 0)
-        .map((m) => ({
-          value: +m.hours || 0,
-          secTarget: (+m.hours || 0) * milestoneUnitSec(t),
-          desc: (m.description || "").trim(),
-        }));
-      const totalSpanSec = checkpoints.length ? Math.max(checkpoints[checkpoints.length - 1].secTarget, 1) : 1;
-
+      const parseConicStartDeg = () => {
+        const progressEl = (els.focusDial as HTMLElement | null)?.querySelector(".focusDialProgress") as HTMLElement | null;
+        if (!progressEl) return 0;
+        const bg = window.getComputedStyle(progressEl).backgroundImage || "";
+        const m = bg.match(/conic-gradient\(\s*from\s*([-\d.]+)deg/i);
+        return m ? Number(m[1]) || 0 : 0;
+      };
+      const parseRingCenterRatio = () => {
+        const progressEl = (els.focusDial as HTMLElement | null)?.querySelector(".focusDialProgress") as HTMLElement | null;
+        if (!progressEl) return 0.82;
+        const cs = window.getComputedStyle(progressEl);
+        const mask = (cs.maskImage || (cs as CSSStyleDeclaration & { webkitMaskImage?: string }).webkitMaskImage || "").toLowerCase();
+        const pct = [...mask.matchAll(/(\d+(?:\.\d+)?)%/g)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n));
+        if (pct.length < 2) return 0.82;
+        const centerHolePct = (pct[0] + pct[1]) / 2;
+        return Math.max(0, Math.min(1, (centerHolePct + 100) / 200));
+      };
       const dialRadiusPx = dialPx / 2;
       const ringInsetPx = 26;
-      const ringRadiusPx = Math.max(0, dialRadiusPx - ringInsetPx);
-      const markerRadiusPx = Math.max(0, ringRadiusPx * 0.82);
+      const progressBoxRadiusPx = Math.max(0, dialRadiusPx - ringInsetPx);
+      const markerRadiusPx = Math.max(0, progressBoxRadiusPx * parseRingCenterRatio());
+      const markerLineLenPx = Math.max(4, progressBoxRadiusPx - markerRadiusPx + 1);
       const labelRadiusPx = dialRadiusPx + 18;
+      const ringStartCssDeg = parseConicStartDeg();
 
       const dots = msSorted
         .filter((m) => (+m.hours || 0) > 0)
         .map((m) => {
           const v = +m.hours || 0;
           const secTarget = v * milestoneUnitSec(t);
-          const ratioFromStart = Math.max(0, Math.min(1, secTarget / totalSpanSec));
-          const angle = -90 + ratioFromStart * 360;
-          const rad = (angle * Math.PI) / 180;
-          const mx = Math.cos(rad) * markerRadiusPx;
-          const my = Math.sin(rad) * markerRadiusPx;
-          const isRight = Math.cos(rad) >= 0;
-          const labelYOffset = my >= 0 ? 12 : -12;
-          const ly = my + labelYOffset;
-          const minAbsX = Math.sqrt(Math.max(0, labelRadiusPx * labelRadiusPx - ly * ly));
-          const lx = (isRight ? minAbsX : -minAbsX) + (isRight ? 12 : -12);
-          const connectorEndX = isRight ? lx : lx;
-          const connectorEndY = ly;
-          const dx = connectorEndX - mx;
-          const dy = connectorEndY - my;
+          const ratioFromStart = Math.max(0, Math.min(1, secTarget / maxSec));
+          const checkpointCssDeg = ringStartCssDeg + ratioFromStart * 360;
+          const theta = (checkpointCssDeg * Math.PI) / 180;
+          const mx = Math.sin(theta) * markerRadiusPx;
+          const my = -Math.cos(theta) * markerRadiusPx;
+          const markerAngleDeg = checkpointCssDeg - 90;
+          const isRight = mx >= 0;
+          const radialGapPx = 34;
+          let lx = mx + Math.sin(theta) * radialGapPx;
+          let ly = my - Math.cos(theta) * radialGapPx;
+          const labelDist = Math.sqrt(lx * lx + ly * ly) || 1;
+          const minOutsideRadius = labelRadiusPx + 12;
+          if (labelDist < minOutsideRadius) {
+            const k = minOutsideRadius / labelDist;
+            lx *= k;
+            ly *= k;
+          }
+          const dx = lx - mx;
+          const dy = ly - my;
           const cl = Math.max(0, Math.sqrt(dx * dx + dy * dy));
           const ca = (Math.atan2(dy, dx) * 180) / Math.PI;
           const title = `${v}${milestoneUnitSuffix(t)}`;
           const desc = (m.description || "").trim();
           const lineText = desc ? `${title} - ${desc}` : title;
           return `
-            <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px" data-seconds="${secTarget}"></div>
+            <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px;--madeg:${markerAngleDeg}deg;--mlpx:${markerLineLenPx}px" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointConnector" style="--cxpx:${mx}px;--cypx:${my}px;--cl:${cl}px;--ca:${ca}deg" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointLabel ${isRight ? "right" : "left"}" style="--lxpx:${lx}px;--lypx:${ly}px" data-seconds="${secTarget}">
               <span class="focusCheckpointLabelTitle">${escapeHtmlUI(lineText)}</span>
@@ -2216,6 +2250,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
       focusShowCheckpoints = !focusShowCheckpoints;
       syncFocusCheckpointToggle(t);
+    });
+    on(els.focusStartBtn, "click", () => {
+      if (!focusModeTaskId) return;
+      const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
+      if (idx < 0) return;
+      startTask(idx);
+    });
+    on(els.focusStopBtn, "click", () => {
+      if (!focusModeTaskId) return;
+      const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
+      if (idx < 0) return;
+      stopTask(idx);
     });
 
     on(els.hmList, "click", (ev: any) => {
