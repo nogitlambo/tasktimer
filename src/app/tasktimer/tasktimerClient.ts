@@ -70,11 +70,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let focusCheckpointSig = "";
   let focusModeTaskName = "";
   let focusShowCheckpoints = true;
+  let suppressAddTaskNameFocusOpen = false;
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
   const THEME_KEY = `${STORAGE_KEY}:theme`;
+  const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
+  const ADD_TASK_PRESET_NAMES = ["Exercise", "Meditation", "Reading", "Running", "Study", "Walking", "Workout"];
   let themeMode: "light" | "dark" = "dark";
+  let addTaskCustomNames: string[] = [];
 
   let historyByTaskId: HistoryByTaskId = {};
   let focusModeTaskId: string | null = null;
@@ -107,6 +111,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskOverlay: document.getElementById("addTaskOverlay"),
     addTaskForm: document.getElementById("addTaskForm"),
     addTaskName: document.getElementById("addTaskName") as HTMLInputElement | null,
+    addTaskNameCombo: document.getElementById("addTaskNameCombo"),
+    addTaskNameToggle: document.getElementById("addTaskNameToggle"),
+    addTaskNameMenu: document.getElementById("addTaskNameMenu"),
+    addTaskNameCustomTitle: document.getElementById("addTaskNameCustomTitle"),
+    addTaskNameCustomList: document.getElementById("addTaskNameCustomList"),
+    addTaskNameDivider: document.getElementById("addTaskNameDivider"),
+    addTaskNamePresetTitle: document.getElementById("addTaskNamePresetTitle"),
+    addTaskNamePresetList: document.getElementById("addTaskNamePresetList"),
     addTaskError: document.getElementById("addTaskError"),
     addTaskMsToggle: document.getElementById("addTaskMsToggle"),
     addTaskMsUnitRow: document.getElementById("addTaskMsUnitRow"),
@@ -708,8 +720,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
               <summary class="iconBtn taskMenuBtn" title="More actions" aria-label="More actions">&#8942;</summary>
               <div class="taskMenuList">
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
-                <button class="taskMenuItem" data-action="delete" title="Delete" type="button">Delete</button>
                 <button class="taskMenuItem" data-action="collapse" title="${escapeHtmlUI(collapseLabel)}" type="button">${escapeHtmlUI(collapseLabel)}</button>
+                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
             </details>
           </div>
@@ -1882,6 +1894,82 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     applyTheme(mode);
   }
 
+  function nameKey(s: string): string {
+    return String(s || "").trim().toLowerCase();
+  }
+
+  function isPresetTaskName(name: string): boolean {
+    const k = nameKey(name);
+    return ADD_TASK_PRESET_NAMES.some((x) => nameKey(x) === k);
+  }
+
+  function loadAddTaskCustomNames() {
+    try {
+      const raw = localStorage.getItem(ADD_TASK_CUSTOM_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(arr)) {
+        addTaskCustomNames = [];
+        return;
+      }
+      const dedup: string[] = [];
+      const seen = new Set<string>();
+      arr.forEach((v: any) => {
+        const t = String(v || "").trim();
+        if (!t) return;
+        const k = nameKey(t);
+        if (seen.has(k)) return;
+        seen.add(k);
+        dedup.push(t);
+      });
+      addTaskCustomNames = dedup.slice(0, 5);
+    } catch {
+      addTaskCustomNames = [];
+    }
+  }
+
+  function saveAddTaskCustomNames() {
+    try {
+      localStorage.setItem(ADD_TASK_CUSTOM_KEY, JSON.stringify(addTaskCustomNames.slice(0, 5)));
+    } catch {
+      // ignore
+    }
+  }
+
+  function rememberCustomTaskName(name: string) {
+    const t = String(name || "").trim();
+    if (!t || isPresetTaskName(t)) return;
+    const k = nameKey(t);
+    addTaskCustomNames = [t, ...addTaskCustomNames.filter((x) => nameKey(x) !== k)].slice(0, 5);
+    saveAddTaskCustomNames();
+  }
+
+  function setAddTaskNameMenuOpen(open: boolean) {
+    if (!els.addTaskNameMenu) return;
+    (els.addTaskNameMenu as HTMLElement).style.display = open ? "block" : "none";
+  }
+
+  function renderAddTaskNameMenu(filterText = "") {
+    const q = nameKey(filterText);
+    const match = (s: string) => !q || nameKey(s).includes(q);
+    const custom = addTaskCustomNames.filter(match).slice(0, 5);
+    const presets = ADD_TASK_PRESET_NAMES.filter(match);
+
+    if (els.addTaskNameCustomList) {
+      els.addTaskNameCustomList.innerHTML = custom
+        .map((name) => `<button class="addTaskNameItem" type="button" data-add-task-name="${escapeHtmlUI(name)}">${escapeHtmlUI(name)}</button>`)
+        .join("");
+    }
+    if (els.addTaskNamePresetList) {
+      els.addTaskNamePresetList.innerHTML = presets
+        .map((name) => `<button class="addTaskNameItem" type="button" data-add-task-name="${escapeHtmlUI(name)}">${escapeHtmlUI(name)}</button>`)
+        .join("");
+    }
+    const hasCustom = custom.length > 0;
+    if (els.addTaskNameCustomTitle) (els.addTaskNameCustomTitle as HTMLElement).style.display = hasCustom ? "block" : "none";
+    if (els.addTaskNameDivider) (els.addTaskNameDivider as HTMLElement).style.display = hasCustom ? "block" : "none";
+    if (els.addTaskNamePresetTitle) (els.addTaskNamePresetTitle as HTMLElement).style.display = presets.length ? "block" : "none";
+  }
+
   function toggleThemeMode() {
     const next: "light" | "dark" = themeMode === "dark" ? "light" : "dark";
     applyTheme(next);
@@ -1915,6 +2003,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const openAddTaskModal = () => {
       resetAddTaskMilestones();
       setAddTaskError("");
+      renderAddTaskNameMenu("");
+      setAddTaskNameMenuOpen(false);
+      suppressAddTaskNameFocusOpen = true;
       openOverlay(els.addTaskOverlay as HTMLElement | null);
       setTimeout(() => {
         try {
@@ -1922,12 +2013,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         } catch {
           // ignore
         }
+        suppressAddTaskNameFocusOpen = false;
       }, 60);
     };
 
     const closeAddTaskModal = () => {
       closeOverlay(els.addTaskOverlay as HTMLElement | null);
       if (els.addTaskName) els.addTaskName.value = "";
+      setAddTaskNameMenuOpen(false);
       setAddTaskError("");
       resetAddTaskMilestones();
     };
@@ -1962,6 +2055,31 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.addTaskName, "input", () => {
       if ((els.addTaskName?.value || "").trim()) setAddTaskError("");
+      renderAddTaskNameMenu(els.addTaskName?.value || "");
+      setAddTaskNameMenuOpen(true);
+    });
+    on(els.addTaskName, "focus", () => {
+      if (suppressAddTaskNameFocusOpen) return;
+      renderAddTaskNameMenu(els.addTaskName?.value || "");
+      setAddTaskNameMenuOpen(true);
+    });
+    on(els.addTaskNameToggle, "click", (ev: any) => {
+      ev.preventDefault?.();
+      const isOpen = (els.addTaskNameMenu as HTMLElement | null)?.style.display === "block";
+      if (!isOpen) renderAddTaskNameMenu(els.addTaskName?.value || "");
+      setAddTaskNameMenuOpen(!isOpen);
+      if (!isOpen) els.addTaskName?.focus();
+    });
+    on(els.addTaskNameMenu, "click", (ev: any) => {
+      const item = ev.target?.closest?.("[data-add-task-name]");
+      if (!item) return;
+      const name = item.getAttribute("data-add-task-name") || "";
+      if (els.addTaskName) {
+        els.addTaskName.value = name;
+        els.addTaskName.focus();
+      }
+      setAddTaskError("");
+      setAddTaskNameMenuOpen(false);
     });
 
     on(els.addTaskAddMsBtn, "click", () => {
@@ -1977,6 +2095,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         setAddTaskError("Task name is required");
         return;
       }
+      rememberCustomTaskName(name);
       setAddTaskError("");
       const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
       const newTask = makeTask(name, nextOrder);
@@ -2021,6 +2140,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       document.querySelectorAll(".taskMenu[open]").forEach((el) => {
         (el as HTMLDetailsElement).open = false;
       });
+      const insideAddNameMenu = ev.target?.closest?.("#addTaskNameCombo");
+      if (!insideAddNameMenu) setAddTaskNameMenuOpen(false);
     });
 
     on(els.taskList, "click", (ev: any) => {
@@ -2485,6 +2606,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   deletedTaskMeta = loadDeletedMeta();
   loadHistoryIntoMemory();
   load();
+  loadAddTaskCustomNames();
   loadThemePreference();
   wireEvents();
   render();

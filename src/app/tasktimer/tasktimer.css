@@ -289,6 +289,15 @@ body{
 .taskMenuItem:hover{
   background: rgba(255,255,255,.1);
 }
+.taskMenuItemDelete{
+  margin-top:auto;
+  color:#ff4d4d;
+  border-color: rgba(255,77,77,.35);
+  background: rgba(255,77,77,.12);
+}
+.taskMenuItemDelete:hover{
+  background: rgba(255,77,77,.2);
+}
 
 /* Progress row */
 .progressRow{ margin-top:12px; }
@@ -392,6 +401,82 @@ input[type="text"], input[type="number"]{
 }
 input[type="text"]:focus, input[type="number"]:focus{
   border-color: rgba(0,207,200,.40);
+}
+.addTaskNameCombo{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.addTaskNameCombo > input{
+  padding-right:46px;
+}
+.addTaskNameToggle{
+  position:absolute;
+  right:6px;
+  top:50%;
+  transform:translateY(-50%);
+  min-width:34px;
+  height:32px;
+  padding:0;
+  line-height:1;
+}
+.addTaskNameToggle:hover,
+.addTaskNameToggle:active{
+  transform:translateY(-50%);
+}
+.addTaskNameMenu{
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0;
+  right:0;
+  display:none;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(10,16,28,.98);
+  box-shadow: 0 8px 20px rgba(0,0,0,.32);
+  z-index:12;
+  max-height:280px;
+  overflow:auto;
+}
+.addTaskNameCustomTitle{
+  padding:8px 10px 4px;
+  font-size:11px;
+  font-style:italic;
+  color: rgba(205,216,232,.9);
+}
+.addTaskNamePresetTitle{
+  padding:6px 10px 4px;
+  font-size:11px;
+  font-style:italic;
+  color: rgba(205,216,232,.9);
+}
+.addTaskNameDivider{
+  height:1px;
+  margin:6px 8px;
+  background: rgba(255,255,255,.14);
+}
+.addTaskNameList{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:4px 8px;
+}
+.addTaskNameItem{
+  width:100%;
+  text-align:left;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color:var(--text);
+  padding:7px 9px;
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.addTaskNameItem:hover{
+  background: rgba(255,255,255,.1);
 }
 .footerBtns{
   display:flex;

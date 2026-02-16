@@ -252,7 +252,23 @@ export default function TaskTimerPage() {
             autoComplete="off"
             style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}
           >
-            <input id="addTaskName" type="text" placeholder="Task name..." />
+            <div className="addTaskNameCombo" id="addTaskNameCombo">
+              <input id="addTaskName" type="text" placeholder="Enter a task name or select from preset values" />
+              <button className="btn btn-ghost small addTaskNameToggle" id="addTaskNameToggle" type="button" aria-label="Show task name options">
+                &#9662;
+              </button>
+              <div className="addTaskNameMenu" id="addTaskNameMenu">
+                <div className="addTaskNameCustomTitle" id="addTaskNameCustomTitle">
+                  Your Custom Tasks
+                </div>
+                <div className="addTaskNameList" id="addTaskNameCustomList" />
+                <div className="addTaskNameDivider" id="addTaskNameDivider" />
+                <div className="addTaskNamePresetTitle" id="addTaskNamePresetTitle">
+                  Presets
+                </div>
+                <div className="addTaskNameList" id="addTaskNamePresetList" />
+              </div>
+            </div>
             <div
               id="addTaskError"
               aria-live="polite"
