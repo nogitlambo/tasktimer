@@ -73,7 +73,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let deletedTaskMeta: DeletedTaskMeta = {};
   let tasks: Task[] = [];
-  let currentMode: "mode1" | "mode2" | "mode3" = "mode1";
+  type MainMode = "mode1" | "mode2" | "mode3";
+  const DEFAULT_MODE_LABELS: Record<MainMode, string> = {
+    mode1: "Category 1",
+    mode2: "Category 2",
+    mode3: "Category 3",
+  };
+  const DEFAULT_MODE_ENABLED: Record<MainMode, boolean> = {
+    mode1: true,
+    mode2: true,
+    mode3: true,
+  };
+  const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
+  const MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels`; // legacy
+  let currentMode: MainMode = "mode1";
+  let modeLabels: Record<MainMode, string> = { ...DEFAULT_MODE_LABELS };
+  let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
   let editIndex: number | null = null;
   let focusCheckpointSig = "";
   let focusModeTaskName = "";
@@ -111,7 +126,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   } | null = null;
   let elapsedPadDraft = "";
   let elapsedPadOriginal = "";
-  let editMoveTargetMode: "mode1" | "mode2" | "mode3" = "mode1";
+  let editMoveTargetMode: MainMode = "mode1";
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -170,6 +185,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     aboutOverlay: document.getElementById("aboutOverlay"),
     howtoOverlay: document.getElementById("howtoOverlay"),
     appearanceOverlay: document.getElementById("appearanceOverlay"),
+    categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
+    categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
+    categoryMode2Input: document.getElementById("categoryMode2Input") as HTMLInputElement | null,
+    categoryMode3Input: document.getElementById("categoryMode3Input") as HTMLInputElement | null,
+    categoryMode2Toggle: document.getElementById("categoryMode2Toggle"),
+    categoryMode3Toggle: document.getElementById("categoryMode3Toggle"),
+    categoryMode2ToggleLabel: document.getElementById("categoryMode2ToggleLabel"),
+    categoryMode3ToggleLabel: document.getElementById("categoryMode3ToggleLabel"),
+    categoryMode2Row: document.getElementById("categoryMode2Row"),
+    categoryMode3Row: document.getElementById("categoryMode3Row"),
+    categoryMode2TrashBtn: document.getElementById("categoryMode2TrashBtn"),
+    categoryMode3TrashBtn: document.getElementById("categoryMode3TrashBtn"),
+    categorySaveBtn: document.getElementById("categorySaveBtn"),
+    categoryResetBtn: document.getElementById("categoryResetBtn"),
     themeToggleRow: document.getElementById("themeToggleRow"),
     themeToggle: document.getElementById("themeToggle"),
     contactOverlay: document.getElementById("contactOverlay"),
@@ -297,6 +326,92 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return JSON.parse(str);
     } catch {
       return null;
+    }
+  }
+
+  function sanitizeModeLabel(value: unknown, fallback: string) {
+    const raw = String(value ?? "").trim().replace(/\s+/g, " ");
+    if (!raw) return fallback;
+    return raw.slice(0, 10);
+  }
+
+  function getModeLabel(mode: MainMode) {
+    return modeLabels[mode] || DEFAULT_MODE_LABELS[mode];
+  }
+
+  function isModeEnabled(mode: MainMode) {
+    if (mode === "mode1") return true;
+    return !!modeEnabled[mode];
+  }
+
+  function syncModeLabelsUi() {
+    if (els.mode1Btn) els.mode1Btn.textContent = getModeLabel("mode1");
+    if (els.mode2Btn) els.mode2Btn.textContent = getModeLabel("mode2");
+    if (els.mode3Btn) els.mode3Btn.textContent = getModeLabel("mode3");
+    if (els.mode2Btn) els.mode2Btn.disabled = !isModeEnabled("mode2");
+    if (els.mode3Btn) els.mode3Btn.disabled = !isModeEnabled("mode3");
+    if (els.editMoveMode1) els.editMoveMode1.textContent = getModeLabel("mode1");
+    if (els.editMoveMode2) els.editMoveMode2.textContent = getModeLabel("mode2");
+    if (els.editMoveMode3) els.editMoveMode3.textContent = getModeLabel("mode3");
+    if (els.categoryMode1Input) els.categoryMode1Input.value = getModeLabel("mode1");
+    if (els.categoryMode2Input) els.categoryMode2Input.value = getModeLabel("mode2");
+    if (els.categoryMode3Input) els.categoryMode3Input.value = getModeLabel("mode3");
+    els.categoryMode2Toggle?.classList.toggle("on", isModeEnabled("mode2"));
+    els.categoryMode2Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode2")));
+    els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
+    els.categoryMode3Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode3")));
+    if (els.categoryMode2ToggleLabel) {
+      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Category 2" : "Enable Category 2";
+    }
+    if (els.categoryMode3ToggleLabel) {
+      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Category 3" : "Enable Category 3";
+    }
+    if (els.categoryMode2Row) (els.categoryMode2Row as HTMLElement).style.display = isModeEnabled("mode2") ? "block" : "none";
+    if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
+    if (els.editMoveMode2) els.editMoveMode2.classList.toggle("is-disabled", !isModeEnabled("mode2"));
+    if (els.editMoveMode3) els.editMoveMode3.classList.toggle("is-disabled", !isModeEnabled("mode3"));
+  }
+
+  function saveModeSettings() {
+    try {
+      localStorage.setItem(
+        MODE_SETTINGS_KEY,
+        JSON.stringify({
+          mode1: { label: modeLabels.mode1, enabled: true },
+          mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2 },
+          mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3 },
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  function loadModeLabels() {
+    modeLabels = { ...DEFAULT_MODE_LABELS };
+    modeEnabled = { ...DEFAULT_MODE_ENABLED };
+    try {
+      const rawSettings = localStorage.getItem(MODE_SETTINGS_KEY);
+      if (rawSettings) {
+        const parsed = JSON.parse(rawSettings);
+        if (parsed && typeof parsed === "object") {
+          modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1?.label, DEFAULT_MODE_LABELS.mode1);
+          modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2?.label, DEFAULT_MODE_LABELS.mode2);
+          modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
+          modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
+          modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
+          return;
+        }
+      }
+      const raw = localStorage.getItem(MODE_LABELS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+      modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1, DEFAULT_MODE_LABELS.mode1);
+      modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2, DEFAULT_MODE_LABELS.mode2);
+      modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3, DEFAULT_MODE_LABELS.mode3);
+    } catch {
+      // ignore
     }
   }
 
@@ -512,7 +627,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmLogChk) els.confirmLogChk.checked = showChk2 ? !!opts.checkbox2Checked : false;
 
     if (els.confirmTitle) els.confirmTitle.textContent = title || "Confirm";
-    if (els.confirmText) els.confirmText.textContent = text || "";
+    if (els.confirmText) {
+      if (opts?.textHtml) els.confirmText.innerHTML = String(opts.textHtml || "");
+      else els.confirmText.textContent = text || "";
+    }
 
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "flex";
   }
@@ -1237,10 +1355,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     {
       const current = taskModeOf(t);
       editMoveTargetMode = current;
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = current === "mode1" ? "Mode 1" : current === "mode2" ? "Mode 2" : "Mode 3";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(current);
       [els.editMoveMode1, els.editMoveMode2, els.editMoveMode3].forEach((btn) => {
         if (!btn) return;
-        const disabled = btn.getAttribute("data-move-mode") === current;
+        const moveMode = btn.getAttribute("data-move-mode") as MainMode;
+        const disabled = btn.getAttribute("data-move-mode") === current || !isModeEnabled(moveMode);
         btn.disabled = disabled;
         btn.classList.toggle("is-disabled", disabled);
       });
@@ -1276,7 +1395,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       t.milestones = sortMilestones(t.milestones);
       const moveMode = editMoveTargetMode || taskModeOf(t);
-      if (moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") {
+      if ((moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") && isModeEnabled(moveMode)) {
         (t as any).mode = moveMode;
       }
 
@@ -1894,6 +2013,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       openHistoryManager();
       return;
     }
+    if (which === "categoryManager") {
+      syncModeLabelsUi();
+    }
 
     closeOverlay(els.menuOverlay as HTMLElement | null);
 
@@ -1901,6 +2023,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       about: els.aboutOverlay as HTMLElement | null,
       howto: els.howtoOverlay as HTMLElement | null,
       appearance: els.appearanceOverlay as HTMLElement | null,
+      categoryManager: els.categoryManagerOverlay as HTMLElement | null,
       contact: els.contactOverlay as HTMLElement | null,
     };
 
@@ -1983,7 +2106,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
-  function applyMainMode(mode: "mode1" | "mode2" | "mode3") {
+  function applyMainMode(mode: MainMode) {
+    if (!isModeEnabled(mode)) mode = "mode1";
     currentMode = mode;
     document.body.setAttribute("data-main-mode", mode);
     els.mode1Btn?.classList.toggle("isOn", mode === "mode1");
@@ -1992,6 +2116,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.mode1View?.classList.toggle("modeViewOn", true);
     els.mode2View?.classList.toggle("modeViewOn", mode === "mode2");
     els.mode3View?.classList.toggle("modeViewOn", mode === "mode3");
+    render();
+  }
+
+  function deleteTasksInMode(mode: MainMode) {
+    tasks = (tasks || []).filter((t) => taskModeOf(t) !== mode);
+    save();
     render();
   }
 
@@ -2073,19 +2203,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
       editMoveTargetMode = "mode1";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 1";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode1");
       if (els.editMoveMenu) els.editMoveMenu.open = false;
     });
     on(els.editMoveMode2, "click", () => {
       if (els.editMoveMode2?.disabled) return;
       editMoveTargetMode = "mode2";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 2";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode2");
       if (els.editMoveMenu) els.editMoveMenu.open = false;
     });
     on(els.editMoveMode3, "click", () => {
       if (els.editMoveMode3?.disabled) return;
       editMoveTargetMode = "mode3";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 3";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode3");
       if (els.editMoveMenu) els.editMoveMenu.open = false;
     });
 
@@ -2395,10 +2525,52 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (e.target?.closest?.("#themeToggle")) return;
       toggleThemeMode();
     });
+    on(els.categoryMode2Toggle, "click", () => {
+      modeEnabled.mode2 = !modeEnabled.mode2;
+      syncModeLabelsUi();
+    });
+    on(els.categoryMode3Toggle, "click", () => {
+      modeEnabled.mode3 = !modeEnabled.mode3;
+      syncModeLabelsUi();
+    });
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
     });
+
+    on(els.categorySaveBtn, "click", () => {
+      modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
+      modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
+      modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
+      modeEnabled.mode1 = true;
+      saveModeSettings();
+      syncModeLabelsUi();
+      if (!isModeEnabled(currentMode)) applyMainMode("mode1");
+      if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
+      closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
+    });
+    on(els.categoryResetBtn, "click", () => {
+      modeLabels = { ...DEFAULT_MODE_LABELS };
+      modeEnabled = { ...DEFAULT_MODE_ENABLED };
+      saveModeSettings();
+      syncModeLabelsUi();
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
+    });
+    const confirmDeleteCategory = (mode: MainMode) => {
+      const label = getModeLabel(mode);
+      const safeLabel = escapeHtmlUI(label);
+      confirm("Delete Category Tasks", "", {
+        okLabel: "Delete",
+        textHtml: `<span class="confirmDanger">All tasks under the ${safeLabel} category will be deleted. Proceed?</span>`,
+        onOk: () => {
+          deleteTasksInMode(mode);
+          closeConfirm();
+        },
+      });
+    };
+    on(els.categoryMode2TrashBtn, "click", () => confirmDeleteCategory("mode2"));
+    on(els.categoryMode3TrashBtn, "click", () => confirmDeleteCategory("mode3"));
 
     on(els.exportBtn, "click", exportBackup);
     on(els.importBtn, "click", () => els.importFile?.click());
@@ -2666,6 +2838,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   load();
   loadAddTaskCustomNames();
   loadThemePreference();
+  loadModeLabels();
+  syncModeLabelsUi();
   applyMainMode("mode1");
   wireEvents();
   render();

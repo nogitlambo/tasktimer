@@ -115,6 +115,10 @@ body{
   border-color: rgba(53,232,255,.5);
   box-shadow: 0 0 10px rgba(53,232,255,.25);
 }
+.modeBtn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
 .modeView{
   display:none;
 }
@@ -597,6 +601,44 @@ input[type="text"]:focus, input[type="number"]:focus{
 .addTaskNameItem:hover{
   background: rgba(255,255,255,.1);
 }
+.categoryFieldRow{
+  margin-top:10px;
+}
+.categoryFieldControl{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.categoryFieldControl > input{
+  flex:1;
+}
+.categoryTrashBtn{
+  width:36px;
+  height:36px;
+  border:1px solid rgba(255,77,77,.35);
+  background: rgba(255,77,77,.12);
+  color:#ff8f8f;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.categoryTrashBtn svg{
+  width:16px;
+  height:16px;
+  fill: currentColor;
+}
+.categoryTrashBtn:hover{
+  background: rgba(255,77,77,.2);
+}
+.switch.opaque{
+  opacity:1;
+  background: rgba(95,105,122,.95);
+  border-color: rgba(145,155,175,.95);
+  cursor:not-allowed;
+}
+.switch.opaque::after{
+  background: rgba(235,240,255,.95);
+}
 .footerBtns{
   display:flex;
   gap:12px;
@@ -748,6 +790,10 @@ input[type="text"]:focus, input[type="number"]:focus{
   line-height:1.55;
   margin-top:6px;
 }
+.confirmDanger{
+  color:#ff4d4d;
+  font-weight:700;
+}
 .chkRow{
   margin-top:14px;
   display:flex;
@@ -798,6 +844,17 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .menuTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 .menuList{ display:flex; flex-direction:column; gap:10px; }
+.settingsSectionLabel{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  color: rgba(255,255,255,.60);
+  text-align:center;
+  margin:10px 2px 4px;
+  padding:4px 0;
+}
 .menuDivider{
   height:1px;
   margin:2px 2px 4px;
@@ -817,10 +874,47 @@ input[type="text"]:focus, input[type="number"]:focus{
   font-weight:700;
   letter-spacing:.1px;
 }
+.settingsAuthItem{
+  text-align:center;
+}
+.settingsBottomLock{
+  margin-top:auto;
+}
 #resetAllBtn{
   color:#ff4d4d;
 }
 .menuItem:hover{ background: rgba(255,255,255,.08); }
+.settingsMenu .menuHead{
+  position:relative;
+  justify-content:center;
+  min-height:42px;
+}
+.settingsMenu .menuTitle{
+  text-align:center;
+  width:100%;
+}
+.settingsMenu .menuList{
+  align-items:center;
+}
+.settingsMenu .settingsCloseIcon{
+  position:absolute;
+  right:4px;
+  top:2px;
+  width:32px;
+  height:32px;
+  font-size:13px;
+  font-weight:800;
+}
+.settingsMenu .menuItem{
+  text-align:center;
+  width:min(560px, 100%);
+}
+.settingsMenu .menuDivider{
+  width:100%;
+}
+.settingsMenu .footerBtns{
+  justify-content:center;
+}
 
 /* History screen */
 #historyScreen{
@@ -1410,6 +1504,7 @@ body[data-theme="light"] .historyMeta,
 body[data-theme="light"] .confirmText,
 body[data-theme="light"] .aboutText,
 body[data-theme="light"] label,
+body[data-theme="light"] .settingsSectionLabel,
 body[data-theme="light"] .unitRow > span,
 body[data-theme="light"] .mkTime,
 body[data-theme="light"] .mkDesc,

@@ -80,6 +80,59 @@ export default function InfoOverlays() {
         </div>
       </div>
 
+      <div className="overlay" id="categoryManagerOverlay">
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Category Manager">
+          <h2>Category Manager</h2>
+          <div className="field categoryFieldRow">
+            <label htmlFor="categoryMode1Input">Category 1 (default)</label>
+            <div className="categoryFieldControl">
+              <input id="categoryMode1Input" type="text" maxLength={10} />
+            </div>
+          </div>
+          <div className="toggleRow">
+            <span id="categoryMode2ToggleLabel">Disable Category 2</span>
+            <button className="switch on" id="categoryMode2Toggle" type="button" role="switch" aria-checked="true" />
+          </div>
+          <div className="field categoryFieldRow" id="categoryMode2Row">
+            <label htmlFor="categoryMode2Input">Category 2</label>
+            <div className="categoryFieldControl">
+              <input id="categoryMode2Input" type="text" maxLength={10} />
+              <button className="categoryTrashBtn" id="categoryMode2TrashBtn" type="button" aria-label="Delete Mode 2 category">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="toggleRow">
+            <span id="categoryMode3ToggleLabel">Disable Category 3</span>
+            <button className="switch on" id="categoryMode3Toggle" type="button" role="switch" aria-checked="true" />
+          </div>
+          <div className="field categoryFieldRow" id="categoryMode3Row">
+            <label htmlFor="categoryMode3Input">Category 3</label>
+            <div className="categoryFieldControl">
+              <input id="categoryMode3Input" type="text" maxLength={10} />
+              <button className="categoryTrashBtn" id="categoryMode3TrashBtn" type="button" aria-label="Delete Mode 3 category">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="footerBtns">
+            <button className="btn btn-ghost" id="categoryResetBtn" type="button">
+              Reset Defaults
+            </button>
+            <button className="btn btn-accent" id="categorySaveBtn" type="button">
+              Save
+            </button>
+            <button className="btn btn-ghost closePopup" type="button">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="overlay" id="contactOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="Contact">
           <h2>Contact</h2>
