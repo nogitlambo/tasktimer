@@ -686,8 +686,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (row as any).dataset.msIndex = String(idx);
 
       row.innerHTML = `
-        <div class="pill">${escapeHtmlUI(String(+m.hours || 0))}${milestoneUnitSuffix(t)}</div>
-        <input type="text" value="${escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
+        <div class="pill msSkewField">${escapeHtmlUI(String(+m.hours || 0))}${milestoneUnitSuffix(t)}</div>
+        <input class="msSkewInput" type="text" value="${escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
 
@@ -1480,14 +1480,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     elapsedPadMilestoneRef = { task, milestone, ms, onApplied };
     elapsedPadOriginal = String(+milestone.hours || 0);
     elapsedPadDraft = elapsedPadOriginal;
-    if (els.elapsedPadTitle) {
-      els.elapsedPadTitle.textContent =
-        task.milestoneTimeUnit === "day"
-          ? "Enter Milestone Days"
-          : task.milestoneTimeUnit === "minute"
-            ? "Enter Milestone Minutes"
-            : "Enter Milestone Hours";
-    }
+    if (els.elapsedPadTitle) els.elapsedPadTitle.textContent = "Set Checkpoint <days> <hours> <minutes>";
     clearElapsedPadError();
     renderElapsedPadDisplay();
     (els.elapsedPadOverlay as HTMLElement).style.display = "flex";

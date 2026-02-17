@@ -776,6 +776,14 @@ input[type="text"]:focus, input[type="number"]:focus{
   cursor:pointer;
 }
 .msRow input[type="text"]{ flex:1; padding:10px; border-radius: 10px; }
+.msSkewField{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.msSkewInput{
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
 .msRow button{
   width:34px;height:34px;
   border-radius:10px;
