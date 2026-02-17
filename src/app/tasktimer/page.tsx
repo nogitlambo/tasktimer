@@ -8,7 +8,6 @@ import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
 import FocusModeScreen from "./components/FocusModeScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import InfoOverlays from "./components/InfoOverlays";
-import MenuOverlay from "./components/MenuOverlay";
 import TaskList from "./components/TaskList";
 import { initTaskTimerClient } from "./tasktimerClient";
 import "./tasktimer.css";
@@ -61,7 +60,6 @@ export default function TaskTimerPage() {
         <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
       </div>
 
-      <MenuOverlay />
       <AddTaskOverlay />
       <InfoOverlays />
       <EditTaskOverlay />

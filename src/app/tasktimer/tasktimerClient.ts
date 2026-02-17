@@ -2172,10 +2172,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(document, "click", (ev: any) => {
       const insideMenu = ev.target?.closest?.(".taskMenu");
-      if (insideMenu) return;
-      document.querySelectorAll(".taskMenu[open]").forEach((el) => {
-        (el as HTMLDetailsElement).open = false;
-      });
+      if (insideMenu) {
+        document.querySelectorAll(".taskMenu[open]").forEach((el) => {
+          if (el !== insideMenu) (el as HTMLDetailsElement).open = false;
+        });
+      } else {
+        document.querySelectorAll(".taskMenu[open]").forEach((el) => {
+          (el as HTMLDetailsElement).open = false;
+        });
+      }
       const insideEditMove = ev.target?.closest?.(".editMoveMenu");
       if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
       const insideAddNameMenu = ev.target?.closest?.("#addTaskNameCombo");
@@ -2378,8 +2383,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     });
 
-    on(els.menuIcon, "click", () => openOverlay(els.menuOverlay as HTMLElement | null));
-    on(els.closeMenuBtn, "click", () => closeOverlay(els.menuOverlay as HTMLElement | null));
+    on(els.menuIcon, "click", () => {
+      window.location.href = "/tasktimer/settings";
+    });
+    on(els.closeMenuBtn, "click", () => {
+      if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
+      else window.location.href = "/tasktimer";
+    });
     on(els.themeToggle, "click", toggleThemeMode);
     on(els.themeToggleRow, "click", (e: any) => {
       if (e.target?.closest?.("#themeToggle")) return;
