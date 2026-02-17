@@ -31,12 +31,16 @@ export default function MenuOverlay() {
             History Manager
           </button>
 
+          <button className="menuItem" id="categoryManagerBtn" type="button">
+            Category Manager
+          </button>
+
           <button className="menuItem" data-menu="about" type="button">
             About
           </button>
 
           <button className="menuItem" data-menu="howto" type="button">
-            How To
+            User-Guide
           </button>
 
           <button className="menuItem" data-menu="appearance" type="button">

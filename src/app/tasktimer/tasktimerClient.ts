@@ -73,6 +73,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let deletedTaskMeta: DeletedTaskMeta = {};
   let tasks: Task[] = [];
+  let currentMode: "mode1" | "mode2" | "mode3" = "mode1";
   let editIndex: number | null = null;
   let focusCheckpointSig = "";
   let focusModeTaskName = "";
@@ -110,6 +111,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   } | null = null;
   let elapsedPadDraft = "";
   let elapsedPadOriginal = "";
+  let editMoveTargetMode: "mode1" | "mode2" | "mode3" = "mode1";
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -136,6 +138,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskMsList: document.getElementById("addTaskMsList"),
     addTaskCancelBtn: document.getElementById("addTaskCancelBtn"),
     resetAllBtn: document.getElementById("resetAllBtn"),
+    mode1Btn: document.getElementById("mode1Btn") as HTMLButtonElement | null,
+    mode2Btn: document.getElementById("mode2Btn") as HTMLButtonElement | null,
+    mode3Btn: document.getElementById("mode3Btn") as HTMLButtonElement | null,
+    mode1View: document.getElementById("mode1View"),
+    mode2View: document.getElementById("mode2View"),
+    mode3View: document.getElementById("mode3View"),
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
@@ -172,6 +180,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     editOverlay: document.getElementById("editOverlay"),
     editName: document.getElementById("editName") as HTMLInputElement | null,
+    editMoveMenu: document.getElementById("editMoveMenu") as HTMLDetailsElement | null,
+    editMoveCurrentLabel: document.getElementById("editMoveCurrentLabel"),
+    editMoveMode1: document.getElementById("editMoveMode1") as HTMLButtonElement | null,
+    editMoveMode2: document.getElementById("editMoveMode2") as HTMLButtonElement | null,
+    editMoveMode3: document.getElementById("editMoveMode3") as HTMLButtonElement | null,
     editD: document.getElementById("editD") as HTMLInputElement | null,
     editH: document.getElementById("editH") as HTMLInputElement | null,
     editM: document.getElementById("editM") as HTMLInputElement | null,
@@ -222,7 +235,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   };
 
   function makeTask(name: string, order?: number): Task {
-    return {
+    const t: Task = {
       id: cryptoRandomId(),
       name,
       order: order || 1,
@@ -235,10 +248,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       milestones: [],
       hasStarted: false,
     };
+    (t as any).mode = currentMode;
+    return t;
   }
 
   function defaultTasks(): Task[] {
-    return [makeTask("Exercise", 1), makeTask("Study", 2), makeTask("Meditation", 3)];
+    const prevMode = currentMode;
+    currentMode = "mode1";
+    const out = [makeTask("Exercise", 1), makeTask("Study", 2), makeTask("Meditation", 3)];
+    currentMode = prevMode;
+    return out;
+  }
+
+  function taskModeOf(t: Task): "mode1" | "mode2" | "mode3" {
+    const m = String((t as any)?.mode || "mode1");
+    if (m === "mode2" || m === "mode3") return m;
+    return "mode1";
   }
 
   function load() {
@@ -250,6 +275,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     tasks = loaded;
     tasks.forEach((t) => {
+      if (!(t as any).mode) (t as any).mode = "mode1";
       if (t.milestoneTimeUnit !== "day" && t.milestoneTimeUnit !== "hour" && t.milestoneTimeUnit !== "minute") {
         t.milestoneTimeUnit = "hour";
       }
@@ -618,7 +644,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
     els.taskList.innerHTML = "";
-    const activeTaskIds = new Set(tasks.map((t) => String(t.id || "")));
+    const modeTasks = tasks.filter((t) => taskModeOf(t) === currentMode);
+    const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
     for (const taskId of Array.from(openHistoryTaskIds)) {
       if (!activeTaskIds.has(taskId)) {
         openHistoryTaskIds.delete(taskId);
@@ -627,6 +654,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     tasks.forEach((t, index) => {
+      if (taskModeOf(t) !== currentMode) return;
       const elapsedMs = getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
 
@@ -1206,6 +1234,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.editH) els.editH.value = String(h);
     if (els.editM) els.editM.value = String(m);
     if (els.editS) els.editS.value = String(s);
+    {
+      const current = taskModeOf(t);
+      editMoveTargetMode = current;
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = current === "mode1" ? "Mode 1" : current === "mode2" ? "Mode 2" : "Mode 3";
+      [els.editMoveMode1, els.editMoveMode2, els.editMoveMode3].forEach((btn) => {
+        if (!btn) return;
+        const disabled = btn.getAttribute("data-move-mode") === current;
+        btn.disabled = disabled;
+        btn.classList.toggle("is-disabled", disabled);
+      });
+      if (els.editMoveMenu) els.editMoveMenu.open = false;
+    }
 
     els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
     els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
@@ -1235,6 +1275,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       t.startMs = t.running ? nowMs() : null;
 
       t.milestones = sortMilestones(t.milestones);
+      const moveMode = editMoveTargetMode || taskModeOf(t);
+      if (moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") {
+        (t as any).mode = moveMode;
+      }
 
       save();
       render();
@@ -1242,6 +1286,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
     closeElapsedPad(false);
+    if (els.editMoveMenu) els.editMoveMenu.open = false;
     editIndex = null;
   }
 
@@ -1488,6 +1533,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function renderHistoryManager() {
     const listEl = document.getElementById("hmList");
     if (!listEl) return;
+    const taskIdFilter = (() => {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const raw = (p.get("taskId") || "").trim();
+        return raw || null;
+      } catch {
+        return null;
+      }
+    })();
 
     let hb: Record<string, any[]> = {};
     try {
@@ -1502,14 +1556,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const arr = (hb as any)[id];
       return Array.isArray(arr) && arr.length;
     });
+    const filteredIds = taskIdFilter ? idsWithHistory.filter((id) => String(id) === String(taskIdFilter)) : idsWithHistory;
 
-    if (!idsWithHistory.length) {
-      listEl.innerHTML = `<div class="hmEmpty">No history entries found.</div>`;
+    if (!filteredIds.length) {
+      listEl.innerHTML = taskIdFilter
+        ? `<div class="hmEmpty">No history entries found for this task.</div>`
+        : `<div class="hmEmpty">No history entries found.</div>`;
       return;
     }
 
     const currentOrder = (tasks || []).map((t) => String(t.id));
-    idsWithHistory.sort((a, b) => {
+    filteredIds.sort((a, b) => {
       const ai = currentOrder.indexOf(String(a));
       const bi = currentOrder.indexOf(String(b));
       const aIsCurrent = ai !== -1;
@@ -1522,26 +1579,67 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return br - ar;
     });
 
-    const groups = idsWithHistory
+    const groups = filteredIds
       .map((taskId) => {
         const meta = getTaskMetaForHistoryId(taskId);
         const arr = ((hb as any)[taskId] || []).slice().sort((x: any, y: any) => (y.ts || 0) - (x.ts || 0));
+        const localDateKey = (ts: number) => {
+          const d = new Date(ts);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const da = String(d.getDate()).padStart(2, "0");
+          return `${y}-${m}-${da}`;
+        };
+        const localDateLabel = (key: string) => {
+          const [y, m, d] = key.split("-").map((x) => parseInt(x, 10));
+          const dt = new Date(y, (m || 1) - 1, d || 1);
+          try {
+            return dt.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit" });
+          } catch {
+            return key;
+          }
+        };
 
-        const rows = arr
-          .map((e: any) => {
-            const dt = formatDateTime(e.ts);
-            const tm = formatTime(e.ms || 0);
-            const key = `${e.ts}|${e.ms}|${String(e.name || "")}`;
+        const rowsByDate: Record<string, string[]> = {};
+        arr.forEach((e: any) => {
+          const key = localDateKey(+e.ts || 0);
+          if (!rowsByDate[key]) rowsByDate[key] = [];
+          const dt = formatDateTime(e.ts);
+          const tm = formatTime(e.ms || 0);
+          const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
+          rowsByDate[key].push(`
+            <tr>
+              <td>${dt}</td>
+              <td>${tm}</td>
+              <td style="text-align:right;">
+                <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
+            rowKey
+          )}" aria-label="Delete log" title="Delete log">&#128465;</button>
+              </td>
+            </tr>
+          `);
+        });
+
+        const dateGroupsHtml = Object.keys(rowsByDate)
+          .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+          .map((dateKey) => {
+            const rows = rowsByDate[dateKey].join("");
             return `
-              <tr>
-                <td>${dt}</td>
-                <td>${tm}</td>
-                <td style="text-align:right;">
-                  <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
-              key
-            )}" aria-label="Delete log" title="Delete log">&#128465;</button>
-                </td>
-              </tr>
+              <details class="hmDateGroup">
+                <summary class="hmDateHeading">${escapeHtmlHM(localDateLabel(dateKey))}</summary>
+                <table class="hmTable" role="table">
+                  <thead>
+                    <tr>
+                      <th>Date/Time</th>
+                      <th>Elapsed</th>
+                      <th style="text-align:right;">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows}
+                  </tbody>
+                </table>
+              </details>
             `;
           })
           .join("");
@@ -1562,18 +1660,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
               <div class="hmCount">${arr.length} logs</div>
             </summary>
 
-            <table class="hmTable" role="table">
-              <thead>
-                <tr>
-                  <th>Date/Time</th>
-                  <th>Elapsed</th>
-                  <th style="text-align:right;">Delete</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
+            ${dateGroupsHtml}
           </details>
         `;
       })
@@ -1896,6 +1983,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function applyMainMode(mode: "mode1" | "mode2" | "mode3") {
+    currentMode = mode;
+    document.body.setAttribute("data-main-mode", mode);
+    els.mode1Btn?.classList.toggle("isOn", mode === "mode1");
+    els.mode2Btn?.classList.toggle("isOn", mode === "mode2");
+    els.mode3Btn?.classList.toggle("isOn", mode === "mode3");
+    els.mode1View?.classList.toggle("modeViewOn", true);
+    els.mode2View?.classList.toggle("modeViewOn", mode === "mode2");
+    els.mode3View?.classList.toggle("modeViewOn", mode === "mode3");
+    render();
+  }
+
   function wireEvents() {
     const setAddTaskError = (msg: string) => {
       if (els.addTaskError) els.addTaskError.textContent = msg;
@@ -1967,6 +2066,27 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       addTaskMilestoneTimeUnit = "minute";
       setAddTaskMilestoneUnitUi("minute");
       renderAddTaskMilestoneEditor();
+    });
+    on(els.mode1Btn, "click", () => applyMainMode("mode1"));
+    on(els.mode2Btn, "click", () => applyMainMode("mode2"));
+    on(els.mode3Btn, "click", () => applyMainMode("mode3"));
+    on(els.editMoveMode1, "click", () => {
+      if (els.editMoveMode1?.disabled) return;
+      editMoveTargetMode = "mode1";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 1";
+      if (els.editMoveMenu) els.editMoveMenu.open = false;
+    });
+    on(els.editMoveMode2, "click", () => {
+      if (els.editMoveMode2?.disabled) return;
+      editMoveTargetMode = "mode2";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 2";
+      if (els.editMoveMenu) els.editMoveMenu.open = false;
+    });
+    on(els.editMoveMode3, "click", () => {
+      if (els.editMoveMode3?.disabled) return;
+      editMoveTargetMode = "mode3";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = "Mode 3";
+      if (els.editMoveMenu) els.editMoveMenu.open = false;
     });
 
     on(els.addTaskName, "input", () => {
@@ -2056,6 +2176,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       document.querySelectorAll(".taskMenu[open]").forEach((el) => {
         (el as HTMLDetailsElement).open = false;
       });
+      const insideEditMove = ev.target?.closest?.(".editMoveMenu");
+      if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
       const insideAddNameMenu = ev.target?.closest?.("#addTaskNameCombo");
       if (!insideAddNameMenu) setAddTaskNameMenuOpen(false);
     });
@@ -2088,6 +2210,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         state.slideDir = "right";
         state.page = Math.max(0, state.page - 1);
         renderHistory(taskId);
+        return;
+      }
+      if (action === "manage") {
+        window.location.href = `/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`;
         return;
       }
       if (action !== "delete" || state.selectedAbsIndex == null) return;
@@ -2388,10 +2514,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else closeConfirm();
     });
 
-    on(els.historyManagerBtn, "click", () => openPopup("historyManager"));
+    on(els.historyManagerBtn, "click", () => {
+      window.location.href = "/tasktimer/history-manager";
+    });
     on(els.historyManagerBackBtn, "click", () => {
-      closeHistoryManager();
-      openOverlay(els.menuOverlay as HTMLElement | null);
+      if (els.menuOverlay) {
+        closeHistoryManager();
+        openOverlay(els.menuOverlay as HTMLElement | null);
+      } else {
+        window.location.href = "/tasktimer";
+      }
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {
@@ -2524,8 +2656,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   load();
   loadAddTaskCustomNames();
   loadThemePreference();
+  applyMainMode("mode1");
   wireEvents();
   render();
+  if (!els.taskList && els.historyManagerScreen) {
+    openHistoryManager();
+  }
   tick();
 
   return { destroy };

@@ -4,7 +4,28 @@ export default function EditTaskOverlay() {
   return (
     <div className="overlay" id="editOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Edit Task">
-        <h2>Edit Task</h2>
+        <div className="editHead">
+          <h2>Edit Task</h2>
+          <div className="editMoveWrap">
+            <label htmlFor="editMoveMenuBtn">Category:</label>
+            <details className="editMoveMenu" id="editMoveMenu">
+              <summary className="taskMenuItem" id="editMoveMenuBtn" role="button">
+                <span id="editMoveCurrentLabel">Mode 1</span>
+              </summary>
+              <div className="taskMenuList">
+                <button className="taskMenuItem editMoveItem" id="editMoveMode1" data-move-mode="mode1" type="button">
+                  Mode 1
+                </button>
+                <button className="taskMenuItem editMoveItem" id="editMoveMode2" data-move-mode="mode2" type="button">
+                  Mode 2
+                </button>
+                <button className="taskMenuItem editMoveItem" id="editMoveMode3" data-move-mode="mode3" type="button">
+                  Mode 3
+                </button>
+              </div>
+            </details>
+          </div>
+        </div>
 
         <div className="field">
           <label>Task Name</label>
