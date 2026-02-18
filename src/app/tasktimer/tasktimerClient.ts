@@ -156,9 +156,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     mode1Btn: document.getElementById("mode1Btn") as HTMLButtonElement | null,
     mode2Btn: document.getElementById("mode2Btn") as HTMLButtonElement | null,
     mode3Btn: document.getElementById("mode3Btn") as HTMLButtonElement | null,
+    modeSwitch: document.getElementById("modeSwitch"),
     mode1View: document.getElementById("mode1View"),
     mode2View: document.getElementById("mode2View"),
     mode3View: document.getElementById("mode3View"),
+    appPageTasks: document.getElementById("appPageTasks"),
+    appPageDashboard: document.getElementById("appPageDashboard"),
+    appPageTest1: document.getElementById("appPageTest1"),
+    appPageTest2: document.getElementById("appPageTest2"),
+    footerTasksBtn: document.getElementById("footerTasksBtn") as HTMLButtonElement | null,
+    footerDashboardBtn: document.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
+    footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
+    footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
+    footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
@@ -2112,6 +2122,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     render();
   }
 
+  function applyAppPage(page: "tasks" | "dashboard" | "test1" | "test2") {
+    document.body.setAttribute("data-app-page", page);
+    els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
+    els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
+    els.appPageTest1?.classList.toggle("appPageOn", page === "test1");
+    els.appPageTest2?.classList.toggle("appPageOn", page === "test2");
+    if (els.modeSwitch) (els.modeSwitch as HTMLElement).style.display = page === "tasks" ? "flex" : "none";
+    els.footerTasksBtn?.classList.toggle("isOn", page === "tasks");
+    els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
+    els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
+    els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
+  }
+
   function deleteTasksInMode(mode: MainMode) {
     tasks = (tasks || []).filter((t) => taskModeOf(t) !== mode);
     save();
@@ -2193,6 +2216,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.mode1Btn, "click", () => applyMainMode("mode1"));
     on(els.mode2Btn, "click", () => applyMainMode("mode2"));
     on(els.mode3Btn, "click", () => applyMainMode("mode3"));
+    on(els.footerTasksBtn, "click", () => applyAppPage("tasks"));
+    on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard"));
+    on(els.footerTest1Btn, "click", () => applyAppPage("test1"));
+    on(els.footerTest2Btn, "click", () => applyAppPage("test2"));
+    on(els.footerSettingsBtn, "click", () => {
+      window.location.href = "/tasktimer/settings";
+    });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
       editMoveTargetMode = "mode1";
@@ -2308,6 +2338,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
       const insideAddNameMenu = ev.target?.closest?.("#addTaskNameCombo");
       if (!insideAddNameMenu) setAddTaskNameMenuOpen(false);
+    });
+    on(els.taskList, "click", (ev: any) => {
+      const summary = ev.target?.closest?.(".taskMenu > summary");
+      if (!summary) return;
+      const menu = summary.closest?.(".taskMenu") as HTMLDetailsElement | null;
+      if (!menu) return;
+
+      window.setTimeout(() => {
+        if (!menu.open) {
+          menu.classList.remove("open-up");
+          return;
+        }
+        const list = menu.querySelector(".taskMenuList") as HTMLElement | null;
+        if (!list) return;
+        const footer = document.querySelector(".appFooterNav") as HTMLElement | null;
+        const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
+        const listRect = list.getBoundingClientRect();
+        const wouldOverlapFooter = listRect.bottom > footerTop - 8;
+        menu.classList.toggle("open-up", wouldOverlapFooter);
+      }, 0);
     });
 
     on(els.taskList, "click", (ev: any) => {
@@ -2834,6 +2884,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   loadModeLabels();
   syncModeLabelsUi();
   applyMainMode("mode1");
+  applyAppPage("tasks");
   wireEvents();
   render();
   if (!els.taskList && els.historyManagerScreen) {

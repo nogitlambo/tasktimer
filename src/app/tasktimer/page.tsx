@@ -26,7 +26,7 @@ export default function TaskTimerPage() {
             <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
           </div>
 
-          <div className="modeSwitch" aria-label="View modes">
+          <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
             <button className="btn btn-ghost small modeBtn isOn" id="mode1Btn" type="button" data-mode="mode1">
               Mode 1
             </button>
@@ -42,22 +42,65 @@ export default function TaskTimerPage() {
             <button className="btn btn-accent" id="openAddTaskBtn" type="button">
               + Add Task
             </button>
-
-            <button className="menuIcon" id="menuIcon" type="button" aria-label="Settings" title="Settings">
-              ⚙
-            </button>
           </div>
         </div>
+        <div className="appPages">
+          <section className="appPage appPageOn" id="appPageTasks" aria-label="Tasks page">
+            <section className="modeView modeViewOn" id="mode1View" aria-label="Mode 1 view">
+              <TaskList />
+              <HistoryScreen />
+              <FocusModeScreen />
+            </section>
 
-        <section className="modeView modeViewOn" id="mode1View" aria-label="Mode 1 view">
-          <TaskList />
-          <HistoryScreen />
-          <FocusModeScreen />
-        </section>
+            <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
 
-        <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
+            <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
+          </section>
 
-        <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
+          <section className="appPage" id="appPageDashboard" aria-label="Dashboard page">
+            <div className="appPagePlaceholder">
+              <h2>Dashboard</h2>
+              <p>Placeholder dashboard widgets will be added here.</p>
+            </div>
+          </section>
+
+          <section className="appPage" id="appPageTest1" aria-label="Test page 1">
+            <div className="appPagePlaceholder">
+              <h2>Test Page 1</h2>
+              <p>Placeholder test content and sample data.</p>
+            </div>
+          </section>
+
+          <section className="appPage" id="appPageTest2" aria-label="Test page 2">
+            <div className="appPagePlaceholder">
+              <h2>Test Page 2</h2>
+              <p>Placeholder test content and sample data.</p>
+            </div>
+          </section>
+        </div>
+
+        <div className="appFooterNav" aria-label="App pages">
+          <button className="btn btn-ghost small appFooterBtn" id="footerDashboardBtn" type="button">
+            <span className="appFooterIconPlaceholder" aria-hidden="true" />
+            Dashboard
+          </button>
+          <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button">
+            <span className="appFooterIconPlaceholder" aria-hidden="true" />
+            Tasks
+          </button>
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest1Btn" type="button">
+            <span className="appFooterIconPlaceholder" aria-hidden="true" />
+            Test 1
+          </button>
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button">
+            <span className="appFooterIconPlaceholder" aria-hidden="true" />
+            Test 2
+          </button>
+          <button className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" type="button">
+            <span className="appFooterIconPlaceholder" aria-hidden="true" />
+            Settings
+          </button>
+        </div>
       </div>
 
       <AddTaskOverlay />
