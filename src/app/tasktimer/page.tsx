@@ -80,25 +80,25 @@ export default function TaskTimerPage() {
         </div>
 
         <div className="appFooterNav" aria-label="App pages">
-          <button className="btn btn-ghost small appFooterBtn" id="footerDashboardBtn" type="button">
-            <span className="appFooterIconPlaceholder" aria-hidden="true" />
-            Dashboard
+          <button className="btn btn-ghost small appFooterBtn" id="footerDashboardBtn" type="button" aria-label="Dashboard">
+            <img className="appFooterIconImage" src="/icon-dashboard.png" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Dashboard</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button">
-            <span className="appFooterIconPlaceholder" aria-hidden="true" />
-            Tasks
+          <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button" aria-label="Tasks">
+            <img className="appFooterIconImage" src="/icon-tasks.png" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Tasks</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerTest1Btn" type="button">
-            <span className="appFooterIconPlaceholder" aria-hidden="true" />
-            Test 1
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest1Btn" type="button" aria-label="Test 1">
+            <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Test 1</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button">
-            <span className="appFooterIconPlaceholder" aria-hidden="true" />
-            Test 2
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Test 2">
+            <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Test 2</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" type="button">
-            <span className="appFooterIconPlaceholder" aria-hidden="true" />
-            Settings
+          <button className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" type="button" aria-label="Settings">
+            <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Settings</span>
           </button>
         </div>
       </div>

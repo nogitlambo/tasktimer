@@ -32,6 +32,27 @@ export default function SettingsPanel() {
         <button className="menuItem" id="categoryManagerBtn" data-menu="categoryManager" type="button">
           Category Manager
         </button>
+        <button className="menuItem" data-menu="appearance" type="button">
+          Appearance
+        </button>
+
+        <div className="menuDivider" role="separator" aria-hidden="true" />
+
+        <div className="settingsSectionLabel">System</div>
+
+        <div className="settingsSectionLabel">Support</div>
+        <button className="menuItem" data-menu="about" type="button">
+          About
+        </button>
+
+        <button className="menuItem" data-menu="howto" type="button">
+          User-Guide
+        </button>
+
+        <button className="menuItem" data-menu="contact" type="button">
+          Contact
+        </button>
+
         <div className="menuDivider" role="separator" aria-hidden="true" />
 
         <div className="settingsSectionLabel">Data</div>
@@ -47,26 +68,8 @@ export default function SettingsPanel() {
           Import Backup
         </button>
 
-        <div className="settingsSectionLabel">System</div>
-        <button className="menuItem" data-menu="appearance" type="button">
-          Appearance
-        </button>
-
-        <button className="menuItem settingsBottomLock" id="resetAllBtn" type="button">
+        <button className="menuItem" id="resetAllBtn" type="button">
           Reset All
-        </button>
-
-        <div className="settingsSectionLabel">Support</div>
-        <button className="menuItem" data-menu="about" type="button">
-          About
-        </button>
-
-        <button className="menuItem" data-menu="howto" type="button">
-          User-Guide
-        </button>
-
-        <button className="menuItem" data-menu="contact" type="button">
-          Contact
         </button>
 
         <input id="importFile" type="file" accept="application/json" style={{ display: "none" }} />
