@@ -32,13 +32,17 @@ export default function SettingsPanel() {
         <button className="menuItem" id="categoryManagerBtn" data-menu="categoryManager" type="button">
           Configure Modes
         </button>
+        <button className="menuItem" id="taskSettingsBtn" type="button">
+          Task Settings
+        </button>
+        <button className="menuItem" id="dashboardSettingsBtn" type="button">
+          Dashboard Settings
+        </button>
         <button className="menuItem" data-menu="appearance" type="button">
           Appearance
         </button>
 
         <div className="menuDivider" role="separator" aria-hidden="true" />
-
-        <div className="settingsSectionLabel">System</div>
 
         <div className="settingsSectionLabel">Support</div>
         <button className="menuItem" data-menu="about" type="button">
