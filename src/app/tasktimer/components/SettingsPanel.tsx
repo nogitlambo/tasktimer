@@ -30,7 +30,7 @@ export default function SettingsPanel() {
 
         <div className="settingsSectionLabel">Preferences</div>
         <button className="menuItem" id="categoryManagerBtn" data-menu="categoryManager" type="button">
-          Category Manager
+          Configure Modes
         </button>
         <button className="menuItem" data-menu="appearance" type="button">
           Appearance

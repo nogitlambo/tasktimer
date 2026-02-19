@@ -26,7 +26,9 @@ export default function TaskTimerPage() {
             <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
           </div>
 
-          <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
+          <div className="modeSwitchWrap">
+            <div className="modeSwitchLabel">Mode</div>
+            <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
             <button className="btn btn-ghost small modeBtn isOn" id="mode1Btn" type="button" data-mode="mode1">
               Mode 1
             </button>
@@ -36,6 +38,7 @@ export default function TaskTimerPage() {
             <button className="btn btn-ghost small modeBtn" id="mode3Btn" type="button" data-mode="mode3">
               Mode 3
             </button>
+            </div>
           </div>
 
           <div className="controls">

@@ -75,20 +75,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let tasks: Task[] = [];
   type MainMode = "mode1" | "mode2" | "mode3";
   const DEFAULT_MODE_LABELS: Record<MainMode, string> = {
-    mode1: "Category 1",
-    mode2: "Category 2",
-    mode3: "Category 3",
+    mode1: "Mode 1",
+    mode2: "Mode 2",
+    mode3: "Mode 3",
   };
   const DEFAULT_MODE_ENABLED: Record<MainMode, boolean> = {
     mode1: true,
     mode2: true,
     mode3: true,
   };
+  const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
+    mode1: "#00CFC8",
+    mode2: "#00CFC8",
+    mode3: "#00CFC8",
+  };
   const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
   const MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels`; // legacy
   let currentMode: MainMode = "mode1";
   let modeLabels: Record<MainMode, string> = { ...DEFAULT_MODE_LABELS };
   let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
+  let modeColors: Record<MainMode, string> = { ...DEFAULT_MODE_COLORS };
   let editIndex: number | null = null;
   let focusCheckpointSig = "";
   let focusModeTaskName = "";
@@ -99,12 +105,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let confirmActionAlt: null | (() => void) = null;
   const THEME_KEY = `${STORAGE_KEY}:theme`;
   const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
+  const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
 
   let historyByTaskId: HistoryByTaskId = {};
   let focusModeTaskId: string | null = null;
   const openHistoryTaskIds = new Set<string>();
+  let pinnedHistoryTaskIds = new Set<string>();
+  let hmExpandedTaskGroups = new Set<string>();
+  let hmExpandedDateGroups = new Set<string>();
+  let hmSortKey: "ts" | "ms" = "ts";
+  let hmSortDir: "asc" | "desc" = "desc";
+  let hmBulkEditMode = false;
+  let hmBulkSelectedRows = new Set<string>();
+  let hmRowsByTask: Record<string, string[]> = {};
+  let hmRowsByTaskDate: Record<string, string[]> = {};
   type HistoryViewState = {
     page: number;
     editMode: boolean;
@@ -174,6 +190,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     menuOverlay: document.getElementById("menuOverlay"),
     historyManagerScreen: document.getElementById("historyManagerScreen"),
     historyManagerBtn: document.getElementById("historyManagerBtn"),
+    historyManagerBulkBtn: document.getElementById("historyManagerBulkBtn") as HTMLButtonElement | null,
+    historyManagerBulkDeleteBtn: document.getElementById("historyManagerBulkDeleteBtn") as HTMLButtonElement | null,
     historyManagerBackBtn: document.getElementById("historyManagerBackBtn"),
     focusModeScreen: document.getElementById("focusModeScreen"),
     focusModeBackBtn: document.getElementById("focusModeBackBtn"),
@@ -199,6 +217,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
     categoryMode2Input: document.getElementById("categoryMode2Input") as HTMLInputElement | null,
     categoryMode3Input: document.getElementById("categoryMode3Input") as HTMLInputElement | null,
+    categoryMode1Color: document.getElementById("categoryMode1Color") as HTMLInputElement | null,
+    categoryMode2Color: document.getElementById("categoryMode2Color") as HTMLInputElement | null,
+    categoryMode3Color: document.getElementById("categoryMode3Color") as HTMLInputElement | null,
+    categoryMode1ColorHex: document.getElementById("categoryMode1ColorHex") as HTMLInputElement | null,
+    categoryMode2ColorHex: document.getElementById("categoryMode2ColorHex") as HTMLInputElement | null,
+    categoryMode3ColorHex: document.getElementById("categoryMode3ColorHex") as HTMLInputElement | null,
     categoryMode2Toggle: document.getElementById("categoryMode2Toggle"),
     categoryMode3Toggle: document.getElementById("categoryMode3Toggle"),
     categoryMode2ToggleLabel: document.getElementById("categoryMode2ToggleLabel"),
@@ -344,9 +368,27 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (!raw) return fallback;
     return raw.slice(0, 10);
   }
+  function sanitizeModeColor(value: unknown, fallback: string) {
+    let raw = String(value ?? "").trim().toUpperCase();
+    if (!raw) return fallback;
+    if (raw.startsWith("#")) raw = raw.slice(1);
+    if (/^[0-9A-F]{3}$/.test(raw)) {
+      raw = raw
+        .split("")
+        .map((ch) => ch + ch)
+        .join("");
+    }
+    return /^[0-9A-F]{6}$/.test(raw) ? `#${raw}` : fallback;
+  }
 
   function getModeLabel(mode: MainMode) {
     return modeLabels[mode] || DEFAULT_MODE_LABELS[mode];
+  }
+  function getModeColor(mode: MainMode) {
+    return modeColors[mode] || DEFAULT_MODE_COLORS[mode];
+  }
+  function applyModeAccent(mode: MainMode) {
+    document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
   }
 
   function isModeEnabled(mode: MainMode) {
@@ -366,15 +408,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.categoryMode1Input) els.categoryMode1Input.value = getModeLabel("mode1");
     if (els.categoryMode2Input) els.categoryMode2Input.value = getModeLabel("mode2");
     if (els.categoryMode3Input) els.categoryMode3Input.value = getModeLabel("mode3");
+    if (els.categoryMode1Color) els.categoryMode1Color.value = getModeColor("mode1");
+    if (els.categoryMode2Color) els.categoryMode2Color.value = getModeColor("mode2");
+    if (els.categoryMode3Color) els.categoryMode3Color.value = getModeColor("mode3");
+    if (els.categoryMode1ColorHex) els.categoryMode1ColorHex.value = getModeColor("mode1");
+    if (els.categoryMode2ColorHex) els.categoryMode2ColorHex.value = getModeColor("mode2");
+    if (els.categoryMode3ColorHex) els.categoryMode3ColorHex.value = getModeColor("mode3");
     els.categoryMode2Toggle?.classList.toggle("on", isModeEnabled("mode2"));
     els.categoryMode2Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode2")));
     els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
     els.categoryMode3Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode3")));
     if (els.categoryMode2ToggleLabel) {
-      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Category 2" : "Enable Category 2";
+      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Mode 2" : "Enable Mode 2";
     }
     if (els.categoryMode3ToggleLabel) {
-      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Category 3" : "Enable Category 3";
+      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Mode 3" : "Enable Mode 3";
     }
     if (els.categoryMode2Row) (els.categoryMode2Row as HTMLElement).style.display = isModeEnabled("mode2") ? "block" : "none";
     if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
@@ -388,8 +436,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         MODE_SETTINGS_KEY,
         JSON.stringify({
           mode1: { label: modeLabels.mode1, enabled: true },
-          mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2 },
-          mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3 },
+          mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2, color: modeColors.mode2 },
+          mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3, color: modeColors.mode3 },
+          mode1Color: modeColors.mode1,
         })
       );
     } catch {
@@ -400,6 +449,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function loadModeLabels() {
     modeLabels = { ...DEFAULT_MODE_LABELS };
     modeEnabled = { ...DEFAULT_MODE_ENABLED };
+    modeColors = { ...DEFAULT_MODE_COLORS };
     try {
       const rawSettings = localStorage.getItem(MODE_SETTINGS_KEY);
       if (rawSettings) {
@@ -410,6 +460,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
           modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
           modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
+          modeColors.mode1 = sanitizeModeColor((parsed as any).mode1?.color ?? (parsed as any).mode1Color, DEFAULT_MODE_COLORS.mode1);
+          modeColors.mode2 = sanitizeModeColor((parsed as any).mode2?.color, DEFAULT_MODE_COLORS.mode2);
+          modeColors.mode3 = sanitizeModeColor((parsed as any).mode3?.color, DEFAULT_MODE_COLORS.mode3);
           return;
         }
       }
@@ -420,6 +473,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1, DEFAULT_MODE_LABELS.mode1);
       modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2, DEFAULT_MODE_LABELS.mode2);
       modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3, DEFAULT_MODE_LABELS.mode3);
+      modeColors = { ...DEFAULT_MODE_COLORS };
     } catch {
       // ignore
     }
@@ -614,6 +668,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmOkBtn) {
       els.confirmOkBtn.textContent = okLabel;
       (els.confirmOkBtn as HTMLElement).style.display = "inline-flex";
+      els.confirmOkBtn.classList.remove("btn-warn");
+      els.confirmOkBtn.classList.add("btn-accent");
+      if (String(okLabel).toLowerCase() === "delete") {
+        els.confirmOkBtn.classList.remove("btn-accent");
+        els.confirmOkBtn.classList.add("btn-warn");
+      }
     }
 
     if (els.confirmAltBtn) {
@@ -650,6 +710,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     confirmAction = null;
     confirmActionAlt = null;
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
+    if (els.confirmOkBtn) {
+      els.confirmOkBtn.classList.remove("btn-warn");
+      els.confirmOkBtn.classList.add("btn-accent");
+    }
   }
 
   function milestoneUnitSec(t: Task | null | undefined): number {
@@ -774,6 +838,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.taskList.innerHTML = "";
     const modeTasks = tasks.filter((t) => taskModeOf(t) === currentMode);
     const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
+    for (const taskId of Array.from(pinnedHistoryTaskIds)) {
+      if (activeTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
+    }
     for (const taskId of Array.from(openHistoryTaskIds)) {
       if (!activeTaskIds.has(taskId)) {
         openHistoryTaskIds.delete(taskId);
@@ -836,12 +903,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       const taskId = String(t.id || "");
       const showHistory = openHistoryTaskIds.has(taskId);
+      const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const historyHTML = showHistory
         ? `
           <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
             <div class="historyTop">
               <div class="historyMeta">
-                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}</div>
+                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}
+                  <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
+                    isHistoryPinned ? "Unpin chart" : "Pin chart"
+                  }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
+                </div>
               </div>
               <div class="historyMeta">
                 <button class="btn btn-ghost small" type="button" data-history-action="close">Close</button>
@@ -1652,9 +1724,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
   }
 
+  function syncHistoryManagerBulkUi() {
+    if (els.historyManagerBulkBtn) {
+      els.historyManagerBulkBtn.textContent = "Bulk Edit";
+      els.historyManagerBulkBtn.classList.toggle("btn-accent", hmBulkEditMode);
+      els.historyManagerBulkBtn.classList.toggle("btn-ghost", !hmBulkEditMode);
+    }
+    if (els.historyManagerBulkDeleteBtn) {
+      const count = hmBulkSelectedRows.size;
+      if (hmBulkEditMode && count > 0) {
+        els.historyManagerBulkDeleteBtn.style.display = "";
+        els.historyManagerBulkDeleteBtn.textContent = count === 1 ? "Delete (1)" : `Delete (${count})`;
+      } else {
+        els.historyManagerBulkDeleteBtn.style.display = "none";
+      }
+    }
+  }
+
   function renderHistoryManager() {
     const listEl = document.getElementById("hmList");
     if (!listEl) return;
+    if (listEl.children.length) {
+      const nextTaskGroups = new Set<string>();
+      const nextDateGroups = new Set<string>();
+      listEl.querySelectorAll(".hmGroup[data-task]").forEach((el) => {
+        const taskId = (el as HTMLElement).getAttribute("data-task");
+        if (taskId && (el as HTMLDetailsElement).open) nextTaskGroups.add(taskId);
+      });
+      listEl.querySelectorAll(".hmDateGroup[data-task][data-date]").forEach((el) => {
+        const taskId = (el as HTMLElement).getAttribute("data-task");
+        const dateKey = (el as HTMLElement).getAttribute("data-date");
+        if (taskId && dateKey && (el as HTMLDetailsElement).open) nextDateGroups.add(`${taskId}|${dateKey}`);
+      });
+      hmExpandedTaskGroups = nextTaskGroups;
+      hmExpandedDateGroups = nextDateGroups;
+    }
+    hmRowsByTask = {};
+    hmRowsByTaskDate = {};
     const taskIdFilter = (() => {
       try {
         const p = new URLSearchParams(window.location.search);
@@ -1722,38 +1828,67 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           }
         };
 
-        const rowsByDate: Record<string, string[]> = {};
+        const rowsByDate: Record<string, any[]> = {};
         arr.forEach((e: any) => {
           const key = localDateKey(+e.ts || 0);
           if (!rowsByDate[key]) rowsByDate[key] = [];
-          const dt = formatDateTime(e.ts);
-          const tm = formatTime(e.ms || 0);
-          const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
-          rowsByDate[key].push(`
-            <tr>
-              <td>${dt}</td>
-              <td>${tm}</td>
-              <td style="text-align:right;">
-                <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
-            rowKey
-          )}" aria-label="Delete log" title="Delete log">&#128465;</button>
-              </td>
-            </tr>
-          `);
+          rowsByDate[key].push(e);
         });
 
         const dateGroupsHtml = Object.keys(rowsByDate)
           .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
           .map((dateKey) => {
-            const rows = rowsByDate[dateKey].join("");
+            const entries = (rowsByDate[dateKey] || []).slice().sort((a: any, b: any) => {
+              const av = hmSortKey === "ms" ? +a.ms || 0 : +a.ts || 0;
+              const bv = hmSortKey === "ms" ? +b.ms || 0 : +b.ts || 0;
+              return hmSortDir === "asc" ? av - bv : bv - av;
+            });
+            const rowIds = entries.map((e: any) => `${taskId}|${e.ts}|${e.ms}|${String(e.name || "")}`);
+            hmRowsByTaskDate[`${taskId}|${dateKey}`] = rowIds;
+            hmRowsByTask[taskId] = (hmRowsByTask[taskId] || []).concat(rowIds);
+            const dateChecked = rowIds.length > 0 && rowIds.every((id) => hmBulkSelectedRows.has(id));
+            const rows = entries
+              .map((e: any) => {
+                const dt = formatDateTime(e.ts);
+                const tm = formatTime(e.ms || 0);
+                const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
+                const rowId = `${taskId}|${rowKey}`;
+                const rowCheckbox = hmBulkEditMode
+                  ? `<input class="hmBulkCheckbox hmBulkRowChk" type="checkbox" data-task="${taskId}" data-key="${escapeHtmlHM(
+                      rowKey
+                    )}" ${hmBulkSelectedRows.has(rowId) ? "checked" : ""} />`
+                  : "";
+                return `
+                  <tr>
+                    <td class="hmSelectCell">${rowCheckbox}</td>
+                    <td>${dt}</td>
+                    <td>${tm}</td>
+                    <td style="text-align:right;">
+                      <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
+                  rowKey
+                )}" aria-label="Delete log" title="Delete log">&#128465;</button>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("");
+            const dateOpen = hmExpandedDateGroups.has(`${taskId}|${dateKey}`) ? " open" : "";
+            const dateSortArrow = hmSortKey === "ts" ? (hmSortDir === "asc" ? " ▲" : " ▼") : "";
+            const elapsedSortArrow = hmSortKey === "ms" ? (hmSortDir === "asc" ? " ▲" : " ▼") : "";
+            const dateCheckbox = hmBulkEditMode
+              ? `<input class="hmBulkCheckbox hmBulkDateChk" type="checkbox" data-task="${taskId}" data-date="${dateKey}" ${
+                  dateChecked ? "checked" : ""
+                } />`
+              : "";
             return `
-              <details class="hmDateGroup">
-                <summary class="hmDateHeading">${escapeHtmlHM(localDateLabel(dateKey))}</summary>
+              <details class="hmDateGroup" data-task="${taskId}" data-date="${dateKey}"${dateOpen}>
+                <summary class="hmDateHeading">${dateCheckbox}${escapeHtmlHM(localDateLabel(dateKey))}</summary>
                 <table class="hmTable" role="table">
                   <thead>
                     <tr>
-                      <th>Date/Time</th>
-                      <th>Elapsed</th>
+                      <th class="hmSelectHead"></th>
+                      <th><button class="hmSortBtn" type="button" data-hm-sort="ts">Date/Time${dateSortArrow}</button></th>
+                      <th><button class="hmSortBtn" type="button" data-hm-sort="ms">Elapsed${elapsedSortArrow}</button></th>
                       <th style="text-align:right;">Delete</th>
                     </tr>
                   </thead>
@@ -1766,15 +1901,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           })
           .join("");
 
-        const swatch = meta.color
-          ? `<span class="hmSwatch" style="background:${meta.color};"></span>`
-          : `<span class="hmSwatch"></span>`;
+        const swatch = `<span class="hmExpandIcon" aria-hidden="true"></span>`;
         const badge = meta.deleted ? `<span class="hmBadge deleted">Deleted</span>` : ``;
+        const taskRows = hmRowsByTask[taskId] || [];
+        const taskChecked = taskRows.length > 0 && taskRows.every((id) => hmBulkSelectedRows.has(id));
+        const taskCheckbox = hmBulkEditMode
+          ? `<input class="hmBulkCheckbox hmBulkTaskChk" type="checkbox" data-task="${taskId}" ${
+              taskChecked ? "checked" : ""
+            } />`
+          : "";
 
+        const taskOpen = hmExpandedTaskGroups.has(String(taskId)) ? " open" : "";
         return `
-          <details class="hmGroup">
+          <details class="hmGroup" data-task="${taskId}"${taskOpen}>
             <summary class="hmSummary">
               <div class="hmTitleRow">
+                ${taskCheckbox}
                 ${swatch}
                 <div class="hmTaskName">${escapeHtmlHM(meta.name || "Task")}</div>
                 ${badge}
@@ -1789,6 +1931,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       .join("");
 
     listEl.innerHTML = groups;
+    const validRowIds = new Set<string>();
+    Object.values(hmRowsByTask).forEach((ids) => ids.forEach((id) => validRowIds.add(id)));
+    hmBulkSelectedRows.forEach((id) => {
+      if (!validRowIds.has(id)) hmBulkSelectedRows.delete(id);
+    });
+    syncHistoryManagerBulkUi();
   }
 
   function openHistoryManager() {
@@ -1805,6 +1953,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (els.historyManagerScreen as HTMLElement).style.display = "none";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "true");
     }
+    hmExpandedTaskGroups = new Set<string>();
+    hmExpandedDateGroups = new Set<string>();
+    hmBulkEditMode = false;
+    hmBulkSelectedRows = new Set<string>();
+    hmRowsByTask = {};
+    hmRowsByTaskDate = {};
+    syncHistoryManagerBulkUi();
   }
 
   function openFocusMode(i: number) {
@@ -2016,6 +2171,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       openHistoryManager();
       return;
     }
+    if (which === "howto") {
+      window.location.href = "/tasktimer/user-guide";
+      return;
+    }
     if (which === "categoryManager") {
       syncModeLabelsUi();
     }
@@ -2070,6 +2229,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function loadPinnedHistoryTaskIds() {
+    try {
+      const raw = localStorage.getItem(PINNED_HISTORY_KEY);
+      const parsed = safeJsonParse(raw || "");
+      if (!Array.isArray(parsed)) {
+        pinnedHistoryTaskIds = new Set<string>();
+        return;
+      }
+      pinnedHistoryTaskIds = new Set<string>(parsed.map((v) => String(v || "").trim()).filter(Boolean));
+    } catch {
+      pinnedHistoryTaskIds = new Set<string>();
+    }
+  }
+
+  function savePinnedHistoryTaskIds() {
+    try {
+      localStorage.setItem(PINNED_HISTORY_KEY, JSON.stringify(Array.from(pinnedHistoryTaskIds)));
+    } catch {
+      // ignore
+    }
+  }
+
   function rememberCustomTaskName(name: string) {
     addTaskCustomNames = rememberRecentCustomTaskName(name, addTaskCustomNames, ADD_TASK_PRESET_NAMES, 5);
     saveAddTaskCustomNames();
@@ -2112,6 +2293,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function applyMainMode(mode: MainMode) {
     if (!isModeEnabled(mode)) mode = "mode1";
     currentMode = mode;
+    applyModeAccent(mode);
     document.body.setAttribute("data-main-mode", mode);
     els.mode1Btn?.classList.toggle("isOn", mode === "mode1");
     els.mode2Btn?.classList.toggle("isOn", mode === "mode2");
@@ -2133,6 +2315,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
     els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
     els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
+    if (page === "tasks") render();
   }
 
   function deleteTasksInMode(mode: MainMode) {
@@ -2145,6 +2328,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const setAddTaskError = (msg: string) => {
       if (els.addTaskError) els.addTaskError.textContent = msg;
     };
+    const wireModeColorPair = (picker: HTMLInputElement | null, hex: HTMLInputElement | null, mode: MainMode) => {
+      on(picker, "input", () => {
+        if (!picker || !hex) return;
+        hex.value = sanitizeModeColor(picker.value, DEFAULT_MODE_COLORS[mode]);
+      });
+      on(hex, "input", () => {
+        if (!picker || !hex) return;
+        const normalized = sanitizeModeColor(hex.value, "");
+        if (normalized) picker.value = normalized;
+      });
+      on(hex, "blur", () => {
+        if (!picker || !hex) return;
+        const normalized = sanitizeModeColor(hex.value, DEFAULT_MODE_COLORS[mode]);
+        hex.value = normalized;
+        picker.value = normalized;
+      });
+    };
+    wireModeColorPair(els.categoryMode1Color, els.categoryMode1ColorHex, "mode1");
+    wireModeColorPair(els.categoryMode2Color, els.categoryMode2ColorHex, "mode2");
+    wireModeColorPair(els.categoryMode3Color, els.categoryMode3ColorHex, "mode3");
 
     const syncAddTaskMilestonesUi = () => {
       els.addTaskMsToggle?.classList.toggle("on", addTaskMilestonesEnabled);
@@ -2369,6 +2572,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!taskId) return;
       const state = ensureHistoryViewState(taskId);
 
+      if (action === "pin") {
+        if (pinnedHistoryTaskIds.has(taskId)) pinnedHistoryTaskIds.delete(taskId);
+        else pinnedHistoryTaskIds.add(taskId);
+        savePinnedHistoryTaskIds();
+        if (pinnedHistoryTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
+        render();
+        return;
+      }
       if (action === "close") {
         closeHistory(taskId);
         return;
@@ -2585,10 +2796,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
       modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
       modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
+      modeColors.mode1 = sanitizeModeColor(
+        (els.categoryMode1ColorHex?.value || "").trim() || els.categoryMode1Color?.value,
+        DEFAULT_MODE_COLORS.mode1
+      );
+      modeColors.mode2 = sanitizeModeColor(
+        (els.categoryMode2ColorHex?.value || "").trim() || els.categoryMode2Color?.value,
+        DEFAULT_MODE_COLORS.mode2
+      );
+      modeColors.mode3 = sanitizeModeColor(
+        (els.categoryMode3ColorHex?.value || "").trim() || els.categoryMode3Color?.value,
+        DEFAULT_MODE_COLORS.mode3
+      );
       modeEnabled.mode1 = true;
       saveModeSettings();
       syncModeLabelsUi();
       if (!isModeEnabled(currentMode)) applyMainMode("mode1");
+      else applyModeAccent(currentMode);
       if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
       if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
       closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
@@ -2596,8 +2820,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.categoryResetBtn, "click", () => {
       modeLabels = { ...DEFAULT_MODE_LABELS };
       modeEnabled = { ...DEFAULT_MODE_ENABLED };
+      modeColors = { ...DEFAULT_MODE_COLORS };
       saveModeSettings();
       syncModeLabelsUi();
+      applyModeAccent(currentMode);
       if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
     });
     const confirmDeleteCategory = (mode: MainMode) => {
@@ -2742,13 +2968,61 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.historyManagerBtn, "click", () => {
       window.location.href = "/tasktimer/history-manager";
     });
+    on(els.historyManagerBulkBtn, "click", () => {
+      hmBulkEditMode = !hmBulkEditMode;
+      if (!hmBulkEditMode) hmBulkSelectedRows = new Set<string>();
+      renderHistoryManager();
+    });
+    on(els.historyManagerBulkDeleteBtn, "click", () => {
+      const selected = Array.from(hmBulkSelectedRows);
+      if (!selected.length) return;
+      const byTask: Record<string, Set<string>> = {};
+      selected.forEach((id) => {
+        const firstSep = id.indexOf("|");
+        if (firstSep <= 0) return;
+        const taskId = id.slice(0, firstSep);
+        const rowKey = id.slice(firstSep + 1);
+        if (!byTask[taskId]) byTask[taskId] = new Set<string>();
+        byTask[taskId].add(rowKey);
+      });
+      const taskCount = Object.keys(byTask).length;
+      const entryCount = selected.length;
+      confirm(
+        "Delete Selected History",
+        `${entryCount} entr${entryCount === 1 ? "y" : "ies"} across ${taskCount} task${
+          taskCount === 1 ? "" : "s"
+        } will be deleted. Continue?`,
+        {
+          okLabel: "Delete",
+          cancelLabel: "Cancel",
+          onOk: () => {
+            historyByTaskId = loadHistory();
+            Object.keys(byTask).forEach((taskId) => {
+              const keys = byTask[taskId];
+              const arr = (historyByTaskId[taskId] || []).slice();
+              const next: any[] = [];
+              arr.forEach((e: any) => {
+                const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
+                if (keys.has(rowKey)) keys.delete(rowKey);
+                else next.push(e);
+              });
+              historyByTaskId[taskId] = next;
+              if (next.length === 0 && deletedTaskMeta && (deletedTaskMeta as any)[taskId]) {
+                delete (deletedTaskMeta as any)[taskId];
+                saveDeletedMeta(deletedTaskMeta);
+              }
+            });
+            saveHistory(historyByTaskId);
+            hmBulkSelectedRows = new Set<string>();
+            renderHistoryManager();
+            closeConfirm();
+          },
+          onCancel: () => closeConfirm(),
+        }
+      );
+    });
     on(els.historyManagerBackBtn, "click", () => {
-      if (els.menuOverlay) {
-        closeHistoryManager();
-        openOverlay(els.menuOverlay as HTMLElement | null);
-      } else {
-        window.location.href = "/tasktimer";
-      }
+      window.location.href = "/tasktimer/settings";
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {
@@ -2776,6 +3050,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.hmList, "click", (ev: any) => {
+      const bulkCheckbox = ev.target?.closest?.(".hmBulkCheckbox");
+      if (bulkCheckbox) {
+        ev.stopPropagation();
+        return;
+      }
+      const sortBtn = ev.target?.closest?.(".hmSortBtn");
+      if (sortBtn) {
+        const key = sortBtn.getAttribute("data-hm-sort");
+        if (key === "ts" || key === "ms") {
+          if (hmSortKey === key) hmSortDir = hmSortDir === "asc" ? "desc" : "asc";
+          else {
+            hmSortKey = key;
+            hmSortDir = "desc";
+          }
+          renderHistoryManager();
+        }
+        return;
+      }
+
       const btn = ev.target?.closest?.(".hmDelBtn");
       if (!btn) return;
 
@@ -2814,6 +3107,41 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         },
         onCancel: () => closeConfirm(),
       });
+    });
+    on(els.hmList, "change", (ev: any) => {
+      if (!hmBulkEditMode) return;
+      const el = ev.target as HTMLInputElement | null;
+      if (!el || !el.classList || !el.classList.contains("hmBulkCheckbox")) return;
+      const checked = !!el.checked;
+      if (el.classList.contains("hmBulkTaskChk")) {
+        const taskId = el.getAttribute("data-task") || "";
+        const ids = hmRowsByTask[taskId] || [];
+        ids.forEach((id) => {
+          if (checked) hmBulkSelectedRows.add(id);
+          else hmBulkSelectedRows.delete(id);
+        });
+        renderHistoryManager();
+        return;
+      }
+      if (el.classList.contains("hmBulkDateChk")) {
+        const taskId = el.getAttribute("data-task") || "";
+        const dateKey = el.getAttribute("data-date") || "";
+        const ids = hmRowsByTaskDate[`${taskId}|${dateKey}`] || [];
+        ids.forEach((id) => {
+          if (checked) hmBulkSelectedRows.add(id);
+          else hmBulkSelectedRows.delete(id);
+        });
+        renderHistoryManager();
+        return;
+      }
+      if (el.classList.contains("hmBulkRowChk")) {
+        const taskId = el.getAttribute("data-task") || "";
+        const rowKey = el.getAttribute("data-key") || "";
+        const id = `${taskId}|${rowKey}`;
+        if (checked) hmBulkSelectedRows.add(id);
+        else hmBulkSelectedRows.delete(id);
+        renderHistoryManager();
+      }
     });
   }
 
@@ -2880,6 +3208,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   loadHistoryIntoMemory();
   load();
   loadAddTaskCustomNames();
+  loadPinnedHistoryTaskIds();
   loadThemePreference();
   loadModeLabels();
   syncModeLabelsUi();
@@ -2894,4 +3223,3 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   return { destroy };
 }
-

@@ -6,6 +6,7 @@
   --muted:rgba(255,255,255,.6);
   --text:#e9eef9;
   --accent:#00CFC8;
+  --mode-accent:#00CFC8;
   --accent2:#00B8B2;
   --accent3:#35e8ff;
   --warn:#ff4d4d;
@@ -113,9 +114,57 @@ body{
   justify-content:center;
   gap:8px;
 }
+.modeSwitchWrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  margin-top:-2px;
+  position:relative;
+  padding:8px 12px 0;
+}
+.modeSwitchWrap::before,
+.modeSwitchWrap::after{
+  content:"";
+  position:absolute;
+  top:8px;
+  width:calc(50% - 58px);
+  height:8px;
+  border-top:2px solid var(--mode-accent);
+  pointer-events:none;
+}
+.modeSwitchWrap::before{
+  left:0;
+  border-left:2px solid var(--mode-accent);
+  border-top-left-radius:3px;
+}
+.modeSwitchWrap::after{
+  right:0;
+  border-right:2px solid var(--mode-accent);
+  border-top-right-radius:3px;
+}
+.modeSwitchLabel{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: var(--mode-accent);
+  line-height:1;
+  margin-bottom:2px;
+  position:relative;
+  top:-4px;
+  padding:0 10px;
+  background: transparent;
+  z-index:1;
+}
 body[data-app-page="dashboard"] #modeSwitch,
 body[data-app-page="test1"] #modeSwitch,
 body[data-app-page="test2"] #modeSwitch{
+  display:none !important;
+}
+body[data-app-page="dashboard"] .modeSwitchWrap,
+body[data-app-page="test1"] .modeSwitchWrap,
+body[data-app-page="test2"] .modeSwitchWrap{
   display:none !important;
 }
 body[data-app-page="dashboard"] #openAddTaskBtn,
@@ -704,6 +753,14 @@ input[type="text"]:focus, input[type="number"]:focus{
 .categoryFieldControl > input{
   flex:1;
 }
+.modeSwitchesLabel{
+  margin:10px 0 6px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  color: rgba(255,255,255,.6);
+}
 .categoryTrashBtn{
   width:36px;
   height:36px;
@@ -721,6 +778,20 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .categoryTrashBtn:hover{
   background: rgba(255,77,77,.2);
+}
+.categoryColorInput{
+  width:36px;
+  height:36px;
+  padding:0;
+  border:1px solid rgba(117,231,255,.35);
+  background: rgba(6,24,41,.75);
+  cursor:pointer;
+}
+.categoryColorHex{
+  width:92px;
+  text-transform:uppercase;
+  font-family:var(--font-tight);
+  letter-spacing:.04em;
 }
 .switch.opaque{
   opacity:1;
@@ -1033,6 +1104,27 @@ input[type="text"]:focus, input[type="number"]:focus{
   font-weight:700;
   font-size:17px;
   letter-spacing:.1px;
+}
+.historyPinBtn{
+  margin-left:8px;
+  padding:0 4px;
+  min-width:20px;
+  height:20px;
+  border:1px solid rgba(117,231,255,.2);
+  background: rgba(255,255,255,.03);
+  color: rgba(190,240,255,.9);
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+  vertical-align:middle;
+}
+.historyPinBtn.isOn{
+  border-color: rgba(53,232,255,.55);
+  background: rgba(53,232,255,.16);
+  color: rgba(230,250,255,.98);
+}
+.historyPinBtn:hover{
+  background: rgba(255,255,255,.1);
 }
 .historyMeta{
   display:flex;
@@ -1410,6 +1502,11 @@ input[type="text"]:focus, input[type="number"]:focus{
   gap:12px;
   margin-bottom:14px;
 }
+.hmHeadActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 .hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 .hmList{ display:flex; flex-direction:column; gap:12px; }
 .hmEmpty{
@@ -1421,9 +1518,10 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .hmGroup{
   border:1px solid rgba(255,255,255,.10);
-  border-radius: 14px;
+  border-radius: 0;
   background: rgba(255,255,255,.04);
   overflow:hidden;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 .hmSummary{
   list-style:none;
@@ -1433,6 +1531,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   align-items:center;
   justify-content:space-between;
   gap:12px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 .hmSummary::-webkit-details-marker{ display:none; }
 .hmTitleRow{
@@ -1440,11 +1539,23 @@ input[type="text"]:focus, input[type="number"]:focus{
   align-items:center;
   gap:12px;
 }
-.hmSwatch{
-  width:14px;height:14px;
-  border-radius:4px;
-  background: rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.12);
+.hmExpandIcon{
+  width:14px;
+  height:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(220,240,255,.9);
+  font-family:var(--font-tight);
+  font-size:14px;
+  font-weight:800;
+  line-height:1;
+}
+.hmExpandIcon::before{
+  content:"+";
+}
+.hmGroup[open] .hmExpandIcon::before{
+  content:"-";
 }
 .hmTaskName{ font-family:var(--font-tight); font-size:14px; font-weight:700; letter-spacing:.1px; }
 .hmBadge{
@@ -1475,6 +1586,49 @@ input[type="text"]:focus, input[type="number"]:focus{
   padding:10px 12px;
   text-align:left;
 }
+.hmTable tbody tr{
+  background: rgba(255,255,255,.03);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.hmSelectHead,
+.hmSelectCell{
+  width:34px;
+  padding-left:10px;
+  padding-right:4px;
+  text-align:left;
+}
+.hmSelectHead{
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.hmSortBtn{
+  border:none;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-weight:800;
+  letter-spacing:.02em;
+  cursor:pointer;
+  padding:0;
+}
+.hmSortBtn:hover{
+  text-decoration: underline;
+}
+.hmBulkCheckbox{
+  width:14px;
+  height:14px;
+  accent-color: var(--accent);
+  cursor:pointer;
+}
+.hmDateHeading .hmBulkCheckbox{
+  margin-right:8px;
+  vertical-align:middle;
+}
+.hmTitleRow .hmBulkCheckbox{
+  margin-right:6px;
+}
+.hmSelectCell .hmBulkCheckbox{
+  margin:0;
+}
 .hmDateGroup + .hmDateGroup{
   border-top:1px solid rgba(255,255,255,.08);
 }
@@ -1487,6 +1641,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   font-size:12px;
   font-weight:800;
   letter-spacing:.04em;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 .hmDateHeading::-webkit-details-marker{
   display:none;
@@ -1522,6 +1677,105 @@ input[type="text"]:focus, input[type="number"]:focus{
   background: rgba(255,255,255,.06);
 }
 .aboutText{ color: rgba(255,255,255,.70); line-height:1.45; }
+
+.userGuidePage{
+  display:grid;
+  grid-template-columns: 220px 1fr;
+  gap:14px;
+  height:100%;
+  padding:18px;
+}
+.userGuideToc{
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(8,15,28,.72);
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.userGuideTocTitle{
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: rgba(190,240,255,.9);
+  margin-bottom:4px;
+}
+.userGuideTocItem{
+  text-align:left;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color:var(--text);
+  padding:8px 10px;
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.userGuideTocItem:hover{
+  background: rgba(255,255,255,.10);
+}
+.userGuideTocItem.isOn{
+  background: linear-gradient(180deg, rgba(53,232,255,.22), rgba(255,255,255,.06));
+  border-color: rgba(53,232,255,.45);
+  box-shadow: 0 0 10px rgba(53,232,255,.2);
+}
+.userGuideScroll{
+  min-height:0;
+  overflow-y:auto;
+  padding-right:4px;
+}
+.userGuideText{
+  line-height:1.55;
+}
+.userGuideWindow{
+  border:1px solid rgba(117,231,255,.16);
+  background: rgba(7,16,30,.4);
+  padding:12px;
+}
+.userGuideSection{
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.userGuideSection:last-child{
+  border-bottom:none;
+  margin-bottom:0;
+}
+.userGuideSection h3{
+  margin:0 0 6px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-tight);
+  font-size:15px;
+  color: rgba(142,242,255,.96);
+}
+.userGuideSection p{
+  margin:0;
+}
+.userGuideIcon{
+  width:22px;
+  height:22px;
+  object-fit:contain;
+  filter: drop-shadow(0 0 4px rgba(0,210,255,.35));
+}
+.userGuideShotPlaceholder{
+  margin-top:10px;
+  min-height:140px;
+  border:1px dashed rgba(117,231,255,.42);
+  background: rgba(6,18,34,.45);
+  color: rgba(173,232,246,.8);
+  font-family:var(--font-tight);
+  font-size:12px;
+  letter-spacing:.04em;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:10px;
+}
 
 body[data-theme="light"]{
   --bg:#f6f4ee;
@@ -1569,6 +1823,28 @@ body[data-theme="light"] .menuItem{
   border-color: rgba(0,0,0,.38);
   background: rgba(255,255,255,.8);
 }
+body[data-theme="light"] .taskMenuList{
+  background: #ffffff;
+  border-color: rgba(0,0,0,.22);
+  box-shadow: none;
+}
+body[data-theme="light"] .taskMenuItem{
+  color:#111111;
+  border-color: rgba(0,0,0,.24);
+  background: #ffffff;
+}
+body[data-theme="light"] .taskMenuItem:hover{
+  background: rgba(0,0,0,.06);
+}
+body[data-theme="light"] .taskMenuItemDelete{
+  color:#a10000;
+  border-color: rgba(161,0,0,.35);
+  background: rgba(161,0,0,.08);
+}
+body[data-theme="light"] .appFooterNav{
+  background: transparent;
+  box-shadow: none;
+}
 body[data-theme="light"] .historyTrashBtn,
 body[data-theme="light"] .hmDelBtn,
 body[data-theme="light"] .msRow button{
@@ -1600,6 +1876,8 @@ body[data-theme="light"] .btn-warn{
   color:#3a0000;
 }
 body[data-theme="light"] .time,
+body[data-theme="light"] .name,
+body[data-theme="light"] .appFooterLabel,
 body[data-theme="light"] .historyMeta,
 body[data-theme="light"] .confirmText,
 body[data-theme="light"] .aboutText,
@@ -1616,9 +1894,141 @@ body[data-theme="light"] .unitBtn.isOn{
   color:#06110b !important;
   border-color: rgba(0,207,200,.35) !important;
 }
+body[data-theme="light"] .name,
+body[data-theme="light"] .appFooterLabel{
+  color:#111111 !important;
+  text-shadow:none;
+}
 body[data-theme="light"] .progressTrack{
   background: rgba(0,0,0,.08);
   border-color: rgba(0,0,0,.12);
+}
+body[data-theme="light"] .historyPinBtn{
+  border-color: rgba(0,0,0,.24);
+  background: rgba(255,255,255,.9);
+  color:#111111;
+}
+body[data-theme="light"] .historyPinBtn.isOn{
+  border-color: rgba(0,151,199,.45);
+  background: rgba(0,151,199,.14);
+  color:#111111;
+}
+body[data-theme="light"] #focusModeScreen{
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(0,207,200,.08), transparent 60%),
+              radial-gradient(900px 600px at 80% 90%, rgba(0,207,200,.06), transparent 55%),
+              var(--bg);
+}
+body[data-theme="light"] .focusModeTitle,
+body[data-theme="light"] .focusTaskTitle,
+body[data-theme="light"] .focusCheckpointToggleRow > span{
+  color:#111111;
+  text-shadow:none;
+}
+body[data-theme="light"] .focusDial{
+  --focus-progress-color: rgba(0,151,199,1);
+}
+body[data-theme="light"] .focusDialOuter{
+  border-color: rgba(0,151,199,.86);
+  box-shadow: 0 0 8px rgba(0,151,199,.24), 0 0 20px rgba(0,151,199,.16);
+}
+body[data-theme="light"] .focusDialProgress{
+  background: conic-gradient(
+    from 0deg,
+    var(--focus-progress-color) 0 var(--focus-progress),
+    rgba(0,0,0,.16) var(--focus-progress) 100%
+  );
+  box-shadow: 0 0 4px rgba(0,151,199,.18), inset 0 0 8px rgba(0,151,199,.12);
+}
+body[data-theme="light"] .focusDialInner{
+  border-color: rgba(0,151,199,.65);
+  box-shadow: inset 0 0 20px rgba(0,151,199,.12);
+}
+body[data-theme="light"] .focusDialTime,
+body[data-theme="light"] .focusDialDays,
+body[data-theme="light"] .focusDialLabel{
+  color:#005f7f;
+  text-shadow: 0 0 1px rgba(0,151,199,.2);
+}
+body[data-theme="light"] .focusCheckpointMark{
+  background: rgba(90,100,116,.8);
+  box-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointMark.reached{
+  background: rgba(20,28,40,.95);
+  box-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointConnector{
+  background: rgba(95,104,120,.7);
+  box-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointConnector.reached{
+  background: rgba(20,28,40,.9);
+  box-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointLabel{
+  color: rgba(55,64,80,.92);
+  text-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointLabel.reached{
+  color:#111111;
+}
+body[data-theme="light"] .hmSortBtn{
+  color:#111111;
+}
+body[data-theme="light"] .hmExpandIcon{
+  color:#111111;
+}
+body[data-theme="light"] .appPagePlaceholder,
+body[data-theme="light"] .modePanel,
+body[data-theme="light"] .userGuideToc,
+body[data-theme="light"] .userGuideWindow,
+body[data-theme="light"] .focusInsights{
+  background: rgba(255,255,255,.82);
+  border-color: rgba(0,0,0,.15);
+  box-shadow: none;
+}
+body[data-theme="light"] .appPagePlaceholder h2,
+body[data-theme="light"] .modePanelTitle,
+body[data-theme="light"] .historyTitle,
+body[data-theme="light"] .hmTitle,
+body[data-theme="light"] .userGuideSection h3,
+body[data-theme="light"] .userGuideTocTitle,
+body[data-theme="light"] .focusInsightsTitle{
+  color:#111111;
+  text-shadow:none;
+}
+body[data-theme="light"] .appPagePlaceholder p,
+body[data-theme="light"] .modePanelText,
+body[data-theme="light"] .historyBest,
+body[data-theme="light"] .historySwipeHint,
+body[data-theme="light"] .focusInsightLabel,
+body[data-theme="light"] .focusInsightValue,
+body[data-theme="light"] .userGuideText,
+body[data-theme="light"] .userGuideSection p,
+body[data-theme="light"] .userGuideShotPlaceholder{
+  color: rgba(0,0,0,.72);
+}
+body[data-theme="light"] .userGuideTocItem{
+  color:#111111;
+  border-color: rgba(0,0,0,.2);
+  background: rgba(255,255,255,.9);
+}
+body[data-theme="light"] .userGuideTocItem:hover{
+  background: rgba(0,0,0,.06);
+}
+body[data-theme="light"] .userGuideTocItem.isOn{
+  background: rgba(0,207,200,.16);
+  border-color: rgba(0,151,199,.45);
+  box-shadow: none;
+}
+body[data-theme="light"] .modeBracketLine,
+body[data-theme="light"] .modeBracketText{
+  color: #111111;
+  border-color: currentColor;
+  text-shadow:none;
+}
+body[data-theme="light"] .logo{
+  filter:none;
 }
 body[data-theme="light"] input[type="text"],
 body[data-theme="light"] input[type="number"]{

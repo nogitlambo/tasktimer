@@ -81,22 +81,27 @@ export default function InfoOverlays() {
       </div>
 
       <div className="overlay" id="categoryManagerOverlay">
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Category Manager">
-          <h2>Category Manager</h2>
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Configure Modes">
+          <h2>Configure Modes</h2>
           <div className="field categoryFieldRow">
-            <label htmlFor="categoryMode1Input">Category 1 (default)</label>
+            <label htmlFor="categoryMode1Input">Default Mode</label>
             <div className="categoryFieldControl">
               <input id="categoryMode1Input" type="text" maxLength={10} />
+              <input className="categoryColorInput" id="categoryMode1Color" type="color" aria-label="Mode 1 color" />
+              <input className="categoryColorHex" id="categoryMode1ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 1 hex color" />
             </div>
           </div>
+          <div className="modeSwitchesLabel">Modes</div>
           <div className="toggleRow">
-            <span id="categoryMode2ToggleLabel">Disable Category 2</span>
+            <span id="categoryMode2ToggleLabel">Disable Mode 2</span>
             <button className="switch on" id="categoryMode2Toggle" type="button" role="switch" aria-checked="true" />
           </div>
           <div className="field categoryFieldRow" id="categoryMode2Row">
-            <label htmlFor="categoryMode2Input">Category 2</label>
+            <label htmlFor="categoryMode2Input">Mode 2</label>
             <div className="categoryFieldControl">
               <input id="categoryMode2Input" type="text" maxLength={10} />
+              <input className="categoryColorInput" id="categoryMode2Color" type="color" aria-label="Mode 2 color" />
+              <input className="categoryColorHex" id="categoryMode2ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 2 hex color" />
               <button className="categoryTrashBtn" id="categoryMode2TrashBtn" type="button" aria-label="Delete Mode 2 category">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
@@ -105,13 +110,15 @@ export default function InfoOverlays() {
             </div>
           </div>
           <div className="toggleRow">
-            <span id="categoryMode3ToggleLabel">Disable Category 3</span>
+            <span id="categoryMode3ToggleLabel">Disable Mode 3</span>
             <button className="switch on" id="categoryMode3Toggle" type="button" role="switch" aria-checked="true" />
           </div>
           <div className="field categoryFieldRow" id="categoryMode3Row">
-            <label htmlFor="categoryMode3Input">Category 3</label>
+            <label htmlFor="categoryMode3Input">Mode 3</label>
             <div className="categoryFieldControl">
               <input id="categoryMode3Input" type="text" maxLength={10} />
+              <input className="categoryColorInput" id="categoryMode3Color" type="color" aria-label="Mode 3 color" />
+              <input className="categoryColorHex" id="categoryMode3ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 3 hex color" />
               <button className="categoryTrashBtn" id="categoryMode3TrashBtn" type="button" aria-label="Delete Mode 3 category">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
