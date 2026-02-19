@@ -80,6 +80,34 @@ export default function InfoOverlays() {
         </div>
       </div>
 
+      <div className="overlay" id="taskSettingsOverlay">
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Task Settings">
+          <h2>Task Settings</h2>
+          <div className="unitRow">
+            <span>Default Task Timer Format</span>
+            <div className="unitButtons">
+              <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatDay" type="button">
+                Day
+              </button>
+              <button className="btn btn-ghost small unitBtn isOn" id="taskDefaultFormatHour" type="button">
+                Hour
+              </button>
+              <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatMinute" type="button">
+                Minute
+              </button>
+            </div>
+          </div>
+          <div className="footerBtns">
+            <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button">
+              Save
+            </button>
+            <button className="btn btn-ghost closePopup" type="button">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="overlay" id="categoryManagerOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="Configure Modes">
           <h2>Configure Modes</h2>

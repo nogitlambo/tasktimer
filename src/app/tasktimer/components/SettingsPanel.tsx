@@ -32,7 +32,7 @@ export default function SettingsPanel() {
         <button className="menuItem" id="categoryManagerBtn" data-menu="categoryManager" type="button">
           Configure Modes
         </button>
-        <button className="menuItem" id="taskSettingsBtn" type="button">
+        <button className="menuItem" id="taskSettingsBtn" data-menu="taskSettings" type="button">
           Task Settings
         </button>
         <button className="menuItem" id="dashboardSettingsBtn" type="button">

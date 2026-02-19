@@ -106,8 +106,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const THEME_KEY = `${STORAGE_KEY}:theme`;
   const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
   const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
+  const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
+  let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
 
   let historyByTaskId: HistoryByTaskId = {};
   let focusModeTaskId: string | null = null;
@@ -214,6 +216,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     aboutOverlay: document.getElementById("aboutOverlay"),
     howtoOverlay: document.getElementById("howtoOverlay"),
     appearanceOverlay: document.getElementById("appearanceOverlay"),
+    taskSettingsOverlay: document.getElementById("taskSettingsOverlay"),
+    taskDefaultFormatDay: document.getElementById("taskDefaultFormatDay"),
+    taskDefaultFormatHour: document.getElementById("taskDefaultFormatHour"),
+    taskDefaultFormatMinute: document.getElementById("taskDefaultFormatMinute"),
+    taskSettingsSaveBtn: document.getElementById("taskSettingsSaveBtn"),
     categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
     categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
     categoryMode2Input: document.getElementById("categoryMode2Input") as HTMLInputElement | null,
@@ -2233,6 +2240,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (which === "categoryManager") {
       syncModeLabelsUi();
     }
+    if (which === "taskSettings") {
+      syncTaskSettingsUi();
+    }
 
     closeOverlay(els.menuOverlay as HTMLElement | null);
 
@@ -2240,6 +2250,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       about: els.aboutOverlay as HTMLElement | null,
       howto: els.howtoOverlay as HTMLElement | null,
       appearance: els.appearanceOverlay as HTMLElement | null,
+      taskSettings: els.taskSettingsOverlay as HTMLElement | null,
       categoryManager: els.categoryManagerOverlay as HTMLElement | null,
       contact: els.contactOverlay as HTMLElement | null,
     };
@@ -2274,6 +2285,31 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     } catch {
       addTaskCustomNames = [];
     }
+  }
+
+  function loadDefaultTaskTimerFormat() {
+    let next: "day" | "hour" | "minute" = "hour";
+    try {
+      const raw = (localStorage.getItem(DEFAULT_TASK_TIMER_FORMAT_KEY) || "").trim();
+      if (raw === "day" || raw === "hour" || raw === "minute") next = raw;
+    } catch {
+      // ignore
+    }
+    defaultTaskTimerFormat = next;
+  }
+
+  function saveDefaultTaskTimerFormat() {
+    try {
+      localStorage.setItem(DEFAULT_TASK_TIMER_FORMAT_KEY, defaultTaskTimerFormat);
+    } catch {
+      // ignore
+    }
+  }
+
+  function syncTaskSettingsUi() {
+    els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
+    els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
+    els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
   }
 
   function saveAddTaskCustomNames() {
@@ -2413,7 +2449,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const resetAddTaskMilestones = () => {
       addTaskMilestonesEnabled = false;
-      addTaskMilestoneTimeUnit = "hour";
+      addTaskMilestoneTimeUnit = defaultTaskTimerFormat;
       addTaskMilestones = [];
       if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
       syncAddTaskMilestonesUi();
@@ -2846,6 +2882,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (e.target?.closest?.("#themeToggle")) return;
       toggleThemeMode();
     });
+    on(els.taskDefaultFormatDay, "click", () => {
+      defaultTaskTimerFormat = "day";
+      syncTaskSettingsUi();
+    });
+    on(els.taskDefaultFormatHour, "click", () => {
+      defaultTaskTimerFormat = "hour";
+      syncTaskSettingsUi();
+    });
+    on(els.taskDefaultFormatMinute, "click", () => {
+      defaultTaskTimerFormat = "minute";
+      syncTaskSettingsUi();
+    });
+    on(els.taskSettingsSaveBtn, "click", () => {
+      saveDefaultTaskTimerFormat();
+      closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
+    });
     on(els.categoryMode2Toggle, "click", () => {
       modeEnabled.mode2 = !modeEnabled.mode2;
       syncModeLabelsUi();
@@ -3275,6 +3327,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   loadHistoryIntoMemory();
   load();
   loadAddTaskCustomNames();
+  loadDefaultTaskTimerFormat();
   loadPinnedHistoryTaskIds();
   loadThemePreference();
   loadModeLabels();
