@@ -1,5 +1,5 @@
 import { sortMilestones } from "./milestones";
-import type { Task } from "../types";
+import type { Task } from "./types";
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -47,7 +47,7 @@ export function sessionColorForTaskMs(t: Task, elapsedMs: number): string {
 
     const msSorted = sortMilestones(t.milestones);
     const maxValue = Math.max(...msSorted.map((m) => +m.hours || 0), 0);
-    const unitSec = t.milestoneTimeUnit === "day" ? 86400 : 3600;
+    const unitSec = t.milestoneTimeUnit === "day" ? 86400 : t.milestoneTimeUnit === "minute" ? 60 : 3600;
     const maxSec = Math.max(maxValue * unitSec, 1);
     const pct = Math.min((elapsedSec / maxSec) * 100, 100);
     return fillBackgroundForPct(pct);

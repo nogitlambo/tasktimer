@@ -97,6 +97,10 @@ export default function InfoOverlays() {
               </button>
             </div>
           </div>
+          <div className="toggleRow" id="taskDynamicColorsToggleRow">
+            <span>Dynamic colors for progress and history</span>
+            <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
+          </div>
           <div className="footerBtns">
             <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button">
               Save

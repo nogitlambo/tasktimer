@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaskTimer</string>
+    <string name="title_activity_main">TaskTimer</string>
+    <string name="package_name">com.tasktimer.app</string>
+    <string name="custom_url_scheme">com.tasktimer.app</string>
+</resources>

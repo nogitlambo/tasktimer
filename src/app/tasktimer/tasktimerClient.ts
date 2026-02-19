@@ -1,6 +1,6 @@
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./types";
+import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
@@ -107,9 +107,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
   const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
   const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
+  const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
+  let dynamicColorsEnabled = true;
 
   let historyByTaskId: HistoryByTaskId = {};
   let focusModeTaskId: string | null = null;
@@ -220,6 +222,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     taskDefaultFormatDay: document.getElementById("taskDefaultFormatDay"),
     taskDefaultFormatHour: document.getElementById("taskDefaultFormatHour"),
     taskDefaultFormatMinute: document.getElementById("taskDefaultFormatMinute"),
+    taskDynamicColorsToggleRow: document.getElementById("taskDynamicColorsToggleRow"),
+    taskDynamicColorsToggle: document.getElementById("taskDynamicColorsToggle"),
     taskSettingsSaveBtn: document.getElementById("taskSettingsSaveBtn"),
     categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
     categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
@@ -651,6 +655,31 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     saveHistory(historyByTaskId);
   }
 
+  function backfillHistoryColorsFromSessionLogic() {
+    if (!historyByTaskId || typeof historyByTaskId !== "object") return;
+    let changed = false;
+
+    Object.keys(historyByTaskId).forEach((taskId) => {
+      const entries = historyByTaskId[taskId];
+      if (!Array.isArray(entries) || entries.length === 0) return;
+      const task = (tasks || []).find((t) => String(t.id || "") === String(taskId));
+      if (!task) return;
+
+      entries.forEach((entry: any) => {
+        if (!entry) return;
+        const ms = Number.isFinite(+entry.ms) ? Math.max(0, +entry.ms) : 0;
+        const nextColor = sessionColorForTaskMs(task, ms);
+        if (entry.color !== nextColor) {
+          entry.color = nextColor;
+          changed = true;
+        }
+      });
+    });
+
+    if (changed) saveHistory(historyByTaskId);
+  }
+
+
   function openOverlay(overlay: HTMLElement | null) {
     if (!overlay) return;
     overlay.style.display = "flex";
@@ -916,7 +945,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <div class="progressRow">
             <div class="progressWrap">
               <div class="progressTrack">
-                <div class="progressFill" style="width:${pct}%;background:${fillBackgroundForPct(pct)}"></div>
+                <div class="progressFill" style="width:${pct}%;background:${
+                  dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t))
+                }"></div>
                 ${markers}
               </div>
             </div>
@@ -1291,7 +1322,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       ctx.save();
       ctx.globalAlpha = 0.92;
-      ctx.fillStyle = e.color || "rgb(0,207,200)";
+      const historyStaticColor = (() => {
+        const t = (tasks || []).find((task) => String(task.id || "") === String(taskId));
+        return t ? getModeColor(taskModeOf(t)) : "rgb(0,207,200)";
+      })();
+      ctx.fillStyle = dynamicColorsEnabled ? e.color || "rgb(0,207,200)" : historyStaticColor;
       ctx.fillRect(x, y, barW, bh);
       ctx.restore();
 
@@ -1365,6 +1400,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
     const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
     const total = all.length;
+    const localDateKey = (ts: number) => {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const da = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${da}`;
+    };
+    const distinctDayCount = new Set(all.map((e: any) => localDateKey(+e.ts || 0))).size;
     const pageSize = historyPageSize(taskId);
 
     const end = Math.max(0, total - state.page * pageSize);
@@ -1376,7 +1419,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
-      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${rangeDays} days)`;
+      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${
+        distinctDayCount === 1 ? "day" : "days"
+      })`;
     }
 
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
@@ -2310,6 +2355,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
     els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
+    els.taskDynamicColorsToggle?.classList.toggle("on", dynamicColorsEnabled);
+    els.taskDynamicColorsToggle?.setAttribute("aria-checked", String(dynamicColorsEnabled));
+  }
+
+  function loadDynamicColorsSetting() {
+    let next = true;
+    try {
+      const raw = (localStorage.getItem(DYNAMIC_COLORS_KEY) || "").trim().toLowerCase();
+      if (raw === "false" || raw === "0" || raw === "off") next = false;
+      else if (raw === "true" || raw === "1" || raw === "on") next = true;
+    } catch {
+      // ignore
+    }
+    dynamicColorsEnabled = next;
+  }
+
+  function saveDynamicColorsSetting() {
+    try {
+      localStorage.setItem(DYNAMIC_COLORS_KEY, dynamicColorsEnabled ? "true" : "false");
+    } catch {
+      // ignore
+    }
   }
 
   function saveAddTaskCustomNames() {
@@ -2894,8 +2961,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       defaultTaskTimerFormat = "minute";
       syncTaskSettingsUi();
     });
+    on(els.taskDynamicColorsToggle, "click", () => {
+      dynamicColorsEnabled = !dynamicColorsEnabled;
+      syncTaskSettingsUi();
+    });
+    on(els.taskDynamicColorsToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#taskDynamicColorsToggle")) return;
+      dynamicColorsEnabled = !dynamicColorsEnabled;
+      syncTaskSettingsUi();
+    });
     on(els.taskSettingsSaveBtn, "click", () => {
       saveDefaultTaskTimerFormat();
+      saveDynamicColorsSetting();
+      render();
       closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
     on(els.categoryMode2Toggle, "click", () => {
@@ -3292,7 +3370,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const fill = node.querySelector(".progressFill") as HTMLElement | null;
         if (fill) {
           fill.style.width = pct + "%";
-          fill.style.background = fillBackgroundForPct(pct);
+          fill.style.background = dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t));
         }
 
         const elapsedSec = getElapsedMs(t) / 1000;
@@ -3328,9 +3406,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   load();
   loadAddTaskCustomNames();
   loadDefaultTaskTimerFormat();
+  loadDynamicColorsSetting();
   loadPinnedHistoryTaskIds();
   loadThemePreference();
   loadModeLabels();
+  backfillHistoryColorsFromSessionLogic();
   syncModeLabelsUi();
   applyMainMode("mode1");
   applyAppPage("tasks");

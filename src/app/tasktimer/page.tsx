@@ -61,9 +61,12 @@ export default function TaskTimerPage() {
           </section>
 
           <section className="appPage" id="appPageDashboard" aria-label="Dashboard page">
-            <div className="appPagePlaceholder">
-              <h2>Dashboard</h2>
-              <p>Placeholder dashboard widgets will be added here.</p>
+            <div className="dashboardShowcase" data-name="Cover" data-node-id="2009:1008">
+              <img
+                className="dashboardShowcaseImage"
+                src="https://www.figma.com/api/mcp/asset/f4d5fb76-7d46-436b-bd8c-9da01a371eaf"
+                alt="Nexus next-gen AI summit event landing page preview"
+              />
             </div>
           </section>
 

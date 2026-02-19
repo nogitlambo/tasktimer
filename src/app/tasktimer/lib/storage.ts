@@ -1,4 +1,4 @@
-import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../types";
+import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
 import { nowMs } from "./time";
 
 export const STORAGE_KEY = "taskticker_tasks_v1";

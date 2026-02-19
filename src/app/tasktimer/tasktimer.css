@@ -224,6 +224,22 @@ body[data-app-page="test2"] #openAddTaskBtn{
   margin:0;
   color: rgba(210,230,246,.8);
 }
+.dashboardShowcase{
+  margin:18px;
+  padding:14px;
+  border:1px solid rgba(121,226,255,.2);
+  background:
+              linear-gradient(150deg, rgba(46,232,255,.08), rgba(0,0,0,0) 28%),
+              linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+              rgba(14,23,42,.82);
+  box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
+}
+.dashboardShowcaseImage{
+  display:block;
+  width:100%;
+  height:auto;
+  border:1px solid rgba(117,231,255,.26);
+}
 .appFooterNav{
   display:grid;
   grid-template-columns: repeat(5, minmax(0,1fr));
@@ -2081,6 +2097,7 @@ body[data-theme="light"] .hmExpandIcon{
   color:#111111;
 }
 body[data-theme="light"] .appPagePlaceholder,
+body[data-theme="light"] .dashboardShowcase,
 body[data-theme="light"] .modePanel,
 body[data-theme="light"] .userGuideToc,
 body[data-theme="light"] .userGuideWindow,
