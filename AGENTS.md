@@ -84,6 +84,7 @@
 
 ### Persistent keys (derived from storage/client modules)
 - `ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames``
+- `DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat``
 - `MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels``
 - `MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings``
 - `PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds``
@@ -115,6 +116,7 @@
 - `data-menu="contact"`
 - `data-menu="historyManager"`
 - `data-menu="howto"`
+- `data-menu="taskSettings"`
 - `data-move-mode="mode1"`
 - `data-move-mode="mode2"`
 - `data-move-mode="mode3"`
