@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "agents:update": "node scripts/update_agents_context.mjs",
+    "agents:check": "node scripts/update_agents_context.mjs --check"
   },
   "dependencies": {
     "firebase": "^12.9.0",
