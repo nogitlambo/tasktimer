@@ -923,6 +923,54 @@ input[type="text"]:focus, input[type="number"]:focus{
   border-color: rgba(0,207,200,.35);
 }
 
+/* Edit Task modal: parallelogram styling */
+#editOverlay .modal{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#editOverlay input[type="text"],
+#editOverlay input[type="number"]{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#editOverlay .toggleRow,
+#editOverlay .milestones,
+#editOverlay .unitRow{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#editOverlay .msRow{
+  padding:8px;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.02);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+/* Add Task modal: parallelogram styling */
+#addTaskOverlay .modal{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#addTaskOverlay input[type="text"],
+#addTaskOverlay input[type="number"]{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#addTaskOverlay .toggleRow,
+#addTaskOverlay .milestones,
+#addTaskOverlay .unitRow{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#addTaskOverlay .msRow{
+  padding:8px;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.02);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
 .msRow{
   display:flex;
   align-items:center;
@@ -1098,6 +1146,11 @@ input[type="text"]:focus, input[type="number"]:focus{
   justify-content:space-between;
   gap:12px;
   margin-bottom:12px;
+  position:relative;
+  min-height:32px;
+}
+.historyTop .historyMeta:first-child{
+  flex:1;
 }
 .historyTitle{
   font-family:var(--font-tight);
@@ -1126,20 +1179,55 @@ input[type="text"]:focus, input[type="number"]:focus{
 .historyPinBtn:hover{
   background: rgba(255,255,255,.1);
 }
+.historyCloseBtn.is-disabled,
+.historyCloseBtn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
 .historyMeta{
   display:flex;
   align-items:center;
   gap:12px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
   color: rgba(255,255,255,.70);
   font-size:12px;
 }
 .historySwipeHint{
-  margin: 2px 0 10px;
-  text-align:center;
+  margin: 0;
+  text-align:left;
   font-size:12px;
   font-style:italic;
   color: rgba(255,255,255,.7);
+  white-space:nowrap;
+}
+.historySwipeHintBottom{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  text-align:center;
+  pointer-events:none;
+}
+.historyRangeToggleRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin: 0;
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  z-index:1;
+}
+.historyRangeToggleRow > span{
+  font-family:var(--font-tight);
+  font-size:12px;
+  letter-spacing:.04em;
+  color: rgba(190,240,255,.9);
+  text-transform:uppercase;
+}
+.historyRangeToggle{
+  transform: scale(.9);
 }
 .historyCanvasWrap{
   width:100%;
@@ -1175,6 +1263,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   align-items:center;
   gap:12px;
   margin-top:12px;
+  position:relative;
 }
 .historyBest{
   margin-top:12px;
@@ -1776,6 +1865,16 @@ input[type="text"]:focus, input[type="number"]:focus{
   text-align:center;
   padding:10px;
 }
+.userGuideShotImage{
+  margin-top:10px;
+  width:100%;
+  max-height:340px;
+  min-height:170px;
+  object-fit:contain;
+  border:1px solid rgba(117,231,255,.28);
+  background: rgba(6,18,34,.45);
+  display:block;
+}
 
 body[data-theme="light"]{
   --bg:#f6f4ee;
@@ -1911,6 +2010,9 @@ body[data-theme="light"] .historyPinBtn{
 body[data-theme="light"] .historyPinBtn.isOn{
   border-color: rgba(0,151,199,.45);
   background: rgba(0,151,199,.14);
+  color:#111111;
+}
+body[data-theme="light"] .historyRangeToggleRow > span{
   color:#111111;
 }
 body[data-theme="light"] #focusModeScreen{

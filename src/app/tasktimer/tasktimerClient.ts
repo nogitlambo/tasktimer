@@ -123,6 +123,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let hmRowsByTaskDate: Record<string, string[]> = {};
   type HistoryViewState = {
     page: number;
+    rangeDays: 7 | 14;
     editMode: boolean;
     barRects: Array<any>;
     selectedAbsIndex: number | null;
@@ -274,6 +275,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     confirmText: document.getElementById("confirmText"),
     confirmChkRow: document.getElementById("confirmChkRow"),
     confirmDeleteAll: document.getElementById("confirmDeleteAll") as HTMLInputElement | null,
+    confirmChkNote: document.getElementById("confirmChkNote"),
     confirmCancelBtn: document.getElementById("confirmCancelBtn"),
     confirmOkBtn: document.getElementById("confirmOkBtn"),
     confirmAltBtn: document.getElementById("confirmAltBtn"),
@@ -289,7 +291,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     historyOlderBtn: document.getElementById("historyOlderBtn") as HTMLButtonElement | null,
     historyNewerBtn: document.getElementById("historyNewerBtn") as HTMLButtonElement | null,
     historyRangeText: document.getElementById("historyRangeText"),
-    historyBest: document.getElementById("historyBest"),
     historyCanvas: document.getElementById("historyChart") as HTMLCanvasElement | null,
     historyCanvasWrap: document.getElementById("historyCanvasWrap"),
     historyEditBtn: document.getElementById("historyEditBtn"),
@@ -690,6 +691,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).style.display = showChk ? "flex" : "none";
     if (showChk && els.confirmChkLabel) els.confirmChkLabel.textContent = opts.checkboxLabel;
     if (els.confirmDeleteAll) els.confirmDeleteAll.checked = showChk ? !!opts.checkboxChecked : false;
+    const disableChk = showChk ? !!opts?.checkboxDisabled : false;
+    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = disableChk;
+    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-disabled", disableChk);
+    const showChkNote = showChk && !!opts?.checkboxNote;
+    if (els.confirmChkNote) {
+      (els.confirmChkNote as HTMLElement).style.display = showChkNote ? "block" : "none";
+      (els.confirmChkNote as HTMLElement).textContent = showChkNote ? String(opts.checkboxNote || "") : "";
+    }
 
     const showChk2 = !!opts?.checkbox2Label;
     if (els.confirmChkRow2) (els.confirmChkRow2 as HTMLElement).style.display = showChk2 ? "flex" : "none";
@@ -713,6 +722,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.confirmOkBtn) {
       els.confirmOkBtn.classList.remove("btn-warn");
       els.confirmOkBtn.classList.add("btn-accent");
+    }
+    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = false;
+    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.remove("is-disabled");
+    if (els.confirmChkNote) {
+      (els.confirmChkNote as HTMLElement).style.display = "none";
+      (els.confirmChkNote as HTMLElement).textContent = "";
     }
   }
 
@@ -914,25 +929,31 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                     isHistoryPinned ? "Unpin chart" : "Pin chart"
                   }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
                 </div>
+                <div class="historyRangeToggleRow" aria-label="History range">
+                  <span>7</span>
+                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
+                  <span>14</span>
+                </div>
               </div>
               <div class="historyMeta">
-                <button class="btn btn-ghost small" type="button" data-history-action="close">Close</button>
+                <button class="btn btn-ghost small historyCloseBtn ${isHistoryPinned ? "is-disabled" : ""}" type="button" data-history-action="close" ${
+                    isHistoryPinned ? "disabled" : ""
+                  }>Close</button>
               </div>
             </div>
-            <div class="historySwipeHint">Swipe right/left to view older/newer entries</div>
             <div class="historyCanvasWrap">
               <canvas class="historyChartInline"></canvas>
             </div>
             <div class="historyTrashRow"></div>
             <div class="historyRangeRow">
               <div class="historyMeta historyRangeText">&nbsp;</div>
+              <div class="historySwipeHint historySwipeHintBottom">Swipe &lt;&gt; to scroll entries</div>
               <div class="historyMeta">
                 <button class="btn btn-ghost small" type="button" data-history-action="export">Export</button>
                 <button class="btn btn-ghost small" type="button" data-history-action="analyse">Analyse</button>
                 <button class="btn btn-ghost small" type="button" data-history-action="manage">Manage</button>
               </div>
             </div>
-            <div class="historyBest"></div>
           </section>
         `
         : "";
@@ -1069,8 +1090,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return arr.slice().sort((a: any, b: any) => (a.ts || 0) - (b.ts || 0));
   }
 
-  function historyPageSize() {
-    return 7;
+  function historyPageSize(taskId?: string) {
+    if (!taskId) return 7;
+    const state = historyViewByTaskId[taskId];
+    return state?.rangeDays || 7;
   }
 
   function ensureHistoryViewState(taskId: string): HistoryViewState {
@@ -1078,6 +1101,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (existing) return existing;
     const created: HistoryViewState = {
       page: 0,
+      rangeDays: 7,
       editMode: false,
       barRects: [],
       selectedAbsIndex: null,
@@ -1095,7 +1119,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     rangeText: HTMLElement | null;
     olderBtn: HTMLButtonElement | null;
     newerBtn: HTMLButtonElement | null;
-    best: HTMLElement | null;
     trashRow: HTMLElement | null;
     deleteBtn: HTMLButtonElement | null;
   };
@@ -1111,7 +1134,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       rangeText: root.querySelector(".historyRangeText"),
       olderBtn: root.querySelector('[data-history-action="older"]'),
       newerBtn: root.querySelector('[data-history-action="newer"]'),
-      best: root.querySelector(".historyBest"),
       trashRow: root.querySelector(".historyTrashRow"),
       deleteBtn: root.querySelector('[data-history-action="delete"]'),
     };
@@ -1130,7 +1152,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     ui.trashRow.style.display = "flex";
 
-    const pageSize = historyPageSize();
+    const pageSize = historyPageSize(taskId);
     const buttons: string[] = [];
 
     for (let i = 0; i < pageSize; i++) {
@@ -1171,7 +1193,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const markerLabelPadR = 42;
     const padR = 12;
     const padT = 14;
-    const padB = 54;
+    const barCount = Math.max(1, entries.length);
+    const useAngledLabels = barCount >= 14;
+    const padB = useAngledLabels ? 92 : 54;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
@@ -1206,8 +1230,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         : [];
     const maxGoalMs = milestoneMs.length ? Math.max(...milestoneMs.map((m) => m.ms || 0), 0) : 0;
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
-    const gap = Math.max(8, Math.floor(plotW * 0.03));
-    const barW = Math.max(16, Math.floor((plotW - gap * (7 - 1)) / 7));
+    const gap = barCount <= 10 ? Math.max(6, Math.floor(plotW * 0.02)) : Math.max(3, Math.floor(plotW * 0.01));
+    const barW = Math.max(4, Math.floor((plotW - gap * (barCount - 1)) / barCount));
 
     ctx.textAlign = "center";
 
@@ -1246,7 +1270,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.textAlign = "center";
     }
 
-    for (let idx = 0; idx < 7; idx++) {
+    const labelStep = useAngledLabels ? 1 : barCount <= 10 ? 1 : Math.ceil(barCount / 10);
+    for (let idx = 0; idx < barCount; idx++) {
       const e = entries[idx];
       if (!e) continue;
 
@@ -1273,19 +1298,52 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.restore();
       }
 
-      ctx.fillStyle = "rgba(255,255,255,.65)";
-      ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      if (idx % labelStep === 0 || idx === barCount - 1) {
+        ctx.fillStyle = "rgba(255,255,255,.65)";
+        ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
 
-      const d = new Date(e.ts || 0);
-      const dd = formatTwo(d.getDate());
-      const mm = formatTwo(d.getMonth() + 1);
-      const hh = formatTwo(d.getHours());
-      const mi = formatTwo(d.getMinutes());
+        const d = new Date(e.ts || 0);
+        const dd = formatTwo(d.getDate());
+        const mm = formatTwo(d.getMonth() + 1);
+        const hh = formatTwo(d.getHours());
+        const mi = formatTwo(d.getMinutes());
 
-      ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, x + barW / 2, padT + innerH + 22);
-      ctx.fillStyle = "rgb(0,207,200)";
-      ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText(formatTime(ms), x + barW / 2, padT + innerH + 39);
+        if (useAngledLabels) {
+          const tx = x + barW / 2;
+          const ty = padT + innerH + 24;
+          const lineStartX = x + barW / 2;
+          const lineStartY = padT + innerH + 2;
+          const lineEndX = tx;
+          const lineEndY = ty - 4;
+          ctx.save();
+          ctx.strokeStyle = "rgba(255,255,255,.72)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(lineStartX, lineStartY);
+          ctx.lineTo(lineEndX, lineEndY);
+          ctx.stroke();
+          ctx.restore();
+          const angle = (-45 * Math.PI) / 180;
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(angle);
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, 0, 0);
+          ctx.fillStyle = "rgb(0,207,200)";
+          ctx.font = "700 10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          ctx.fillText(formatTime(ms), 0, 13);
+          ctx.restore();
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+        } else {
+          ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, x + barW / 2, padT + innerH + 22);
+          ctx.fillStyle = "rgb(0,207,200)";
+          ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          ctx.fillText(formatTime(ms), x + barW / 2, padT + innerH + 39);
+        }
+      }
     }
   }
 
@@ -1295,9 +1353,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (!ui) return;
     const state = ensureHistoryViewState(taskId);
 
-    const all = getHistoryForTask(taskId);
+    const allRaw = getHistoryForTask(taskId);
+    const rangeDays = state.rangeDays || 7;
+    const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
+    const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
     const total = all.length;
-    const pageSize = historyPageSize();
+    const pageSize = historyPageSize(taskId);
 
     const end = Math.max(0, total - state.page * pageSize);
     const start = Math.max(0, end - pageSize);
@@ -1308,7 +1369,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
-      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries`;
+      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${rangeDays} days)`;
     }
 
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
@@ -1327,17 +1388,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     drawHistoryChart(slice, start, ui, taskId);
     renderHistoryTrashRow(slice, start, ui);
-
-    if (ui.best) {
-      if (total === 0) {
-        ui.best.textContent = "";
-      } else {
-        let best = all[0];
-        for (let i = 1; i < all.length; i++) {
-          if ((all[i].ms || 0) > (best.ms || 0)) best = all[i];
-        }
-        ui.best.textContent = `All-time best: ${formatTime(best.ms || 0)} on ${formatDateTime(best.ts)}`;
-      }
+    const rangeToggle = ui.root.querySelector(".historyRangeToggle") as HTMLElement | null;
+    if (rangeToggle) {
+      const is14 = rangeDays === 14;
+      rangeToggle.classList.toggle("on", is14);
+      rangeToggle.setAttribute("aria-checked", String(is14));
     }
   }
 
@@ -2564,6 +2619,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.taskList, "click", (ev: any) => {
+      const rangeToggle = ev.target?.closest?.("[data-history-range-toggle]") as HTMLElement | null;
+      if (rangeToggle) {
+        const taskEl = rangeToggle.closest?.(".task") as HTMLElement | null;
+        const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+        if (!taskId) return;
+        const state = ensureHistoryViewState(taskId);
+        state.rangeDays = state.rangeDays === 14 ? 7 : 14;
+        state.page = 0;
+        renderHistory(taskId);
+        return;
+      }
+
       const btn = ev.target?.closest?.("[data-history-action]");
       const action = btn?.getAttribute?.("data-history-action");
       if (!action) return;
@@ -2620,7 +2687,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             historyByTaskId[taskId] = all2 as any;
             saveHistory(historyByTaskId);
 
-            const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize()) - 1);
+            const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize(taskId)) - 1);
             state.page = Math.min(state.page, maxPage);
             renderHistory(taskId);
           }

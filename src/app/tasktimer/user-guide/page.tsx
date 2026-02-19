@@ -18,13 +18,15 @@ export default function UserGuidePage() {
         icon: "/icon-dashboard.png",
         text: "Use footer tabs to move between Dashboard, Tasks, test pages, and Settings.",
         shot: "Screenshot placeholder: Navigation",
+        shotImage: "/navigation.PNG",
       },
       {
         id: "ug-tasks",
         title: "Tasks",
         icon: "/icon-tasks.png",
-        text: "Create tasks with Add Task, edit with the Edit modal, and organize tasks by category.",
+        text: "Create tasks with Add Task, edit with the Edit modal, and organize tasks by mode.",
         shot: "Screenshot placeholder: Tasks",
+        shotImage: "",
       },
       {
         id: "ug-timers",
@@ -32,6 +34,7 @@ export default function UserGuidePage() {
         icon: "/icon-tasks.png",
         text: "Each task supports Start/Stop/Reset and optional checkpoints (Day/Hour/Minute) with descriptions.",
         shot: "Screenshot placeholder: Timers and Checkpoints",
+        shotImage: "",
       },
       {
         id: "ug-history",
@@ -39,6 +42,7 @@ export default function UserGuidePage() {
         icon: "/icon-dashboard.png",
         text: "Use task history charts for recent sessions, swipe between pages, and manage entries in History Manager.",
         shot: "Screenshot placeholder: History",
+        shotImage: "",
       },
       {
         id: "ug-focus",
@@ -46,13 +50,15 @@ export default function UserGuidePage() {
         icon: "/icon-settings.png",
         text: "Click a task name to open Focus Mode with circular progress, checkpoint markers, and quick stats.",
         shot: "Screenshot placeholder: Focus Mode",
+        shotImage: "",
       },
       {
-        id: "ug-categories",
-        title: "Categories",
+        id: "ug-modes",
+        title: "Modes",
         icon: "/icon-account.png",
-        text: "Category 1 is always enabled. Category 2/3 can be enabled, disabled, renamed, and cleared in Category Manager.",
-        shot: "Screenshot placeholder: Categories",
+        text: "Mode 1 is always enabled. Mode 2/3 can be enabled, disabled, renamed, and cleared in Configure Modes.",
+        shot: "Screenshot placeholder: Modes",
+        shotImage: "",
       },
       {
         id: "ug-settings",
@@ -60,6 +66,7 @@ export default function UserGuidePage() {
         icon: "/icon-settings.png",
         text: "Settings includes authentication actions, appearance theme toggle, support links, and data tools.",
         shot: "Screenshot placeholder: Settings",
+        shotImage: "",
       },
       {
         id: "ug-data",
@@ -67,6 +74,7 @@ export default function UserGuidePage() {
         icon: "/icon-settings.png",
         text: "Use Export Backup/Import Backup for JSON data portability. Use Reset All to clear timers with confirmation options.",
         shot: "Screenshot placeholder: Backup and Reset",
+        shotImage: "",
       },
     ],
     []
@@ -101,7 +109,11 @@ export default function UserGuidePage() {
                   {activeSection.title}
                 </h3>
                 <p>{activeSection.text}</p>
-                <div className="userGuideShotPlaceholder">{activeSection.shot}</div>
+                {activeSection.shotImage ? (
+                  <img className="userGuideShotImage" src={activeSection.shotImage} alt={`${activeSection.title} screenshot`} />
+                ) : (
+                  <div className="userGuideShotPlaceholder">{activeSection.shot}</div>
+                )}
               </section>
             </div>
             <div className="footerBtns">

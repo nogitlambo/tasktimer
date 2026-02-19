@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="300" viewBox="0 0 980 300">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#061427"/>
+      <stop offset="100%" stop-color="#041022"/>
+    </linearGradient>
+    <linearGradient id="tab" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0d2744"/>
+      <stop offset="100%" stop-color="#081c35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="980" height="300" fill="#041022"/>
+  <rect x="24" y="26" width="932" height="248" fill="url(#bg)" stroke="#2b6f93" stroke-opacity=".65" rx="14"/>
+  <rect x="40" y="56" width="900" height="202" fill="#071a30" fill-opacity=".9" stroke="#2b6f93" stroke-opacity=".35" rx="10"/>
+
+  <g transform="translate(68,74)">
+    <g transform="translate(0,0)">
+      <polygon points="16,0 206,0 190,150 0,150" fill="url(#tab)" stroke="#36b7dd" stroke-opacity=".55"/>
+      <image href="/icon-dashboard.png" x="52" y="16" width="92" height="92"/>
+      <text x="102" y="130" text-anchor="middle" fill="#40ecff" font-size="19" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Dashboard</text>
+    </g>
+    <g transform="translate(218,0)">
+      <polygon points="16,0 206,0 190,150 0,150" fill="url(#tab)" stroke="#36b7dd" stroke-opacity=".55"/>
+      <image href="/icon-tasks.png" x="52" y="16" width="92" height="92"/>
+      <text x="102" y="130" text-anchor="middle" fill="#40ecff" font-size="19" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Tasks</text>
+    </g>
+    <g transform="translate(436,0)">
+      <polygon points="16,0 206,0 190,150 0,150" fill="url(#tab)" stroke="#36b7dd" stroke-opacity=".55"/>
+      <image href="/icon-account.png" x="52" y="16" width="92" height="92"/>
+      <text x="102" y="130" text-anchor="middle" fill="#40ecff" font-size="19" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Account</text>
+    </g>
+    <g transform="translate(654,0)">
+      <polygon points="16,0 206,0 190,150 0,150" fill="url(#tab)" stroke="#36b7dd" stroke-opacity=".55"/>
+      <image href="/icon-settings.png" x="52" y="16" width="92" height="92"/>
+      <text x="102" y="130" text-anchor="middle" fill="#40ecff" font-size="19" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Settings</text>
+    </g>
+  </g>
+</svg>

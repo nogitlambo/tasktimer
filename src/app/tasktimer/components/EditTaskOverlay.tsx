@@ -32,6 +32,21 @@ export default function EditTaskOverlay() {
           <input type="text" id="editName" />
         </div>
 
+        <div className="unitRow" id="msUnitRow">
+          <span>Task Timer Format</span>
+          <div className="unitButtons">
+            <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
+              Day
+            </button>
+            <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
+              Hour
+            </button>
+            <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
+              Minute
+            </button>
+          </div>
+        </div>
+
         <div className="field">
           <label>Override Elapsed Time</label>
           <div className="row3 overrideElapsedRow">
@@ -60,20 +75,6 @@ export default function EditTaskOverlay() {
         </div>
 
         <div className="milestones" id="msArea">
-          <div className="unitRow" id="msUnitRow">
-            <span>Checkpoint Time Format</span>
-            <div className="unitButtons">
-              <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
-                Day
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
-                Hour
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
-                Minute
-              </button>
-            </div>
-          </div>
           <div id="msList" />
           <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
             + Add Timer Checkpoint

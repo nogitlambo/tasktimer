@@ -13,6 +13,7 @@ export default function ConfirmOverlay() {
             Also delete all tasks
           </label>
         </div>
+        <div className="confirmChkNote" id="confirmChkNote" style={{ display: "none" }} />
 
         <div className="chkRow" id="confirmChkRow2" style={{ display: "none" }}>
           <input type="checkbox" id="confirmLogChk" />

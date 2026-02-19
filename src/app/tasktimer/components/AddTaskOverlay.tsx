@@ -24,25 +24,25 @@ export default function AddTaskOverlay() {
             </div>
           </div>
           <div id="addTaskError" aria-live="polite" style={{ color: "#ff5c6a", fontSize: 13, fontWeight: 700, minHeight: 18 }} />
+          <div className="unitRow" id="addTaskMsUnitRow">
+            <span>Task Timer Format</span>
+            <div className="unitButtons">
+              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
+                Day
+              </button>
+              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
+                Hour
+              </button>
+              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
+                Minute
+              </button>
+            </div>
+          </div>
           <div className="toggleRow" style={{ marginTop: 0 }}>
             <span>Time Checkpoints</span>
             <div className="switch" id="addTaskMsToggle" role="switch" aria-checked="false" />
           </div>
           <div className="milestones" id="addTaskMsArea">
-            <div className="unitRow" id="addTaskMsUnitRow">
-              <span>Checkpoint Time Format</span>
-              <div className="unitButtons">
-                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
-                  Day
-                </button>
-                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
-                  Hour
-                </button>
-                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
-                  Minute
-                </button>
-              </div>
-            </div>
             <div id="addTaskMsList" />
             <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
               + Add Timer Checkpoint
