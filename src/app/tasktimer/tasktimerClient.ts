@@ -190,6 +190,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
+    dashboardSettingsBtn: document.getElementById("dashboardSettingsBtn") as HTMLButtonElement | null,
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
@@ -329,6 +330,33 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
     const suffix = normalizedPath.replace(/^\/tasktimer/, "");
     return `${taskTimerRootPath()}${suffix}${trailing}`;
+  }
+
+  function maybeOpenImportFromQuery() {
+    let shouldOpenImport = false;
+    let nextSearch = "";
+    try {
+      const params = new URLSearchParams(window.location.search);
+      shouldOpenImport = params.get("import") === "1";
+      if (!shouldOpenImport) return;
+      params.delete("import");
+      nextSearch = params.toString();
+    } catch {
+      return;
+    }
+
+    if (!els.importBtn) return;
+
+    window.setTimeout(() => {
+      els.importBtn?.click();
+    }, 0);
+
+    try {
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash || ""}`;
+      window.history.replaceState({}, "", nextUrl);
+    } catch {
+      // ignore URL cleanup failures
+    }
   }
 
   function makeTask(name: string, order?: number): Task {
@@ -1301,41 +1329,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     ctx.textAlign = "center";
 
-    if (milestoneMs.length) {
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,.5)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 3]);
-
-      const sortedGoals = milestoneMs.slice().sort((a, b) => b.ms - a.ms);
-      const drawnLabelY: number[] = [];
-      const minLabelGap = 11;
-
-      for (const goal of sortedGoals) {
-        const markerRatio = Math.max(0, Math.min(1, goal.ms / scaleMaxMs));
-        const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
-
-        ctx.beginPath();
-        ctx.moveTo(plotLeft, markerY);
-        ctx.lineTo(plotRight, markerY);
-        ctx.stroke();
-
-        const tooClose = drawnLabelY.some((y) => Math.abs(y - markerY) < minLabelGap);
-        if (tooClose) continue;
-        drawnLabelY.push(markerY);
-
-        ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(255,255,255,.92)";
-        ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.fillText(`${goal.value}${milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
-        ctx.setLineDash([4, 3]);
-      }
-      ctx.restore();
-      ctx.textAlign = "center";
-    }
-
     const labelStep = useAngledLabels ? 1 : veryCompactLabels ? 2 : barCount <= 10 ? 1 : Math.ceil(barCount / 10);
     for (let idx = 0; idx < barCount; idx++) {
       const e = entries[idx];
@@ -1420,6 +1413,39 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ctx.fillText(compactElapsedLabel, x + barW / 2, padT + innerH + (compactLabels ? 34 : 39));
         }
       }
+    }
+
+    if (milestoneMs.length) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.5)";
+      ctx.lineWidth = 1;
+
+      const sortedGoals = milestoneMs.slice().sort((a, b) => b.ms - a.ms);
+      const drawnLabelY: number[] = [];
+      const minLabelGap = 11;
+
+      for (const goal of sortedGoals) {
+        const markerRatio = Math.max(0, Math.min(1, goal.ms / scaleMaxMs));
+        const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
+
+        ctx.beginPath();
+        ctx.moveTo(plotLeft, markerY);
+        ctx.lineTo(plotRight, markerY);
+        ctx.stroke();
+
+        const tooClose = drawnLabelY.some((y) => Math.abs(y - markerY) < minLabelGap);
+        if (tooClose) continue;
+        drawnLabelY.push(markerY);
+
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${goal.value}${milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
+      }
+      ctx.restore();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
     }
   }
 
@@ -2977,6 +3003,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.menuIcon, "click", () => {
       window.location.href = appRoute("/tasktimer/settings");
     });
+    on(els.dashboardSettingsBtn, "click", () => {
+      const target = appRoute("/tasktimer/settings");
+      console.debug("[TaskTimer] dashboardSettingsBtn navigate ->", target);
+      window.location.href = target;
+    });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
       else window.location.href = appRoute("/tasktimer");
@@ -3453,6 +3484,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   applyAppPage("tasks");
   wireEvents();
   render();
+  maybeOpenImportFromQuery();
   if (!els.taskList && els.historyManagerScreen) {
     openHistoryManager();
   }

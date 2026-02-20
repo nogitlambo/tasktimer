@@ -34,13 +34,22 @@ export default function Home() {
               TaskTimer helps you run focused sessions, monitor progress across
               categories, and build better work habits with clean visual history.
             </p>
-            <Link
-              href="/tasktimer"
-              className="mt-5 inline-flex items-center border border-[#35e8ff]/60 bg-gradient-to-b from-[#35e8ff] to-[#00cfc8] px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#04131c] shadow-[0_0_14px_rgba(0,220,255,.32)] transition hover:brightness-110 md:mt-6 md:px-6"
-              style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
-            >
-              Open TaskTimer
-            </Link>
+            <div className="mt-5 flex flex-wrap items-center gap-3 md:mt-6">
+              <Link
+                href="/tasktimer"
+                className="inline-flex items-center border border-[#35e8ff]/65 bg-gradient-to-r from-[#2ea7ff] via-[#35e8ff] to-[#00cfc8] px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#04131c] shadow-[0_0_14px_rgba(0,220,255,.32)] transition hover:brightness-110 md:px-6"
+                style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
+              >
+                Open TaskTimer
+              </Link>
+              <Link
+                href="/tasktimer/settings?import=1"
+                className="inline-flex items-center border border-[#35e8ff]/65 bg-gradient-to-r from-[#2ea7ff] via-[#35e8ff] to-[#00cfc8] px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#04131c] shadow-[0_0_14px_rgba(0,220,255,.32)] transition hover:brightness-110 md:px-6"
+                style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
+              >
+                Import
+              </Link>
+            </div>
           </div>
         </section>
       </main>

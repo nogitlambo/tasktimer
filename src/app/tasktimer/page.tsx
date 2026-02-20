@@ -70,9 +70,9 @@ export default function TaskTimerPage() {
                 alt="Nexus next-gen AI summit event landing page preview"
               />
               <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
-                <a className="btn btn-accent small" href="/tasktimer/settings/" aria-label="Open Settings">
+                <button className="btn btn-accent small" id="dashboardSettingsBtn" type="button" aria-label="Open Settings">
                   Settings
-                </a>
+                </button>
               </div>
             </div>
           </section>
