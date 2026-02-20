@@ -967,11 +967,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                     isHistoryPinned ? "Unpin chart" : "Pin chart"
                   }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
                 </div>
-                <div class="historyRangeToggleRow" aria-label="History range">
-                  <span>7</span>
-                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
-                  <span>14</span>
-                </div>
               </div>
               <div class="historyMeta">
                 <button class="btn btn-ghost small historyCloseBtn ${isHistoryPinned ? "is-disabled" : ""}" type="button" data-history-action="close" ${
@@ -984,9 +979,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             </div>
             <div class="historyTrashRow"></div>
             <div class="historyRangeRow">
-              <div class="historyMeta historyRangeText">&nbsp;</div>
-              <div class="historySwipeHint historySwipeHintBottom">Swipe &lt;&gt; to scroll entries</div>
-              <div class="historyMeta">
+              <div class="historyRangeInfo">
+                <div class="historyRangeToggleRow" aria-label="History range">
+                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
+                </div>
+                <div class="historyMeta historyRangeText">&nbsp;</div>
+              </div>
+              <div class="historyMeta historyRangeActions">
                 <button class="btn btn-ghost small" type="button" data-history-action="export">Export</button>
                 <button class="btn btn-ghost small" type="button" data-history-action="analyse">Analyse</button>
                 <button class="btn btn-ghost small" type="button" data-history-action="manage">Manage</button>
@@ -1215,7 +1214,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const state = ensureHistoryViewState(taskId);
 
     const rect = wrap.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.max(300, Math.floor(rect.width));
     const h = Math.max(200, Math.floor(rect.height));
     canvas.width = Math.floor(w * dpr);
@@ -1232,8 +1231,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const padR = 12;
     const padT = 14;
     const barCount = Math.max(1, entries.length);
-    const useAngledLabels = barCount >= 14;
-    const padB = useAngledLabels ? 92 : 54;
+    const compactLabels = w <= 560;
+    const veryCompactLabels = w <= 420;
+    const useAngledLabels = barCount >= 14 || (compactLabels && barCount >= 9);
+    const padB = useAngledLabels ? (veryCompactLabels ? 84 : 92) : compactLabels ? 64 : 54;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
@@ -1308,7 +1309,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.textAlign = "center";
     }
 
-    const labelStep = useAngledLabels ? 1 : barCount <= 10 ? 1 : Math.ceil(barCount / 10);
+    const labelStep = useAngledLabels ? 1 : veryCompactLabels ? 2 : barCount <= 10 ? 1 : Math.ceil(barCount / 10);
     for (let idx = 0; idx < barCount; idx++) {
       const e = entries[idx];
       if (!e) continue;
@@ -1342,17 +1343,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
       if (idx % labelStep === 0 || idx === barCount - 1) {
         ctx.fillStyle = "rgba(255,255,255,.65)";
-        ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+        ctx.font = `${compactLabels ? 10 : 11}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
 
         const d = new Date(e.ts || 0);
         const dd = formatTwo(d.getDate());
         const mm = formatTwo(d.getMonth() + 1);
         const hh = formatTwo(d.getHours());
         const mi = formatTwo(d.getMinutes());
+        const compactDateLabel = veryCompactLabels ? `${dd}/${mm}` : compactLabels ? `${dd}/${mm} ${hh}:${mi}` : `${dd}/${mm}:${hh}:${mi}`;
+        const rawElapsedLabel = formatTime(ms);
+        const compactElapsedLabel =
+          veryCompactLabels && rawElapsedLabel.includes(":")
+            ? rawElapsedLabel.split(":").slice(-2).join(":")
+            : rawElapsedLabel;
 
         if (useAngledLabels) {
           const tx = x + barW / 2;
-          const ty = padT + innerH + 24;
+          const ty = padT + innerH + (compactLabels ? 20 : 24);
           const lineStartX = x + barW / 2;
           const lineStartY = padT + innerH + 2;
           const lineEndX = tx;
@@ -1371,19 +1378,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ctx.rotate(angle);
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-          ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, 0, 0);
+          ctx.font = `${veryCompactLabels ? 9 : 10}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.fillText(compactDateLabel, 0, 0);
           ctx.fillStyle = "rgb(0,207,200)";
-          ctx.font = "700 10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-          ctx.fillText(formatTime(ms), 0, 13);
+          ctx.font = `700 ${veryCompactLabels ? 9 : 10}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.fillText(compactElapsedLabel, 0, 12);
           ctx.restore();
           ctx.textAlign = "center";
           ctx.textBaseline = "alphabetic";
         } else {
-          ctx.fillText(`${dd}/${mm}:${hh}:${mi}`, x + barW / 2, padT + innerH + 22);
+          ctx.fillText(compactDateLabel, x + barW / 2, padT + innerH + (compactLabels ? 18 : 22));
           ctx.fillStyle = "rgb(0,207,200)";
-          ctx.font = "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-          ctx.fillText(formatTime(ms), x + barW / 2, padT + innerH + 39);
+          ctx.font = `700 ${compactLabels ? 10 : 12}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.fillText(compactElapsedLabel, x + barW / 2, padT + innerH + (compactLabels ? 34 : 39));
         }
       }
     }

@@ -128,7 +128,7 @@ body{
   content:"";
   position:absolute;
   top:8px;
-  width:calc(50% - 58px);
+  width:max(18px, calc(50% - 58px));
   height:8px;
   border-top:2px solid var(--mode-accent);
   pointer-events:none;
@@ -465,6 +465,10 @@ body[data-app-page="test2"] #openAddTaskBtn{
   flex-wrap:wrap;
   justify-content:flex-end;
   justify-self:end;
+}
+.task .actions .iconBtn{
+  width:54px;
+  height:36px;
 }
 .taskMenu{
   position:relative;
@@ -1226,24 +1230,13 @@ input[type="text"]:focus, input[type="number"]:focus{
 .historyRangeToggleRow{
   display:flex;
   align-items:center;
-  justify-content:center;
-  gap:10px;
+  justify-content:flex-start;
+  gap:6px;
   margin: 0;
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%, -50%);
-  z-index:1;
-}
-.historyRangeToggleRow > span{
-  font-family:var(--font-tight);
-  font-size:12px;
-  letter-spacing:.04em;
-  color: rgba(190,240,255,.9);
-  text-transform:uppercase;
 }
 .historyRangeToggle{
-  transform: scale(.9);
+  transform: scale(.45);
+  transform-origin:left center;
 }
 .historyCanvasWrap{
   width:100%;
@@ -1277,9 +1270,23 @@ input[type="text"]:focus, input[type="number"]:focus{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px;
+  gap:10px;
   margin-top:12px;
-  position:relative;
+  flex-wrap:nowrap;
+}
+.historyRangeInfo{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  flex:1 1 auto;
+}
+.historyRangeText{
+  min-width:0;
+}
+.historyRangeActions{
+  justify-content:flex-end;
+  margin-left:auto;
 }
 .historyBest{
   margin-top:12px;
@@ -2154,4 +2161,372 @@ body[data-theme="light"] input[type="number"]{
   color:#111111;
   background: rgba(255,255,255,.9);
   border-color: rgba(0,0,0,.2);
+}
+
+@media (max-width: 980px){
+  body{
+    padding:14px 10px;
+    background-attachment: scroll;
+  }
+  .wrap{
+    width:100%;
+    height:calc(100svh - 28px);
+    border-radius:12px;
+  }
+  .topbar{
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand controls"
+      "mode mode";
+    gap:10px;
+    padding:12px;
+  }
+  .brand{ grid-area:brand; }
+  .controls{ grid-area:controls; }
+  .modeSwitchWrap{
+    grid-area:mode;
+    width:100%;
+    padding:6px 0 0;
+    margin-top:0;
+  }
+  .modeSwitch{
+    width:100%;
+    justify-content:stretch;
+  }
+  .modeBtn{
+    flex:1 1 0;
+    min-width:0;
+  }
+  .brandLogo{
+    height:44px;
+    max-width:240px;
+  }
+  .appPages{
+    padding-bottom:78px;
+  }
+  .appFooterNav{
+    gap:6px;
+    padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+  }
+  .appFooterBtn{
+    min-height:74px;
+    padding:6px 4px;
+  }
+  .appFooterIconImage{
+    width:40px;
+    height:40px;
+  }
+  .appFooterLabel{
+    font-size:10px;
+    letter-spacing:.03em;
+  }
+  .list{
+    padding:12px;
+    padding-bottom:20px;
+    gap:12px;
+  }
+  .task{
+    padding:12px 12px 10px;
+  }
+  .row{
+    grid-template-columns: 1fr;
+    gap:10px;
+  }
+  .name{
+    font-size:14px;
+    letter-spacing:.12em;
+  }
+  .time{
+    justify-self:start;
+  }
+  .actions{
+    justify-self:start;
+    justify-content:flex-start;
+  }
+  .timePanel{
+    height:44px;
+    padding:6px 12px;
+  }
+  .timeBoxValue{
+    font-size:20px;
+  }
+  .progressWrap{
+    padding:10px 8px 52px;
+  }
+  .overlay{
+    padding:10px;
+  }
+  .modal{
+    max-height:88svh;
+    overflow:auto;
+    padding:14px;
+  }
+  .historyRangeRow{
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .historyRangeInfo{
+    flex:1 1 100%;
+  }
+  .historyRangeActions{
+    width:100%;
+    justify-content:flex-end;
+  }
+  #historyManagerScreen{
+    padding:12px;
+  }
+  .hmDateGroup{
+    overflow-x:auto;
+  }
+  .hmTable{
+    min-width:560px;
+  }
+  .userGuidePage{
+    grid-template-columns: 1fr;
+    gap:10px;
+    padding:12px;
+  }
+  .userGuideToc{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap:8px;
+  }
+  .userGuideTocTitle{
+    grid-column: 1 / -1;
+  }
+  .userGuideScroll{
+    padding-right:0;
+  }
+}
+
+@media (max-width: 640px){
+  body{
+    padding:10px 8px;
+  }
+  .wrap{
+    height:calc(100svh - 20px);
+    border-radius:10px;
+  }
+  .topbar{
+    padding:10px;
+  }
+  .brandLogo{
+    height:36px;
+    max-width:190px;
+  }
+  #openAddTaskBtn{
+    min-height:34px;
+    padding:8px 10px;
+  }
+  .modeSwitchWrap::before,
+  .modeSwitchWrap::after{
+    top:7px;
+    width:max(12px, calc(50% - 52px));
+  }
+  .modeSwitchLabel{
+    top:0;
+    margin-bottom:4px;
+  }
+  .appFooterBtn{
+    min-height:62px;
+  }
+  .appFooterIconImage{
+    width:32px;
+    height:32px;
+  }
+  .appFooterLabel{
+    display:none;
+  }
+  .taskMenuList{
+    right:0;
+    left:auto;
+    min-width:160px;
+    max-width:calc(100vw - 40px);
+    max-height:min(60vh, 280px);
+    overflow:auto;
+  }
+  .footerBtns{
+    justify-content:stretch;
+  }
+  .footerBtns .btn{
+    flex:1 1 100%;
+  }
+  .row2,
+  .row3{
+    flex-direction:column;
+  }
+  .userGuideToc{
+    grid-template-columns: 1fr;
+  }
+  .userGuideShotImage{
+    min-height:120px;
+  }
+}
+
+@media (max-width: 420px){
+  .name{
+    font-size:13px;
+    letter-spacing:.08em;
+  }
+  .timePanel{
+    padding:6px 10px;
+    gap:4px;
+  }
+  .timeChunk{
+    min-width:50px;
+  }
+  .timeBoxValue{
+    font-size:17px;
+  }
+  .hmTable{
+    min-width:500px;
+  }
+}
+
+@media (max-width: 360px){
+  .topbar{
+    gap:8px;
+    padding:8px;
+  }
+  .brandLogo{
+    height:30px;
+    max-width:160px;
+  }
+  #openAddTaskBtn{
+    min-height:36px;
+    padding:8px 8px;
+    font-size:11px;
+  }
+  .modeBtn{
+    min-height:34px;
+    padding:6px 8px;
+    font-size:11px;
+  }
+  .list{
+    padding:10px;
+    gap:10px;
+  }
+  .task{
+    padding:10px 10px 8px;
+  }
+  .actions{
+    gap:6px;
+    flex-wrap:nowrap;
+    width:100%;
+  }
+  .task .actions .btn.small{
+    min-width:56px;
+    padding:6px 8px;
+    font-size:11px;
+  }
+  .actions .btn,
+  .actions .iconBtn{
+    min-height:36px;
+  }
+  .task .actions .iconBtn{
+    width:40px;
+    height:36px;
+  }
+  .timePanel{
+    height:40px;
+    padding:6px 8px;
+  }
+  .timeChunk{
+    min-width:44px;
+  }
+  .timeBoxValue{
+    font-size:15px;
+  }
+  .timeBoxUnit{
+    font-size:10px;
+  }
+  .progressWrap{
+    padding:8px 6px 50px;
+  }
+  .appFooterNav{
+    gap:4px;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  .appFooterBtn{
+    min-height:56px;
+    padding:4px 2px;
+  }
+  .appFooterIconImage{
+    width:28px;
+    height:28px;
+  }
+  .modal{
+    padding:12px;
+  }
+  .modal h2{
+    font-size:18px;
+  }
+  .footerBtns{
+    gap:8px;
+  }
+  #focusModeScreen{
+    padding:10px 8px;
+  }
+  .focusModeHead{
+    grid-template-columns: auto 1fr;
+    gap:8px;
+  }
+  .focusModeHeadSpacer{
+    display:none;
+  }
+  .focusModeTitle{
+    text-align:left;
+    font-size:18px;
+    letter-spacing:.06em;
+  }
+  .focusDialWrap{
+    padding:18px 4px 14px;
+  }
+  .focusTaskTitle{
+    margin-top:6px;
+    margin-bottom:16px;
+    font-size:14px;
+    letter-spacing:.1em;
+  }
+  .focusDialTime{
+    font-size:clamp(24px, 9vw, 36px);
+  }
+  .focusDialDays{
+    font-size:clamp(16px, 5vw, 22px);
+  }
+  .focusInsights{
+    width:100%;
+    margin:20px auto 0;
+    padding:10px 10px;
+  }
+  .focusInsightRow{
+    gap:8px;
+  }
+  .focusInsightLabel,
+  .focusInsightValue{
+    font-size:11px;
+  }
+  #historyManagerScreen{
+    padding:10px;
+  }
+  .hmHead{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .hmHeadActions{
+    width:100%;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation:none !important;
+    transition:none !important;
+    scroll-behavior:auto !important;
+  }
 }
