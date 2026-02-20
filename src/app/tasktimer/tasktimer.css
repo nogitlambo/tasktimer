@@ -470,6 +470,15 @@ body[data-app-page="test2"] #openAddTaskBtn{
   width:54px;
   height:36px;
 }
+.task .actions .historyActionBtn.isActive{
+  border-color: rgba(53,232,255,.62);
+  background: linear-gradient(180deg, rgba(53,232,255,.22), rgba(255,255,255,.06));
+  box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 10px rgba(0,220,255,.22);
+}
+.task .actions .historyActionBtn.isPinned{
+  opacity:.72;
+  cursor:not-allowed;
+}
 .taskMenu{
   position:relative;
 }
@@ -1154,6 +1163,49 @@ input[type="text"]:focus, input[type="number"]:focus{
 .settingsMenu .footerBtns{
   justify-content:center;
 }
+#app[aria-label="TaskTimer Settings"],
+#app[aria-label="TaskTimer Settings"] .menu,
+#app[aria-label="TaskTimer Settings"] .menuTitle,
+#app[aria-label="TaskTimer Settings"] .settingsSectionLabel,
+#app[aria-label="TaskTimer Settings"] .menuItem,
+#app[aria-label="TaskTimer Settings"] h1,
+#app[aria-label="TaskTimer Settings"] h2,
+#app[aria-label="TaskTimer Settings"] h3,
+#app[aria-label="TaskTimer Settings"] h4,
+#app[aria-label="TaskTimer Settings"] label,
+#aboutOverlay .modal,
+#aboutOverlay .modal h1,
+#aboutOverlay .modal h2,
+#aboutOverlay .modal h3,
+#aboutOverlay .modal h4,
+#aboutOverlay .modal label,
+#howtoOverlay .modal,
+#howtoOverlay .modal h1,
+#howtoOverlay .modal h2,
+#howtoOverlay .modal h3,
+#howtoOverlay .modal h4,
+#howtoOverlay .modal label,
+#appearanceOverlay .modal,
+#appearanceOverlay .modal h1,
+#appearanceOverlay .modal h2,
+#appearanceOverlay .modal h3,
+#appearanceOverlay .modal h4,
+#appearanceOverlay .modal label,
+#taskSettingsOverlay .modal,
+#taskSettingsOverlay .modal h1,
+#taskSettingsOverlay .modal h2,
+#taskSettingsOverlay .modal h3,
+#taskSettingsOverlay .modal h4,
+#taskSettingsOverlay .modal label,
+#categoryManagerOverlay .modal,
+#categoryManagerOverlay .modal h1,
+#categoryManagerOverlay .modal h2,
+#categoryManagerOverlay .modal h3,
+#categoryManagerOverlay .modal h4,
+#categoryManagerOverlay .modal label,
+#contactOverlay .modal{
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
 
 /* History screen */
 #historyScreen{
@@ -1171,6 +1223,10 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .historyTop .historyMeta:first-child{
   flex:1;
+}
+.historyTopActions{
+  margin-left:auto;
+  justify-content:flex-end;
 }
 .historyTitle{
   font-family:var(--font-tight);
@@ -2034,6 +2090,11 @@ body[data-theme="light"] .historyPinBtn.isOn{
   border-color: rgba(0,151,199,.45);
   background: rgba(0,151,199,.14);
   color:#111111;
+}
+body[data-theme="light"] .task .actions .historyActionBtn.isActive{
+  border-color: rgba(0,151,199,.52);
+  background: rgba(0,151,199,.14);
+  box-shadow: 0 0 0 1px rgba(0,151,199,.22) inset;
 }
 body[data-theme="light"] .historyRangeToggleRow > span{
   color:#111111;

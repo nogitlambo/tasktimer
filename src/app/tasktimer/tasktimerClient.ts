@@ -962,16 +962,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
             <div class="historyTop">
               <div class="historyMeta">
-                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}
-                  <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
+                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}</div>
+              </div>
+              <div class="historyMeta historyTopActions">
+                <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
                     isHistoryPinned ? "Unpin chart" : "Pin chart"
                   }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
-                </div>
-              </div>
-              <div class="historyMeta">
-                <button class="btn btn-ghost small historyCloseBtn ${isHistoryPinned ? "is-disabled" : ""}" type="button" data-history-action="close" ${
-                    isHistoryPinned ? "disabled" : ""
-                  }>Close</button>
               </div>
             </div>
             <div class="historyCanvasWrap">
@@ -1007,7 +1003,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             }
             <button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>
             <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-            <button class="iconBtn" data-action="history" title="History">&#128202;</button>
+            <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
+              isHistoryPinned ? "isPinned" : ""
+            }" data-action="history" title="${
+              isHistoryPinned ? "History pinned" : "History"
+            }" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${
+              isHistoryPinned ? "disabled" : ""
+            }>&#128202;</button>
             <details class="taskMenu">
               <summary class="iconBtn taskMenuBtn" title="More actions" aria-label="More actions">&#8942;</summary>
               <div class="taskMenuList">
