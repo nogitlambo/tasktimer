@@ -4,17 +4,9 @@ export default function FocusModeScreen() {
   return (
     <section id="focusModeScreen" aria-hidden="true">
       <div className="focusModeHead">
-        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
-          Back
-        </button>
+        <div className="focusModeHeadSpacer" aria-hidden="true" />
         <div className="focusModeTitle">Focus Mode</div>
         <div className="focusModeHeadSpacer" aria-hidden="true" />
-      </div>
-      <div className="focusCheckpointToggleTop">
-        <div className="focusCheckpointToggleRow">
-          <span>Show checkpoints</span>
-          <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
-        </div>
       </div>
       <div className="focusTaskTitle" id="focusTaskName">
         TASKTIMER
@@ -45,6 +37,12 @@ export default function FocusModeScreen() {
           </div>
         </div>
       </div>
+      <div className="focusCheckpointToggleTop">
+        <div className="focusCheckpointToggleRow">
+          <span>Show checkpoints</span>
+          <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
+        </div>
+      </div>
       <div className="focusInsights" id="focusInsights">
         <div className="focusInsightsTitle">Quick Stats</div>
         <div className="focusInsightRow">
@@ -71,6 +69,11 @@ export default function FocusModeScreen() {
             --
           </span>
         </div>
+      </div>
+      <div className="focusModeExitWrap">
+        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+          Exit
+        </button>
       </div>
     </section>
   );

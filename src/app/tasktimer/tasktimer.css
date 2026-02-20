@@ -1428,6 +1428,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   grid-template-columns:auto 1fr auto;
   align-items:center;
   gap:12px;
+  margin-bottom:8px;
 }
 .focusModeTitle{
   text-align:center;
@@ -1444,7 +1445,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   justify-content:center;
   align-items:flex-start;
   min-height: 0;
-  padding:44px 8px 24px;
+  padding:28px 8px 64px;
 }
 .focusDialPanel{
   display:flex;
@@ -1453,16 +1454,20 @@ input[type="text"]:focus, input[type="number"]:focus{
   gap:14px;
 }
 .focusCheckpointToggleTop{
-  position:absolute;
-  top:18px;
-  right:16px;
+  display:flex;
+  justify-content:center;
+  margin: 16px 0 30px;
+  position:relative;
   z-index:2;
 }
 .focusCheckpointToggleRow{
   display:flex;
-  justify-content:flex-end;
+  justify-content:center;
   align-items:center;
   gap:10px;
+  padding: 4px 8px;
+  border:none;
+  background: transparent;
 }
 .focusCheckpointToggleRow > span{
   font-size:12px;
@@ -1532,6 +1537,46 @@ input[type="text"]:focus, input[type="number"]:focus{
   background: rgba(236,244,255,.96);
   box-shadow: 0 0 5px rgba(205,228,255,.6);
 }
+.focusCheckpointFlag{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:18px;
+  height:14px;
+  transform: translate(var(--fxpx, 0px), var(--fypx, 0px)) translate(-35%, -65%);
+  pointer-events:none;
+}
+.focusCheckpointFlag::before{
+  content:"";
+  position:absolute;
+  left:1px;
+  top:-5px;
+  width:2px;
+  height:18px;
+  background: rgba(127,139,160,.9);
+}
+.focusCheckpointFlag::after{
+  content:"";
+  position:absolute;
+  left:3px;
+  top:-3px;
+  width:12px;
+  height:9px;
+  border-radius:1px;
+  background:
+    linear-gradient(90deg, rgba(130,142,162,.92) 50%, rgba(205,213,226,.9) 50%) 0 0 / 6px 4.5px,
+    linear-gradient(90deg, rgba(205,213,226,.9) 50%, rgba(130,142,162,.92) 50%) 0 4.5px / 6px 4.5px;
+  box-shadow: 0 0 2px rgba(0,0,0,.45);
+}
+.focusCheckpointFlag.reached::before{
+  background: rgba(220,232,246,.96);
+}
+.focusCheckpointFlag.reached::after{
+  background:
+    linear-gradient(90deg, rgba(0,238,255,.96) 50%, rgba(236,244,255,.95) 50%) 0 0 / 6px 4.5px,
+    linear-gradient(90deg, rgba(236,244,255,.95) 50%, rgba(0,238,255,.96) 50%) 0 4.5px / 6px 4.5px;
+  box-shadow: 0 0 5px rgba(0,220,255,.5);
+}
 .focusCheckpointConnector{
   position:absolute;
   top:50%;
@@ -1551,7 +1596,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   position:absolute;
   top:50%;
   left:50%;
-  transform: translate(var(--lxpx, 0px), var(--lypx, 0px)) translateY(-50%);
+  transform: translate(calc(var(--lxpx, 0px) + 14px), var(--lypx, 0px)) translateY(-50%);
   white-space:nowrap;
   display:block;
   min-width:0;
@@ -1565,7 +1610,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   text-align:left;
 }
 .focusCheckpointLabel.left{
-  transform: translate(var(--lxpx, 0px), var(--lypx, 0px)) translate(-100%, -50%);
+  transform: translate(calc(var(--lxpx, 0px) - 14px), var(--lypx, 0px)) translate(-100%, -50%);
   text-align:right;
 }
 .focusCheckpointLabel.reached{
@@ -1618,13 +1663,18 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .focusInsights{
   width:min(82vw, 620px);
-  margin: 60px auto 0;
+  margin: 22px auto 0;
   padding: 12px 14px;
   border:1px solid rgba(255,255,255,.1);
   background: rgba(9,18,33,.45);
   box-shadow: inset 0 0 16px rgba(0,180,255,.08);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.focusModeExitWrap{
+  display:flex;
+  justify-content:center;
+  margin: 16px 0 8px;
 }
 .focusInsightsTitle{
   margin-bottom:8px;
@@ -2186,6 +2236,23 @@ body[data-theme="light"] .focusCheckpointMark.reached{
   background: rgba(20,28,40,.95);
   box-shadow:none;
 }
+body[data-theme="light"] .focusCheckpointFlag::before{
+  background: rgba(95,104,120,.9);
+}
+body[data-theme="light"] .focusCheckpointFlag::after{
+  background:
+    linear-gradient(90deg, rgba(122,132,148,.95) 50%, rgba(236,239,245,.98) 50%) 0 0 / 6px 4.5px,
+    linear-gradient(90deg, rgba(236,239,245,.98) 50%, rgba(122,132,148,.95) 50%) 0 4.5px / 6px 4.5px;
+  box-shadow:none;
+}
+body[data-theme="light"] .focusCheckpointFlag.reached::before{
+  background: rgba(20,28,40,.95);
+}
+body[data-theme="light"] .focusCheckpointFlag.reached::after{
+  background:
+    linear-gradient(90deg, rgba(0,151,199,.96) 50%, rgba(20,28,40,.95) 50%) 0 0 / 6px 4.5px,
+    linear-gradient(90deg, rgba(20,28,40,.95) 50%, rgba(0,151,199,.96) 50%) 0 4.5px / 6px 4.5px;
+}
 body[data-theme="light"] .focusCheckpointConnector{
   background: rgba(95,104,120,.7);
   box-shadow:none;
@@ -2469,6 +2536,9 @@ body[data-theme="light"] input[type="number"]{
   .userGuideShotImage{
     min-height:120px;
   }
+  .focusCheckpointLabelDesc{
+    display:none;
+  }
 }
 
 @media (max-width: 420px){
@@ -2577,19 +2647,23 @@ body[data-theme="light"] input[type="number"]{
       calc(8px + var(--safe-left));
   }
   .focusModeHead{
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 1fr auto 1fr;
     gap:8px;
   }
   .focusModeHeadSpacer{
-    display:none;
+    display:block;
   }
   .focusModeTitle{
-    text-align:left;
+    text-align:center;
     font-size:18px;
     letter-spacing:.06em;
+    padding-bottom:6px;
   }
   .focusDialWrap{
-    padding:18px 4px 14px;
+    padding:20px 4px 72px;
+  }
+  .focusCheckpointToggleTop{
+    margin: 16px 0 28px;
   }
   .focusTaskTitle{
     margin-top:6px;

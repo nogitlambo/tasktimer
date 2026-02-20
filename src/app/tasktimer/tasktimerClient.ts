@@ -2283,11 +2283,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           const dy = ly - my;
           const cl = Math.max(0, Math.sqrt(dx * dx + dy * dy));
           const ca = (Math.atan2(dy, dx) * 180) / Math.PI;
+          const fx = lx;
+          const fy = ly;
           const title = `${v}${milestoneUnitSuffix(t)}`;
           const desc = (m.description || "").trim();
           const lineText = desc ? `${title} - ${desc}` : title;
           return `
             <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px;--madeg:${markerAngleDeg}deg;--mlpx:${markerLineLenPx}px" data-seconds="${secTarget}"></div>
+            <div class="focusCheckpointFlag" style="--fxpx:${fx}px;--fypx:${fy}px" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointConnector" style="--cxpx:${mx}px;--cypx:${my}px;--cl:${cl}px;--ca:${ca}deg" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointLabel ${isRight ? "right" : "left"}" style="--lxpx:${lx}px;--lypx:${ly}px" data-seconds="${secTarget}">
               <span class="focusCheckpointLabelTitle">${escapeHtmlUI(lineText)}</span>
@@ -2300,7 +2303,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     (els.focusCheckpointRing as HTMLElement)
-      .querySelectorAll(".focusCheckpointMark, .focusCheckpointLabel, .focusCheckpointConnector")
+      .querySelectorAll(".focusCheckpointMark, .focusCheckpointFlag, .focusCheckpointLabel, .focusCheckpointConnector")
       .forEach((dot) => {
       const secTarget = Number((dot as HTMLElement).dataset.seconds || "0");
       (dot as HTMLElement).classList.toggle("reached", elapsedSec >= secTarget);
