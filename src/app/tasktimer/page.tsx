@@ -1,5 +1,7 @@
 ﻿"use client";
 
+"use client";
+
 import { useEffect } from "react";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import ConfirmOverlay from "./components/ConfirmOverlay";
@@ -67,6 +69,11 @@ export default function TaskTimerPage() {
                 src="https://www.figma.com/api/mcp/asset/f4d5fb76-7d46-436b-bd8c-9da01a371eaf"
                 alt="Nexus next-gen AI summit event landing page preview"
               />
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+                <a className="btn btn-accent small" href="/tasktimer/settings/" aria-label="Open Settings">
+                  Settings
+                </a>
+              </div>
             </div>
           </section>
 
@@ -102,10 +109,10 @@ export default function TaskTimerPage() {
             <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Test 2</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" type="button" aria-label="Settings">
+          <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings/" aria-label="Settings">
             <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Settings</span>
-          </button>
+          </a>
         </div>
       </div>
 

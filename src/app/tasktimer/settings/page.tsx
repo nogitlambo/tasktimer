@@ -1,5 +1,7 @@
 ﻿"use client";
 
+"use client";
+
 import { useEffect } from "react";
 import ConfirmOverlay from "../components/ConfirmOverlay";
 import InfoOverlays from "../components/InfoOverlays";

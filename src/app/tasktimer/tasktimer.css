@@ -1700,7 +1700,8 @@ input[type="text"]:focus, input[type="number"]:focus{
   position:fixed;
   inset:0;
   z-index:90;
-  padding:18px 16px;
+  padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
+    calc(16px + var(--safe-left));
   background: radial-gradient(1200px 800px at 20% 10%, rgba(0,207,200,.12), transparent 60%),
               radial-gradient(900px 600px at 80% 90%, rgba(0,207,200,.08), transparent 55%),
               var(--bg);
@@ -2572,7 +2573,8 @@ body[data-theme="light"] input[type="number"]{
     gap:8px;
   }
   #focusModeScreen{
-    padding:10px 8px;
+    padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
+      calc(8px + var(--safe-left));
   }
   .focusModeHead{
     grid-template-columns: auto 1fr;
