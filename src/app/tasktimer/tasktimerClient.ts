@@ -309,6 +309,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     historyTrashRow: document.getElementById("historyTrashRow"),
   };
 
+  function appRoute(path: string) {
+    const pathname = window.location.pathname || "";
+    const idx = pathname.indexOf("/tasktimer");
+    const base = idx > 0 ? pathname.slice(0, idx) : "";
+    return `${base}${path}`;
+  }
+
   function makeTask(name: string, order?: number): Task {
     const t: Task = {
       id: cryptoRandomId(),
@@ -2288,7 +2295,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     if (which === "howto") {
-      window.location.href = "/tasktimer/user-guide";
+      window.location.href = appRoute("/tasktimer/user-guide");
       return;
     }
     if (which === "categoryManager") {
@@ -2591,7 +2598,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerTest1Btn, "click", () => applyAppPage("test1"));
     on(els.footerTest2Btn, "click", () => applyAppPage("test2"));
     on(els.footerSettingsBtn, "click", () => {
-      window.location.href = "/tasktimer/settings";
+      window.location.href = appRoute("/tasktimer/settings");
     });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
@@ -2781,7 +2788,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         return;
       }
       if (action === "manage") {
-        window.location.href = `/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`;
+        window.location.href = appRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
         return;
       }
       if (action !== "delete" || state.selectedAbsIndex == null) return;
@@ -2947,11 +2954,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.menuIcon, "click", () => {
-      window.location.href = "/tasktimer/settings";
+      window.location.href = appRoute("/tasktimer/settings");
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else window.location.href = "/tasktimer";
+      else window.location.href = appRoute("/tasktimer");
     });
     on(els.themeToggle, "click", toggleThemeMode);
     on(els.themeToggleRow, "click", (e: any) => {
@@ -3172,7 +3179,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.historyManagerBtn, "click", () => {
-      window.location.href = "/tasktimer/history-manager";
+      window.location.href = appRoute("/tasktimer/history-manager");
     });
     on(els.historyManagerBulkBtn, "click", () => {
       hmBulkEditMode = !hmBulkEditMode;
@@ -3228,7 +3235,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       );
     });
     on(els.historyManagerBackBtn, "click", () => {
-      window.location.href = "/tasktimer/settings";
+      window.location.href = appRoute("/tasktimer/settings");
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {

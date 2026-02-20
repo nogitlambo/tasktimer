@@ -5,6 +5,13 @@ import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function UserGuidePage() {
+  const appRoute = (path: string) => {
+    const pathname = window.location.pathname || "";
+    const idx = pathname.indexOf("/tasktimer");
+    const base = idx > 0 ? pathname.slice(0, idx) : "";
+    return `${base}${path}`;
+  };
+
   useEffect(() => {
     const { destroy } = initTaskTimerClient();
     return () => destroy();
@@ -117,7 +124,7 @@ export default function UserGuidePage() {
               </section>
             </div>
             <div className="footerBtns">
-              <button className="btn btn-accent" type="button" onClick={() => (window.location.href = "/tasktimer/settings")}>
+              <button className="btn btn-accent" type="button" onClick={() => (window.location.href = appRoute("/tasktimer/settings"))}>
                 Back to Settings
               </button>
             </div>
