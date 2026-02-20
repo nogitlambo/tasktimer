@@ -320,8 +320,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function appRoute(path: string) {
     if (!path.startsWith("/tasktimer")) return path;
-    const suffix = path.replace(/^\/tasktimer/, "");
-    return `${taskTimerRootPath()}${suffix}`;
+    const hashIndex = path.indexOf("#");
+    const queryIndex = path.indexOf("?");
+    const cutIndex =
+      queryIndex === -1 ? hashIndex : hashIndex === -1 ? queryIndex : Math.min(queryIndex, hashIndex);
+    const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
+    const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
+    const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
+    const suffix = normalizedPath.replace(/^\/tasktimer/, "");
+    return `${taskTimerRootPath()}${suffix}${trailing}`;
   }
 
   function makeTask(name: string, order?: number): Task {
@@ -951,9 +958,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           const leftPos = edgeCls === "mkEdgeL" ? 0 : edgeCls === "mkEdgeR" ? 100 : left;
           const wrapCls = edgeCls && label.length > 8 ? "mkWrap8" : "";
           markers += `
-            <div class="mkLine" style="left:${leftPos}%"></div>
+            <div class="mkFlag ${cls}" style="left:${leftPos}%"></div>
             <div class="mkTime ${cls} ${edgeCls} ${wrapCls}" style="left:${leftPos}%">${escapeHtmlUI(label)}</div>
-            ${desc ? `<div class="mkDesc ${edgeCls}" style="left:${leftPos}%">${escapeHtmlUI(desc)}</div>` : ``}`;
+            ${desc ? `<div class="mkDesc ${cls} ${edgeCls}" style="left:${leftPos}%">${escapeHtmlUI(desc)}</div>` : ``}`;
         });
 
         progressHTML = `

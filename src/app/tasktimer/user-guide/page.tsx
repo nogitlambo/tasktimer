@@ -16,8 +16,15 @@ export default function UserGuidePage() {
 
   const appRoute = (path: string) => {
     if (!path.startsWith("/tasktimer")) return path;
-    const suffix = path.replace(/^\/tasktimer/, "");
-    return `${taskTimerRootPath()}${suffix}`;
+    const hashIndex = path.indexOf("#");
+    const queryIndex = path.indexOf("?");
+    const cutIndex =
+      queryIndex === -1 ? hashIndex : hashIndex === -1 ? queryIndex : Math.min(queryIndex, hashIndex);
+    const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
+    const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
+    const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
+    const suffix = normalizedPath.replace(/^\/tasktimer/, "");
+    return `${taskTimerRootPath()}${suffix}${trailing}`;
   };
 
   useEffect(() => {
