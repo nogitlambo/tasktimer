@@ -23,34 +23,24 @@ export default function Home() {
               priority
             />
           </div>
-          <div className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] text-white/60">
-                Smart Personal Time Tracking
-              </p>
-              <h1 className="mt-3 max-w-xl text-3xl font-bold uppercase leading-[1.05] tracking-tight sm:text-4xl md:text-6xl">
-                Track Better. Focus Longer.
-              </h1>
-              <p className="mt-3 max-w-xl text-sm text-white/70 md:mt-4 md:text-base">
-                TaskTimer helps you run focused sessions, monitor progress across
-                categories, and build better work habits with clean visual history.
-              </p>
-              <Link
-                href="/tasktimer"
-                className="mt-5 inline-flex rounded-full bg-[#1453ff] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2a64ff] md:mt-6 md:px-5"
-              >
-                Open TaskTimer
-              </Link>
-            </div>
-            <div className="rounded-xl border border-white/15 bg-white/[0.03] p-2 sm:rounded-2xl sm:p-3">
-              <Image
-                src="/focus-timer-preview.svg"
-                alt="TaskTimer focus timer preview"
-                width={640}
-                height={420}
-                className="h-auto w-full rounded-xl border border-white/10"
-              />
-            </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-white/60">
+              Smart Personal Time Tracking
+            </p>
+            <h1 className="mt-3 max-w-xl text-3xl font-bold uppercase leading-[1.05] tracking-tight sm:text-4xl md:text-6xl">
+              Track Better. Focus Longer.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm text-white/70 md:mt-4 md:text-base">
+              TaskTimer helps you run focused sessions, monitor progress across
+              categories, and build better work habits with clean visual history.
+            </p>
+            <Link
+              href="/tasktimer"
+              className="mt-5 inline-flex items-center border border-[#35e8ff]/60 bg-gradient-to-b from-[#35e8ff] to-[#00cfc8] px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#04131c] shadow-[0_0_14px_rgba(0,220,255,.32)] transition hover:brightness-110 md:mt-6 md:px-6"
+              style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
+            >
+              Open TaskTimer
+            </Link>
           </div>
         </section>
       </main>

@@ -309,11 +309,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     historyTrashRow: document.getElementById("historyTrashRow"),
   };
 
-  function appRoute(path: string) {
+  function taskTimerRootPath() {
     const pathname = window.location.pathname || "";
-    const idx = pathname.indexOf("/tasktimer");
-    const base = idx > 0 ? pathname.slice(0, idx) : "";
-    return `${base}${path}`;
+    const normalized = pathname.replace(/\/+$/, "");
+    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
+    if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
+    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide)$/, "");
+    return pageStyleRoot || normalized || "/tasktimer";
+  }
+
+  function appRoute(path: string) {
+    if (!path.startsWith("/tasktimer")) return path;
+    const suffix = path.replace(/^\/tasktimer/, "");
+    return `${taskTimerRootPath()}${suffix}`;
   }
 
   function makeTask(name: string, order?: number): Task {
@@ -1235,26 +1243,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
+    const compactLabels = w <= 560;
+    const veryCompactLabels = w <= 420;
     const padL = 12;
-    const markerLabelPadR = 42;
+    const markerLabelPadR = 10;
     const padR = 12;
     const padT = 14;
     const barCount = Math.max(1, entries.length);
-    const compactLabels = w <= 560;
-    const veryCompactLabels = w <= 420;
-    const useAngledLabels = barCount >= 14 || (compactLabels && barCount >= 9);
+    // Keep consistent label styling between 7-entry and 14-entry views.
+    const useAngledLabels = true;
     const padB = useAngledLabels ? (veryCompactLabels ? 84 : 92) : compactLabels ? 64 : 54;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
     const labelGutterW = markerLabelPadR;
-    const plotW = Math.max(140, innerW - labelGutterW);
-    const plotRight = padL + plotW;
+    const plotSidePad = useAngledLabels ? (veryCompactLabels ? 10 : 14) : 6;
+    const plotW = Math.max(140, innerW - labelGutterW - plotSidePad * 2);
+    const plotLeft = padL + plotSidePad;
+    const plotRight = plotLeft + plotW;
 
     ctx.strokeStyle = "rgba(255,255,255,.20)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(padL, padT + innerH + 0.5);
+    ctx.moveTo(plotLeft, padT + innerH + 0.5);
     ctx.lineTo(plotRight, padT + innerH + 0.5);
     ctx.stroke();
 
@@ -1298,7 +1309,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
 
         ctx.beginPath();
-        ctx.moveTo(padL, markerY);
+        ctx.moveTo(plotLeft, markerY);
         ctx.lineTo(plotRight, markerY);
         ctx.stroke();
 
@@ -1327,7 +1338,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const ratio = ms / scaleMaxMs;
       const bh = Math.max(2, Math.floor(innerH * ratio));
 
-      const x = padL + idx * (barW + gap);
+      const x = plotLeft + idx * (barW + gap);
       const y = padT + innerH - bh;
 
       ctx.save();

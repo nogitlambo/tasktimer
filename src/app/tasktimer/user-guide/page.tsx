@@ -5,11 +5,19 @@ import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function UserGuidePage() {
-  const appRoute = (path: string) => {
+  const taskTimerRootPath = () => {
     const pathname = window.location.pathname || "";
-    const idx = pathname.indexOf("/tasktimer");
-    const base = idx > 0 ? pathname.slice(0, idx) : "";
-    return `${base}${path}`;
+    const normalized = pathname.replace(/\/+$/, "");
+    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
+    if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
+    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide)$/, "");
+    return pageStyleRoot || normalized || "/tasktimer";
+  };
+
+  const appRoute = (path: string) => {
+    if (!path.startsWith("/tasktimer")) return path;
+    const suffix = path.replace(/^\/tasktimer/, "");
+    return `${taskTimerRootPath()}${suffix}`;
   };
 
   useEffect(() => {
