@@ -281,10 +281,23 @@ body[data-app-page="test2"] #openAddTaskBtn{
   text-transform:uppercase;
   color: rgba(142,242,255,.96);
 }
+#dashboardEditBtn.isOn{
+  background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
+  border-color: rgba(53,232,255,.5);
+  box-shadow: 0 0 10px rgba(53,232,255,.25);
+}
 .dashboardGrid{
   display:grid;
   gap:12px;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.dashboardGrid.isEditMode .dashboardCard{
+  cursor: grab;
+  user-select: none;
+}
+.dashboardGrid.isEditMode .dashboardCard.isDragging{
+  opacity:.6;
+  cursor: grabbing;
 }
 .dashboardCard{
   border:1px solid rgba(121,226,255,.2);
@@ -1221,6 +1234,10 @@ input[type="text"]:focus, input[type="number"]:focus{
 .switch.on{ background: rgba(0,207,200,.25); border-color: rgba(0,207,200,.35); }
 .switch.on::after{ left:26px; background: var(--accent); }
 
+.overrideElapsedRow.isDisabled{
+  display:none;
+}
+
 .milestones{
   display:none;
   margin-top:12px;
@@ -1260,6 +1277,7 @@ input[type="text"]:focus, input[type="number"]:focus{
 
 /* Edit Task modal: parallelogram styling */
 #editOverlay .modal{
+  background: #0d0f13;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
@@ -1280,6 +1298,22 @@ input[type="text"]:focus, input[type="number"]:focus{
   background: rgba(255,255,255,.02);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+/* History Analysis modal: match app modal visual language */
+#historyAnalysisOverlay .modal{
+  width:min(560px, 100%);
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#historyAnalysisSummary{
+  margin-top:8px;
+  color: rgba(255,255,255,.78);
+  line-height:1.5;
+}
+#historyAnalysisSummary b{
+  color: rgba(230,250,255,.98);
 }
 
 /* Add Task modal: parallelogram styling */
@@ -1448,26 +1482,70 @@ input[type="text"]:focus, input[type="number"]:focus{
   width:100%;
 }
 .settingsMenu .menuList{
-  align-items:center;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap:10px;
+  align-items:stretch;
 }
 .settingsMenu .settingsCloseIcon{
   position:absolute;
   right:4px;
   top:2px;
-  width:32px;
-  height:32px;
-  font-size:13px;
-  font-weight:800;
+  width:auto;
+  height:auto;
+  min-width:88px;
+  min-height:34px;
+  padding:8px 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+  line-height:1;
 }
 .settingsMenu .menuItem{
   text-align:center;
-  width:min(560px, 100%);
+  width:100%;
+  min-height:112px;
+  aspect-ratio:1/1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 8px;
+  border:1px solid rgba(53,232,255,.25);
+  background: linear-gradient(180deg, rgba(53,232,255,.08), rgba(255,255,255,.02));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  font-size:12px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.settingsMenu .settingsAuthItem{
+  min-height:44px;
+  aspect-ratio:auto;
+  display:block;
+  padding:12px 14px;
+  text-transform:none;
+  letter-spacing:.1px;
+  font-size:13px;
 }
 .settingsMenu .menuDivider{
+  grid-column: 1 / -1;
   width:100%;
 }
 .settingsMenu .footerBtns{
   justify-content:center;
+}
+.settingsMenu .settingsSectionLabel{
+  grid-column: 1 / -1;
+  margin: 6px 2px 2px;
+}
+@media (hover: hover) and (pointer: fine){
+  .settingsMenu .menuItem:hover{
+    background: linear-gradient(180deg, rgba(53,232,255,.18), rgba(255,255,255,.05));
+    border-color: rgba(53,232,255,.5);
+    box-shadow: inset 0 0 0 1px rgba(53,232,255,.2), 0 0 12px rgba(0,220,255,.16);
+    transform: translateY(-1px);
+  }
 }
 #app[aria-label="TaskTimer Settings"],
 #app[aria-label="TaskTimer Settings"] .menu,
@@ -1553,7 +1631,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   padding:0 4px;
   min-width:20px;
   height:20px;
-  border:1px solid rgba(117,231,255,.2);
+  border:none;
   background: rgba(255,255,255,.03);
   color: rgba(190,240,255,.9);
   font-size:12px;
@@ -1578,7 +1656,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   background: rgba(255,77,77,.2);
 }
 .historyPinBtn.isOn{
-  border-color: rgba(53,232,255,.55);
+  border:none;
   background: rgba(53,232,255,.16);
   color: rgba(230,250,255,.98);
 }
@@ -1624,6 +1702,29 @@ input[type="text"]:focus, input[type="number"]:focus{
   transform: scale(.45);
   transform-origin:left center;
 }
+.historyRangeModePill{
+  height:20px;
+  padding:0 8px;
+  border-radius:0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  border:1px solid rgba(117,231,255,.28);
+  background: rgba(255,255,255,.03);
+  color: rgba(190,240,255,.85);
+  font-family:var(--font-tight);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.historyRangeModePill:first-of-type{
+  margin-left:auto;
+}
+.historyRangeModePill.isOn{
+  background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
+  border-color: rgba(53,232,255,.55);
+  color: rgba(228,248,255,.98);
+}
 .historyCanvasWrap{
   width:100%;
   height:260px;
@@ -1663,17 +1764,41 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .historyRangeInfo{
   display:flex;
-  align-items:center;
+  flex-direction:column;
+  align-items:flex-start;
   gap:8px;
   min-width:0;
   flex:1 1 auto;
 }
 .historyRangeText{
   min-width:0;
+  font-size:10px;
+  line-height:1.2;
 }
 .historyRangeActions{
   justify-content:flex-end;
   margin-left:auto;
+}
+.historyActionIconBtn{
+  width:30px;
+  height:30px;
+  font-size:14px;
+  line-height:1;
+}
+.historyActionIconBtn.isDisabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+.historyTopIconBtn{
+  border:none !important;
+  background: transparent !important;
+  box-shadow:none !important;
+}
+@media (hover: hover) and (pointer: fine){
+  .historyTopIconBtn:hover{
+    border:none !important;
+    background: rgba(235,245,255,.18) !important;
+  }
 }
 .historyBest{
   margin-top:12px;
@@ -2244,16 +2369,17 @@ input[type="text"]:focus, input[type="number"]:focus{
   align-items:center;
 }
 .aboutLogo{
-  width:56px; height:56px;
-  border-radius: 14px;
-  border:1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.06);
+  width: 220px;
+  max-width: 42vw;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 .aboutText{ color: rgba(255,255,255,.70); line-height:1.45; }
 
 .userGuidePage{
   display:grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 1fr;
   gap:14px;
   height:100%;
   padding:18px;
@@ -2274,12 +2400,21 @@ input[type="text"]:focus, input[type="number"]:focus{
   justify-content:center;
 }
 .userGuideToc{
+  grid-column:1 / -1;
   border:1px solid rgba(255,255,255,.12);
   background: #0d0f13 !important;
   padding:12px;
   display:flex;
   flex-direction:column;
   gap:8px;
+}
+.userGuideTopic{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.userGuideTopicPanel{
+  margin:0;
 }
 .userGuideTocTitle{
   font-family:var(--font-tight);
@@ -2509,12 +2644,12 @@ body[data-theme="light"] .progressTrack{
   border-color: rgba(0,0,0,.12);
 }
 body[data-theme="light"] .historyPinBtn{
-  border-color: rgba(0,0,0,.24);
+  border:none;
   background: rgba(255,255,255,.9);
   color:#111111;
 }
 body[data-theme="light"] .historyPinBtn.isOn{
-  border-color: rgba(0,151,199,.45);
+  border:none;
   background: rgba(0,151,199,.14);
   color:#111111;
 }
@@ -2714,16 +2849,17 @@ body[data-theme="light"] input[type="number"]{
     padding-bottom:78px;
   }
   .appFooterNav{
-    position:relative;
+    position:sticky;
     left:auto;
     top:auto;
-    bottom:auto;
+    bottom:0;
     width:100%;
     grid-template-columns: repeat(5, minmax(0,1fr));
     gap:6px;
     border-right:none;
     border-top:1px solid rgba(117,231,255,.28);
     box-shadow: 0 -10px 20px rgba(0,0,0,.35);
+    z-index: 12;
     padding:10px 8px calc(10px + env(safe-area-inset-bottom));
   }
   .appFooterBtn{
@@ -2819,13 +2955,11 @@ body[data-theme="light"] input[type="number"]{
     padding:12px;
   }
   .userGuideToc{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display:flex;
+    flex-direction:column;
     gap:8px;
   }
-  .userGuideTocTitle{
-    grid-column: 1 / -1;
-  }
+  .userGuideTocTitle{ grid-column: auto; }
   .userGuideScroll{
     padding-right:0;
   }
@@ -2901,7 +3035,8 @@ body[data-theme="light"] input[type="number"]{
     flex-direction:column;
   }
   .userGuideToc{
-    grid-template-columns: 1fr;
+    display:flex;
+    flex-direction:column;
   }
   .userGuideShotImage{
     min-height:120px;

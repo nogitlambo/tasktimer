@@ -13,7 +13,7 @@ export default function HistoryManagerScreen() {
             Delete
           </button>
           <button className="btn btn-ghost small" id="historyManagerBackBtn" type="button">
-            Back to Settings
+            Exit
           </button>
         </div>
       </div>

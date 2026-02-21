@@ -7,8 +7,8 @@ export default function SettingsPanel() {
         <div className="menuTitle" aria-label="Task Timer Settings">
           Task Timer Settings
         </div>
-        <button className="menuIcon settingsCloseIcon" id="closeMenuBtn" type="button" aria-label="Close menu">
-          X
+        <button className="menuIcon settingsCloseIcon" id="closeMenuBtn" type="button" aria-label="Exit settings">
+          Exit
         </button>
       </div>
 

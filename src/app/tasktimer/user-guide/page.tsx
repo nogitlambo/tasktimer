@@ -242,7 +242,6 @@ export default function UserGuidePage() {
     []
   );
   const [activeId, setActiveId] = useState("ug-nav");
-  const activeSection = sections.find((s) => s.id === activeId) || sections[0];
 
   return (
     <div className="wrap" id="app" aria-label="TaskTimer User Guide">
@@ -258,48 +257,39 @@ export default function UserGuidePage() {
         </div>
         <aside className="userGuideToc">
           <div className="userGuideTocTitle">Contents</div>
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              className={`userGuideTocItem${activeId === s.id ? " isOn" : ""}`}
-              type="button"
-              onClick={() => setActiveId(s.id)}
-            >
-              {s.title}
-            </button>
-          ))}
+          {sections.map((s) => {
+            const isOn = activeId === s.id;
+            return (
+              <div className="userGuideTopic" key={s.id}>
+                <button className={`userGuideTocItem${isOn ? " isOn" : ""}`} type="button" onClick={() => setActiveId(s.id)}>
+                  {s.title}
+                </button>
+                {isOn ? (
+                  <div className="modalSubtext userGuideText userGuideWindow userGuideTopicPanel">
+                    <section className="userGuideSection">
+                      <h3>
+                        <img className="userGuideIcon" src={s.icon} alt="" aria-hidden="true" />
+                        {s.title}
+                      </h3>
+                      {s.paragraphs.map((para, idx) => (
+                        <p key={`${s.id}-p-${idx}`}>{para}</p>
+                      ))}
+                      {s.shots.map((shot, idx) =>
+                        shot.image ? (
+                          <img key={`${s.id}-shot-${idx}`} className="userGuideShotImage" src={shot.image} alt={`${s.title} screenshot ${idx + 1}`} />
+                        ) : (
+                          <div key={`${s.id}-shot-${idx}`} className="userGuideShotPlaceholder">
+                            {shot.label}
+                          </div>
+                        )
+                      )}
+                    </section>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </aside>
-
-        <div className="userGuideScroll">
-          <div className="modal" role="dialog" aria-modal="true" aria-label="User Guide">
-            <h2>User Guide</h2>
-            <div className="modalSubtext userGuideText userGuideWindow">
-              <section className="userGuideSection">
-                <h3>
-                  <img className="userGuideIcon" src={activeSection.icon} alt="" aria-hidden="true" />
-                  {activeSection.title}
-                </h3>
-                {activeSection.paragraphs.map((para, idx) => (
-                  <p key={`${activeSection.id}-p-${idx}`}>{para}</p>
-                ))}
-                {activeSection.shots.map((shot, idx) =>
-                  shot.image ? (
-                    <img
-                      key={`${activeSection.id}-shot-${idx}`}
-                      className="userGuideShotImage"
-                      src={shot.image}
-                      alt={`${activeSection.title} screenshot ${idx + 1}`}
-                    />
-                  ) : (
-                    <div key={`${activeSection.id}-shot-${idx}`} className="userGuideShotPlaceholder">
-                      {shot.label}
-                    </div>
-                  )
-                )}
-              </section>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -109,6 +109,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
   const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
   const HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId`;
+  const HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId`;
+  const DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
@@ -116,6 +118,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let historyByTaskId: HistoryByTaskId = {};
   let historyRangeDaysByTaskId: Record<string, 7 | 14> = {};
+  let historyRangeModeByTaskId: Record<string, "entries" | "day"> = {};
   let focusModeTaskId: string | null = null;
   const openHistoryTaskIds = new Set<string>();
   let pinnedHistoryTaskIds = new Set<string>();
@@ -130,6 +133,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   type HistoryViewState = {
     page: number;
     rangeDays: 7 | 14;
+    rangeMode: "entries" | "day";
     editMode: boolean;
     barRects: Array<any>;
     labelHitRects: Array<any>;
@@ -156,6 +160,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let elapsedPadDraft = "";
   let elapsedPadOriginal = "";
   let editMoveTargetMode: MainMode = "mode1";
+  let dashboardEditMode = false;
+  let dashboardDragEl: HTMLElement | null = null;
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -198,7 +204,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
-    dashboardSettingsBtn: document.getElementById("dashboardSettingsBtn") as HTMLButtonElement | null,
+    dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
+    dashboardGrid: document.querySelector(".dashboardGrid") as HTMLElement | null,
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
@@ -269,6 +276,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     editMoveMode1: document.getElementById("editMoveMode1") as HTMLButtonElement | null,
     editMoveMode2: document.getElementById("editMoveMode2") as HTMLButtonElement | null,
     editMoveMode3: document.getElementById("editMoveMode3") as HTMLButtonElement | null,
+    editOverrideElapsedToggle: document.getElementById("editOverrideElapsedToggle"),
+    editOverrideElapsedFields: document.getElementById("editOverrideElapsedFields"),
     editD: document.getElementById("editD") as HTMLInputElement | null,
     editH: document.getElementById("editH") as HTMLInputElement | null,
     editM: document.getElementById("editM") as HTMLInputElement | null,
@@ -304,6 +313,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     confirmChkRow2: document.getElementById("confirmChkRow2"),
     confirmChkLabel2: document.getElementById("confirmChkLabel2"),
     confirmLogChk: document.getElementById("confirmLogChk") as HTMLInputElement | null,
+    historyAnalysisOverlay: document.getElementById("historyAnalysisOverlay"),
+    historyAnalysisTitle: document.getElementById("historyAnalysisTitle"),
+    historyAnalysisSummary: document.getElementById("historyAnalysisSummary"),
 
     historyScreen: document.getElementById("historyScreen"),
     historyBackBtn: document.getElementById("historyBackBtn"),
@@ -427,6 +439,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function loadHistoryRangePrefs() {
     historyRangeDaysByTaskId = {};
+    historyRangeModeByTaskId = {};
     try {
       const raw = localStorage.getItem(HISTORY_RANGE_KEY);
       if (!raw) return;
@@ -435,6 +448,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       Object.keys(parsed).forEach((taskId) => {
         const value = (parsed as any)[taskId];
         historyRangeDaysByTaskId[taskId] = value === 14 ? 14 : 7;
+      });
+    } catch {
+      // ignore
+    }
+    try {
+      const rawMode = localStorage.getItem(HISTORY_RANGE_MODE_KEY);
+      if (!rawMode) return;
+      const parsedMode = JSON.parse(rawMode);
+      if (!parsedMode || typeof parsedMode !== "object") return;
+      Object.keys(parsedMode).forEach((taskId) => {
+        const value = (parsedMode as any)[taskId];
+        historyRangeModeByTaskId[taskId] = value === "day" ? "day" : "entries";
       });
     } catch {
       // ignore
@@ -448,6 +473,65 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       localStorage.setItem(HISTORY_RANGE_KEY, JSON.stringify(historyRangeDaysByTaskId));
     } catch {
       // ignore
+    }
+  }
+
+  function saveHistoryRangeModePref(taskId: string, rangeMode: "entries" | "day") {
+    if (!taskId) return;
+    historyRangeModeByTaskId[taskId] = rangeMode;
+    try {
+      localStorage.setItem(HISTORY_RANGE_MODE_KEY, JSON.stringify(historyRangeModeByTaskId));
+    } catch {
+      // ignore
+    }
+  }
+
+  function applyDashboardOrderFromStorage() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    try {
+      const raw = localStorage.getItem(DASHBOARD_ORDER_KEY);
+      if (!raw) return;
+      const order = JSON.parse(raw);
+      if (!Array.isArray(order) || !order.length) return;
+      const byId = new Map<string, HTMLElement>();
+      Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
+        const card = el as HTMLElement;
+        const id = card.getAttribute("data-dashboard-id");
+        if (id) byId.set(id, card);
+      });
+      order.forEach((id: any) => {
+        const card = byId.get(String(id || ""));
+        if (card) grid.appendChild(card);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  function saveDashboardOrder() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    const order = Array.from(grid.querySelectorAll(".dashboardCard"))
+      .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
+      .filter(Boolean);
+    try {
+      localStorage.setItem(DASHBOARD_ORDER_KEY, JSON.stringify(order));
+    } catch {
+      // ignore
+    }
+  }
+
+  function applyDashboardEditMode() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    grid.classList.toggle("isEditMode", dashboardEditMode);
+    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
+      (el as HTMLElement).setAttribute("draggable", dashboardEditMode ? "true" : "false");
+    });
+    if (els.dashboardEditBtn) {
+      els.dashboardEditBtn.classList.toggle("isOn", dashboardEditMode);
+      els.dashboardEditBtn.textContent = dashboardEditMode ? "Done" : "Edit";
     }
   }
 
@@ -636,19 +720,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return out;
   }
 
-  function mergeBackup(payload: any) {
+  function mergeBackup(payload: any, opts?: { overwrite?: boolean }) {
     if (!payload || typeof payload !== "object") return { ok: false, msg: "Invalid backup file." };
+    const overwrite = !!opts?.overwrite;
 
     const importedTasks = Array.isArray(payload.tasks) ? payload.tasks : [];
     const importedHistory = payload.history && typeof payload.history === "object" ? payload.history : {};
 
-    const existingMaxOrder = tasks.reduce((mx, t) => Math.max(mx, +t.order || 0), 0) || 0;
-    const existingIds = new Set(tasks.map((t) => String(t.id)));
+    const existingMaxOrder = overwrite ? 0 : tasks.reduce((mx, t) => Math.max(mx, +t.order || 0), 0) || 0;
+    const existingIds = new Set(overwrite ? [] : tasks.map((t) => String(t.id)));
     const idMap: Record<string, string> = {};
 
     const orderedImport = importedTasks.slice().sort((a: any, b: any) => (+a.order || 0) - (+b.order || 0));
 
     let added = 0;
+    const nextTasks: Task[] = overwrite ? [] : tasks.slice();
 
     orderedImport.forEach((rawTask: any, idx: number) => {
       if (!rawTask || typeof rawTask !== "object") return;
@@ -663,23 +749,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       nt.order = existingMaxOrder + idx + 1;
 
       existingIds.add(newId);
-      tasks.push(nt);
+      nextTasks.push(nt);
       added += 1;
     });
+
+    const nextHistory: HistoryByTaskId = overwrite ? {} : { ...(historyByTaskId || {}) };
 
     Object.keys(importedHistory).forEach((oldId) => {
       const arr = (importedHistory as any)[oldId];
       if (!Array.isArray(arr) || arr.length === 0) return;
 
       const destId = idMap[String(oldId)] || String(oldId);
-      if (!Array.isArray(historyByTaskId[destId])) historyByTaskId[destId] = [];
+      if (!Array.isArray(nextHistory[destId])) nextHistory[destId] = [];
 
       arr.forEach((e: any) => {
         if (!e || typeof e !== "object") return;
         const ts = Number.isFinite(+e.ts) ? +e.ts : null;
         const ms = Number.isFinite(+e.ms) ? Math.max(0, +e.ms) : null;
         if (!ts || !ms) return;
-        historyByTaskId[destId].push({
+        nextHistory[destId].push({
           name: String(e.name || ""),
           ms,
           ts,
@@ -688,6 +776,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       });
     });
 
+    tasks = nextTasks;
+    historyByTaskId = nextHistory;
     save();
     saveHistory(historyByTaskId);
     historyByTaskId = cleanupHistory(historyByTaskId);
@@ -703,9 +793,39 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     reader.onload = () => {
       const text = String(reader.result || "");
       const payload = safeJsonParse(text);
-      const res = mergeBackup(payload);
-      if (!res.ok) alert(res.msg || "Import failed.");
-      else alert(res.msg || "Import complete.");
+      const importedTasks = payload && Array.isArray(payload.tasks) ? payload.tasks : [];
+      const hasExistingTasks = Array.isArray(tasks) && tasks.length > 0;
+      const hasIncomingTasks = importedTasks.length > 0;
+
+      const runImport = (overwrite: boolean) => {
+        const res = mergeBackup(payload, { overwrite });
+        if (!res.ok) alert(res.msg || "Import failed.");
+        else alert(res.msg || "Import complete.");
+      };
+
+      if (hasExistingTasks && hasIncomingTasks) {
+        confirm(
+          "Import Backup",
+          "Existing tasks were found. Do you want to add imported tasks to existing tasks, or overwrite existing data?",
+          {
+            okLabel: "Add",
+            altLabel: "Overwrite",
+            cancelLabel: "Cancel",
+            onOk: () => {
+              runImport(false);
+              closeConfirm();
+            },
+            onAlt: () => {
+              runImport(true);
+              closeConfirm();
+            },
+            onCancel: () => closeConfirm(),
+          }
+        );
+        return;
+      }
+
+      runImport(false);
     };
     reader.onerror = () => alert("Could not read the file.");
     reader.readAsText(file);
@@ -1052,6 +1172,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 <div class="historyTitle historyInlineTitle">History</div>
               </div>
               <div class="historyMeta historyTopActions">
+                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="export" title="Export" aria-label="Export">&#11123;</button>
+                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="analyse" title="Analysis" aria-label="Analysis">&#128269;</button>
+                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="manage" title="Manage" aria-label="Manage">&#9881;</button>
                 <button class="historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">X</button>
                 <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
                     isHistoryPinned ? "Unpin chart" : "Pin chart"
@@ -1064,15 +1187,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             <div class="historyTrashRow"></div>
             <div class="historyRangeRow">
               <div class="historyRangeInfo">
+                <div class="historyMeta historyRangeText">&nbsp;</div>
                 <div class="historyRangeToggleRow" aria-label="History range">
                   <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
+                  <button class="historyRangeModePill isOn" type="button" data-history-range-mode="entries" aria-pressed="true">Entries</button>
+                  <button class="historyRangeModePill" type="button" data-history-range-mode="day" aria-pressed="false">Day</button>
                 </div>
-                <div class="historyMeta historyRangeText">&nbsp;</div>
               </div>
               <div class="historyMeta historyRangeActions">
-                <button class="btn btn-ghost small" type="button" data-history-action="export">Export</button>
-                <button class="btn btn-ghost small" type="button" data-history-action="analyse">Analyse</button>
-                <button class="btn btn-ghost small" type="button" data-history-action="manage">Manage</button>
               </div>
             </div>
           </section>
@@ -1082,7 +1204,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       taskEl.innerHTML = `
         <div class="row">
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
-          <div class="time">${formatMainTaskElapsedHtml(elapsedMs, !!t.running, !!t.hasStarted)}</div>
+          <div class="time">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
           <div class="actions">
             ${
               t.running
@@ -1247,9 +1369,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const existing = historyViewByTaskId[taskId];
     if (existing) return existing;
     const savedRangeDays = historyRangeDaysByTaskId[taskId] === 14 ? 14 : 7;
+    const savedRangeMode = historyRangeModeByTaskId[taskId] === "day" ? "day" : "entries";
     const created: HistoryViewState = {
       page: 0,
       rangeDays: savedRangeDays,
+      rangeMode: savedRangeMode,
       editMode: false,
       barRects: [],
       labelHitRects: [],
@@ -1645,7 +1769,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const rangeDays = state.rangeDays || 7;
     const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
     const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
-    const total = all.length;
     const localDateKey = (ts: number) => {
       const d = new Date(ts);
       const y = d.getFullYear();
@@ -1655,19 +1778,47 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     };
     const distinctDayCount = new Set(all.map((e: any) => localDateKey(+e.ts || 0))).size;
     const pageSize = historyPageSize(taskId);
+    const isDayMode = state.rangeMode === "day";
+    const groupedByDay: Array<any> = [];
+    if (isDayMode) {
+      const historyTask = tasks.find((task) => String(task.id || "") === String(taskId));
+      all.forEach((e: any) => {
+        const ts = +e.ts || 0;
+        const ms = Math.max(0, +e.ms || 0);
+        const key = localDateKey(ts);
+        const last = groupedByDay[groupedByDay.length - 1];
+        if (last && last.dayKey === key) {
+          last.ms += ms;
+          last.count += 1;
+          if (ts >= last.ts) last.ts = ts;
+        } else {
+          groupedByDay.push({
+            dayKey: key,
+            ts,
+            ms,
+            count: 1,
+            color: historyTask ? sessionColorForTaskMs(historyTask as any, ms) : e.color,
+          });
+        }
+      });
+    }
+    const display = isDayMode ? groupedByDay : all;
+    const total = display.length;
 
     const end = Math.max(0, total - state.page * pageSize);
     const start = Math.max(0, end - pageSize);
-    const slice = all.slice(start, end);
+    const slice = display.slice(start, end);
 
     const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
     if (state.page > maxPage) state.page = maxPage;
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
-      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${
-        distinctDayCount === 1 ? "day" : "days"
-      })`;
+      else if (isDayMode) ui.rangeText.textContent = `Showing ${slice.length} of ${total} days (${all.length} entries)`;
+      else
+        ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${
+          distinctDayCount === 1 ? "day" : "days"
+        })`;
     }
 
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
@@ -1683,7 +1834,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     } else {
       state.selectedRelIndex = null;
     }
-    const hasDeleteTarget = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
+    const hasDeleteTarget = !isDayMode && (state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0);
     if (ui.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
     if (ui.clearLocksBtn) ui.clearLocksBtn.style.display = state.lockedAbsIndexes.size > 0 ? "inline-flex" : "none";
 
@@ -1702,6 +1853,98 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       rangeToggle.classList.toggle("on", is14);
       rangeToggle.setAttribute("aria-checked", String(is14));
     }
+    const rangeModeEntries = ui.root.querySelector('[data-history-range-mode="entries"]') as HTMLElement | null;
+    const rangeModeDay = ui.root.querySelector('[data-history-range-mode="day"]') as HTMLElement | null;
+    const isEntriesMode = state.rangeMode !== "day";
+    if (rangeModeEntries) {
+      rangeModeEntries.classList.toggle("isOn", isEntriesMode);
+      rangeModeEntries.setAttribute("aria-pressed", String(isEntriesMode));
+    }
+    if (rangeModeDay) {
+      rangeModeDay.classList.toggle("isOn", !isEntriesMode);
+      rangeModeDay.setAttribute("aria-pressed", String(!isEntriesMode));
+    }
+    const analyseBtn = ui.root.querySelector('[data-history-action="analyse"]') as HTMLButtonElement | null;
+    if (analyseBtn) {
+      const canAnalyse = state.lockedAbsIndexes.size >= 2;
+      analyseBtn.classList.toggle("isDisabled", !canAnalyse);
+      analyseBtn.setAttribute("aria-disabled", String(!canAnalyse));
+      analyseBtn.title = canAnalyse ? "Analysis" : "Lock at least 2 columns to analyse";
+    }
+  }
+
+  function getHistoryDisplayForTask(taskId: string, state: HistoryViewState) {
+    const allRaw = getHistoryForTask(taskId);
+    const rangeDays = state.rangeDays || 7;
+    const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
+    const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
+    if (state.rangeMode !== "day") return all;
+
+    const groupedByDay: Array<any> = [];
+    const historyTask = tasks.find((task) => String(task.id || "") === String(taskId));
+    const localDateKey = (ts: number) => {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const da = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${da}`;
+    };
+    all.forEach((e: any) => {
+      const ts = +e.ts || 0;
+      const ms = Math.max(0, +e.ms || 0);
+      const key = localDateKey(ts);
+      const last = groupedByDay[groupedByDay.length - 1];
+      if (last && last.dayKey === key) {
+        last.ms += ms;
+        last.count += 1;
+        if (ts >= last.ts) last.ts = ts;
+      } else {
+        groupedByDay.push({
+          dayKey: key,
+          ts,
+          ms,
+          count: 1,
+          color: historyTask ? sessionColorForTaskMs(historyTask as any, ms) : e.color,
+        });
+      }
+    });
+    return groupedByDay;
+  }
+
+  function openHistoryAnalysisModal(taskId: string) {
+    const state = ensureHistoryViewState(taskId);
+    if (state.lockedAbsIndexes.size < 2) return;
+    const display = getHistoryDisplayForTask(taskId, state);
+    if (!display.length) return;
+    const selected = Array.from(state.lockedAbsIndexes.values())
+      .sort((a, b) => a - b)
+      .map((idx) => display[idx])
+      .filter(Boolean);
+    if (selected.length < 2) return;
+
+    const totalMs = selected.reduce((sum, e: any) => sum + Math.max(0, +e.ms || 0), 0);
+    const avgMs = Math.floor(totalMs / selected.length);
+    const minMs = Math.min(...selected.map((e: any) => Math.max(0, +e.ms || 0)));
+    const maxMs = Math.max(...selected.map((e: any) => Math.max(0, +e.ms || 0)));
+    const firstTs = Math.min(...selected.map((e: any) => +e.ts || 0));
+    const lastTs = Math.max(...selected.map((e: any) => +e.ts || 0));
+    const task = tasks.find((t) => String(t.id || "") === String(taskId));
+    const taskName = (task?.name || "Task").trim() || "Task";
+    const modeLabel = state.rangeMode === "day" ? "Day" : "Entries";
+
+    if (els.historyAnalysisTitle) {
+      els.historyAnalysisTitle.textContent = `History Analysis - ${taskName}`;
+    }
+    if (els.historyAnalysisSummary) {
+      els.historyAnalysisSummary.innerHTML = `
+        <p style="margin:0 0 8px">Selected columns: <b>${selected.length}</b> (${modeLabel} view)</p>
+        <p style="margin:0 0 8px">Total time: <b>${formatTime(totalMs)}</b></p>
+        <p style="margin:0 0 8px">Average: <b>${formatTime(avgMs)}</b></p>
+        <p style="margin:0 0 8px">Min / Max: <b>${formatTime(minMs)}</b> / <b>${formatTime(maxMs)}</b></p>
+        <p style="margin:0">Range: <b>${formatDateTime(firstTs)}</b> to <b>${formatDateTime(lastTs)}</b></p>
+      `;
+    }
+    openOverlay(els.historyAnalysisOverlay as HTMLElement | null);
   }
 
   function resetTask(i: number) {
@@ -1797,6 +2040,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.editH) els.editH.value = String(h);
     if (els.editM) els.editM.value = String(m);
     if (els.editS) els.editS.value = String(s);
+    setEditElapsedOverrideEnabled(false);
     {
       const current = taskModeOf(t);
       editMoveTargetMode = current;
@@ -1827,16 +2071,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (saveChanges && t) {
       t.name = (els.editName?.value || "").trim() || t.name;
 
-      const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
-      const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
-      const hh = isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
-      const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
-      const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
+      if (isEditElapsedOverrideEnabled()) {
+        const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
+        const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
+        const hh = isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
+        const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
+        const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
 
-      const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
+        const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
 
-      t.accumulatedMs = newMs;
-      t.startMs = t.running ? nowMs() : null;
+        t.accumulatedMs = newMs;
+        t.startMs = t.running ? nowMs() : null;
+      }
 
       t.milestones = sortMilestones(t.milestones);
       const moveMode = editMoveTargetMode || taskModeOf(t);
@@ -1861,6 +2107,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (input === els.editM) return "Minutes";
     if (input === els.editS) return "Seconds";
     return "Value";
+  }
+
+  function isEditElapsedOverrideEnabled() {
+    return !!els.editOverrideElapsedToggle?.classList.contains("on");
+  }
+
+  function setEditElapsedOverrideEnabled(enabled: boolean) {
+    els.editOverrideElapsedToggle?.classList.toggle("on", enabled);
+    els.editOverrideElapsedToggle?.setAttribute("aria-checked", String(enabled));
+    els.editOverrideElapsedFields?.classList.toggle("isDisabled", !enabled);
   }
 
   function elapsedPadRangeForInput(input: HTMLInputElement | null) {
@@ -2408,9 +2664,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return `${formatTwo(days)} ${formatTwo(hours)} ${formatTwo(minutes)} ${formatTwo(seconds)}`;
   }
 
-  function formatMainTaskElapsedHtml(ms: number, isRunning = false, hasStarted = false): string {
+  function formatMainTaskElapsedHtml(ms: number, isRunning = false): string {
     const parts = formatMainTaskElapsed(ms).split(" ");
-    const panelStateClass = !isRunning && hasStarted ? " isStopped" : "";
+    const panelStateClass = !isRunning ? " isStopped" : "";
     return `
       <span class="timePanel${panelStateClass}">
         <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
@@ -2834,7 +3090,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerTasksBtn, "click", () => applyAppPage("tasks"));
     on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard"));
     on(els.footerTest1Btn, "click", () => applyAppPage("test1"));
-    on(els.footerTest2Btn, "click", () => applyAppPage("test2"));
+    on(els.footerTest2Btn, "click", () => {
+      window.location.href = appRoute("/tasktimer/user-guide");
+    });
     on(els.footerSettingsBtn, "click", () => {
       window.location.href = appRoute("/tasktimer/settings");
     });
@@ -2972,13 +3230,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           menu.classList.remove("open-up");
           return;
         }
-        const list = menu.querySelector(".taskMenuList") as HTMLElement | null;
-        if (!list) return;
-        const footer = document.querySelector(".appFooterNav") as HTMLElement | null;
-        const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
-        const listRect = list.getBoundingClientRect();
-        const wouldOverlapFooter = listRect.bottom > footerTop - 8;
-        menu.classList.toggle("open-up", wouldOverlapFooter);
+        menu.classList.remove("open-up");
       }, 0);
     });
 
@@ -2992,6 +3244,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         state.rangeDays = state.rangeDays === 14 ? 7 : 14;
         saveHistoryRangePref(taskId, state.rangeDays);
         state.page = 0;
+        renderHistory(taskId);
+        return;
+      }
+      const rangeModeBtn = ev.target?.closest?.("[data-history-range-mode]") as HTMLElement | null;
+      if (rangeModeBtn) {
+        const taskEl = rangeModeBtn.closest?.(".task") as HTMLElement | null;
+        const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+        if (!taskId) return;
+        const state = ensureHistoryViewState(taskId);
+        const mode = rangeModeBtn.getAttribute("data-history-range-mode");
+        state.rangeMode = mode === "day" ? "day" : "entries";
+        saveHistoryRangeModePref(taskId, state.rangeMode);
         renderHistory(taskId);
         return;
       }
@@ -3035,6 +3299,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
       if (action === "manage") {
         window.location.href = appRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
+        return;
+      }
+      if (action === "analyse") {
+        if (state.lockedAbsIndexes.size < 2) return;
+        openHistoryAnalysisModal(taskId);
         return;
       }
       if (action === "clearLocks") {
@@ -3175,23 +3444,38 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       swipeWrap = null;
       swipePointerId = null;
 
-      if (Math.abs(dx) < 40) return;
+      if (Math.abs(dx) < 24) return;
       if (Math.abs(dy) > 60) return;
 
       const taskId = currentWrap?.closest(".task")?.getAttribute("data-task-id") || "";
       if (!taskId) return;
       const state = ensureHistoryViewState(taskId);
+      const rangeDays = state.rangeDays || 7;
+      const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
+      const visibleEntries = getHistoryForTask(taskId).filter((e: any) => (+e.ts || 0) >= cutoffMs);
+      const total =
+        state.rangeMode === "day"
+          ? new Set(
+              visibleEntries.map((e: any) => {
+                const d = new Date(+e.ts || 0);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, "0");
+                const da = String(d.getDate()).padStart(2, "0");
+                return `${y}-${m}-${da}`;
+              })
+            ).size
+          : visibleEntries.length;
+      const pageSize = historyPageSize(taskId);
+      const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
 
       if (dx < 0) {
-        const ui = getHistoryUi(taskId);
-        if (!ui?.olderBtn?.disabled) {
+        if (state.page < maxPage) {
           state.slideDir = "left";
           state.page += 1;
           renderHistory(taskId);
         }
       } else {
-        const ui = getHistoryUi(taskId);
-        if (!ui?.newerBtn?.disabled) {
+        if (state.page > 0) {
           state.slideDir = "right";
           state.page = Math.max(0, state.page - 1);
           renderHistory(taskId);
@@ -3199,58 +3483,60 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     };
 
-    on(
-      els.taskList,
-      "touchstart",
-      (e: any) => {
-        swipeWrap = e.target?.closest?.(".historyCanvasWrap") || null;
-        if (!swipeWrap) return;
-        if (!e.touches || !e.touches.length) return;
-        swipeStartX = e.touches[0].clientX;
-        swipeStartY = e.touches[0].clientY;
-      },
-      { passive: true }
-    );
+    if ("PointerEvent" in window) {
+      on(els.taskList, "pointerdown", (e: any) => {
+        const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
+        if (!wrap) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        swipeWrap = wrap;
+        swipePointerId = typeof e.pointerId === "number" ? e.pointerId : null;
+        swipeStartX = e.clientX;
+        swipeStartY = e.clientY;
+      });
 
-    on(
-      els.taskList,
-      "touchend",
-      (e: any) => {
-        const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
-        if (!t) return;
-        runHistorySwipe(t.clientX, t.clientY);
-      },
-      { passive: true }
-    );
+      on(els.taskList, "pointerup", (e: any) => {
+        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
+        runHistorySwipe(e.clientX, e.clientY);
+      });
 
-    on(els.taskList, "touchcancel", () => {
-      swipeStartX = null;
-      swipeStartY = null;
-      swipeWrap = null;
-      swipePointerId = null;
-    });
+      on(els.taskList, "pointercancel", () => {
+        swipeStartX = null;
+        swipeStartY = null;
+        swipeWrap = null;
+        swipePointerId = null;
+      });
+    } else {
+      on(
+        els.taskList,
+        "touchstart",
+        (e: any) => {
+          swipeWrap = e.target?.closest?.(".historyCanvasWrap") || null;
+          if (!swipeWrap) return;
+          if (!e.touches || !e.touches.length) return;
+          swipeStartX = e.touches[0].clientX;
+          swipeStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
 
-    on(els.taskList, "pointerdown", (e: any) => {
-      const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
-      if (!wrap) return;
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      swipeWrap = wrap;
-      swipePointerId = typeof e.pointerId === "number" ? e.pointerId : null;
-      swipeStartX = e.clientX;
-      swipeStartY = e.clientY;
-    });
+      on(
+        els.taskList,
+        "touchend",
+        (e: any) => {
+          const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
+          if (!t) return;
+          runHistorySwipe(t.clientX, t.clientY);
+        },
+        { passive: true }
+      );
 
-    on(els.taskList, "pointerup", (e: any) => {
-      if (swipePointerId != null && e.pointerId !== swipePointerId) return;
-      runHistorySwipe(e.clientX, e.clientY);
-    });
-
-    on(els.taskList, "pointercancel", () => {
-      swipeStartX = null;
-      swipeStartY = null;
-      swipeWrap = null;
-      swipePointerId = null;
-    });
+      on(els.taskList, "touchcancel", () => {
+        swipeStartX = null;
+        swipeStartY = null;
+        swipeWrap = null;
+        swipePointerId = null;
+      });
+    }
 
     on(window, "resize", () => {
       for (const taskId of openHistoryTaskIds) {
@@ -3261,10 +3547,47 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.menuIcon, "click", () => {
       window.location.href = appRoute("/tasktimer/settings");
     });
-    on(els.dashboardSettingsBtn, "click", () => {
-      const target = appRoute("/tasktimer/settings");
-      console.debug("[TaskTimer] dashboardSettingsBtn navigate ->", target);
-      window.location.href = target;
+    on(els.dashboardEditBtn, "click", () => {
+      dashboardEditMode = !dashboardEditMode;
+      applyDashboardEditMode();
+    });
+    on(els.dashboardGrid, "dragstart", (e: any) => {
+      if (!dashboardEditMode) return;
+      const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
+      if (!card || !els.dashboardGrid?.contains(card)) return;
+      dashboardDragEl = card;
+      card.classList.add("isDragging");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        try {
+          e.dataTransfer.setData("text/plain", card.getAttribute("data-dashboard-id") || "");
+        } catch {
+          // ignore
+        }
+      }
+    });
+    on(els.dashboardGrid, "dragover", (e: any) => {
+      if (!dashboardEditMode) return;
+      const grid = els.dashboardGrid;
+      const dragging = dashboardDragEl;
+      if (!grid || !dragging) return;
+      const over = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
+      if (!over || over === dragging || !grid.contains(over)) return;
+      e.preventDefault();
+      const rect = over.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      if (before) grid.insertBefore(dragging, over);
+      else grid.insertBefore(dragging, over.nextSibling);
+    });
+    on(els.dashboardGrid, "drop", (e: any) => {
+      if (!dashboardEditMode) return;
+      e.preventDefault();
+      saveDashboardOrder();
+    });
+    on(els.dashboardGrid, "dragend", () => {
+      if (dashboardDragEl) dashboardDragEl.classList.remove("isDragging");
+      dashboardDragEl = null;
+      if (dashboardEditMode) saveDashboardOrder();
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
@@ -3382,26 +3705,45 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
+    on(els.editOverrideElapsedToggle, "click", () => {
+      setEditElapsedOverrideEnabled(!isEditElapsedOverrideEnabled());
+    });
     on(els.editD, "click", (e: any) => {
+      if (!isEditElapsedOverrideEnabled()) return;
       e.preventDefault();
       openElapsedPad(els.editD);
     });
     on(els.editH, "click", (e: any) => {
+      if (!isEditElapsedOverrideEnabled()) return;
       e.preventDefault();
       openElapsedPad(els.editH);
     });
     on(els.editM, "click", (e: any) => {
+      if (!isEditElapsedOverrideEnabled()) return;
       e.preventDefault();
       openElapsedPad(els.editM);
     });
     on(els.editS, "click", (e: any) => {
+      if (!isEditElapsedOverrideEnabled()) return;
       e.preventDefault();
       openElapsedPad(els.editS);
     });
-    on(els.editD, "focus", () => openElapsedPad(els.editD));
-    on(els.editH, "focus", () => openElapsedPad(els.editH));
-    on(els.editM, "focus", () => openElapsedPad(els.editM));
-    on(els.editS, "focus", () => openElapsedPad(els.editS));
+    on(els.editD, "focus", () => {
+      if (!isEditElapsedOverrideEnabled()) return;
+      openElapsedPad(els.editD);
+    });
+    on(els.editH, "focus", () => {
+      if (!isEditElapsedOverrideEnabled()) return;
+      openElapsedPad(els.editH);
+    });
+    on(els.editM, "focus", () => {
+      if (!isEditElapsedOverrideEnabled()) return;
+      openElapsedPad(els.editM);
+    });
+    on(els.editS, "focus", () => {
+      if (!isEditElapsedOverrideEnabled()) return;
+      openElapsedPad(els.editS);
+    });
 
     on(els.elapsedPadOverlay, "click", (e: any) => {
       if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
@@ -3545,7 +3887,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       );
     });
     on(els.historyManagerBackBtn, "click", () => {
-      window.location.href = appRoute("/tasktimer/settings");
+      window.location.href = appRoute("/tasktimer");
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {
@@ -3685,7 +4027,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!t) return;
 
       const timeEl = node.querySelector(".time");
-      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(getElapsedMs(t), !!t.running, !!t.hasStarted);
+      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(getElapsedMs(t), !!t.running);
 
       if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
         const msSorted = sortMilestones(t.milestones);
@@ -3741,6 +4083,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   syncModeLabelsUi();
   applyMainMode("mode1");
   applyAppPage("tasks");
+  applyDashboardOrderFromStorage();
+  applyDashboardEditMode();
   wireEvents();
   render();
   maybeOpenImportFromQuery();

@@ -23,8 +23,9 @@
 ## Settings and overlays
 - Settings UI is shared via `src/app/tasktimer/components/SettingsPanel.tsx` and used on `/tasktimer/settings`.
 - Category Manager is implemented as an overlay in `src/app/tasktimer/components/InfoOverlays.tsx` and opened via `data-menu="categoryManager"`.
-- Common overlays and controls depend on stable IDs (e.g. `aboutOverlay`, `howtoOverlay`, `appearanceOverlay`, `categoryManagerOverlay`, `confirmOverlay`).
+- Common overlays and controls depend on stable IDs (e.g. `aboutOverlay`, `howtoOverlay`, `appearanceOverlay`, `categoryManagerOverlay`, `confirmOverlay`, `historyAnalysisOverlay`).
 - History Manager supports bulk edit, hierarchical checkbox selection, and sortable Date/Time + Elapsed columns.
+- Inline history analysis now uses `data-history-action="analyse"` and is enabled only when 2+ columns are lock-selected.
 
 ## Persistent state keys
 - `${STORAGE_KEY}`: primary task storage key (via `lib/storage.ts`).
@@ -45,6 +46,11 @@
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`; avoid unintended edits to `src/app/tasktimer/styles/tasktimer.css`.
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure light-mode overrides are included when introducing new dark-theme visual elements.
+- For all newly added modals and pages, always apply current app styling by default:
+  - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
+  - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
+  - Use existing button design system classes (`btn`, `btn-accent`, `btn-ghost`, `iconBtn`) and existing interaction patterns.
+  - Keep visual parity between dark and light theme overrides for any new UI surface.
 
 ## Development rules
 - Keep behavior changes minimal and scoped to the request.

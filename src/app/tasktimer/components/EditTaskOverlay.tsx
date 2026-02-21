@@ -48,8 +48,11 @@ export default function EditTaskOverlay() {
         </div>
 
         <div className="field">
-          <label>Override Elapsed Time</label>
-          <div className="row3 overrideElapsedRow">
+          <div className="toggleRow">
+            <span>Override Elapsed Time</span>
+            <div className="switch" id="editOverrideElapsedToggle" role="switch" aria-checked="false" />
+          </div>
+          <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
             <div className="field" style={{ margin: 0 }}>
               <label style={{ textTransform: "none", letterSpacing: 0 }}>Days</label>
               <input type="number" id="editD" min={0} step={1} readOnly />

@@ -9,15 +9,27 @@ export default function InfoOverlays() {
             <img className="aboutLogo" alt="TaskTimer logo" src="/tasktimer-logo.png" />
             <div>
               <h2 style={{ margin: 0 }}>TaskTimer</h2>
-              <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>Track time per task</div>
+              <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>Focused task timing with progress and history</div>
             </div>
           </div>
 
           <div className="aboutText" style={{ marginTop: 10 }}>
             <p style={{ marginTop: 0 }}>
-              TaskTimer helps you track time spent across tasks, with optional milestones and a history log when you
-              reset.
+              TaskTimer is built for tracking focused work across multiple tasks and modes, with a fast workflow for
+              start/stop timing, reviewing progress, and managing your history.
             </p>
+            <p>
+              Key features include:
+            </p>
+            <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+              <li>Multiple task categories (Mode 1, Mode 2, Mode 3) with configurable labels and colors</li>
+              <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
+              <li>Checkpoint milestones and progress tracking on each task</li>
+              <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
+              <li>Focus Mode for a single-task timer view with dedicated controls and insights</li>
+              <li>Backup export/import, including import merge/overwrite options</li>
+              <li>Dashboard and guide pages for overview and onboarding</li>
+            </ul>
           </div>
 
           <div className="footerBtns">

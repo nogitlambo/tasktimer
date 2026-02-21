@@ -9,6 +9,7 @@ import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
 import FocusModeScreen from "./components/FocusModeScreen";
 import HistoryScreen from "./components/HistoryScreen";
+import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import TaskList from "./components/TaskList";
 import { initTaskTimerClient } from "./tasktimerClient";
@@ -69,13 +70,13 @@ export default function TaskTimerPage() {
                   <p className="dashboardKicker">Performance Overview</p>
                   <h2 className="dashboardTitle">Mission Dashboard</h2>
                 </div>
-                <button className="btn btn-accent small" id="dashboardSettingsBtn" type="button" aria-label="Open Settings">
-                  Settings
+                <button className="btn btn-accent small" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout">
+                  Edit
                 </button>
               </div>
 
               <div className="dashboardGrid">
-                <section className="dashboardCard dashboardProfileCard" aria-label="Profile summary">
+                <section className="dashboardCard dashboardProfileCard" data-dashboard-id="profile" aria-label="Profile summary">
                   <div className="dashboardProfileHead">
                     <div className="dashboardAvatar">AT</div>
                     <div>
@@ -89,7 +90,7 @@ export default function TaskTimerPage() {
                   </div>
                 </section>
 
-                <section className="dashboardCard dashboardStreakCard" aria-label="Streak information">
+                <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
                   <div className="dashboardCardTitle">Streak</div>
                   <div className="dashboardStreakValue">21 Days</div>
                   <div className="dashboardStreakBar">
@@ -98,19 +99,19 @@ export default function TaskTimerPage() {
                   <div className="dashboardStreakMeta">4/5 sessions completed today</div>
                 </section>
 
-                <section className="dashboardCard dashboardStatCard" aria-label="Weekly hours">
+                <section className="dashboardCard dashboardStatCard" data-dashboard-id="week-hours" aria-label="Weekly hours">
                   <div className="dashboardCardTitle">This Week</div>
                   <div className="dashboardBigValue">32h 40m</div>
                   <div className="dashboardDelta positive">+14% vs last week</div>
                 </section>
 
-                <section className="dashboardCard dashboardStatCard" aria-label="Task completion">
+                <section className="dashboardCard dashboardStatCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                   <div className="dashboardCardTitle">Tasks Completed</div>
                   <div className="dashboardBigValue">18</div>
                   <div className="dashboardDelta">2 carried over</div>
                 </section>
 
-                <section className="dashboardCard dashboardMainGraphCard" aria-label="Focus trend graph">
+                <section className="dashboardCard dashboardMainGraphCard" data-dashboard-id="focus-trend" aria-label="Focus trend graph">
                   <div className="dashboardCardTitle">Focus Trend (7 Days)</div>
                   <div className="dashboardGraphBars">
                     <span style={{ height: "36%" }} />
@@ -126,7 +127,7 @@ export default function TaskTimerPage() {
                   </div>
                 </section>
 
-                <section className="dashboardCard dashboardDonutCard" aria-label="Category distribution">
+                <section className="dashboardCard dashboardDonutCard" data-dashboard-id="mode-distribution" aria-label="Category distribution">
                   <div className="dashboardCardTitle">Mode Distribution</div>
                   <div className="dashboardDonutWrap">
                     <div className="dashboardDonut" />
@@ -139,7 +140,7 @@ export default function TaskTimerPage() {
                   </div>
                 </section>
 
-                <section className="dashboardCard dashboardTimelineCard" aria-label="Today timeline">
+                <section className="dashboardCard dashboardTimelineCard" data-dashboard-id="timeline" aria-label="Today timeline">
                   <div className="dashboardCardTitle">Timeline</div>
                   <ul className="dashboardTimeline">
                     <li><span>07:30</span><p>Plan sprint and daily goals</p></li>
@@ -149,7 +150,7 @@ export default function TaskTimerPage() {
                   </ul>
                 </section>
 
-                <section className="dashboardCard dashboardHeatCard" aria-label="Activity heatmap">
+                <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" aria-label="Activity heatmap">
                   <div className="dashboardCardTitle">Focus Heatmap</div>
                   <div className="dashboardHeatGrid">
                     {Array.from({ length: 35 }).map((_, idx) => (
@@ -189,9 +190,9 @@ export default function TaskTimerPage() {
             <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Test 1</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Test 2">
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="User Guide">
             <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
-            <span className="appFooterLabel">Test 2</span>
+            <span className="appFooterLabel">User Guide</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings/" aria-label="Settings">
             <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
@@ -205,6 +206,7 @@ export default function TaskTimerPage() {
       <EditTaskOverlay />
       <ElapsedPadOverlay />
       <ConfirmOverlay />
+      <HistoryAnalysisOverlay />
     </>
   );
 }
