@@ -101,7 +101,18 @@ export default function InfoOverlays() {
             <span>Dynamic colors for progress and history</span>
             <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
           </div>
+          <div className="toggleRow" id="taskSoundsToggleRow">
+            <span>Play sound when milestones are reached</span>
+            <button className="switch on" id="taskSoundsToggle" type="button" role="switch" aria-checked="true" />
+          </div>
+          <div className="toggleRow" id="taskNotificationsToggleRow">
+            <span>Browser notifications for milestone alerts</span>
+            <button className="switch" id="taskNotificationsToggle" type="button" role="switch" aria-checked="false" />
+          </div>
           <div className="footerBtns">
+            <button className="btn btn-ghost" id="taskTestSoundBtn" type="button">
+              Test Sound
+            </button>
             <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button">
               Save
             </button>

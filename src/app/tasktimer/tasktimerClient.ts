@@ -108,10 +108,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
   const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
   const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
+  const MILESTONE_SOUNDS_KEY = `${STORAGE_KEY}:milestoneSoundsEnabled`;
+  const MILESTONE_NOTIFICATIONS_KEY = `${STORAGE_KEY}:milestoneNotificationsEnabled`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let dynamicColorsEnabled = true;
+  let milestoneSoundsEnabled = true;
+  let milestoneNotificationsEnabled = false;
+  let audioContext: AudioContext | null = null;
+  const announcedMilestones = new Set<string>();
+  let milestoneAlertsReady = false;
 
   let historyByTaskId: HistoryByTaskId = {};
   let focusModeTaskId: string | null = null;
@@ -225,6 +232,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     taskDefaultFormatMinute: document.getElementById("taskDefaultFormatMinute"),
     taskDynamicColorsToggleRow: document.getElementById("taskDynamicColorsToggleRow"),
     taskDynamicColorsToggle: document.getElementById("taskDynamicColorsToggle"),
+    taskSoundsToggleRow: document.getElementById("taskSoundsToggleRow"),
+    taskSoundsToggle: document.getElementById("taskSoundsToggle"),
+    taskNotificationsToggleRow: document.getElementById("taskNotificationsToggleRow"),
+    taskNotificationsToggle: document.getElementById("taskNotificationsToggle"),
+    taskTestSoundBtn: document.getElementById("taskTestSoundBtn"),
     taskSettingsSaveBtn: document.getElementById("taskSettingsSaveBtn"),
     categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
     categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
@@ -2420,6 +2432,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
     els.taskDynamicColorsToggle?.classList.toggle("on", dynamicColorsEnabled);
     els.taskDynamicColorsToggle?.setAttribute("aria-checked", String(dynamicColorsEnabled));
+    els.taskSoundsToggle?.classList.toggle("on", milestoneSoundsEnabled);
+    els.taskSoundsToggle?.setAttribute("aria-checked", String(milestoneSoundsEnabled));
+    els.taskNotificationsToggle?.classList.toggle("on", milestoneNotificationsEnabled);
+    els.taskNotificationsToggle?.setAttribute("aria-checked", String(milestoneNotificationsEnabled));
+    syncNotificationAvailabilityUi();
   }
 
   function loadDynamicColorsSetting() {
@@ -2439,6 +2456,139 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       localStorage.setItem(DYNAMIC_COLORS_KEY, dynamicColorsEnabled ? "true" : "false");
     } catch {
       // ignore
+    }
+  }
+
+  function loadMilestoneAlertSettings() {
+    let sounds = true;
+    let notifications = false;
+    try {
+      const soundRaw = (localStorage.getItem(MILESTONE_SOUNDS_KEY) || "").trim().toLowerCase();
+      if (soundRaw === "false" || soundRaw === "0" || soundRaw === "off") sounds = false;
+      else if (soundRaw === "true" || soundRaw === "1" || soundRaw === "on") sounds = true;
+
+      const notifyRaw = (localStorage.getItem(MILESTONE_NOTIFICATIONS_KEY) || "").trim().toLowerCase();
+      if (notifyRaw === "false" || notifyRaw === "0" || notifyRaw === "off") notifications = false;
+      else if (notifyRaw === "true" || notifyRaw === "1" || notifyRaw === "on") notifications = true;
+    } catch {
+      // ignore
+    }
+    milestoneSoundsEnabled = sounds;
+    milestoneNotificationsEnabled = notifications;
+  }
+
+  function saveMilestoneAlertSettings() {
+    try {
+      localStorage.setItem(MILESTONE_SOUNDS_KEY, milestoneSoundsEnabled ? "true" : "false");
+      localStorage.setItem(MILESTONE_NOTIFICATIONS_KEY, milestoneNotificationsEnabled ? "true" : "false");
+    } catch {
+      // ignore
+    }
+  }
+
+  function canUseNotifications() {
+    return typeof window !== "undefined" && "Notification" in window;
+  }
+
+  function canShowNotifications() {
+    return canUseNotifications() && Notification.permission === "granted";
+  }
+
+  function syncNotificationAvailabilityUi() {
+    const unsupported = !canUseNotifications();
+    if (els.taskNotificationsToggleRow) {
+      (els.taskNotificationsToggleRow as HTMLElement).style.opacity = unsupported ? "0.6" : "";
+    }
+    if (els.taskNotificationsToggle) {
+      (els.taskNotificationsToggle as HTMLButtonElement).disabled = unsupported;
+      (els.taskNotificationsToggle as HTMLButtonElement).title = unsupported
+        ? "Notifications are not supported in this browser."
+        : "";
+    }
+  }
+
+  async function requestNotificationPermissionIfNeeded() {
+    if (!canUseNotifications()) return false;
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") return false;
+    try {
+      const res = await Notification.requestPermission();
+      return res === "granted";
+    } catch {
+      return false;
+    }
+  }
+
+  function ensureAudioContext() {
+    if (audioContext) return audioContext;
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return null;
+    try {
+      audioContext = new Ctx();
+    } catch {
+      audioContext = null;
+    }
+    return audioContext;
+  }
+
+  function playMilestoneTone() {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") void ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.22);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.2, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch {
+      // ignore
+    }
+  }
+
+  function notifyMilestoneReached(taskName: string, label: string) {
+    if (!canShowNotifications()) return;
+    try {
+      const n = new Notification("TaskTimer milestone reached", {
+        body: `${taskName}: ${label}`,
+        tag: `tasktimer-milestone-${taskName}-${label}`,
+      });
+      window.setTimeout(() => n.close(), 4000);
+    } catch {
+      // ignore
+    }
+  }
+
+  function checkMilestoneAlerts() {
+    for (const t of tasks) {
+      if (!t.running || !t.milestonesEnabled || !Array.isArray(t.milestones) || t.milestones.length === 0) continue;
+      const elapsedSec = getElapsedMs(t) / 1000;
+      const unitSec = milestoneUnitSec(t);
+      for (let i = 0; i < t.milestones.length; i += 1) {
+        const m = t.milestones[i];
+        const hours = Number(m.hours);
+        if (!Number.isFinite(hours) || hours <= 0) continue;
+        const targetSec = hours * unitSec;
+        const key = `${t.id}:${i}:${targetSec}`;
+        if (elapsedSec >= targetSec && !announcedMilestones.has(key)) {
+          announcedMilestones.add(key);
+          if (!milestoneAlertsReady) continue;
+          if (milestoneSoundsEnabled) playMilestoneTone();
+          if (milestoneNotificationsEnabled) {
+            const suffix = milestoneUnitSuffix(t);
+            const text = `${hours}${suffix}${m.description ? ` - ${m.description}` : ""}`;
+            notifyMilestoneReached(t.name || "Task", text);
+          }
+        }
+      }
     }
   }
 
@@ -3038,9 +3188,41 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       dynamicColorsEnabled = !dynamicColorsEnabled;
       syncTaskSettingsUi();
     });
+    on(els.taskSoundsToggle, "click", () => {
+      milestoneSoundsEnabled = !milestoneSoundsEnabled;
+      syncTaskSettingsUi();
+    });
+    on(els.taskSoundsToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#taskSoundsToggle")) return;
+      milestoneSoundsEnabled = !milestoneSoundsEnabled;
+      syncTaskSettingsUi();
+    });
+    on(els.taskNotificationsToggle, "click", async () => {
+      if (!milestoneNotificationsEnabled) {
+        const granted = await requestNotificationPermissionIfNeeded();
+        milestoneNotificationsEnabled = granted;
+      } else {
+        milestoneNotificationsEnabled = false;
+      }
+      syncTaskSettingsUi();
+    });
+    on(els.taskNotificationsToggleRow, "click", async (e: any) => {
+      if (e.target?.closest?.("#taskNotificationsToggle")) return;
+      if (!milestoneNotificationsEnabled) {
+        const granted = await requestNotificationPermissionIfNeeded();
+        milestoneNotificationsEnabled = granted;
+      } else {
+        milestoneNotificationsEnabled = false;
+      }
+      syncTaskSettingsUi();
+    });
+    on(els.taskTestSoundBtn, "click", () => {
+      playMilestoneTone();
+    });
     on(els.taskSettingsSaveBtn, "click", () => {
       saveDefaultTaskTimerFormat();
       saveDynamicColorsSetting();
+      saveMilestoneAlertSettings();
       render();
       closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
@@ -3463,6 +3645,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     }
 
+    checkMilestoneAlerts();
+
     tickRaf = window.requestAnimationFrame(() => {
       tickTimeout = window.setTimeout(tick, 200);
     });
@@ -3475,6 +3659,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   loadAddTaskCustomNames();
   loadDefaultTaskTimerFormat();
   loadDynamicColorsSetting();
+  loadMilestoneAlertSettings();
   loadPinnedHistoryTaskIds();
   loadThemePreference();
   loadModeLabels();
@@ -3488,6 +3673,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   if (!els.taskList && els.historyManagerScreen) {
     openHistoryManager();
   }
+  milestoneAlertsReady = true;
   tick();
 
   return { destroy };
