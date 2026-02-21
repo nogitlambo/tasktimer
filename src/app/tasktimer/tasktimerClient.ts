@@ -130,8 +130,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     rangeDays: 7 | 14;
     editMode: boolean;
     barRects: Array<any>;
+    labelHitRects: Array<any>;
+    lockedAbsIndexes: Set<number>;
     selectedAbsIndex: number | null;
     selectedRelIndex: number | null;
+    selectionClearTimer: number | null;
+    visualSelectedAbsIndex: number | null;
+    selectionZoom: number;
+    selectionAnimRaf: number | null;
     slideDir: "left" | "right" | null;
   };
   const historyViewByTaskId: Record<string, HistoryViewState> = {};
@@ -1012,7 +1018,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
             <div class="historyTop">
               <div class="historyMeta">
-                <div class="historyTitle">History: ${escapeHtmlUI(t.name)}</div>
+                <div class="historyTitle historyInlineTitle">History</div>
               </div>
               <div class="historyMeta historyTopActions">
                 <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
@@ -1044,7 +1050,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       taskEl.innerHTML = `
         <div class="row">
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
-          <div class="time">${formatMainTaskElapsedHtml(elapsedMs)}</div>
+          <div class="time">${formatMainTaskElapsedHtml(elapsedMs, !!t.running, !!t.hasStarted)}</div>
           <div class="actions">
             ${
               t.running
@@ -1106,15 +1112,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function syncFocusRunButtons(t?: Task | null) {
     const startBtn = els.focusStartBtn;
     const stopBtn = els.focusStopBtn;
+    const dial = els.focusDial as HTMLElement | null;
     if (!startBtn || !stopBtn) return;
     if (!t) {
       startBtn.style.display = "inline-flex";
       stopBtn.style.display = "none";
+      if (dial) {
+        dial.classList.remove("isRunning", "isStopped");
+      }
       return;
     }
     const isRunning = !!t.running;
     startBtn.style.display = isRunning ? "none" : "inline-flex";
     stopBtn.style.display = isRunning ? "inline-flex" : "none";
+    if (dial) {
+      dial.classList.toggle("isRunning", isRunning);
+      dial.classList.toggle("isStopped", !isRunning);
+    }
   }
 
   function formatSignedDelta(ms: number): string {
@@ -1165,11 +1179,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function closeHistory(taskId?: string) {
     if (taskId) {
+      const state = historyViewByTaskId[taskId];
+      if (state?.selectionClearTimer != null) {
+        window.clearTimeout(state.selectionClearTimer);
+      }
+      if (state?.selectionAnimRaf != null) {
+        window.cancelAnimationFrame(state.selectionAnimRaf);
+      }
       openHistoryTaskIds.delete(taskId);
       delete historyViewByTaskId[taskId];
     } else {
       openHistoryTaskIds.clear();
-      Object.keys(historyViewByTaskId).forEach((k) => delete historyViewByTaskId[k]);
+      Object.keys(historyViewByTaskId).forEach((k) => {
+        const state = historyViewByTaskId[k];
+        if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
+        if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
+        delete historyViewByTaskId[k];
+      });
     }
     render();
   }
@@ -1193,12 +1219,68 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       rangeDays: 7,
       editMode: false,
       barRects: [],
+      labelHitRects: [],
+      lockedAbsIndexes: new Set<number>(),
       selectedAbsIndex: null,
       selectedRelIndex: null,
+      selectionClearTimer: null,
+      visualSelectedAbsIndex: null,
+      selectionZoom: 1,
+      selectionAnimRaf: null,
       slideDir: null,
     };
     historyViewByTaskId[taskId] = created;
     return created;
+  }
+
+  function startHistorySelectionAnimation(taskId: string, nextAbsIndex: number | null) {
+    const state = ensureHistoryViewState(taskId);
+    if (state.selectionAnimRaf != null) {
+      window.cancelAnimationFrame(state.selectionAnimRaf);
+      state.selectionAnimRaf = null;
+    }
+
+    const prevAbsIndex = state.visualSelectedAbsIndex;
+    const switchingTarget = prevAbsIndex !== nextAbsIndex;
+    const fromZoom = switchingTarget ? (nextAbsIndex == null ? state.selectionZoom : 1) : state.selectionZoom;
+    const toZoom = nextAbsIndex == null ? 1 : 1.5;
+    const durationMs = 180;
+    const startAt = performance.now();
+
+    if (nextAbsIndex != null) state.visualSelectedAbsIndex = nextAbsIndex;
+
+    const tick = (now: number) => {
+      const t = Math.max(0, Math.min(1, (now - startAt) / durationMs));
+      const eased = 1 - Math.pow(1 - t, 3);
+      state.selectionZoom = fromZoom + (toZoom - fromZoom) * eased;
+      renderHistory(taskId);
+      if (t < 1) {
+        state.selectionAnimRaf = window.requestAnimationFrame(tick);
+      } else {
+        state.selectionAnimRaf = null;
+        state.selectionZoom = toZoom;
+        if (nextAbsIndex == null) state.visualSelectedAbsIndex = null;
+        renderHistory(taskId);
+      }
+    };
+
+    state.selectionAnimRaf = window.requestAnimationFrame(tick);
+  }
+
+  function scheduleHistorySelectionClear(taskId: string) {
+    const state = ensureHistoryViewState(taskId);
+    if (state.selectionClearTimer != null) {
+      window.clearTimeout(state.selectionClearTimer);
+      state.selectionClearTimer = null;
+    }
+    state.selectionClearTimer = window.setTimeout(() => {
+      const next = historyViewByTaskId[taskId];
+      if (!next) return;
+      next.selectedAbsIndex = null;
+      next.selectedRelIndex = null;
+      next.selectionClearTimer = null;
+      startHistorySelectionAnimation(taskId, null);
+    }, 3000);
   }
 
   type HistoryUI = {
@@ -1305,6 +1387,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     ctx.stroke();
 
     state.barRects = [];
+    state.labelHitRects = [];
 
     if (!entries || !entries.length) {
       ctx.fillStyle = "rgba(255,255,255,.55)";
@@ -1337,33 +1420,61 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const ms = Math.max(0, e.ms || 0);
       const ratio = ms / scaleMaxMs;
       const bh = Math.max(2, Math.floor(innerH * ratio));
+      const visualRelIndex =
+        state.visualSelectedAbsIndex != null ? state.visualSelectedAbsIndex - (absStartIndex || 0) : null;
+      const absIndex = (absStartIndex || 0) + idx;
+      const isLocked = state.lockedAbsIndexes.has(absIndex);
+      const isSelected = visualRelIndex === idx;
+      const hasSelection = visualRelIndex != null || state.lockedAbsIndexes.size > 0;
+      const scaleFactor = isSelected ? state.selectionZoom || 1.5 : isLocked ? 1.5 : 1;
 
-      const x = plotLeft + idx * (barW + gap);
-      const y = padT + innerH - bh;
+      const baseX = plotLeft + idx * (barW + gap);
+      const cx = baseX + barW / 2;
+      const drawW = Math.max(2, Math.floor(barW * scaleFactor));
+      const drawH = Math.max(2, Math.floor(bh * scaleFactor));
+      const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
+      const y = Math.max(padT, padT + innerH - drawH);
 
       ctx.save();
-      ctx.globalAlpha = 0.92;
+      ctx.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
       const historyStaticColor = (() => {
         const t = (tasks || []).find((task) => String(task.id || "") === String(taskId));
         return t ? getModeColor(taskModeOf(t)) : "rgb(0,207,200)";
       })();
       ctx.fillStyle = dynamicColorsEnabled ? e.color || "rgb(0,207,200)" : historyStaticColor;
-      ctx.fillRect(x, y, barW, bh);
+      ctx.fillRect(x, y, drawW, drawH);
       ctx.restore();
 
-      state.barRects[idx] = { x, y, w: barW, h: bh, absIndex: (absStartIndex || 0) + idx };
+      const slotLeft = idx === 0 ? plotLeft : plotLeft + idx * (barW + gap) - Math.floor(gap / 2);
+      const slotRight = idx === barCount - 1 ? plotRight : plotLeft + (idx + 1) * (barW + gap) - Math.floor(gap / 2);
+      state.barRects[idx] = {
+        x,
+        y,
+        w: drawW,
+        h: drawH,
+        absIndex: (absStartIndex || 0) + idx,
+        hitX: Math.max(plotLeft, slotLeft),
+        hitY: padT,
+        hitW: Math.max(4, Math.min(plotRight, slotRight) - Math.max(plotLeft, slotLeft)),
+        hitH: innerH,
+      };
 
-      if (state.selectedRelIndex === idx) {
+      if (isSelected || isLocked) {
         ctx.save();
-        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        ctx.strokeStyle = isLocked ? "rgba(255,77,77,.95)" : "rgba(255,255,255,.9)";
         ctx.lineWidth = 2;
-        ctx.strokeRect(x + 1, y + 1, barW - 2, bh - 2);
+        ctx.strokeRect(x + 1, y + 1, Math.max(1, drawW - 2), Math.max(1, drawH - 2));
         ctx.restore();
       }
 
       if (idx % labelStep === 0 || idx === barCount - 1) {
+        const labelAlpha = hasSelection ? (isSelected || isLocked ? 1 : 0.28) : 1;
+        ctx.save();
+        ctx.globalAlpha = labelAlpha;
         ctx.fillStyle = "rgba(255,255,255,.65)";
-        ctx.font = `${compactLabels ? 10 : 11}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+        const baseDateFont = compactLabels ? 10 : 11;
+        const labelFontScale = isSelected ? 1 + ((state.selectionZoom || 1.5) - 1) * 1.5 : isLocked ? 1.75 : 1;
+        ctx.font = `${Math.round(baseDateFont * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
 
         const d = new Date(e.ts || 0);
         const dd = formatTwo(d.getDate());
@@ -1378,9 +1489,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             : rawElapsedLabel;
 
         if (useAngledLabels) {
-          const tx = x + barW / 2;
-          const ty = padT + innerH + (compactLabels ? 20 : 24);
-          const lineStartX = x + barW / 2;
+          const expandedLabelLift = isSelected || isLocked ? 20 : 0;
+          const tx = x + drawW / 2;
+          const ty = padT + innerH + (compactLabels ? 20 : 24) - expandedLabelLift;
+          const lineStartX = x + drawW / 2;
           const lineStartY = padT + innerH + 2;
           const lineEndX = tx;
           const lineEndY = ty - 4;
@@ -1398,20 +1510,42 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ctx.rotate(angle);
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          ctx.font = `${veryCompactLabels ? 9 : 10}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.font = `${Math.round((veryCompactLabels ? 9 : 10) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
           ctx.fillText(compactDateLabel, 0, 0);
           ctx.fillStyle = "rgb(0,207,200)";
-          ctx.font = `700 ${veryCompactLabels ? 9 : 10}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
-          ctx.fillText(compactElapsedLabel, 0, 12);
+          ctx.font = `700 ${Math.round((veryCompactLabels ? 9 : 10) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.fillText(compactElapsedLabel, 0, Math.round(12 * labelFontScale));
           ctx.restore();
+          const labelHitW = Math.max(24, Math.round(barW * (isSelected || isLocked ? 1.5 : 1.15)));
+          const labelHitH = Math.max(24, Math.round((veryCompactLabels ? 30 : 34) * (isSelected || isLocked ? 1.2 : 1)));
+          state.labelHitRects[idx] = {
+            x: tx - labelHitW / 2,
+            y: ty - 10,
+            w: labelHitW,
+            h: labelHitH,
+            absIndex: (absStartIndex || 0) + idx,
+          };
           ctx.textAlign = "center";
           ctx.textBaseline = "alphabetic";
         } else {
-          ctx.fillText(compactDateLabel, x + barW / 2, padT + innerH + (compactLabels ? 18 : 22));
+          const lx = x + drawW / 2;
+          const line1Y = padT + innerH + (compactLabels ? 18 : 22);
+          const line2Y = padT + innerH + (compactLabels ? 34 : 39);
+          ctx.fillText(compactDateLabel, lx, line1Y);
           ctx.fillStyle = "rgb(0,207,200)";
-          ctx.font = `700 ${compactLabels ? 10 : 12}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
-          ctx.fillText(compactElapsedLabel, x + barW / 2, padT + innerH + (compactLabels ? 34 : 39));
+          ctx.font = `700 ${Math.round((compactLabels ? 10 : 12) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+          ctx.fillText(compactElapsedLabel, lx, line2Y);
+          const labelHitW = Math.max(24, Math.round(barW * (isSelected || isLocked ? 1.5 : 1.15)));
+          const labelHitH = Math.max(24, Math.round((compactLabels ? 28 : 32) * (isSelected || isLocked ? 1.2 : 1)));
+          state.labelHitRects[idx] = {
+            x: lx - labelHitW / 2,
+            y: line1Y - 10,
+            w: labelHitW,
+            h: labelHitH,
+            absIndex: (absStartIndex || 0) + idx,
+          };
         }
+        ctx.restore();
       }
     }
 
@@ -1487,9 +1621,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
     if (ui.newerBtn) ui.newerBtn.disabled = end >= total;
 
-    state.selectedAbsIndex = null;
-    state.selectedRelIndex = null;
-    if (ui.deleteBtn) ui.deleteBtn.disabled = true;
+    if (state.selectedAbsIndex != null) {
+      const rel = state.selectedAbsIndex - start;
+      if (rel >= 0 && rel < slice.length) state.selectedRelIndex = rel;
+      else {
+        state.selectedAbsIndex = null;
+        state.selectedRelIndex = null;
+      }
+    } else {
+      state.selectedRelIndex = null;
+    }
+    const hasDeleteTarget = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
+    if (ui.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
 
     if (ui.canvasWrap && state.slideDir) {
       ui.canvasWrap.classList.remove("slideFromLeft", "slideFromRight");
@@ -2212,10 +2355,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return `${formatTwo(days)} ${formatTwo(hours)} ${formatTwo(minutes)} ${formatTwo(seconds)}`;
   }
 
-  function formatMainTaskElapsedHtml(ms: number): string {
+  function formatMainTaskElapsedHtml(ms: number, isRunning = false, hasStarted = false): string {
     const parts = formatMainTaskElapsed(ms).split(" ");
+    const panelStateClass = !isRunning && hasStarted ? " isStopped" : "";
     return `
-      <span class="timePanel">
+      <span class="timePanel${panelStateClass}">
         <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
         <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[1]}</span><span class="timeBoxUnit">H</span></span></span>
         <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[2]}</span><span class="timeBoxUnit">M</span></span></span>
@@ -2279,7 +2423,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const ringInsetPx = 26;
       const progressBoxRadiusPx = Math.max(0, dialRadiusPx - ringInsetPx);
       const markerRadiusPx = Math.max(0, progressBoxRadiusPx * parseRingCenterRatio());
-      const markerLineLenPx = Math.max(4, progressBoxRadiusPx - markerRadiusPx + 1);
+      const outerRingRadiusPx = Math.max(0, dialRadiusPx - 2);
+      const markerLineLenPx = Math.max(4, outerRingRadiusPx - markerRadiusPx);
       const labelRadiusPx = dialRadiusPx + 18;
       const ringStartCssDeg = parseConicStartDeg();
 
@@ -2305,19 +2450,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             lx *= k;
             ly *= k;
           }
-          const dx = lx - mx;
-          const dy = ly - my;
-          const cl = Math.max(0, Math.sqrt(dx * dx + dy * dy));
-          const ca = (Math.atan2(dy, dx) * 180) / Math.PI;
           const fx = lx;
           const fy = ly;
-          const title = `${v}${milestoneUnitSuffix(t)}`;
-          const desc = (m.description || "").trim();
-          const lineText = desc ? `${title} - ${desc}` : title;
+          const lineText = `${v}${milestoneUnitSuffix(t)}`;
           return `
             <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px;--madeg:${markerAngleDeg}deg;--mlpx:${markerLineLenPx}px" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointFlag" style="--fxpx:${fx}px;--fypx:${fy}px" data-seconds="${secTarget}"></div>
-            <div class="focusCheckpointConnector" style="--cxpx:${mx}px;--cypx:${my}px;--cl:${cl}px;--ca:${ca}deg" data-seconds="${secTarget}"></div>
             <div class="focusCheckpointLabel ${isRight ? "right" : "left"}" style="--lxpx:${lx}px;--lypx:${ly}px" data-seconds="${secTarget}">
               <span class="focusCheckpointLabelTitle">${escapeHtmlUI(lineText)}</span>
             </div>
@@ -2838,20 +2976,38 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         window.location.href = appRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
         return;
       }
-      if (action !== "delete" || state.selectedAbsIndex == null) return;
+      const lockedList = Array.from(state.lockedAbsIndexes.values());
+      const deleteAbsIndex = state.selectedAbsIndex != null ? state.selectedAbsIndex : lockedList[lockedList.length - 1] ?? null;
+      if (action !== "delete" || deleteAbsIndex == null) return;
 
       const all = getHistoryForTask(taskId);
-      const e = all[state.selectedAbsIndex];
+      const e = all[deleteAbsIndex];
       if (!e) return;
 
       confirm("Delete Log Entry", `Delete this entry (${formatTime(e.ms || 0)})?`, {
         okLabel: "Delete",
         onOk: () => {
           const all2 = getHistoryForTask(taskId);
-          if (state.selectedAbsIndex! >= 0 && state.selectedAbsIndex! < all2.length) {
-            all2.splice(state.selectedAbsIndex!, 1);
+          if (deleteAbsIndex >= 0 && deleteAbsIndex < all2.length) {
+            all2.splice(deleteAbsIndex, 1);
             historyByTaskId[taskId] = all2 as any;
             saveHistory(historyByTaskId);
+
+            if (state.selectedAbsIndex === deleteAbsIndex) {
+              state.selectedAbsIndex = null;
+              state.selectedRelIndex = null;
+              startHistorySelectionAnimation(taskId, null);
+            } else if (state.selectedAbsIndex != null && state.selectedAbsIndex > deleteAbsIndex) {
+              state.selectedAbsIndex -= 1;
+            }
+            if (state.lockedAbsIndexes.size > 0) {
+              const nextLocked = new Set<number>();
+              state.lockedAbsIndexes.forEach((idx) => {
+                if (idx === deleteAbsIndex) return;
+                nextLocked.add(idx > deleteAbsIndex ? idx - 1 : idx);
+              });
+              state.lockedAbsIndexes = nextLocked;
+            }
 
             const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize(taskId)) - 1);
             state.page = Math.min(state.page, maxPage);
@@ -2878,22 +3034,64 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       for (let i = 0; i < state.barRects.length; i++) {
         const r = state.barRects[i];
         if (!r) continue;
-        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        const hx = typeof r.hitX === "number" ? r.hitX : r.x;
+        const hy = typeof r.hitY === "number" ? r.hitY : r.y;
+        const hw = typeof r.hitW === "number" ? r.hitW : r.w;
+        const hh = typeof r.hitH === "number" ? r.hitH : r.h;
+        if (x >= hx && x <= hx + hw && y >= hy && y <= hy + hh) {
           hit = { rel: i, abs: r.absIndex };
           break;
         }
       }
+      if (!hit) {
+        for (let i = 0; i < state.labelHitRects.length; i++) {
+          const r = state.labelHitRects[i];
+          if (!r) continue;
+          if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+            hit = { rel: i, abs: r.absIndex };
+            break;
+          }
+        }
+      }
 
       if (hit) {
-        state.selectedRelIndex = hit.rel;
-        state.selectedAbsIndex = hit.abs;
-        const ui = getHistoryUi(taskId);
-        if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
+        const isSameTransient = state.selectedAbsIndex != null && state.selectedAbsIndex === hit.abs;
+        const isSameLocked = state.lockedAbsIndexes.has(hit.abs);
+        if (isSameLocked) {
+          state.lockedAbsIndexes.delete(hit.abs);
+          const ui = getHistoryUi(taskId);
+          const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
+          if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
+        } else if (isSameTransient) {
+          state.lockedAbsIndexes.add(hit.abs);
+          if (state.selectionClearTimer != null) {
+            window.clearTimeout(state.selectionClearTimer);
+            state.selectionClearTimer = null;
+          }
+          state.selectedRelIndex = null;
+          state.selectedAbsIndex = null;
+          startHistorySelectionAnimation(taskId, null);
+          const ui = getHistoryUi(taskId);
+          if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
+        } else {
+          state.selectedRelIndex = hit.rel;
+          state.selectedAbsIndex = hit.abs;
+          startHistorySelectionAnimation(taskId, hit.abs);
+          scheduleHistorySelectionClear(taskId);
+          const ui = getHistoryUi(taskId);
+          if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
+        }
       } else {
+        if (state.selectionClearTimer != null) {
+          window.clearTimeout(state.selectionClearTimer);
+          state.selectionClearTimer = null;
+        }
         state.selectedRelIndex = null;
         state.selectedAbsIndex = null;
+        startHistorySelectionAnimation(taskId, null);
         const ui = getHistoryUi(taskId);
-        if (ui?.deleteBtn) ui.deleteBtn.disabled = true;
+        const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
+        if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
       }
 
       renderHistory(taskId);
@@ -3427,7 +3625,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!t) return;
 
       const timeEl = node.querySelector(".time");
-      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(getElapsedMs(t));
+      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(getElapsedMs(t), !!t.running, !!t.hasStarted);
 
       if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
         const msSorted = sortMilestones(t.milestones);

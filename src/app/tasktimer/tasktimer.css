@@ -388,7 +388,7 @@ body[data-app-page="test2"] #openAddTaskBtn{
   background:
               linear-gradient(150deg, rgba(46,232,255,.08), rgba(0,0,0,0) 28%),
               linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-              rgba(14,23,42,.82);
+              rgba(7,12,24,.94);
   border:1px solid rgba(121,226,255,.2);
   border-radius: 0;
   padding:16px 16px 14px;
@@ -437,6 +437,14 @@ body[data-app-page="test2"] #openAddTaskBtn{
   background: linear-gradient(180deg, rgba(2,24,34,.82), rgba(1,14,26,.74));
   box-shadow: inset 0 0 16px rgba(0,240,255,.15), 0 0 14px rgba(0,180,255,.3);
   font-variant-numeric: tabular-nums;
+}
+.timePanel.isStopped{
+  border-color: rgba(255,77,77,.78);
+  box-shadow: inset 0 0 16px rgba(255,77,77,.18), 0 0 14px rgba(255,77,77,.28);
+}
+.timePanel.isStopped .timeBoxValue{
+  color:#ff6b6b;
+  text-shadow: 0 0 1px rgba(255,190,190,.95), 0 0 4px rgba(255,95,95,.72), 0 0 8px rgba(255,77,77,.5);
 }
 .timeChunk{
   width:auto;
@@ -1276,6 +1284,14 @@ input[type="text"]:focus, input[type="number"]:focus{
   font-size:17px;
   letter-spacing:.1px;
 }
+.historyInlineTitle{
+  font-family:var(--font-tight);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#ffffff !important;
+}
 .historyPinBtn{
   margin-left:8px;
   padding:0 4px;
@@ -1339,6 +1355,7 @@ input[type="text"]:focus, input[type="number"]:focus{
 .historyCanvasWrap{
   width:100%;
   height:260px;
+  padding-bottom:24px;
   border-radius: 0;
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
@@ -1356,7 +1373,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   to{ transform: translateX(0); opacity:1; }
 }
 #historyChart{ width:100%; height:100%; display:block; }
-.historyCanvasWrap .historyChartInline{ width:100%; height:100%; display:block; }
+.historyCanvasWrap .historyChartInline{ width:100%; height:calc(100% - 24px); display:block; }
 .historyInline{
   margin-top:14px;
   padding:14px;
@@ -1440,6 +1457,11 @@ input[type="text"]:focus, input[type="number"]:focus{
 .focusModeHeadSpacer{
   width:66px;
 }
+.focusModeHeadAction{
+  width:66px;
+  display:flex;
+  justify-content:flex-end;
+}
 .focusDialWrap{
   display:flex;
   justify-content:center;
@@ -1499,6 +1521,21 @@ input[type="text"]:focus, input[type="number"]:focus{
   border-radius:50%;
   border:4px solid rgba(0,233,255,.95);
   box-shadow: 0 0 14px rgba(0,233,255,.8), 0 0 42px rgba(0,174,255,.5);
+}
+.focusDial.isRunning .focusDialOuter{
+  animation: focusDialPulseGlow 2.8s ease-in-out infinite;
+}
+.focusDial.isStopped .focusDialOuter{
+  border-color: rgba(255,77,77,.95);
+  box-shadow: 0 0 14px rgba(255,77,77,.72), 0 0 42px rgba(255,77,77,.42);
+}
+@keyframes focusDialPulseGlow{
+  0%, 100%{
+    box-shadow: 0 0 10px rgba(0,233,255,.55), 0 0 26px rgba(0,174,255,.34);
+  }
+  50%{
+    box-shadow: 0 0 18px rgba(0,233,255,.95), 0 0 56px rgba(0,174,255,.6);
+  }
 }
 .focusDialProgress{
   position:absolute;
@@ -1750,6 +1787,9 @@ input[type="text"]:focus, input[type="number"]:focus{
   position:fixed;
   inset:0;
   z-index:90;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling: touch;
   padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
     calc(16px + var(--safe-left));
   background: radial-gradient(1200px 800px at 20% 10%, rgba(0,207,200,.12), transparent 60%),
@@ -2652,6 +2692,10 @@ body[data-theme="light"] input[type="number"]{
   }
   .focusModeHeadSpacer{
     display:block;
+  }
+  .focusModeHeadAction{
+    width:auto;
+    justify-content:flex-end;
   }
   .focusModeTitle{
     text-align:center;

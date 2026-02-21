@@ -6,7 +6,11 @@ export default function FocusModeScreen() {
       <div className="focusModeHead">
         <div className="focusModeHeadSpacer" aria-hidden="true" />
         <div className="focusModeTitle">Focus Mode</div>
-        <div className="focusModeHeadSpacer" aria-hidden="true" />
+        <div className="focusModeHeadAction">
+          <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+            Exit
+          </button>
+        </div>
       </div>
       <div className="focusTaskTitle" id="focusTaskName">
         TASKTIMER
@@ -69,11 +73,6 @@ export default function FocusModeScreen() {
             --
           </span>
         </div>
-      </div>
-      <div className="focusModeExitWrap">
-        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
-          Exit
-        </button>
       </div>
     </section>
   );
