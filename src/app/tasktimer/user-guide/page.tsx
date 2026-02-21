@@ -247,6 +247,11 @@ export default function UserGuidePage() {
   return (
     <div className="wrap" id="app" aria-label="TaskTimer User Guide">
       <div className="userGuidePage">
+        <div className="userGuideTopAction">
+          <button className="btn btn-accent" type="button" onClick={() => (window.location.href = appRoute("/tasktimer/settings"))}>
+            Back
+          </button>
+        </div>
         <aside className="userGuideToc">
           <div className="userGuideTocTitle">Contents</div>
           {sections.map((s) => (
@@ -288,11 +293,6 @@ export default function UserGuidePage() {
                   )
                 )}
               </section>
-            </div>
-            <div className="footerBtns">
-              <button className="btn btn-accent" type="button" onClick={() => (window.location.href = appRoute("/tasktimer/settings"))}>
-                Back to Settings
-              </button>
             </div>
           </div>
         </div>

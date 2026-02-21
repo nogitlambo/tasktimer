@@ -1021,6 +1021,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 <div class="historyTitle historyInlineTitle">History</div>
               </div>
               <div class="historyMeta historyTopActions">
+                <button class="historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">X</button>
                 <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
                     isHistoryPinned ? "Unpin chart" : "Pin chart"
                   }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
@@ -1283,10 +1284,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }, 3000);
   }
 
+  function clearHistoryChartSelection(taskId: string) {
+    const state = ensureHistoryViewState(taskId);
+    if (state.selectionClearTimer != null) {
+      window.clearTimeout(state.selectionClearTimer);
+      state.selectionClearTimer = null;
+    }
+    state.selectedRelIndex = null;
+    state.selectedAbsIndex = null;
+    state.lockedAbsIndexes.clear();
+    startHistorySelectionAnimation(taskId, null);
+  }
+
+  function clearHistoryLockedSelections(taskId: string) {
+    const state = ensureHistoryViewState(taskId);
+    state.lockedAbsIndexes.clear();
+  }
+
   type HistoryUI = {
     root: HTMLElement;
     canvasWrap: HTMLElement | null;
     canvas: HTMLCanvasElement | null;
+    clearLocksBtn: HTMLButtonElement | null;
     rangeText: HTMLElement | null;
     olderBtn: HTMLButtonElement | null;
     newerBtn: HTMLButtonElement | null;
@@ -1302,6 +1321,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       root,
       canvasWrap: root.querySelector(".historyCanvasWrap"),
       canvas: root.querySelector(".historyChartInline"),
+      clearLocksBtn: root.querySelector('[data-history-action="clearLocks"]'),
       rangeText: root.querySelector(".historyRangeText"),
       olderBtn: root.querySelector('[data-history-action="older"]'),
       newerBtn: root.querySelector('[data-history-action="newer"]'),
@@ -1431,7 +1451,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const baseX = plotLeft + idx * (barW + gap);
       const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW * scaleFactor));
-      const drawH = Math.max(2, Math.floor(bh * scaleFactor));
+      const drawH = Math.max(2, Math.min(innerH, Math.floor(bh * scaleFactor)));
       const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
       const y = Math.max(padT, padT + innerH - drawH);
 
@@ -1489,9 +1509,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             : rawElapsedLabel;
 
         if (useAngledLabels) {
-          const expandedLabelLift = isSelected || isLocked ? 20 : 0;
+          const expandedLabelDrop = isSelected || isLocked ? Math.round(10 * labelFontScale) : 0;
           const tx = x + drawW / 2;
-          const ty = padT + innerH + (compactLabels ? 20 : 24) - expandedLabelLift;
+          const ty = padT + innerH + (compactLabels ? 20 : 24) + expandedLabelDrop;
           const lineStartX = x + drawW / 2;
           const lineStartY = padT + innerH + 2;
           const lineEndX = tx;
@@ -1529,8 +1549,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ctx.textBaseline = "alphabetic";
         } else {
           const lx = x + drawW / 2;
-          const line1Y = padT + innerH + (compactLabels ? 18 : 22);
-          const line2Y = padT + innerH + (compactLabels ? 34 : 39);
+          const expandedLabelDrop = isSelected || isLocked ? Math.round(8 * labelFontScale) : 0;
+          const line1Y = padT + innerH + (compactLabels ? 18 : 22) + expandedLabelDrop;
+          const line2Y = padT + innerH + (compactLabels ? 34 : 39) + expandedLabelDrop;
           ctx.fillText(compactDateLabel, lx, line1Y);
           ctx.fillStyle = "rgb(0,207,200)";
           ctx.font = `700 ${Math.round((compactLabels ? 10 : 12) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
@@ -1633,6 +1654,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     const hasDeleteTarget = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
     if (ui.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
+    if (ui.clearLocksBtn) ui.clearLocksBtn.style.display = state.lockedAbsIndexes.size > 0 ? "inline-flex" : "none";
 
     if (ui.canvasWrap && state.slideDir) {
       ui.canvasWrap.classList.remove("slideFromLeft", "slideFromRight");
@@ -2976,6 +2998,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         window.location.href = appRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
         return;
       }
+      if (action === "clearLocks") {
+        clearHistoryLockedSelections(taskId);
+        renderHistory(taskId);
+        return;
+      }
       const lockedList = Array.from(state.lockedAbsIndexes.values());
       const deleteAbsIndex = state.selectedAbsIndex != null ? state.selectedAbsIndex : lockedList[lockedList.length - 1] ?? null;
       if (action !== "delete" || deleteAbsIndex == null) return;
@@ -3082,13 +3109,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
         }
       } else {
-        if (state.selectionClearTimer != null) {
-          window.clearTimeout(state.selectionClearTimer);
-          state.selectionClearTimer = null;
-        }
-        state.selectedRelIndex = null;
-        state.selectedAbsIndex = null;
-        startHistorySelectionAnimation(taskId, null);
+        clearHistoryChartSelection(taskId);
         const ui = getHistoryUi(taskId);
         const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
         if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
