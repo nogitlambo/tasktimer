@@ -108,12 +108,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
   const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
   const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
+  const HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let dynamicColorsEnabled = true;
 
   let historyByTaskId: HistoryByTaskId = {};
+  let historyRangeDaysByTaskId: Record<string, 7 | 14> = {};
   let focusModeTaskId: string | null = null;
   const openHistoryTaskIds = new Set<string>();
   let pinnedHistoryTaskIds = new Set<string>();
@@ -423,6 +425,32 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     saveHistory(historyByTaskId);
   }
 
+  function loadHistoryRangePrefs() {
+    historyRangeDaysByTaskId = {};
+    try {
+      const raw = localStorage.getItem(HISTORY_RANGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+      Object.keys(parsed).forEach((taskId) => {
+        const value = (parsed as any)[taskId];
+        historyRangeDaysByTaskId[taskId] = value === 14 ? 14 : 7;
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  function saveHistoryRangePref(taskId: string, rangeDays: 7 | 14) {
+    if (!taskId) return;
+    historyRangeDaysByTaskId[taskId] = rangeDays;
+    try {
+      localStorage.setItem(HISTORY_RANGE_KEY, JSON.stringify(historyRangeDaysByTaskId));
+    } catch {
+      // ignore
+    }
+  }
+
   function safeJsonParse(str: string) {
     try {
       return JSON.parse(str);
@@ -457,6 +485,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
   function applyModeAccent(mode: MainMode) {
     document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
+    document.documentElement.style.setProperty("--mode1-accent", getModeColor("mode1"));
+    document.documentElement.style.setProperty("--mode2-accent", getModeColor("mode2"));
+    document.documentElement.style.setProperty("--mode3-accent", getModeColor("mode3"));
   }
 
   function isModeEnabled(mode: MainMode) {
@@ -1215,9 +1246,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function ensureHistoryViewState(taskId: string): HistoryViewState {
     const existing = historyViewByTaskId[taskId];
     if (existing) return existing;
+    const savedRangeDays = historyRangeDaysByTaskId[taskId] === 14 ? 14 : 7;
     const created: HistoryViewState = {
       page: 0,
-      rangeDays: 7,
+      rangeDays: savedRangeDays,
       editMode: false,
       barRects: [],
       labelHitRects: [],
@@ -1389,7 +1421,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const barCount = Math.max(1, entries.length);
     // Keep consistent label styling between 7-entry and 14-entry views.
     const useAngledLabels = true;
-    const padB = useAngledLabels ? (veryCompactLabels ? 84 : 92) : compactLabels ? 64 : 54;
+    const padB = useAngledLabels ? (veryCompactLabels ? 110 : 122) : compactLabels ? 84 : 72;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
@@ -1446,12 +1478,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const isLocked = state.lockedAbsIndexes.has(absIndex);
       const isSelected = visualRelIndex === idx;
       const hasSelection = visualRelIndex != null || state.lockedAbsIndexes.size > 0;
-      const scaleFactor = isSelected ? state.selectionZoom || 1.5 : isLocked ? 1.5 : 1;
-
       const baseX = plotLeft + idx * (barW + gap);
       const cx = baseX + barW / 2;
-      const drawW = Math.max(2, Math.floor(barW * scaleFactor));
-      const drawH = Math.max(2, Math.min(innerH, Math.floor(bh * scaleFactor)));
+      // Keep bar size static; selection/lock state is indicated by accent borders and label zoom.
+      const drawW = Math.max(2, Math.floor(barW));
+      const drawH = Math.max(2, Math.min(innerH, Math.floor(bh)));
       const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
       const y = Math.max(padT, padT + innerH - drawH);
 
@@ -1493,7 +1524,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         ctx.globalAlpha = labelAlpha;
         ctx.fillStyle = "rgba(255,255,255,.65)";
         const baseDateFont = compactLabels ? 10 : 11;
-        const labelFontScale = isSelected ? 1 + ((state.selectionZoom || 1.5) - 1) * 1.5 : isLocked ? 1.75 : 1;
+        const labelFontScale = isSelected ? 1 + ((state.selectionZoom || 1.5) - 1) : isLocked ? 1.5 : 1;
         ctx.font = `${Math.round(baseDateFont * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
 
         const d = new Date(e.ts || 0);
@@ -2888,7 +2919,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (!Number.isFinite(i)) return;
 
       const btn = e.target?.closest?.("[data-action]");
-      if (!btn) return;
+      if (!btn) {
+        const inTopRow = !!e.target?.closest?.(".row");
+        const inActions = !!e.target?.closest?.(".actions");
+        if (inTopRow && !inActions) {
+          openFocusMode(i);
+        }
+        return;
+      }
       const action = btn.getAttribute("data-action");
 
       if (action === "start") startTask(i);
@@ -2952,6 +2990,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         if (!taskId) return;
         const state = ensureHistoryViewState(taskId);
         state.rangeDays = state.rangeDays === 14 ? 7 : 14;
+        saveHistoryRangePref(taskId, state.rangeDays);
         state.page = 0;
         renderHistory(taskId);
         return;
@@ -3690,6 +3729,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   // Init
   deletedTaskMeta = loadDeletedMeta();
   loadHistoryIntoMemory();
+  loadHistoryRangePrefs();
   load();
   loadAddTaskCustomNames();
   loadDefaultTaskTimerFormat();

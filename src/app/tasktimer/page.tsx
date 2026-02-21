@@ -63,16 +63,100 @@ export default function TaskTimerPage() {
           </section>
 
           <section className="appPage" id="appPageDashboard" aria-label="Dashboard page">
-            <div className="dashboardShowcase" data-name="Cover" data-node-id="2009:1008">
-              <img
-                className="dashboardShowcaseImage"
-                src="https://www.figma.com/api/mcp/asset/f4d5fb76-7d46-436b-bd8c-9da01a371eaf"
-                alt="Nexus next-gen AI summit event landing page preview"
-              />
-              <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+            <div className="dashboardShell">
+              <div className="dashboardTopRow">
+                <div className="dashboardTitleWrap">
+                  <p className="dashboardKicker">Performance Overview</p>
+                  <h2 className="dashboardTitle">Mission Dashboard</h2>
+                </div>
                 <button className="btn btn-accent small" id="dashboardSettingsBtn" type="button" aria-label="Open Settings">
                   Settings
                 </button>
+              </div>
+
+              <div className="dashboardGrid">
+                <section className="dashboardCard dashboardProfileCard" aria-label="Profile summary">
+                  <div className="dashboardProfileHead">
+                    <div className="dashboardAvatar">AT</div>
+                    <div>
+                      <div className="dashboardProfileName">Ari Taskrunner</div>
+                      <div className="dashboardProfileMeta">Focus Operator - Mode 2</div>
+                    </div>
+                  </div>
+                  <div className="dashboardTagRow">
+                    <span className="dashboardTag">Daily Target 6h</span>
+                    <span className="dashboardTag">Deep Work</span>
+                  </div>
+                </section>
+
+                <section className="dashboardCard dashboardStreakCard" aria-label="Streak information">
+                  <div className="dashboardCardTitle">Streak</div>
+                  <div className="dashboardStreakValue">21 Days</div>
+                  <div className="dashboardStreakBar">
+                    <span style={{ width: "78%" }} />
+                  </div>
+                  <div className="dashboardStreakMeta">4/5 sessions completed today</div>
+                </section>
+
+                <section className="dashboardCard dashboardStatCard" aria-label="Weekly hours">
+                  <div className="dashboardCardTitle">This Week</div>
+                  <div className="dashboardBigValue">32h 40m</div>
+                  <div className="dashboardDelta positive">+14% vs last week</div>
+                </section>
+
+                <section className="dashboardCard dashboardStatCard" aria-label="Task completion">
+                  <div className="dashboardCardTitle">Tasks Completed</div>
+                  <div className="dashboardBigValue">18</div>
+                  <div className="dashboardDelta">2 carried over</div>
+                </section>
+
+                <section className="dashboardCard dashboardMainGraphCard" aria-label="Focus trend graph">
+                  <div className="dashboardCardTitle">Focus Trend (7 Days)</div>
+                  <div className="dashboardGraphBars">
+                    <span style={{ height: "36%" }} />
+                    <span style={{ height: "52%" }} />
+                    <span style={{ height: "40%" }} />
+                    <span style={{ height: "69%" }} />
+                    <span style={{ height: "61%" }} />
+                    <span style={{ height: "82%" }} />
+                    <span style={{ height: "76%" }} />
+                  </div>
+                  <div className="dashboardGraphAxis">
+                    <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+                  </div>
+                </section>
+
+                <section className="dashboardCard dashboardDonutCard" aria-label="Category distribution">
+                  <div className="dashboardCardTitle">Mode Distribution</div>
+                  <div className="dashboardDonutWrap">
+                    <div className="dashboardDonut" />
+                    <div className="dashboardDonutCenter">68%</div>
+                  </div>
+                  <div className="dashboardLegend">
+                    <span><i className="dot mode1" /> Mode 1</span>
+                    <span><i className="dot mode2" /> Mode 2</span>
+                    <span><i className="dot mode3" /> Mode 3</span>
+                  </div>
+                </section>
+
+                <section className="dashboardCard dashboardTimelineCard" aria-label="Today timeline">
+                  <div className="dashboardCardTitle">Timeline</div>
+                  <ul className="dashboardTimeline">
+                    <li><span>07:30</span><p>Plan sprint and daily goals</p></li>
+                    <li><span>09:00</span><p>Deep work block - Product build</p></li>
+                    <li><span>12:00</span><p>Review history and optimize checkpoints</p></li>
+                    <li><span>15:30</span><p>Bug sweep and task reset pass</p></li>
+                  </ul>
+                </section>
+
+                <section className="dashboardCard dashboardHeatCard" aria-label="Activity heatmap">
+                  <div className="dashboardCardTitle">Focus Heatmap</div>
+                  <div className="dashboardHeatGrid">
+                    {Array.from({ length: 35 }).map((_, idx) => (
+                      <span key={`hm-${idx}`} className={`h${(idx * 7) % 5}`} />
+                    ))}
+                  </div>
+                </section>
               </div>
             </div>
           </section>

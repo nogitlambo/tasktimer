@@ -11,6 +11,9 @@
   --text:#e9eef9;
   --accent:#00CFC8;
   --mode-accent:#00CFC8;
+  --mode1-accent:#00CFC8;
+  --mode2-accent:#3A86FF;
+  --mode3-accent:#FF6B6B;
   --accent2:#00B8B2;
   --accent3:#35e8ff;
   --warn:#ff4d4d;
@@ -57,12 +60,17 @@ body{
   overflow:hidden;
   display:flex;
   flex-direction:column;
+  position:relative;
 }
 #app[aria-label="TaskTimer App"]{
   width: min(1220px, 100%);
   margin-bottom:0;
   border: none;
   box-shadow: none;
+}
+#app[aria-label="TaskTimer Settings"],
+#app[aria-label="TaskTimer User Guide"]{
+  background: #0d0f13 !important;
 }
 .topbar{
   display:grid;
@@ -194,7 +202,8 @@ body[data-app-page="test2"] #openAddTaskBtn{
 }
 .appPages{
   flex:1 1 auto;
-  padding-bottom:64px;
+  padding-bottom:12px;
+  padding-left:120px;
   min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
@@ -242,31 +251,287 @@ body[data-app-page="test2"] #openAddTaskBtn{
   height:auto;
   border:1px solid rgba(117,231,255,.26);
 }
+.dashboardShell{
+  margin:18px;
+  padding:14px;
+  border:1px solid rgba(121,226,255,.2);
+  background:#0d0f13;
+  box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
+}
+.dashboardTopRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.dashboardKicker{
+  margin:0;
+  color: rgba(190,240,255,.72);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+.dashboardTitle{
+  margin:4px 0 0;
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: rgba(142,242,255,.96);
+}
+.dashboardGrid{
+  display:grid;
+  gap:12px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.dashboardCard{
+  border:1px solid rgba(121,226,255,.2);
+  background:#0d0f13;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  padding:12px;
+}
+.dashboardCardTitle{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color: rgba(190,240,255,.8);
+}
+.dashboardProfileCard{ grid-column: span 5; }
+.dashboardStreakCard{ grid-column: span 3; }
+.dashboardStatCard{ grid-column: span 2; }
+.dashboardMainGraphCard{ grid-column: span 7; }
+.dashboardDonutCard{ grid-column: span 5; }
+.dashboardTimelineCard{ grid-column: span 7; }
+.dashboardHeatCard{ grid-column: span 5; }
+.dashboardProfileHead{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.dashboardAvatar{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  font-family:var(--font-tight);
+  font-weight:800;
+  color:#031019;
+  background: linear-gradient(180deg, var(--accent3), var(--accent));
+  border:1px solid rgba(53,232,255,.62);
+}
+.dashboardProfileName{
+  font-family:var(--font-tight);
+  font-size:15px;
+  font-weight:800;
+  color: rgba(226,247,255,.96);
+}
+.dashboardProfileMeta{
+  font-size:12px;
+  color: rgba(188,214,230,.76);
+}
+.dashboardTagRow{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.dashboardTag{
+  padding:4px 8px;
+  font-size:11px;
+  border:1px solid rgba(117,231,255,.24);
+  background: rgba(117,231,255,.09);
+  color: rgba(180,236,255,.92);
+}
+.dashboardStreakValue{
+  margin-top:4px;
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:800;
+  color: rgba(142,242,255,.96);
+}
+.dashboardStreakBar{
+  margin-top:8px;
+  height:8px;
+  border:1px solid rgba(117,231,255,.2);
+  background: rgba(0,0,0,.28);
+  position:relative;
+}
+.dashboardStreakBar > span{
+  position:absolute;
+  inset:0 auto 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent3));
+}
+.dashboardStreakMeta{
+  margin-top:8px;
+  font-size:12px;
+  color: rgba(188,214,230,.78);
+}
+.dashboardBigValue{
+  margin-top:4px;
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:800;
+  color: rgba(240,250,255,.96);
+}
+.dashboardDelta{
+  margin-top:7px;
+  font-size:12px;
+  color: rgba(188,214,230,.76);
+}
+.dashboardDelta.positive{
+  color: rgba(126,240,195,.95);
+}
+.dashboardGraphBars{
+  margin-top:10px;
+  height:118px;
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:6px;
+  align-items:end;
+  padding:8px 8px 10px;
+  border:1px solid rgba(117,231,255,.18);
+  background: rgba(3,9,18,.45);
+}
+.dashboardGraphBars > span{
+  background: linear-gradient(180deg, rgba(53,232,255,.96), rgba(0,207,200,.72));
+  box-shadow: 0 0 8px rgba(53,232,255,.28);
+}
+.dashboardGraphAxis{
+  margin-top:7px;
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size:11px;
+  color: rgba(175,203,222,.72);
+  text-align:center;
+}
+.dashboardDonutWrap{
+  margin-top:8px;
+  position:relative;
+  width:124px;
+  height:124px;
+}
+.dashboardDonut{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background: conic-gradient(var(--mode1-accent) 0 48%, var(--mode2-accent) 48% 72%, var(--mode3-accent) 72% 100%);
+  -webkit-mask: radial-gradient(circle at center, transparent 58%, #000 60%);
+  mask: radial-gradient(circle at center, transparent 58%, #000 60%);
+}
+.dashboardDonutCenter{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-family:var(--font-tight);
+  font-size:20px;
+  font-weight:800;
+  color: rgba(236,248,255,.95);
+}
+.dashboardLegend{
+  margin-top:8px;
+  display:grid;
+  gap:5px;
+  font-size:12px;
+  color: rgba(188,214,230,.82);
+}
+.dashboardLegend .dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  margin-right:6px;
+}
+.dashboardLegend .dot.mode1{ background: var(--mode1-accent); }
+.dashboardLegend .dot.mode2{ background: var(--mode2-accent); }
+.dashboardLegend .dot.mode3{ background: var(--mode3-accent); }
+.dashboardTimeline{
+  margin:8px 0 0;
+  padding:0;
+  list-style:none;
+  display:grid;
+  gap:8px;
+}
+.dashboardTimeline li{
+  display:grid;
+  grid-template-columns: 56px 1fr;
+  gap:10px;
+  border-top:1px solid rgba(117,231,255,.16);
+  padding-top:8px;
+}
+.dashboardTimeline li:first-child{
+  border-top:none;
+  padding-top:0;
+}
+.dashboardTimeline li > span{
+  font-size:11px;
+  color: rgba(142,242,255,.92);
+  font-family:var(--font-tight);
+  letter-spacing:.08em;
+}
+.dashboardTimeline li > p{
+  margin:0;
+  font-size:13px;
+  color: rgba(210,230,246,.82);
+}
+.dashboardHeatGrid{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:6px;
+}
+.dashboardHeatGrid > span{
+  aspect-ratio:1/1;
+  border:1px solid rgba(117,231,255,.18);
+  background: rgba(255,255,255,.06);
+}
+.dashboardHeatGrid > span.h1{ background: rgba(53,232,255,.22); }
+.dashboardHeatGrid > span.h2{ background: rgba(53,232,255,.36); }
+.dashboardHeatGrid > span.h3{ background: rgba(53,232,255,.52); }
+.dashboardHeatGrid > span.h4{ background: rgba(53,232,255,.7); }
 .appFooterNav{
   display:grid;
-  grid-template-columns: repeat(5, minmax(0,1fr));
-  gap:10px;
-  padding: 36px calc(14px + var(--safe-right)) calc(42px + var(--safe-bottom)) calc(14px + var(--safe-left));
-  position: relative;
+  grid-template-columns: 1fr;
+  gap:8px;
+  padding: 12px 10px;
+  position: absolute;
+  left:0;
+  top:88px;
+  bottom:0;
+  width:108px;
   z-index: 6;
-  border-top:1px solid rgba(117,231,255,.28);
-  box-shadow: 0 -10px 20px rgba(0,0,0,.35);
-  background: rgba(8,14,27,.98);
+  border-top:none;
+  border-right:1px solid rgba(117,231,255,.28);
+  box-shadow: 10px 0 20px rgba(0,0,0,.25);
+  background: #0d0f13 !important;
 }
 .appFooterBtn{
   width:100%;
-  min-height:96px;
-  padding:8px 6px;
+  min-height:68px;
+  padding:8px 4px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:6px;
+  gap:4px;
   text-align:center;
 }
+.appFooterBtn.isOn{
+  background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
+  border-color: rgba(53,232,255,.55);
+  box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 10px rgba(0,220,255,.22);
+}
+.appFooterBtn.isOn .appFooterLabel{
+  color: rgba(142,242,255,.98);
+}
+.appFooterBtn.isOn .appFooterIconImage{
+  filter: drop-shadow(0 0 8px rgba(53,232,255,.48));
+}
 .appFooterIconImage{
-  width:56px;
-  height:56px;
+  width:42px;
+  height:42px;
   object-fit:contain;
   object-position:center;
   display:block;
@@ -275,9 +540,9 @@ body[data-app-page="test2"] #openAddTaskBtn{
 }
 .appFooterLabel{
   font-family:var(--font-tight);
-  font-size:12px;
+  font-size:10px;
   font-weight:700;
-  letter-spacing:.08em;
+  letter-spacing:.06em;
   text-transform:uppercase;
   color: rgba(63,233,255,.95);
   text-shadow: 0 0 8px rgba(0,220,255,.5);
@@ -1116,7 +1381,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   width: min(420px, 100%);
   border-radius: 16px;
   padding:14px;
-  background: rgba(18,24,42,.98);
+  background: #0d0f13 !important;
   border:1px solid rgba(255,255,255,.14);
   box-shadow: var(--shadow);
 }
@@ -1362,7 +1627,7 @@ input[type="text"]:focus, input[type="number"]:focus{
 .historyCanvasWrap{
   width:100%;
   height:260px;
-  padding-bottom:24px;
+  padding-bottom:0;
   border-radius: 0;
   background: #0d0f13 !important;
   border:1px solid rgba(255,255,255,.08);
@@ -1380,7 +1645,7 @@ input[type="text"]:focus, input[type="number"]:focus{
   to{ transform: translateX(0); opacity:1; }
 }
 #historyChart{ width:100%; height:100%; display:block; }
-.historyCanvasWrap .historyChartInline{ width:100%; height:calc(100% - 24px); display:block; }
+.historyCanvasWrap .historyChartInline{ width:100%; height:100%; display:block; }
 .historyInline{
   margin-top:14px;
   padding:14px;
@@ -1992,15 +2257,25 @@ input[type="text"]:focus, input[type="number"]:focus{
   gap:14px;
   height:100%;
   padding:18px;
+  background: #0d0f13;
 }
 .userGuideTopAction{
   grid-column:1 / -1;
   display:flex;
   justify-content:flex-end;
+  align-items:flex-start;
+}
+.userGuideBackBtn{
+  width:auto;
+  min-width:88px;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
 .userGuideToc{
   border:1px solid rgba(255,255,255,.12);
-  background: rgba(8,15,28,.72);
+  background: #0d0f13 !important;
   padding:12px;
   display:flex;
   flex-direction:column;
@@ -2044,7 +2319,7 @@ input[type="text"]:focus, input[type="number"]:focus{
 }
 .userGuideWindow{
   border:1px solid rgba(117,231,255,.16);
-  background: rgba(7,16,30,.4);
+  background: #0d0f13 !important;
   padding:12px;
 }
 .userGuideSection{
@@ -2167,8 +2442,13 @@ body[data-theme="light"] .taskMenuItemDelete{
   background: rgba(161,0,0,.08);
 }
 body[data-theme="light"] .appFooterNav{
-  background: transparent;
+  background: #0d0f13 !important;
   box-shadow: none;
+}
+body[data-theme="light"] .appFooterBtn.isOn{
+  background: linear-gradient(180deg, rgba(53,232,255,.22), rgba(255,255,255,.08));
+  border-color: rgba(53,232,255,.5);
+  box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
 }
 body[data-theme="light"] .historyTrashBtn,
 body[data-theme="light"] .hmDelBtn,
@@ -2330,11 +2610,13 @@ body[data-theme="light"] .hmExpandIcon{
 }
 body[data-theme="light"] .appPagePlaceholder,
 body[data-theme="light"] .dashboardShowcase,
+body[data-theme="light"] .dashboardShell,
+body[data-theme="light"] .dashboardCard,
 body[data-theme="light"] .modePanel,
 body[data-theme="light"] .userGuideToc,
 body[data-theme="light"] .userGuideWindow,
 body[data-theme="light"] .focusInsights{
-  background: rgba(255,255,255,.82);
+  background: #0d0f13;
   border-color: rgba(0,0,0,.15);
   box-shadow: none;
 }
@@ -2428,10 +2710,20 @@ body[data-theme="light"] input[type="number"]{
     max-width:240px;
   }
   .appPages{
+    padding-left:0;
     padding-bottom:78px;
   }
   .appFooterNav{
+    position:relative;
+    left:auto;
+    top:auto;
+    bottom:auto;
+    width:100%;
+    grid-template-columns: repeat(5, minmax(0,1fr));
     gap:6px;
+    border-right:none;
+    border-top:1px solid rgba(117,231,255,.28);
+    box-shadow: 0 -10px 20px rgba(0,0,0,.35);
     padding:10px 8px calc(10px + env(safe-area-inset-bottom));
   }
   .appFooterBtn{
@@ -2445,6 +2737,18 @@ body[data-theme="light"] input[type="number"]{
   .appFooterLabel{
     font-size:10px;
     letter-spacing:.03em;
+  }
+  .dashboardGrid{
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .dashboardProfileCard,
+  .dashboardStreakCard,
+  .dashboardStatCard,
+  .dashboardMainGraphCard,
+  .dashboardDonutCard,
+  .dashboardTimelineCard,
+  .dashboardHeatCard{
+    grid-column: span 3;
   }
   .list{
     padding:12px;
@@ -2565,6 +2869,18 @@ body[data-theme="light"] input[type="number"]{
   }
   .appFooterLabel{
     display:none;
+  }
+  .dashboardGrid{
+    grid-template-columns: 1fr;
+  }
+  .dashboardProfileCard,
+  .dashboardStreakCard,
+  .dashboardStatCard,
+  .dashboardMainGraphCard,
+  .dashboardDonutCard,
+  .dashboardTimelineCard,
+  .dashboardHeatCard{
+    grid-column: auto;
   }
   .taskMenuList{
     right:0;
