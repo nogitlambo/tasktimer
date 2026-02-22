@@ -70,9 +70,17 @@ export default function TaskTimerPage() {
                   <p className="dashboardKicker">Performance Overview</p>
                   <h2 className="dashboardTitle">Mission Dashboard</h2>
                 </div>
-                <button className="btn btn-accent small" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout">
-                  Edit
-                </button>
+                <div className="dashboardEditActions">
+                  <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
+                    &#9998;
+                  </button>
+                  <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
+                    Cancel
+                  </button>
+                  <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
+                    Done
+                  </button>
+                </div>
               </div>
 
               <div className="dashboardGrid">
@@ -185,10 +193,6 @@ export default function TaskTimerPage() {
           <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button" aria-label="Tasks">
             <img className="appFooterIconImage" src="/icon-tasks.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Tasks</span>
-          </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerTest1Btn" type="button" aria-label="Test 1">
-            <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
-            <span className="appFooterLabel">Test 1</span>
           </button>
           <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="User Guide">
             <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />

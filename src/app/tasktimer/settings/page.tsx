@@ -5,7 +5,7 @@
 import { useEffect } from "react";
 import ConfirmOverlay from "../components/ConfirmOverlay";
 import InfoOverlays from "../components/InfoOverlays";
-import SettingsPanel from "../components/SettingsPanel";
+import SettingsScreen from "../components/SettingsScreen";
 import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
@@ -17,11 +17,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <div className="wrap" id="app" aria-label="TaskTimer Settings">
-        <div className="list" style={{ paddingTop: 18 }}>
-          <SettingsPanel />
-        </div>
-      </div>
+      <SettingsScreen />
       <InfoOverlays />
       <ConfirmOverlay />
     </>

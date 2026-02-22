@@ -71,6 +71,15 @@ body{
 #app[aria-label="TaskTimer Settings"],
 #app[aria-label="TaskTimer User Guide"]{
   background: #0d0f13 !important;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+#app[aria-label="TaskTimer Settings"] .list{
+  min-height:100%;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuidePage{
+  height:auto;
+  min-height:100%;
 }
 .topbar{
   display:grid;
@@ -264,6 +273,24 @@ body[data-app-page="test2"] #openAddTaskBtn{
   justify-content:space-between;
   gap:12px;
   margin-bottom:12px;
+}
+.dashboardEditActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+#dashboardEditBtn{
+  width:36px;
+  height:36px;
+  padding:0;
+  display:inline-flex;
+  place-items:center;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  line-height:1;
 }
 .dashboardKicker{
   margin:0;
@@ -1281,19 +1308,85 @@ input[type="text"]:focus, input[type="number"]:focus{
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+#editOverlay .modal{
+  padding:14px 14px 12px;
+}
+#editOverlay .field{
+  margin-top:8px;
+}
+#editOverlay label{
+  margin-bottom:4px;
+  font-size:10px;
+  letter-spacing:.06em;
+}
 #editOverlay input[type="text"],
 #editOverlay input[type="number"]{
+  padding:9px 10px;
+  min-height:36px;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 #editOverlay .toggleRow,
 #editOverlay .milestones,
 #editOverlay .unitRow{
+  margin-top:8px;
+  padding:8px 10px;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+#editOverlay .toggleRow{
+  min-height:42px;
+}
+#editOverlay .unitRow{
+  margin-bottom:6px;
+  gap:8px;
+}
+#editOverlay .unitButtons{
+  gap:6px;
+}
+#editOverlay .unitBtn.small{
+  padding:6px 9px;
+  font-size:11px;
+}
+#editOverlay .row3{
+  gap:8px;
+}
+#editOverlay .editHead{
+  gap:10px;
+}
+#editOverlay .editMoveWrap{
+  gap:6px;
+  margin-top:0;
+}
+#editOverlay .footerBtns{
+  margin-top:10px;
+  gap:8px;
+}
+#editOverlay .footerBtns .btn{
+  padding:9px 12px;
+  min-height:36px;
+}
+#editOverlay .milestones{
+  border:none;
+  background: transparent;
+  box-shadow:none;
+  padding:6px 0 0;
+}
 #editOverlay .msRow{
-  padding:8px;
+  margin-top:6px;
+  padding:5px 6px;
+  gap:6px;
+}
+#editOverlay .msRow button{
+  width:28px;
+  height:28px;
+}
+#editOverlay .msRow input[type="text"]{
+  padding:7px 9px;
+  min-height:30px;
+}
+#editOverlay .msRow{
+  padding:5px 6px;
   border:1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
   border-radius: 0;
@@ -2854,7 +2947,7 @@ body[data-theme="light"] input[type="number"]{
     top:auto;
     bottom:0;
     width:100%;
-    grid-template-columns: repeat(5, minmax(0,1fr));
+    grid-template-columns: repeat(4, minmax(0,1fr));
     gap:6px;
     border-right:none;
     border-top:1px solid rgba(117,231,255,.28);

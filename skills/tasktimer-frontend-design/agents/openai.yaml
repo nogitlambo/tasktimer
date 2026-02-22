@@ -1,0 +1,3 @@
+display_name: TaskTimer Frontend Design
+short_description: Apply TaskTimer's current UI style system to new pages, modals, charts, and controls.
+default_prompt: Use the TaskTimer frontend design skill to implement UI that matches the existing app styling (fonts, #0d0f13 surfaces, slanted controls, existing button classes, and theme parity).

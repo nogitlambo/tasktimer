@@ -162,6 +162,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let editMoveTargetMode: MainMode = "mode1";
   let dashboardEditMode = false;
   let dashboardDragEl: HTMLElement | null = null;
+  let dashboardOrderDraftBeforeEdit: string[] | null = null;
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -205,6 +206,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
     dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
+    dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
+    dashboardEditDoneBtn: document.getElementById("dashboardEditDoneBtn") as HTMLButtonElement | null,
     dashboardGrid: document.querySelector(".dashboardGrid") as HTMLElement | null,
 
     menuIcon: document.getElementById("menuIcon"),
@@ -512,14 +515,60 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function saveDashboardOrder() {
     const grid = els.dashboardGrid;
     if (!grid) return;
-    const order = Array.from(grid.querySelectorAll(".dashboardCard"))
-      .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
-      .filter(Boolean);
+    const order = getCurrentDashboardOrder();
     try {
       localStorage.setItem(DASHBOARD_ORDER_KEY, JSON.stringify(order));
     } catch {
       // ignore
     }
+  }
+
+  function getCurrentDashboardOrder() {
+    const grid = els.dashboardGrid;
+    if (!grid) return [] as string[];
+    return Array.from(grid.querySelectorAll(".dashboardCard"))
+      .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
+      .filter(Boolean);
+  }
+
+  function applyDashboardOrder(order: string[] | null | undefined) {
+    const grid = els.dashboardGrid;
+    if (!grid || !Array.isArray(order) || !order.length) return;
+    const byId = new Map<string, HTMLElement>();
+    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
+      const card = el as HTMLElement;
+      const id = card.getAttribute("data-dashboard-id");
+      if (id) byId.set(id, card);
+    });
+    order.forEach((id) => {
+      const card = byId.get(String(id || ""));
+      if (card) grid.appendChild(card);
+    });
+  }
+
+  function beginDashboardEditMode() {
+    if (dashboardEditMode) return;
+    dashboardOrderDraftBeforeEdit = getCurrentDashboardOrder();
+    dashboardEditMode = true;
+    applyDashboardEditMode();
+  }
+
+  function cancelDashboardEditMode() {
+    if (!dashboardEditMode) return;
+    if (dashboardOrderDraftBeforeEdit && dashboardOrderDraftBeforeEdit.length) {
+      applyDashboardOrder(dashboardOrderDraftBeforeEdit);
+    }
+    dashboardEditMode = false;
+    dashboardOrderDraftBeforeEdit = null;
+    applyDashboardEditMode();
+  }
+
+  function commitDashboardEditMode() {
+    if (!dashboardEditMode) return;
+    saveDashboardOrder();
+    dashboardEditMode = false;
+    dashboardOrderDraftBeforeEdit = null;
+    applyDashboardEditMode();
   }
 
   function applyDashboardEditMode() {
@@ -531,8 +580,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     if (els.dashboardEditBtn) {
       els.dashboardEditBtn.classList.toggle("isOn", dashboardEditMode);
-      els.dashboardEditBtn.textContent = dashboardEditMode ? "Done" : "Edit";
+      (els.dashboardEditBtn as HTMLElement).style.display = dashboardEditMode ? "none" : "inline-flex";
     }
+    if (els.dashboardEditCancelBtn) (els.dashboardEditCancelBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
+    if (els.dashboardEditDoneBtn) (els.dashboardEditDoneBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
   }
 
   function safeJsonParse(str: string) {
@@ -3547,10 +3598,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.menuIcon, "click", () => {
       window.location.href = appRoute("/tasktimer/settings");
     });
-    on(els.dashboardEditBtn, "click", () => {
-      dashboardEditMode = !dashboardEditMode;
-      applyDashboardEditMode();
-    });
+    on(els.dashboardEditBtn, "click", beginDashboardEditMode);
+    on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
+    on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
     on(els.dashboardGrid, "dragstart", (e: any) => {
       if (!dashboardEditMode) return;
       const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
@@ -3582,12 +3632,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.dashboardGrid, "drop", (e: any) => {
       if (!dashboardEditMode) return;
       e.preventDefault();
-      saveDashboardOrder();
     });
     on(els.dashboardGrid, "dragend", () => {
       if (dashboardDragEl) dashboardDragEl.classList.remove("isDragging");
       dashboardDragEl = null;
-      if (dashboardEditMode) saveDashboardOrder();
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
