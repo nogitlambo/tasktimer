@@ -187,19 +187,19 @@ export default function TaskTimerPage() {
 
         <div className="appFooterNav" aria-label="App pages">
           <button className="btn btn-ghost small appFooterBtn" id="footerDashboardBtn" type="button" aria-label="Dashboard">
-            <img className="appFooterIconImage" src="/icon-dashboard.png" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/Dashboard.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Dashboard</span>
           </button>
           <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button" aria-label="Tasks">
-            <img className="appFooterIconImage" src="/icon-tasks.png" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Tasks</span>
           </button>
           <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="User Guide">
-            <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/User_Guide.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">User Guide</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="./settings/index.html" aria-label="Settings">
-            <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/Settings.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Settings</span>
           </a>
         </div>

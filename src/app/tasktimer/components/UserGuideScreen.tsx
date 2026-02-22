@@ -18,7 +18,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-overview",
         title: "Overview",
-        icon: "/icon-dashboard.png",
+        icon: "/Dashboard.svg",
         paragraphs: [
           "TaskTimer is a multi-task time tracking app designed for focused work sessions. You can run timers per task, define milestone checkpoints, review session history, and monitor consistency over time.",
           "The app is organized around four core flows: tracking active tasks, reviewing history, configuring categories and appearance, and managing backups. Most actions happen on the Tasks page, with Settings used for global controls.",
@@ -29,7 +29,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-quick-start",
         title: "Quick Start",
-        icon: "/icon-tasks.png",
+        icon: "/Task_List.svg",
         paragraphs: [
           "Create your first task with Add Task, then press Start to begin timing. Use Stop to pause and Start again to resume. Press Reset when you want to clear the timer and optionally log the finished session to history.",
           "If you track different activity types, switch modes to keep tasks grouped by category. Mode 1 is always available; Mode 2 and Mode 3 can be enabled and renamed in Configure Modes.",
@@ -44,7 +44,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-nav",
         title: "Navigation",
-        icon: "/icon-dashboard.png",
+        icon: "/Dashboard.svg",
         paragraphs: [
           "Use the footer bar to move between Dashboard, Tasks, and additional pages. The Settings button opens the dedicated settings route.",
           "The top bar contains mode switching and Add Task controls. Mode and Add Task are intended for task tracking context and are hidden on non-task pages.",
@@ -59,9 +59,10 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-tasks",
         title: "Tasks",
-        icon: "/icon-tasks.png",
+        icon: "/Task_List.svg",
         paragraphs: [
-          "Each task row provides Start/Stop, Reset, Edit, History, and a more-actions menu. Use Duplicate to clone setup quickly, Collapse to hide progress details, and Delete to remove a task.",
+          "Each task row provides Start/Stop, Reset, Edit, History, and a more-actions menu.",
+          "Use Duplicate to clone setup quickly, Collapse to hide progress details, and Delete to remove a task.",
           "Task names can be edited directly by opening Edit, where you can also adjust accumulated time manually. Manual edits change the task timer value but do not create history until a reset is logged.",
           "Task state is persisted locally, including elapsed time, milestones, and mode assignment. This allows continuity between sessions on the same device.",
         ],
@@ -74,7 +75,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-timers",
         title: "Timers and Checkpoints",
-        icon: "/icon-tasks.png",
+        icon: "/Task_Settings.svg",
         paragraphs: [
           "Timers accumulate elapsed time while running. Start begins timing, Stop pauses timing, and Reset returns elapsed time to zero.",
           "Milestones (checkpoints) can be enabled per task in Edit. You can choose Day, Hour, or Minute as the unit and assign optional descriptions to each checkpoint.",
@@ -89,7 +90,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-history",
         title: "History",
-        icon: "/icon-dashboard.png",
+        icon: "/History_Manager.svg",
         paragraphs: [
           "Inline History opens from each task and shows recent session entries as bars. You can toggle between 7-day and 14-day ranges, page through entries, and inspect values directly on the chart.",
           "Pin keeps a task history panel open for quick reference. Export, Analyse, and Manage actions are available from the inline panel footer.",
@@ -104,7 +105,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-history-manager",
         title: "History Manager",
-        icon: "/icon-dashboard.png",
+        icon: "/History_Manager.svg",
         paragraphs: [
           "History Manager is the comprehensive view for all recorded entries. It groups entries by task and date, supports sorting by date/time or elapsed duration, and shows task metadata.",
           "Bulk Edit mode enables hierarchical selection: task-level, date-level, and row-level checkboxes. Selected rows can be deleted in one action with a confirmation summary.",
@@ -119,7 +120,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-focus",
         title: "Focus Mode",
-        icon: "/icon-settings.png",
+        icon: "/Focus.svg",
         paragraphs: [
           "Tap a task name to open Focus Mode. This view provides a large circular dial, formatted elapsed time, checkpoint ring markers, and focused controls for starting/stopping the selected task.",
           "Focus insights summarize key performance metrics such as best session and trend deltas. These values are derived from your task history.",
@@ -134,7 +135,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-modes",
         title: "Modes",
-        icon: "/icon-account.png",
+        icon: "/Modes.svg",
         paragraphs: [
           "Modes are category buckets used to organize tasks. Mode 1 is mandatory and always enabled. Mode 2 and Mode 3 can be enabled or disabled from Configure Modes.",
           "Each mode supports a custom label and color. These colors can drive task visuals and static history/progress appearance when dynamic colors are turned off.",
@@ -149,7 +150,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-settings",
         title: "Settings",
-        icon: "/icon-settings.png",
+        icon: "/Settings.svg",
         paragraphs: [
           "Settings is the central control panel for app-wide behavior. It includes appearance, task defaults, category management, history manager access, and backup tools.",
           "Task Settings lets you set default milestone unit and enable or disable dynamic colors for progress/history visuals.",
@@ -164,7 +165,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-data",
         title: "Backup and Reset",
-        icon: "/icon-settings.png",
+        icon: "/Import.svg",
         paragraphs: [
           "Export Backup creates a JSON file containing tasks, mode settings, and history. Keep exports as periodic snapshots for recovery and transfer.",
           "Import Backup merges data into the current dataset. Imported tasks are normalized and re-keyed when ID collisions occur to avoid overwriting existing tasks.",
@@ -179,7 +180,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-mobile",
         title: "Mobile Usage",
-        icon: "/icon-settings.png",
+        icon: "/Settings.svg",
         paragraphs: [
           "The UI is responsive down to narrow mobile widths. Task actions, chart controls, and settings layouts are optimized to avoid overlap and preserve touch targets.",
           "Inline history chart supports swipe gestures for pagination. On small screens, labels are compacted and angled for legibility.",
@@ -194,7 +195,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       {
         id: "ug-troubleshoot",
         title: "Troubleshooting",
-        icon: "/icon-settings.png",
+        icon: "/About.svg",
         paragraphs: [
           "If buttons navigate to unexpected pages in packaged builds, verify route output files exist in the exported `out` directory and rebuild the Android package after syncing.",
           "If chart colors look wrong, check whether Dynamic Colors is enabled in Task Settings. Disabled mode forces static mode color.",
@@ -210,7 +211,8 @@ export default function UserGuideScreen({ onBack }: Props) {
     []
   );
 
-  const [activeId, setActiveId] = useState("ug-nav");
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const selectedTopic = sections.find((s) => s.id === selectedTopicId) || null;
 
   return (
     <div className="wrap" id="app" aria-label="TaskTimer User Guide">
@@ -220,41 +222,61 @@ export default function UserGuideScreen({ onBack }: Props) {
             Back
           </button>
         </div>
-        <aside className="userGuideToc">
-          <div className="userGuideTocTitle">Contents</div>
-          {sections.map((s) => {
-            const isOn = activeId === s.id;
-            return (
-              <div className="userGuideTopic" key={s.id}>
-                <button className={`userGuideTocItem${isOn ? " isOn" : ""}`} type="button" onClick={() => setActiveId(s.id)}>
-                  {s.title}
+
+        {!selectedTopic ? (
+          <aside className="userGuideToc">
+            <div className="userGuideTocHeader">
+              <div className="userGuideTocTitle">Contents</div>
+              <div className="userGuideTocSubtext">Tap a topic to open its screen</div>
+            </div>
+            <div className="userGuideGrid" role="list" aria-label="User Guide Topics">
+              {sections.map((s) => (
+                <button
+                  className="menuItem userGuideTopicTile"
+                  key={s.id}
+                  type="button"
+                  role="listitem"
+                  onClick={() => setSelectedTopicId(s.id)}
+                >
+                  <span className="userGuideTocItemMain">
+                    <img className="userGuideIcon" src={s.icon} alt="" aria-hidden="true" />
+                    <span>{s.title}</span>
+                  </span>
                 </button>
-                {isOn ? (
-                  <div className="modalSubtext userGuideText userGuideWindow userGuideTopicPanel">
-                    <section className="userGuideSection">
-                      <h3>
-                        <img className="userGuideIcon" src={s.icon} alt="" aria-hidden="true" />
-                        {s.title}
-                      </h3>
-                      {s.paragraphs.map((para, idx) => (
-                        <p key={`${s.id}-p-${idx}`}>{para}</p>
-                      ))}
-                      {s.shots.map((shot, idx) =>
-                        shot.image ? (
-                          <img key={`${s.id}-shot-${idx}`} className="userGuideShotImage" src={shot.image} alt={`${s.title} screenshot ${idx + 1}`} />
-                        ) : (
-                          <div key={`${s.id}-shot-${idx}`} className="userGuideShotPlaceholder">
-                            {shot.label}
-                          </div>
-                        )
-                      )}
-                    </section>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </aside>
+              ))}
+            </div>
+          </aside>
+        ) : (
+          <section className="userGuideTopicScreen userGuideWindow modalSubtext userGuideText">
+            <div className="userGuideTopicScreenHead">
+              <button className="btn btn-ghost small" type="button" onClick={() => setSelectedTopicId(null)}>
+                Topics
+              </button>
+              <h3>
+                <img className="userGuideIcon" src={selectedTopic.icon} alt="" aria-hidden="true" />
+                {selectedTopic.title}
+              </h3>
+            </div>
+            <section className="userGuideSection">
+              {selectedTopic.paragraphs.map((para, idx) => (
+                <React.Fragment key={`${selectedTopic.id}-p-${idx}`}>
+                  <p>{para}</p>
+                  {selectedTopic.shots[idx]
+                    ? selectedTopic.shots[idx].image ? (
+                        <img
+                          className="userGuideShotImage"
+                          src={selectedTopic.shots[idx].image}
+                          alt={`${selectedTopic.title} screenshot ${idx + 1}`}
+                        />
+                      ) : (
+                        <div className="userGuideShotPlaceholder">{selectedTopic.shots[idx].label}</div>
+                      )
+                    : null}
+                </React.Fragment>
+              ))}
+            </section>
+          </section>
+        )}
       </div>
     </div>
   );
