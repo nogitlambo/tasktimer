@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <style>
+    :root { --tt-primary:#00E5FF; }
+
+    .tt-dial {
+      fill: none;
+      stroke: var(--tt-primary);
+      stroke-width: 10;
+      stroke-linecap: round;
+
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+
+      transform: rotate(-90deg);
+      transform-origin: 100px 100px;
+
+      filter: url(#ttGlow);
+      animation: tt-fill 1.6s linear infinite, tt-glow 1.6s ease-in-out infinite;
+      opacity: 0.92;
+    }
+
+    @keyframes tt-fill {
+      0%   { stroke-dashoffset: 100; }
+      92%  { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: 100; }
+    }
+
+    @keyframes tt-glow {
+      0%, 100% { opacity: 0.80; }
+      50%      { opacity: 1; }
+    }
+  </style>
+
+  <defs>
+    <filter id="ttGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Crop the left icon area from the full TaskTimer logo (1600x350 viewBox). -->
+  <image href="/tasktimer-logo.svg" x="0" y="0" width="914.286" height="200" preserveAspectRatio="xMinYMid slice"/>
+
+  <!-- Animated dial overlay -->
+  <circle class="tt-dial" cx="100" cy="100" r="58" pathLength="100"/>
+
+</svg>

@@ -65,6 +65,9 @@ export default function SettingsPanel() {
         <button className="menuItem" data-menu="contact" type="button">
           <MenuIconLabel icon="/Contact.svg" label="Contact" />
         </button>
+        <button className="menuItem" id="feedbackBtn" type="button">
+          <MenuIconLabel icon="/Feedback.svg" label="Feedback" />
+        </button>
 
         <div className="menuDivider" role="separator" aria-hidden="true" />
 

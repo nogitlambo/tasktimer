@@ -377,6 +377,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return `${noTrailingSlash}/index.html${resolvedTrailing}`;
   }
 
+  function getInitialAppPageFromQuery(): "tasks" | "dashboard" | "test1" | "test2" {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      const page = String(params.get("page") || "").toLowerCase();
+      if (page === "dashboard") return "dashboard";
+      if (page === "test1") return "test1";
+      if (page === "test2") return "test2";
+    } catch {
+      // ignore
+    }
+    return "tasks";
+  }
+
   function maybeOpenImportFromQuery() {
     let shouldOpenImport = false;
     let nextSearch = "";
@@ -4154,7 +4167,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   backfillHistoryColorsFromSessionLogic();
   syncModeLabelsUi();
   applyMainMode("mode1");
-  applyAppPage("tasks");
+  applyAppPage(getInitialAppPageFromQuery());
   applyDashboardOrderFromStorage();
   applyDashboardEditMode();
   wireEvents();

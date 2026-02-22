@@ -2558,9 +2558,10 @@ input[type="text"]:focus, input[type="number"]:focus{
   white-space:normal;
   text-align:center;
   text-transform:uppercase;
-  letter-spacing:.08em;
+  letter-spacing:.06em;
   font-size:12px;
-  font-weight:800;
+  font-weight:700;
+  line-height:1.15;
   margin-top:auto;
 }
 .userGuideTopicTile .userGuideIcon{
@@ -3184,6 +3185,12 @@ body[data-theme="light"] input[type="number"]{
     gap:10px;
     padding:12px;
   }
+  #app[aria-label="TaskTimer Settings"] .list{
+    padding-bottom: calc(20px + var(--safe-bottom));
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuidePage{
+    padding-bottom: calc(20px + var(--safe-bottom));
+  }
   .userGuideTopAction{
     justify-content:flex-start;
   }
@@ -3285,6 +3292,12 @@ body[data-theme="light"] input[type="number"]{
   .userGuideToc{
     display:flex;
     flex-direction:column;
+  }
+  #app[aria-label="TaskTimer Settings"] .list{
+    padding-bottom: calc(16px + var(--safe-bottom));
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuidePage{
+    padding-bottom: calc(16px + var(--safe-bottom));
   }
   .userGuideGrid{
     grid-template-columns: 1fr;
