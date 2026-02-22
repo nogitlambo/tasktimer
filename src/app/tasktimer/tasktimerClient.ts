@@ -352,7 +352,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
     const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
     const suffix = normalizedPath.replace(/^\/tasktimer/, "");
-    return `${taskTimerRootPath()}${suffix}${trailing}`;
+    const resolved = `${taskTimerRootPath()}${suffix}${trailing}`;
+
+    // In exported/mobile builds (e.g. Android WebView), folder URLs like `/tasktimer/settings/`
+    // can fall back to the app root. Target the actual exported file path instead.
+    const currentPath = window.location.pathname || "";
+    const isCapacitorRuntime = !!(window as any).Capacitor;
+    const usesExportedHtmlPaths =
+      window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isCapacitorRuntime;
+    if (!usesExportedHtmlPaths) return resolved;
+
+    const resolvedHashIndex = resolved.indexOf("#");
+    const resolvedQueryIndex = resolved.indexOf("?");
+    const resolvedCutIndex =
+      resolvedQueryIndex === -1
+        ? resolvedHashIndex
+        : resolvedHashIndex === -1
+          ? resolvedQueryIndex
+          : Math.min(resolvedQueryIndex, resolvedHashIndex);
+    const resolvedPathOnly = resolvedCutIndex >= 0 ? resolved.slice(0, resolvedCutIndex) : resolved;
+    const resolvedTrailing = resolvedCutIndex >= 0 ? resolved.slice(resolvedCutIndex) : "";
+    if (/\/index\.html$/i.test(resolvedPathOnly)) return resolved;
+    const noTrailingSlash = resolvedPathOnly.replace(/\/+$/, "");
+    return `${noTrailingSlash}/index.html${resolvedTrailing}`;
   }
 
   function maybeOpenImportFromQuery() {
@@ -3141,10 +3163,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerTasksBtn, "click", () => applyAppPage("tasks"));
     on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard"));
     on(els.footerTest1Btn, "click", () => applyAppPage("test1"));
-    on(els.footerTest2Btn, "click", () => {
+    on(els.footerTest2Btn, "click", (e: any) => {
+      e?.preventDefault?.();
       window.location.href = appRoute("/tasktimer/user-guide");
     });
-    on(els.footerSettingsBtn, "click", () => {
+    on(els.footerSettingsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
       window.location.href = appRoute("/tasktimer/settings");
     });
     on(els.editMoveMode1, "click", () => {
