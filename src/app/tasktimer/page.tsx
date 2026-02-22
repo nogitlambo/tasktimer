@@ -198,7 +198,7 @@ export default function TaskTimerPage() {
             <img className="appFooterIconImage" src="/icon-account.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">User Guide</span>
           </button>
-          <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings/" aria-label="Settings">
+          <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
             <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Settings</span>
           </a>
