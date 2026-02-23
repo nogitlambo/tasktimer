@@ -142,7 +142,7 @@ export default function Home() {
           aria-hidden={!showTitlePhase}
         >
           <h1 className="max-w-[26ch] text-center text-[15px] font-extrabold uppercase tracking-[0.16em] text-white sm:text-[18px]">
-            TIME TRACKING BUILT FOR DEEP FOCUS
+            Build better habits with smarter time tracking.
           </h1>
         </div>
 

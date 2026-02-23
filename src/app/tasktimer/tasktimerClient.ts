@@ -63,6 +63,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
+    if (removeCapBackListener) {
+      try {
+        removeCapBackListener();
+      } catch {
+        // ignore
+      }
+      removeCapBackListener = null;
+    }
 
     for (const l of listeners) {
       try {
@@ -115,6 +123,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId`;
   const HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId`;
   const DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder`;
+  const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
@@ -169,6 +178,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let dashboardEditMode = false;
   let dashboardDragEl: HTMLElement | null = null;
   let dashboardOrderDraftBeforeEdit: string[] | null = null;
+  let currentAppPage: "tasks" | "dashboard" | "test1" | "test2" = "tasks";
+  let suppressNavStackPush = false;
+  let removeCapBackListener: null | (() => void) = null;
   const checkpointToastQueue: Array<{ id: string; title: string; text: string }> = [];
   let activeCheckpointToast: { id: string; title: string; text: string } | null = null;
   let checkpointToastAutoCloseTimer: number | null = null;
@@ -412,6 +424,212 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       // ignore
     }
     return "tasks";
+  }
+
+  function normalizedPathname() {
+    try {
+      return (window.location.pathname || "").replace(/\/+$/, "") || "/";
+    } catch {
+      return "/";
+    }
+  }
+
+  function screenTokenForCurrent(pageOverride?: "tasks" | "dashboard" | "test1" | "test2") {
+    const path = normalizedPathname();
+    if (/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path)) {
+      const page = pageOverride || currentAppPage || "tasks";
+      return `app:${path}|page=${page}`;
+    }
+    return `route:${path}`;
+  }
+
+  function parseAppPageFromToken(token: string | null | undefined): "tasks" | "dashboard" | "test1" | "test2" | null {
+    const m = String(token || "").match(/\|page=(tasks|dashboard|test1|test2)$/);
+    if (!m) return null;
+    const p = m[1];
+    if (p === "tasks" || p === "dashboard" || p === "test1" || p === "test2") return p;
+    return null;
+  }
+
+  function loadNavStack(): string[] {
+    try {
+      const raw = localStorage.getItem(NAV_STACK_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.map((v) => String(v || "")).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveNavStack(stack: string[]) {
+    try {
+      localStorage.setItem(NAV_STACK_KEY, JSON.stringify(stack.slice(-50)));
+    } catch {
+      // ignore
+    }
+  }
+
+  function pushCurrentScreenToNavStack(pageOverride?: "tasks" | "dashboard" | "test1" | "test2") {
+    if (suppressNavStackPush) return;
+    const token = screenTokenForCurrent(pageOverride);
+    const stack = loadNavStack();
+    if (stack[stack.length - 1] === token) return;
+    stack.push(token);
+    saveNavStack(stack);
+  }
+
+  function ensureNavStackCurrentScreen() {
+    pushCurrentScreenToNavStack();
+  }
+
+  function navigateToAppRoute(path: string) {
+    pushCurrentScreenToNavStack();
+    window.location.href = appRoute(path);
+  }
+
+  function exitAppNow() {
+    try {
+      const capApp = (window as any)?.Capacitor?.Plugins?.App;
+      if (capApp?.exitApp) {
+        capApp.exitApp();
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      const navApp = (navigator as any)?.app;
+      if (navApp?.exitApp) {
+        navApp.exitApp();
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      window.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  function showExitAppConfirm() {
+    confirm("Exit App", "Do you want to exit the app?", {
+      okLabel: "Yes",
+      cancelLabel: "Cancel",
+      onOk: () => {
+        closeConfirm();
+        exitAppNow();
+      },
+      onCancel: () => closeConfirm(),
+    });
+  }
+
+  function closeTopOverlayIfOpen() {
+    const openOverlays = Array.from(document.querySelectorAll(".overlay")).filter((el) => {
+      const node = el as HTMLElement;
+      return getComputedStyle(node).display !== "none";
+    }) as HTMLElement[];
+    if (!openOverlays.length) return false;
+    const top = openOverlays[openOverlays.length - 1];
+    if (top.id === "editOverlay") {
+      closeEdit(false);
+      return true;
+    }
+    if (top.id === "elapsedPadOverlay") {
+      closeElapsedPad(false);
+      return true;
+    }
+    if (top.id === "confirmOverlay") {
+      closeConfirm();
+      return true;
+    }
+    closeOverlay(top);
+    return true;
+  }
+
+  function handleAppBackNavigation(): boolean {
+    if (closeTopOverlayIfOpen()) return true;
+
+    const path = normalizedPathname();
+    const stack = loadNavStack();
+    const currentToken = screenTokenForCurrent();
+    while (stack.length && stack[stack.length - 1] === currentToken) stack.pop();
+    const prevToken = stack.pop() || null;
+    saveNavStack(stack);
+
+    if (!prevToken) {
+      showExitAppConfirm();
+      return true;
+    }
+
+    const prevAppPage = parseAppPageFromToken(prevToken);
+    const prevIsSameRoot = prevToken.startsWith("app:") && (/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path));
+    if (prevIsSameRoot && prevAppPage) {
+      suppressNavStackPush = true;
+      applyAppPage(prevAppPage);
+      suppressNavStackPush = false;
+      return true;
+    }
+
+    if (prevToken.startsWith("route:")) {
+      const routePath = prevToken.slice("route:".length);
+      const target = routePath.endsWith(".html") || window.location.protocol === "file:" ? routePath : `${routePath}`;
+      window.location.href = target;
+      return true;
+    }
+
+    if (prevToken.startsWith("app:")) {
+      const routePart = prevToken.slice("app:".length).split("|")[0] || "/tasktimer";
+      const page = prevAppPage;
+      const qs = page && page !== "tasks" ? `?page=${page}` : "";
+      window.location.href = `${routePart}${qs}`;
+      return true;
+    }
+
+    showExitAppConfirm();
+    return true;
+  }
+
+  function initMobileBackHandling() {
+    ensureNavStackCurrentScreen();
+
+    const onPopState = () => {
+      const path = normalizedPathname();
+      if (!(/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path))) return;
+      const nextPage = getInitialAppPageFromQuery();
+      suppressNavStackPush = true;
+      applyAppPage(nextPage);
+      suppressNavStackPush = false;
+    };
+    on(window, "popstate", onPopState as any);
+
+    on(document as any, "backbutton", (e: any) => {
+      e?.preventDefault?.();
+      handleAppBackNavigation();
+    });
+
+    try {
+      const capApp = (window as any)?.Capacitor?.Plugins?.App;
+      if (capApp?.addListener) {
+        const maybePromise = capApp.addListener("backButton", (ev: any) => {
+          if (ev?.canGoBack) {
+            window.history.back();
+            return;
+          }
+          handleAppBackNavigation();
+        });
+        if (maybePromise && typeof maybePromise.then === "function") {
+          maybePromise.then((h: any) => {
+            if (h?.remove) removeCapBackListener = () => h.remove();
+          }).catch(() => {});
+        } else if (maybePromise?.remove) {
+          removeCapBackListener = () => maybePromise.remove();
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   function maybeOpenImportFromQuery() {
@@ -2916,7 +3134,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     if (which === "howto") {
-      window.location.href = appRoute("/tasktimer/user-guide");
+      navigateToAppRoute("/tasktimer/user-guide");
       return;
     }
     if (which === "categoryManager") {
@@ -3318,7 +3536,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     render();
   }
 
-  function applyAppPage(page: "tasks" | "dashboard" | "test1" | "test2") {
+  function applyAppPage(
+    page: "tasks" | "dashboard" | "test1" | "test2",
+    opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }
+  ) {
+    currentAppPage = page;
+    if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
     document.body.setAttribute("data-app-page", page);
     els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
     els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
@@ -3329,6 +3552,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
     els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
     els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
+    const syncUrlMode = opts?.syncUrl;
+    const canSyncMainPageUrl = /\/tasktimer$/.test(normalizedPathname()) || /\/tasktimer\/index\.html$/i.test(normalizedPathname());
+    if (syncUrlMode && canSyncMainPageUrl) {
+      try {
+        const path = appRoute("/tasktimer");
+        const nextUrl = page === "tasks" ? path : `${path}?page=${page}`;
+        if (syncUrlMode === "replace") window.history.replaceState({ page }, "", nextUrl);
+        else window.history.pushState({ page }, "", nextUrl);
+      } catch {
+        // ignore history API failures
+      }
+    }
     if (page === "tasks") render();
   }
 
@@ -3433,16 +3668,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.mode1Btn, "click", () => applyMainMode("mode1"));
     on(els.mode2Btn, "click", () => applyMainMode("mode2"));
     on(els.mode3Btn, "click", () => applyMainMode("mode3"));
-    on(els.footerTasksBtn, "click", () => applyAppPage("tasks"));
-    on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard"));
-    on(els.footerTest1Btn, "click", () => applyAppPage("test1"));
+    on(els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
+    on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" }));
+    on(els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
     on(els.footerTest2Btn, "click", (e: any) => {
       e?.preventDefault?.();
-      window.location.href = appRoute("/tasktimer/user-guide");
+      navigateToAppRoute("/tasktimer/user-guide");
     });
     on(els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      window.location.href = appRoute("/tasktimer/settings");
+      navigateToAppRoute("/tasktimer/settings");
     });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
@@ -3646,7 +3881,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         return;
       }
       if (action === "manage") {
-        window.location.href = appRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
+        navigateToAppRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
         return;
       }
       if (action === "analyse") {
@@ -3893,7 +4128,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.menuIcon, "click", () => {
-      window.location.href = appRoute("/tasktimer/settings");
+      navigateToAppRoute("/tasktimer/settings");
     });
     on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
@@ -3936,7 +4171,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else window.location.href = appRoute("/tasktimer");
+      else navigateToAppRoute("/tasktimer");
     });
     on(els.themeToggle, "click", toggleThemeMode);
     on(els.themeToggleRow, "click", (e: any) => {
@@ -4228,7 +4463,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.historyManagerBtn, "click", () => {
-      window.location.href = appRoute("/tasktimer/history-manager");
+      navigateToAppRoute("/tasktimer/history-manager");
     });
     on(els.historyManagerBulkBtn, "click", () => {
       hmBulkEditMode = !hmBulkEditMode;
@@ -4284,7 +4519,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       );
     });
     on(els.historyManagerBackBtn, "click", () => {
-      window.location.href = appRoute("/tasktimer");
+      navigateToAppRoute("/tasktimer");
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {
@@ -4490,9 +4725,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   backfillHistoryColorsFromSessionLogic();
   syncModeLabelsUi();
   applyMainMode("mode1");
-  applyAppPage(getInitialAppPageFromQuery());
+  applyAppPage(getInitialAppPageFromQuery(), { syncUrl: "replace" });
   applyDashboardOrderFromStorage();
   applyDashboardEditMode();
+  initMobileBackHandling();
   wireEvents();
   render();
   maybeOpenImportFromQuery();

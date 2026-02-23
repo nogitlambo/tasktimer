@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import ConfirmOverlay from "../components/ConfirmOverlay";
 import UserGuideScreen from "../components/UserGuideScreen";
 import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
@@ -33,5 +34,10 @@ export default function UserGuidePage() {
     return () => destroy();
   }, []);
 
-  return <UserGuideScreen onBack={() => (window.location.href = appRoute("/tasktimer/settings"))} />;
+  return (
+    <>
+      <UserGuideScreen onBack={() => (window.location.href = appRoute("/tasktimer/settings"))} />
+      <ConfirmOverlay />
+    </>
+  );
 }

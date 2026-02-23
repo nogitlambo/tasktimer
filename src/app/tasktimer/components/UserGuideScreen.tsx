@@ -216,67 +216,74 @@ export default function UserGuideScreen({ onBack }: Props) {
 
   return (
     <div className="wrap" id="app" aria-label="TaskTimer User Guide">
-      <div className="userGuidePage">
-        <div className="userGuideTopAction">
-          <button className="btn btn-accent userGuideBackBtn" type="button" onClick={onBack}>
-            Back
-          </button>
-        </div>
+      <div className="list" style={{ paddingTop: 18 }}>
+        <div className="menu settingsMenu userGuideMenu" role="dialog" aria-modal="true" aria-label="User Guide">
+          <div className="menuHead">
+            <div className="menuTitle" aria-label="User Guide">
+              User Guide
+            </div>
+            <button className="menuIcon settingsCloseIcon" type="button" onClick={onBack} aria-label="Exit user guide">
+              Back
+            </button>
+          </div>
 
-        {!selectedTopic ? (
-          <aside className="userGuideToc">
-            <div className="userGuideTocHeader">
-              <div className="userGuideTocTitle">Contents</div>
-              <div className="userGuideTocSubtext">Tap a topic to open its screen</div>
-            </div>
-            <div className="userGuideGrid" role="list" aria-label="User Guide Topics">
-              {sections.map((s) => (
-                <button
-                  className="menuItem userGuideTopicTile"
-                  key={s.id}
-                  type="button"
-                  role="listitem"
-                  onClick={() => setSelectedTopicId(s.id)}
-                >
-                  <span className="userGuideTocItemMain">
-                    <img className="userGuideIcon" src={s.icon} alt="" aria-hidden="true" />
-                    <span>{s.title}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </aside>
-        ) : (
-          <section className="userGuideTopicScreen userGuideWindow modalSubtext userGuideText">
-            <div className="userGuideTopicScreenHead">
-              <button className="btn btn-ghost small" type="button" onClick={() => setSelectedTopicId(null)}>
-                Topics
-              </button>
-              <h3>
-                <img className="userGuideIcon" src={selectedTopic.icon} alt="" aria-hidden="true" />
-                {selectedTopic.title}
-              </h3>
-            </div>
-            <section className="userGuideSection">
-              {selectedTopic.paragraphs.map((para, idx) => (
-                <React.Fragment key={`${selectedTopic.id}-p-${idx}`}>
-                  <p>{para}</p>
-                  {selectedTopic.shots[idx]
-                    ? selectedTopic.shots[idx].image ? (
-                        <img
-                          className="userGuideShotImage"
-                          src={selectedTopic.shots[idx].image}
-                          alt={`${selectedTopic.title} screenshot ${idx + 1}`}
-                        />
-                      ) : (
-                        <div className="userGuideShotPlaceholder">{selectedTopic.shots[idx].label}</div>
-                      )
-                    : null}
-                </React.Fragment>
-              ))}
-            </section>
-          </section>
-        )}
+          <div className="menuList userGuideMenuBody">
+            {!selectedTopic ? (
+              <aside className="userGuideToc">
+                <div className="userGuideTocHeader">
+                  <div className="userGuideTocTitle">Contents</div>
+                  <div className="userGuideTocSubtext">Tap a topic to open its screen</div>
+                </div>
+                <div className="userGuideGrid" role="list" aria-label="User Guide Topics">
+                  {sections.map((s) => (
+                    <button
+                      className="menuItem userGuideTopicTile"
+                      key={s.id}
+                      type="button"
+                      role="listitem"
+                      onClick={() => setSelectedTopicId(s.id)}
+                    >
+                      <span className="userGuideTocItemMain">
+                        <img className="userGuideIcon" src={s.icon} alt="" aria-hidden="true" />
+                        <span>{s.title}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </aside>
+            ) : (
+              <section className="userGuideTopicScreen userGuideWindow modalSubtext userGuideText">
+                <div className="userGuideTopicScreenHead">
+                  <button className="btn btn-ghost small" type="button" onClick={() => setSelectedTopicId(null)}>
+                    Topics
+                  </button>
+                  <h3>
+                    <img className="userGuideIcon" src={selectedTopic.icon} alt="" aria-hidden="true" />
+                    {selectedTopic.title}
+                  </h3>
+                </div>
+                <section className="userGuideSection">
+                  {selectedTopic.paragraphs.map((para, idx) => (
+                    <React.Fragment key={`${selectedTopic.id}-p-${idx}`}>
+                      <p>{para}</p>
+                      {selectedTopic.shots[idx]
+                        ? selectedTopic.shots[idx].image ? (
+                            <img
+                              className="userGuideShotImage"
+                              src={selectedTopic.shots[idx].image}
+                              alt={`${selectedTopic.title} screenshot ${idx + 1}`}
+                            />
+                          ) : (
+                            <div className="userGuideShotPlaceholder">{selectedTopic.shots[idx].label}</div>
+                          )
+                        : null}
+                    </React.Fragment>
+                  ))}
+                </section>
+              </section>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

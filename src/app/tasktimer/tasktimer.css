@@ -679,15 +679,15 @@ body[data-app-page="test2"] #openAddTaskBtn{
 
 /* Task list */
 .list{
-  padding:18px;
-  padding-bottom:24px;
+  padding:12px;
+  padding-bottom:18px;
   display:flex;
   flex-direction:column;
   gap:var(--gap);
 }
 .task{
   background: #0d0f13 !important;
-  border:1px solid rgba(121,226,255,.2);
+  border:none;
   border-radius: 0;
   padding:16px 16px 14px;
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
@@ -849,6 +849,20 @@ body[data-app-page="test2"] #openAddTaskBtn{
 }
 .taskMenuItemDelete:hover{
   background: rgba(255,77,77,.2);
+}
+
+/* Use more available width on the Tasks page without affecting route screens that reuse `.list`. */
+#app[aria-label="TaskTimer App"] .appPageTasks .list{
+  padding:0;
+}
+#app[aria-label="TaskTimer App"] .appPageTasks .task{
+  padding-left:8px;
+  padding-right:12px;
+  width:100%;
+  max-width:none;
+  margin-left:0;
+  margin-right:0;
+  box-sizing:border-box;
 }
 
 /* Progress row */
@@ -1651,6 +1665,39 @@ input[type="text"]:focus, input[type="number"]:focus{
 .settingsMenu .settingsSectionLabel{
   grid-column: 1 / -1;
   margin: 6px 2px 2px;
+}
+.userGuideMenu .menuHead{
+  position:relative;
+  justify-content:center;
+  min-height:42px;
+}
+.userGuideMenu .menuTitle{
+  text-align:center;
+  width:100%;
+}
+.userGuideMenu .settingsCloseIcon{
+  position:absolute;
+  right:4px;
+  top:2px;
+  width:auto;
+  height:auto;
+  min-width:88px;
+  min-height:34px;
+  padding:8px 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+  line-height:1;
+}
+.userGuideMenu .menuList.userGuideMenuBody{
+  display:block;
+  padding-top:2px;
+}
+.userGuideMenu .userGuideToc,
+.userGuideMenu .userGuideTopicScreen{
+  margin:0;
 }
 @media (hover: hover) and (pointer: fine){
   .settingsMenu .menuItem:hover{
@@ -3188,11 +3235,8 @@ body[data-theme="light"] input[type="number"]{
   #app[aria-label="TaskTimer Settings"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuidePage{
+  #app[aria-label="TaskTimer User Guide"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
-  }
-  .userGuideTopAction{
-    justify-content:flex-start;
   }
   .userGuideToc{
     display:flex;
@@ -3296,7 +3340,7 @@ body[data-theme="light"] input[type="number"]{
   #app[aria-label="TaskTimer Settings"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuidePage{
+  #app[aria-label="TaskTimer User Guide"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
   }
   .userGuideGrid{
