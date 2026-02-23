@@ -13,6 +13,7 @@ export default function Home() {
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [landingHandAngle, setLandingHandAngle] = useState(0);
+  const [landingRingOffset, setLandingRingOffset] = useState(100);
   const [landingAnimRun] = useState(0);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function Home() {
       const elapsed = now - startedAt;
       const progress = Math.min(elapsed / DIAL_PHASE_MS, 1);
       setLandingHandAngle(progress * 360);
+      setLandingRingOffset(100 - progress * 100);
       if (progress < 1) rafId = window.requestAnimationFrame(tick);
     };
 
@@ -100,12 +102,10 @@ export default function Home() {
                   filter="url(#landingDialGlow)"
                   style={{
                     strokeDasharray: 100,
-                    strokeDashoffset: 100,
+                    strokeDashoffset: landingRingOffset,
                     transform: "rotate(-90deg)",
                     transformOrigin: "100px 100px",
                     opacity: 0.95,
-                    animation:
-                      showLogo ? `ttLandingFill ${DIAL_PHASE_MS}ms linear forwards` : undefined,
                   }}
                 />
 
@@ -170,16 +170,6 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <style jsx global>{`
-        @keyframes ttLandingFill {
-          from {
-            stroke-dashoffset: 100;
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}</style>
     </main>
   );
 }
