@@ -77,6 +77,19 @@ export default function EditTaskOverlay() {
           <div className="switch" id="msToggle" role="switch" aria-checked="false" />
         </div>
 
+        <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
+          <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
+          <div className="toggleRow" id="editCheckpointSoundToggleRow">
+            <span>Sound Alert</span>
+            <div className="switch" id="editCheckpointSoundToggle" role="switch" aria-checked="false" />
+          </div>
+          <div className="toggleRow" id="editCheckpointToastToggleRow">
+            <span>Toast Alert</span>
+            <div className="switch" id="editCheckpointToastToggle" role="switch" aria-checked="false" />
+          </div>
+          <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
+        </div>
+
         <div className="milestones" id="msArea">
           <div id="msList" />
           <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>

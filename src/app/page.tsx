@@ -13,7 +13,7 @@ export default function Home() {
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [landingHandAngle, setLandingHandAngle] = useState(0);
-  const [landingAnimRun, setLandingAnimRun] = useState(0);
+  const [landingAnimRun] = useState(0);
 
   useEffect(() => {
     const raf = window.requestAnimationFrame(() => setShowLogo(true));
@@ -163,24 +163,12 @@ export default function Home() {
           <button
             type="button"
             onClick={() => router.push("/tasktimer")}
-            className="min-w-[190px] border border-white/20 bg-transparent px-5 py-2.5 text-sm font-bold uppercase tracking-[0.08em] text-white/90 transition hover:bg-white/[0.08]"
+            className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)]"
             style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
           >
             Go to Tasks
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            setLandingHandAngle(0);
-            setLandingAnimRun((v) => v + 1);
-          }}
-          className="mt-4 border border-white/20 bg-transparent px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
-          style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
-        >
-          Reload Animation
-        </button>
       </div>
       <style jsx global>{`
         @keyframes ttLandingFill {

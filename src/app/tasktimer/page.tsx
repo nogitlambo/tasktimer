@@ -211,6 +211,7 @@ export default function TaskTimerPage() {
       <ElapsedPadOverlay />
       <ConfirmOverlay />
       <HistoryAnalysisOverlay />
+      <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </>
   );
 }

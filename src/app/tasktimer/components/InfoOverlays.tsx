@@ -113,6 +113,17 @@ export default function InfoOverlays() {
             <span>Dynamic colors for progress and history</span>
             <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
           </div>
+          <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
+            <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
+            <div className="toggleRow" id="taskCheckpointSoundToggleRow">
+              <span>Enable sound alerts</span>
+              <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+            <div className="toggleRow" id="taskCheckpointToastToggleRow">
+              <span>Enable toast alerts</span>
+              <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+          </div>
           <div className="footerBtns">
             <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button">
               Save

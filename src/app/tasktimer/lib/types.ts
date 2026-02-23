@@ -16,6 +16,8 @@ export type Task = {
   milestones: Milestone[];
   hasStarted: boolean;
   color?: string | null;
+  checkpointSoundEnabled?: boolean;
+  checkpointToastEnabled?: boolean;
 };
 
 export type HistoryEntry = {
