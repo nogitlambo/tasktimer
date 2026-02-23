@@ -14,10 +14,6 @@ export default function Home() {
   const [showActions, setShowActions] = useState(false);
   const [landingHandAngle, setLandingHandAngle] = useState(0);
   const [landingAnimRun, setLandingAnimRun] = useState(0);
-  const handLength = 59;
-  const handRadians = (landingHandAngle * Math.PI) / 180;
-  const handX2 = 100 + Math.sin(handRadians) * handLength;
-  const handY2 = 100 - Math.cos(handRadians) * handLength;
 
   useEffect(() => {
     const raf = window.requestAnimationFrame(() => setShowLogo(true));
@@ -71,10 +67,11 @@ export default function Home() {
               height={94}
               priority
               className="h-auto w-[240px] sm:w-[320px] md:w-[380px]"
+              style={{ clipPath: "inset(0 0 0 21.8%)" }}
             />
             <div
-              className="pointer-events-none absolute top-1/2 aspect-square w-[20.6%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
-              style={{ left: "11.45%" }}
+              className="pointer-events-none absolute top-1/2 aspect-square w-[21.2%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+              style={{ left: "11.5%" }}
               aria-hidden="true"
             >
               <svg viewBox="0 0 200 200" className="h-full w-full overflow-visible">
@@ -90,7 +87,6 @@ export default function Home() {
                   </filter>
                 </defs>
 
-                <rect x="-8" y="-8" width="216" height="216" fill="#0d0f13" />
                 <circle
                   key={`landing-progress-${landingAnimRun}`}
                   cx="100"
@@ -113,21 +109,28 @@ export default function Home() {
                   }}
                 />
 
-                <circle cx="100" cy="100" r="73" fill="#0d0f13" />
-                <g>
-                  <line
-                    x1="100"
-                    y1="100"
-                    x2={handX2}
-                    y2={handY2}
-                    stroke="#00E5FF"
-                    strokeWidth="7"
-                    strokeLinecap="round"
-                    filter="url(#landingDialGlow)"
-                  />
-                  <circle cx="100" cy="100" r="6" fill="#00E5FF" filter="url(#landingDialGlow)" />
-                </g>
               </svg>
+              <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                <div
+                  className="absolute left-1/2 top-1/2 h-[9px] w-[27%] -translate-y-1/2 rounded-[1px] bg-[#00E5FF]"
+                  style={{
+                    boxShadow: "0 0 10px rgba(0,229,255,.55), 0 0 18px rgba(0,229,255,.22)",
+                    transformOrigin: "0 50%",
+                  }}
+                />
+                <div
+                  className="absolute left-1/2 top-1/2 h-[9px] w-[27%] -translate-y-1/2 rounded-[1px] bg-[#00E5FF]"
+                  style={{
+                    boxShadow: "0 0 10px rgba(0,229,255,.6), 0 0 20px rgba(0,229,255,.24)",
+                    transformOrigin: "0 50%",
+                    transform: `translateY(-50%) rotate(${landingHandAngle - 90}deg)`,
+                  }}
+                />
+                <div
+                  className="absolute left-1/2 top-1/2 h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#00E5FF]"
+                  style={{ boxShadow: "0 0 10px rgba(0,229,255,.6), 0 0 20px rgba(0,229,255,.22)" }}
+                />
+              </div>
             </div>
           </div>
         </div>
