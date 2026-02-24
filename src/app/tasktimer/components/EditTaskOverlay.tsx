@@ -86,6 +86,15 @@ export default function EditTaskOverlay() {
 
         <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
           <div className="checkpointAlertsTitle">Timer Settings</div>
+          <div className="toggleRow" id="editPresetIntervalsToggleRow">
+            <span>Use Preset Intervals</span>
+            <div className="switch" id="editPresetIntervalsToggle" role="switch" aria-checked="false" />
+          </div>
+          <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
+            <label htmlFor="editPresetIntervalInput">Preset interval</label>
+            <input id="editPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
+          </div>
+          <p className="checkpointAlertsNote" id="editPresetIntervalNote" style={{ display: "none" }} />
           <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
             <label htmlFor="editFinalCheckpointActionSelect">When final checkpoint is reached</label>
             <select id="editFinalCheckpointActionSelect" defaultValue="continue">
@@ -128,7 +137,7 @@ export default function EditTaskOverlay() {
             Cancel
           </button>
           <button className="btn btn-accent" id="saveEditBtn" type="button">
-            Save
+            Save Changes
           </button>
         </div>
       </div>

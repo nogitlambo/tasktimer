@@ -107,6 +107,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
   let modeColors: Record<MainMode, string> = { ...DEFAULT_MODE_COLORS };
   let editIndex: number | null = null;
+  let editDraftSnapshot = "";
   let focusCheckpointSig = "";
   let focusModeTaskName = "";
   let focusShowCheckpoints = true;
@@ -351,6 +352,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     editCheckpointToastModeSelect: document.getElementById("editCheckpointToastModeSelect") as HTMLSelectElement | null,
     editCheckpointAlertsNote: document.getElementById("editCheckpointAlertsNote"),
     editTimerSettingsGroup: document.getElementById("editTimerSettingsGroup"),
+    editPresetIntervalsToggleRow: document.getElementById("editPresetIntervalsToggleRow"),
+    editPresetIntervalsToggle: document.getElementById("editPresetIntervalsToggle"),
+    editPresetIntervalField: document.getElementById("editPresetIntervalField"),
+    editPresetIntervalInput: document.getElementById("editPresetIntervalInput") as HTMLInputElement | null,
+    editPresetIntervalNote: document.getElementById("editPresetIntervalNote"),
     editFinalCheckpointActionField: document.getElementById("editFinalCheckpointActionField"),
     editFinalCheckpointActionSelect: document.getElementById("editFinalCheckpointActionSelect") as HTMLSelectElement | null,
     editD: document.getElementById("editD") as HTMLInputElement | null,
@@ -715,6 +721,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       checkpointToastEnabled: false,
       checkpointToastMode: "auto3s",
       finalCheckpointAction: "continue",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: 0,
+      presetIntervalLastMilestoneId: null,
+      presetIntervalNextSeq: 1,
     };
     (t as any).mode = currentMode;
     return t;
@@ -756,6 +766,73 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           ? t.finalCheckpointAction
           : "continue";
     });
+  }
+
+  function ensureMilestoneIdentity(task: Task) {
+    if (!task || !Array.isArray(task.milestones)) return;
+    let nextSeq = 1;
+    let maxSeq = 0;
+    task.milestones.forEach((m) => {
+      if (!m) return;
+      if (!m.id) m.id = cryptoRandomId();
+      if (!Number.isFinite(+m.createdSeq) || (+m.createdSeq || 0) <= 0) {
+        m.createdSeq = nextSeq++;
+      }
+      maxSeq = Math.max(maxSeq, +m.createdSeq || 0);
+    });
+    const currentNext = Number.isFinite(+task.presetIntervalNextSeq) ? Math.max(1, Math.floor(+task.presetIntervalNextSeq!)) : 1;
+    task.presetIntervalNextSeq = Math.max(currentNext, maxSeq + 1);
+    if (task.presetIntervalLastMilestoneId) {
+      const exists = task.milestones.some((m) => String(m.id || "") === String(task.presetIntervalLastMilestoneId || ""));
+      if (!exists) task.presetIntervalLastMilestoneId = null;
+    }
+  }
+
+  function hasValidPresetInterval(task: Task | null | undefined) {
+    return !!task && Number.isFinite(+task.presetIntervalValue) && +task.presetIntervalValue > 0;
+  }
+
+  function getPresetIntervalLastMilestone(task: Task | null | undefined) {
+    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return null;
+    ensureMilestoneIdentity(task);
+    const lastId = String(task.presetIntervalLastMilestoneId || "");
+    let match = task.milestones.find((m) => String(m.id || "") === lastId) || null;
+    if (match) return match;
+    match =
+      task.milestones
+        .slice()
+        .sort((a, b) => (+a.createdSeq || 0) - (+b.createdSeq || 0))
+        .pop() || null;
+    if (match?.id) task.presetIntervalLastMilestoneId = String(match.id);
+    return match;
+  }
+
+  function addMilestoneWithCurrentPreset(task: Task) {
+    task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
+    ensureMilestoneIdentity(task);
+    const interval = Math.max(0, +task.presetIntervalValue || 0);
+    const last = getPresetIntervalLastMilestone(task);
+    const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
+    const nextSeq = Math.max(1, Math.floor(+task.presetIntervalNextSeq || 1));
+    const milestone = { id: cryptoRandomId(), createdSeq: nextSeq, hours: nextHours, description: "" };
+    task.milestones.push(milestone);
+    task.presetIntervalLastMilestoneId = milestone.id;
+    task.presetIntervalNextSeq = nextSeq + 1;
+    task.milestones = sortMilestones(task.milestones);
+  }
+
+  function regeneratePresetIntervalMilestones(task: Task) {
+    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return;
+    if (!hasValidPresetInterval(task)) return;
+    ensureMilestoneIdentity(task);
+    const interval = Math.max(0, +task.presetIntervalValue || 0);
+    const ordered = task.milestones.slice().sort((a, b) => (+a.createdSeq || 0) - (+b.createdSeq || 0));
+    ordered.forEach((m, idx) => {
+      m.hours = interval * (idx + 1);
+    });
+    const last = ordered[ordered.length - 1];
+    task.presetIntervalLastMilestoneId = last?.id ? String(last.id) : null;
+    task.milestones = sortMilestones(ordered);
   }
 
   function savePendingTaskJump(taskId: string | null) {
@@ -1152,6 +1229,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         milestoneTimeUnit:
           t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
         milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
+          id: String((m as any)?.id || cryptoRandomId()),
+          createdSeq: Number.isFinite(+(m as any)?.createdSeq) ? Math.max(1, Math.floor(+(m as any).createdSeq)) : undefined,
           hours: Number.isFinite(+m.hours) ? +m.hours : 0,
           description: String(m.description || ""),
         })),
@@ -1163,6 +1242,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
             ? t.finalCheckpointAction
             : "continue",
+        presetIntervalsEnabled: !!t.presetIntervalsEnabled,
+        presetIntervalValue: Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0,
+        presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
+        presetIntervalNextSeq: Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1,
       })),
       history: historyByTaskId || {},
     };
@@ -1180,6 +1263,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           milestoneTimeUnit:
             t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
           milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
+            id: String((m as any)?.id || cryptoRandomId()),
+            createdSeq: Number.isFinite(+(m as any)?.createdSeq) ? Math.max(1, Math.floor(+(m as any).createdSeq)) : undefined,
             hours: Number.isFinite(+m.hours) ? +m.hours : 0,
             description: String(m.description || ""),
           })),
@@ -1191,6 +1276,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
               ? t.finalCheckpointAction
               : "continue",
+          presetIntervalsEnabled: !!t.presetIntervalsEnabled,
+          presetIntervalValue: Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0,
+          presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
+          presetIntervalNextSeq: Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1,
         },
       ],
       history: taskId ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] } : {},
@@ -1240,6 +1329,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.milestoneTimeUnit = t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     out.milestones = Array.isArray(t.milestones)
       ? t.milestones.map((m: any) => ({
+          id: m?.id ? String(m.id) : cryptoRandomId(),
+          createdSeq: Number.isFinite(+m?.createdSeq) ? Math.max(1, Math.floor(+m.createdSeq)) : undefined,
           hours: Number.isFinite(+m.hours) ? +m.hours : 0,
           description: String(m.description || ""),
         }))
@@ -1252,6 +1343,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto3s";
     out.finalCheckpointAction =
       t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
+    out.presetIntervalsEnabled = !!t.presetIntervalsEnabled;
+    out.presetIntervalValue = Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0;
+    out.presetIntervalLastMilestoneId = t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null;
+    out.presetIntervalNextSeq = Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1;
+    ensureMilestoneIdentity(out);
     return out;
   }
 
@@ -1676,7 +1772,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           <div class="mkLine" style="left:0%"></div>
           <div class="mkTime mkAch mkEdgeL" style="left:0%">0${unitSuffix}</div>`;
 
-        msSorted.forEach((m) => {
+        const nextPendingIndex = msSorted.findIndex((m) => elapsedSec < (+m.hours || 0) * milestoneUnitSec(t));
+        const labelTargetIndex = nextPendingIndex >= 0 ? nextPendingIndex : Math.max(0, msSorted.length - 1);
+
+        msSorted.forEach((m, msIdx) => {
           const val = +m.hours || 0;
           const left = Math.min((val / (maxValue || 1)) * 100, 100);
           const reached = elapsedSec >= val * milestoneUnitSec(t);
@@ -1686,10 +1785,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           const edgeCls = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
           const leftPos = edgeCls === "mkEdgeL" ? 0 : edgeCls === "mkEdgeR" ? 100 : left;
           const wrapCls = edgeCls && label.length > 8 ? "mkWrap8" : "";
+          const showCheckpointLabel = msIdx === labelTargetIndex;
           markers += `
             <div class="mkFlag ${cls}" style="left:${leftPos}%"></div>
-            <div class="mkTime ${cls} ${edgeCls} ${wrapCls}" style="left:${leftPos}%">${escapeHtmlUI(label)}</div>
-            ${desc ? `<div class="mkDesc ${cls} ${edgeCls}" style="left:${leftPos}%">${escapeHtmlUI(desc)}</div>` : ``}`;
+            ${
+              showCheckpointLabel
+                ? `<div class="mkTime ${cls} ${edgeCls} ${wrapCls}" style="left:${leftPos}%">${escapeHtmlUI(label)}</div>`
+                : ``
+            }
+            ${
+              showCheckpointLabel && desc
+                ? `<div class="mkDesc ${cls} ${edgeCls}" style="left:${leftPos}%">${escapeHtmlUI(desc)}</div>`
+                : ``
+            }`;
         });
 
         progressHTML = `
@@ -2620,6 +2728,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
 
     renderMilestoneEditor(t);
+    ensureMilestoneIdentity(t);
+    if (els.editPresetIntervalInput) els.editPresetIntervalInput.value = String(Number(t.presetIntervalValue || 0) || 0);
+    toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, !!t.presetIntervalsEnabled);
+    syncEditCheckpointAlertUi(t);
+    editDraftSnapshot = buildEditDraftSnapshot(t);
+    syncEditSaveAvailability(t);
 
     if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "flex";
   }
@@ -2653,6 +2767,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
       t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
       t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+      t.presetIntervalsEnabled = isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
+      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
       t.finalCheckpointAction =
         els.editFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
@@ -2660,6 +2776,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ? "resetNoLog"
             : "continue";
 
+      ensureMilestoneIdentity(t);
       t.milestones = sortMilestones(t.milestones);
       const moveMode = editMoveTargetMode || taskModeOf(t);
       if ((moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") && isModeEnabled(moveMode)) {
@@ -2674,6 +2791,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     closeElapsedPad(false);
     if (els.editMoveMenu) els.editMoveMenu.open = false;
     editIndex = null;
+    editDraftSnapshot = "";
   }
 
   function elapsedPadLabelForInput(input: HTMLInputElement | null) {
@@ -2794,6 +2912,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     clearElapsedPadError();
     if (els.elapsedPadOverlay) (els.elapsedPadOverlay as HTMLElement).style.display = "none";
+    if (editIndex != null && tasks[editIndex]) {
+      syncEditCheckpointAlertUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    }
     elapsedPadTarget = null;
     elapsedPadMilestoneRef = null;
     elapsedPadDraft = "";
@@ -3755,7 +3877,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
+    ensureMilestoneIdentity(t);
     els.editCheckpointAlertsGroup?.classList.toggle("isHidden", !t.milestonesEnabled);
+    if (els.editPresetIntervalsToggle) {
+      toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, !!t.presetIntervalsEnabled);
+    }
+    if (els.editPresetIntervalInput) {
+      const nextValue = Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue || 0) : 0;
+      if (els.editPresetIntervalInput.value !== String(nextValue)) els.editPresetIntervalInput.value = String(nextValue);
+      els.editPresetIntervalInput.disabled = !t.milestonesEnabled || !t.presetIntervalsEnabled;
+    }
+    els.editPresetIntervalsToggleRow?.classList.toggle("isDisabled", !t.milestonesEnabled);
+    els.editPresetIntervalField?.classList.toggle("isHidden", !t.milestonesEnabled || !t.presetIntervalsEnabled);
+    if (els.editPresetIntervalNote) {
+      const intervalInvalid = !!t.milestonesEnabled && !!t.presetIntervalsEnabled && !hasValidPresetInterval(t);
+      if (intervalInvalid) {
+        (els.editPresetIntervalNote as HTMLElement).style.display = "block";
+        els.editPresetIntervalNote.textContent = "Enter a preset interval greater than 0 to add checkpoints.";
+      } else {
+        (els.editPresetIntervalNote as HTMLElement).style.display = "none";
+        els.editPresetIntervalNote.textContent = "";
+      }
+    }
     toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !!t.checkpointSoundEnabled);
     toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !!t.checkpointToastEnabled);
     els.editCheckpointSoundToggleRow?.classList.toggle("isDisabled", !checkpointAlertSoundEnabled);
@@ -3793,6 +3936,48 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function buildEditDraftSnapshot(task: Task | null | undefined) {
+    if (!task) return "";
+    const milestones = sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((m) => ({
+      id: String((m as any)?.id || ""),
+      createdSeq: Number.isFinite(+(m as any)?.createdSeq) ? Math.floor(+(m as any).createdSeq) : 0,
+      hours: Number.isFinite(+m.hours) ? +m.hours : 0,
+      description: String(m.description || ""),
+    }));
+    const elapsedDraft =
+      isEditElapsedOverrideEnabled()
+        ? {
+            d: String(els.editD?.value || "0"),
+            h: String(els.editH?.value || "0"),
+            m: String(els.editM?.value || "0"),
+            s: String(els.editS?.value || "0"),
+          }
+        : null;
+    return JSON.stringify({
+      name: String(els.editName?.value || task.name || "").trim(),
+      mode: editMoveTargetMode || taskModeOf(task),
+      milestoneTimeUnit: task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+      milestonesEnabled: !!task.milestonesEnabled,
+      milestones,
+      overrideElapsedEnabled: !!elapsedDraft,
+      elapsedDraft,
+      checkpointSoundEnabled: !!isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null),
+      checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
+      checkpointToastEnabled: !!isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null),
+      checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto3s",
+      finalCheckpointAction:
+        els.editFinalCheckpointActionSelect?.value === "resetLog"
+          ? "resetLog"
+          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
+            ? "resetNoLog"
+            : "continue",
+      presetIntervalsEnabled: !!isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null),
+      presetIntervalValue: Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0),
+      presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
+      presetIntervalNextSeq: Number.isFinite(+task.presetIntervalNextSeq) ? Math.max(1, Math.floor(+task.presetIntervalNextSeq)) : 1,
+    });
+  }
+
   function syncEditSaveAvailability(t?: Task | null) {
     const task = t || (editIndex != null ? tasks[editIndex] : null);
     if (!els.saveEditBtn) return;
@@ -3803,9 +3988,59 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     const requiresCheckpoint = !!task.milestonesEnabled;
     const hasCheckpoint = Array.isArray(task.milestones) && task.milestones.length > 0;
-    const disabled = requiresCheckpoint && !hasCheckpoint;
+    const invalidPresetInterval = !!task.milestonesEnabled && !!task.presetIntervalsEnabled && !hasValidPresetInterval(task);
+    const isDirty = buildEditDraftSnapshot(task) !== editDraftSnapshot;
+    const disabled = (requiresCheckpoint && !hasCheckpoint) || invalidPresetInterval || !isDirty;
     els.saveEditBtn.disabled = disabled;
-    els.saveEditBtn.title = disabled ? "Add at least 1 timer checkpoint to save" : "";
+    els.saveEditBtn.title =
+      requiresCheckpoint && !hasCheckpoint
+        ? "Add at least 1 timer checkpoint to save"
+        : invalidPresetInterval
+          ? "Enter a preset interval greater than 0"
+          : !isDirty
+            ? "No changes to save"
+            : "";
+  }
+
+  function maybeToggleEditPresetIntervals(nextEnabled: boolean) {
+    if (editIndex == null) return;
+    const t = tasks[editIndex];
+    if (!t) return;
+    if (!t.milestonesEnabled) {
+      t.presetIntervalsEnabled = false;
+      syncEditCheckpointAlertUi(t);
+      return;
+    }
+    if (!nextEnabled) {
+      t.presetIntervalsEnabled = false;
+      syncEditCheckpointAlertUi(t);
+      return;
+    }
+    const hasExisting = Array.isArray(t.milestones) && t.milestones.length > 0;
+    if (!hasExisting) {
+      t.presetIntervalsEnabled = true;
+      syncEditCheckpointAlertUi(t);
+      return;
+    }
+    confirm("Use Preset Intervals", "Enabling preset intervals will clear the current checkpoints. Confirm?", {
+      okLabel: "Confirm",
+      cancelLabel: "Cancel",
+      onOk: () => {
+        t.milestones = [];
+        t.presetIntervalLastMilestoneId = null;
+        t.presetIntervalNextSeq = 1;
+        t.presetIntervalsEnabled = true;
+        renderMilestoneEditor(t);
+        syncEditCheckpointAlertUi(t);
+        syncEditSaveAvailability(t);
+        closeConfirm();
+      },
+      onCancel: () => {
+        t.presetIntervalsEnabled = false;
+        syncEditCheckpointAlertUi(t);
+        closeConfirm();
+      },
+    });
   }
 
   function processCheckpointAlertsForTask(t: Task, elapsedSecNow: number) {
@@ -4778,8 +5013,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
+    on(els.editName, "input", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
     on(els.editOverrideElapsedToggle, "click", () => {
       setEditElapsedOverrideEnabled(!isEditElapsedOverrideEnabled());
+      if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
     });
     on(els.editCheckpointSoundToggle, "click", () => {
       if (!checkpointAlertSoundEnabled) return;
@@ -4797,6 +5037,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex != null && tasks[editIndex]) {
         tasks[editIndex].checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
         syncEditCheckpointAlertUi(tasks[editIndex]);
+        syncEditSaveAvailability(tasks[editIndex]);
       }
     });
     on(els.editCheckpointSoundToggle, "click", () => {
@@ -4809,6 +5050,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex == null || !tasks[editIndex]) return;
       tasks[editIndex].checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
       syncEditCheckpointAlertUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
     });
     on(els.editCheckpointToastToggle, "click", () => {
       if (!checkpointAlertToastEnabled) return;
@@ -4826,6 +5068,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex != null && tasks[editIndex]) {
         tasks[editIndex].checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
         syncEditCheckpointAlertUi(tasks[editIndex]);
+        syncEditSaveAvailability(tasks[editIndex]);
       }
     });
     on(els.editCheckpointToastToggle, "click", () => {
@@ -4838,6 +5081,34 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex == null || !tasks[editIndex]) return;
       tasks[editIndex].checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto3s";
       syncEditCheckpointAlertUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editPresetIntervalsToggle, "click", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      const t = tasks[editIndex];
+      maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
+      syncEditSaveAvailability(t);
+    });
+    on(els.editPresetIntervalsToggleRow, "click", (e: any) => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      if (e.target?.closest?.("#editPresetIntervalsToggle")) return;
+      const t = tasks[editIndex];
+      maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
+      syncEditSaveAvailability(t);
+    });
+    on(els.editPresetIntervalInput, "input", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      const t = tasks[editIndex];
+      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
+    });
+    on(els.editPresetIntervalInput, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      const t = tasks[editIndex];
+      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editFinalCheckpointActionSelect, "change", () => {
       if (editIndex == null || !tasks[editIndex]) return;
@@ -4848,6 +5119,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ? "resetNoLog"
             : "continue";
       syncEditCheckpointAlertUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
     });
     on(els.editD, "click", (e: any) => {
       if (!isEditElapsedOverrideEnabled()) return;
@@ -4928,6 +5200,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncEditSaveAvailability(t);
 
       if (!t.milestonesEnabled) {
+        t.presetIntervalsEnabled = false;
         save();
         render();
       }
@@ -4940,6 +5213,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       t.milestoneTimeUnit = "day";
       setMilestoneUnitUi("day");
       renderMilestoneEditor(t);
+      syncEditSaveAvailability(t);
     });
     on(els.msUnitHour, "click", () => {
       if (editIndex == null) return;
@@ -4948,6 +5222,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       t.milestoneTimeUnit = "hour";
       setMilestoneUnitUi("hour");
       renderMilestoneEditor(t);
+      syncEditSaveAvailability(t);
     });
     on(els.msUnitMinute, "click", () => {
       if (editIndex == null) return;
@@ -4956,6 +5231,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       t.milestoneTimeUnit = "minute";
       setMilestoneUnitUi("minute");
       renderMilestoneEditor(t);
+      syncEditSaveAvailability(t);
     });
 
     on(els.addMsBtn, "click", () => {
@@ -4963,9 +5239,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const t = tasks[editIndex];
       if (!t) return;
 
-      t.milestones = t.milestones || [];
-      t.milestones.push({ hours: 0, description: "" });
+      if (t.presetIntervalsEnabled) {
+        if (!hasValidPresetInterval(t)) {
+          syncEditCheckpointAlertUi(t);
+          return;
+        }
+        addMilestoneWithCurrentPreset(t);
+      } else {
+        t.milestones = t.milestones || [];
+        ensureMilestoneIdentity(t);
+        const nextSeq = Math.max(1, Math.floor(+t.presetIntervalNextSeq || 1));
+        t.milestones.push({ id: cryptoRandomId(), createdSeq: nextSeq, hours: 0, description: "" });
+        t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
+        t.presetIntervalNextSeq = nextSeq + 1;
+      }
       renderMilestoneEditor(t);
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
     });
 
     on(els.confirmCancelBtn, "click", closeConfirm);

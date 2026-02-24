@@ -1005,7 +1005,7 @@ body[data-app-page="test2"] #openAddTaskBtn{
 }
 .mkFlag{
   position:absolute;
-  top:-14px;
+  top:3px;
   width:13px;
   height:11px;
   transform: translateX(-2px);
@@ -1014,9 +1014,9 @@ body[data-app-page="test2"] #openAddTaskBtn{
   content:"";
   position:absolute;
   left:0;
-  top:-1px;
+  top:0;
   width:2px;
-  height:13px;
+  height:10px;
   background: rgba(225,245,255,.95);
 }
 .mkFlag::after{
@@ -1033,6 +1033,14 @@ body[data-app-page="test2"] #openAddTaskBtn{
   background-size: 4px 4px;
   background-position: 0 0, 2px 2px;
   box-shadow: 0 0 4px rgba(0,220,255,.25);
+}
+.mkFlag.mkPend::before{
+  background: rgba(235,247,255,.98);
+}
+.mkFlag.mkPend::after{
+  border-color: rgba(255,255,255,.82);
+  box-shadow: 0 0 6px rgba(0,220,255,.32);
+  opacity: .96;
 }
 .mkFlag.mkAch::before{
   background: rgba(0,207,200,.95);
@@ -1470,6 +1478,17 @@ optgroup{
 #editOverlay .toggleRow{
   min-height:42px;
 }
+#editOverlay .switch{
+  width:39px;
+  height:21px;
+}
+#editOverlay .switch::after{
+  width:18px;
+  height:18px;
+}
+#editOverlay .switch.on::after{
+  left:19px;
+}
 #editOverlay .unitRow{
   margin-bottom:6px;
   gap:8px;
@@ -1498,6 +1517,12 @@ optgroup{
 #editOverlay .footerBtns .btn{
   padding:9px 12px;
   min-height:36px;
+}
+#editOverlay #saveEditBtn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  box-shadow:none;
+  filter:saturate(.65);
 }
 #editOverlay .milestones{
   border:none;

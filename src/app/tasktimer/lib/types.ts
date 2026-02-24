@@ -1,6 +1,8 @@
 export type Milestone = {
   hours: number;
   description: string;
+  id?: string;
+  createdSeq?: number;
 };
 
 export type Task = {
@@ -21,6 +23,10 @@ export type Task = {
   checkpointToastEnabled?: boolean;
   checkpointToastMode?: "auto3s" | "manual";
   finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog";
+  presetIntervalsEnabled?: boolean;
+  presetIntervalValue?: number;
+  presetIntervalLastMilestoneId?: string | null;
+  presetIntervalNextSeq?: number;
 };
 
 export type HistoryEntry = {
