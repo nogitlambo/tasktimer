@@ -77,6 +77,13 @@ export default function EditTaskOverlay() {
           <div className="switch" id="msToggle" role="switch" aria-checked="false" />
         </div>
 
+        <div className="milestones" id="msArea">
+          <div id="msList" />
+          <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+            + Add Timer Checkpoint
+          </button>
+        </div>
+
         <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
           <div className="checkpointAlertsTitle">Timer Settings</div>
           <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
@@ -114,13 +121,6 @@ export default function EditTaskOverlay() {
             </select>
           </div>
           <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
-        </div>
-
-        <div className="milestones" id="msArea">
-          <div id="msList" />
-          <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-            + Add Timer Checkpoint
-          </button>
         </div>
 
         <div className="footerBtns">

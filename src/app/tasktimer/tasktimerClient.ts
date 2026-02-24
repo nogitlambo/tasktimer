@@ -366,7 +366,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     msList: document.getElementById("msList"),
     addMsBtn: document.getElementById("addMsBtn"),
     cancelEditBtn: document.getElementById("cancelEditBtn"),
-    saveEditBtn: document.getElementById("saveEditBtn"),
+    saveEditBtn: document.getElementById("saveEditBtn") as HTMLButtonElement | null,
     elapsedPadOverlay: document.getElementById("elapsedPadOverlay"),
     elapsedPadTitle: document.getElementById("elapsedPadTitle"),
     elapsedPadDisplay: document.getElementById("elapsedPadDisplay"),
@@ -650,9 +650,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const capApp = (window as any)?.Capacitor?.Plugins?.App;
       if (capApp?.addListener) {
         const maybePromise = capApp.addListener("backButton", (ev: any) => {
-          if (ev?.canGoBack) {
-            window.history.back();
-            return;
+          try {
+            ev?.preventDefault?.();
+          } catch {
+            // ignore
           }
           handleAppBackNavigation();
         });
@@ -1145,8 +1146,54 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return {
       schema: "taskticka_backup_v1",
       exportedAt: new Date().toISOString(),
-      tasks: tasks || [],
+      tasks: (tasks || []).map((t) => ({
+        ...t,
+        milestonesEnabled: !!t.milestonesEnabled,
+        milestoneTimeUnit:
+          t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
+        milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
+          hours: Number.isFinite(+m.hours) ? +m.hours : 0,
+          description: String(m.description || ""),
+        })),
+        checkpointSoundEnabled: !!t.checkpointSoundEnabled,
+        checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
+        checkpointToastEnabled: !!t.checkpointToastEnabled,
+        checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto3s",
+        finalCheckpointAction:
+          t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+            ? t.finalCheckpointAction
+            : "continue",
+      })),
       history: historyByTaskId || {},
+    };
+  }
+
+  function makeSingleTaskExportPayload(t: Task) {
+    const taskId = String(t?.id || "");
+    return {
+      schema: "taskticka_backup_v1",
+      exportedAt: new Date().toISOString(),
+      tasks: [
+        {
+          ...t,
+          milestonesEnabled: !!t.milestonesEnabled,
+          milestoneTimeUnit:
+            t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
+          milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
+            hours: Number.isFinite(+m.hours) ? +m.hours : 0,
+            description: String(m.description || ""),
+          })),
+          checkpointSoundEnabled: !!t.checkpointSoundEnabled,
+          checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
+          checkpointToastEnabled: !!t.checkpointToastEnabled,
+          checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto3s",
+          finalCheckpointAction:
+            t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+              ? t.finalCheckpointAction
+              : "continue",
+        },
+      ],
+      history: taskId ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] } : {},
     };
   }
 
@@ -1162,6 +1209,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const payload = makeBackupPayload();
     downloadTextFile(filename, JSON.stringify(payload, null, 2));
     closeOverlay(els.menuOverlay as HTMLElement | null);
+  }
+
+  function exportTask(i: number) {
+    const t = tasks[i];
+    if (!t) return;
+    const d = new Date();
+    const dd = formatTwo(d.getDate());
+    const mm = formatTwo(d.getMonth() + 1);
+    const yyyy = String(d.getFullYear());
+    const safeTaskName = String(t.name || "task")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "task";
+    const filename = `tasktimer-export-${safeTaskName}${dd}${mm}${yyyy}.json`;
+    const payload = makeSingleTaskExportPayload(t);
+    downloadTextFile(filename, JSON.stringify(payload, null, 2));
   }
 
   function normalizeImportedTask(t: any): Task {
@@ -1710,6 +1774,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
               <div class="taskMenuList">
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
                 <button class="taskMenuItem" data-action="collapse" title="${escapeHtmlUI(collapseLabel)}" type="button">${escapeHtmlUI(collapseLabel)}</button>
+                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
             </details>
@@ -4144,6 +4209,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else if (action === "duplicate") duplicateTask(i);
       else if (action === "editName") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
+      else if (action === "exportTask") exportTask(i);
       else if (action === "muteCheckpointAlert") {
         stopCheckpointRepeatAlert();
         return;
