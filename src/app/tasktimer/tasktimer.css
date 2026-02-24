@@ -687,10 +687,59 @@ body[data-app-page="test2"] #openAddTaskBtn{
 }
 .task{
   background: #0d0f13 !important;
+  position:relative;
   border:none;
   border-radius: 0;
   padding:16px 16px 14px;
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
+}
+.checkpointMuteBtn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:34px;
+  height:30px;
+  min-width:34px;
+  padding:0;
+  border:1px solid rgba(255,210,60,.55);
+  background: rgba(255,210,60,.16);
+  color:#ffd84f;
+  font-size:24px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 0 10px rgba(255,210,60,.42), inset 0 0 8px rgba(255,210,60,.12);
+  text-shadow: 0 0 8px rgba(255,210,60,.65);
+  z-index:2;
+}
+.checkpointMuteBtn:hover{
+  background: rgba(255,210,60,.24);
+  box-shadow: 0 0 14px rgba(255,210,60,.56), inset 0 0 10px rgba(255,210,60,.16);
+}
+.task.taskAlertPulse{
+  box-shadow:
+    0 0 0 1px rgba(255,210,60,.22),
+    0 0 14px rgba(255,210,60,.28),
+    0 0 28px rgba(255,210,60,.16),
+    inset 0 0 0 1px rgba(255,210,60,.10);
+  animation: taskAlertPulseGlow 1.4s ease-in-out infinite;
+}
+@keyframes taskAlertPulseGlow{
+  0%, 100%{
+    box-shadow:
+      0 0 0 1px rgba(255,210,60,.18),
+      0 0 10px rgba(255,210,60,.22),
+      0 0 20px rgba(255,210,60,.12),
+      inset 0 0 0 1px rgba(255,210,60,.08);
+  }
+  50%{
+    box-shadow:
+      0 0 0 1px rgba(255,210,60,.42),
+      0 0 18px rgba(255,210,60,.42),
+      0 0 40px rgba(255,210,60,.24),
+      inset 0 0 0 1px rgba(255,210,60,.18);
+  }
 }
 .task.collapsed .progressRow{ display:none; }
 .row{
@@ -863,6 +912,13 @@ body[data-app-page="test2"] #openAddTaskBtn{
   margin-left:0;
   margin-right:0;
   box-sizing:border-box;
+}
+#app[aria-label="TaskTimer App"] .appPageTasks .task[draggable="true"]{
+  cursor: grab;
+}
+#app[aria-label="TaskTimer App"] .appPageTasks .task.isDragging{
+  opacity:.72;
+  box-shadow: 0 0 0 1px rgba(53,232,255,.35), 0 10px 22px rgba(0,0,0,.28);
 }
 
 /* Progress row */
@@ -1056,6 +1112,11 @@ input[type="text"], input[type="number"]{
 }
 input[type="text"]:focus, input[type="number"]:focus{
   border-color: rgba(0,207,200,.40);
+}
+option,
+optgroup{
+  background:#0d0f13;
+  color:#fff;
 }
 .addTaskNameCombo{
   position:relative;
@@ -3344,7 +3405,7 @@ body[data-theme="light"] input[type="number"]{
     padding-bottom: calc(16px + var(--safe-bottom));
   }
   .userGuideGrid{
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .userGuideShotImage{
     min-height:120px;
@@ -3546,6 +3607,31 @@ body[data-theme="light"] input[type="number"]{
 .checkpointAlertsGroup .toggleRow + .toggleRow{
   margin-top:4px;
 }
+.checkpointAlertSoundModeField{
+  margin-top:6px;
+}
+.checkpointAlertSoundModeField.isHidden{
+  display:none;
+}
+#editTimerSettingsGroup.isHidden{
+  display:none;
+}
+#editCheckpointAlertsGroup.isHidden{
+  display:none;
+}
+.checkpointAlertSoundModeField label{
+  margin-bottom:4px;
+}
+.checkpointAlertSoundModeField select{
+  width:100%;
+  min-height:38px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+  color: var(--text);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
 .checkpointAlertsNote{
   margin:6px 0 0;
   font-size:12px;
@@ -3555,29 +3641,62 @@ body[data-theme="light"] input[type="number"]{
 #editOverlay .checkpointAlertsGroup{
   margin:6px 0 2px;
 }
+#editOverlay .checkpointAlertSoundModeField{
+  margin-top:4px;
+}
 
 .checkpointToastHost{
   position:fixed;
-  top:12px;
-  right:12px;
+  inset:0;
   z-index:160;
-  width:min(420px, calc(100vw - 24px));
+  width:100%;
   display:flex;
-  flex-direction:column;
-  gap:8px;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  pointer-events:none;
+}
+.checkpointToastHost::before{
+  content:none;
+}
+.checkpointToastHost.isActive::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.22);
+  backdrop-filter: blur(1px);
   pointer-events:none;
 }
 .checkpointToast{
   pointer-events:auto;
+  position:relative;
+  z-index:1;
   display:grid;
-  grid-template-columns: 1fr auto;
-  gap:6px 10px;
+  grid-template-columns: 1fr;
+  gap:8px;
   align-items:start;
   background:#0d0f13;
-  border:1px solid rgba(0,229,255,.3);
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  box-shadow:0 10px 26px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.02);
-  padding:10px 12px;
+  border:2px solid rgba(255,220,80,.82);
+  clip-path: none;
+  box-shadow:0 16px 34px rgba(0,0,0,.45), 0 0 0 1px rgba(255,214,64,.28) inset, 0 0 18px rgba(255,220,80,.22);
+  padding:16px 16px 14px;
+  width:min(680px, calc(100vw - 28px));
+  border-radius: 0;
+  isolation:isolate;
+}
+.checkpointToast::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  border:2px solid rgba(255,220,80,.82);
+  box-shadow: 0 0 12px rgba(255,220,80,.18);
+  animation: taskAlertPulseShadow 1.15s ease-in-out infinite;
+  z-index:0;
+}
+.checkpointToast > *{
+  position:relative;
+  z-index:1;
 }
 .checkpointToastTitle{
   margin:0;
@@ -3586,31 +3705,127 @@ body[data-theme="light"] input[type="number"]{
   letter-spacing:.16em;
   text-transform:uppercase;
   color:#fff;
+  text-align:center;
+}
+.checkpointToastTaskName{
+  margin:0 0 4px;
+  font-family: var(--font-tight);
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#ffffff;
+  text-align:center;
+  text-shadow: 0 0 8px rgba(53,232,255,.14);
+}
+.checkpointToastSummary{
+  margin-top:8px;
+  padding:10px 12px;
+  border:1px solid rgba(255,220,80,.2);
+  background: rgba(255,220,80,.04);
+}
+.checkpointToastCounterInline{
+  margin-top:12px;
+  padding:0;
+}
+.checkpointToastSummaryLabel{
+  margin:0 0 8px;
+  font-family:var(--font-tight);
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color: rgba(255,240,180,.92);
+}
+.checkpointToastCounterValue{
+  margin:0;
+  text-align:center;
+  font-family: var(--font-tight);
+  font-weight:700;
+  letter-spacing:.08em;
+  color:#ffffff;
+  text-shadow: 0 0 10px rgba(53,232,255,.16);
 }
 .checkpointToastText{
   margin:0;
   color:rgba(255,255,255,.84);
-  font-size:13px;
+  font-size:14px;
+  line-height:1.4;
+  text-align:center;
+}
+.checkpointToastDesc{
+  margin:6px 0 0;
+  color:#fff6b8;
+  font-size:14px;
   line-height:1.35;
+  text-align:center;
+  font-weight:700;
+}
+.checkpointToastActions{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:8px;
+  margin-top:12px;
+}
+.checkpointToastActions .btn{
+  min-height:40px;
+  width:100%;
+  justify-content:center;
+  position:relative;
+  z-index:2;
+  transform: translateZ(0);
+  will-change: background-color, border-color, color, box-shadow;
 }
 .checkpointToastClose{
-  grid-row:1 / span 2;
-  align-self:center;
+  white-space:nowrap;
+}
+.checkpointToastJump{
+  white-space:nowrap;
+  background: transparent !important;
+}
+.taskJumpFlash{
+  animation: taskJumpFlashPulse 1.2s ease-out 1;
 }
 
 body[data-theme="light"] .checkpointToast{
   background:#0d0f13;
   border-color: rgba(0,151,199,.32);
 }
+body[data-theme="light"] .checkpointAlertSoundModeField select{
+  background: rgba(255,255,255,.9);
+  color:#111111;
+  border-color: rgba(0,0,0,.2);
+}
+body[data-theme="light"] option,
+body[data-theme="light"] optgroup{
+  background:#0d0f13;
+  color:#fff;
+}
 
 @media (max-width: 980px){
   .checkpointToastHost{
-    top:auto;
-    right:10px;
-    left:10px;
-    width:auto;
-    bottom:calc(var(--safe-bottom) + 82px);
+    padding:10px;
   }
+  .checkpointToast{
+    width:min(680px, calc(100vw - 20px));
+  }
+  .checkpointToastActions{
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes taskAlertPulseShadow{
+  0%,100%{
+    box-shadow: 0 0 0 1px rgba(255,214,64,.28) inset, 0 0 12px rgba(255,220,80,.18);
+  }
+  50%{
+    box-shadow: 0 0 0 1px rgba(255,214,64,.38) inset, 0 0 22px rgba(255,220,80,.34), 0 0 34px rgba(255,220,80,.18);
+  }
+}
+
+@keyframes taskJumpFlashPulse{
+  0%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }
+  25%{ box-shadow: 0 0 0 1px rgba(255,220,80,.35), 0 0 22px rgba(255,220,80,.35); }
+  100%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }
 }
 
 @media (prefers-reduced-motion: reduce){

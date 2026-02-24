@@ -63,6 +63,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
+    if (checkpointRepeatCycleTimer != null) window.clearTimeout(checkpointRepeatCycleTimer);
     if (removeCapBackListener) {
       try {
         removeCapBackListener();
@@ -124,6 +125,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   const HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId`;
   const DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder`;
   const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
+  const PENDING_TASK_JUMP_KEY = `${STORAGE_KEY}:pendingTaskJump`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
@@ -177,16 +179,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let editMoveTargetMode: MainMode = "mode1";
   let dashboardEditMode = false;
   let dashboardDragEl: HTMLElement | null = null;
+  let taskDragEl: HTMLElement | null = null;
   let dashboardOrderDraftBeforeEdit: string[] | null = null;
   let currentAppPage: "tasks" | "dashboard" | "test1" | "test2" = "tasks";
   let suppressNavStackPush = false;
   let removeCapBackListener: null | (() => void) = null;
-  const checkpointToastQueue: Array<{ id: string; title: string; text: string }> = [];
-  let activeCheckpointToast: { id: string; title: string; text: string } | null = null;
+  const checkpointToastQueue: Array<{
+    id: string;
+    title: string;
+    text: string;
+    checkpointTimeText?: string | null;
+    checkpointDescText?: string | null;
+    taskName?: string | null;
+    counterText?: string | null;
+    autoCloseMs: number | null;
+    taskId?: string | null;
+    muteRepeatOnManualDismiss?: boolean;
+  }> = [];
+  let activeCheckpointToast: {
+    id: string;
+    title: string;
+    text: string;
+    checkpointTimeText?: string | null;
+    checkpointDescText?: string | null;
+    taskName?: string | null;
+    counterText?: string | null;
+    autoCloseMs: number | null;
+    taskId?: string | null;
+    muteRepeatOnManualDismiss?: boolean;
+  } | null = null;
   let checkpointToastAutoCloseTimer: number | null = null;
   let checkpointBeepAudio: HTMLAudioElement | null = null;
   let checkpointBeepQueueCount = 0;
   let checkpointBeepQueueTimer: number | null = null;
+  let checkpointRepeatStopAtMs = 0;
+  let checkpointRepeatCycleTimer: number | null = null;
+  let checkpointRepeatActiveTaskId: string | null = null;
+  let checkpointAutoResetDirty = false;
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
   const checkpointBaselineSecByTaskId: Record<string, number> = {};
 
@@ -313,9 +342,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     editOverrideElapsedFields: document.getElementById("editOverrideElapsedFields"),
     editCheckpointSoundToggleRow: document.getElementById("editCheckpointSoundToggleRow"),
     editCheckpointSoundToggle: document.getElementById("editCheckpointSoundToggle"),
+    editCheckpointSoundModeField: document.getElementById("editCheckpointSoundModeField"),
+    editCheckpointSoundModeSelect: document.getElementById("editCheckpointSoundModeSelect") as HTMLSelectElement | null,
+    editCheckpointAlertsGroup: document.getElementById("editCheckpointAlertsGroup"),
     editCheckpointToastToggleRow: document.getElementById("editCheckpointToastToggleRow"),
     editCheckpointToastToggle: document.getElementById("editCheckpointToastToggle"),
+    editCheckpointToastModeField: document.getElementById("editCheckpointToastModeField"),
+    editCheckpointToastModeSelect: document.getElementById("editCheckpointToastModeSelect") as HTMLSelectElement | null,
     editCheckpointAlertsNote: document.getElementById("editCheckpointAlertsNote"),
+    editTimerSettingsGroup: document.getElementById("editTimerSettingsGroup"),
+    editFinalCheckpointActionField: document.getElementById("editFinalCheckpointActionField"),
+    editFinalCheckpointActionSelect: document.getElementById("editFinalCheckpointActionSelect") as HTMLSelectElement | null,
     editD: document.getElementById("editD") as HTMLInputElement | null,
     editH: document.getElementById("editH") as HTMLInputElement | null,
     editM: document.getElementById("editM") as HTMLInputElement | null,
@@ -673,7 +710,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       milestones: [],
       hasStarted: false,
       checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
       checkpointToastEnabled: false,
+      checkpointToastMode: "auto3s",
+      finalCheckpointAction: "continue",
     };
     (t as any).mode = currentMode;
     return t;
@@ -707,8 +747,63 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         t.milestoneTimeUnit = "hour";
       }
       t.checkpointSoundEnabled = !!t.checkpointSoundEnabled;
+      t.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
       t.checkpointToastEnabled = !!t.checkpointToastEnabled;
+      t.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto3s";
+      t.finalCheckpointAction =
+        t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+          ? t.finalCheckpointAction
+          : "continue";
     });
+  }
+
+  function savePendingTaskJump(taskId: string | null) {
+    try {
+      if (!taskId) localStorage.removeItem(PENDING_TASK_JUMP_KEY);
+      else localStorage.setItem(PENDING_TASK_JUMP_KEY, String(taskId));
+    } catch {
+      // ignore
+    }
+  }
+
+  function loadPendingTaskJump() {
+    try {
+      const raw = String(localStorage.getItem(PENDING_TASK_JUMP_KEY) || "").trim();
+      return raw || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function jumpToTaskById(taskId: string) {
+    const targetId = String(taskId || "").trim();
+    if (!targetId) return;
+    const t = tasks.find((x) => String(x.id || "") === targetId);
+    if (!t) return;
+    const mode = taskModeOf(t);
+    if (currentMode !== mode) applyMainMode(mode);
+    applyAppPage("tasks", { syncUrl: "push" });
+    window.setTimeout(() => {
+      const list = els.taskList;
+      if (!list) return;
+      const sel = `.task[data-task-id="${targetId.replace(/"/g, '\\"')}"]`;
+      const el = list.querySelector(sel) as HTMLElement | null;
+      if (!el) return;
+      try {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch {
+        el.scrollIntoView();
+      }
+      el.classList.add("taskJumpFlash");
+      window.setTimeout(() => el.classList.remove("taskJumpFlash"), 1400);
+    }, 70);
+  }
+
+  function maybeHandlePendingTaskJump() {
+    const taskId = loadPendingTaskJump();
+    if (!taskId) return;
+    savePendingTaskJump(null);
+    jumpToTaskById(taskId);
   }
 
   function save() {
@@ -865,6 +960,44 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     if (els.dashboardEditCancelBtn) (els.dashboardEditCancelBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
     if (els.dashboardEditDoneBtn) (els.dashboardEditDoneBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
+  }
+
+  function shouldIgnoreTaskDragStart(target: EventTarget | null) {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    return !!el.closest(
+      ".actions, .taskMenu, .taskMenuList, .historyInline, .historyCanvasWrap, .progressRow, button, summary, details, canvas, input, select, textarea"
+    );
+  }
+
+  function persistTaskOrderFromTaskListDom() {
+    if (!els.taskList) return;
+    const domTaskIds = Array.from(els.taskList.querySelectorAll(".task[data-task-id]"))
+      .map((el) => String((el as HTMLElement).dataset.taskId || ""))
+      .filter(Boolean);
+    if (!domTaskIds.length) return;
+
+    const byId = new Map(tasks.map((t) => [String(t.id || ""), t] as const));
+    const domModeTasks: Task[] = [];
+    domTaskIds.forEach((id) => {
+      const t = byId.get(id);
+      if (t && taskModeOf(t) === currentMode) domModeTasks.push(t);
+    });
+    if (!domModeTasks.length) return;
+
+    const sortedAll = tasks.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    let modePtr = 0;
+    const merged = sortedAll.map((t) => {
+      if (taskModeOf(t) !== currentMode) return t;
+      const next = domModeTasks[modePtr++];
+      return next || t;
+    });
+
+    merged.forEach((t, idx) => {
+      t.order = idx + 1;
+    });
+    tasks = merged;
+    save();
   }
 
   function safeJsonParse(str: string) {
@@ -1050,7 +1183,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.milestones = sortMilestones(out.milestones);
     out.hasStarted = !!t.hasStarted;
     out.checkpointSoundEnabled = !!t.checkpointSoundEnabled;
+    out.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
     out.checkpointToastEnabled = !!t.checkpointToastEnabled;
+    out.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto3s";
+    out.finalCheckpointAction =
+      t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
     return out;
   }
 
@@ -1379,6 +1516,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     t.milestones = ms;
+    syncEditSaveAvailability(t);
   }
 
   function renderAddTaskMilestoneEditor() {
@@ -1452,9 +1590,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
-      taskEl.className = "task" + (t.collapsed ? " collapsed" : "");
+      const hasActiveToastForTask =
+        !!activeCheckpointToast?.taskId && String(activeCheckpointToast.taskId) === String(t.id || "");
+      taskEl.className =
+        "task" +
+        (t.collapsed ? " collapsed" : "") +
+        ((checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === String(t.id || "")) || hasActiveToastForTask
+          ? " taskAlertPulse"
+          : "");
       (taskEl as any).dataset.index = String(index);
       (taskEl as any).dataset.taskId = String(t.id || "");
+      taskEl.setAttribute("draggable", "true");
 
       const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
 
@@ -1536,6 +1682,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         : "";
 
       taskEl.innerHTML = `
+        ${
+          checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === taskId
+            ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
+            : ""
+        }
         <div class="row">
           <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
           <div class="time">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
@@ -1597,6 +1748,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     clearCheckpointBaseline(t.id);
     save();
     render();
+  }
+
+  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean }) {
+    if (!t) return;
+    if (!!opts?.logHistory && canLogSession(t)) {
+      const ms = getTaskElapsedMs(t);
+      if (ms > 0) appendHistory(t.id, { ts: nowMs(), name: t.name, ms, color: sessionColorForTaskMs(t, ms) });
+    }
+    t.accumulatedMs = 0;
+    t.running = false;
+    t.startMs = null;
+    t.hasStarted = false;
+    resetCheckpointAlertTracking(t.id);
+    checkpointAutoResetDirty = true;
   }
 
   function syncFocusRunButtons(t?: Task | null) {
@@ -2295,18 +2460,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       onOk: () => {
         const doLog = !!els.confirmDeleteAll?.checked;
 
-        if (doLog && canLogSession(t)) {
-          const ms = getTaskElapsedMs(t);
-          if (ms > 0) {
-            appendHistory(t.id, { ts: nowMs(), name: t.name, ms, color: sessionColorForTaskMs(t, ms) });
-          }
-        }
-
-        t.accumulatedMs = 0;
-        t.running = false;
-        t.startMs = null;
-        t.hasStarted = false;
-        resetCheckpointAlertTracking(t.id);
+        resetTaskStateImmediate(t, { logHistory: doLog });
 
         save();
         render();
@@ -2380,6 +2534,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.editS) els.editS.value = String(s);
     setEditElapsedOverrideEnabled(false);
     syncEditCheckpointAlertUi(t);
+    syncEditSaveAvailability(t);
     {
       const current = taskModeOf(t);
       editMoveTargetMode = current;
@@ -2408,6 +2563,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const t = editIndex != null ? tasks[editIndex] : null;
 
     if (saveChanges && t) {
+      if (t.milestonesEnabled && (!Array.isArray(t.milestones) || t.milestones.length === 0)) {
+        syncEditSaveAvailability(t);
+        return;
+      }
       const prevElapsedMs = getElapsedMs(t);
       t.name = (els.editName?.value || "").trim() || t.name;
 
@@ -2427,7 +2586,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
 
       t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+      t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
       t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+      t.finalCheckpointAction =
+        els.editFinalCheckpointActionSelect?.value === "resetLog"
+          ? "resetLog"
+          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
+            ? "resetNoLog"
+            : "continue";
 
       t.milestones = sortMilestones(t.milestones);
       const moveMode = editMoveTargetMode || taskModeOf(t);
@@ -2537,7 +2703,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const valid =
         elapsedPadMilestoneRef && !elapsedPadTarget
           ? (() => {
-              const parsed = parseInt(elapsedPadDraft || "", 10);
+              const parsed = parseFloat(elapsedPadDraft || "");
               if (!Number.isFinite(parsed) || isNaN(parsed) || parsed < 0) return null;
               return String(parsed);
             })()
@@ -2571,8 +2737,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function padAppendDigit(digit: string) {
     clearElapsedPadError();
-    const next = `${elapsedPadDraft || ""}${digit}`.replace(/^0+(?=\d)/, "");
+    const raw = `${elapsedPadDraft || ""}${digit}`;
+    const next = raw.includes(".") ? raw : raw.replace(/^0+(?=\d)/, "");
     elapsedPadDraft = next.slice(0, 6) || "0";
+    renderElapsedPadDisplay();
+  }
+
+  function padAppendDot() {
+    clearElapsedPadError();
+    if (!elapsedPadMilestoneRef || elapsedPadTarget) return;
+    const current = elapsedPadDraft || "0";
+    if (current.includes(".")) return;
+    elapsedPadDraft = `${current}.`;
     renderElapsedPadDisplay();
   }
 
@@ -3323,6 +3499,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function stopCheckpointRepeatAlert() {
+    checkpointRepeatStopAtMs = 0;
+    checkpointRepeatActiveTaskId = null;
+    if (checkpointRepeatCycleTimer != null) {
+      window.clearTimeout(checkpointRepeatCycleTimer);
+      checkpointRepeatCycleTimer = null;
+    }
+    if (checkpointBeepQueueTimer != null) {
+      window.clearTimeout(checkpointBeepQueueTimer);
+      checkpointBeepQueueTimer = null;
+    }
+    checkpointBeepQueueCount = 0;
+    if (checkpointBeepAudio) {
+      try {
+        checkpointBeepAudio.pause();
+        checkpointBeepAudio.currentTime = 0;
+      } catch {
+        // ignore playback stop failures
+      }
+    }
+    if (!destroyed) render();
+  }
+
   function flushCheckpointBeepQueue() {
     if (checkpointBeepQueueCount <= 0) {
       checkpointBeepQueueCount = 0;
@@ -3335,6 +3534,27 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     else checkpointBeepQueueTimer = null;
   }
 
+  function scheduleCheckpointRepeatCycle() {
+    if (checkpointRepeatStopAtMs <= 0) {
+      stopCheckpointRepeatAlert();
+      return;
+    }
+    if (Date.now() >= checkpointRepeatStopAtMs) {
+      stopCheckpointRepeatAlert();
+      return;
+    }
+    enqueueCheckpointBeeps(1);
+    checkpointRepeatCycleTimer = window.setTimeout(scheduleCheckpointRepeatCycle, 2000);
+  }
+
+  function startCheckpointRepeatAlert(taskId: string) {
+    checkpointRepeatActiveTaskId = taskId;
+    checkpointRepeatStopAtMs = Date.now() + 60_000;
+    if (!destroyed) render();
+    if (checkpointRepeatCycleTimer != null) return;
+    scheduleCheckpointRepeatCycle();
+  }
+
   function enqueueCheckpointBeeps(count: number) {
     if (!Number.isFinite(count) || count <= 0) return;
     checkpointBeepQueueCount += Math.floor(count);
@@ -3344,15 +3564,32 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function renderCheckpointToast() {
     const host = els.checkpointToastHost as HTMLElement | null;
     if (!host) return;
+    host.classList.toggle("isActive", !!activeCheckpointToast);
     if (!activeCheckpointToast) {
       host.innerHTML = "";
       return;
     }
+    const showMuteBellIcon = !!activeCheckpointToast.muteRepeatOnManualDismiss;
+    const dismissBtnLabel = showMuteBellIcon ? "Dismiss alert and mute sound" : "Dismiss alert";
+    const dismissBtnText = `${showMuteBellIcon ? "&#128276; " : ""}Dismiss`;
+    const jumpBtnText = `${showMuteBellIcon ? "&#128276; " : ""}Dismiss and Jump to Task`;
+    const toastTaskName = String(activeCheckpointToast.taskName || "").trim();
+    const checkpointTimeText = String(activeCheckpointToast.checkpointTimeText || activeCheckpointToast.text || "").trim();
+    const checkpointDescText = String(activeCheckpointToast.checkpointDescText || "").trim();
     host.innerHTML = `
       <div class="checkpointToast" data-toast-id="${escapeHtmlUI(activeCheckpointToast.id)}" role="status">
-        <p class="checkpointToastTitle">${escapeHtmlUI(activeCheckpointToast.title)}</p>
-        <button class="btn btn-ghost small checkpointToastClose" type="button" data-action="closeCheckpointToast" aria-label="Close alert">Exit</button>
-        <p class="checkpointToastText">${escapeHtmlUI(activeCheckpointToast.text)}</p>
+        ${toastTaskName ? `<p class="checkpointToastTaskName">${escapeHtmlUI(toastTaskName)}</p>` : ""}
+        <p class="checkpointToastTitle">${escapeHtmlUI(String(activeCheckpointToast.title || "CHECKPOINT REACHED!").toUpperCase())}</p>
+        <div class="checkpointToastSummary">
+          <p class="checkpointToastText">${escapeHtmlUI(checkpointTimeText)}</p>
+          ${checkpointDescText ? `<p class="checkpointToastDesc">${escapeHtmlUI(checkpointDescText)}</p>` : ""}
+        </div>
+        <div class="checkpointToastActions">
+          <button class="btn btn-ghost small checkpointToastClose" type="button" data-action="closeCheckpointToast" aria-label="${escapeHtmlUI(
+            dismissBtnLabel
+          )}" title="${escapeHtmlUI(dismissBtnLabel)}">${dismissBtnText}</button>
+          <button class="btn btn-ghost small checkpointToastJump" type="button" data-action="jumpToCheckpointTask" aria-label="Dismiss and jump to task" title="Dismiss and Jump to Task">${jumpBtnText}</button>
+        </div>
       </div>
     `;
   }
@@ -3361,26 +3598,88 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (activeCheckpointToast || checkpointToastQueue.length === 0) return;
     activeCheckpointToast = checkpointToastQueue.shift() || null;
     renderCheckpointToast();
+    if (!destroyed) render();
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
-    checkpointToastAutoCloseTimer = window.setTimeout(() => {
-      dismissCheckpointToast();
-    }, 5000);
+    if ((activeCheckpointToast?.autoCloseMs || 0) > 0) {
+      checkpointToastAutoCloseTimer = window.setTimeout(() => {
+      dismissCheckpointToast({ manual: false });
+    }, activeCheckpointToast!.autoCloseMs as number);
+    } else {
+      checkpointToastAutoCloseTimer = null;
+    }
   }
 
-  function dismissCheckpointToast() {
+  function dismissCheckpointToast(opts?: { manual?: boolean }) {
+    const manual = !!opts?.manual;
+    if (
+      manual &&
+      activeCheckpointToast?.muteRepeatOnManualDismiss &&
+      activeCheckpointToast.taskId &&
+      checkpointRepeatActiveTaskId &&
+      String(activeCheckpointToast.taskId) === String(checkpointRepeatActiveTaskId)
+    ) {
+      stopCheckpointRepeatAlert();
+    }
     if (checkpointToastAutoCloseTimer != null) {
       window.clearTimeout(checkpointToastAutoCloseTimer);
       checkpointToastAutoCloseTimer = null;
     }
     activeCheckpointToast = null;
     renderCheckpointToast();
+    if (!destroyed) render();
     if (checkpointToastQueue.length) {
       window.setTimeout(showNextCheckpointToast, 50);
     }
   }
 
-  function enqueueCheckpointToast(title: string, text: string) {
-    checkpointToastQueue.push({ id: `${Date.now()}-${Math.random()}`, title, text });
+  function dismissCheckpointToastAndJumpToTask() {
+    const taskId = String(activeCheckpointToast?.taskId || "").trim();
+    dismissCheckpointToast({ manual: true });
+    if (!taskId) return;
+    const path = normalizedPathname();
+    const onMainTaskTimerRoute = /\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path);
+    if (onMainTaskTimerRoute) {
+      jumpToTaskById(taskId);
+      return;
+    }
+    savePendingTaskJump(taskId);
+    navigateToAppRoute("/tasktimer");
+  }
+
+  function enqueueCheckpointToast(
+    title: string,
+    text: string,
+    opts?: {
+      autoCloseMs?: number | null;
+      taskId?: string | null;
+      taskName?: string | null;
+      counterText?: string | null;
+      checkpointTimeText?: string | null;
+      checkpointDescText?: string | null;
+      muteRepeatOnManualDismiss?: boolean;
+    }
+  ) {
+    const autoCloseMs = opts?.autoCloseMs === null ? null : Math.max(0, Number(opts?.autoCloseMs ?? 5000)) || 0;
+    // Do not stack checkpoint alerts: replace any existing/queued toast with the newest one.
+    checkpointToastQueue.length = 0;
+    if (checkpointToastAutoCloseTimer != null) {
+      window.clearTimeout(checkpointToastAutoCloseTimer);
+      checkpointToastAutoCloseTimer = null;
+    }
+    activeCheckpointToast = null;
+
+    checkpointToastQueue.push({
+      id: `${Date.now()}-${Math.random()}`,
+      title,
+      text,
+      checkpointTimeText: opts?.checkpointTimeText ?? null,
+      checkpointDescText: opts?.checkpointDescText ?? null,
+      taskName: opts?.taskName ?? null,
+      counterText: opts?.counterText ?? null,
+      autoCloseMs,
+      taskId: opts?.taskId ?? null,
+      muteRepeatOnManualDismiss: !!opts?.muteRepeatOnManualDismiss,
+    });
     showNextCheckpointToast();
   }
 
@@ -3391,10 +3690,30 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
+    els.editCheckpointAlertsGroup?.classList.toggle("isHidden", !t.milestonesEnabled);
     toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !!t.checkpointSoundEnabled);
     toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !!t.checkpointToastEnabled);
     els.editCheckpointSoundToggleRow?.classList.toggle("isDisabled", !checkpointAlertSoundEnabled);
     els.editCheckpointToastToggleRow?.classList.toggle("isDisabled", !checkpointAlertToastEnabled);
+    if (els.editCheckpointSoundModeSelect) {
+      els.editCheckpointSoundModeSelect.value = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
+    }
+    if (els.editCheckpointToastModeSelect) {
+      els.editCheckpointToastModeSelect.value = t.checkpointToastMode === "manual" ? "manual" : "auto3s";
+    }
+    els.editCheckpointSoundModeField?.classList.toggle(
+      "isHidden",
+      !checkpointAlertSoundEnabled || !t.checkpointSoundEnabled
+    );
+    els.editCheckpointToastModeField?.classList.toggle(
+      "isHidden",
+      !checkpointAlertToastEnabled || !t.checkpointToastEnabled
+    );
+    els.editTimerSettingsGroup?.classList.toggle("isHidden", !t.milestonesEnabled);
+    if (els.editFinalCheckpointActionSelect) {
+      els.editFinalCheckpointActionSelect.value =
+        t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
+    }
     const notes: string[] = [];
     if (!checkpointAlertSoundEnabled) notes.push("sound alerts are disabled globally");
     if (!checkpointAlertToastEnabled) notes.push("toast alerts are disabled globally");
@@ -3407,6 +3726,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         els.editCheckpointAlertsNote.textContent = "";
       }
     }
+  }
+
+  function syncEditSaveAvailability(t?: Task | null) {
+    const task = t || (editIndex != null ? tasks[editIndex] : null);
+    if (!els.saveEditBtn) return;
+    if (!task) {
+      els.saveEditBtn.disabled = false;
+      els.saveEditBtn.title = "";
+      return;
+    }
+    const requiresCheckpoint = !!task.milestonesEnabled;
+    const hasCheckpoint = Array.isArray(task.milestones) && task.milestones.length > 0;
+    const disabled = requiresCheckpoint && !hasCheckpoint;
+    els.saveEditBtn.disabled = disabled;
+    els.saveEditBtn.title = disabled ? "Add at least 1 timer checkpoint to save" : "";
   }
 
   function processCheckpointAlertsForTask(t: Task, elapsedSecNow: number) {
@@ -3433,7 +3767,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const fired = getCheckpointFiredSet(taskId);
     const msSorted = sortMilestones((t.milestones || []).slice());
+    const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t))) > 0);
+    const totalCheckpoints = validMilestones.length;
     let beepCount = 0;
+    let shouldResetAtFinal: null | "resetLog" | "resetNoLog" = null;
     msSorted.forEach((m) => {
       const targetSec = Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t)));
       if (targetSec <= 0) return;
@@ -3442,15 +3779,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (fired.has(key)) return;
       fired.add(key);
       const text = formatCheckpointAlertText(t, m);
+      const checkpointIndex = Math.max(
+        1,
+        validMilestones.findIndex((vm) => checkpointKeyForTask(vm, t) === key) + 1
+      );
+      const checkpointTimeText = formatTime(targetSec * 1000);
+      const checkpointDescText = String(m.description || "").trim();
       if (checkpointAlertToastEnabled && t.checkpointToastEnabled) {
-        enqueueCheckpointToast("Checkpoint Reached", text);
+        const toastMode = t.checkpointToastMode === "manual" ? "manual" : "auto3s";
+        enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
+          autoCloseMs: toastMode === "manual" ? null : 3000,
+          taskId,
+          taskName: t.name || "",
+          counterText: formatMainTaskElapsed(getElapsedMs(t)),
+          checkpointTimeText,
+          checkpointDescText,
+          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
+        });
       }
       if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled) {
         beepCount += 1;
       }
+      if (
+        checkpointIndex >= totalCheckpoints &&
+        totalCheckpoints > 0 &&
+        (t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog")
+      ) {
+        shouldResetAtFinal = t.finalCheckpointAction;
+      }
     });
     checkpointBaselineSecByTaskId[taskId] = elapsedWholeSec;
-    if (beepCount > 0) enqueueCheckpointBeeps(beepCount);
+    if (beepCount > 0) {
+      if ((t.checkpointSoundMode || "once") === "repeat") startCheckpointRepeatAlert(taskId);
+      else enqueueCheckpointBeeps(beepCount);
+    }
+    if (shouldResetAtFinal) {
+      resetTaskStateImmediate(t, { logHistory: shouldResetAtFinal === "resetLog" });
+    }
   }
 
   function saveAddTaskCustomNames() {
@@ -3779,6 +4144,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else if (action === "duplicate") duplicateTask(i);
       else if (action === "editName") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
+      else if (action === "muteCheckpointAlert") {
+        stopCheckpointRepeatAlert();
+        return;
+      }
 
       const menu = btn.closest?.(".taskMenu") as HTMLDetailsElement | null;
       if (menu && menu.open) menu.open = false;
@@ -4169,6 +4538,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (dashboardDragEl) dashboardDragEl.classList.remove("isDragging");
       dashboardDragEl = null;
     });
+    on(els.taskList, "dragstart", (e: any) => {
+      if (shouldIgnoreTaskDragStart(e.target)) return;
+      const card = e.target?.closest?.(".task") as HTMLElement | null;
+      if (!card || !els.taskList?.contains(card)) return;
+      taskDragEl = card;
+      card.classList.add("isDragging");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        try {
+          e.dataTransfer.setData("text/plain", card.getAttribute("data-task-id") || "");
+        } catch {
+          // ignore
+        }
+      }
+    });
+    on(els.taskList, "dragover", (e: any) => {
+      const list = els.taskList;
+      const dragging = taskDragEl;
+      if (!list || !dragging) return;
+      const over = e.target?.closest?.(".task") as HTMLElement | null;
+      if (!over || over === dragging || !list.contains(over)) return;
+      e.preventDefault();
+      const rect = over.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      if (before) list.insertBefore(dragging, over);
+      else list.insertBefore(dragging, over.nextSibling);
+    });
+    on(els.taskList, "drop", (e: any) => {
+      if (!taskDragEl) return;
+      e.preventDefault();
+      persistTaskOrderFromTaskListDom();
+      render();
+    });
+    on(els.taskList, "dragend", () => {
+      if (taskDragEl) taskDragEl.classList.remove("isDragging");
+      taskDragEl = null;
+    });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
       else navigateToAppRoute("/tasktimer");
@@ -4201,11 +4607,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.taskCheckpointSoundToggle, "click", () => {
       checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
+      if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
       syncTaskSettingsUi();
     });
     on(els.taskCheckpointSoundToggleRow, "click", (e: any) => {
       if (e.target?.closest?.("#taskCheckpointSoundToggle")) return;
       checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
+      if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
       syncTaskSettingsUi();
     });
     on(els.taskCheckpointToastToggle, "click", () => {
@@ -4320,6 +4728,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         els.editCheckpointSoundToggle as HTMLElement | null,
         !isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null)
       );
+      if (editIndex != null && tasks[editIndex]) {
+        tasks[editIndex].checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(tasks[editIndex]);
+      }
+    });
+    on(els.editCheckpointSoundToggle, "click", () => {
+      if (editIndex != null && tasks[editIndex]) {
+        tasks[editIndex].checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(tasks[editIndex]);
+      }
+    });
+    on(els.editCheckpointSoundModeSelect, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      tasks[editIndex].checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
+      syncEditCheckpointAlertUi(tasks[editIndex]);
     });
     on(els.editCheckpointToastToggle, "click", () => {
       if (!checkpointAlertToastEnabled) return;
@@ -4334,6 +4757,31 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         els.editCheckpointToastToggle as HTMLElement | null,
         !isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null)
       );
+      if (editIndex != null && tasks[editIndex]) {
+        tasks[editIndex].checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(tasks[editIndex]);
+      }
+    });
+    on(els.editCheckpointToastToggle, "click", () => {
+      if (editIndex != null && tasks[editIndex]) {
+        tasks[editIndex].checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(tasks[editIndex]);
+      }
+    });
+    on(els.editCheckpointToastModeSelect, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      tasks[editIndex].checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto3s";
+      syncEditCheckpointAlertUi(tasks[editIndex]);
+    });
+    on(els.editFinalCheckpointActionSelect, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      tasks[editIndex].finalCheckpointAction =
+        els.editFinalCheckpointActionSelect?.value === "resetLog"
+          ? "resetLog"
+          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
+            ? "resetNoLog"
+            : "continue";
+      syncEditCheckpointAlertUi(tasks[editIndex]);
     });
     on(els.editD, "click", (e: any) => {
       if (!isEditElapsedOverrideEnabled()) return;
@@ -4391,6 +4839,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           padBackspace();
           return;
         }
+        if (action === "dot") {
+          padAppendDot();
+          return;
+        }
         if (action === "clear") {
           padClear();
         }
@@ -4406,6 +4858,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
       els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
       els.msArea?.classList.toggle("on", !!t.milestonesEnabled);
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
 
       if (!t.milestonesEnabled) {
         save();
@@ -4457,9 +4911,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else closeConfirm();
     });
     on(els.checkpointToastHost, "click", (e: any) => {
-      const btn = e.target?.closest?.('[data-action="closeCheckpointToast"]');
+      const btn = e.target?.closest?.("[data-action]");
       if (!btn) return;
-      dismissCheckpointToast();
+      const action = btn.getAttribute("data-action");
+      if (action === "closeCheckpointToast") {
+        dismissCheckpointToast({ manual: true });
+        return;
+      }
+      if (action === "jumpToCheckpointTask") {
+        dismissCheckpointToastAndJumpToTask();
+      }
     });
 
     on(els.historyManagerBtn, "click", () => {
@@ -4696,6 +5157,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       processCheckpointAlertsForTask(t, getElapsedMs(t) / 1000);
     });
 
+    if (checkpointAutoResetDirty) {
+      checkpointAutoResetDirty = false;
+      save();
+      render();
+      return;
+    }
+
     if (focusModeTaskId) {
       const ft = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
       if (ft) {
@@ -4703,6 +5171,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       } else if (els.focusTaskName && focusModeTaskName) {
         els.focusTaskName.textContent = focusModeTaskName;
       }
+    }
+
+    if (activeCheckpointToast) {
+      renderCheckpointToast();
     }
 
     tickRaf = window.requestAnimationFrame(() => {
@@ -4731,6 +5203,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   initMobileBackHandling();
   wireEvents();
   render();
+  maybeHandlePendingTaskJump();
   maybeOpenImportFromQuery();
   if (!els.taskList && els.historyManagerScreen) {
     openHistoryManager();

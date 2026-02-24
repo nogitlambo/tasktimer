@@ -77,15 +77,41 @@ export default function EditTaskOverlay() {
           <div className="switch" id="msToggle" role="switch" aria-checked="false" />
         </div>
 
+        <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
+          <div className="checkpointAlertsTitle">Timer Settings</div>
+          <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
+            <label htmlFor="editFinalCheckpointActionSelect">When final checkpoint is reached</label>
+            <select id="editFinalCheckpointActionSelect" defaultValue="continue">
+              <option value="continue">Continue to run timer until stopped by user (default)</option>
+              <option value="resetLog">Stop/reset timer and save session to history</option>
+              <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
+            </select>
+          </div>
+        </div>
+
         <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
           <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
           <div className="toggleRow" id="editCheckpointSoundToggleRow">
             <span>Sound Alert</span>
             <div className="switch" id="editCheckpointSoundToggle" role="switch" aria-checked="false" />
           </div>
+          <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointSoundModeField">
+            <label htmlFor="editCheckpointSoundModeSelect">Sound Alert Behaviour</label>
+            <select id="editCheckpointSoundModeSelect" defaultValue="once">
+              <option value="once">Sound alert once only (default)</option>
+              <option value="repeat">Wait for user to dismiss sound alert</option>
+            </select>
+          </div>
           <div className="toggleRow" id="editCheckpointToastToggleRow">
             <span>Toast Alert</span>
             <div className="switch" id="editCheckpointToastToggle" role="switch" aria-checked="false" />
+          </div>
+          <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointToastModeField">
+            <label htmlFor="editCheckpointToastModeSelect">Toast Alert Behaviour</label>
+            <select id="editCheckpointToastModeSelect" defaultValue="auto3s">
+              <option value="auto3s">Dismiss toast alert after 3 seconds (default)</option>
+              <option value="manual">Wait for user to dismiss toast alert</option>
+            </select>
           </div>
           <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
         </div>

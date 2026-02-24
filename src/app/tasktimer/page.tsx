@@ -177,10 +177,10 @@ export default function TaskTimerPage() {
             </div>
           </section>
 
-          <section className="appPage" id="appPageTest2" aria-label="Test page 2">
+          <section className="appPage" id="appPageTest2" aria-label="Profile page">
             <div className="appPagePlaceholder">
-              <h2>Test Page 2</h2>
-              <p>Placeholder test content and sample data.</p>
+              <h2>Profile</h2>
+              <p>Profile module placeholder content.</p>
             </div>
           </section>
         </div>
@@ -194,9 +194,9 @@ export default function TaskTimerPage() {
             <img className="appFooterIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Tasks</span>
           </button>
-          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="User Guide">
-            <img className="appFooterIconImage" src="/User_Guide.svg" alt="" aria-hidden="true" />
-            <span className="appFooterLabel">User Guide</span>
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Profile">
+            <img className="appFooterIconImage" src="/Contact.svg" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Profile</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="./settings/index.html" aria-label="Settings">
             <img className="appFooterIconImage" src="/Settings.svg" alt="" aria-hidden="true" />

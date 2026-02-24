@@ -21,7 +21,7 @@ export default function ElapsedPadOverlay() {
           <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="9">9</button>
           <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-action="clear">Clear</button>
           <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-digit="0">0</button>
-          <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-action="back">Back</button>
+          <button className="btn btn-ghost elapsedPadKey" type="button" data-pad-action="dot">.</button>
         </div>
         <div className="footerBtns">
           <button className="btn btn-ghost" id="elapsedPadCancelBtn" type="button">

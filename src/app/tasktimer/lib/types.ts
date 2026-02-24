@@ -17,7 +17,10 @@ export type Task = {
   hasStarted: boolean;
   color?: string | null;
   checkpointSoundEnabled?: boolean;
+  checkpointSoundMode?: "once" | "repeat";
   checkpointToastEnabled?: boolean;
+  checkpointToastMode?: "auto3s" | "manual";
+  finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog";
 };
 
 export type HistoryEntry = {
