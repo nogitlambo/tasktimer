@@ -113,17 +113,6 @@ export default function InfoOverlays() {
         </div>
       </div>
 
-      <div className="overlay" id="contactOverlay">
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Contact">
-          <h2>Contact</h2>
-          <p className="modalSubtext">Coming soon...</p>
-          <div className="footerBtns">
-            <button className="btn btn-accent closePopup" type="button">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
     </>
   );
 }

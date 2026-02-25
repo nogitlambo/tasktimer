@@ -5,8 +5,11 @@ import React, { useMemo, useState } from "react";
 type SettingsPaneKey =
   | "general"
   | "preferences"
-  | "support"
-  | "data";
+  | "userGuide"
+  | "about"
+  | "feedback"
+  | "data"
+  | "reset";
 
 function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
   return (
@@ -20,16 +23,18 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 function SettingsNavTile({
   label,
   active,
+  danger,
   onClick,
 }: {
   label: string;
   active: boolean;
+  danger?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      className={`menuItem settingsNavTile${active ? " isActive" : ""}`}
+      className={`menuItem settingsNavTile${active ? " isActive" : ""}${danger ? " isDanger" : ""}`}
       aria-pressed={active}
       onClick={onClick}
     >
@@ -64,15 +69,23 @@ function SettingsDetailPane({
 export default function SettingsPanel() {
   const [activePane, setActivePane] = useState<SettingsPaneKey>("preferences");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackType, setFeedbackType] = useState("");
+  const [feedbackDetails, setFeedbackDetails] = useState("");
   const navItems = useMemo(
     () => [
-      { key: "general" as const, label: "General" },
+      { key: "general" as const, label: "Account" },
       { key: "preferences" as const, label: "Preferences" },
-      { key: "support" as const, label: "Support" },
+      { key: "userGuide" as const, label: "User Guide" },
+      { key: "about" as const, label: "About" },
+      { key: "feedback" as const, label: "Feedback" },
       { key: "data" as const, label: "Data" },
+      { key: "reset" as const, label: "Reset All" },
     ],
     []
   );
+  const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
+  const canSubmitFeedback = isValidFeedbackEmail && !!feedbackType && feedbackDetails.trim().length > 0;
 
   return (
     <div className="menu settingsMenu settingsDashboardShell dashboardShell" role="dialog" aria-modal="true" aria-label="Menu">
@@ -94,6 +107,7 @@ export default function SettingsPanel() {
                 key={item.key}
                 label={item.label}
                 active={activePane === item.key}
+                danger={item.key === "reset"}
                 onClick={() => {
                   setActivePane(item.key);
                   setMobileDetailOpen(true);
@@ -119,7 +133,7 @@ export default function SettingsPanel() {
           </div>
           <SettingsDetailPane
             active={activePane === "general"}
-            title="General"
+            title="Account"
             subtitle="Account and sign-in options for TaskTimer."
           >
             <div className="settingsActionGrid settingsActionGridStack">
@@ -178,11 +192,6 @@ export default function SettingsPanel() {
                     <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
                   </div>
                 </div>
-                <div className="settingsInlineFooter">
-                  <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button">
-                    Save
-                  </button>
-                </div>
               </section>
 
               <section className="settingsInlineSection">
@@ -233,14 +242,6 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-                <div className="settingsInlineFooter">
-                  <button className="btn btn-ghost" id="categoryResetBtn" type="button">
-                    Reset Defaults
-                  </button>
-                  <button className="btn btn-accent" id="categorySaveBtn" type="button">
-                    Save
-                  </button>
-                </div>
               </section>
 
               <section className="settingsInlineSection">
@@ -267,26 +268,139 @@ export default function SettingsPanel() {
                 </button>
               </section>
             </div>
+            <div className="settingsInlineFooter settingsPreferencesFooter">
+              <button className="btn btn-ghost" id="categoryResetBtn" type="button">
+                Reset Defaults
+              </button>
+              <button
+                className="btn btn-accent"
+                id="preferencesSaveBtn"
+                type="button"
+                onClick={() => {
+                  (document.getElementById("taskSettingsSaveBtn") as HTMLButtonElement | null)?.click();
+                  (document.getElementById("categorySaveBtn") as HTMLButtonElement | null)?.click();
+                }}
+              >
+                Save Preferences
+              </button>
+            </div>
+            <div style={{ display: "none" }} aria-hidden="true">
+              <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
+                Save
+              </button>
+              <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
+                Save
+              </button>
+            </div>
           </SettingsDetailPane>
 
           <SettingsDetailPane
-            active={activePane === "support"}
-            title="Support"
-            subtitle="Documentation, app information, and contact options."
+            active={activePane === "userGuide"}
+            title="User Guide"
+            subtitle="Open the TaskTimer user guide and walkthrough content."
           >
             <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
               <button className="menuItem settingsActionRow" data-menu="howto" type="button">
-                <MenuIconLabel icon="/User_Guide.svg" label="User Guide" />
+                <MenuIconLabel icon="/User_Guide.svg" label="Open User Guide" />
               </button>
-              <button className="menuItem settingsActionRow" data-menu="about" type="button">
-                <MenuIconLabel icon="/About.svg" label="About" />
-              </button>
-              <button className="menuItem settingsActionRow" data-menu="contact" type="button">
-                <MenuIconLabel icon="/Contact.svg" label="Contact" />
-              </button>
-              <button className="menuItem settingsActionRow" id="feedbackBtn" type="button">
-                <MenuIconLabel icon="/Feedback.svg" label="Feedback" />
-              </button>
+            </div>
+            <div className="settingsDetailNote">
+              User Guide is available as its own module for quicker access from the Settings screen.
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "about"}
+            title="About"
+            subtitle="App summary, version information, and feature overview."
+          >
+            <div className="aboutHead">
+              <img className="aboutLogo" alt="TaskTimer logo" src="/tasktimer-logo.png" />
+              <div>
+                <h2 style={{ margin: 0 }}>TaskTimer</h2>
+                <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>
+                  Focused task timing with progress and history
+                </div>
+              </div>
+            </div>
+            <div className="aboutText" style={{ marginTop: 10 }}>
+              <p style={{ marginTop: 0 }}>
+                TaskTimer is built for tracking focused work across multiple tasks and modes, with a fast workflow for
+                start/stop timing, reviewing progress, and managing your history.
+              </p>
+              <p>Key features include:</p>
+              <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+                <li>Multiple task categories (Mode 1, Mode 2, Mode 3) with configurable labels and colors</li>
+                <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
+                <li>Checkpoint milestones and progress tracking on each task</li>
+                <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
+                <li>Focus Mode for a single-task timer view with dedicated controls and insights</li>
+                <li>Backup export/import, including import merge/overwrite options</li>
+                <li>Dashboard and guide pages for overview and onboarding</li>
+              </ul>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "feedback"}
+            title="Feedback"
+            subtitle="Share product feedback and suggestions."
+          >
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Feedback.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Feedback Form</div>
+                </div>
+
+                <div className="field">
+                  <label htmlFor="feedbackEmailInput">Email Address</label>
+                  <input
+                    id="feedbackEmailInput"
+                    type="email"
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    value={feedbackEmail}
+                    onChange={(e) => setFeedbackEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="feedbackTypeSelect">Feedback Type</label>
+                  <select
+                    id="feedbackTypeSelect"
+                    value={feedbackType}
+                    onChange={(e) => setFeedbackType(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      --Please Select--
+                    </option>
+                    <option value="bug">Report a bug</option>
+                    <option value="general">General feedback</option>
+                    <option value="feature">Request a feature/enhancement</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label htmlFor="feedbackDetailsInput">Details</label>
+                  <textarea
+                    id="feedbackDetailsInput"
+                    rows={6}
+                    placeholder="Share details, steps to reproduce (if reporting a bug), or what you would like improved."
+                    value={feedbackDetails}
+                    onChange={(e) => setFeedbackDetails(e.target.value)}
+                  />
+                </div>
+
+                <div className="settingsInlineFooter">
+                  <button className="btn btn-accent" id="feedbackBtn" type="button" disabled={!canSubmitFeedback}>
+                    Submit Feedback
+                  </button>
+                </div>
+              </section>
+            </div>
+            <div className="settingsDetailNote">
+              This is a mock feedback form layout. Submission handling can be wired to email, API, or issue tracking later.
             </div>
           </SettingsDetailPane>
 
@@ -305,9 +419,21 @@ export default function SettingsPanel() {
               <button className="menuItem settingsActionRow" id="importBtn" type="button">
                 <MenuIconLabel icon="/Import.svg" label="Import Backup" />
               </button>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "reset"}
+            title="Reset All"
+            subtitle="Clear local app data and reset the app state on this device."
+          >
+            <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
               <button className="menuItem settingsActionRow" id="resetAllBtn" type="button">
-                <MenuIconLabel icon="/Reset.svg" label="Reset All" />
+                <MenuIconLabel icon="/Reset.svg" label="Reset All Data" />
               </button>
+            </div>
+            <div className="settingsDetailNote">
+              This action is destructive. Export a backup first if you want to preserve tasks, history, and settings.
             </div>
           </SettingsDetailPane>
 

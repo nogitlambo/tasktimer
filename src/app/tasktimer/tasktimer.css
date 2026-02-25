@@ -2312,6 +2312,14 @@ optgroup{
   color:#ff8a8a;
 }
 
+#app[aria-label="TaskTimer Settings"] .settingsDashboardShell.dashboardShell{
+  margin:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  padding:0;
+}
+
 #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
   display:grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -2328,8 +2336,14 @@ optgroup{
   -webkit-overflow-scrolling: touch;
 }
 #app[aria-label="TaskTimer Settings"] .settingsNavPanel{
+  padding-left:4px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavPanel{
   position:sticky;
   top:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
 }
 #app[aria-label="TaskTimer Settings"] .settingsSideLabel{
   text-align:left;
@@ -2370,9 +2384,24 @@ optgroup{
   border-color: rgba(53,232,255,.45) !important;
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.14), 0 0 10px rgba(0,220,255,.15) !important;
 }
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger{
+  border-color: rgba(255,77,77,.35);
+  background: rgba(255,77,77,.10);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.08);
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger .settingsNavRowText{
+  color: rgba(255,170,170,.95);
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger.isActive{
+  border-color: rgba(255,77,77,.55) !important;
+  background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,255,255,.02)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.16), 0 0 10px rgba(255,77,77,.14) !important;
+}
 #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
   position:relative;
   min-height:520px;
+  border:none;
+  box-shadow:none;
 }
 #app[aria-label="TaskTimer Settings"] .settingsMobileDetailHead{
   display:none;
@@ -2513,6 +2542,29 @@ optgroup{
 #app[aria-label="TaskTimer Settings"] .settingsInlineSection .unitRow{
   margin:0;
 }
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .toggleRow,
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .unitRow,
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .field{
+  border:1px solid rgba(121,226,255,.16);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding:8px 10px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch{
+  width:39px;
+  height:21px;
+  min-width:39px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch::after{
+  width:18px;
+  height:18px;
+  top:1px;
+  left:1px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch.on::after{
+  left:19px;
+}
 #app[aria-label="TaskTimer Settings"] .settingsInlineFooter{
   display:flex;
   gap:8px;
@@ -2522,6 +2574,59 @@ optgroup{
 }
 #app[aria-label="TaskTimer Settings"] .settingsInlineSection .field{
   margin-bottom:0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .field label{
+  margin-bottom:6px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl{
+  gap:8px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"],
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="color"],
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > button{
+  border-radius:0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"]{
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+  color: var(--text);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryColorInput{
+  border:1px solid rgba(121,226,255,.18);
+  background: rgba(255,255,255,.03);
+  padding:2px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryTrashBtn{
+  border:1px solid rgba(255,77,77,.35);
+  background: rgba(255,77,77,.12);
+}
+#app[aria-label="TaskTimer Settings"] .settingsPreferencesFooter{
+  justify-content:space-between;
+  align-items:center;
+}
+#app[aria-label="TaskTimer Settings"] .settingsPreferencesFooter .btn:last-child{
+  margin-left:auto;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection select,
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection textarea{
+  width:100%;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+  color: var(--text);
+  border-radius:0;
+  font: inherit;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection select{
+  min-height:38px;
+  padding:8px 10px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSection textarea{
+  min-height:120px;
+  padding:10px;
+  resize:vertical;
+  line-height:1.4;
 }
 .settingsMenu .menuItem{
   text-align:center;
