@@ -193,6 +193,15 @@ body[data-app-page="test1"] #openAddTaskBtn,
 body[data-app-page="test2"] #openAddTaskBtn{
   display:none !important;
 }
+/* Dashboard container overrides */
+.dashboardShell{
+  border: none !important;
+  box-shadow: none !important;
+  padding-left: 4px !important;
+}
+body[data-app-page="dashboard"] .appPages{
+  padding-left: 104px !important;
+}
 .modeBtn{
   min-width:84px;
 }
@@ -2204,9 +2213,7 @@ optgroup{
   min-height:auto;
   margin-bottom:12px;
   border-bottom:1px solid rgba(121,226,255,.18);
-  background:
-    linear-gradient(150deg, rgba(46,232,255,.06), rgba(0,0,0,0) 28%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  background: transparent;
   border-radius:0;
   padding:4px 4px 10px;
 }
@@ -2352,6 +2359,22 @@ optgroup{
   margin:0 0 8px;
   padding:0;
 }
+#app[aria-label="TaskTimer Settings"] .settingsNavTopActions{
+  display:flex;
+  justify-content:flex-start;
+  margin:0 0 14px;
+  padding:0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavExitBtn{
+  position:static;
+  right:auto;
+  top:auto;
+  min-width:72px;
+  min-height:32px;
+  padding:6px 10px;
+  justify-content:flex-start;
+  text-align:left;
+}
 #app[aria-label="TaskTimer Settings"] .settingsNavGrid{
   display:flex;
   flex-direction:column;
@@ -2363,9 +2386,9 @@ optgroup{
   padding:10px 12px;
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
   gap:8px;
-  text-align:left;
+  text-align:center;
   text-transform:uppercase;
   letter-spacing:.08em;
 }
@@ -2380,6 +2403,8 @@ optgroup{
   font-size:12px;
   font-weight:700;
   color: rgba(228,248,255,.94);
+  width:100%;
+  text-align:center;
 }
 #app[aria-label="TaskTimer Settings"] .settingsNavTile.isActive{
   background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.03)) !important;
@@ -2567,6 +2592,25 @@ optgroup{
   gap:10px;
   padding-bottom:8px;
   border-bottom:1px solid rgba(121,226,255,.12);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead{
+  cursor:pointer;
+  list-style:none;
+  margin:0;
+  user-select:none;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::-webkit-details-marker{
+  display:none;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::after{
+  content:"\25B8";
+  margin-left:auto;
+  color: rgba(190,240,255,.82);
+  font-size:24px;
+  line-height:1;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible[open] > .settingsInlineSectionHead::after{
+  content:"\25BE";
 }
 #app[aria-label="TaskTimer Settings"] .settingsInlineSectionIcon{
   width:28px;
@@ -5195,6 +5239,153 @@ body[data-theme="light"] optgroup{
 /* Ensure shared confirm dialog renders above Focus Mode */
 #confirmOverlay{
   z-index: 10020 !important;
+}
+
+/* User Guide route aligned to Settings split-panel layout */
+#app[aria-label="TaskTimer User Guide"] .userGuideMenu{
+  margin:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  padding:0;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideMenu .menuHead{
+  min-height:auto;
+  margin-bottom:12px;
+  border-bottom:1px solid rgba(121,226,255,.18);
+  background:
+    linear-gradient(150deg, rgba(46,232,255,.06), rgba(0,0,0,0) 28%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  border-radius:0;
+  padding:4px 4px 10px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+  display:grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap:10px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel{
+  position:sticky;
+  top:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  padding-left:4px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideNavGrid{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel .settingsNavTile{
+  min-height:46px;
+  aspect-ratio:auto;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideDetailPanel{
+  position:relative;
+  min-height:520px;
+  border:none;
+  box-shadow:none;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicPane{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicHead{
+  border-bottom:1px solid rgba(121,226,255,.16);
+  padding-bottom:10px;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicTitleInline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicTitleInline .userGuideIcon{
+  width:22px;
+  height:22px;
+  max-width:22px;
+  max-height:22px;
+  margin:0;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:100%;
+  max-width:none;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideSection{
+  width:100%;
+  max-width:none;
+}
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideShotPlaceholder,
+#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideShotImage{
+  width:100%;
+  max-width:100%;
+}
+#app[aria-label="TaskTimer User Guide"] .settingsDetailEmpty{
+  border:1px solid rgba(121,226,255,.14);
+  background: rgba(255,255,255,.02);
+  color: rgba(188,214,230,.8);
+  padding:14px 16px;
+  font-size:12px;
+  line-height:1.4;
+}
+
+@media (min-width: 641px) and (max-width: 980px){
+  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap:10px;
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+    gap:10px;
+    position:relative;
+    overflow-x:hidden;
+    overflow-y:visible;
+    grid-template-columns: 1fr;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideNavPanel,
+  #app[aria-label="TaskTimer User Guide"] .userGuideDetailPanel{
+    min-height:0;
+    max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideNavPanel{
+    position:static;
+    padding-left:0;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout:not(.isMobileDetailOpen) .userGuideDetailPanel{
+    display:none;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideNavPanel{
+    display:none;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideDetailPanel{
+    display:block;
+    animation: settingsDetailSlideIn .22s ease-out;
+  }
+  #app[aria-label="TaskTimer User Guide"] .userGuideMenu .settingsMobileDetailHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+    padding-bottom:8px;
+    border-bottom:1px solid rgba(121,226,255,.14);
+  }
 }
 #confirmOverlay .modal{
   position: relative;

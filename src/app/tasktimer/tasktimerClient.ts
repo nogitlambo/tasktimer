@@ -4622,10 +4622,43 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.addTaskError.textContent = msg;
       els.addTaskError.classList.toggle("isOn", !!String(msg || "").trim());
     };
+    const persistInlineTaskSettingsImmediate = () => {
+      saveDefaultTaskTimerFormat();
+      saveDynamicColorsSetting();
+      saveCheckpointAlertSettings();
+      render();
+    };
+    const applyAndPersistModeSettingsImmediate = (opts?: { closeOverlay?: boolean }) => {
+      modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
+      modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
+      modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
+      modeColors.mode1 = sanitizeModeColor(
+        (els.categoryMode1ColorHex?.value || "").trim() || els.categoryMode1Color?.value,
+        DEFAULT_MODE_COLORS.mode1
+      );
+      modeColors.mode2 = sanitizeModeColor(
+        (els.categoryMode2ColorHex?.value || "").trim() || els.categoryMode2Color?.value,
+        DEFAULT_MODE_COLORS.mode2
+      );
+      modeColors.mode3 = sanitizeModeColor(
+        (els.categoryMode3ColorHex?.value || "").trim() || els.categoryMode3Color?.value,
+        DEFAULT_MODE_COLORS.mode3
+      );
+      modeEnabled.mode1 = true;
+      saveModeSettings();
+      syncModeLabelsUi();
+      if (!isModeEnabled(currentMode)) applyMainMode("mode1");
+      else applyModeAccent(currentMode);
+      if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
+      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
+      if (opts?.closeOverlay) closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
+      else render();
+    };
     const wireModeColorPair = (picker: HTMLInputElement | null, hex: HTMLInputElement | null, mode: MainMode) => {
       on(picker, "input", () => {
         if (!picker || !hex) return;
         hex.value = sanitizeModeColor(picker.value, DEFAULT_MODE_COLORS[mode]);
+        applyAndPersistModeSettingsImmediate();
       });
       on(hex, "input", () => {
         if (!picker || !hex) return;
@@ -4637,6 +4670,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const normalized = sanitizeModeColor(hex.value, DEFAULT_MODE_COLORS[mode]);
         hex.value = normalized;
         picker.value = normalized;
+        applyAndPersistModeSettingsImmediate();
       });
     };
     wireModeColorPair(els.categoryMode1Color, els.categoryMode1ColorHex, "mode1");
@@ -5378,7 +5412,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else navigateToAppRoute("/tasktimer");
+      else if (!handleAppBackNavigation()) navigateToAppRoute("/tasktimer");
     });
     on(els.themeToggle, "click", toggleThemeMode);
     on(els.themeToggleRow, "click", (e: any) => {
@@ -5388,43 +5422,52 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.taskDefaultFormatDay, "click", () => {
       defaultTaskTimerFormat = "day";
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskDefaultFormatHour, "click", () => {
       defaultTaskTimerFormat = "hour";
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskDefaultFormatMinute, "click", () => {
       defaultTaskTimerFormat = "minute";
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskDynamicColorsToggle, "click", () => {
       dynamicColorsEnabled = !dynamicColorsEnabled;
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskDynamicColorsToggleRow, "click", (e: any) => {
       if (e.target?.closest?.("#taskDynamicColorsToggle")) return;
       dynamicColorsEnabled = !dynamicColorsEnabled;
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskCheckpointSoundToggle, "click", () => {
       checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
       if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskCheckpointSoundToggleRow, "click", (e: any) => {
       if (e.target?.closest?.("#taskCheckpointSoundToggle")) return;
       checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
       if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskCheckpointToastToggle, "click", () => {
       checkpointAlertToastEnabled = !checkpointAlertToastEnabled;
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskCheckpointToastToggleRow, "click", (e: any) => {
       if (e.target?.closest?.("#taskCheckpointToastToggle")) return;
       checkpointAlertToastEnabled = !checkpointAlertToastEnabled;
       syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
     });
     on(els.taskSettingsSaveBtn, "click", () => {
       saveDefaultTaskTimerFormat();
@@ -5436,40 +5479,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.categoryMode2Toggle, "click", () => {
       modeEnabled.mode2 = !modeEnabled.mode2;
       syncModeLabelsUi();
+      applyAndPersistModeSettingsImmediate();
     });
     on(els.categoryMode3Toggle, "click", () => {
       modeEnabled.mode3 = !modeEnabled.mode3;
       syncModeLabelsUi();
+      applyAndPersistModeSettingsImmediate();
     });
+    on(els.categoryMode1Input, "change", () => applyAndPersistModeSettingsImmediate());
+    on(els.categoryMode2Input, "change", () => applyAndPersistModeSettingsImmediate());
+    on(els.categoryMode3Input, "change", () => applyAndPersistModeSettingsImmediate());
+    on(els.categoryMode1Input, "blur", () => applyAndPersistModeSettingsImmediate());
+    on(els.categoryMode2Input, "blur", () => applyAndPersistModeSettingsImmediate());
+    on(els.categoryMode3Input, "blur", () => applyAndPersistModeSettingsImmediate());
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
     });
 
     on(els.categorySaveBtn, "click", () => {
-      modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
-      modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
-      modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
-      modeColors.mode1 = sanitizeModeColor(
-        (els.categoryMode1ColorHex?.value || "").trim() || els.categoryMode1Color?.value,
-        DEFAULT_MODE_COLORS.mode1
-      );
-      modeColors.mode2 = sanitizeModeColor(
-        (els.categoryMode2ColorHex?.value || "").trim() || els.categoryMode2Color?.value,
-        DEFAULT_MODE_COLORS.mode2
-      );
-      modeColors.mode3 = sanitizeModeColor(
-        (els.categoryMode3ColorHex?.value || "").trim() || els.categoryMode3Color?.value,
-        DEFAULT_MODE_COLORS.mode3
-      );
-      modeEnabled.mode1 = true;
-      saveModeSettings();
-      syncModeLabelsUi();
-      if (!isModeEnabled(currentMode)) applyMainMode("mode1");
-      else applyModeAccent(currentMode);
-      if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
-      closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
+      applyAndPersistModeSettingsImmediate({ closeOverlay: true });
     });
     on(els.categoryResetBtn, "click", () => {
       modeLabels = { ...DEFAULT_MODE_LABELS };

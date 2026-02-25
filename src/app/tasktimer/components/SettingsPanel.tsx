@@ -77,7 +77,7 @@ export default function SettingsPanel() {
       { key: "general" as const, label: "Account" },
       { key: "preferences" as const, label: "Preferences" },
       { key: "notifications" as const, label: "Notifications" },
-      { key: "userGuide" as const, label: "User Guide" },
+      { key: "userGuide" as const, label: "Support" },
       { key: "about" as const, label: "About" },
       { key: "feedback" as const, label: "Feedback" },
       { key: "data" as const, label: "Data" },
@@ -94,14 +94,15 @@ export default function SettingsPanel() {
         <div className="menuTitle" aria-label="Task Timer Settings">
           Settings
         </div>
-        <button className="menuIcon settingsCloseIcon" id="closeMenuBtn" type="button" aria-label="Exit settings">
-          Exit
-        </button>
       </div>
 
       <div className={`settingsSplitLayout${mobileDetailOpen ? " isMobileDetailOpen" : ""}`}>
         <aside className="settingsNavPanel dashboardCard" aria-label="Settings navigation">
-          <div className="settingsSectionLabel settingsSideLabel">Modules</div>
+          <div className="settingsNavTopActions">
+            <button className="menuIcon settingsCloseIcon settingsNavExitBtn" id="closeMenuBtn" type="button" aria-label="Back">
+              &lt; Back
+            </button>
+          </div>
           <div className="settingsNavGrid">
             {navItems.map((item) => (
               <SettingsNavTile
@@ -164,11 +165,11 @@ export default function SettingsPanel() {
             subtitle="Configure task behavior, modes, dashboard options, and appearance."
           >
             <div className="settingsInlineStack">
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
+              <details className="settingsInlineSection settingsInlineSectionCollapsible">
+                <summary className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Task Settings</div>
-                </div>
+                </summary>
                 <div className="unitRow">
                   <span>Default Task Timer Format</span>
                   <div className="unitButtons">
@@ -183,17 +184,13 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-                <div className="toggleRow" id="taskDynamicColorsToggleRow">
-                  <span>Dynamic colors for progress and history</span>
-                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
-                </div>
-              </section>
+              </details>
 
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
+              <details className="settingsInlineSection settingsInlineSectionCollapsible">
+                <summary className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Configure Modes</div>
-                </div>
+                </summary>
                 <div className="field categoryFieldRow">
                   <label htmlFor="categoryMode1Input">Default Mode</label>
                   <div className="categoryFieldControl">
@@ -237,47 +234,35 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
+              <details className="settingsInlineSection settingsInlineSectionCollapsible">
+                <summary className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Appearance</div>
-                </div>
+                </summary>
                 <div className="toggleRow" id="themeToggleRow">
                   <span>Toggle between light and dark mode</span>
                   <button className="switch on" id="themeToggle" type="button" role="switch" aria-checked="true" />
                 </div>
-              </section>
+                <div className="toggleRow" id="taskDynamicColorsToggleRow">
+                  <span>Dynamic colors for progress and history</span>
+                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
+                </div>
+              </details>
 
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
+              <details className="settingsInlineSection settingsInlineSectionCollapsible">
+                <summary className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Dashboard Settings</div>
-                </div>
+                </summary>
                 <div className="settingsDetailNote">
                   Dashboard settings controls can be added here. The section is now part of Preferences and no longer opens a separate modal.
                 </div>
                 <button className="menuItem settingsActionRow" id="dashboardSettingsBtn" type="button">
                   <MenuIconLabel icon="/Dashboard.svg" label="Dashboard Settings" />
                 </button>
-              </section>
-            </div>
-            <div className="settingsInlineFooter settingsPreferencesFooter">
-              <button className="btn btn-ghost" id="categoryResetBtn" type="button">
-                Reset Defaults
-              </button>
-              <button
-                className="btn btn-accent"
-                id="preferencesSaveBtn"
-                type="button"
-                onClick={() => {
-                  (document.getElementById("taskSettingsSaveBtn") as HTMLButtonElement | null)?.click();
-                  (document.getElementById("categorySaveBtn") as HTMLButtonElement | null)?.click();
-                }}
-              >
-                Save Preferences
-              </button>
+              </details>
             </div>
             <div style={{ display: "none" }} aria-hidden="true">
               <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
@@ -285,6 +270,9 @@ export default function SettingsPanel() {
               </button>
               <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
                 Save
+              </button>
+              <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
+                Reset Defaults
               </button>
             </div>
           </SettingsDetailPane>
@@ -317,16 +305,13 @@ export default function SettingsPanel() {
 
           <SettingsDetailPane
             active={activePane === "userGuide"}
-            title="User Guide"
+            title="Support"
             subtitle="Open the TaskTimer user guide and walkthrough content."
           >
             <div className="settingsActionGrid settingsDataTileGrid">
               <button className="menuItem settingsDataTile" data-menu="howto" type="button">
                 <MenuIconLabel icon="/User_Guide.svg" label="Open User Guide" />
               </button>
-            </div>
-            <div className="settingsDetailNote">
-              User Guide is available as its own module for quicker access from the Settings screen.
             </div>
           </SettingsDetailPane>
 
@@ -335,29 +320,40 @@ export default function SettingsPanel() {
             title="About"
             subtitle="App summary, version information, and feature overview."
           >
-            <div className="aboutHead">
-              <img className="aboutLogo" alt="TaskTimer logo" src="/tasktimer-logo.png" />
-              <div>
-                <h2 style={{ margin: 0 }}>TaskTimer</h2>
-                <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>
-                  Focused task timing with progress and history
-                </div>
-              </div>
-            </div>
-            <div className="aboutText" style={{ marginTop: 10 }}>
+            <div className="aboutText">
               <p style={{ marginTop: 0 }}>
-                TaskTimer is built for tracking focused work across multiple tasks and modes, with a fast workflow for
-                start/stop timing, reviewing progress, and managing your history.
+                TaskTimer is a focused time-tracking app built to help you create better habits, manage repeatable
+                routines, and review progress over time.
               </p>
-              <p>Key features include:</p>
+              <p>
+                It is designed for fast task control during active sessions, clear checkpoint visibility, and a workflow
+                that works well on both mobile and desktop.
+              </p>
+
+              <p style={{ marginBottom: 6, fontWeight: 700 }}>What TaskTimer is for</p>
+              <ul style={{ margin: "0 0 12px 18px", padding: 0 }}>
+                <li>Tracking focused work sessions and personal routines</li>
+                <li>Monitoring progress against time checkpoints</li>
+                <li>Reviewing completed sessions through history and charts</li>
+                <li>Keeping task timing data portable with backup export/import</li>
+              </ul>
+
+              <p style={{ marginBottom: 6, fontWeight: 700 }}>Core features</p>
               <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
-                <li>Multiple task categories (Mode 1, Mode 2, Mode 3) with configurable labels and colors</li>
-                <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
-                <li>Checkpoint milestones and progress tracking on each task</li>
-                <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
-                <li>Focus Mode for a single-task timer view with dedicated controls and insights</li>
-                <li>Backup export/import, including import merge/overwrite options</li>
-                <li>Dashboard and guide pages for overview and onboarding</li>
+                <li>Task timers with start/stop/reset, duplication, editing, and per-task settings</li>
+                <li>Checkpoint milestones with labels, progress markers, and task-level alert behavior</li>
+                <li>Sound and toast checkpoint notifications, including repeat-until-dismiss options</li>
+                <li>Inline history charts with export, analysis, manage actions, and selectable data points</li>
+                <li>Focus Mode with dial view, checkpoint markers, and completed checkpoint log</li>
+                <li>Dashboard, Settings modules, and User Guide/Support flows optimized for desktop and mobile</li>
+                <li>Backup export/import for tasks, history, modes, and task-specific configuration</li>
+              </ul>
+
+              <p style={{ margin: "12px 0 6px", fontWeight: 700 }}>Design approach</p>
+              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
+                <li>Fast access to common actions with minimal navigation</li>
+                <li>High-contrast visuals for active timing and checkpoint feedback</li>
+                <li>Responsive layouts that preserve usability on smaller screens</li>
               </ul>
             </div>
           </SettingsDetailPane>
