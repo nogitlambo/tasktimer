@@ -319,44 +319,46 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
-            subtitle="Passwordless email sign-in for TaskTimer."
+            subtitle="Continue with email using a passwordless sign-in link."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Email Link Sign-In</div>
+                  <div className="settingsInlineSectionTitle">Continue with Email</div>
                 </div>
-                <div className="field">
-                  <label htmlFor="authEmailInput">Email Address</label>
-                  <input
-                    id="authEmailInput"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="name@example.com"
-                    value={authEmail}
-                    onChange={(e) => {
-                      setAuthEmail(e.target.value);
-                      setAuthError("");
-                    }}
-                  />
-                </div>
-                {authUserEmail ? (
-                  <div className="settingsDetailNote">Signed in as: {authUserEmail}</div>
+                {!authUserEmail ? (
+                  <div className="field">
+                    <label htmlFor="authEmailInput">Email Address</label>
+                    <input
+                      id="authEmailInput"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@example.com"
+                      value={authEmail}
+                      onChange={(e) => {
+                        setAuthEmail(e.target.value);
+                        setAuthError("");
+                      }}
+                    />
+                  </div>
                 ) : null}
+                {authUserEmail ? <div className="settingsDetailNote">Signed in as: {authUserEmail}</div> : null}
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 <div className="settingsInlineFooter settingsAuthActions">
-                  <button
-                    className="btn btn-accent"
-                    id="signInEmailBtn"
-                    type="button"
-                    disabled={authBusy || !isValidAuthEmail}
-                    onClick={handleSendEmailLink}
-                  >
-                    Send Sign-In Link
-                  </button>
-                  {isEmailLinkFlow ? (
+                  {!authUserEmail ? (
+                    <button
+                      className="btn btn-accent"
+                      id="signInEmailBtn"
+                      type="button"
+                      disabled={authBusy || !isValidAuthEmail}
+                      onClick={handleSendEmailLink}
+                    >
+                      Send Link
+                    </button>
+                  ) : null}
+                  {!authUserEmail && isEmailLinkFlow ? (
                     <button
                       className="btn btn-ghost"
                       id="signUpBtn"
@@ -368,7 +370,7 @@ export default function SettingsPanel() {
                     </button>
                   ) : null}
                   <button
-                    className="btn btn-ghost"
+                    className={authUserEmail ? "btn btn-accent" : "btn btn-ghost"}
                     id="signInGoogleBtn"
                     type="button"
                     disabled={authBusy || !authUserEmail}
@@ -379,9 +381,11 @@ export default function SettingsPanel() {
                 </div>
               </section>
             </div>
-            <div className="settingsDetailNote">
-              Open the sign-in link from your email on the same device to complete passwordless sign-in.
-            </div>
+            {!authUserEmail ? (
+              <div className="settingsDetailNote">
+                Open the email link on this device to complete sign-in.
+              </div>
+            ) : null}
           </SettingsDetailPane>
 
           <SettingsDetailPane
