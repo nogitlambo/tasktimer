@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 type SettingsPaneKey =
   | "general"
   | "preferences"
+  | "notifications"
   | "userGuide"
   | "about"
   | "feedback"
@@ -57,7 +58,6 @@ function SettingsDetailPane({
   return (
     <section className={`settingsDetailPane${active ? " isActive" : ""}`} aria-hidden={active ? "false" : "true"}>
       <div className="settingsDetailHead">
-        <div className="settingsDetailKicker">Settings Module</div>
         <h2 className="settingsDetailTitle">{title}</h2>
         <p className="settingsDetailText">{subtitle}</p>
       </div>
@@ -67,7 +67,7 @@ function SettingsDetailPane({
 }
 
 export default function SettingsPanel() {
-  const [activePane, setActivePane] = useState<SettingsPaneKey>("preferences");
+  const [activePane, setActivePane] = useState<SettingsPaneKey | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackType, setFeedbackType] = useState("");
@@ -76,6 +76,7 @@ export default function SettingsPanel() {
     () => [
       { key: "general" as const, label: "Account" },
       { key: "preferences" as const, label: "Preferences" },
+      { key: "notifications" as const, label: "Notifications" },
       { key: "userGuide" as const, label: "User Guide" },
       { key: "about" as const, label: "About" },
       { key: "feedback" as const, label: "Feedback" },
@@ -131,6 +132,11 @@ export default function SettingsPanel() {
               {navItems.find((n) => n.key === activePane)?.label || "Settings"}
             </div>
           </div>
+          {!activePane ? (
+            <div className="settingsDetailEmpty" aria-live="polite">
+              Select a module to view settings.
+            </div>
+          ) : null}
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
@@ -180,17 +186,6 @@ export default function SettingsPanel() {
                 <div className="toggleRow" id="taskDynamicColorsToggleRow">
                   <span>Dynamic colors for progress and history</span>
                   <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
-                  <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
-                  <div className="toggleRow" id="taskCheckpointSoundToggleRow">
-                    <span>Enable sound alerts</span>
-                    <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
-                  </div>
-                  <div className="toggleRow" id="taskCheckpointToastToggleRow">
-                    <span>Enable toast alerts</span>
-                    <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
-                  </div>
                 </div>
               </section>
 
@@ -295,12 +290,38 @@ export default function SettingsPanel() {
           </SettingsDetailPane>
 
           <SettingsDetailPane
+            active={activePane === "notifications"}
+            title="Notifications"
+            subtitle="Manage checkpoint sound and toast alerts."
+          >
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Checkpoint Alerts</div>
+                </div>
+                <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
+                  <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
+                  <div className="toggleRow" id="taskCheckpointSoundToggleRow">
+                    <span>Enable sound alerts</span>
+                    <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
+                  </div>
+                  <div className="toggleRow" id="taskCheckpointToastToggleRow">
+                    <span>Enable toast alerts</span>
+                    <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
+                  </div>
+                </div>
+              </section>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
             active={activePane === "userGuide"}
             title="User Guide"
             subtitle="Open the TaskTimer user guide and walkthrough content."
           >
-            <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
-              <button className="menuItem settingsActionRow" data-menu="howto" type="button">
+            <div className="settingsActionGrid settingsDataTileGrid">
+              <button className="menuItem settingsDataTile" data-menu="howto" type="button">
                 <MenuIconLabel icon="/User_Guide.svg" label="Open User Guide" />
               </button>
             </div>
@@ -409,14 +430,14 @@ export default function SettingsPanel() {
             title="Data"
             subtitle="Manage history, export or import backups, and reset local data."
           >
-            <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
-              <button className="menuItem settingsActionRow" data-menu="historyManager" id="historyManagerBtn" type="button">
+            <div className="settingsActionGrid settingsDataTileGrid">
+              <button className="menuItem settingsDataTile" data-menu="historyManager" id="historyManagerBtn" type="button">
                 <MenuIconLabel icon="/History_Manager.svg" label="History Manager" />
               </button>
-              <button className="menuItem settingsActionRow" id="exportBtn" type="button">
+              <button className="menuItem settingsDataTile" id="exportBtn" type="button">
                 <MenuIconLabel icon="/Export.svg" label="Export Backup" />
               </button>
-              <button className="menuItem settingsActionRow" id="importBtn" type="button">
+              <button className="menuItem settingsDataTile" id="importBtn" type="button">
                 <MenuIconLabel icon="/Import.svg" label="Import Backup" />
               </button>
             </div>

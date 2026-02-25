@@ -2204,7 +2204,9 @@ optgroup{
   min-height:auto;
   margin-bottom:12px;
   border-bottom:1px solid rgba(121,226,255,.18);
-  background: transparent;
+  background:
+    linear-gradient(150deg, rgba(46,232,255,.06), rgba(0,0,0,0) 28%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
   border-radius:0;
   padding:4px 4px 10px;
 }
@@ -2422,6 +2424,14 @@ optgroup{
 #app[aria-label="TaskTimer Settings"] .settingsDetailPane.isActive{
   display:flex;
 }
+#app[aria-label="TaskTimer Settings"] .settingsDetailEmpty{
+  border:1px solid rgba(121,226,255,.14);
+  background: rgba(255,255,255,.02);
+  color: rgba(188,214,230,.8);
+  padding:14px 16px;
+  font-size:12px;
+  line-height:1.4;
+}
 #app[aria-label="TaskTimer Settings"] .settingsDetailHead{
   border-bottom:1px solid rgba(121,226,255,.16);
   padding-bottom:10px;
@@ -2493,6 +2503,40 @@ optgroup{
   text-align:left;
   line-height:1.2;
   font-size:12px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+#app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+  grid-template-columns: repeat(3, minmax(0, 144px));
+  gap:8px;
+  justify-content:flex-start;
+}
+#app[aria-label="TaskTimer Settings"] .settingsDataTile{
+  min-height: 72px;
+  max-width: 144px;
+  aspect-ratio: 1 / 1;
+  width:100%;
+  padding: 8px 6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  text-align:center;
+}
+#app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+  width:100%;
+  height:100%;
+  max-width:34px;
+  max-height:34px;
+  margin:0;
+  flex:0 0 auto;
+}
+#app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+  margin-top:0;
+  text-align:center;
+  line-height:1.15;
+  font-size:10px;
   letter-spacing:.05em;
   text-transform:uppercase;
 }
@@ -4496,6 +4540,22 @@ body[data-theme="light"] input[type="number"]{
     grid-template-columns: 1fr;
     gap:8px;
   }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile{
+    min-height:63px;
+    padding:6px 5px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+    max-width:30px;
+    max-height:30px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+    font-size:9px;
+    letter-spacing:.04em;
+  }
 }
 
 @media (max-width: 640px){
@@ -4640,6 +4700,22 @@ body[data-theme="light"] input[type="number"]{
   #app[aria-label="TaskTimer Settings"] .settingsActionGrid{
     grid-template-columns: 1fr;
     gap:8px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile{
+    min-height:57px;
+    padding:6px 3px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+    max-width:26px;
+    max-height:26px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+    font-size:8px;
+    letter-spacing:.03em;
   }
   .settingsMenu .menuTitle{
     font-size:18px;

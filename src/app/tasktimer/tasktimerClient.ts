@@ -910,6 +910,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (!targetId) return;
     const t = tasks.find((x) => String(x.id || "") === targetId);
     if (!t) return;
+    if (focusModeTaskId || ((els.focusModeScreen as HTMLElement | null)?.style.display !== "none" && (els.focusModeScreen as HTMLElement | null)?.getAttribute("aria-hidden") !== "true")) {
+      closeFocusMode();
+    }
     const mode = taskModeOf(t);
     if (currentMode !== mode) applyMainMode(mode);
     applyAppPage("tasks", { syncUrl: "push" });
@@ -6029,7 +6032,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       checkpointAutoResetDirty = false;
       save();
       render();
-      return;
+      if (focusModeTaskId) {
+        const ft = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
+        if (ft) {
+          // Force a full checkpoint marker re-layout after auto-reset/log, since the dial
+          // update was skipped in the same tick that triggered the reset.
+          focusCheckpointSig = "";
+          updateFocusDial(ft);
+        }
+      }
     }
 
     if (focusModeTaskId) {

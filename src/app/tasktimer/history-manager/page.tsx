@@ -18,6 +18,7 @@ export default function HistoryManagerPage() {
     <>
       <div className="wrap" id="app" aria-label="TaskTimer History Manager">
         <HistoryManagerScreen />
+        <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
       </div>
       <ConfirmOverlay />
     </>

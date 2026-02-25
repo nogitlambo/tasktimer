@@ -285,6 +285,7 @@ export default function UserGuideScreen({ onBack }: Props) {
           </div>
         </div>
       </div>
+      <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>
   );
 }
