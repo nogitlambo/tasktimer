@@ -2573,6 +2573,31 @@ optgroup{
   font-size:12px;
   line-height:1.4;
 }
+#app[aria-label="TaskTimer Settings"] .settingsAuthNotice{
+  border:1px solid rgba(121,226,255,.22);
+  background: rgba(53,232,255,.06);
+  color: rgba(224,248,255,.96);
+  padding:10px 12px;
+  font-size:12px;
+  line-height:1.4;
+}
+#app[aria-label="TaskTimer Settings"] .settingsAuthError{
+  border:1px solid rgba(255,77,77,.30);
+  background: rgba(255,77,77,.08);
+  color: #ffb1b1;
+  padding:10px 12px;
+  font-size:12px;
+  line-height:1.4;
+}
+#app[aria-label="TaskTimer Settings"] .settingsAuthActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-start;
+}
+#app[aria-label="TaskTimer Settings"] .settingsAuthActions .btn{
+  min-width:148px;
+}
 #app[aria-label="TaskTimer Settings"] .settingsInlineStack{
   display:flex;
   flex-direction:column;

@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { firebaseAuth } from "@/lib/firebaseClient";
+import {
+  isSignInWithEmailLink,
+  onAuthStateChanged,
+  sendSignInLinkToEmail,
+  signInWithEmailLink,
+  signOut,
+} from "firebase/auth";
 
 type SettingsPaneKey =
   | "general"
@@ -19,6 +27,15 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
       <span className="settingsMenuItemText">{label}</span>
     </>
   );
+}
+
+const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
+function getErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === "object" && "message" in err) {
+    const msg = (err as { message?: unknown }).message;
+    if (typeof msg === "string" && msg.trim()) return msg;
+  }
+  return fallback;
 }
 
 function SettingsNavTile({
@@ -72,6 +89,12 @@ export default function SettingsPanel() {
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackType, setFeedbackType] = useState("");
   const [feedbackDetails, setFeedbackDetails] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authStatus, setAuthStatus] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
+  const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -87,6 +110,161 @@ export default function SettingsPanel() {
   );
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const canSubmitFeedback = isValidFeedbackEmail && !!feedbackType && feedbackDetails.trim().length > 0;
+  const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "";
+      if (saved && !authEmail) setAuthEmail(saved);
+    } catch {
+      // ignore
+    }
+  }, [authEmail]);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(firebaseAuth, (user) => {
+      setAuthUserEmail(user?.email || null);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const href = window.location.href;
+    const emailLink = isSignInWithEmailLink(firebaseAuth, href);
+    setIsEmailLinkFlow(emailLink);
+    if (!emailLink) return;
+
+    const complete = async () => {
+      let email = "";
+      try {
+        email = (localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "").trim();
+      } catch {
+        email = "";
+      }
+      if (!email) {
+        setAuthStatus("Email sign-in link detected. Enter your email below, then click Complete Sign-In.");
+        return;
+      }
+      setAuthBusy(true);
+      setAuthError("");
+      setAuthStatus("Completing sign-in...");
+      try {
+        await signInWithEmailLink(firebaseAuth, email, href);
+        try {
+          localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        setAuthEmail(email);
+        setAuthStatus("Signed in successfully.");
+        try {
+          const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
+          window.history.replaceState({}, "", cleanUrl);
+        } catch {
+          // ignore
+        }
+        setIsEmailLinkFlow(false);
+      } catch (err: unknown) {
+        setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
+        setAuthStatus("");
+      } finally {
+        setAuthBusy(false);
+      }
+    };
+    void complete();
+  }, []);
+
+  const getEmailLinkContinueUrl = () => {
+    if (typeof window !== "undefined") {
+      const origin = window.location.origin;
+      if (/^https?:/i.test(origin)) return `${origin}/tasktimer/settings`;
+    }
+    return "https://tasktimer-prod.firebaseapp.com/tasktimer/settings";
+  };
+
+  const handleSendEmailLink = async () => {
+    const email = authEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthError("Enter a valid email address.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Sending sign-in link...");
+    try {
+      await sendSignInLinkToEmail(firebaseAuth, email, {
+        url: getEmailLinkContinueUrl(),
+        handleCodeInApp: true,
+      });
+      try {
+        localStorage.setItem(EMAIL_LINK_STORAGE_KEY, email);
+      } catch {
+        // ignore
+      }
+      setAuthStatus("Sign-in link sent. Open the link from your email on this device to complete sign-in.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not send sign-in link."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleCompleteEmailLink = async () => {
+    if (typeof window === "undefined") return;
+    const href = window.location.href;
+    if (!isSignInWithEmailLink(firebaseAuth, href)) {
+      setAuthError("No email sign-in link detected in this page URL.");
+      setAuthStatus("");
+      return;
+    }
+    const email = authEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthError("Enter the same email address used to request the sign-in link.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Completing sign-in...");
+    try {
+      await signInWithEmailLink(firebaseAuth, email, href);
+      try {
+        localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+      setAuthStatus("Signed in successfully.");
+      try {
+        const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
+        window.history.replaceState({}, "", cleanUrl);
+      } catch {
+        // ignore
+      }
+      setIsEmailLinkFlow(false);
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("");
+    try {
+      await signOut(firebaseAuth);
+      setAuthStatus("Signed out.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not sign out."));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
 
   return (
     <div className="menu settingsMenu settingsDashboardShell dashboardShell" role="dialog" aria-modal="true" aria-label="Menu">
@@ -141,21 +319,68 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
-            subtitle="Account and sign-in options for TaskTimer."
+            subtitle="Passwordless email sign-in for TaskTimer."
           >
-            <div className="settingsActionGrid settingsActionGridStack">
-              <button className="menuItem settingsAuthItem" id="signUpBtn" type="button">
-                Sign Up
-              </button>
-              <button className="menuItem settingsAuthItem" id="signInEmailBtn" type="button">
-                Sign in with email
-              </button>
-              <button className="menuItem settingsAuthItem" id="signInGoogleBtn" type="button">
-                Sign in with Google
-              </button>
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Email Link Sign-In</div>
+                </div>
+                <div className="field">
+                  <label htmlFor="authEmailInput">Email Address</label>
+                  <input
+                    id="authEmailInput"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@example.com"
+                    value={authEmail}
+                    onChange={(e) => {
+                      setAuthEmail(e.target.value);
+                      setAuthError("");
+                    }}
+                  />
+                </div>
+                {authUserEmail ? (
+                  <div className="settingsDetailNote">Signed in as: {authUserEmail}</div>
+                ) : null}
+                {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
+                {authError ? <div className="settingsAuthError">{authError}</div> : null}
+                <div className="settingsInlineFooter settingsAuthActions">
+                  <button
+                    className="btn btn-accent"
+                    id="signInEmailBtn"
+                    type="button"
+                    disabled={authBusy || !isValidAuthEmail}
+                    onClick={handleSendEmailLink}
+                  >
+                    Send Sign-In Link
+                  </button>
+                  {isEmailLinkFlow ? (
+                    <button
+                      className="btn btn-ghost"
+                      id="signUpBtn"
+                      type="button"
+                      disabled={authBusy || !isValidAuthEmail}
+                      onClick={handleCompleteEmailLink}
+                    >
+                      Complete Sign-In
+                    </button>
+                  ) : null}
+                  <button
+                    className="btn btn-ghost"
+                    id="signInGoogleBtn"
+                    type="button"
+                    disabled={authBusy || !authUserEmail}
+                    onClick={handleSignOut}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </section>
             </div>
             <div className="settingsDetailNote">
-              Account actions stay available here while keeping preferences and data tools separate.
+              Open the sign-in link from your email on the same device to complete passwordless sign-in.
             </div>
           </SettingsDetailPane>
 
