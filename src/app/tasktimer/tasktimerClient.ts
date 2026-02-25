@@ -809,63 +809,81 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     task.milestones.forEach((m) => {
       if (!m) return;
       if (!m.id) m.id = cryptoRandomId();
-      if (!Number.isFinite(+m.createdSeq) || (+m.createdSeq || 0) <= 0) {
-        m.createdSeq = nextSeq++;
+      const mAny = m as any;
+      if (!Number.isFinite(+mAny.createdSeq) || (+mAny.createdSeq || 0) <= 0) {
+        mAny.createdSeq = nextSeq++;
       }
-      maxSeq = Math.max(maxSeq, +m.createdSeq || 0);
+      maxSeq = Math.max(maxSeq, +mAny.createdSeq || 0);
     });
-    const currentNext = Number.isFinite(+task.presetIntervalNextSeq) ? Math.max(1, Math.floor(+task.presetIntervalNextSeq!)) : 1;
-    task.presetIntervalNextSeq = Math.max(currentNext, maxSeq + 1);
-    if (task.presetIntervalLastMilestoneId) {
-      const exists = task.milestones.some((m) => String(m.id || "") === String(task.presetIntervalLastMilestoneId || ""));
-      if (!exists) task.presetIntervalLastMilestoneId = null;
+    const taskAny = task as any;
+    const currentNext = Number.isFinite(+taskAny.presetIntervalNextSeq)
+      ? Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq))
+      : 1;
+    taskAny.presetIntervalNextSeq = Math.max(currentNext, maxSeq + 1);
+    if (taskAny.presetIntervalLastMilestoneId) {
+      const exists = task.milestones.some((m) => String(m.id || "") === String(taskAny.presetIntervalLastMilestoneId || ""));
+      if (!exists) taskAny.presetIntervalLastMilestoneId = null;
     }
   }
 
   function hasValidPresetInterval(task: Task | null | undefined) {
-    return !!task && Number.isFinite(+task.presetIntervalValue) && +task.presetIntervalValue > 0;
+    const taskAny = task as any;
+    return !!task && Number.isFinite(+taskAny?.presetIntervalValue) && +taskAny.presetIntervalValue > 0;
+  }
+
+  function getPresetIntervalValueNum(task: Task | null | undefined) {
+    const taskAny = task as any;
+    return Number.isFinite(+taskAny?.presetIntervalValue) ? Math.max(0, +taskAny.presetIntervalValue) : 0;
+  }
+
+  function getPresetIntervalNextSeqNum(task: Task | null | undefined) {
+    const taskAny = task as any;
+    return Number.isFinite(+taskAny?.presetIntervalNextSeq) ? Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq)) : 1;
   }
 
   function getPresetIntervalLastMilestone(task: Task | null | undefined) {
     if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return null;
+    const taskAny = task as any;
     ensureMilestoneIdentity(task);
-    const lastId = String(task.presetIntervalLastMilestoneId || "");
+    const lastId = String(taskAny.presetIntervalLastMilestoneId || "");
     let match = task.milestones.find((m) => String(m.id || "") === lastId) || null;
     if (match) return match;
     match =
       task.milestones
         .slice()
-        .sort((a, b) => (+a.createdSeq || 0) - (+b.createdSeq || 0))
+        .sort((a, b) => (+((a as any).createdSeq) || 0) - (+((b as any).createdSeq) || 0))
         .pop() || null;
-    if (match?.id) task.presetIntervalLastMilestoneId = String(match.id);
+    if (match?.id) taskAny.presetIntervalLastMilestoneId = String(match.id);
     return match;
   }
 
   function addMilestoneWithCurrentPreset(task: Task) {
+    const taskAny = task as any;
     task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
     ensureMilestoneIdentity(task);
-    const interval = Math.max(0, +task.presetIntervalValue || 0);
+    const interval = Math.max(0, +taskAny.presetIntervalValue || 0);
     const last = getPresetIntervalLastMilestone(task);
     const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
-    const nextSeq = Math.max(1, Math.floor(+task.presetIntervalNextSeq || 1));
+    const nextSeq = Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq || 1));
     const milestone = { id: cryptoRandomId(), createdSeq: nextSeq, hours: nextHours, description: "" };
     task.milestones.push(milestone);
-    task.presetIntervalLastMilestoneId = milestone.id;
-    task.presetIntervalNextSeq = nextSeq + 1;
+    taskAny.presetIntervalLastMilestoneId = milestone.id;
+    taskAny.presetIntervalNextSeq = nextSeq + 1;
     task.milestones = sortMilestones(task.milestones);
   }
 
   function regeneratePresetIntervalMilestones(task: Task) {
     if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return;
     if (!hasValidPresetInterval(task)) return;
+    const taskAny = task as any;
     ensureMilestoneIdentity(task);
-    const interval = Math.max(0, +task.presetIntervalValue || 0);
-    const ordered = task.milestones.slice().sort((a, b) => (+a.createdSeq || 0) - (+b.createdSeq || 0));
+    const interval = Math.max(0, +taskAny.presetIntervalValue || 0);
+    const ordered = task.milestones.slice().sort((a, b) => (+((a as any).createdSeq) || 0) - (+((b as any).createdSeq) || 0));
     ordered.forEach((m, idx) => {
       m.hours = interval * (idx + 1);
     });
     const last = ordered[ordered.length - 1];
-    task.presetIntervalLastMilestoneId = last?.id ? String(last.id) : null;
+    taskAny.presetIntervalLastMilestoneId = last?.id ? String(last.id) : null;
     task.milestones = sortMilestones(ordered);
   }
 
@@ -1277,9 +1295,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ? t.finalCheckpointAction
             : "continue",
         presetIntervalsEnabled: !!t.presetIntervalsEnabled,
-        presetIntervalValue: Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0,
+        presetIntervalValue: getPresetIntervalValueNum(t),
         presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
-        presetIntervalNextSeq: Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1,
+        presetIntervalNextSeq: getPresetIntervalNextSeqNum(t),
       })),
       history: historyByTaskId || {},
     };
@@ -1311,9 +1329,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
               ? t.finalCheckpointAction
               : "continue",
           presetIntervalsEnabled: !!t.presetIntervalsEnabled,
-          presetIntervalValue: Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0,
+          presetIntervalValue: getPresetIntervalValueNum(t),
           presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
-          presetIntervalNextSeq: Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1,
+          presetIntervalNextSeq: getPresetIntervalNextSeqNum(t),
         },
       ],
       history: taskId ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] } : {},
@@ -1378,9 +1396,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     out.finalCheckpointAction =
       t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
     out.presetIntervalsEnabled = !!t.presetIntervalsEnabled;
-    out.presetIntervalValue = Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue) : 0;
+    out.presetIntervalValue = getPresetIntervalValueNum(t as any);
     out.presetIntervalLastMilestoneId = t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null;
-    out.presetIntervalNextSeq = Number.isFinite(+t.presetIntervalNextSeq) ? Math.max(1, Math.floor(+t.presetIntervalNextSeq)) : 1;
+    out.presetIntervalNextSeq = getPresetIntervalNextSeqNum(t as any);
     ensureMilestoneIdentity(out);
     return out;
   }
@@ -4247,7 +4265,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, !!t.presetIntervalsEnabled);
     }
     if (els.editPresetIntervalInput) {
-      const nextValue = Number.isFinite(+t.presetIntervalValue) ? Math.max(0, +t.presetIntervalValue || 0) : 0;
+      const nextValue = getPresetIntervalValueNum(t);
       if (els.editPresetIntervalInput.value !== String(nextValue)) els.editPresetIntervalInput.value = String(nextValue);
       els.editPresetIntervalInput.disabled = !t.milestonesEnabled || !t.presetIntervalsEnabled;
     }
@@ -4338,7 +4356,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       presetIntervalsEnabled: !!isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null),
       presetIntervalValue: Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0),
       presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
-      presetIntervalNextSeq: Number.isFinite(+task.presetIntervalNextSeq) ? Math.max(1, Math.floor(+task.presetIntervalNextSeq)) : 1,
+      presetIntervalNextSeq: getPresetIntervalNextSeqNum(task),
     });
   }
 
@@ -5735,7 +5753,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       } else {
         t.milestones = t.milestones || [];
         ensureMilestoneIdentity(t);
-        const nextSeq = Math.max(1, Math.floor(+t.presetIntervalNextSeq || 1));
+        const nextSeq = getPresetIntervalNextSeqNum(t);
         t.milestones.push({ id: cryptoRandomId(), createdSeq: nextSeq, hours: 0, description: "" });
         t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
         t.presetIntervalNextSeq = nextSeq + 1;
