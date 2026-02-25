@@ -72,17 +72,21 @@ export default function EditTaskOverlay() {
           </div>
         </div>
 
-        <div className="toggleRow">
-          <span>Time Checkpoints</span>
-          <div className="switch" id="msToggle" role="switch" aria-checked="false" />
-        </div>
-
-        <div className="milestones" id="msArea">
-          <div id="msList" />
-          <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-            + Add Timer Checkpoint
-          </button>
-        </div>
+        <details className="milestones" id="msArea">
+          <summary className="milestonesSummary" role="button">
+            <span className="milestonesSummaryPrimary">Time Checkpoints</span>
+            <span className="milestonesSummaryControls">
+              <div className="switch" id="msToggle" role="switch" aria-checked="false" />
+              <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
+            </span>
+          </summary>
+          <div className="milestonesBody">
+            <div id="msList" />
+            <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+              + Add Timer Checkpoint
+            </button>
+          </div>
+        </details>
 
         <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
           <div className="checkpointAlertsTitle">Timer Settings</div>
@@ -124,13 +128,15 @@ export default function EditTaskOverlay() {
           </div>
           <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointToastModeField">
             <label htmlFor="editCheckpointToastModeSelect">Toast Alert Behaviour</label>
-            <select id="editCheckpointToastModeSelect" defaultValue="auto3s">
-              <option value="auto3s">Dismiss toast alert after 3 seconds (default)</option>
+            <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
+              <option value="auto5s">Dismiss toast alert after 5 seconds (default)</option>
               <option value="manual">Wait for user to dismiss toast alert</option>
             </select>
           </div>
           <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
         </div>
+
+        <div className="editValidationError" id="editValidationError" aria-live="polite" />
 
         <div className="footerBtns">
           <button className="btn btn-ghost" id="cancelEditBtn" type="button">

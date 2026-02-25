@@ -30,11 +30,22 @@ export default function FocusModeScreen() {
                 00:00:00
               </div>
               <div className="focusDialControls">
-                <button className="btn btn-accent small" id="focusStartBtn" type="button">
-                  Start
-                </button>
-                <button className="btn btn-warn small" id="focusStopBtn" type="button">
-                  Stop
+                <div className="focusDialRunControls">
+                  <button className="btn btn-accent small" id="focusStartBtn" type="button">
+                    Start
+                  </button>
+                  <button className="btn btn-warn small" id="focusStopBtn" type="button">
+                    Stop
+                  </button>
+                </div>
+                <button
+                  className="iconBtn"
+                  id="focusResetBtn"
+                  type="button"
+                  title="Reset"
+                  aria-label="Reset"
+                >
+                  &#10227;
                 </button>
               </div>
             </div>
@@ -43,8 +54,15 @@ export default function FocusModeScreen() {
       </div>
       <div className="focusCheckpointToggleTop">
         <div className="focusCheckpointToggleRow">
-          <span>Show checkpoints</span>
+          <span>Show Checkpoint Markers</span>
           <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
+        </div>
+        <div className="focusCheckpointLog" id="focusCheckpointLog" aria-live="polite">
+          <div className="focusCheckpointLogTitle">Completed Checkpoints</div>
+          <div className="focusCheckpointLogEmpty" id="focusCheckpointLogEmpty">
+            No checkpoints completed yet
+          </div>
+          <div className="focusCheckpointLogList" id="focusCheckpointLogList" />
         </div>
       </div>
       <div className="focusInsights" id="focusInsights">

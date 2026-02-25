@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimer.css','utf8');['.focusDialProgress{','.focusDialInner{','@media (max-width: 640px)','@media (max-width: 420px)'].forEach(k= i=0; while((i=s.indexOf(k,i))!==-1){console.log('\n---'+k+' @ '+i+'---'); console.log(s.slice(i,i+500)); i+=k.length;}}); 

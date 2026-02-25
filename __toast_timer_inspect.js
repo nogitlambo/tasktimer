@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimerClient.ts','utf8');['checkpointToastAutoCloseTimer','function showNextCheckpointToast()','function dismissCheckpointToast('].forEach(k= i=s.indexOf(k); console.log('\n---'+k+'---\n'+s.slice(i-120,i+520));}); 

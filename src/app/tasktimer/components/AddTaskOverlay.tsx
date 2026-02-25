@@ -38,15 +38,68 @@ export default function AddTaskOverlay() {
               </button>
             </div>
           </div>
-          <div className="toggleRow" style={{ marginTop: 0 }}>
-            <span>Time Checkpoints</span>
-            <div className="switch" id="addTaskMsToggle" role="switch" aria-checked="false" />
+          <details className="milestones" id="addTaskMsArea">
+            <summary className="milestonesSummary" role="button">
+              <span className="milestonesSummaryPrimary">Time Checkpoints</span>
+              <span className="milestonesSummaryControls">
+                <div className="switch" id="addTaskMsToggle" role="switch" aria-checked="false" />
+                <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
+              </span>
+            </summary>
+            <div className="milestonesBody">
+              <div id="addTaskMsList" />
+              <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+                + Add Timer Checkpoint
+              </button>
+            </div>
+          </details>
+
+          <div className="checkpointAlertsGroup" id="addTaskTimerSettingsGroup">
+            <div className="checkpointAlertsTitle">Timer Settings</div>
+            <div className="toggleRow" id="addTaskPresetIntervalsToggleRow">
+              <span>Use Preset Intervals</span>
+              <div className="switch" id="addTaskPresetIntervalsToggle" role="switch" aria-checked="false" />
+            </div>
+            <div className="field checkpointAlertSoundModeField isHidden" id="addTaskPresetIntervalField">
+              <label htmlFor="addTaskPresetIntervalInput">Preset interval</label>
+              <input id="addTaskPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
+            </div>
+            <p className="checkpointAlertsNote" id="addTaskPresetIntervalNote" style={{ display: "none" }} />
+            <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
+              <label htmlFor="addTaskFinalCheckpointActionSelect">When final checkpoint is reached</label>
+              <select id="addTaskFinalCheckpointActionSelect" defaultValue="continue">
+                <option value="continue">Continue to run timer until stopped by user (default)</option>
+                <option value="resetLog">Stop/reset timer and save session to history</option>
+                <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
+              </select>
+            </div>
           </div>
-          <div className="milestones" id="addTaskMsArea">
-            <div id="addTaskMsList" />
-            <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-              + Add Timer Checkpoint
-            </button>
+
+          <div className="checkpointAlertsGroup" id="addTaskCheckpointAlertsGroup">
+            <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
+            <div className="toggleRow" id="addTaskCheckpointSoundToggleRow">
+              <span>Sound Alert</span>
+              <div className="switch" id="addTaskCheckpointSoundToggle" role="switch" aria-checked="false" />
+            </div>
+            <div className="field checkpointAlertSoundModeField isHidden" id="addTaskCheckpointSoundModeField">
+              <label htmlFor="addTaskCheckpointSoundModeSelect">Sound Alert Behaviour</label>
+              <select id="addTaskCheckpointSoundModeSelect" defaultValue="once">
+                <option value="once">Sound alert once only (default)</option>
+                <option value="repeat">Wait for user to dismiss sound alert</option>
+              </select>
+            </div>
+            <div className="toggleRow" id="addTaskCheckpointToastToggleRow">
+              <span>Toast Alert</span>
+              <div className="switch" id="addTaskCheckpointToastToggle" role="switch" aria-checked="false" />
+            </div>
+            <div className="field checkpointAlertSoundModeField isHidden" id="addTaskCheckpointToastModeField">
+              <label htmlFor="addTaskCheckpointToastModeSelect">Toast Alert Behaviour</label>
+              <select id="addTaskCheckpointToastModeSelect" defaultValue="auto5s">
+                <option value="auto5s">Dismiss toast alert after 5 seconds (default)</option>
+                <option value="manual">Wait for user to dismiss toast alert</option>
+              </select>
+            </div>
+            <p className="checkpointAlertsNote" id="addTaskCheckpointAlertsNote" style={{ display: "none" }} />
           </div>
 
           <div className="footerBtns" style={{ justifyContent: "center" }}>

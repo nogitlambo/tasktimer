@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimer.css','utf8'); const i=s.indexOf('#editOverlay .modal'); const j=s.indexOf('.footerBtns', Math.max(0,i-2000)); console.log('editOverlay', s.slice(i,i+380)); console.log('\nfooterBtns', s.slice(j,j+420));  

@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimerClient.ts','utf8');const i=s.indexOf('openOverlay(els.confirmOverlay');console.log(i); if(i console.log(s.slice(i-240,i+260));  

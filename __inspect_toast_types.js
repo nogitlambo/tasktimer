@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimerClient.ts','utf8'); const a=s.indexOf('type CheckpointToast'); const b=s.indexOf('function enqueueCheckpointToast'); console.log(s.slice(Math.max(0,a-200), b+2200));  

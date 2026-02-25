@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimer.css','utf8');const i=s.indexOf('.focusCheckpointLabelDesc', 2400); console.log(s.slice(i-120,i+220)); const j=s.indexOf('.focusCheckpointLabelDesc', i+1); console.log('\n2nd:\n'+s.slice(j-160,j+260)); 
