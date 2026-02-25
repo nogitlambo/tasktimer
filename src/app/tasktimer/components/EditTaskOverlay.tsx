@@ -34,18 +34,27 @@ export default function EditTaskOverlay() {
           <input type="text" id="editName" />
         </div>
 
-        <div className="unitRow" id="msUnitRow">
-          <span>Task Timer Format</span>
-          <div className="unitButtons">
-            <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
-              Day
-            </button>
-            <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
-              Hour
-            </button>
-            <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
-              Minute
-            </button>
+        <div className="field" id="editTimerTypeField">
+          <div className="timerTypeRow">
+            <span>Timer Type</span>
+            <div className="timerTypePills" role="group" aria-label="Timer Type">
+              <button
+                className="timerTypePill isOn"
+                id="editTimerTypeTimerBtn"
+                type="button"
+                aria-pressed="true"
+              >
+                Timer
+              </button>
+              <button
+                className="timerTypePill"
+                id="editTimerTypeCountdownBtn"
+                type="button"
+                aria-pressed="false"
+              >
+                Countdown
+              </button>
+            </div>
           </div>
         </div>
 
@@ -82,6 +91,20 @@ export default function EditTaskOverlay() {
               <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
             </span>
           </summary>
+          <div className="unitRow" id="msUnitRow">
+            <span>Task Timer Format</span>
+            <div className="unitButtons">
+              <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
+                Day
+              </button>
+              <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
+                Hour
+              </button>
+              <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
+                Minute
+              </button>
+            </div>
+          </div>
           <div className="milestonesBody">
             <div id="msList" />
             <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>

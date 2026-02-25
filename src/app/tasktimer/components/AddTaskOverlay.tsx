@@ -24,18 +24,17 @@ export default function AddTaskOverlay() {
               <div className="addTaskNameList" id="addTaskNamePresetList" />
             </div>
           </div>
-          <div className="unitRow" id="addTaskMsUnitRow">
-            <span>Task Timer Format</span>
-            <div className="unitButtons">
-              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
-                Day
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
-                Hour
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
-                Minute
-              </button>
+          <div className="field" id="addTaskTimerTypeField">
+            <div className="timerTypeRow">
+              <span>Timer Type</span>
+              <div className="timerTypePills" role="group" aria-label="Timer Type">
+                <button className="timerTypePill isOn" id="addTaskTimerTypeTimerBtn" type="button" aria-pressed="true">
+                  Timer
+                </button>
+                <button className="timerTypePill" id="addTaskTimerTypeCountdownBtn" type="button" aria-pressed="false">
+                  Countdown
+                </button>
+              </div>
             </div>
           </div>
           <details className="milestones" id="addTaskMsArea">
@@ -46,6 +45,20 @@ export default function AddTaskOverlay() {
                 <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
               </span>
             </summary>
+            <div className="unitRow" id="addTaskMsUnitRow">
+              <span>Task Timer Format</span>
+              <div className="unitButtons">
+                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
+                  Day
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
+                  Hour
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
+                  Minute
+                </button>
+              </div>
+            </div>
             <div className="milestonesBody">
               <div id="addTaskMsList" />
               <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>

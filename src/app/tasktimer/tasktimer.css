@@ -4985,8 +4985,79 @@ body[data-theme="light"] input[type="number"]{
 .checkpointAlertsGroup .toggleRow{
   margin:0;
 }
+.timerTypeRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.timerTypePills{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.timerTypePill{
+  min-width:84px;
+  min-height:30px;
+  padding:6px 10px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font-family: var(--font-tight);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+  border-radius:0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.timerTypePill.isOn{
+  border-color: rgba(53,232,255,.38);
+  background: linear-gradient(180deg, rgba(53,232,255,.14), rgba(255,255,255,.02));
+  color:#eafcff;
+  box-shadow: inset 0 0 0 1px rgba(53,232,255,.10);
+}
+#editOverlay .timerTypePill,
+#addTaskOverlay .timerTypePill{
+  min-width:74px;
+  min-height:26px;
+  padding:4px 8px;
+  font-size:10px;
+}
 .checkpointAlertsGroup .toggleRow + .toggleRow{
   margin-top:4px;
+}
+#msUnitRow,
+#addTaskMsUnitRow{
+  display:none;
+}
+#msArea.on > #msUnitRow,
+#addTaskMsArea.on > #addTaskMsUnitRow{
+  display:flex;
+}
+#msArea > #msUnitRow,
+#addTaskMsArea > #addTaskMsUnitRow{
+  margin:8px 0 0;
+}
+details.milestones:not([open]) > #msUnitRow,
+details.milestones:not([open]) > #addTaskMsUnitRow{
+  display:none;
+}
+details.milestones.on:not([open]) > #msUnitRow,
+details.milestones.on:not([open]) > #addTaskMsUnitRow{
+  display:flex;
+}
+#msUnitRow .unitButtons,
+#addTaskMsUnitRow .unitButtons{
+  gap:6px;
+}
+#msUnitRow .unitBtn,
+#addTaskMsUnitRow .unitBtn{
+  min-width:74px;
+  min-height:26px;
+  padding:4px 8px;
+  font-size:10px;
 }
 .checkpointAlertSoundModeField{
   margin-top:6px;
@@ -5390,4 +5461,24 @@ body[data-theme="light"] optgroup{
 #confirmOverlay .modal{
   position: relative;
   z-index: 1;
+}
+@keyframes taskNewGlowFade {
+  0% {
+    box-shadow:
+      0 0 0 1px rgba(53, 232, 255, 0.65),
+      0 0 0 1px rgba(53, 232, 255, 0.35) inset,
+      0 0 20px rgba(53, 232, 255, 0.55),
+      0 0 36px rgba(53, 232, 255, 0.25);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(53, 232, 255, 0),
+      0 0 0 1px rgba(53, 232, 255, 0) inset,
+      0 0 0 rgba(53, 232, 255, 0),
+      0 0 0 rgba(53, 232, 255, 0);
+  }
+}
+
+.task.isNewTaskGlow {
+  animation: taskNewGlowFade 3s ease-out forwards;
 }

@@ -55,6 +55,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let destroyed = false;
   let tickTimeout: number | null = null;
   let tickRaf: number | null = null;
+  let newTaskHighlightTimer: number | null = null;
 
   const destroy = () => {
     destroyed = true;
@@ -4616,6 +4617,38 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     render();
   }
 
+  function jumpToTaskAndHighlight(taskId: string) {
+    if (!taskId) return;
+    window.setTimeout(() => {
+      const list = els.taskList as HTMLElement | null;
+      if (!list) return;
+      let taskEl: HTMLElement | null = null;
+      try {
+        const esc =
+          typeof (window as any).CSS !== "undefined" && typeof (window as any).CSS.escape === "function"
+            ? (window as any).CSS.escape(taskId)
+            : taskId.replace(/["\\]/g, "\\$&");
+        taskEl = list.querySelector(`.task[data-task-id="${esc}"]`) as HTMLElement | null;
+      } catch {
+        taskEl = list.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
+      }
+      if (!taskEl) return;
+      try {
+        taskEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      } catch {
+        taskEl.scrollIntoView();
+      }
+      taskEl.classList.remove("isNewTaskGlow");
+      void taskEl.offsetWidth;
+      taskEl.classList.add("isNewTaskGlow");
+      if (newTaskHighlightTimer != null) window.clearTimeout(newTaskHighlightTimer);
+      newTaskHighlightTimer = window.setTimeout(() => {
+        taskEl?.classList.remove("isNewTaskGlow");
+        newTaskHighlightTimer = null;
+      }, 3000);
+    }, 0);
+  }
+
   function wireEvents() {
     const setAddTaskError = (msg: string) => {
       if (!els.addTaskError) return;
@@ -4950,6 +4983,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       closeAddTaskModal();
       save();
       render();
+      jumpToTaskAndHighlight(String(newTask.id || ""));
     });
 
     on(els.taskList, "click", (e: any) => {
