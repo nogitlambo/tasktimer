@@ -2598,6 +2598,88 @@ optgroup{
 #app[aria-label="TaskTimer Settings"] .settingsAuthActions .btn{
   min-width:148px;
 }
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyBlock{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyBtn{
+  min-height:28px;
+  padding:4px 10px;
+  font-size:10px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyValue{
+  font-family: var(--font-tight);
+  font-size:12px;
+  letter-spacing:.08em;
+  color:#ffffff;
+  word-break: break-all;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyRow{
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:8px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyActions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyActionBtn{
+  min-height:24px;
+  padding:3px 8px;
+  font-size:10px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyRemoveBtn{
+  border-color: rgba(255,77,77,.28);
+  color:#ffb1b1;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyCopyStatus{
+  font-size:11px;
+  color: rgba(190,240,255,.88);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmOverlay{
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+  z-index: 180;
+  padding: 14px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal{
+  width: min(420px, calc(100vw - 28px));
+  background: #0d0f13;
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmTitle{
+  margin: 0 0 8px;
+  font-family: var(--font-tight);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(228,248,255,.96);
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmText{
+  margin: 0;
+  color: rgba(188,214,230,.86);
+  font-size: 13px;
+  line-height: 1.45;
+}
+#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmBtns{
+  margin-top: 12px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsFriendKeyExpiry{
+  font-size:11px;
+  color: rgba(188,214,230,.82);
+}
 #app[aria-label="TaskTimer Settings"] .settingsInlineStack{
   display:flex;
   flex-direction:column;

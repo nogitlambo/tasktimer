@@ -30,12 +30,31 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 }
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
+const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
     if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
+}
+function generateFriendInviteKey(length = 24) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()-_=+?";
+  let out = "";
+  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+    const arr = new Uint32Array(length);
+    window.crypto.getRandomValues(arr);
+    for (let i = 0; i < length; i++) out += chars[arr[i] % chars.length];
+    return out;
+  }
+  for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+function formatRemainingTime(ms: number) {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  return `${mins}m ${String(secs).padStart(2, "0")}s`;
 }
 
 function SettingsNavTile({
@@ -94,7 +113,13 @@ export default function SettingsPanel() {
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
+  const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
+  const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
+  const [friendInviteKeyExpiresAt, setFriendInviteKeyExpiresAt] = useState<number | null>(null);
+  const [friendInviteKeyNow, setFriendInviteKeyNow] = useState<number>(Date.now());
+  const [friendKeyCopyStatus, setFriendKeyCopyStatus] = useState("");
+  const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -124,9 +149,73 @@ export default function SettingsPanel() {
   useEffect(() => {
     const unsub = onAuthStateChanged(firebaseAuth, (user) => {
       setAuthUserEmail(user?.email || null);
+      setAuthUserUid(user?.uid || null);
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!authUserUid) {
+      setFriendInviteKey(null);
+      setFriendInviteKeyExpiresAt(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
+      if (!raw) {
+        setFriendInviteKey(null);
+        setFriendInviteKeyExpiresAt(null);
+        return;
+      }
+      const parsed = JSON.parse(raw) as { key?: unknown; expiresAt?: unknown };
+      const key = typeof parsed.key === "string" ? parsed.key : "";
+      const expiresAt = typeof parsed.expiresAt === "number" ? parsed.expiresAt : Number(parsed.expiresAt || 0);
+      if (!key || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
+        setFriendInviteKey(null);
+        setFriendInviteKeyExpiresAt(null);
+        return;
+      }
+      setFriendInviteKey(key);
+      setFriendInviteKeyExpiresAt(expiresAt);
+      setFriendInviteKeyNow(Date.now());
+    } catch {
+      setFriendInviteKey(null);
+      setFriendInviteKeyExpiresAt(null);
+    }
+  }, [authUserUid]);
+
+  useEffect(() => {
+    if (!friendInviteKeyExpiresAt) return;
+    if (friendInviteKeyExpiresAt <= Date.now()) {
+      if (authUserUid) {
+        try {
+          localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
+        } catch {
+          // ignore
+        }
+      }
+      setFriendInviteKey(null);
+      setFriendInviteKeyExpiresAt(null);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setFriendInviteKeyNow(now);
+      if (friendInviteKeyExpiresAt <= now) {
+        if (authUserUid) {
+          try {
+            localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
+          } catch {
+            // ignore
+          }
+        }
+        setFriendInviteKey(null);
+        setFriendInviteKeyExpiresAt(null);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [friendInviteKeyExpiresAt, authUserUid]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -266,6 +355,47 @@ export default function SettingsPanel() {
     }
   };
 
+  const handleGenerateFriendKey = () => {
+    if (!authUserUid) return;
+    const key = generateFriendInviteKey(24);
+    const expiresAt = Date.now() + 60 * 60 * 1000;
+    setFriendInviteKey(key);
+    setFriendInviteKeyExpiresAt(expiresAt);
+    setFriendInviteKeyNow(Date.now());
+    try {
+      localStorage.setItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`, JSON.stringify({ key, expiresAt }));
+    } catch {
+      // ignore
+    }
+    setFriendKeyCopyStatus("");
+  };
+
+  const handleRemoveFriendKey = () => {
+    if (authUserUid) {
+      try {
+        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
+      } catch {
+        // ignore
+      }
+    }
+    setFriendInviteKey(null);
+    setFriendInviteKeyExpiresAt(null);
+    setFriendKeyCopyStatus("");
+    setShowRemoveFriendKeyConfirm(false);
+  };
+
+  const handleCopyFriendKey = async () => {
+    if (!friendInviteKey) return;
+    try {
+      await navigator.clipboard.writeText(friendInviteKey);
+      setFriendKeyCopyStatus("Copied");
+      window.setTimeout(() => setFriendKeyCopyStatus(""), 1500);
+    } catch {
+      setFriendKeyCopyStatus("Copy failed");
+      window.setTimeout(() => setFriendKeyCopyStatus(""), 1500);
+    }
+  };
+
   return (
     <div className="menu settingsMenu settingsDashboardShell dashboardShell" role="dialog" aria-modal="true" aria-label="Menu">
       <div className="menuHead">
@@ -343,7 +473,56 @@ export default function SettingsPanel() {
                     />
                   </div>
                 ) : null}
-                {authUserEmail ? <div className="settingsDetailNote">Signed in as: {authUserEmail}</div> : null}
+                {authUserEmail ? (
+                  <div className="settingsDetailNote">
+                    <div>Signed in as: {authUserEmail}</div>
+                    {authUserUid ? <div>UID: {authUserUid}</div> : null}
+                    {authUserUid ? (
+                      <div className="settingsFriendKeyBlock">
+                        <button
+                          className="btn btn-ghost small settingsFriendKeyBtn"
+                          type="button"
+                          onClick={handleGenerateFriendKey}
+                        >
+                          Generate Random Key
+                        </button>
+                        {friendInviteKey ? (
+                          <>
+                            <div className="settingsFriendKeyRow">
+                              <div className="settingsFriendKeyValue">{friendInviteKey}</div>
+                              <div className="settingsFriendKeyActions">
+                                <button
+                                  className="btn btn-ghost small settingsFriendKeyActionBtn"
+                                  type="button"
+                                  onClick={handleCopyFriendKey}
+                                >
+                                  Copy
+                                </button>
+                                  <button
+                                    className="btn btn-ghost small settingsFriendKeyActionBtn settingsFriendKeyRemoveBtn"
+                                    type="button"
+                                    onClick={() => setShowRemoveFriendKeyConfirm(true)}
+                                  >
+                                    Remove
+                                  </button>
+                              </div>
+                            </div>
+                            {friendKeyCopyStatus ? (
+                              <div className="settingsFriendKeyCopyStatus">{friendKeyCopyStatus}</div>
+                            ) : null}
+                            {friendInviteKeyExpiresAt ? (
+                              <div className="settingsFriendKeyExpiry">
+                                Expires in {formatRemainingTime(friendInviteKeyExpiresAt - friendInviteKeyNow)}
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <div className="settingsFriendKeyExpiry">No active key. Keys expire after 60 minutes.</div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 <div className="settingsInlineFooter settingsAuthActions">
@@ -384,6 +563,30 @@ export default function SettingsPanel() {
             {!authUserEmail ? (
               <div className="settingsDetailNote">
                 Open the email link on this device to complete sign-in.
+              </div>
+            ) : null}
+            {showRemoveFriendKeyConfirm ? (
+              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
+                <div
+                  className="modal settingsInlineConfirmModal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Remove Random Key"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="settingsInlineConfirmTitle">Remove Random Key</h3>
+                  <p className="settingsInlineConfirmText">
+                    Remove the current random key? This key will no longer be available to share.
+                  </p>
+                  <div className="footerBtns settingsInlineConfirmBtns">
+                    <button className="btn btn-ghost" type="button" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-accent" type="button" onClick={handleRemoveFriendKey}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : null}
           </SettingsDetailPane>
