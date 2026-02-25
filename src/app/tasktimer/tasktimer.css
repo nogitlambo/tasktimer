@@ -1555,6 +1555,20 @@ optgroup{
 #editOverlay .editValidationError.isOn{
   display:block;
 }
+#addTaskOverlay .addTaskValidationError{
+  display:none;
+  margin:8px 0 0;
+  padding:8px 10px;
+  border:1px solid rgba(255,77,77,.5);
+  background: rgba(255,77,77,.12);
+  color:#ffd3d3;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.25;
+}
+#addTaskOverlay .addTaskValidationError.isOn{
+  display:block;
+}
 #editOverlay #saveEditBtn:disabled{
   opacity:.45;
   cursor:not-allowed;
@@ -1632,6 +1646,10 @@ optgroup{
   content: "▾";
 }
 #editOverlay .milestones.isInvalid .milestonesSummary{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.16);
+}
+#addTaskOverlay .milestones.isInvalid .milestonesSummary{
   border-color: rgba(255,77,77,.55);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.16);
 }
@@ -1735,11 +1753,27 @@ optgroup{
   border-color: rgba(255,77,77,.55);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.14);
 }
+#addTaskOverlay .msRow.isInvalid{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.14);
+}
 #editOverlay #editPresetIntervalField.isInvalid{
   border-color: rgba(255,77,77,.55);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
 }
 #editOverlay #editPresetIntervalField.isInvalid input{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
+}
+#addTaskOverlay #addTaskPresetIntervalField.isInvalid{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
+}
+#addTaskOverlay #addTaskPresetIntervalField.isInvalid input{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
+}
+#addTaskOverlay #addTaskName.isInvalid{
   border-color: rgba(255,77,77,.55);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
 }

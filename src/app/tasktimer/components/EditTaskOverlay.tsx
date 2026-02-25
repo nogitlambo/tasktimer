@@ -27,6 +27,8 @@ export default function EditTaskOverlay() {
           </div>
         </div>
 
+        <div className="editValidationError" id="editValidationError" aria-live="polite" />
+
         <div className="field">
           <label>Task Name</label>
           <input type="text" id="editName" />
@@ -135,8 +137,6 @@ export default function EditTaskOverlay() {
           </div>
           <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
         </div>
-
-        <div className="editValidationError" id="editValidationError" aria-live="polite" />
 
         <div className="footerBtns">
           <button className="btn btn-ghost" id="cancelEditBtn" type="button">

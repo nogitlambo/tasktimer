@@ -1666,6 +1666,45 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.msList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
   }
 
+  function clearAddTaskValidationState() {
+    els.addTaskError?.classList.remove("isOn");
+    if (els.addTaskError) els.addTaskError.textContent = "";
+    els.addTaskName?.classList.remove("isInvalid");
+    els.addTaskMsArea?.classList.remove("isInvalid");
+    els.addTaskPresetIntervalField?.classList.remove("isInvalid");
+    els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
+  }
+
+  function applyAddTaskCheckpointValidationHighlights(opts?: {
+    name?: boolean;
+    checkpoints?: boolean;
+    checkpointRows?: boolean;
+    presetInterval?: boolean;
+  }) {
+    const options = opts || {};
+    els.addTaskName?.classList.toggle("isInvalid", !!options.name);
+    els.addTaskMsArea?.classList.toggle("isInvalid", !!options.checkpoints || !!options.checkpointRows);
+    els.addTaskPresetIntervalField?.classList.toggle("isInvalid", !!options.presetInterval);
+    const rows = Array.from(els.addTaskMsList?.querySelectorAll?.(".msRow") || []);
+    rows.forEach((row, idx) => {
+      const m = addTaskMilestones[idx];
+      const invalid = !!options.checkpointRows && !!m && !(Number(+m.hours) > 0);
+      row.classList.toggle("isInvalid", invalid);
+    });
+  }
+
+  function showAddTaskValidationError(
+    msg: string,
+    opts?: { name?: boolean; checkpoints?: boolean; checkpointRows?: boolean; presetInterval?: boolean }
+  ) {
+    clearAddTaskValidationState();
+    applyAddTaskCheckpointValidationHighlights(opts);
+    if (els.addTaskError) {
+      els.addTaskError.textContent = msg;
+      els.addTaskError.classList.add("isOn");
+    }
+  }
+
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
     if (!task) return;
     const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
@@ -4558,7 +4597,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function wireEvents() {
     const setAddTaskError = (msg: string) => {
-      if (els.addTaskError) els.addTaskError.textContent = msg;
+      if (!els.addTaskError) return;
+      els.addTaskError.textContent = msg;
+      els.addTaskError.classList.toggle("isOn", !!String(msg || "").trim());
     };
     const wireModeColorPair = (picker: HTMLInputElement | null, hex: HTMLInputElement | null, mode: MainMode) => {
       on(picker, "input", () => {
@@ -4604,6 +4645,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (els.addTaskMsArea && "open" in (els.addTaskMsArea as any)) {
         (els.addTaskMsArea as HTMLDetailsElement).open = false;
       }
+      clearAddTaskValidationState();
       syncAddTaskMilestonesUi();
     };
 
@@ -4705,7 +4747,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     on(els.addTaskName, "input", () => {
-      if ((els.addTaskName?.value || "").trim()) setAddTaskError("");
+      if ((els.addTaskName?.value || "").trim()) clearAddTaskValidationState();
       renderAddTaskNameMenu(els.addTaskName?.value || "");
       setAddTaskNameMenuOpen(true);
     });
@@ -4746,10 +4788,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.addTaskPresetIntervalInput, "input", () => {
       addTaskPresetIntervalValue = Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0);
+      clearAddTaskValidationState();
       syncAddTaskCheckpointAlertUi();
     });
     on(els.addTaskPresetIntervalInput, "change", () => {
       addTaskPresetIntervalValue = Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0);
+      clearAddTaskValidationState();
       syncAddTaskCheckpointAlertUi();
     });
     on(els.addTaskFinalCheckpointActionSelect, "change", () => {
@@ -4806,22 +4850,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         addTaskMilestones.push({ hours: 0, description: "" });
       }
       renderAddTaskMilestoneEditor();
+      clearAddTaskValidationState();
       syncAddTaskCheckpointAlertUi();
     });
 
     on(els.addTaskForm, "submit", (e: any) => {
       e.preventDefault();
+      clearAddTaskValidationState();
       const name = (els.addTaskName?.value || "").trim();
       if (!name) {
-        setAddTaskError("Task name is required");
+        showAddTaskValidationError("Task name is required", { name: true });
         return;
       }
       if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
-        setAddTaskError("Add at least 1 checkpoint when Time Checkpoints is enabled");
+        showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
         return;
       }
       if (addTaskMilestonesEnabled && hasNonPositiveCheckpoint(addTaskMilestones)) {
-        setAddTaskError("Checkpoint times must be greater than 0");
+        showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
+        return;
+      }
+      if (addTaskMilestonesEnabled && addTaskPresetIntervalsEnabled && !(Number(addTaskPresetIntervalValue) > 0)) {
+        showAddTaskValidationError("Enter a preset interval greater than 0", { presetInterval: true });
         return;
       }
       rememberCustomTaskName(name);
@@ -5529,6 +5579,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex == null || !tasks[editIndex]) return;
       const t = tasks[editIndex];
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
+      clearEditValidationState();
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
     });
@@ -5536,6 +5587,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (editIndex == null || !tasks[editIndex]) return;
       const t = tasks[editIndex];
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
+      clearEditValidationState();
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
     });
@@ -5689,6 +5741,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         t.presetIntervalNextSeq = nextSeq + 1;
       }
       renderMilestoneEditor(t);
+      clearEditValidationState();
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
     });

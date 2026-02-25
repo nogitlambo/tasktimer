@@ -5,6 +5,7 @@ export default function AddTaskOverlay() {
     <div className="overlay" id="addTaskOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Add Task">
         <h2>Add Task</h2>
+        <div className="addTaskValidationError" id="addTaskError" aria-live="polite" />
         <form id="addTaskForm" autoComplete="off" style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}>
           <div className="addTaskNameCombo" id="addTaskNameCombo">
             <input id="addTaskName" type="text" placeholder="Enter a task name or select from preset values" />
@@ -23,7 +24,6 @@ export default function AddTaskOverlay() {
               <div className="addTaskNameList" id="addTaskNamePresetList" />
             </div>
           </div>
-          <div id="addTaskError" aria-live="polite" style={{ color: "#ff5c6a", fontSize: 13, fontWeight: 700, minHeight: 18 }} />
           <div className="unitRow" id="addTaskMsUnitRow">
             <span>Task Timer Format</span>
             <div className="unitButtons">
