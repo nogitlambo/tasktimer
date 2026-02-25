@@ -147,7 +147,9 @@ export default function SettingsPanel() {
   }, [authEmail]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(firebaseAuth, (user) => {
+    const auth = firebaseAuth;
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
     });
@@ -219,8 +221,10 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const auth = firebaseAuth;
+    if (!auth) return;
     const href = window.location.href;
-    const emailLink = isSignInWithEmailLink(firebaseAuth, href);
+    const emailLink = isSignInWithEmailLink(auth, href);
     setIsEmailLinkFlow(emailLink);
     if (!emailLink) return;
 
@@ -239,7 +243,7 @@ export default function SettingsPanel() {
       setAuthError("");
       setAuthStatus("Completing sign-in...");
       try {
-        await signInWithEmailLink(firebaseAuth, email, href);
+        await signInWithEmailLink(auth, email, href);
         try {
           localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
         } catch {
@@ -273,6 +277,12 @@ export default function SettingsPanel() {
   };
 
   const handleSendEmailLink = async () => {
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
     const email = authEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setAuthError("Enter a valid email address.");
@@ -283,7 +293,7 @@ export default function SettingsPanel() {
     setAuthError("");
     setAuthStatus("Sending sign-in link...");
     try {
-      await sendSignInLinkToEmail(firebaseAuth, email, {
+      await sendSignInLinkToEmail(auth, email, {
         url: getEmailLinkContinueUrl(),
         handleCodeInApp: true,
       });
@@ -303,8 +313,14 @@ export default function SettingsPanel() {
 
   const handleCompleteEmailLink = async () => {
     if (typeof window === "undefined") return;
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
     const href = window.location.href;
-    if (!isSignInWithEmailLink(firebaseAuth, href)) {
+    if (!isSignInWithEmailLink(auth, href)) {
       setAuthError("No email sign-in link detected in this page URL.");
       setAuthStatus("");
       return;
@@ -319,7 +335,7 @@ export default function SettingsPanel() {
     setAuthError("");
     setAuthStatus("Completing sign-in...");
     try {
-      await signInWithEmailLink(firebaseAuth, email, href);
+      await signInWithEmailLink(auth, email, href);
       try {
         localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
       } catch {
@@ -342,11 +358,17 @@ export default function SettingsPanel() {
   };
 
   const handleSignOut = async () => {
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
     setAuthBusy(true);
     setAuthError("");
     setAuthStatus("");
     try {
-      await signOut(firebaseAuth);
+      await signOut(auth);
       setAuthStatus("Signed out.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not sign out."));
@@ -449,14 +471,23 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
-            subtitle="Continue with email using a passwordless sign-in link."
+            subtitle={authUserEmail ? "" : "Continue with email using a passwordless sign-in link."}
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Continue with Email</div>
-                </div>
+                {!authUserEmail ? (
+                  <>
+                    <div className="settingsInlineSectionHead">
+                      <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                      <div className="settingsInlineSectionTitle">Continue with Email</div>
+                    </div>
+                  </>
+                ) : null}
+                {authUserEmail ? (
+                  <div className="accountAvatarPlaceholder" aria-hidden="true">
+                    <div className="accountAvatarPlaceholderInner" />
+                  </div>
+                ) : null}
                 {!authUserEmail ? (
                   <div className="field">
                     <label htmlFor="authEmailInput">Email Address</label>

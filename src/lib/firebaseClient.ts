@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,7 +11,24 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const hasFirebaseClientConfig = Boolean(
+  firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId,
+);
 
-export const firebaseAuth = getAuth(app);
+function createFirebaseAuth(): Auth | null {
+  // Prevent Firebase Web Auth initialization during SSR/prerender/build.
+  if (typeof window === "undefined") return null;
+  if (!hasFirebaseClientConfig) return null;
+  try {
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    return getAuth(app);
+  } catch {
+    return null;
+  }
+}
 
+export const firebaseAuth = createFirebaseAuth();
+export const hasFirebaseAuthClientConfig = hasFirebaseClientConfig;

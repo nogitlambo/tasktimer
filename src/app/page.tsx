@@ -75,7 +75,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(firebaseAuth, (user) => {
+    const auth = firebaseAuth;
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       setAuthUserEmail(email);
       if (email && !hasRedirected) {
@@ -88,8 +90,13 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      return;
+    }
     const href = window.location.href;
-    const emailLink = isSignInWithEmailLink(firebaseAuth, href);
+    const emailLink = isSignInWithEmailLink(auth, href);
     setIsEmailLinkFlow(emailLink);
     if (!emailLink) return;
 
@@ -108,7 +115,7 @@ export default function Home() {
       setAuthError("");
       setAuthStatus("Completing sign-in...");
       try {
-        await signInWithEmailLink(firebaseAuth, email, href);
+        await signInWithEmailLink(auth, email, href);
         try {
           localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
         } catch {
@@ -142,6 +149,12 @@ export default function Home() {
   };
 
   const handleSendEmailLink = async () => {
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
     const email = authEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setAuthError("Enter a valid email address.");
@@ -152,7 +165,7 @@ export default function Home() {
     setAuthError("");
     setAuthStatus("Sending sign-in link...");
     try {
-      await sendSignInLinkToEmail(firebaseAuth, email, {
+      await sendSignInLinkToEmail(auth, email, {
         url: getEmailLinkContinueUrl(),
         handleCodeInApp: true,
       });
@@ -172,8 +185,14 @@ export default function Home() {
 
   const handleCompleteEmailLink = async () => {
     if (typeof window === "undefined") return;
+    const auth = firebaseAuth;
+    if (!auth) {
+      setAuthError("Email sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
     const href = window.location.href;
-    if (!isSignInWithEmailLink(firebaseAuth, href)) {
+    if (!isSignInWithEmailLink(auth, href)) {
       setAuthError("No email sign-in link detected in this page URL.");
       setAuthStatus("");
       return;
@@ -188,7 +207,7 @@ export default function Home() {
     setAuthError("");
     setAuthStatus("Completing sign-in...");
     try {
-      await signInWithEmailLink(firebaseAuth, email, href);
+      await signInWithEmailLink(auth, email, href);
       try {
         localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
       } catch {
