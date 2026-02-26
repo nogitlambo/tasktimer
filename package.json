@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/copy-standalone-assets.mjs",
     "build:android": "cmd /c set NEXT_OUTPUT=export&& next build",
     "start": "next start",
     "lint": "eslint",
