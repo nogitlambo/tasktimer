@@ -3,11 +3,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
+  GoogleAuthProvider,
+  getRedirectResult,
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
+  signInWithRedirect,
   signInWithEmailLink,
+  signInWithPopup,
   signOut,
+  updateProfile,
 } from "firebase/auth";
 
 type SettingsPaneKey =
@@ -31,6 +36,22 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
+const AVATAR_SELECTION_STORAGE_PREFIX = "tasktimer:avatarSelection:";
+const DEFAULT_AVATARS = [
+  { id: "initials-AN", src: "/avatars/initials-AN.svg", label: "Initials AN" },
+];
+type AvatarOption = { id: string; src: string; label: string };
+function formatMemberSinceDate(value: string | null) {
+  if (!value) return "--";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return "--";
+  return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+function shouldUseRedirectAuth() {
+  if (typeof window === "undefined") return false;
+  const w = window as Window & { Capacitor?: unknown };
+  return !!w.Capacitor || window.location.protocol === "file:";
+}
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
@@ -114,12 +135,20 @@ export default function SettingsPanel() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
+  const [authUserAlias, setAuthUserAlias] = useState("");
+  const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
+  const [isEditingAlias, setIsEditingAlias] = useState(false);
+  const [aliasDraft, setAliasDraft] = useState("");
+  const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
   const [friendInviteKeyExpiresAt, setFriendInviteKeyExpiresAt] = useState<number | null>(null);
   const [friendInviteKeyNow, setFriendInviteKeyNow] = useState<number>(Date.now());
   const [friendKeyCopyStatus, setFriendKeyCopyStatus] = useState("");
   const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
+  const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
+  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(DEFAULT_AVATARS);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>(DEFAULT_AVATARS[0]?.id || "");
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -152,6 +181,12 @@ export default function SettingsPanel() {
     const unsub = onAuthStateChanged(auth, (user) => {
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
+      const nextAlias = (user?.displayName || "").trim();
+      setAuthUserAlias(nextAlias);
+      setAliasDraft(nextAlias);
+      setAuthMemberSince(user?.metadata?.creationTime || null);
+      setIsEditingAlias(false);
+      if (user) setShowEmailLoginForm(false);
     });
     return () => unsub();
   }, []);
@@ -186,6 +221,67 @@ export default function SettingsPanel() {
       setFriendInviteKeyExpiresAt(null);
     }
   }, [authUserUid]);
+
+  useEffect(() => {
+    if (!authUserUid) {
+      setSelectedAvatarId((prev) => prev || avatarOptions[0]?.id || "");
+      return;
+    }
+    const nextId = avatarOptions.some((a) => a.id === selectedAvatarId) ? selectedAvatarId : avatarOptions[0]?.id || "";
+    if (nextId !== selectedAvatarId) setSelectedAvatarId(nextId);
+  }, [avatarOptions, selectedAvatarId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAvatarOptions = async () => {
+      try {
+        const res = await fetch("/api/avatars", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { avatars?: AvatarOption[] };
+        const next = Array.isArray(data.avatars)
+          ? data.avatars.filter(
+              (a): a is AvatarOption =>
+                !!a &&
+                typeof a.id === "string" &&
+                typeof a.src === "string" &&
+                typeof a.label === "string" &&
+                a.id.trim() !== "" &&
+                a.src.trim() !== ""
+            )
+          : [];
+        if (!cancelled && next.length) setAvatarOptions(next);
+      } catch {
+        // ignore and keep defaults
+      }
+    };
+    void loadAvatarOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showAvatarPickerModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowAvatarPickerModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showAvatarPickerModal]);
+
+  useEffect(() => {
+    if (!authUserUid) {
+      setSelectedAvatarId(avatarOptions[0]?.id || "");
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`) || "";
+      const nextId = avatarOptions.some((a) => a.id === saved) ? saved : avatarOptions[0]?.id || "";
+      setSelectedAvatarId(nextId);
+    } catch {
+      setSelectedAvatarId(avatarOptions[0]?.id || "");
+    }
+  }, [authUserUid, avatarOptions]);
 
   useEffect(() => {
     if (!friendInviteKeyExpiresAt) return;
@@ -266,6 +362,28 @@ export default function SettingsPanel() {
       }
     };
     void complete();
+  }, []);
+
+  useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    let cancelled = false;
+    const applyRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (cancelled || !result?.user) return;
+        setAuthStatus("Signed in successfully.");
+        setAuthError("");
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setAuthError(getErrorMessage(err, "Could not complete Google sign-in."));
+        setAuthStatus("");
+      }
+    };
+    void applyRedirectResult();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const getEmailLinkContinueUrl = () => {
@@ -377,6 +495,58 @@ export default function SettingsPanel() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) {
+      setAuthError("Sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Signing in with Google...");
+    try {
+      const provider = new GoogleAuthProvider();
+      if (shouldUseRedirectAuth()) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      await signInWithPopup(auth, provider);
+      setAuthStatus("Signed in successfully.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not sign in with Google."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleSaveAlias = async () => {
+    const auth = getFirebaseAuthClient();
+    const user = auth?.currentUser || null;
+    if (!auth || !user) {
+      setAuthError("You must be signed in to update your alias.");
+      setAuthStatus("");
+      return;
+    }
+    const nextAlias = aliasDraft.trim().slice(0, 15);
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Saving alias...");
+    try {
+      await updateProfile(user, { displayName: nextAlias || null });
+      setAuthUserAlias(nextAlias);
+      setAliasDraft(nextAlias);
+      setIsEditingAlias(false);
+      setAuthStatus("Alias updated.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not update alias."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const handleGenerateFriendKey = () => {
     if (!authUserUid) return;
     const key = generateFriendInviteKey(24);
@@ -417,6 +587,19 @@ export default function SettingsPanel() {
       window.setTimeout(() => setFriendKeyCopyStatus(""), 1500);
     }
   };
+
+  const handleSelectAvatar = (avatarId: string) => {
+    setSelectedAvatarId(avatarId);
+    if (!authUserUid) return;
+    try {
+      localStorage.setItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`, avatarId);
+    } catch {
+      // ignore
+    }
+    setShowAvatarPickerModal(false);
+  };
+
+  const selectedAvatar = avatarOptions.find((a) => a.id === selectedAvatarId) || avatarOptions[0] || null;
 
   return (
     <div className="menu settingsMenu settingsDashboardShell dashboardShell" role="dialog" aria-modal="true" aria-label="Menu">
@@ -471,7 +654,7 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
-            subtitle={authUserEmail ? "" : "Continue with email using a passwordless sign-in link."}
+            subtitle={authUserEmail ? "" : ""}
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -479,29 +662,141 @@ export default function SettingsPanel() {
                   <>
                     <div className="settingsInlineSectionHead">
                       <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                      <div className="settingsInlineSectionTitle">Continue with Email</div>
+                      <div className="settingsInlineSectionTitle">Sign Up or Sign In with email or Google</div>
                     </div>
                   </>
                 ) : null}
                 {authUserEmail ? (
-                  <div className="accountAvatarPlaceholder" aria-hidden="true">
-                    <div className="accountAvatarPlaceholderInner" />
+                  <div className="settingsAvatarPicker" aria-label="Avatar selection">
+                    <div className="settingsAccountProfileRow">
+                      <div className="settingsAvatarCol">
+                        <button
+                          type="button"
+                          className="accountAvatarFrameBtn"
+                          onClick={() => setShowAvatarPickerModal(true)}
+                          aria-label="Choose avatar"
+                        >
+                          <div className="accountAvatarPlaceholder">
+                            {selectedAvatar ? (
+                              <img
+                                className="accountAvatarImage"
+                                src={selectedAvatar.src}
+                                alt={`${selectedAvatar.label} avatar`}
+                              />
+                            ) : (
+                              <div className="accountAvatarPlaceholderInner" />
+                            )}
+                          </div>
+                        </button>
+                        <div className="settingsAvatarPickerLabel">Tap avatar to change</div>
+                      </div>
+                      <div className="settingsAccountMeta">
+                        <div className="settingsAccountFieldRow">
+                          <div className="settingsAccountFieldLabel">Name/Alias</div>
+                          {isEditingAlias ? (
+                            <div className="settingsAccountAliasEditor">
+                              <input
+                                type="text"
+                                value={aliasDraft}
+                                maxLength={15}
+                                onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
+                                className="settingsAccountAliasInput"
+                                aria-label="Edit name alias"
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-ghost small"
+                                onClick={handleSaveAlias}
+                                disabled={authBusy}
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost small"
+                                onClick={() => {
+                                  setAliasDraft(authUserAlias);
+                                  setIsEditingAlias(false);
+                                }}
+                                disabled={authBusy}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="settingsAccountFieldValueRow">
+                              <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
+                              <button
+                                type="button"
+                                className="iconBtn settingsAliasEditBtn"
+                                aria-label="Edit alias"
+                                onClick={() => setIsEditingAlias(true)}
+                              >
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                  <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="settingsAccountFieldRow">
+                          <div className="settingsAccountFieldLabel">Member since</div>
+                          <div className="settingsAccountFieldValue">{formatMemberSinceDate(authMemberSince)}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : null}
                 {!authUserEmail ? (
-                  <div className="field">
-                    <label htmlFor="authEmailInput">Email Address</label>
-                    <input
-                      id="authEmailInput"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="name@example.com"
-                      value={authEmail}
-                      onChange={(e) => {
-                        setAuthEmail(e.target.value);
-                        setAuthError("");
-                      }}
-                    />
+                  <div className="settingsAuthChooser">
+                    <button
+                      type="button"
+                      className="settingsAuthOptionBtn"
+                      onClick={() => setShowEmailLoginForm((v) => !v)}
+                      aria-expanded={showEmailLoginForm ? "true" : "false"}
+                    >
+                      <span className="settingsAuthOptionIcon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z" />
+                        </svg>
+                      </span>
+                      <span>{showEmailLoginForm ? "Email login" : "Login with email"}</span>
+                    </button>
+                    <button
+                      className="settingsAuthOptionBtn"
+                      id="signInGoogleBtn"
+                      type="button"
+                      disabled={authBusy}
+                      onClick={handleGoogleSignIn}
+                    >
+                      <span className="settingsAuthOptionIcon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path fill="#EA4335" d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"/>
+                          <path fill="#4285F4" d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"/>
+                          <path fill="#FBBC05" d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"/>
+                          <path fill="#34A853" d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"/>
+                        </svg>
+                      </span>
+                      <span>Login with Google</span>
+                    </button>
+                    {showEmailLoginForm ? (
+                      <div className="settingsAuthEmailForm">
+                        <div className="field">
+                          <label htmlFor="authEmailInput">Email Address</label>
+                          <input
+                            id="authEmailInput"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="name@example.com"
+                            value={authEmail}
+                            onChange={(e) => {
+                              setAuthEmail(e.target.value);
+                              setAuthError("");
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 {authUserEmail ? (
@@ -558,15 +853,19 @@ export default function SettingsPanel() {
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 <div className="settingsInlineFooter settingsAuthActions">
                   {!authUserEmail ? (
-                    <button
-                      className="btn btn-accent"
-                      id="signInEmailBtn"
-                      type="button"
-                      disabled={authBusy || !isValidAuthEmail}
-                      onClick={handleSendEmailLink}
-                    >
-                      Send Link
-                    </button>
+                    <>
+                      {showEmailLoginForm ? (
+                        <button
+                          className="btn btn-accent"
+                          id="signInEmailBtn"
+                          type="button"
+                          disabled={authBusy || !isValidAuthEmail}
+                          onClick={handleSendEmailLink}
+                        >
+                          Send Link
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
                   {!authUserEmail && isEmailLinkFlow ? (
                     <button
@@ -579,23 +878,20 @@ export default function SettingsPanel() {
                       Complete Sign-In
                     </button>
                   ) : null}
-                  <button
-                    className={authUserEmail ? "btn btn-accent" : "btn btn-ghost"}
-                    id="signInGoogleBtn"
-                    type="button"
-                    disabled={authBusy || !authUserEmail}
-                    onClick={handleSignOut}
-                  >
-                    Sign Out
-                  </button>
+                  {authUserEmail ? (
+                    <button
+                      className="btn btn-accent"
+                      id="signInGoogleBtn"
+                      type="button"
+                      disabled={authBusy}
+                      onClick={handleSignOut}
+                    >
+                      Sign Out
+                    </button>
+                  ) : null}
                 </div>
               </section>
             </div>
-            {!authUserEmail ? (
-              <div className="settingsDetailNote">
-                Open the email link on this device to complete sign-in.
-              </div>
-            ) : null}
             {showRemoveFriendKeyConfirm ? (
               <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
                 <div
@@ -615,6 +911,44 @@ export default function SettingsPanel() {
                     </button>
                     <button className="btn btn-accent" type="button" onClick={handleRemoveFriendKey}>
                       Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            {showAvatarPickerModal ? (
+              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowAvatarPickerModal(false)}>
+                <div
+                  className="modal settingsAvatarModal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Choose Avatar"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="settingsInlineConfirmTitle">Choose Avatar</h3>
+                  <div className="settingsAvatarOptions" role="list" aria-label="Available avatars">
+                    {avatarOptions.map((avatar) => (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        className={`settingsAvatarOption${selectedAvatarId === avatar.id ? " isSelected" : ""}`}
+                        onClick={() => handleSelectAvatar(avatar.id)}
+                        aria-pressed={selectedAvatarId === avatar.id}
+                        title={avatar.label}
+                      >
+                        <img src={avatar.src} alt={avatar.label} className="settingsAvatarOptionImg" />
+                        <span className="settingsAvatarOptionLabel">{avatar.label}</span>
+                        {selectedAvatarId === avatar.id ? (
+                          <span className="settingsAvatarOptionSelected" aria-hidden="true">
+                            Selected
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="footerBtns settingsInlineConfirmBtns">
+                    <button className="btn btn-ghost" type="button" onClick={() => setShowAvatarPickerModal(false)}>
+                      Cancel
                     </button>
                   </div>
                 </div>

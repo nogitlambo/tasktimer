@@ -3831,7 +3831,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     if (which === "howto") {
-      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+      navigateToAppRoute("/tasktimer/user-guide");
       return;
     }
     if (which === "categoryManager") {

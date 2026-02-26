@@ -5606,3 +5606,266 @@ body[data-theme="light"] optgroup{
   border:1px dashed rgba(53,232,255,.28);
   opacity:.75;
 }
+.settingsMenu .settingsAvatarPicker{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin:4px 0 6px;
+}
+.settingsMenu .settingsAccountProfileRow{
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.settingsMenu .settingsAvatarCol{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.settingsMenu .settingsAccountMeta{
+  flex:1 1 240px;
+  min-width:220px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-top:2px;
+}
+.settingsMenu .settingsAccountFieldRow{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.settingsMenu .settingsAccountFieldLabel{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#b7f7ff;
+  font-weight:800;
+}
+.settingsMenu .settingsAccountFieldValueRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.settingsMenu .settingsAccountFieldValue{
+  min-height:24px;
+  display:flex;
+  align-items:center;
+  font-size:14px;
+  color:#eefcff;
+  word-break:break-word;
+}
+.settingsMenu .settingsAliasEditBtn{
+  width:26px;
+  height:26px;
+  min-width:26px;
+  padding:4px;
+}
+.settingsMenu .settingsAliasEditBtn svg{
+  width:16px;
+  height:16px;
+  fill:currentColor;
+}
+.settingsMenu .settingsAccountAliasEditor{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.settingsMenu .settingsAccountAliasInput{
+  min-width:180px;
+  max-width:240px;
+  height:34px;
+  padding:0 10px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.03);
+  color:#fff;
+  clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+}
+.settingsMenu .settingsAccountAliasInput:focus{
+  outline:1px solid rgba(53,232,255,.55);
+  border-color:rgba(53,232,255,.55);
+}
+.settingsMenu .settingsAuthChooser{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.settingsMenu .settingsAuthOptionBtn{
+  width:100%;
+  min-height:38px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.35);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px 14px;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:700;
+}
+.settingsMenu .settingsAuthOptionBtn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.settingsMenu .settingsAuthOptionBtn:hover:not(:disabled){
+  border-color:rgba(53,232,255,.35);
+}
+.settingsMenu .settingsAuthOptionBtn:focus-visible{
+  outline:2px solid rgba(53,232,255,.6);
+  outline-offset:2px;
+}
+.settingsMenu .settingsAuthOptionIcon{
+  width:18px;
+  height:18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.settingsMenu .settingsAuthOptionIcon svg{
+  width:18px;
+  height:18px;
+  display:block;
+  fill:currentColor;
+}
+.settingsMenu .settingsAuthEmailForm{
+  margin-top:2px;
+}
+.settingsMenu .accountAvatarFrameBtn{
+  align-self:flex-start;
+  padding:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+.settingsMenu .accountAvatarFrameBtn:focus-visible{
+  outline:2px solid rgba(53,232,255,.7);
+  outline-offset:4px;
+}
+.settingsMenu .accountAvatarPlaceholder{
+  width:88px;
+  height:88px;
+  border:1px solid rgba(53,232,255,.28);
+  background:rgba(255,255,255,.02);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);
+}
+.settingsMenu .accountAvatarPlaceholderInner{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  background:rgba(53,232,255,.15);
+  box-shadow:inset 0 0 0 1px rgba(53,232,255,.3);
+}
+.settingsMenu .accountAvatarImage{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.settingsMenu .settingsAvatarPickerLabel{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#b7f7ff;
+  font-weight:800;
+}
+.settingsMenu .settingsAvatarOptions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.settingsMenu .settingsAvatarModal{
+  width:min(520px, calc(100vw - 28px));
+  max-height:min(75vh, 560px);
+  overflow:auto;
+}
+.settingsMenu .settingsAvatarOption{
+  width:92px;
+  min-height:112px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.02);
+  padding:6px 6px 8px;
+  cursor:pointer;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+}
+.settingsMenu .settingsAvatarOption.isSelected{
+  border-color:rgba(53,232,255,.75);
+  box-shadow:0 0 0 1px rgba(53,232,255,.25), 0 0 14px rgba(0,220,255,.18);
+}
+.settingsMenu .settingsAvatarOptionImg{
+  width:100%;
+  height:68px;
+  object-fit:cover;
+  display:block;
+}
+.settingsMenu .settingsAvatarOptionLabel{
+  font-size:10px;
+  line-height:1.2;
+  color:#d8fbff;
+  text-align:center;
+}
+.settingsMenu .settingsAvatarOptionSelected{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#8ff6ff;
+}
+body.light .settingsMenu .accountAvatarPlaceholder{
+  border-color:rgba(0,133,160,.28);
+  background:rgba(0,0,0,.02);
+}
+body.light .settingsMenu .settingsAvatarPickerLabel{
+  color:#0b7285;
+}
+body.light .settingsMenu .settingsAccountFieldLabel{
+  color:#0b7285;
+}
+body.light .settingsMenu .settingsAccountFieldValue{
+  color:#17343c;
+}
+body.light .settingsMenu .settingsAccountAliasInput{
+  border-color:rgba(0,0,0,.14);
+  background:rgba(255,255,255,.8);
+  color:#17343c;
+}
+body.light .settingsMenu .settingsAccountAliasInput:focus{
+  outline:1px solid rgba(0,133,160,.5);
+  border-color:rgba(0,133,160,.5);
+}
+body.light .settingsMenu .settingsAuthOptionBtn{
+  border-color:rgba(0,0,0,.12);
+  background:rgba(255,255,255,.82);
+  color:#12262c;
+}
+body.light .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled){
+  border-color:rgba(0,133,160,.35);
+}
+body.light .settingsMenu .settingsAuthOptionBtn:focus-visible{
+  outline:2px solid rgba(0,133,160,.5);
+}
+body.light .settingsMenu .settingsAvatarOption{
+  border-color:rgba(0,0,0,.14);
+  background:rgba(255,255,255,.6);
+}
+body.light .settingsMenu .settingsAvatarOption.isSelected{
+  border-color:rgba(0,133,160,.8);
+  box-shadow:0 0 0 1px rgba(0,133,160,.2);
+}
+body.light .settingsMenu .settingsAvatarOptionLabel{
+  color:#17343c;
+}
+body.light .settingsMenu .settingsAvatarOptionSelected{
+  color:#0b7285;
+}

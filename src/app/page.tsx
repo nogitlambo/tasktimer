@@ -4,7 +4,16 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  getRedirectResult,
+  isSignInWithEmailLink,
+  onAuthStateChanged,
+  sendSignInLinkToEmail,
+  signInWithRedirect,
+  signInWithEmailLink,
+  signInWithPopup,
+} from "firebase/auth";
 
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
@@ -16,6 +25,12 @@ function getErrorMessage(err: unknown, fallback: string) {
     if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
+}
+
+function shouldUseRedirectAuth() {
+  if (typeof window === "undefined") return false;
+  const w = window as Window & { Capacitor?: unknown };
+  return !!w.Capacitor || window.location.protocol === "file:";
 }
 
 export default function Home() {
@@ -140,6 +155,28 @@ export default function Home() {
     void complete();
   }, []);
 
+  useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    let cancelled = false;
+    const applyRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (cancelled || !result?.user) return;
+        setAuthStatus("Signed in successfully.");
+        setAuthError("");
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setAuthError(getErrorMessage(err, "Could not complete Google sign-in."));
+        setAuthStatus("");
+      }
+    };
+    void applyRedirectResult();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const getEmailLinkContinueUrl = () => {
     if (typeof window !== "undefined") {
       const origin = window.location.origin;
@@ -217,6 +254,32 @@ export default function Home() {
       setIsEmailLinkFlow(false);
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) {
+      setAuthError("Sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Signing in with Google...");
+    try {
+      const provider = new GoogleAuthProvider();
+      if (shouldUseRedirectAuth()) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      await signInWithPopup(auth, provider);
+      setAuthStatus("Signed in successfully.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not sign in with Google."));
       setAuthStatus("");
     } finally {
       setAuthBusy(false);
@@ -362,6 +425,15 @@ export default function Home() {
                   style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
                 >
                   Send Link
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={authBusy}
+                  className="min-w-[190px] border border-[#35e8ff]/50 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] disabled:cursor-not-allowed disabled:opacity-45"
+                  style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
+                >
+                  Google Sign-In
                 </button>
                 {isEmailLinkFlow ? (
                   <button
