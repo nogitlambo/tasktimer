@@ -30,5 +30,12 @@ function createFirebaseAuth(): Auth | null {
   }
 }
 
-export const firebaseAuth = createFirebaseAuth();
+let firebaseAuthInstance: Auth | null | undefined;
+
+export function getFirebaseAuthClient(): Auth | null {
+  if (firebaseAuthInstance !== undefined) return firebaseAuthInstance;
+  firebaseAuthInstance = createFirebaseAuth();
+  return firebaseAuthInstance;
+}
+
 export const hasFirebaseAuthClientConfig = hasFirebaseClientConfig;

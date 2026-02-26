@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { firebaseAuth } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   isSignInWithEmailLink,
   onAuthStateChanged,
@@ -147,7 +147,7 @@ export default function SettingsPanel() {
   }, [authEmail]);
 
   useEffect(() => {
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setAuthUserEmail(user?.email || null);
@@ -221,7 +221,7 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) return;
     const href = window.location.href;
     const emailLink = isSignInWithEmailLink(auth, href);
@@ -277,7 +277,7 @@ export default function SettingsPanel() {
   };
 
   const handleSendEmailLink = async () => {
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       setAuthStatus("");
@@ -313,7 +313,7 @@ export default function SettingsPanel() {
 
   const handleCompleteEmailLink = async () => {
     if (typeof window === "undefined") return;
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       setAuthStatus("");
@@ -358,7 +358,7 @@ export default function SettingsPanel() {
   };
 
   const handleSignOut = async () => {
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       setAuthStatus("");

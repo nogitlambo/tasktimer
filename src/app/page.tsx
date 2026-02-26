@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { firebaseAuth } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink } from "firebase/auth";
 
 const LOGO_PHASE_MS = 1200;
@@ -75,7 +75,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
@@ -90,7 +90,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       return;
@@ -149,7 +149,7 @@ export default function Home() {
   };
 
   const handleSendEmailLink = async () => {
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       setAuthStatus("");
@@ -185,7 +185,7 @@ export default function Home() {
 
   const handleCompleteEmailLink = async () => {
     if (typeof window === "undefined") return;
-    const auth = firebaseAuth;
+    const auth = getFirebaseAuthClient();
     if (!auth) {
       setAuthError("Email sign-in is not configured for this environment.");
       setAuthStatus("");
