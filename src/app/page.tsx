@@ -48,6 +48,7 @@ export default function Home() {
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
@@ -394,47 +395,67 @@ export default function Home() {
           aria-hidden={!showActions}
         >
           {!authUserEmail ? (
-            <div className="flex w-full max-w-[420px] flex-col items-stretch gap-3 rounded-none border border-[#35e8ff]/20 bg-[rgba(255,255,255,.02)] p-3 sm:p-4">
-              <label
-                htmlFor="landingEmailInput"
-                className="text-left text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#b7f7ff]"
+            <div className="flex w-full max-w-[630px] flex-col items-stretch gap-3">
+              <button
+                type="button"
+                onClick={() => setShowEmailLoginForm((v) => !v)}
+                aria-expanded={showEmailLoginForm ? "true" : "false"}
+                disabled={authBusy}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
+                style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
               >
-                Continue with Email
-              </label>
-              <input
-                id="landingEmailInput"
-                type="email"
-                autoComplete="email"
-                placeholder="name@example.com"
-                value={authEmail}
-                onChange={(e) => {
-                  setAuthEmail(e.target.value);
-                  setAuthError("");
-                }}
-                className="h-10 w-full border border-white/15 bg-black/20 px-3 text-sm text-white outline-none"
-                style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
-              />
+                <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z"
+                  />
+                </svg>
+                <span>Login with email</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={authBusy}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
+                style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
+              >
+                <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
+                  <path fill="#EA4335" d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"/>
+                  <path fill="#4285F4" d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"/>
+                  <path fill="#FBBC05" d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"/>
+                  <path fill="#34A853" d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"/>
+                </svg>
+                <span>Login with Google</span>
+              </button>
+              {showEmailLoginForm ? (
+                <input
+                  id="landingEmailInput"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  value={authEmail}
+                  onChange={(e) => {
+                    setAuthEmail(e.target.value);
+                    setAuthError("");
+                  }}
+                  className="h-11 w-full border border-white/15 bg-black/20 px-4 text-sm text-white outline-none"
+                  style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
+                />
+              ) : null}
               {authStatus ? <div className="text-left text-xs text-[#d3faff]">{authStatus}</div> : null}
               {authError ? <div className="text-left text-xs text-[#ff9b9b]">{authError}</div> : null}
               <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={handleSendEmailLink}
-                  disabled={authBusy || !isValidAuthEmail}
-                  className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)] disabled:cursor-not-allowed disabled:opacity-45"
-                  style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
-                >
-                  Send Link
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={authBusy}
-                  className="min-w-[190px] border border-[#35e8ff]/50 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] disabled:cursor-not-allowed disabled:opacity-45"
-                  style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
-                >
-                  Google Sign-In
-                </button>
+                {showEmailLoginForm ? (
+                  <button
+                    type="button"
+                    onClick={handleSendEmailLink}
+                    disabled={authBusy || !isValidAuthEmail}
+                    className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)] disabled:cursor-not-allowed disabled:opacity-45"
+                    style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
+                  >
+                    Send Link
+                  </button>
+                ) : null}
                 {isEmailLinkFlow ? (
                   <button
                     type="button"

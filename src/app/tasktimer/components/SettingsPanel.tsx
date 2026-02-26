@@ -3,14 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
-  GoogleAuthProvider,
-  getRedirectResult,
-  isSignInWithEmailLink,
   onAuthStateChanged,
-  sendSignInLinkToEmail,
-  signInWithRedirect,
-  signInWithEmailLink,
-  signInWithPopup,
   signOut,
   updateProfile,
 } from "firebase/auth";
@@ -34,7 +27,6 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
 const AVATAR_SELECTION_STORAGE_PREFIX = "tasktimer:avatarSelection:";
 const DEFAULT_AVATARS = [
@@ -46,11 +38,6 @@ function formatMemberSinceDate(value: string | null) {
   const dt = new Date(value);
   if (Number.isNaN(dt.getTime())) return "--";
   return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-function shouldUseRedirectAuth() {
-  if (typeof window === "undefined") return false;
-  const w = window as Window & { Capacitor?: unknown };
-  return !!w.Capacitor || window.location.protocol === "file:";
 }
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -129,7 +116,6 @@ export default function SettingsPanel() {
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackType, setFeedbackType] = useState("");
   const [feedbackDetails, setFeedbackDetails] = useState("");
-  const [authEmail, setAuthEmail] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
@@ -139,8 +125,6 @@ export default function SettingsPanel() {
   const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
   const [isEditingAlias, setIsEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState("");
-  const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
-  const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
   const [friendInviteKeyExpiresAt, setFriendInviteKeyExpiresAt] = useState<number | null>(null);
   const [friendInviteKeyNow, setFriendInviteKeyNow] = useState<number>(Date.now());
@@ -164,17 +148,6 @@ export default function SettingsPanel() {
   );
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const canSubmitFeedback = isValidFeedbackEmail && !!feedbackType && feedbackDetails.trim().length > 0;
-  const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "";
-      if (saved && !authEmail) setAuthEmail(saved);
-    } catch {
-      // ignore
-    }
-  }, [authEmail]);
-
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
@@ -186,7 +159,6 @@ export default function SettingsPanel() {
       setAliasDraft(nextAlias);
       setAuthMemberSince(user?.metadata?.creationTime || null);
       setIsEditingAlias(false);
-      if (user) setShowEmailLoginForm(false);
     });
     return () => unsub();
   }, []);
@@ -315,166 +287,6 @@ export default function SettingsPanel() {
     return () => window.clearInterval(timer);
   }, [friendInviteKeyExpiresAt, authUserUid]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const auth = getFirebaseAuthClient();
-    if (!auth) return;
-    const href = window.location.href;
-    const emailLink = isSignInWithEmailLink(auth, href);
-    setIsEmailLinkFlow(emailLink);
-    if (!emailLink) return;
-
-    const complete = async () => {
-      let email = "";
-      try {
-        email = (localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "").trim();
-      } catch {
-        email = "";
-      }
-      if (!email) {
-        setAuthStatus("Email sign-in link detected. Enter your email below, then click Complete Sign-In.");
-        return;
-      }
-      setAuthBusy(true);
-      setAuthError("");
-      setAuthStatus("Completing sign-in...");
-      try {
-        await signInWithEmailLink(auth, email, href);
-        try {
-          localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-        } catch {
-          // ignore
-        }
-        setAuthEmail(email);
-        setAuthStatus("Signed in successfully.");
-        try {
-          const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
-          window.history.replaceState({}, "", cleanUrl);
-        } catch {
-          // ignore
-        }
-        setIsEmailLinkFlow(false);
-      } catch (err: unknown) {
-        setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
-        setAuthStatus("");
-      } finally {
-        setAuthBusy(false);
-      }
-    };
-    void complete();
-  }, []);
-
-  useEffect(() => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) return;
-    let cancelled = false;
-    const applyRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (cancelled || !result?.user) return;
-        setAuthStatus("Signed in successfully.");
-        setAuthError("");
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setAuthError(getErrorMessage(err, "Could not complete Google sign-in."));
-        setAuthStatus("");
-      }
-    };
-    void applyRedirectResult();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const getEmailLinkContinueUrl = () => {
-    if (typeof window !== "undefined") {
-      const origin = window.location.origin;
-      if (/^https?:/i.test(origin)) return `${origin}/tasktimer/settings`;
-    }
-    return "https://tasktimer-prod.firebaseapp.com/tasktimer/settings";
-  };
-
-  const handleSendEmailLink = async () => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) {
-      setAuthError("Email sign-in is not configured for this environment.");
-      setAuthStatus("");
-      return;
-    }
-    const email = authEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setAuthError("Enter a valid email address.");
-      setAuthStatus("");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Sending sign-in link...");
-    try {
-      await sendSignInLinkToEmail(auth, email, {
-        url: getEmailLinkContinueUrl(),
-        handleCodeInApp: true,
-      });
-      try {
-        localStorage.setItem(EMAIL_LINK_STORAGE_KEY, email);
-      } catch {
-        // ignore
-      }
-      setAuthStatus("Sign-in link sent. Open the link from your email on this device to complete sign-in.");
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not send sign-in link."));
-      setAuthStatus("");
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
-  const handleCompleteEmailLink = async () => {
-    if (typeof window === "undefined") return;
-    const auth = getFirebaseAuthClient();
-    if (!auth) {
-      setAuthError("Email sign-in is not configured for this environment.");
-      setAuthStatus("");
-      return;
-    }
-    const href = window.location.href;
-    if (!isSignInWithEmailLink(auth, href)) {
-      setAuthError("No email sign-in link detected in this page URL.");
-      setAuthStatus("");
-      return;
-    }
-    const email = authEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setAuthError("Enter the same email address used to request the sign-in link.");
-      setAuthStatus("");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Completing sign-in...");
-    try {
-      await signInWithEmailLink(auth, email, href);
-      try {
-        localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-      } catch {
-        // ignore
-      }
-      setAuthStatus("Signed in successfully.");
-      try {
-        const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
-        window.history.replaceState({}, "", cleanUrl);
-      } catch {
-        // ignore
-      }
-      setIsEmailLinkFlow(false);
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
-      setAuthStatus("");
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
   const handleSignOut = async () => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
@@ -488,34 +300,9 @@ export default function SettingsPanel() {
     try {
       await signOut(auth);
       setAuthStatus("Signed out.");
+      if (typeof window !== "undefined") window.location.assign("/");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not sign out."));
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) {
-      setAuthError("Sign-in is not configured for this environment.");
-      setAuthStatus("");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Signing in with Google...");
-    try {
-      const provider = new GoogleAuthProvider();
-      if (shouldUseRedirectAuth()) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-      await signInWithPopup(auth, provider);
-      setAuthStatus("Signed in successfully.");
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not sign in with Google."));
-      setAuthStatus("");
     } finally {
       setAuthBusy(false);
     }
@@ -654,18 +441,10 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "general"}
             title="Account"
-            subtitle={authUserEmail ? "" : ""}
+            subtitle=""
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                {!authUserEmail ? (
-                  <>
-                    <div className="settingsInlineSectionHead">
-                      <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                      <div className="settingsInlineSectionTitle">Sign Up or Sign In with email or Google</div>
-                    </div>
-                  </>
-                ) : null}
                 {authUserEmail ? (
                   <div className="settingsAvatarPicker" aria-label="Avatar selection">
                     <div className="settingsAccountProfileRow">
@@ -747,58 +526,6 @@ export default function SettingsPanel() {
                     </div>
                   </div>
                 ) : null}
-                {!authUserEmail ? (
-                  <div className="settingsAuthChooser">
-                    <button
-                      type="button"
-                      className="settingsAuthOptionBtn"
-                      onClick={() => setShowEmailLoginForm((v) => !v)}
-                      aria-expanded={showEmailLoginForm ? "true" : "false"}
-                    >
-                      <span className="settingsAuthOptionIcon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false">
-                          <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z" />
-                        </svg>
-                      </span>
-                      <span>{showEmailLoginForm ? "Email login" : "Login with email"}</span>
-                    </button>
-                    <button
-                      className="settingsAuthOptionBtn"
-                      id="signInGoogleBtn"
-                      type="button"
-                      disabled={authBusy}
-                      onClick={handleGoogleSignIn}
-                    >
-                      <span className="settingsAuthOptionIcon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false">
-                          <path fill="#EA4335" d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"/>
-                          <path fill="#4285F4" d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"/>
-                          <path fill="#FBBC05" d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"/>
-                          <path fill="#34A853" d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"/>
-                        </svg>
-                      </span>
-                      <span>Login with Google</span>
-                    </button>
-                    {showEmailLoginForm ? (
-                      <div className="settingsAuthEmailForm">
-                        <div className="field">
-                          <label htmlFor="authEmailInput">Email Address</label>
-                          <input
-                            id="authEmailInput"
-                            type="email"
-                            autoComplete="email"
-                            placeholder="name@example.com"
-                            value={authEmail}
-                            onChange={(e) => {
-                              setAuthEmail(e.target.value);
-                              setAuthError("");
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
                 {authUserEmail ? (
                   <div className="settingsDetailNote">
                     <div>Signed in as: {authUserEmail}</div>
@@ -852,32 +579,6 @@ export default function SettingsPanel() {
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 <div className="settingsInlineFooter settingsAuthActions">
-                  {!authUserEmail ? (
-                    <>
-                      {showEmailLoginForm ? (
-                        <button
-                          className="btn btn-accent"
-                          id="signInEmailBtn"
-                          type="button"
-                          disabled={authBusy || !isValidAuthEmail}
-                          onClick={handleSendEmailLink}
-                        >
-                          Send Link
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
-                  {!authUserEmail && isEmailLinkFlow ? (
-                    <button
-                      className="btn btn-ghost"
-                      id="signUpBtn"
-                      type="button"
-                      disabled={authBusy || !isValidAuthEmail}
-                      onClick={handleCompleteEmailLink}
-                    >
-                      Complete Sign-In
-                    </button>
-                  ) : null}
                   {authUserEmail ? (
                     <button
                       className="btn btn-accent"
@@ -890,6 +591,11 @@ export default function SettingsPanel() {
                     </button>
                   ) : null}
                 </div>
+                {!authUserEmail ? (
+                  <div className="settingsDetailNote">
+                    Account details are available after signing in from the landing page.
+                  </div>
+                ) : null}
               </section>
             </div>
             {showRemoveFriendKeyConfirm ? (
