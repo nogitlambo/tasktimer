@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:android": "cmd /c set NEXT_OUTPUT=export&& next build",
     "start": "next start",
     "lint": "eslint",
-    "android:sync": "npm run build && npx cap sync android",
+    "android:sync": "npm run build:android && npx cap sync android",
     "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && copy /Y app\\build\\outputs\\apk\\debug\\app-debug.apk \"G:\\My Drive\\Apps\\app-debug.apk\"",
     "agents:update": "node scripts/update_agents_context.mjs",
     "agents:check": "node scripts/update_agents_context.mjs --check"

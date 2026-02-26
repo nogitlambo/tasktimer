@@ -90,39 +90,46 @@
 
 ### Persistent keys (derived from storage/client modules)
 - `ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames``
+- `CHECKPOINT_ALERT_SOUND_KEY = `${STORAGE_KEY}:checkpointAlertSoundEnabled``
+- `CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled``
+- `DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder``
 - `DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat``
+- `DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled``
+- `HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId``
+- `HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId``
 - `MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels``
 - `MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings``
+- `NAV_STACK_KEY = `${STORAGE_KEY}:navStack``
+- `PENDING_TASK_JUMP_KEY = `${STORAGE_KEY}:pendingTaskJump``
 - `PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds``
 - `STORAGE_KEY = "taskticker_tasks_v1"`
 - `THEME_KEY = `${STORAGE_KEY}:theme``
 
 ### Data hooks (derived from client/components)
+- `data-action="closeCheckpointToast"`
 - `data-action="collapse"`
 - `data-action="delete"`
 - `data-action="duplicate"`
 - `data-action="edit"`
 - `data-action="editName"`
+- `data-action="exportTask"`
 - `data-action="history"`
+- `data-action="jumpToCheckpointTask"`
+- `data-action="muteCheckpointAlert"`
 - `data-action="reset"`
 - `data-action="rmMs"`
 - `data-action="start"`
 - `data-action="stop"`
 - `data-history-action="analyse"`
-- `data-history-action="close"`
+- `data-history-action="clearLocks"`
 - `data-history-action="delete"`
 - `data-history-action="export"`
 - `data-history-action="manage"`
 - `data-history-action="newer"`
 - `data-history-action="older"`
 - `data-history-action="pin"`
-- `data-menu="about"`
-- `data-menu="appearance"`
-- `data-menu="categoryManager"`
-- `data-menu="contact"`
 - `data-menu="historyManager"`
 - `data-menu="howto"`
-- `data-menu="taskSettings"`
 - `data-move-mode="mode1"`
 - `data-move-mode="mode2"`
 - `data-move-mode="mode3"`
