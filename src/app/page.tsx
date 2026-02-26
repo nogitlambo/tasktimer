@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
@@ -304,12 +303,11 @@ export default function Home() {
           } ${showTitlePhase ? "-translate-y-6 sm:-translate-y-8" : ""}`}
         >
           <div className="relative inline-block">
-            <Image
+            <img
               src="/tasktimer-logo.svg"
               alt="TaskTimer"
               width={420}
               height={94}
-              priority
               className="h-auto w-[240px] sm:w-[320px] md:w-[380px]"
               style={{ clipPath: "inset(0 0 0 21.8%)" }}
             />
