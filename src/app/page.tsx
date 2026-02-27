@@ -387,13 +387,13 @@ export default function Home() {
         </div>
 
         <div
-          className={`mt-6 flex flex-col items-center gap-3 transition-all duration-500 sm:flex-row ${
+          className={`mt-12 flex flex-col items-center gap-3 transition-all duration-500 sm:flex-row ${
             showActions ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
           aria-hidden={!showActions}
         >
           {!authUserEmail ? (
-            <div className="flex w-full max-w-[630px] flex-col items-stretch gap-3">
+            <div className="flex w-full max-w-[945px] flex-col items-stretch gap-3">
               <button
                 type="button"
                 onClick={() => setShowEmailLoginForm((v) => !v)}
@@ -466,8 +466,11 @@ export default function Home() {
                   </button>
                 ) : null}
               </div>
-              <div className="pt-1 text-left text-xs text-white/70">
-                <a href="/privacy" className="underline underline-offset-2 hover:text-white">
+              <div className="grid grid-cols-2 items-center gap-3 pt-1 text-xs text-white/70">
+                <a href="/tasktimer" className="justify-self-start underline underline-offset-2 hover:text-white">
+                  Guest Sign In
+                </a>
+                <a href="/privacy" className="justify-self-end underline underline-offset-2 hover:text-white">
                   Privacy Policy
                 </a>
               </div>
