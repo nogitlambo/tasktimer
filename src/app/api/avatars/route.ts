@@ -16,18 +16,35 @@ function labelFromFilename(fileName: string) {
 export async function GET() {
   try {
     const avatarsDir = path.join(process.cwd(), "public", "avatars");
-    const entries = await fs.readdir(avatarsDir, { withFileTypes: true });
+    const walkAvatarFiles = async (dir: string, relDir = ""): Promise<string[]> => {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      const files: string[] = [];
+      for (const entry of entries) {
+        if (entry.name.startsWith(".")) continue;
+        const entryAbsPath = path.join(dir, entry.name);
+        const entryRelPath = relDir ? path.posix.join(relDir, entry.name) : entry.name;
+        if (entry.isDirectory()) {
+          files.push(...(await walkAvatarFiles(entryAbsPath, entryRelPath)));
+          continue;
+        }
+        if (!entry.isFile()) continue;
+        if (!ALLOWED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+        files.push(entryRelPath);
+      }
+      return files;
+    };
 
-    const avatars = entries
-      .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .filter((name) => ALLOWED_EXTENSIONS.has(path.extname(name).toLowerCase()))
+    const avatars = (await walkAvatarFiles(avatarsDir))
       .sort((a, b) => a.localeCompare(b))
-      .map((fileName) => ({
-        id: fileName.replace(/\.[^.]+$/, ""),
-        src: `/avatars/${fileName}`,
-        label: labelFromFilename(fileName),
-      }));
+      .map((relativePath) => {
+        const normalized = relativePath.replace(/\\/g, "/");
+        const fileName = path.posix.basename(normalized);
+        return {
+          id: normalized.replace(/\.[^.]+$/, ""),
+          src: `/avatars/${normalized}`,
+          label: labelFromFilename(fileName),
+        };
+      });
 
     return NextResponse.json({ avatars });
   } catch {

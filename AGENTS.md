@@ -22,10 +22,15 @@
 
 ## Settings and overlays
 - Settings UI is shared via `src/app/tasktimer/components/SettingsPanel.tsx` and used on `/tasktimer/settings`.
+- On `/tasktimer/settings`, auto-select `Account` (`general`) only on desktop/wide layouts where nav + detail panels are shown together.
+- On mobile/narrow layouts (list-first view), do not auto-select a pane by default.
+- Keep Settings default-pane behavior as initial-render only; do not force-reset pane selection on viewport resize.
 - Category Manager is implemented as an overlay in `src/app/tasktimer/components/InfoOverlays.tsx` and opened via `data-menu="categoryManager"`.
 - Common overlays and controls depend on stable IDs (e.g. `aboutOverlay`, `howtoOverlay`, `appearanceOverlay`, `categoryManagerOverlay`, `confirmOverlay`, `historyAnalysisOverlay`).
 - History Manager supports bulk edit, hierarchical checkbox selection, and sortable Date/Time + Elapsed columns.
 - Inline history analysis now uses `data-history-action="analyse"` and is enabled only when 2+ columns are lock-selected.
+- In Account pane, Delete Account warning text stays always visible.
+- Delete Account button remains hidden until disclosure is expanded; expanded button appears below the warning text, centered, with an arrow-only disclosure control.
 
 ## Persistent state keys
 - `${STORAGE_KEY}`: primary task storage key (via `lib/storage.ts`).
@@ -40,12 +45,20 @@
 - Mode switch and Add Task controls should only be visible on the Tasks page.
 - Inline task history is wired via `data-history-action` handlers and includes actions like `manage`, `close`, and `pin`.
 - History Manager back action is expected to return to `/tasktimer/settings`.
+- Settings exit button `#closeMenuBtn` label is `Close` and exits to dashboard fallback (`/tasktimer?page=dashboard`) when no overlay/nav stack is active.
+- Settings mobile detail `Back` is pane navigation only (returns to module list), not route exit.
+- `/privacy` back behavior must be history-aware: use browser back when history exists, else fallback to `/tasktimer/settings`.
 - Preserve selector hooks used by delegated handlers (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
 
 ## Styling guardrails
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`; avoid unintended edits to `src/app/tasktimer/styles/tasktimer.css`.
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure light-mode overrides are included when introducing new dark-theme visual elements.
+- User Guide must not inherit shared `.menu` width caps; keep route-scoped full-width overrides under `#app[aria-label="TaskTimer User Guide"]`.
+- User Guide right detail/topic content should use full available panel width.
+- User Guide topic list buttons should match Settings module list style (flat treatment; no extra shading unless explicitly requested).
+- `tasktimer.css` contains repeated route/media blocks; place final authoritative route-specific overrides in the last applicable route-scoped block to avoid later overrides.
+- Prefer route-scoped selectors (`#app[aria-label="..."]`) for Settings/User Guide changes.
 - For all newly added modals and pages, always apply current app styling by default:
   - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
   - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
@@ -79,6 +92,8 @@
 ## Git hygiene
 - Do not revert unrelated local changes.
 - Keep diffs focused and easy to review.
+- Do not create ad-hoc temp scripts/files in repo root (e.g. `tmp_*`, `__inspect_*`, stray one-off files); use a dedicated temp folder such as `workspace/`.
+- Remove accidental scratch artifacts before handoff.
 
 <!-- AUTO-CONTEXT:START -->
 ## Auto-Generated Context

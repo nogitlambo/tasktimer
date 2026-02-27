@@ -466,6 +466,11 @@ export default function Home() {
                   </button>
                 ) : null}
               </div>
+              <div className="pt-1 text-left text-xs text-white/70">
+                <a href="/privacy" className="underline underline-offset-2 hover:text-white">
+                  Privacy Policy
+                </a>
+              </div>
             </div>
           ) : (
             <>
@@ -485,6 +490,9 @@ export default function Home() {
               >
                 Go to Tasks
               </button>
+              <a href="/privacy" className="text-xs text-white/70 underline underline-offset-2 hover:text-white">
+                Privacy Policy
+              </a>
             </>
           )}
         </div>

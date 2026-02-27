@@ -222,19 +222,30 @@ export default function UserGuideScreen({ onBack }: Props) {
           <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
         </div>
       </div>
-      <div className="list userGuidePage" style={{ paddingTop: 18 }}>
+      <div className="list settingsPageList userGuidePage" style={{ paddingTop: 18 }}>
+        <div className="settingsSceneBackdrop" aria-hidden="true">
+          <div className="settingsSceneGlow settingsSceneGlowA" />
+          <div className="settingsSceneGlow settingsSceneGlowB" />
+        </div>
         <div className="menu settingsMenu userGuideMenu settingsDashboardShell dashboardShell" role="dialog" aria-modal="true" aria-label="User Guide">
           <div className="menuHead">
             <div className="menuTitle" aria-label="User Guide">
               User Guide
             </div>
-            <button className="menuIcon settingsCloseIcon" type="button" onClick={onBack} aria-label="Exit user guide">
-              Back
-            </button>
           </div>
 
           <div className={`settingsSplitLayout userGuideSplitLayout${mobileDetailOpen ? " isMobileDetailOpen" : ""}`}>
-            <aside className="settingsNavPanel userGuideNavPanel" aria-label="User Guide topics">
+            <aside className="settingsNavPanel userGuideNavPanel dashboardCard" aria-label="User Guide topics">
+              <div className="settingsNavTopActions">
+                <button
+                  className="btn btn-ghost small settingsNavExitBtn"
+                  type="button"
+                  onClick={onBack}
+                  aria-label="Back"
+                >
+                  Back
+                </button>
+              </div>
               <div className="settingsSectionLabel settingsSideLabel">Topics</div>
               <div className="settingsNavGrid userGuideNavGrid" role="list" aria-label="User Guide Topics">
                 {sections.map((s) => (
@@ -254,7 +265,7 @@ export default function UserGuideScreen({ onBack }: Props) {
               </div>
             </aside>
 
-            <div className={`settingsDetailPanel userGuideDetailPanel${mobileDetailOpen ? " isMobileOpen" : ""}`}>
+            <div className={`settingsDetailPanel userGuideDetailPanel dashboardCard${mobileDetailOpen ? " isMobileOpen" : ""}`}>
               <div className="settingsMobileDetailHead">
                 <button
                   type="button"

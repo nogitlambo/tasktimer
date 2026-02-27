@@ -5446,7 +5446,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else if (!handleAppBackNavigation()) navigateToAppRoute("/tasktimer");
+      else navigateToAppRoute("/tasktimer?page=dashboard");
     });
     on(els.themeToggle, "click", toggleThemeMode);
     on(els.themeToggleRow, "click", (e: any) => {

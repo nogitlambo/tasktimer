@@ -3,8 +3,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
+  deleteUser,
+  getRedirectResult,
+  GoogleAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithPopup,
+  reauthenticateWithRedirect,
   signOut,
+  type User,
   updateProfile,
 } from "firebase/auth";
 
@@ -12,6 +18,7 @@ type SettingsPaneKey =
   | "general"
   | "preferences"
   | "notifications"
+  | "privacy"
   | "userGuide"
   | "about"
   | "feedback"
@@ -29,10 +36,12 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 
 const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
 const AVATAR_SELECTION_STORAGE_PREFIX = "tasktimer:avatarSelection:";
+const ACCOUNT_DELETE_REAUTH_PENDING_KEY = "tasktimer:accountDeletePendingReauth";
 const DEFAULT_AVATARS = [
-  { id: "initials-AN", src: "/avatars/initials-AN.svg", label: "Initials AN" },
+  { id: "initials/initials-AN", src: "/avatars/initials/initials-AN.svg", label: "Initials AN" },
 ];
 type AvatarOption = { id: string; src: string; label: string };
+type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
   const dt = new Date(value);
@@ -63,6 +72,12 @@ function formatRemainingTime(ms: number) {
   const mins = Math.floor(totalSec / 60);
   const secs = totalSec % 60;
   return `${mins}m ${String(secs).padStart(2, "0")}s`;
+}
+
+function shouldUseRedirectAuth() {
+  if (typeof window === "undefined") return false;
+  const w = window as Window & { Capacitor?: unknown };
+  return !!w.Capacitor || window.location.protocol === "file:";
 }
 
 function SettingsNavTile({
@@ -131,6 +146,7 @@ export default function SettingsPanel() {
   const [friendKeyCopyStatus, setFriendKeyCopyStatus] = useState("");
   const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(DEFAULT_AVATARS);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(DEFAULT_AVATARS[0]?.id || "");
   const navItems = useMemo(
@@ -138,6 +154,7 @@ export default function SettingsPanel() {
       { key: "general" as const, label: "Account" },
       { key: "preferences" as const, label: "Preferences" },
       { key: "notifications" as const, label: "Notifications" },
+      { key: "privacy" as const, label: "Privacy Policy" },
       { key: "userGuide" as const, label: "Support" },
       { key: "about" as const, label: "About" },
       { key: "feedback" as const, label: "Feedback" },
@@ -148,6 +165,34 @@ export default function SettingsPanel() {
   );
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const canSubmitFeedback = isValidFeedbackEmail && !!feedbackType && feedbackDetails.trim().length > 0;
+  const avatarGroups = useMemo<AvatarGroup[]>(() => {
+    const groups = new Map<string, AvatarOption[]>();
+    for (const avatar of avatarOptions) {
+      const normalizedId = String(avatar.id || "").replace(/\\/g, "/");
+      const parts = normalizedId.split("/");
+      const folder = parts.length > 1 ? parts[parts.length - 2] || "misc" : "misc";
+      const key = folder.trim() || "misc";
+      const existing = groups.get(key);
+      if (existing) existing.push(avatar);
+      else groups.set(key, [avatar]);
+    }
+    return Array.from(groups.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, items]) => ({
+        key,
+        title: key.replace(/[-_]+/g, " ").trim().toUpperCase(),
+        items: items.slice().sort((a, b) => a.label.localeCompare(b.label)),
+      }));
+  }, [avatarOptions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
+    if (!isMobileViewport) {
+      setActivePane((prev) => prev ?? "general");
+    }
+  }, []);
+
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
@@ -201,7 +246,68 @@ export default function SettingsPanel() {
     }
     const nextId = avatarOptions.some((a) => a.id === selectedAvatarId) ? selectedAvatarId : avatarOptions[0]?.id || "";
     if (nextId !== selectedAvatarId) setSelectedAvatarId(nextId);
-  }, [avatarOptions, selectedAvatarId]);
+  }, [authUserUid, avatarOptions, selectedAvatarId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    let cancelled = false;
+    const resumePendingDelete = async () => {
+      let pendingDelete = false;
+      try {
+        pendingDelete = localStorage.getItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY) === "1";
+      } catch {
+        pendingDelete = false;
+      }
+      if (!pendingDelete) return;
+      try {
+        await getRedirectResult(auth);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        try {
+          localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
+        } catch {
+          // ignore
+        }
+        setAuthError(getErrorMessage(err, "Could not complete Google re-authentication for account deletion."));
+        setAuthStatus("");
+        return;
+      }
+      if (cancelled) return;
+      if (!auth.currentUser) return;
+      try {
+        localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
+      } catch {
+        // ignore
+      }
+      setShowDeleteAccountConfirm(false);
+      setAuthStatus("Re-authentication complete. Deleting account...");
+      setAuthError("");
+      setAuthBusy(true);
+      try {
+        const deleteUid = auth.currentUser.uid;
+        await deleteUser(auth.currentUser);
+        try {
+          localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${deleteUid}`);
+          localStorage.removeItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${deleteUid}`);
+        } catch {
+          // ignore
+        }
+        setAuthStatus("Account deleted.");
+        if (typeof window !== "undefined") window.location.assign("/");
+      } catch (err: unknown) {
+        setAuthError(getErrorMessage(err, "Could not delete account."));
+        setAuthStatus("");
+      } finally {
+        setAuthBusy(false);
+      }
+    };
+    void resumePendingDelete();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid]);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,6 +414,83 @@ export default function SettingsPanel() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const auth = getFirebaseAuthClient();
+    const user = auth?.currentUser || null;
+    if (!auth || !user) {
+      setAuthError("You must be signed in to delete your account.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Deleting account...");
+    setShowDeleteAccountConfirm(false);
+    const deleteSignedInUser = async (targetUser: User) => {
+      const deleteUid = targetUser.uid;
+      await deleteUser(targetUser);
+      try {
+        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${deleteUid}`);
+        localStorage.removeItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${deleteUid}`);
+        localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
+      } catch {
+        // ignore
+      }
+      setAuthStatus("Account deleted.");
+      if (typeof window !== "undefined") window.location.assign("/");
+    };
+    try {
+      await deleteSignedInUser(user);
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code || "") : "";
+      const providerIds = new Set(
+        (user.providerData || []).map((provider) => String(provider?.providerId || "")).filter(Boolean)
+      );
+      const canUseGoogleReauth = providerIds.has("google.com");
+      if (code === "auth/requires-recent-login") {
+        if (canUseGoogleReauth) {
+          const provider = new GoogleAuthProvider();
+          try {
+            setAuthStatus("Recent sign-in required. Re-authenticating with Google...");
+            setAuthError("");
+            if (shouldUseRedirectAuth()) {
+              try {
+                localStorage.setItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY, "1");
+              } catch {
+                // ignore
+              }
+              await reauthenticateWithRedirect(user, provider);
+              return;
+            }
+            await reauthenticateWithPopup(user, provider);
+            const currentUser = auth.currentUser || user;
+            await deleteSignedInUser(currentUser);
+            return;
+          } catch (reauthErr: unknown) {
+            setAuthError(getErrorMessage(reauthErr, "Could not re-authenticate to delete your account."));
+            setAuthStatus("");
+            try {
+              localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
+            } catch {
+              // ignore
+            }
+            return;
+          }
+        }
+        setAuthError(
+          "Recent sign-in required. Sign out, sign in again, then retry Delete Account."
+        );
+        setAuthStatus("");
+        return;
+      }
+      setAuthError(getErrorMessage(err, "Could not delete account."));
+      setAuthStatus("");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const handleSaveAlias = async () => {
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser || null;
@@ -399,8 +582,8 @@ export default function SettingsPanel() {
       <div className={`settingsSplitLayout${mobileDetailOpen ? " isMobileDetailOpen" : ""}`}>
         <aside className="settingsNavPanel dashboardCard" aria-label="Settings navigation">
           <div className="settingsNavTopActions">
-            <button className="menuIcon settingsCloseIcon settingsNavExitBtn" id="closeMenuBtn" type="button" aria-label="Back">
-              &lt; Back
+            <button className="btn btn-ghost small settingsNavExitBtn" id="closeMenuBtn" type="button" aria-label="Close">
+              Close
             </button>
           </div>
           <div className="settingsNavGrid">
@@ -580,24 +763,82 @@ export default function SettingsPanel() {
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 <div className="settingsInlineFooter settingsAuthActions">
                   {authUserEmail ? (
-                    <button
-                      className="btn btn-accent"
-                      id="signInGoogleBtn"
-                      type="button"
-                      disabled={authBusy}
-                      onClick={handleSignOut}
-                    >
-                      Sign Out
-                    </button>
+                    <>
+                      <button
+                        className="btn btn-accent"
+                        id="signInGoogleBtn"
+                        type="button"
+                        disabled={authBusy}
+                        onClick={handleSignOut}
+                      >
+                        Sign Out
+                      </button>
+                    </>
                   ) : null}
                 </div>
+                {authUserEmail ? (
+                  <>
+                    <div className="settingsInlineSectionHead">
+                      <div className="settingsInlineSectionTitle">Delete Account</div>
+                    </div>
+                    <div className="settingsDetailNote settingsDangerDisclosure">
+                      <div className="settingsDangerDisclosureBody">
+                        Deleting your account removes your Firebase sign-in account. Local task and history data on this
+                        device is not removed automatically. Use Reset All if you want to clear local device data.
+                      </div>
+                      <details className="settingsDangerDisclosureToggle">
+                        <summary className="settingsDangerDisclosureSummary" aria-label="Show delete account button" />
+                        <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions">
+                          <button
+                            className="btn btn-warn"
+                            type="button"
+                            disabled={authBusy}
+                            onClick={() => setShowDeleteAccountConfirm(true)}
+                          >
+                            Delete Account
+                          </button>
+                        </div>
+                      </details>
+                    </div>
+                  </>
+                ) : null}
                 {!authUserEmail ? (
                   <div className="settingsDetailNote">
                     Account details are available after signing in from the landing page.
+                    {" "}
+                    <a href="/privacy">Privacy Policy</a>
                   </div>
                 ) : null}
               </section>
             </div>
+            {showDeleteAccountConfirm ? (
+              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowDeleteAccountConfirm(false)}>
+                <div
+                  className="modal settingsInlineConfirmModal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Delete Account"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="settingsInlineConfirmTitle">Delete Account</h3>
+                  <p className="settingsInlineConfirmText">
+                    Permanently delete your sign-in account for this app? This action cannot be undone.
+                  </p>
+                  <p className="settingsInlineConfirmText">
+                    Local task and history data on this device are not deleted automatically. Use Reset All separately
+                    if needed.
+                  </p>
+                  <div className="footerBtns settingsInlineConfirmBtns">
+                    <button className="btn btn-ghost" type="button" onClick={() => setShowDeleteAccountConfirm(false)}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-warn" type="button" onClick={handleDeleteAccount} disabled={authBusy}>
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             {showRemoveFriendKeyConfirm ? (
               <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
                 <div
@@ -625,7 +866,7 @@ export default function SettingsPanel() {
             {showAvatarPickerModal ? (
               <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowAvatarPickerModal(false)}>
                 <div
-                  className="modal settingsAvatarModal"
+                  className="modal settingsInlineConfirmModal settingsAvatarModal"
                   role="dialog"
                   aria-modal="true"
                   aria-label="Choose Avatar"
@@ -633,23 +874,30 @@ export default function SettingsPanel() {
                 >
                   <h3 className="settingsInlineConfirmTitle">Choose Avatar</h3>
                   <div className="settingsAvatarOptions" role="list" aria-label="Available avatars">
-                    {avatarOptions.map((avatar) => (
-                      <button
-                        key={avatar.id}
-                        type="button"
-                        className={`settingsAvatarOption${selectedAvatarId === avatar.id ? " isSelected" : ""}`}
-                        onClick={() => handleSelectAvatar(avatar.id)}
-                        aria-pressed={selectedAvatarId === avatar.id}
-                        title={avatar.label}
-                      >
-                        <img src={avatar.src} alt={avatar.label} className="settingsAvatarOptionImg" />
-                        <span className="settingsAvatarOptionLabel">{avatar.label}</span>
-                        {selectedAvatarId === avatar.id ? (
-                          <span className="settingsAvatarOptionSelected" aria-hidden="true">
-                            Selected
-                          </span>
-                        ) : null}
-                      </button>
+                    {avatarGroups.map((group) => (
+                      <section key={group.key} className="settingsAvatarGroup" aria-label={group.title}>
+                        <h4 className="settingsAvatarGroupTitle">{group.title}</h4>
+                        <div className="settingsAvatarGroupRow" role="list">
+                          {group.items.map((avatar) => (
+                            <button
+                              key={avatar.id}
+                              type="button"
+                              className={`settingsAvatarOption${selectedAvatarId === avatar.id ? " isSelected" : ""}`}
+                              onClick={() => handleSelectAvatar(avatar.id)}
+                              aria-pressed={selectedAvatarId === avatar.id}
+                              title={avatar.label}
+                            >
+                              <img src={avatar.src} alt={avatar.label} className="settingsAvatarOptionImg" />
+                              <span className="settingsAvatarOptionLabel">{avatar.label}</span>
+                              {selectedAvatarId === avatar.id ? (
+                                <span className="settingsAvatarOptionSelected" aria-hidden="true">
+                                  Selected
+                                </span>
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
                     ))}
                   </div>
                   <div className="footerBtns settingsInlineConfirmBtns">
@@ -668,11 +916,11 @@ export default function SettingsPanel() {
             subtitle="Configure task behavior, modes, dashboard options, and appearance."
           >
             <div className="settingsInlineStack">
-              <details className="settingsInlineSection settingsInlineSectionCollapsible">
-                <summary className="settingsInlineSectionHead">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Task Settings</div>
-                </summary>
+                </div>
                 <div className="unitRow">
                   <span>Default Task Timer Format</span>
                   <div className="unitButtons">
@@ -687,13 +935,13 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-              </details>
+              </section>
 
-              <details className="settingsInlineSection settingsInlineSectionCollapsible">
-                <summary className="settingsInlineSectionHead">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Configure Modes</div>
-                </summary>
+                </div>
                 <div className="field categoryFieldRow">
                   <label htmlFor="categoryMode1Input">Default Mode</label>
                   <div className="categoryFieldControl">
@@ -737,13 +985,13 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-              </details>
+              </section>
 
-              <details className="settingsInlineSection settingsInlineSectionCollapsible">
-                <summary className="settingsInlineSectionHead">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Appearance</div>
-                </summary>
+                </div>
                 <div className="toggleRow" id="themeToggleRow">
                   <span>Toggle between light and dark mode</span>
                   <button className="switch on" id="themeToggle" type="button" role="switch" aria-checked="true" />
@@ -752,20 +1000,20 @@ export default function SettingsPanel() {
                   <span>Dynamic colors for progress and history</span>
                   <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
-              </details>
+              </section>
 
-              <details className="settingsInlineSection settingsInlineSectionCollapsible">
-                <summary className="settingsInlineSectionHead">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Dashboard Settings</div>
-                </summary>
+                </div>
                 <div className="settingsDetailNote">
                   Dashboard settings controls can be added here. The section is now part of Preferences and no longer opens a separate modal.
                 </div>
                 <button className="menuItem settingsActionRow" id="dashboardSettingsBtn" type="button">
                   <MenuIconLabel icon="/Dashboard.svg" label="Dashboard Settings" />
                 </button>
-              </details>
+              </section>
             </div>
             <div style={{ display: "none" }} aria-hidden="true">
               <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
@@ -801,6 +1049,30 @@ export default function SettingsPanel() {
                     <span>Enable toast alerts</span>
                     <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
                   </div>
+                </div>
+              </section>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "privacy"}
+            title="Privacy Policy"
+            subtitle="View TaskTimer privacy information and account deletion details."
+          >
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/file.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Privacy Policy</div>
+                </div>
+                <div className="settingsDetailNote">
+                  Review TaskTimer&apos;s privacy policy, including data handling, local storage behavior, and account
+                  deletion information.
+                </div>
+                <div className="settingsInlineFooter">
+                  <a className="btn btn-ghost" href="/privacy">
+                    Open Privacy Policy
+                  </a>
                 </div>
               </section>
             </div>
