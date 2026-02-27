@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated Android and synced web assets:
+    "android/**/build/**",
+    "android/app/src/main/assets/public/**",
+    // Local scratch/debug scripts:
+    "__*.js",
+    "tmp_*.js",
+    "apk_check_*/**",
   ]),
 ]);
 
