@@ -1,55 +1,143 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import {
+  deleteDeletedTaskMeta,
+  deleteTask,
+  loadUserWorkspace,
+  loadDashboard,
+  loadPreferences,
+  loadTaskUi,
+  replaceTaskHistory,
+  saveDashboard,
+  savePreferences,
+  saveTaskUi,
+  saveDeletedTaskMeta,
+  saveTask,
+} from "./cloudStore";
 import { nowMs } from "./time";
 
 export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
 export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
 
-export function loadTasks(): Task[] | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Task[]) : null;
-  } catch {
-    return null;
+let cachedTasks: Task[] = [];
+let cachedHistory: HistoryByTaskId = {};
+let cachedDeletedMeta: DeletedTaskMeta = {};
+let cachedPreferences: Awaited<ReturnType<typeof loadPreferences>> = null;
+let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
+let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
+let hydratedUid = "";
+
+function currentUid(): string {
+  const auth = getFirebaseAuthClient();
+  return String(auth?.currentUser?.uid || "").trim();
+}
+
+export async function hydrateStorageFromCloud(): Promise<void> {
+  const uid = currentUid();
+  if (!uid) {
+    cachedTasks = [];
+    cachedHistory = {};
+    cachedDeletedMeta = {};
+    cachedPreferences = null;
+    cachedDashboard = null;
+    cachedTaskUi = null;
+    hydratedUid = "";
+    return;
   }
+  if (hydratedUid === uid) return;
+  const snapshot = await loadUserWorkspace(uid);
+  cachedTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
+  cachedHistory = snapshot.historyByTaskId || {};
+  cachedDeletedMeta = snapshot.deletedTaskMeta || {};
+  cachedPreferences = snapshot.preferences || null;
+  cachedDashboard = snapshot.dashboard || null;
+  cachedTaskUi = snapshot.taskUi || null;
+  hydratedUid = uid;
+}
+
+export function loadCachedPreferences() {
+  return cachedPreferences;
+}
+
+export function loadCachedDashboard() {
+  return cachedDashboard;
+}
+
+export function loadCachedTaskUi() {
+  return cachedTaskUi;
+}
+
+export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences>) {
+  cachedPreferences = prefs;
+  const uid = currentUid();
+  if (!uid) return;
+  void savePreferences(uid, prefs);
+}
+
+export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard>) {
+  cachedDashboard = dashboard;
+  const uid = currentUid();
+  if (!uid) return;
+  void saveDashboard(uid, dashboard);
+}
+
+export function saveCloudTaskUi(taskUi: NonNullable<typeof cachedTaskUi>) {
+  cachedTaskUi = taskUi;
+  const uid = currentUid();
+  if (!uid) return;
+  void saveTaskUi(uid, taskUi);
+}
+
+export function loadTasks(): Task[] | null {
+  return Array.isArray(cachedTasks) ? cachedTasks : null;
 }
 
 export function saveTasks(tasks: Task[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks || []));
+  const next = Array.isArray(tasks) ? tasks : [];
+  const prevById = new Map((cachedTasks || []).map((t) => [String(t.id || ""), t]));
+  const nextById = new Map(next.map((t) => [String(t.id || ""), t]));
+  cachedTasks = next;
+  const uid = currentUid();
+  if (!uid) return;
+  void Promise.all(
+    next
+      .filter((t) => String(t.id || ""))
+      .map((t) => saveTask(uid, t))
+  );
+  for (const taskId of prevById.keys()) {
+    if (!nextById.has(taskId)) void deleteTask(uid, taskId);
+  }
 }
 
 export function loadHistory(): HistoryByTaskId {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    const hb = raw ? JSON.parse(raw) : {};
-    return hb && typeof hb === "object" ? (hb as HistoryByTaskId) : {};
-  } catch {
-    return {};
-  }
+  return cachedHistory && typeof cachedHistory === "object" ? cachedHistory : {};
 }
 
 export function saveHistory(historyByTaskId: HistoryByTaskId): void {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(historyByTaskId || {}));
-  } catch {}
+  cachedHistory = historyByTaskId || {};
+  const uid = currentUid();
+  if (!uid) return;
+  const entries = Object.entries(cachedHistory || {});
+  void Promise.all(entries.map(([taskId, rows]) => replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])));
 }
 
 export function loadDeletedMeta(): DeletedTaskMeta {
-  try {
-    const raw = localStorage.getItem(DELETED_META_KEY);
-    const dm = raw ? JSON.parse(raw) : {};
-    return dm && typeof dm === "object" ? (dm as DeletedTaskMeta) : {};
-  } catch {
-    return {};
-  }
+  return cachedDeletedMeta && typeof cachedDeletedMeta === "object" ? cachedDeletedMeta : {};
 }
 
 export function saveDeletedMeta(meta: DeletedTaskMeta): void {
-  try {
-    localStorage.setItem(DELETED_META_KEY, JSON.stringify(meta || {}));
-  } catch {}
+  const prev = cachedDeletedMeta || {};
+  const next = meta || {};
+  cachedDeletedMeta = next;
+  const uid = currentUid();
+  if (!uid) return;
+  for (const [taskId, row] of Object.entries(next)) {
+    if (row) void saveDeletedTaskMeta(uid, taskId, row);
+  }
+  for (const taskId of Object.keys(prev)) {
+    if (!next[taskId]) void deleteDeletedTaskMeta(uid, taskId);
+  }
 }
 
 export function cleanupHistory(historyByTaskId: HistoryByTaskId): HistoryByTaskId {

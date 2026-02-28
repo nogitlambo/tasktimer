@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import {
   deleteUser,
   getRedirectResult,
@@ -13,6 +14,7 @@ import {
   type User,
   updateProfile,
 } from "firebase/auth";
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 
 type SettingsPaneKey =
@@ -35,9 +37,6 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
-const AVATAR_SELECTION_STORAGE_PREFIX = "tasktimer:avatarSelection:";
-const ACCOUNT_DELETE_REAUTH_PENDING_KEY = "tasktimer:accountDeletePendingReauth";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
 function formatMemberSinceDate(value: string | null) {
@@ -53,23 +52,14 @@ function getErrorMessage(err: unknown, fallback: string) {
   }
   return fallback;
 }
-function generateFriendInviteKey(length = 24) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()-_=+?";
-  let out = "";
+function generateFriendInviteKey() {
+  let value = Math.floor(Math.random() * 1_000_000);
   if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-    const arr = new Uint32Array(length);
+    const arr = new Uint32Array(1);
     window.crypto.getRandomValues(arr);
-    for (let i = 0; i < length; i++) out += chars[arr[i] % chars.length];
-    return out;
+    value = arr[0] % 1_000_000;
   }
-  for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-function formatRemainingTime(ms: number) {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  const mins = Math.floor(totalSec / 60);
-  const secs = totalSec % 60;
-  return `${mins}m ${String(secs).padStart(2, "0")}s`;
+  return String(value).padStart(6, "0");
 }
 
 function shouldUseRedirectAuth() {
@@ -141,15 +131,40 @@ export default function SettingsPanel() {
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [isEditingAlias, setIsEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState("");
+  const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
-  const [friendInviteKeyExpiresAt, setFriendInviteKeyExpiresAt] = useState<number | null>(null);
-  const [friendInviteKeyNow, setFriendInviteKeyNow] = useState<number>(Date.now());
   const [friendKeyCopyStatus, setFriendKeyCopyStatus] = useState("");
   const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [avatarOptions] = useState<AvatarOption[]>(AVATAR_CATALOG);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
+
+  const accountStateDocRef = (uid: string) => {
+    const db = getFirebaseFirestoreClient();
+    if (!db) return null;
+    return doc(db, "users", uid, "accountState", "v1");
+  };
+
+  const userDocRef = useCallback((uid: string) => {
+    const db = getFirebaseFirestoreClient();
+    if (!db) return null;
+    return doc(db, "users", uid);
+  }, []);
+
+  const saveUserDocPatch = useCallback(async (uid: string, patch: Record<string, unknown>) => {
+    const ref = userDocRef(uid);
+    if (!ref) throw new Error("Cloud Firestore is not available.");
+    await setDoc(
+      ref,
+      {
+        schemaVersion: 1,
+        updatedAt: serverTimestamp(),
+        ...patch,
+      },
+      { merge: true }
+    );
+  }, [userDocRef]);
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -205,70 +220,60 @@ export default function SettingsPanel() {
       setAliasDraft(nextAlias);
       setAuthMemberSince(user?.metadata?.creationTime || null);
       setIsEditingAlias(false);
+      if (user?.uid) {
+        void saveUserDocPatch(user.uid, {
+          email: user.email || "",
+          displayName: user.displayName || null,
+        }).catch(() => {
+          // ignore root profile sync failures here; avatar write path handles user-facing errors.
+        });
+        setSyncState("synced");
+        setSyncMessage("Cloud data connected.");
+        setSyncAtMs(Date.now());
+      } else {
+        setSyncState("idle");
+        setSyncMessage("Sign in to sync preferences.");
+        setSyncAtMs(null);
+      }
     });
     return () => unsub();
-  }, []);
-
-  useEffect(() => {
-    const onSyncState = (evt: Event) => {
-      const custom = evt as CustomEvent<{ status?: unknown; message?: unknown; atMs?: unknown }>;
-      const nextStatus = String(custom.detail?.status || "").trim();
-      const nextMessage = String(custom.detail?.message || "").trim();
-      const nextAtMs = Number(custom.detail?.atMs || 0);
-      if (nextStatus === "idle" || nextStatus === "syncing" || nextStatus === "synced" || nextStatus === "error") {
-        setSyncState(nextStatus);
-      }
-      if (nextMessage) setSyncMessage(nextMessage);
-      if (Number.isFinite(nextAtMs) && nextAtMs > 0) setSyncAtMs(nextAtMs);
-    };
-    window.addEventListener("tasktimer:preferences-sync-state", onSyncState as EventListener);
-    return () => {
-      window.removeEventListener("tasktimer:preferences-sync-state", onSyncState as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (authUserEmail) {
-      if (syncState === "idle") {
-        setSyncState("syncing");
-        setSyncMessage("Syncing preferences...");
-      }
-      return;
-    }
-    setSyncState("idle");
-    setSyncMessage("Sign in to sync preferences.");
-    setSyncAtMs(null);
-  }, [authUserEmail, syncState]);
+  }, [saveUserDocPatch]);
 
   useEffect(() => {
     if (!authUserUid) {
       setFriendInviteKey(null);
-      setFriendInviteKeyExpiresAt(null);
       return;
     }
-    try {
-      const raw = localStorage.getItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
-      if (!raw) {
+    let cancelled = false;
+    const loadAccountState = async () => {
+      const ref = accountStateDocRef(authUserUid);
+      if (!ref) {
         setFriendInviteKey(null);
-        setFriendInviteKeyExpiresAt(null);
         return;
       }
-      const parsed = JSON.parse(raw) as { key?: unknown; expiresAt?: unknown };
-      const key = typeof parsed.key === "string" ? parsed.key : "";
-      const expiresAt = typeof parsed.expiresAt === "number" ? parsed.expiresAt : Number(parsed.expiresAt || 0);
-      if (!key || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
-        setFriendInviteKey(null);
-        setFriendInviteKeyExpiresAt(null);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        if (!cancelled) {
+          setFriendInviteKey(null);
+        }
         return;
       }
-      setFriendInviteKey(key);
-      setFriendInviteKeyExpiresAt(expiresAt);
-      setFriendInviteKeyNow(Date.now());
-    } catch {
-      setFriendInviteKey(null);
-      setFriendInviteKeyExpiresAt(null);
-    }
+      const parsed = snap.data() as { friendInviteKey?: unknown };
+      const key = typeof parsed.friendInviteKey === "string" ? parsed.friendInviteKey : "";
+      if (!key) {
+        if (!cancelled) setFriendInviteKey(null);
+        return;
+      }
+      if (!cancelled) {
+        setFriendInviteKey(key);
+      }
+    };
+    void loadAccountState().catch(() => {
+      if (!cancelled) setFriendInviteKey(null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [authUserUid]);
 
   useEffect(() => {
@@ -286,46 +291,31 @@ export default function SettingsPanel() {
     if (!auth) return;
     let cancelled = false;
     const resumePendingDelete = async () => {
-      let pendingDelete = false;
-      try {
-        pendingDelete = localStorage.getItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY) === "1";
-      } catch {
-        pendingDelete = false;
-      }
+      const uid = String(auth.currentUser?.uid || authUserUid || "").trim();
+      if (!uid) return;
+      const ref = accountStateDocRef(uid);
+      if (!ref) return;
+      const stateSnap = await getDoc(ref);
+      const pendingDelete = stateSnap.exists() && stateSnap.get("deleteReauthPending") === true;
       if (!pendingDelete) return;
       try {
         await getRedirectResult(auth);
       } catch (err: unknown) {
         if (cancelled) return;
-        try {
-          localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
-        } catch {
-          // ignore
-        }
+        await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
         setAuthError(getErrorMessage(err, "Could not complete Google re-authentication for account deletion."));
         setAuthStatus("");
         return;
       }
       if (cancelled) return;
       if (!auth.currentUser) return;
-      try {
-        localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
-      } catch {
-        // ignore
-      }
+      await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
       setShowDeleteAccountConfirm(false);
       setAuthStatus("Re-authentication complete. Deleting account...");
       setAuthError("");
       setAuthBusy(true);
       try {
-        const deleteUid = auth.currentUser.uid;
         await deleteUser(auth.currentUser);
-        try {
-          localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${deleteUid}`);
-          localStorage.removeItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${deleteUid}`);
-        } catch {
-          // ignore
-        }
         setAuthStatus("Account deleted.");
         if (typeof window !== "undefined") window.location.assign("/");
       } catch (err: unknown) {
@@ -342,23 +332,6 @@ export default function SettingsPanel() {
   }, [authUserUid]);
 
   useEffect(() => {
-    if (!authUserUid) return;
-    const onCloudApplied = () => {
-      try {
-        const saved = localStorage.getItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`) || "";
-        const nextId = avatarOptions.some((a) => a.id === saved) ? saved : avatarOptions[0]?.id || "";
-        setSelectedAvatarId(nextId);
-      } catch {
-        setSelectedAvatarId(avatarOptions[0]?.id || "");
-      }
-    };
-    window.addEventListener("tasktimer:preferences-cloud-applied", onCloudApplied as EventListener);
-    return () => {
-      window.removeEventListener("tasktimer:preferences-cloud-applied", onCloudApplied as EventListener);
-    };
-  }, [authUserUid, avatarOptions]);
-
-  useEffect(() => {
     if (!showAvatarPickerModal) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowAvatarPickerModal(false);
@@ -372,46 +345,25 @@ export default function SettingsPanel() {
       setSelectedAvatarId(avatarOptions[0]?.id || "");
       return;
     }
-    try {
-      const saved = localStorage.getItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`) || "";
+    let cancelled = false;
+    const loadAvatar = async () => {
+      const ref = userDocRef(authUserUid);
+      if (!ref) {
+        if (!cancelled) setSelectedAvatarId(avatarOptions[0]?.id || "");
+        return;
+      }
+      const snap = await getDoc(ref);
+      const saved = snap.exists() ? String(snap.get("avatarId") || "") : "";
       const nextId = avatarOptions.some((a) => a.id === saved) ? saved : avatarOptions[0]?.id || "";
-      setSelectedAvatarId(nextId);
-    } catch {
-      setSelectedAvatarId(avatarOptions[0]?.id || "");
-    }
-  }, [authUserUid, avatarOptions]);
-
-  useEffect(() => {
-    if (!friendInviteKeyExpiresAt) return;
-    if (friendInviteKeyExpiresAt <= Date.now()) {
-      if (authUserUid) {
-        try {
-          localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
-        } catch {
-          // ignore
-        }
-      }
-      setFriendInviteKey(null);
-      setFriendInviteKeyExpiresAt(null);
-      return;
-    }
-    const timer = window.setInterval(() => {
-      const now = Date.now();
-      setFriendInviteKeyNow(now);
-      if (friendInviteKeyExpiresAt <= now) {
-        if (authUserUid) {
-          try {
-            localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
-          } catch {
-            // ignore
-          }
-        }
-        setFriendInviteKey(null);
-        setFriendInviteKeyExpiresAt(null);
-      }
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [friendInviteKeyExpiresAt, authUserUid]);
+      if (!cancelled) setSelectedAvatarId(nextId);
+    };
+    void loadAvatar().catch(() => {
+      if (!cancelled) setSelectedAvatarId(avatarOptions[0]?.id || "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid, avatarOptions, userDocRef]);
 
   const handleSignOut = async () => {
     const auth = getFirebaseAuthClient();
@@ -456,12 +408,13 @@ export default function SettingsPanel() {
     const deleteSignedInUser = async (targetUser: User) => {
       const deleteUid = targetUser.uid;
       await deleteUser(targetUser);
-      try {
-        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${deleteUid}`);
-        localStorage.removeItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${deleteUid}`);
-        localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
-      } catch {
-        // ignore
+      const accountRef = accountStateDocRef(deleteUid);
+      if (accountRef) {
+        try {
+          await deleteDoc(accountRef);
+        } catch {
+          // ignore
+        }
       }
       setAuthStatus("Account deleted.");
       if (typeof window !== "undefined") window.location.assign("/");
@@ -482,11 +435,8 @@ export default function SettingsPanel() {
             setAuthStatus("Recent sign-in required. Re-authenticating with Google...");
             setAuthError("");
             if (shouldUseRedirectAuth()) {
-              try {
-                localStorage.setItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY, "1");
-              } catch {
-                // ignore
-              }
+              const ref = accountStateDocRef(user.uid);
+              if (ref) await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true });
               await reauthenticateWithRedirect(user, provider);
               return;
             }
@@ -497,11 +447,8 @@ export default function SettingsPanel() {
           } catch (reauthErr: unknown) {
             setAuthError(getErrorMessage(reauthErr, "Could not re-authenticate to delete your account."));
             setAuthStatus("");
-            try {
-              localStorage.removeItem(ACCOUNT_DELETE_REAUTH_PENDING_KEY);
-            } catch {
-              // ignore
-            }
+            const ref = accountStateDocRef(user.uid);
+            if (ref) await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
             return;
           }
         }
@@ -546,29 +493,19 @@ export default function SettingsPanel() {
 
   const handleGenerateFriendKey = () => {
     if (!authUserUid) return;
-    const key = generateFriendInviteKey(24);
-    const expiresAt = Date.now() + 60 * 60 * 1000;
+    const key = generateFriendInviteKey();
     setFriendInviteKey(key);
-    setFriendInviteKeyExpiresAt(expiresAt);
-    setFriendInviteKeyNow(Date.now());
-    try {
-      localStorage.setItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`, JSON.stringify({ key, expiresAt }));
-    } catch {
-      // ignore
-    }
+    const ref = accountStateDocRef(authUserUid);
+    if (ref) void setDoc(ref, { friendInviteKey: key, friendInviteKeyExpiresAt: null, updatedAt: serverTimestamp() }, { merge: true });
     setFriendKeyCopyStatus("");
   };
 
   const handleRemoveFriendKey = () => {
     if (authUserUid) {
-      try {
-        localStorage.removeItem(`${FRIEND_KEY_STORAGE_PREFIX}${authUserUid}`);
-      } catch {
-        // ignore
-      }
+      const ref = accountStateDocRef(authUserUid);
+      if (ref) void setDoc(ref, { friendInviteKey: null, friendInviteKeyExpiresAt: null, updatedAt: serverTimestamp() }, { merge: true });
     }
     setFriendInviteKey(null);
-    setFriendInviteKeyExpiresAt(null);
     setFriendKeyCopyStatus("");
     setShowRemoveFriendKeyConfirm(false);
   };
@@ -585,13 +522,31 @@ export default function SettingsPanel() {
     }
   };
 
-  const handleSelectAvatar = (avatarId: string) => {
-    setSelectedAvatarId(avatarId);
+  const handleCopyUid = async () => {
     if (!authUserUid) return;
     try {
-      localStorage.setItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`, avatarId);
+      await navigator.clipboard.writeText(authUserUid);
+      setUidCopyStatus("Copied");
+      window.setTimeout(() => setUidCopyStatus(""), 1200);
     } catch {
-      // ignore
+      setUidCopyStatus("Copy failed");
+      window.setTimeout(() => setUidCopyStatus(""), 1500);
+    }
+  };
+
+  const handleSelectAvatar = async (avatarId: string) => {
+    setSelectedAvatarId(avatarId);
+    if (!authUserUid) {
+      setAuthError("Sign in is required to save avatar selection.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthError("");
+    try {
+      await saveUserDocPatch(authUserUid, { avatarId });
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not save avatar selection."));
+      setAuthStatus("");
     }
     setShowAvatarPickerModal(false);
   };
@@ -739,7 +694,14 @@ export default function SettingsPanel() {
                 {authUserEmail ? (
                   <div className="settingsDetailNote">
                     <div>Signed in as: {authUserEmail}</div>
-                    {authUserUid ? <div>UID: {authUserUid}</div> : null}
+                    {authUserUid ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                        <span>UID: {authUserUid}</span>
+                        <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={handleCopyUid}>
+                          {uidCopyStatus || "Copy"}
+                        </button>
+                      </div>
+                    ) : null}
                     <div className={`settingsSyncStatus is-${syncState}`}>
                       <span className="settingsSyncStatusDot" aria-hidden="true" />
                       <span className="settingsSyncStatusText">{syncMessage}</span>
@@ -749,59 +711,9 @@ export default function SettingsPanel() {
                         </span>
                       ) : null}
                     </div>
-                    {authUserUid ? (
-                      <div className="settingsFriendKeyBlock">
-                        <button
-                          className="btn btn-ghost small settingsFriendKeyBtn"
-                          type="button"
-                          onClick={handleGenerateFriendKey}
-                        >
-                          Generate Random Key
-                        </button>
-                        {friendInviteKey ? (
-                          <>
-                            <div className="settingsFriendKeyRow">
-                              <div className="settingsFriendKeyValue">{friendInviteKey}</div>
-                              <div className="settingsFriendKeyActions">
-                                <button
-                                  className="btn btn-ghost small settingsFriendKeyActionBtn"
-                                  type="button"
-                                  onClick={handleCopyFriendKey}
-                                >
-                                  Copy
-                                </button>
-                                  <button
-                                    className="btn btn-ghost small settingsFriendKeyActionBtn settingsFriendKeyRemoveBtn"
-                                    type="button"
-                                    onClick={() => setShowRemoveFriendKeyConfirm(true)}
-                                  >
-                                    Remove
-                                  </button>
-                              </div>
-                            </div>
-                            {friendKeyCopyStatus ? (
-                              <div className="settingsFriendKeyCopyStatus">{friendKeyCopyStatus}</div>
-                            ) : null}
-                            {friendInviteKeyExpiresAt ? (
-                              <div className="settingsFriendKeyExpiry">
-                                Expires in {formatRemainingTime(friendInviteKeyExpiresAt - friendInviteKeyNow)}
-                              </div>
-                            ) : null}
-                          </>
-                        ) : (
-                          <div className="settingsFriendKeyExpiry">No active key. Keys expire after 60 minutes.</div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-                {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
-                {authError ? <div className="settingsAuthError">{authError}</div> : null}
-                <div className="settingsInlineFooter settingsAuthActions">
-                  {authUserEmail ? (
-                    <>
+                    <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
                       <button
-                        className="btn btn-accent"
+                        className="btn btn-accent small settingsSignOutBtn"
                         id="signInGoogleBtn"
                         type="button"
                         disabled={authBusy}
@@ -809,12 +721,58 @@ export default function SettingsPanel() {
                       >
                         Sign Out
                       </button>
-                    </>
-                  ) : null}
-                </div>
+                    </div>
+                  </div>
+                ) : null}
+                {authUserUid ? (
+                  <section className="settingsInlineSection">
+                    <div className="settingsInlineSectionHead">
+                      <div className="settingsInlineSectionTitle">Friend Key</div>
+                    </div>
+                    <div className="settingsFriendKeyBlock">
+                      <button
+                        className="btn btn-ghost small settingsFriendKeyBtn"
+                        type="button"
+                        onClick={handleGenerateFriendKey}
+                      >
+                        Generate OTC
+                      </button>
+                      {friendInviteKey ? (
+                        <>
+                          <div className="settingsFriendKeyRow">
+                            <div className="settingsFriendKeyValue">{friendInviteKey}</div>
+                            <div className="settingsFriendKeyActions">
+                              <button
+                                className="btn btn-ghost small settingsFriendKeyActionBtn"
+                                type="button"
+                                onClick={handleCopyFriendKey}
+                              >
+                                Copy
+                              </button>
+                                <button
+                                  className="btn btn-ghost small settingsFriendKeyActionBtn settingsFriendKeyRemoveBtn"
+                                  type="button"
+                                  onClick={() => setShowRemoveFriendKeyConfirm(true)}
+                                >
+                                  Remove
+                                </button>
+                            </div>
+                          </div>
+                          {friendKeyCopyStatus ? (
+                            <div className="settingsFriendKeyCopyStatus">{friendKeyCopyStatus}</div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <div className="settingsFriendKeyExpiry">No active key. Generate a 6-digit one-time key.</div>
+                      )}
+                    </div>
+                  </section>
+                ) : null}
+                {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
+                {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 {authUserEmail ? (
                   <>
-                    <div className="settingsInlineSectionHead">
+                    <div className="settingsInlineSectionHead settingsDeleteAccountHead">
                       <div className="settingsInlineSectionTitle">Delete Account</div>
                     </div>
                     <div className="settingsDetailNote settingsDangerDisclosure">
@@ -1053,10 +1011,10 @@ export default function SettingsPanel() {
             </div>
             <div style={{ display: "none" }} aria-hidden="true">
               <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
-                Save
+                Save Task Settings
               </button>
               <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
-                Save
+                Save Category
               </button>
               <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
                 Reset Defaults
@@ -1093,21 +1051,13 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "privacy"}
             title="Privacy Policy"
-            subtitle="View TaskTimer privacy information and account deletion details."
+            subtitle="Review TaskTimer's privacy policy, including data handling, local storage behavior, and account deletion information."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/file.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Privacy Policy</div>
-                </div>
-                <div className="settingsDetailNote">
-                  Review TaskTimer&apos;s privacy policy, including data handling, local storage behavior, and account
-                  deletion information.
-                </div>
-                <div className="settingsInlineFooter">
-                  <a className="btn btn-ghost" href="/privacy">
-                    Open Privacy Policy
+                <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
+                  <a className="menuItem settingsActionRow" href="/privacy">
+                    <MenuIconLabel icon="/file.svg" label="Privacy Policy" />
                   </a>
                 </div>
               </section>

@@ -12,11 +12,19 @@ import {
   rememberRecentCustomTaskName,
 } from "./lib/addTaskNames";
 import { computeFocusInsights } from "./lib/focusInsights";
-import { startUserPreferencesCloudSync } from "./lib/userPreferencesSync";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
-  STORAGE_KEY,
-  HISTORY_KEY,
-  DELETED_META_KEY,
+  approveFriendRequest,
+  declineFriendRequest,
+  loadFriendships,
+  loadIncomingRequests,
+  loadOutgoingRequests,
+  sendFriendRequest,
+  type FriendRequest,
+  type Friendship,
+} from "./lib/friendsStore";
+import {
+  hydrateStorageFromCloud,
   loadTasks,
   saveTasks,
   loadHistory,
@@ -24,6 +32,12 @@ import {
   loadDeletedMeta,
   saveDeletedMeta,
   cleanupHistory,
+  loadCachedDashboard,
+  loadCachedPreferences,
+  loadCachedTaskUi,
+  saveCloudDashboard,
+  saveCloudPreferences,
+  saveCloudTaskUi,
 } from "./lib/storage";
 
 export type TaskTimerClientHandle = {
@@ -57,7 +71,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let tickTimeout: number | null = null;
   let tickRaf: number | null = null;
   let newTaskHighlightTimer: number | null = null;
-  let stopUserPreferencesCloudSync: null | (() => void) = null;
+  let eventsWired = false;
+  let tickStarted = false;
 
   const destroy = () => {
     destroyed = true;
@@ -68,14 +83,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
     if (checkpointRepeatCycleTimer != null) window.clearTimeout(checkpointRepeatCycleTimer);
-    if (stopUserPreferencesCloudSync) {
-      try {
-        stopUserPreferencesCloudSync();
-      } catch {
-        // ignore
-      }
-      stopUserPreferencesCloudSync = null;
-    }
     if (removeCapBackListener) {
       try {
         removeCapBackListener();
@@ -112,8 +119,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     mode2: "#00CFC8",
     mode3: "#00CFC8",
   };
-  const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
-  const MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels`; // legacy
   let currentMode: MainMode = "mode1";
   let modeLabels: Record<MainMode, string> = { ...DEFAULT_MODE_LABELS };
   let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
@@ -127,18 +132,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
-  const THEME_KEY = `${STORAGE_KEY}:theme`;
-  const ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames`;
-  const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
-  const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
-  const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
-  const CHECKPOINT_ALERT_SOUND_KEY = `${STORAGE_KEY}:checkpointAlertSoundEnabled`;
-  const CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled`;
-  const HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId`;
-  const HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId`;
-  const DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder`;
-  const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
-  const PENDING_TASK_JUMP_KEY = `${STORAGE_KEY}:pendingTaskJump`;
   let themeMode: "light" | "dark" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
@@ -241,6 +234,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let checkpointAutoResetDirty = false;
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
   const checkpointBaselineSecByTaskId: Record<string, number> = {};
+  let cloudPreferencesCache = loadCachedPreferences();
+  let cloudDashboardCache = loadCachedDashboard();
+  let cloudTaskUiCache = loadCachedTaskUi();
+  let navStackMemory: string[] = [];
+  let pendingTaskJumpMemory: string | null = null;
+  let groupsIncomingRequests: FriendRequest[] = [];
+  let groupsOutgoingRequests: FriendRequest[] = [];
+  let groupsFriendships: Friendship[] = [];
+  let groupsLoading = false;
+  let groupsStatusMessage = "Ready.";
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -296,6 +299,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     appPageDashboard: document.getElementById("appPageDashboard"),
     appPageTest1: document.getElementById("appPageTest1"),
     appPageTest2: document.getElementById("appPageTest2"),
+    groupsFriendsSection: document.getElementById("groupsFriendsSection"),
+    openFriendRequestModalBtn: document.getElementById("openFriendRequestModalBtn") as HTMLButtonElement | null,
+    friendRequestModal: document.getElementById("friendRequestModal"),
+    friendRequestUserIdInput: document.getElementById("friendRequestUserIdInput") as HTMLInputElement | null,
+    friendRequestTokenInput: document.getElementById("friendRequestTokenInput") as HTMLInputElement | null,
+    friendRequestCancelBtn: document.getElementById("friendRequestCancelBtn") as HTMLButtonElement | null,
+    friendRequestSendBtn: document.getElementById("friendRequestSendBtn") as HTMLButtonElement | null,
+    groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
+    groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
+    groupsFriendsList: document.getElementById("groupsFriendsList"),
+    groupsFriendRequestStatus: document.getElementById("groupsFriendRequestStatus"),
     footerTasksBtn: document.getElementById("footerTasksBtn") as HTMLButtonElement | null,
     footerDashboardBtn: document.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
@@ -546,21 +560,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function loadNavStack(): string[] {
-    try {
-      const raw = localStorage.getItem(NAV_STACK_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed.map((v) => String(v || "")).filter(Boolean) : [];
-    } catch {
-      return [];
-    }
+    return Array.isArray(navStackMemory) ? navStackMemory.slice() : [];
   }
 
   function saveNavStack(stack: string[]) {
-    try {
-      localStorage.setItem(NAV_STACK_KEY, JSON.stringify(stack.slice(-50)));
-    } catch {
-      // ignore
-    }
+    navStackMemory = (Array.isArray(stack) ? stack : []).slice(-50);
   }
 
   function pushCurrentScreenToNavStack(pageOverride?: "tasks" | "dashboard" | "test1" | "test2") {
@@ -798,6 +802,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function load() {
     const loaded = loadTasks();
     if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
+      // Prevent duplicate default-task writes for signed-in users.
+      // Cloud hydration runs asynchronously; creating defaults before it completes
+      // can repeatedly insert new task IDs into Firestore across app startups.
+      const uid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+      if (uid) {
+        tasks = [];
+        return;
+      }
       tasks = defaultTasks();
       saveTasks(tasks);
       return;
@@ -905,21 +917,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function savePendingTaskJump(taskId: string | null) {
-    try {
-      if (!taskId) localStorage.removeItem(PENDING_TASK_JUMP_KEY);
-      else localStorage.setItem(PENDING_TASK_JUMP_KEY, String(taskId));
-    } catch {
-      // ignore
-    }
+    pendingTaskJumpMemory = taskId ? String(taskId) : null;
   }
 
   function loadPendingTaskJump() {
-    try {
-      const raw = String(localStorage.getItem(PENDING_TASK_JUMP_KEY) || "").trim();
-      return raw || null;
-    } catch {
-      return null;
-    }
+    const raw = String(pendingTaskJumpMemory || "").trim();
+    return raw || null;
   }
 
   function jumpToTaskById(taskId: string) {
@@ -969,84 +972,54 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function loadHistoryRangePrefs() {
     historyRangeDaysByTaskId = {};
     historyRangeModeByTaskId = {};
-    try {
-      const raw = localStorage.getItem(HISTORY_RANGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return;
-      Object.keys(parsed).forEach((taskId) => {
-        const value = (parsed as any)[taskId];
-        historyRangeDaysByTaskId[taskId] = value === 14 ? 14 : 7;
-      });
-    } catch {
-      // ignore
-    }
-    try {
-      const rawMode = localStorage.getItem(HISTORY_RANGE_MODE_KEY);
-      if (!rawMode) return;
-      const parsedMode = JSON.parse(rawMode);
-      if (!parsedMode || typeof parsedMode !== "object") return;
-      Object.keys(parsedMode).forEach((taskId) => {
-        const value = (parsedMode as any)[taskId];
-        historyRangeModeByTaskId[taskId] = value === "day" ? "day" : "entries";
-      });
-    } catch {
-      // ignore
-    }
+    const taskUi = cloudTaskUiCache || loadCachedTaskUi();
+    if (!taskUi) return;
+    Object.keys(taskUi.historyRangeDaysByTaskId || {}).forEach((taskId) => {
+      const value = (taskUi.historyRangeDaysByTaskId as any)[taskId];
+      historyRangeDaysByTaskId[taskId] = value === 14 ? 14 : 7;
+    });
+    Object.keys(taskUi.historyRangeModeByTaskId || {}).forEach((taskId) => {
+      const value = (taskUi.historyRangeModeByTaskId as any)[taskId];
+      historyRangeModeByTaskId[taskId] = value === "day" ? "day" : "entries";
+    });
   }
 
   function saveHistoryRangePref(taskId: string, rangeDays: 7 | 14) {
     if (!taskId) return;
     historyRangeDaysByTaskId[taskId] = rangeDays;
-    try {
-      localStorage.setItem(HISTORY_RANGE_KEY, JSON.stringify(historyRangeDaysByTaskId));
-    } catch {
-      // ignore
-    }
+    persistTaskUiToCloud();
   }
 
   function saveHistoryRangeModePref(taskId: string, rangeMode: "entries" | "day") {
     if (!taskId) return;
     historyRangeModeByTaskId[taskId] = rangeMode;
-    try {
-      localStorage.setItem(HISTORY_RANGE_MODE_KEY, JSON.stringify(historyRangeModeByTaskId));
-    } catch {
-      // ignore
-    }
+    persistTaskUiToCloud();
   }
 
   function applyDashboardOrderFromStorage() {
     const grid = els.dashboardGrid;
     if (!grid) return;
-    try {
-      const raw = localStorage.getItem(DASHBOARD_ORDER_KEY);
-      if (!raw) return;
-      const order = JSON.parse(raw);
-      if (!Array.isArray(order) || !order.length) return;
-      const byId = new Map<string, HTMLElement>();
-      Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-        const card = el as HTMLElement;
-        const id = card.getAttribute("data-dashboard-id");
-        if (id) byId.set(id, card);
-      });
-      order.forEach((id: any) => {
-        const card = byId.get(String(id || ""));
-        if (card) grid.appendChild(card);
-      });
-    } catch {
-      // ignore
-    }
+    const dashboard = cloudDashboardCache || loadCachedDashboard();
+    const order = Array.isArray(dashboard?.order) ? dashboard?.order : [];
+    if (!order.length) return;
+    const byId = new Map<string, HTMLElement>();
+    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
+      const card = el as HTMLElement;
+      const id = card.getAttribute("data-dashboard-id");
+      if (id) byId.set(id, card);
+    });
+    order.forEach((id: any) => {
+      const card = byId.get(String(id || ""));
+      if (card) grid.appendChild(card);
+    });
   }
 
   function saveDashboardOrder() {
     const grid = els.dashboardGrid;
     if (!grid) return;
     const order = getCurrentDashboardOrder();
-    try {
-      localStorage.setItem(DASHBOARD_ORDER_KEY, JSON.stringify(order));
-    } catch {
-      // ignore
-    }
+    cloudDashboardCache = { order };
+    saveCloudDashboard(cloudDashboardCache);
   }
 
   function getCurrentDashboardOrder() {
@@ -1158,6 +1131,42 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function currentUid() {
+    return String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+  }
+
+  function persistPreferencesToCloud() {
+    const uid = currentUid();
+    if (!uid) return;
+    cloudPreferencesCache = {
+      schemaVersion: 1,
+      theme: themeMode,
+      defaultTaskTimerFormat,
+      dynamicColorsEnabled,
+      checkpointAlertSoundEnabled,
+      checkpointAlertToastEnabled,
+      modeSettings: {
+        mode1: { label: modeLabels.mode1, enabled: true, color: modeColors.mode1 },
+        mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2, color: modeColors.mode2 },
+        mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3, color: modeColors.mode3 },
+      },
+      updatedAtMs: Date.now(),
+    };
+    saveCloudPreferences(cloudPreferencesCache);
+  }
+
+  function persistTaskUiToCloud() {
+    const uid = currentUid();
+    if (!uid) return;
+    cloudTaskUiCache = {
+      historyRangeDaysByTaskId,
+      historyRangeModeByTaskId,
+      pinnedHistoryTaskIds: Array.from(pinnedHistoryTaskIds),
+      customTaskNames: addTaskCustomNames.slice(0, 5),
+    };
+    saveCloudTaskUi(cloudTaskUiCache);
+  }
+
   function sanitizeModeLabel(value: unknown, fallback: string) {
     const raw = String(value ?? "").trim().replace(/\s+/g, " ");
     if (!raw) return fallback;
@@ -1229,19 +1238,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function saveModeSettings() {
-    try {
-      localStorage.setItem(
-        MODE_SETTINGS_KEY,
-        JSON.stringify({
-          mode1: { label: modeLabels.mode1, enabled: true },
-          mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2, color: modeColors.mode2 },
-          mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3, color: modeColors.mode3 },
-          mode1Color: modeColors.mode1,
-        })
-      );
-    } catch {
-      // ignore
-    }
+    persistPreferencesToCloud();
   }
 
   function loadModeLabels() {
@@ -1249,28 +1246,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     modeEnabled = { ...DEFAULT_MODE_ENABLED };
     modeColors = { ...DEFAULT_MODE_COLORS };
     try {
-      const rawSettings = localStorage.getItem(MODE_SETTINGS_KEY);
-      if (rawSettings) {
-        const parsed = JSON.parse(rawSettings);
-        if (parsed && typeof parsed === "object") {
-          modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1?.label, DEFAULT_MODE_LABELS.mode1);
-          modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2?.label, DEFAULT_MODE_LABELS.mode2);
-          modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
-          modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
-          modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
-          modeColors.mode1 = sanitizeModeColor((parsed as any).mode1?.color ?? (parsed as any).mode1Color, DEFAULT_MODE_COLORS.mode1);
-          modeColors.mode2 = sanitizeModeColor((parsed as any).mode2?.color, DEFAULT_MODE_COLORS.mode2);
-          modeColors.mode3 = sanitizeModeColor((parsed as any).mode3?.color, DEFAULT_MODE_COLORS.mode3);
-          return;
-        }
+      const parsed = (cloudPreferencesCache || loadCachedPreferences())?.modeSettings;
+      if (parsed && typeof parsed === "object") {
+        modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1?.label, DEFAULT_MODE_LABELS.mode1);
+        modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2?.label, DEFAULT_MODE_LABELS.mode2);
+        modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
+        modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
+        modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
+        modeColors.mode1 = sanitizeModeColor((parsed as any).mode1?.color ?? (parsed as any).mode1Color, DEFAULT_MODE_COLORS.mode1);
+        modeColors.mode2 = sanitizeModeColor((parsed as any).mode2?.color, DEFAULT_MODE_COLORS.mode2);
+        modeColors.mode3 = sanitizeModeColor((parsed as any).mode3?.color, DEFAULT_MODE_COLORS.mode3);
+        return;
       }
-      const raw = localStorage.getItem(MODE_LABELS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return;
-      modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1, DEFAULT_MODE_LABELS.mode1);
-      modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2, DEFAULT_MODE_LABELS.mode2);
-      modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3, DEFAULT_MODE_LABELS.mode3);
+      modeLabels = { ...DEFAULT_MODE_LABELS };
+      modeEnabled = { ...DEFAULT_MODE_ENABLED };
       modeColors = { ...DEFAULT_MODE_COLORS };
     } catch {
       // ignore
@@ -3330,14 +3319,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     })();
 
-    let hb: Record<string, any[]> = {};
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      hb = raw ? JSON.parse(raw) : {};
-      if (!hb || typeof hb !== "object") hb = {};
-    } catch {
-      hb = {};
-    }
+    let hb: Record<string, any[]> = (loadHistory() as Record<string, any[]>) || {};
+    if (!hb || typeof hb !== "object") hb = {};
 
     const idsWithHistory = Object.keys(hb || {}).filter((id) => {
       const arr = (hb as any)[id];
@@ -3881,42 +3864,24 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function loadThemePreference() {
-    let mode: "light" | "dark" = "dark";
-    try {
-      const raw = localStorage.getItem(THEME_KEY);
-      if (raw === "light" || raw === "dark") mode = raw;
-    } catch {
-      // ignore
-    }
+    const mode: "light" | "dark" = (cloudPreferencesCache || loadCachedPreferences())?.theme === "light" ? "light" : "dark";
     applyTheme(mode);
   }
 
   function loadAddTaskCustomNames() {
-    try {
-      const raw = localStorage.getItem(ADD_TASK_CUSTOM_KEY);
-      addTaskCustomNames = parseRecentCustomTaskNames(raw, 5);
-    } catch {
-      addTaskCustomNames = [];
-    }
+    const settings = (cloudTaskUiCache || loadCachedTaskUi()) as any;
+    const raw = Array.isArray(settings?.customTaskNames) ? JSON.stringify(settings.customTaskNames) : "";
+    addTaskCustomNames = parseRecentCustomTaskNames(raw, 5);
   }
 
   function loadDefaultTaskTimerFormat() {
-    let next: "day" | "hour" | "minute" = "hour";
-    try {
-      const raw = (localStorage.getItem(DEFAULT_TASK_TIMER_FORMAT_KEY) || "").trim();
-      if (raw === "day" || raw === "hour" || raw === "minute") next = raw;
-    } catch {
-      // ignore
-    }
+    const raw = (cloudPreferencesCache || loadCachedPreferences())?.defaultTaskTimerFormat;
+    const next: "day" | "hour" | "minute" = raw === "day" || raw === "minute" ? raw : "hour";
     defaultTaskTimerFormat = next;
   }
 
   function saveDefaultTaskTimerFormat() {
-    try {
-      localStorage.setItem(DEFAULT_TASK_TIMER_FORMAT_KEY, defaultTaskTimerFormat);
-    } catch {
-      // ignore
-    }
+    persistPreferencesToCloud();
   }
 
   function toggleSwitchElement(el: HTMLElement | null | undefined, enabled: boolean) {
@@ -3939,69 +3904,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function loadDynamicColorsSetting() {
-    let next = true;
-    try {
-      const raw = (localStorage.getItem(DYNAMIC_COLORS_KEY) || "").trim().toLowerCase();
-      if (raw === "false" || raw === "0" || raw === "off") next = false;
-      else if (raw === "true" || raw === "1" || raw === "on") next = true;
-    } catch {
-      // ignore
-    }
-    dynamicColorsEnabled = next;
+    dynamicColorsEnabled = (cloudPreferencesCache || loadCachedPreferences())?.dynamicColorsEnabled !== false;
   }
 
   function saveDynamicColorsSetting() {
-    try {
-      localStorage.setItem(DYNAMIC_COLORS_KEY, dynamicColorsEnabled ? "true" : "false");
-    } catch {
-      // ignore
-    }
+    persistPreferencesToCloud();
   }
 
   function loadCheckpointAlertSettings() {
-    let soundNext = true;
-    let toastNext = true;
-    try {
-      const raw = (localStorage.getItem(CHECKPOINT_ALERT_SOUND_KEY) || "").trim().toLowerCase();
-      if (raw === "false" || raw === "0" || raw === "off") soundNext = false;
-      else if (raw === "true" || raw === "1" || raw === "on") soundNext = true;
-    } catch {
-      // ignore
-    }
-    try {
-      const raw = (localStorage.getItem(CHECKPOINT_ALERT_TOAST_KEY) || "").trim().toLowerCase();
-      if (raw === "false" || raw === "0" || raw === "off") toastNext = false;
-      else if (raw === "true" || raw === "1" || raw === "on") toastNext = true;
-    } catch {
-      // ignore
-    }
-    checkpointAlertSoundEnabled = soundNext;
-    checkpointAlertToastEnabled = toastNext;
+    const prefs = cloudPreferencesCache || loadCachedPreferences();
+    checkpointAlertSoundEnabled = prefs?.checkpointAlertSoundEnabled !== false;
+    checkpointAlertToastEnabled = prefs?.checkpointAlertToastEnabled !== false;
   }
 
   function saveCheckpointAlertSettings() {
-    try {
-      localStorage.setItem(CHECKPOINT_ALERT_SOUND_KEY, checkpointAlertSoundEnabled ? "true" : "false");
-      localStorage.setItem(CHECKPOINT_ALERT_TOAST_KEY, checkpointAlertToastEnabled ? "true" : "false");
-    } catch {
-      // ignore
-    }
-  }
-
-  function applySyncedPreferencesFromStorage() {
-    loadDefaultTaskTimerFormat();
-    loadDynamicColorsSetting();
-    loadCheckpointAlertSettings();
-    loadThemePreference();
-    loadModeLabels();
-    syncTaskSettingsUi();
-    syncModeLabelsUi();
-    if (!isModeEnabled(currentMode)) {
-      applyMainMode("mode1");
-    } else {
-      applyModeAccent(currentMode);
-    }
-    render();
+    persistPreferencesToCloud();
   }
 
   function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
@@ -4530,33 +4447,27 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function saveAddTaskCustomNames() {
-    try {
-      localStorage.setItem(ADD_TASK_CUSTOM_KEY, JSON.stringify(addTaskCustomNames.slice(0, 5)));
-    } catch {
-      // ignore
-    }
+    const next = {
+      historyRangeDaysByTaskId,
+      historyRangeModeByTaskId,
+      pinnedHistoryTaskIds: Array.from(pinnedHistoryTaskIds),
+      customTaskNames: addTaskCustomNames.slice(0, 5),
+    } as any;
+    cloudTaskUiCache = next;
+    saveCloudTaskUi(next);
   }
 
   function loadPinnedHistoryTaskIds() {
-    try {
-      const raw = localStorage.getItem(PINNED_HISTORY_KEY);
-      const parsed = safeJsonParse(raw || "");
-      if (!Array.isArray(parsed)) {
-        pinnedHistoryTaskIds = new Set<string>();
-        return;
-      }
-      pinnedHistoryTaskIds = new Set<string>(parsed.map((v) => String(v || "").trim()).filter(Boolean));
-    } catch {
+    const parsed = (cloudTaskUiCache || loadCachedTaskUi())?.pinnedHistoryTaskIds;
+    if (!Array.isArray(parsed)) {
       pinnedHistoryTaskIds = new Set<string>();
+      return;
     }
+    pinnedHistoryTaskIds = new Set<string>(parsed.map((v) => String(v || "").trim()).filter(Boolean));
   }
 
   function savePinnedHistoryTaskIds() {
-    try {
-      localStorage.setItem(PINNED_HISTORY_KEY, JSON.stringify(Array.from(pinnedHistoryTaskIds)));
-    } catch {
-      // ignore
-    }
+    persistTaskUiToCloud();
   }
 
   function rememberCustomTaskName(name: string) {
@@ -4591,10 +4502,171 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function toggleThemeMode() {
     const next: "light" | "dark" = themeMode === "dark" ? "light" : "dark";
     applyTheme(next);
+    persistPreferencesToCloud();
+  }
+
+  function setGroupsStatus(message: string) {
+    groupsStatusMessage = String(message || "").trim() || "Ready.";
+    if (els.groupsFriendRequestStatus) {
+      els.groupsFriendRequestStatus.textContent = groupsStatusMessage;
+    }
+  }
+
+  function openFriendRequestModal() {
+    if (!els.friendRequestModal) return;
+    (els.friendRequestModal as HTMLElement).style.display = "flex";
+    if (els.friendRequestUserIdInput) els.friendRequestUserIdInput.value = "";
+    if (els.friendRequestTokenInput) els.friendRequestTokenInput.value = "";
+    setGroupsStatus("Enter User ID and secret token.");
+    window.setTimeout(() => {
+      try {
+        els.friendRequestUserIdInput?.focus();
+      } catch {
+        // ignore
+      }
+    }, 0);
+  }
+
+  function closeFriendRequestModal() {
+    if (!els.friendRequestModal) return;
+    (els.friendRequestModal as HTMLElement).style.display = "none";
+  }
+
+  function renderGroupsRequestsList(
+    container: HTMLElement | null,
+    rows: FriendRequest[],
+    opts: { incoming: boolean }
+  ) {
+    if (!container) return;
+    if (!rows.length) {
+      container.textContent = opts.incoming ? "No incoming requests." : "No outgoing requests.";
+      return;
+    }
+    container.innerHTML = rows
+      .map((row) => {
+        const peerUid = opts.incoming ? row.senderUid : row.receiverUid;
+        const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
+        const status = String(row.status || "pending");
+        const statusLabel = status[0].toUpperCase() + status.slice(1);
+        const actionBtns =
+          opts.incoming && status === "pending"
+            ? `<div class="footerBtns"><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
+                row.requestId
+              )}">Approve</button><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
+                row.requestId
+              )}">Decline</button></div>`
+            : "";
+        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div><div>User ID: ${escapeHtmlUI(
+          peerUid
+        )}</div>${peerEmail ? `<div>${escapeHtmlUI(peerEmail)}</div>` : ""}${actionBtns}</div>`;
+      })
+      .join("");
+  }
+
+  function renderGroupsFriendsList() {
+    if (!els.groupsFriendsList) return;
+    const uid = currentUid();
+    if (!uid) {
+      els.groupsFriendsList.textContent = "Sign in to view friends.";
+      return;
+    }
+    if (!groupsFriendships.length) {
+      els.groupsFriendsList.textContent = "No friends yet.";
+      return;
+    }
+    els.groupsFriendsList.innerHTML = groupsFriendships
+      .map((row) => {
+        const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
+        return `<div class="settingsDetailNote">User ID: ${escapeHtmlUI(friendUid)}</div>`;
+      })
+      .join("");
+  }
+
+  function renderGroupsPage() {
+    renderGroupsRequestsList(els.groupsIncomingRequestsList as HTMLElement | null, groupsIncomingRequests, { incoming: true });
+    renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, groupsOutgoingRequests, { incoming: false });
+    renderGroupsFriendsList();
+    if (els.friendRequestSendBtn) els.friendRequestSendBtn.disabled = groupsLoading;
+  }
+
+  async function refreshGroupsData() {
+    const uid = currentUid();
+    if (!uid) {
+      groupsIncomingRequests = [];
+      groupsOutgoingRequests = [];
+      groupsFriendships = [];
+      setGroupsStatus("Sign in to use Groups.");
+      renderGroupsPage();
+      return;
+    }
+    groupsLoading = true;
+    renderGroupsPage();
     try {
-      localStorage.setItem(THEME_KEY, next);
+      const [incoming, outgoing, friendships] = await Promise.all([
+        loadIncomingRequests(uid),
+        loadOutgoingRequests(uid),
+        loadFriendships(uid),
+      ]);
+      groupsIncomingRequests = incoming;
+      groupsOutgoingRequests = outgoing;
+      groupsFriendships = friendships;
+      setGroupsStatus("Ready.");
     } catch {
-      // ignore
+      setGroupsStatus("Could not load friend data.");
+    } finally {
+      groupsLoading = false;
+      renderGroupsPage();
+    }
+  }
+
+  async function handleSendFriendRequest() {
+    const uid = currentUid();
+    const auth = getFirebaseAuthClient();
+    const email = auth?.currentUser?.email || null;
+    const receiverUid = String(els.friendRequestUserIdInput?.value || "").trim();
+    const secretToken = String(els.friendRequestTokenInput?.value || "").trim();
+    groupsLoading = true;
+    renderGroupsPage();
+    setGroupsStatus("Sending request...");
+    try {
+      const result = await sendFriendRequest(uid, email, receiverUid, secretToken);
+      if (!result.ok) {
+        setGroupsStatus(result.message);
+        return;
+      }
+      setGroupsStatus("Friend request sent.");
+      closeFriendRequestModal();
+      await refreshGroupsData();
+    } catch {
+      setGroupsStatus("Could not send friend request.");
+    } finally {
+      groupsLoading = false;
+      renderGroupsPage();
+    }
+  }
+
+  async function handleIncomingDecision(requestId: string, action: "approve" | "decline") {
+    const uid = currentUid();
+    if (!uid || !requestId) return;
+    groupsLoading = true;
+    setGroupsStatus(action === "approve" ? "Approving request..." : "Declining request...");
+    renderGroupsPage();
+    try {
+      const result =
+        action === "approve"
+          ? await approveFriendRequest(requestId, uid)
+          : await declineFriendRequest(requestId, uid);
+      if (!result.ok) {
+        setGroupsStatus(result.message || "Action failed.");
+        return;
+      }
+      setGroupsStatus(action === "approve" ? "Friend request approved." : "Friend request declined.");
+      await refreshGroupsData();
+    } catch {
+      setGroupsStatus("Could not update friend request.");
+    } finally {
+      groupsLoading = false;
+      renderGroupsPage();
     }
   }
 
@@ -4643,6 +4715,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         // ignore history API failures
       }
     }
+    if (page === "test2") {
+      renderGroupsPage();
+      void refreshGroupsData();
+      return;
+    }
+    closeFriendRequestModal();
     if (page === "tasks") render();
   }
 
@@ -4849,6 +4927,38 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings");
+    });
+    on(els.openFriendRequestModalBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      openFriendRequestModal();
+    });
+    on(els.friendRequestCancelBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      closeFriendRequestModal();
+    });
+    on(els.friendRequestModal, "click", (e: any) => {
+      if (e?.target === els.friendRequestModal) closeFriendRequestModal();
+    });
+    on(els.friendRequestSendBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      if (groupsLoading) return;
+      void handleSendFriendRequest();
+    });
+    on(els.friendRequestTokenInput, "keydown", (e: any) => {
+      if (e?.key !== "Enter") return;
+      e?.preventDefault?.();
+      if (groupsLoading) return;
+      void handleSendFriendRequest();
+    });
+    on(els.groupsIncomingRequestsList, "click", (e: any) => {
+      const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
+      if (!btn) return;
+      const requestId = String(btn.getAttribute("data-request-id") || "").trim();
+      const action = btn.getAttribute("data-friend-action");
+      if (!requestId) return;
+      if (action !== "approve" && action !== "decline") return;
+      if (groupsLoading) return;
+      void handleIncomingDecision(requestId, action);
     });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
@@ -6159,47 +6269,57 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
   }
 
-  // Init
-  deletedTaskMeta = loadDeletedMeta();
-  loadHistoryIntoMemory();
-  loadHistoryRangePrefs();
-  load();
-  loadAddTaskCustomNames();
-  loadDefaultTaskTimerFormat();
-  loadDynamicColorsSetting();
-  loadCheckpointAlertSettings();
-  loadPinnedHistoryTaskIds();
-  loadThemePreference();
-  loadModeLabels();
-  backfillHistoryColorsFromSessionLogic();
-  syncModeLabelsUi();
-  applyMainMode("mode1");
-  applyAppPage(getInitialAppPageFromQuery(), { syncUrl: "replace" });
-  applyDashboardOrderFromStorage();
-  applyDashboardEditMode();
-  initMobileBackHandling();
-  stopUserPreferencesCloudSync = startUserPreferencesCloudSync({
-    avatarSelectionStoragePrefix: "tasktimer:avatarSelection:",
-    storageKeys: {
-      theme: THEME_KEY,
-      defaultTaskTimerFormat: DEFAULT_TASK_TIMER_FORMAT_KEY,
-      dynamicColorsEnabled: DYNAMIC_COLORS_KEY,
-      checkpointAlertSoundEnabled: CHECKPOINT_ALERT_SOUND_KEY,
-      checkpointAlertToastEnabled: CHECKPOINT_ALERT_TOAST_KEY,
-      modeSettings: MODE_SETTINGS_KEY,
-    },
-    onCloudPreferencesApplied: () => {
-      applySyncedPreferencesFromStorage();
-    },
-  });
-  wireEvents();
-  render();
-  maybeHandlePendingTaskJump();
-  maybeOpenImportFromQuery();
-  if (!els.taskList && els.historyManagerScreen) {
-    openHistoryManager();
+  function hydrateUiStateFromCaches() {
+    deletedTaskMeta = loadDeletedMeta();
+    loadHistoryIntoMemory();
+    loadHistoryRangePrefs();
+    load();
+    loadAddTaskCustomNames();
+    loadDefaultTaskTimerFormat();
+    loadDynamicColorsSetting();
+    loadCheckpointAlertSettings();
+    // Keep Preferences controls in sync with hydrated cloud values on both
+    // /tasktimer and /tasktimer/settings routes.
+    syncTaskSettingsUi();
+    loadPinnedHistoryTaskIds();
+    loadThemePreference();
+    loadModeLabels();
+    backfillHistoryColorsFromSessionLogic();
+    syncModeLabelsUi();
+    applyMainMode("mode1");
+    applyAppPage(getInitialAppPageFromQuery(), { syncUrl: "replace" });
+    applyDashboardOrderFromStorage();
+    applyDashboardEditMode();
   }
-  tick();
+
+  // Init
+  const bootstrap = () => {
+    hydrateUiStateFromCaches();
+    initMobileBackHandling();
+    if (!eventsWired) {
+      wireEvents();
+      eventsWired = true;
+    }
+    render();
+    maybeHandlePendingTaskJump();
+    maybeOpenImportFromQuery();
+    if (!els.taskList && els.historyManagerScreen) {
+      openHistoryManager();
+    }
+    if (!tickStarted) {
+      tick();
+      tickStarted = true;
+    }
+  };
+
+  bootstrap();
+  void hydrateStorageFromCloud().then(() => {
+    if (destroyed) return;
+    hydrateUiStateFromCaches();
+    render();
+  }).catch(() => {
+    // Keep the already-initialized in-memory fallback state.
+  });
 
   return { destroy };
 }

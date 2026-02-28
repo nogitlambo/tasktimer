@@ -1,8 +1,351 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function onlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function isUserDoc() {
+      return onlyKeys([
+        "email",
+        "displayName",
+        "avatarId",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion"
+      ])
+      && (!("email" in request.resource.data) || request.resource.data.email is string)
+      && (!("displayName" in request.resource.data) || request.resource.data.displayName == null || request.resource.data.displayName is string)
+      && (!("avatarId" in request.resource.data) || request.resource.data.avatarId is string)
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int);
+    }
+
+    function isPreferencesV1() {
+      return onlyKeys([
+        "schemaVersion",
+        "theme",
+        "defaultTaskTimerFormat",
+        "dynamicColorsEnabled",
+        "checkpointAlertSoundEnabled",
+        "checkpointAlertToastEnabled",
+        "modeSettings",
+        "updatedAtMs",
+        "updatedAt"
+      ])
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && (!("theme" in request.resource.data) || request.resource.data.theme in ["light", "dark"])
+      && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
+      && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
+      && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
+      && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)
+      && (!("modeSettings" in request.resource.data) || request.resource.data.modeSettings == null || request.resource.data.modeSettings is map)
+      && (!("updatedAtMs" in request.resource.data) || request.resource.data.updatedAtMs is int)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isDashboardV1() {
+      return onlyKeys([
+        "schemaVersion",
+        "order",
+        "widgets",
+        "updatedAt"
+      ])
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && (!("order" in request.resource.data) || request.resource.data.order is list)
+      && (!("widgets" in request.resource.data) || request.resource.data.widgets is map)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isTaskUiV1() {
+      return onlyKeys([
+        "schemaVersion",
+        "historyRangeDaysByTaskId",
+        "historyRangeModeByTaskId",
+        "pinnedHistoryTaskIds",
+        "customTaskNames",
+        "updatedAt"
+      ])
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && (!("historyRangeDaysByTaskId" in request.resource.data) || request.resource.data.historyRangeDaysByTaskId is map)
+      && (!("historyRangeModeByTaskId" in request.resource.data) || request.resource.data.historyRangeModeByTaskId is map)
+      && (!("pinnedHistoryTaskIds" in request.resource.data) || request.resource.data.pinnedHistoryTaskIds is list)
+      && (!("customTaskNames" in request.resource.data) || request.resource.data.customTaskNames is list)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isAccountStateV1() {
+      return onlyKeys([
+        "schemaVersion",
+        "friendInviteKey",
+        "friendInviteKeyExpiresAt",
+        "deleteReauthPending",
+        "updatedAt"
+      ])
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && (!("friendInviteKey" in request.resource.data) || request.resource.data.friendInviteKey == null || request.resource.data.friendInviteKey is string)
+      && (!("friendInviteKeyExpiresAt" in request.resource.data) || request.resource.data.friendInviteKeyExpiresAt == null || request.resource.data.friendInviteKeyExpiresAt is int)
+      && (!("deleteReauthPending" in request.resource.data) || request.resource.data.deleteReauthPending is bool)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isTaskDoc() {
+      return onlyKeys([
+        "id",
+        "name",
+        "order",
+        "collapsed",
+        "color",
+        "accumulatedMs",
+        "running",
+        "startMs",
+        "hasStarted",
+        "checkpointsEnabled",
+        "checkpointTimeUnit",
+        "checkpoints",
+        "checkpointSoundEnabled",
+        "checkpointSoundMode",
+        "checkpointToastEnabled",
+        "checkpointToastMode",
+        "finalCheckpointAction",
+        "presetIntervalsEnabled",
+        "presetIntervalValue",
+        "presetIntervalLastCheckpointId",
+        "presetIntervalNextSeq",
+        "mode",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion"
+      ])
+      && (!("id" in request.resource.data) || request.resource.data.id is string)
+      && (!("name" in request.resource.data) || request.resource.data.name is string)
+      && (!("order" in request.resource.data) || request.resource.data.order is int)
+      && (!("collapsed" in request.resource.data) || request.resource.data.collapsed is bool)
+      && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
+      && (!("accumulatedMs" in request.resource.data) || request.resource.data.accumulatedMs is int)
+      && (!("running" in request.resource.data) || request.resource.data.running is bool)
+      && (!("startMs" in request.resource.data) || request.resource.data.startMs == null || request.resource.data.startMs is int)
+      && (!("hasStarted" in request.resource.data) || request.resource.data.hasStarted is bool)
+      && (!("checkpointsEnabled" in request.resource.data) || request.resource.data.checkpointsEnabled is bool)
+      && (!("checkpointTimeUnit" in request.resource.data) || request.resource.data.checkpointTimeUnit in ["day", "hour", "minute"])
+      && (!("checkpoints" in request.resource.data) || request.resource.data.checkpoints is list)
+      && (!("checkpointSoundEnabled" in request.resource.data) || request.resource.data.checkpointSoundEnabled is bool)
+      && (!("checkpointSoundMode" in request.resource.data) || request.resource.data.checkpointSoundMode in ["once", "repeat"])
+      && (!("checkpointToastEnabled" in request.resource.data) || request.resource.data.checkpointToastEnabled is bool)
+      && (!("checkpointToastMode" in request.resource.data) || request.resource.data.checkpointToastMode in ["auto5s", "manual"])
+      && (!("finalCheckpointAction" in request.resource.data) || request.resource.data.finalCheckpointAction in ["continue", "resetLog", "resetNoLog"])
+      && (!("presetIntervalsEnabled" in request.resource.data) || request.resource.data.presetIntervalsEnabled is bool)
+      && (!("presetIntervalValue" in request.resource.data) || request.resource.data.presetIntervalValue is int || request.resource.data.presetIntervalValue is float)
+      && (!("presetIntervalLastCheckpointId" in request.resource.data) || request.resource.data.presetIntervalLastCheckpointId == null || request.resource.data.presetIntervalLastCheckpointId is string)
+      && (!("presetIntervalNextSeq" in request.resource.data) || request.resource.data.presetIntervalNextSeq is int)
+      && (!("mode" in request.resource.data) || request.resource.data.mode in ["mode1", "mode2", "mode3"])
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int);
+    }
+
+    function isHistoryDoc() {
+      return onlyKeys([
+        "ts",
+        "name",
+        "ms",
+        "color",
+        "createdAt"
+      ])
+      && (!("ts" in request.resource.data) || request.resource.data.ts is int)
+      && (!("name" in request.resource.data) || request.resource.data.name is string)
+      && (!("ms" in request.resource.data) || request.resource.data.ms is int)
+      && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp);
+    }
+
+    function isDeletedTaskDoc() {
+      return onlyKeys([
+        "name",
+        "color",
+        "deletedAt",
+        "updatedAt"
+      ])
+      && (!("name" in request.resource.data) || request.resource.data.name is string)
+      && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
+      && (!("deletedAt" in request.resource.data) || request.resource.data.deletedAt is int)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isFriendRequestDocShape() {
+      return onlyKeys([
+        "requestId",
+        "senderUid",
+        "receiverUid",
+        "senderEmail",
+        "receiverEmail",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "respondedAt",
+        "respondedBy"
+      ])
+      && (!("requestId" in request.resource.data) || request.resource.data.requestId is string)
+      && (!("senderUid" in request.resource.data) || request.resource.data.senderUid is string)
+      && (!("receiverUid" in request.resource.data) || request.resource.data.receiverUid is string)
+      && (!("senderEmail" in request.resource.data) || request.resource.data.senderEmail == null || request.resource.data.senderEmail is string)
+      && (!("receiverEmail" in request.resource.data) || request.resource.data.receiverEmail == null || request.resource.data.receiverEmail is string)
+      && (!("status" in request.resource.data) || request.resource.data.status in ["pending", "approved", "declined"])
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
+      && (!("respondedAt" in request.resource.data) || request.resource.data.respondedAt == null || request.resource.data.respondedAt is timestamp)
+      && (!("respondedBy" in request.resource.data) || request.resource.data.respondedBy == null || request.resource.data.respondedBy is string);
+    }
+
+    function isFriendRequestCreateDoc() {
+      return isFriendRequestDocShape()
+      && request.resource.data.keys().hasAll([
+        "requestId",
+        "senderUid",
+        "receiverUid",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "respondedAt",
+        "respondedBy"
+      ])
+      && request.resource.data.requestId == ("pending:" + request.resource.data.senderUid + ":" + request.resource.data.receiverUid)
+      && request.resource.data.status == "pending"
+      && request.resource.data.senderUid != request.resource.data.receiverUid
+      && request.resource.data.respondedAt == null
+      && request.resource.data.respondedBy == null;
+    }
+
+    function isFriendRequestDecisionUpdate() {
+      return isFriendRequestDocShape()
+      && request.auth != null
+      && request.auth.uid == resource.data.receiverUid
+      && resource.data.status == "pending"
+      && request.resource.data.status in ["approved", "declined"]
+      && request.resource.data.requestId == resource.data.requestId
+      && request.resource.data.senderUid == resource.data.senderUid
+      && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.respondedBy == request.auth.uid
+      && request.resource.data.respondedAt is timestamp;
+    }
+
+    function isFriendRequestRetryUpdate() {
+      return isFriendRequestDocShape()
+      && request.auth != null
+      && request.auth.uid == resource.data.senderUid
+      && resource.data.status in ["approved", "declined"]
+      && request.resource.data.status == "pending"
+      && request.resource.data.requestId == resource.data.requestId
+      && request.resource.data.senderUid == resource.data.senderUid
+      && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.respondedBy == null
+      && request.resource.data.respondedAt == null;
+    }
+
+    function isFriendshipDocCreate() {
+      return onlyKeys([
+        "pairId",
+        "users",
+        "createdAt",
+        "createdBy"
+      ])
+      && request.resource.data.keys().hasAll([
+        "pairId",
+        "users",
+        "createdAt",
+        "createdBy"
+      ])
+      && request.auth != null
+      && request.resource.data.pairId is string
+      && request.resource.data.users is list
+      && request.resource.data.users.size() == 2
+      && request.resource.data.users[0] is string
+      && request.resource.data.users[1] is string
+      && request.resource.data.users[0] != request.resource.data.users[1]
+      && request.auth.uid in request.resource.data.users
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.createdBy is string
+      && (
+        (
+          request.resource.data.users[0] < request.resource.data.users[1]
+          && request.resource.data.pairId == ("pair:" + request.resource.data.users[0] + ":" + request.resource.data.users[1])
+        )
+        || (
+          request.resource.data.users[1] < request.resource.data.users[0]
+          && request.resource.data.pairId == ("pair:" + request.resource.data.users[1] + ":" + request.resource.data.users[0])
+        )
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isUserDoc();
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/preferences/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && docId == "v1" && isPreferencesV1();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/dashboard/{docId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && docId == "v1" && isDashboardV1();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/taskUi/{docId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && docId == "v1" && isTaskUiV1();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/accountState/{docId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && docId == "v1" && isAccountStateV1();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/tasks/{taskId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isTaskDoc();
+      allow delete: if isOwner(userId);
+
+      match /history/{entryId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isHistoryDoc();
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /users/{userId}/deletedTasks/{taskId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isDeletedTaskDoc();
+      allow delete: if isOwner(userId);
+    }
+
+    match /friend_requests/{requestId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.senderUid || request.auth.uid == resource.data.receiverUid);
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.senderUid
+        && isFriendRequestCreateDoc();
+      allow update: if isFriendRequestDecisionUpdate() || isFriendRequestRetryUpdate();
+      allow delete: if false;
+    }
+
+    match /friendships/{pairId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.users;
+      allow create: if isFriendshipDocCreate();
+      allow update, delete: if false;
     }
   }
 }

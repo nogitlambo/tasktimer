@@ -68,6 +68,7 @@
   - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
   - Use existing button design system classes (`btn`, `btn-accent`, `btn-ghost`, `iconBtn`) and existing interaction patterns.
   - Keep visual parity between dark and light theme overrides for any new UI surface.
+  - Any newly created modal must use the same visual style and interaction pattern as the Edit Task modal by default.
 
 ## Development rules
 - Keep behavior changes minimal and scoped to the request.

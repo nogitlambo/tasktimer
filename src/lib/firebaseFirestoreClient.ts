@@ -4,6 +4,7 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { hasFirebaseAuthClientConfig } from "./firebaseClient";
 
 let firestoreClient: Firestore | null | undefined;
+const firestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
 
 export function getFirebaseFirestoreClient(): Firestore | null {
   if (firestoreClient !== undefined) return firestoreClient;
@@ -15,9 +16,13 @@ export function getFirebaseFirestoreClient(): Firestore | null {
     firestoreClient = null;
     return firestoreClient;
   }
+  if (!firestoreDatabaseId) {
+    firestoreClient = null;
+    return firestoreClient;
+  }
   try {
     const app = getApps().length ? getApp() : null;
-    firestoreClient = app ? getFirestore(app) : null;
+    firestoreClient = app ? getFirestore(app, firestoreDatabaseId) : null;
   } catch {
     firestoreClient = null;
   }

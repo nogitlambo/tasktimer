@@ -118,8 +118,8 @@ export default function TaskTimerPage() {
             <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
 
             <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
-            <div className="controls" style={{ display: "flex", justifyContent: "center" }}>
-              <button className="btn btn-ghost" id="openAddTaskBtn" type="button">
+            <div className="controls">
+              <button className="btn btn-ghost" id="openAddTaskBtn" type="button" style={{ width: "100%" }}>
                 + Add Task
               </button>
             </div>
@@ -240,7 +240,46 @@ export default function TaskTimerPage() {
           </section>
 
           <section className="appPage" id="appPageTest2" aria-label="Groups page">
-            <div className="appPagePlaceholder" />
+            <div className="dashboardShell" id="groupsFriendsSection">
+              <div className="dashboardTopRow">
+                <div className="dashboardTitleWrap">
+                  <p className="dashboardKicker">Community</p>
+                  <h2 className="dashboardTitle">Friends</h2>
+                </div>
+                <div className="dashboardEditActions">
+                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
+                    + Friend
+                  </button>
+                </div>
+              </div>
+
+              <div className="dashboardGrid">
+                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }}>
+                  Ready.
+                </div>
+
+                <section className="dashboardCard" aria-label="Friends list">
+                  <div className="dashboardCardTitle">Friends</div>
+                  <div id="groupsFriendsList" className="settingsDetailNote">
+                    No friends yet.
+                  </div>
+                </section>
+
+                <section className="dashboardCard" aria-label="Incoming requests">
+                  <div className="dashboardCardTitle">Incoming Requests</div>
+                  <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                    No incoming requests.
+                  </div>
+                </section>
+
+                <section className="dashboardCard" aria-label="Outgoing requests">
+                  <div className="dashboardCardTitle">Outgoing Requests</div>
+                  <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                    No outgoing requests.
+                  </div>
+                </section>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -270,6 +309,29 @@ export default function TaskTimerPage() {
       <ElapsedPadOverlay />
       <ConfirmOverlay />
       <HistoryAnalysisOverlay />
+      <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
+          <div className="editHead">
+            <h2>Send Friend Request</h2>
+          </div>
+          <div className="field">
+            <label htmlFor="friendRequestUserIdInput">User ID</label>
+            <input id="friendRequestUserIdInput" type="text" autoComplete="off" />
+          </div>
+          <div className="field">
+            <label htmlFor="friendRequestTokenInput">Secret token</label>
+            <input id="friendRequestTokenInput" type="text" autoComplete="off" />
+          </div>
+          <div className="footerBtns">
+            <button className="btn btn-ghost" id="friendRequestCancelBtn" type="button">
+              Cancel
+            </button>
+            <button className="btn btn-accent" id="friendRequestSendBtn" type="button">
+              Send Request
+            </button>
+          </div>
+        </div>
+      </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </>
   );
