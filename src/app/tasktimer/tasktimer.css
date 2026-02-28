@@ -2661,6 +2661,36 @@ optgroup{
 #app[aria-label="TaskTimer Settings"] .settingsAuthActions .btn{
   min-width:148px;
 }
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatus{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  line-height:1.35;
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatusDot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:rgba(188,214,230,.65);
+  flex:0 0 auto;
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-syncing .settingsSyncStatusDot{
+  background:#f0c85a;
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-synced .settingsSyncStatusDot{
+  background:#35e8ff;
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-error .settingsSyncStatusDot{
+  background:#ff8f8f;
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatusText{
+  color:rgba(224,248,255,.94);
+}
+#app[aria-label="TaskTimer Settings"] .settingsSyncStatusTime{
+  color:rgba(188,214,230,.8);
+}
 #app[aria-label="TaskTimer Settings"] .settingsFriendKeyBlock{
   margin-top:10px;
   display:flex;

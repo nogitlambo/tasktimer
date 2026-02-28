@@ -1,4 +1,7 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "apphosting": {
     "backendId": "tasktimer",
     "rootDir": "/",

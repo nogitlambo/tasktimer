@@ -12,6 +12,7 @@ import {
   rememberRecentCustomTaskName,
 } from "./lib/addTaskNames";
 import { computeFocusInsights } from "./lib/focusInsights";
+import { startUserPreferencesCloudSync } from "./lib/userPreferencesSync";
 import {
   STORAGE_KEY,
   HISTORY_KEY,
@@ -56,6 +57,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let tickTimeout: number | null = null;
   let tickRaf: number | null = null;
   let newTaskHighlightTimer: number | null = null;
+  let stopUserPreferencesCloudSync: null | (() => void) = null;
 
   const destroy = () => {
     destroyed = true;
@@ -66,6 +68,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
     if (checkpointRepeatCycleTimer != null) window.clearTimeout(checkpointRepeatCycleTimer);
+    if (stopUserPreferencesCloudSync) {
+      try {
+        stopUserPreferencesCloudSync();
+      } catch {
+        // ignore
+      }
+      stopUserPreferencesCloudSync = null;
+    }
     if (removeCapBackListener) {
       try {
         removeCapBackListener();
@@ -471,9 +481,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     // In exported/mobile builds (e.g. Android WebView), folder URLs like `/tasktimer/settings/`
     // can fall back to the app root. Target the actual exported file path instead.
     const currentPath = window.location.pathname || "";
-    const isCapacitorRuntime = !!(window as any).Capacitor;
+    const capacitorApi = (window as any).Capacitor;
+    const isNativeCapacitorRuntime = !!(
+      capacitorApi &&
+      typeof capacitorApi.isNativePlatform === "function" &&
+      capacitorApi.isNativePlatform()
+    );
     const usesExportedHtmlPaths =
-      window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isCapacitorRuntime;
+      window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativeCapacitorRuntime;
     if (!usesExportedHtmlPaths) return resolved;
 
     const resolvedHashIndex = resolved.indexOf("#");
@@ -3972,6 +3987,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function applySyncedPreferencesFromStorage() {
+    loadDefaultTaskTimerFormat();
+    loadDynamicColorsSetting();
+    loadCheckpointAlertSettings();
+    loadThemePreference();
+    loadModeLabels();
+    syncTaskSettingsUi();
+    syncModeLabelsUi();
+    if (!isModeEnabled(currentMode)) {
+      applyMainMode("mode1");
+    } else {
+      applyModeAccent(currentMode);
+    }
+    render();
+  }
+
   function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
     const unitSeconds = milestoneUnitSec(t);
     const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
@@ -6143,6 +6174,20 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   applyDashboardOrderFromStorage();
   applyDashboardEditMode();
   initMobileBackHandling();
+  stopUserPreferencesCloudSync = startUserPreferencesCloudSync({
+    avatarSelectionStoragePrefix: "tasktimer:avatarSelection:",
+    storageKeys: {
+      theme: THEME_KEY,
+      defaultTaskTimerFormat: DEFAULT_TASK_TIMER_FORMAT_KEY,
+      dynamicColorsEnabled: DYNAMIC_COLORS_KEY,
+      checkpointAlertSoundEnabled: CHECKPOINT_ALERT_SOUND_KEY,
+      checkpointAlertToastEnabled: CHECKPOINT_ALERT_TOAST_KEY,
+      modeSettings: MODE_SETTINGS_KEY,
+    },
+    onCloudPreferencesApplied: () => {
+      applySyncedPreferencesFromStorage();
+    },
+  });
   wireEvents();
   render();
   maybeHandlePendingTaskJump();

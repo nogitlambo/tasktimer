@@ -10,6 +10,7 @@ import {
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
+  signOut,
   signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
@@ -18,6 +19,7 @@ import {
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
+const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -36,6 +38,48 @@ function shouldUseRedirectAuth() {
   }
 }
 
+function maskApiKey(value: string | undefined) {
+  if (!value) return null;
+  if (value.length <= 8) return value;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
+
+function logGoogleAuthDebug(stage: string, auth: ReturnType<typeof getFirebaseAuthClient>) {
+  if (typeof window === "undefined") return;
+  const opts = auth?.app?.options;
+  const mode = shouldUseRedirectAuth() ? "redirect/native" : "popup/web";
+  console.info("[auth-debug] google", {
+    stage,
+    mode,
+    href: window.location.href,
+    origin: window.location.origin,
+    protocol: window.location.protocol,
+    isNativePlatform: Capacitor.isNativePlatform(),
+    authDomain: opts?.authDomain ?? null,
+    projectId: opts?.projectId ?? null,
+    appId: opts?.appId ?? null,
+    apiKey: maskApiKey(opts?.apiKey),
+  });
+}
+
+function logFirebaseAuthError(stage: string, err: unknown) {
+  if (!err || typeof err !== "object") {
+    console.error("[auth-debug] error", { stage, err });
+    return;
+  }
+  const e = err as {
+    code?: string;
+    message?: string;
+    customData?: { email?: string; _tokenResponse?: unknown; [key: string]: unknown };
+  };
+  console.error("[auth-debug] error", {
+    stage,
+    code: e.code ?? null,
+    message: e.message ?? null,
+    customData: e.customData ?? null,
+  });
+}
+
 export default function Home() {
   const router = useRouter();
   const [showLogo, setShowLogo] = useState(false);
@@ -52,6 +96,7 @@ export default function Home() {
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
+  const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
@@ -94,18 +139,65 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    let shouldBypass = false;
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      shouldBypass = params.get("signedOut") === "1";
+    } catch {
+      shouldBypass = false;
+    }
+    if (!shouldBypass) {
+      try {
+        shouldBypass = sessionStorage.getItem(SIGN_OUT_LANDING_BYPASS_KEY) === "1";
+      } catch {
+        shouldBypass = false;
+      }
+    }
+    if (shouldBypass) {
+      setBypassAutoRedirect(true);
+      setAuthUserEmail(null);
+      const auth = getFirebaseAuthClient();
+      if (auth) {
+        void signOut(auth).catch(() => {
+          // ignore; onAuthStateChanged still drives the final UI state
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       setAuthUserEmail(email);
-      if (email && !hasRedirected) {
+      if (!email && bypassAutoRedirect) {
+        setBypassAutoRedirect(false);
+        try {
+          sessionStorage.removeItem(SIGN_OUT_LANDING_BYPASS_KEY);
+        } catch {
+          // ignore
+        }
+        try {
+          const params = new URLSearchParams(window.location.search || "");
+          if (params.get("signedOut") === "1") {
+            params.delete("signedOut");
+            const qs = params.toString();
+            const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash || ""}`;
+            window.history.replaceState({}, "", cleanUrl);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (email && !hasRedirected && !bypassAutoRedirect) {
         setHasRedirected(true);
         router.replace("/tasktimer?page=dashboard");
       }
     });
     return () => unsub();
-  }, [router, hasRedirected]);
+  }, [router, hasRedirected, bypassAutoRedirect]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -165,12 +257,20 @@ export default function Home() {
     let cancelled = false;
     const applyRedirectResult = async () => {
       try {
+        logGoogleAuthDebug("beforeGetRedirectResult", auth);
         const result = await getRedirectResult(auth);
+        console.info("[auth-debug] google", {
+          stage: "afterGetRedirectResult",
+          hasResult: Boolean(result),
+          hasUser: Boolean(result?.user),
+          providerId: result?.providerId ?? null,
+        });
         if (cancelled || !result?.user) return;
         setAuthStatus("Signed in successfully.");
         setAuthError("");
       } catch (err: unknown) {
         if (cancelled) return;
+        logFirebaseAuthError("getRedirectResult", err);
         setAuthError(getErrorMessage(err, "Could not complete Google sign-in."));
         setAuthStatus("");
       }
@@ -271,6 +371,7 @@ export default function Home() {
       setAuthStatus("");
       return;
     }
+    logGoogleAuthDebug("beforeGoogleSignIn", auth);
     setAuthBusy(true);
     setAuthError("");
     setAuthStatus("Signing in with Google...");
@@ -287,13 +388,23 @@ export default function Home() {
         }
         const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
         await signInWithCredential(auth, nativeCredential);
+        console.info("[auth-debug] google", {
+          stage: "afterSignInWithCredential",
+          provider: "google.com",
+          tokenSource: "native-capacitor",
+        });
         setAuthStatus("Signed in successfully.");
         return;
       }
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      console.info("[auth-debug] google", {
+        stage: "afterSignInWithPopup",
+        provider: "google.com",
+      });
       setAuthStatus("Signed in successfully.");
     } catch (err: unknown) {
+      logFirebaseAuthError("handleGoogleSignIn", err);
       setAuthError(getErrorMessage(err, "Could not sign in with Google."));
       setAuthStatus("");
     } finally {
@@ -481,10 +592,7 @@ export default function Home() {
                   </button>
                 ) : null}
               </div>
-              <div className="grid grid-cols-2 items-center gap-3 pt-1 text-xs text-white/70">
-                <a href="/tasktimer" className="justify-self-start underline underline-offset-2 hover:text-white">
-                  Guest Sign In
-                </a>
+              <div className="grid grid-cols-1 items-center gap-3 pt-1 text-xs text-white/70">
                 <a href="/privacy" className="justify-self-end underline underline-offset-2 hover:text-white">
                   Privacy Policy
                 </a>
@@ -492,22 +600,6 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => router.push("/tasktimer?page=dashboard")}
-                className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)]"
-                style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
-              >
-                Go to Dashboard
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/tasktimer")}
-                className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)]"
-                style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
-              >
-                Go to Tasks
-              </button>
               <a href="/privacy" className="text-xs text-white/70 underline underline-offset-2 hover:text-white">
                 Privacy Policy
               </a>

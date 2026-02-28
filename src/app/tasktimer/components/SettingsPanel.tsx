@@ -13,6 +13,7 @@ import {
   type User,
   updateProfile,
 } from "firebase/auth";
+import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 
 type SettingsPaneKey =
   | "general"
@@ -37,10 +38,7 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 const FRIEND_KEY_STORAGE_PREFIX = "tasktimer:friendInviteKey:";
 const AVATAR_SELECTION_STORAGE_PREFIX = "tasktimer:avatarSelection:";
 const ACCOUNT_DELETE_REAUTH_PENDING_KEY = "tasktimer:accountDeletePendingReauth";
-const DEFAULT_AVATARS = [
-  { id: "initials/initials-AN", src: "/avatars/initials/initials-AN.svg", label: "Initials AN" },
-];
-type AvatarOption = { id: string; src: string; label: string };
+const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
@@ -138,6 +136,9 @@ export default function SettingsPanel() {
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [authUserAlias, setAuthUserAlias] = useState("");
   const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
+  const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [isEditingAlias, setIsEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState("");
   const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
@@ -147,8 +148,8 @@ export default function SettingsPanel() {
   const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
-  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(DEFAULT_AVATARS);
-  const [selectedAvatarId, setSelectedAvatarId] = useState<string>(DEFAULT_AVATARS[0]?.id || "");
+  const [avatarOptions] = useState<AvatarOption[]>(AVATAR_CATALOG);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -207,6 +208,37 @@ export default function SettingsPanel() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const onSyncState = (evt: Event) => {
+      const custom = evt as CustomEvent<{ status?: unknown; message?: unknown; atMs?: unknown }>;
+      const nextStatus = String(custom.detail?.status || "").trim();
+      const nextMessage = String(custom.detail?.message || "").trim();
+      const nextAtMs = Number(custom.detail?.atMs || 0);
+      if (nextStatus === "idle" || nextStatus === "syncing" || nextStatus === "synced" || nextStatus === "error") {
+        setSyncState(nextStatus);
+      }
+      if (nextMessage) setSyncMessage(nextMessage);
+      if (Number.isFinite(nextAtMs) && nextAtMs > 0) setSyncAtMs(nextAtMs);
+    };
+    window.addEventListener("tasktimer:preferences-sync-state", onSyncState as EventListener);
+    return () => {
+      window.removeEventListener("tasktimer:preferences-sync-state", onSyncState as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authUserEmail) {
+      if (syncState === "idle") {
+        setSyncState("syncing");
+        setSyncMessage("Syncing preferences...");
+      }
+      return;
+    }
+    setSyncState("idle");
+    setSyncMessage("Sign in to sync preferences.");
+    setSyncAtMs(null);
+  }, [authUserEmail, syncState]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -310,33 +342,21 @@ export default function SettingsPanel() {
   }, [authUserUid]);
 
   useEffect(() => {
-    let cancelled = false;
-    const loadAvatarOptions = async () => {
+    if (!authUserUid) return;
+    const onCloudApplied = () => {
       try {
-        const res = await fetch("/api/avatars", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { avatars?: AvatarOption[] };
-        const next = Array.isArray(data.avatars)
-          ? data.avatars.filter(
-              (a): a is AvatarOption =>
-                !!a &&
-                typeof a.id === "string" &&
-                typeof a.src === "string" &&
-                typeof a.label === "string" &&
-                a.id.trim() !== "" &&
-                a.src.trim() !== ""
-            )
-          : [];
-        if (!cancelled && next.length) setAvatarOptions(next);
+        const saved = localStorage.getItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${authUserUid}`) || "";
+        const nextId = avatarOptions.some((a) => a.id === saved) ? saved : avatarOptions[0]?.id || "";
+        setSelectedAvatarId(nextId);
       } catch {
-        // ignore and keep defaults
+        setSelectedAvatarId(avatarOptions[0]?.id || "");
       }
     };
-    void loadAvatarOptions();
+    window.addEventListener("tasktimer:preferences-cloud-applied", onCloudApplied as EventListener);
     return () => {
-      cancelled = true;
+      window.removeEventListener("tasktimer:preferences-cloud-applied", onCloudApplied as EventListener);
     };
-  }, []);
+  }, [authUserUid, avatarOptions]);
 
   useEffect(() => {
     if (!showAvatarPickerModal) return;
@@ -406,7 +426,14 @@ export default function SettingsPanel() {
     try {
       await signOut(auth);
       setAuthStatus("Signed out.");
-      if (typeof window !== "undefined") window.location.assign("/");
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");
+        } catch {
+          // ignore
+        }
+        window.location.assign("/?signedOut=1");
+      }
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not sign out."));
     } finally {
@@ -713,6 +740,15 @@ export default function SettingsPanel() {
                   <div className="settingsDetailNote">
                     <div>Signed in as: {authUserEmail}</div>
                     {authUserUid ? <div>UID: {authUserUid}</div> : null}
+                    <div className={`settingsSyncStatus is-${syncState}`}>
+                      <span className="settingsSyncStatusDot" aria-hidden="true" />
+                      <span className="settingsSyncStatusText">{syncMessage}</span>
+                      {syncAtMs && syncState === "synced" ? (
+                        <span className="settingsSyncStatusTime">
+                          ({new Date(syncAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                        </span>
+                      ) : null}
+                    </div>
                     {authUserUid ? (
                       <div className="settingsFriendKeyBlock">
                         <button

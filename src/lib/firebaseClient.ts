@@ -3,18 +3,29 @@ import { getAuth, type Auth } from "firebase/auth";
 
 function shouldUseMobileAuthDomain() {
   if (typeof window === "undefined") return false;
-  const w = window as Window & { Capacitor?: unknown };
-  return !!w.Capacitor || window.location.protocol === "file:";
+  const w = window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  };
+  const isNativePlatform =
+    !!w.Capacitor &&
+    typeof w.Capacitor.isNativePlatform === "function" &&
+    w.Capacitor.isNativePlatform();
+  return isNativePlatform || window.location.protocol === "file:";
 }
 
 const defaultAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DOMAIN;
+const defaultApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const mobileApiKeyOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY;
 const resolvedAuthDomain = shouldUseMobileAuthDomain()
   ? mobileAuthDomainOverride || defaultAuthDomain
   : defaultAuthDomain;
+const resolvedApiKey = shouldUseMobileAuthDomain()
+  ? mobileApiKeyOverride || defaultApiKey
+  : defaultApiKey;
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  apiKey: resolvedApiKey,
   authDomain: resolvedAuthDomain,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
