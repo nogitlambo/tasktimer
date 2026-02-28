@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "996538028829",
+    "project_id": "tasktimer-prod",
+    "storage_bucket": "tasktimer-prod.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996538028829:android:484fbbaf46586490ffc7f4",
+        "android_client_info": {
+          "package_name": "com.tasktimer.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "996538028829-hqk7g2muiol7ac9j272esifbat7l4ehk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tasktimer.app",
+            "certificate_hash": "284680344447d752714e8a665966441288f87e75"
+          }
+        },
+        {
+          "client_id": "996538028829-tkrcs3kr5l0udrfhr682chinq6d9239e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBy6VYWwQK23pka_yXS8-pIRX85V-r40bo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "996538028829-tkrcs3kr5l0udrfhr682chinq6d9239e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

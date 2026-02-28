@@ -1,9 +1,21 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
+function shouldUseMobileAuthDomain() {
+  if (typeof window === "undefined") return false;
+  const w = window as Window & { Capacitor?: unknown };
+  return !!w.Capacitor || window.location.protocol === "file:";
+}
+
+const defaultAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DOMAIN;
+const resolvedAuthDomain = shouldUseMobileAuthDomain()
+  ? mobileAuthDomainOverride || defaultAuthDomain
+  : defaultAuthDomain;
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: resolvedAuthDomain,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -23,6 +35,10 @@ function createFirebaseAuth(): Auth | null {
   if (typeof window === "undefined") return null;
   if (!hasFirebaseClientConfig) return null;
   try {
+    console.info("[firebase-auth] Initializing auth client", {
+      authDomain: firebaseConfig.authDomain || null,
+      mode: shouldUseMobileAuthDomain() ? "mobile" : "web",
+    });
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     return getAuth(app);
   } catch {

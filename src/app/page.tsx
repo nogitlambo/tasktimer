@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   GoogleAuthProvider,
@@ -9,7 +10,7 @@ import {
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
-  signInWithRedirect,
+  signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
 } from "firebase/auth";
@@ -28,8 +29,11 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 function shouldUseRedirectAuth() {
   if (typeof window === "undefined") return false;
-  const w = window as Window & { Capacitor?: unknown };
-  return !!w.Capacitor || window.location.protocol === "file:";
+  try {
+    return Capacitor.isNativePlatform() || window.location.protocol === "file:";
+  } catch {
+    return window.location.protocol === "file:";
+  }
 }
 
 export default function Home() {
@@ -271,11 +275,22 @@ export default function Home() {
     setAuthError("");
     setAuthStatus("Signing in with Google...");
     try {
-      const provider = new GoogleAuthProvider();
       if (shouldUseRedirectAuth()) {
-        await signInWithRedirect(auth, provider);
+        const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+        const nativeResult = await FirebaseAuthentication.signInWithGoogle({
+          skipNativeAuth: true,
+        });
+        const idToken = nativeResult.credential?.idToken;
+        const accessToken = nativeResult.credential?.accessToken;
+        if (!idToken && !accessToken) {
+          throw new Error("Google sign-in did not return an auth token.");
+        }
+        const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
+        await signInWithCredential(auth, nativeCredential);
+        setAuthStatus("Signed in successfully.");
         return;
       }
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       setAuthStatus("Signed in successfully.");
     } catch (err: unknown) {
