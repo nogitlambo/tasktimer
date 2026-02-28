@@ -422,7 +422,7 @@ export default function Home() {
         }}
       />
 
-      <div className="relative flex w-full max-w-2xl flex-col items-center justify-center text-center">
+      <div className="relative flex w-full max-w-[2130px] flex-col items-center justify-center text-center">
         <div
           className={`transition-all duration-1000 ease-out ${
             showLogo ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
@@ -513,13 +513,13 @@ export default function Home() {
         </div>
 
         <div
-          className={`mt-12 flex flex-col items-center gap-3 transition-all duration-500 sm:flex-row ${
+          className={`mt-12 flex w-full flex-col items-center gap-3 transition-all duration-500 sm:flex-row ${
             showActions ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
           aria-hidden={!showActions}
         >
           {!authUserEmail ? (
-            <div className="flex w-full max-w-[945px] flex-col items-stretch gap-3">
+            <div className="mx-auto flex w-[240px] max-w-full flex-col items-stretch gap-3 sm:w-[320px] md:w-[380px]">
               <button
                 type="button"
                 onClick={() => setShowEmailLoginForm((v) => !v)}
@@ -592,8 +592,8 @@ export default function Home() {
                   </button>
                 ) : null}
               </div>
-              <div className="grid grid-cols-1 items-center gap-3 pt-1 text-xs text-white/70">
-                <a href="/privacy" className="justify-self-end underline underline-offset-2 hover:text-white">
+              <div className="grid grid-cols-1 place-items-center gap-3 pt-1 text-xs text-white/70">
+                <a href="/privacy" className="text-center underline underline-offset-2 hover:text-white">
                   Privacy Policy
                 </a>
               </div>

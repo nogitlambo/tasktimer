@@ -301,6 +301,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
+    signedInHeaderBadge: document.getElementById("signedInHeaderBadge") as HTMLElement | null,
     dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
     dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
     dashboardEditDoneBtn: document.getElementById("dashboardEditDoneBtn") as HTMLButtonElement | null,
@@ -4627,6 +4628,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
     els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
     els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
+    if (els.signedInHeaderBadge) {
+      els.signedInHeaderBadge.style.display = page === "dashboard" || page === "test2" ? "inline-flex" : "none";
+    }
     const syncUrlMode = opts?.syncUrl;
     const canSyncMainPageUrl = /\/tasktimer$/.test(normalizedPathname()) || /\/tasktimer\/index\.html$/i.test(normalizedPathname());
     if (syncUrlMode && canSyncMainPageUrl) {
@@ -4840,7 +4844,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
     on(els.footerTest2Btn, "click", (e: any) => {
       e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/user-guide");
+      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
     });
     on(els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();

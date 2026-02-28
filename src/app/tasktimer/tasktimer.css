@@ -164,6 +164,10 @@ body{
   border-right:2px solid var(--mode-accent);
   border-top-right-radius:3px;
 }
+.modeSwitchWrap.modeSwitchNoBrackets::before,
+.modeSwitchWrap.modeSwitchNoBrackets::after{
+  display:none;
+}
 .modeSwitchLabel{
   font-size:11px;
   font-weight:800;

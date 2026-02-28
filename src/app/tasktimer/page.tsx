@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import ConfirmOverlay from "./components/ConfirmOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
@@ -13,12 +14,24 @@ import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import TaskList from "./components/TaskList";
 import { initTaskTimerClient } from "./tasktimerClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import "./tasktimer.css";
 
 export default function TaskTimerPage() {
+  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+
   useEffect(() => {
     const { destroy } = initTaskTimerClient();
     return () => destroy();
+  }, []);
+
+  useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setSignedInEmail(user?.email || null);
+    });
+    return () => unsub();
   }, []);
 
   return (
@@ -29,24 +42,68 @@ export default function TaskTimerPage() {
             <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
           </div>
 
-          <div className="modeSwitchWrap">
-            <div className="modeSwitchLabel">Mode</div>
-            <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
+          {signedInEmail ? (
+            <div
+              id="signedInHeaderBadge"
+              style={{
+                justifySelf: "end",
+                gridColumn: 3,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                border: "none",
+                borderRadius: 0,
+                padding: 0,
+                background: "transparent",
+                color: "#d3faff",
+                fontSize: 11,
+                lineHeight: 1.2,
+                maxWidth: 280,
+                justifyContent: "flex-end",
+              }}
+              aria-label={`Signed in as ${signedInEmail}`}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  border: "1px solid rgba(53,232,255,.6)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#8ff6ff",
+                }}
+              >
+                {signedInEmail.slice(0, 1).toUpperCase()}
+              </span>
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  textAlign: "right",
+                }}
+                title={signedInEmail}
+              >
+                Signed in as: {signedInEmail}
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <div className="modeSwitchWrap modeSwitchNoBrackets" style={{ display: "flex", justifyContent: "center" }}>
+          <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
             <button className="btn btn-ghost small modeBtn isOn" id="mode1Btn" type="button" data-mode="mode1">
-              Mode 1
+              1
             </button>
             <button className="btn btn-ghost small modeBtn" id="mode2Btn" type="button" data-mode="mode2">
-              Mode 2
+              2
             </button>
             <button className="btn btn-ghost small modeBtn" id="mode3Btn" type="button" data-mode="mode3">
-              Mode 3
-            </button>
-            </div>
-          </div>
-
-          <div className="controls">
-            <button className="btn btn-accent" id="openAddTaskBtn" type="button">
-              + Add Task
+              3
             </button>
           </div>
         </div>
@@ -61,6 +118,11 @@ export default function TaskTimerPage() {
             <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
 
             <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
+            <div className="controls" style={{ display: "flex", justifyContent: "center" }}>
+              <button className="btn btn-ghost" id="openAddTaskBtn" type="button">
+                + Add Task
+              </button>
+            </div>
           </section>
 
           <section className="appPage" id="appPageDashboard" aria-label="Dashboard page">
@@ -178,10 +240,7 @@ export default function TaskTimerPage() {
           </section>
 
           <section className="appPage" id="appPageTest2" aria-label="Groups page">
-            <div className="appPagePlaceholder">
-              <h2>Groups</h2>
-              <p>Groups module placeholder content.</p>
-            </div>
+            <div className="appPagePlaceholder" />
           </section>
         </div>
 
@@ -193,6 +252,10 @@ export default function TaskTimerPage() {
           <button className="btn btn-ghost small appFooterBtn isOn" id="footerTasksBtn" type="button" aria-label="Tasks">
             <img className="appFooterIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Tasks</span>
+          </button>
+          <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Groups">
+            <img className="appFooterIconImage" src="/User_Guide.svg" alt="" aria-hidden="true" />
+            <span className="appFooterLabel">Groups</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
             <img className="appFooterIconImage" src="/Settings.svg" alt="" aria-hidden="true" />

@@ -12,6 +12,7 @@
 - Preserve IDs and selector hooks in JSX when editing UI.
 - Main stylesheet in active use is `src/app/tasktimer/tasktimer.css`.
 - `src/app/tasktimer/styles/tasktimer.css` also exists; avoid unintended dual edits.
+- Auth behavior is centralized in `src/lib/firebaseClient.ts`; detect native/mobile runtime with `Capacitor.isNativePlatform()` (or `file:`), not `!!window.Capacitor`.
 
 ## Modes and categories
 - Task categories are implemented as three internal modes: `mode1`, `mode2`, `mode3`.
@@ -48,6 +49,9 @@
 - Settings exit button `#closeMenuBtn` label is `Close` and exits to dashboard fallback (`/tasktimer?page=dashboard`) when no overlay/nav stack is active.
 - Settings mobile detail `Back` is pane navigation only (returns to module list), not route exit.
 - `/privacy` back behavior must be history-aware: use browser back when history exists, else fallback to `/tasktimer/settings`.
+- All `/tasktimer/*` routes are auth-protected via `src/app/tasktimer/layout.tsx`; unauthenticated users must be redirected to `/`.
+- Landing page auth UX does not include guest entry or authenticated shortcut buttons (`Guest Sign In`, `Go to Dashboard`, `Go to Tasks`).
+- Logout must land on `/` and preserve the one-time signed-out handoff (`?signedOut=1` + `tasktimer:authSignedOutRedirectBypass`) to avoid immediate auth redirect races.
 - Preserve selector hooks used by delegated handlers (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
 
 ## Styling guardrails
@@ -76,6 +80,7 @@
 - Avoid broad refactors unless requested.
 - If editing UI labels in JSX, avoid raw `<` or `>` characters in text nodes.
 - Keep TypeScript/React code compatible with Next.js 16 App Router conventions.
+- For route generation in Next.js dev/web, do not force `/index.html` URLs; only use exported `index.html` pathing for true file/native export runtime.
 
 ## Validation
 - After edits, check for:
