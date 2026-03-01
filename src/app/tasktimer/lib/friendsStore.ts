@@ -23,6 +23,10 @@ export type FriendRequest = {
   receiverUid: string;
   senderEmail: string | null;
   receiverEmail: string | null;
+  senderAlias: string | null;
+  senderAvatarId: string | null;
+  receiverAlias: string | null;
+  receiverAvatarId: string | null;
   status: FriendRequestStatus;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
@@ -30,9 +34,15 @@ export type FriendRequest = {
   respondedBy: string | null;
 };
 
+export type FriendProfile = {
+  alias: string | null;
+  avatarId: string | null;
+};
+
 export type Friendship = {
   pairId: string;
   users: [string, string];
+  profileByUid: Record<string, FriendProfile>;
   createdAt: Timestamp | null;
   createdBy: string;
 };
@@ -44,7 +54,8 @@ function dbOrNull() {
 }
 
 function sortedPair(a: string, b: string): [string, string] {
-  return [a, b].sort((x, y) => x.localeCompare(y)) as [string, string];
+  // Match Firestore rules string ordering checks (`<` / `>`) deterministically.
+  return [a, b].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)) as [string, string];
 }
 
 function requestDocId(senderUid: string, receiverUid: string) {
@@ -60,6 +71,31 @@ function friendshipDocId(uidA: string, uidB: string) {
   return `pair:${a}:${b}`;
 }
 
+function normalizeAlias(value: unknown): string | null {
+  const out = String(value || "").trim();
+  return out ? out.slice(0, 40) : null;
+}
+
+function normalizeAvatarId(value: unknown): string | null {
+  const out = String(value || "").trim();
+  return out ? out.slice(0, 120) : null;
+}
+
+async function loadOwnProfile(uid: string): Promise<FriendProfile> {
+  const db = dbOrNull();
+  if (!db || !uid) return { alias: null, avatarId: null };
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return { alias: null, avatarId: null };
+    return {
+      alias: normalizeAlias(snap.get("displayName")),
+      avatarId: normalizeAvatarId(snap.get("avatarId")),
+    };
+  } catch {
+    return { alias: null, avatarId: null };
+  }
+}
+
 function asFriendRequest(id: string, row: Record<string, unknown>): FriendRequest {
   const statusRaw = String(row.status || "pending");
   const status: FriendRequestStatus =
@@ -70,6 +106,10 @@ function asFriendRequest(id: string, row: Record<string, unknown>): FriendReques
     receiverUid: String(row.receiverUid || ""),
     senderEmail: row.senderEmail == null ? null : String(row.senderEmail || ""),
     receiverEmail: row.receiverEmail == null ? null : String(row.receiverEmail || ""),
+    senderAlias: row.senderAlias == null ? null : String(row.senderAlias || ""),
+    senderAvatarId: row.senderAvatarId == null ? null : String(row.senderAvatarId || ""),
+    receiverAlias: row.receiverAlias == null ? null : String(row.receiverAlias || ""),
+    receiverAvatarId: row.receiverAvatarId == null ? null : String(row.receiverAvatarId || ""),
     status,
     createdAt: (row.createdAt as Timestamp) || null,
     updatedAt: (row.updatedAt as Timestamp) || null,
@@ -81,9 +121,21 @@ function asFriendRequest(id: string, row: Record<string, unknown>): FriendReques
 function asFriendship(id: string, row: Record<string, unknown>): Friendship {
   const users = Array.isArray(row.users) ? row.users.map((x) => String(x || "")) : [];
   const pair = sortedPair(users[0] || "", users[1] || "");
+  const profileByUidRaw =
+    row.profileByUid && typeof row.profileByUid === "object" ? (row.profileByUid as Record<string, unknown>) : {};
+  const profileByUid: Record<string, FriendProfile> = {};
+  pair.forEach((uid) => {
+    const value = profileByUidRaw[uid];
+    const valueObj = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+    profileByUid[uid] = {
+      alias: normalizeAlias(valueObj.alias),
+      avatarId: normalizeAvatarId(valueObj.avatarId),
+    };
+  });
   return {
     pairId: id,
     users: pair,
+    profileByUid,
     createdAt: (row.createdAt as Timestamp) || null,
     createdBy: String(row.createdBy || ""),
   };
@@ -120,6 +172,7 @@ export async function sendFriendRequest(
     const receiverUid = String(lookupSnap.get("uid") || "").trim();
     if (!receiverUid) return { ok: false, message: "Could not resolve user account." };
     if (receiverUid === senderUid) return { ok: false, message: "You cannot send a request to yourself." };
+    const senderProfile = await loadOwnProfile(senderUid);
 
     const requestId = requestDocId(senderUid, receiverUid);
     const requestRef = doc(db, "friend_requests", requestId);
@@ -146,6 +199,10 @@ export async function sendFriendRequest(
           status: "pending",
           senderEmail: senderEmail || null,
           receiverEmail: receiverEmailValue,
+          senderAlias: senderProfile.alias,
+          senderAvatarId: senderProfile.avatarId,
+          receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
+          receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
           updatedAt: serverTimestamp(),
           respondedAt: null,
           respondedBy: null,
@@ -159,6 +216,10 @@ export async function sendFriendRequest(
         receiverUid,
         senderEmail: senderEmail || null,
         receiverEmail: receiverEmailValue,
+        senderAlias: senderProfile.alias,
+        senderAvatarId: senderProfile.avatarId,
+        receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
+        receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
         status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -191,6 +252,7 @@ export async function loadIncomingRequests(uid: string): Promise<FriendRequest[]
   const snap = await getDocs(query(collection(db, "friend_requests"), where("receiverUid", "==", uid)));
   return snap.docs
     .map((d) => asFriendRequest(d.id, d.data() as Record<string, unknown>))
+    .filter((row) => row.status === "pending")
     .sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
 }
 
@@ -200,6 +262,7 @@ export async function loadOutgoingRequests(uid: string): Promise<FriendRequest[]
   const snap = await getDocs(query(collection(db, "friend_requests"), where("senderUid", "==", uid)));
   return snap.docs
     .map((d) => asFriendRequest(d.id, d.data() as Record<string, unknown>))
+    .filter((row) => row.status === "pending")
     .sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
 }
 
@@ -213,36 +276,58 @@ export async function loadFriendships(uid: string): Promise<Friendship[]> {
 }
 
 export async function approveFriendRequest(requestId: string, receiverUid: string): Promise<{ ok: boolean; message?: string }> {
-  const db = dbOrNull();
-  if (!db) return { ok: false, message: "Cloud Firestore is not available." };
-  const ref = doc(db, "friend_requests", requestId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return { ok: false, message: "Request not found." };
-  const row = asFriendRequest(requestId, snap.data() as Record<string, unknown>);
-  if (row.receiverUid !== receiverUid) return { ok: false, message: "You cannot approve this request." };
-  if (row.status !== "pending") return { ok: false, message: "Request is no longer pending." };
+  try {
+    const db = dbOrNull();
+    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
+    const ref = doc(db, "friend_requests", requestId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok: false, message: "Request not found." };
+    const row = asFriendRequest(requestId, snap.data() as Record<string, unknown>);
+    if (row.receiverUid !== receiverUid) return { ok: false, message: "You cannot approve this request." };
+    if (row.status !== "pending") return { ok: false, message: "Request is no longer pending." };
 
-  await updateDoc(ref, {
-    status: "approved",
-    updatedAt: serverTimestamp(),
-    respondedAt: serverTimestamp(),
-    respondedBy: receiverUid,
-  });
-
-  const pairId = friendshipDocId(row.senderUid, row.receiverUid);
-  const pair = sortedPair(row.senderUid, row.receiverUid);
-  const pairRef = doc(db, "friendships", pairId);
-  const pairSnap = await getDoc(pairRef);
-  if (!pairSnap.exists()) {
-    await setDoc(pairRef, {
-      pairId,
-      users: pair,
-      createdBy: receiverUid,
-      createdAt: serverTimestamp(),
+    await updateDoc(ref, {
+      status: "approved",
+      updatedAt: serverTimestamp(),
+      respondedAt: serverTimestamp(),
+      respondedBy: receiverUid,
     });
-  }
 
-  return { ok: true };
+    const pairId = friendshipDocId(row.senderUid, row.receiverUid);
+    const pair = sortedPair(row.senderUid, row.receiverUid);
+    const receiverProfile = await loadOwnProfile(receiverUid);
+    const pairRef = doc(db, "friendships", pairId);
+    const pairSnap = await getDoc(pairRef);
+    const profileByUid = {
+      [row.senderUid]: {
+        alias: normalizeAlias(row.senderAlias || row.senderEmail),
+        avatarId: normalizeAvatarId(row.senderAvatarId),
+      },
+      [row.receiverUid]: {
+        alias: normalizeAlias(receiverProfile.alias || row.receiverAlias || row.receiverEmail),
+        avatarId: normalizeAvatarId(receiverProfile.avatarId || row.receiverAvatarId),
+      },
+    };
+    if (!pairSnap.exists()) {
+      await setDoc(pairRef, {
+        pairId,
+        users: pair,
+        profileByUid,
+        createdBy: receiverUid,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    return { ok: true };
+  } catch (err: unknown) {
+    const firebaseErr = err as FirebaseError | undefined;
+    const code = String(firebaseErr?.code || "").trim();
+    if (code === "permission-denied") {
+      return { ok: false, message: "Permission denied while approving request." };
+    }
+    const message = String(firebaseErr?.message || "").trim();
+    return { ok: false, message: message || "Could not approve friend request." };
+  }
 }
 
 export async function declineFriendRequest(requestId: string, receiverUid: string): Promise<{ ok: boolean; message?: string }> {

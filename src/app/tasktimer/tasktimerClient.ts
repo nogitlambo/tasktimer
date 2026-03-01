@@ -12,6 +12,7 @@ import {
   rememberRecentCustomTaskName,
 } from "./lib/addTaskNames";
 import { computeFocusInsights } from "./lib/focusInsights";
+import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   approveFriendRequest,
@@ -244,6 +245,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let groupsFriendships: Friendship[] = [];
   let groupsLoading = false;
   let groupsStatusMessage = "Ready.";
+  const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, item) => {
+    const key = String(item.id || "").trim();
+    if (key) acc[key] = item.src;
+    return acc;
+  }, {});
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -4596,7 +4602,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.groupsFriendsList.innerHTML = groupsFriendships
       .map((row) => {
         const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        return `<div class="settingsDetailNote">User ID: ${escapeHtmlUI(friendUid)}</div>`;
+        const profile = row.profileByUid?.[friendUid];
+        const alias = String(profile?.alias || "").trim() || friendUid;
+        const avatarId = String(profile?.avatarId || "").trim();
+        const avatarSrc = avatarSrcById[avatarId] || "/avatars/initials/initials-AN.svg";
+        return `<div class="settingsDetailNote" style="display:flex;align-items:center;gap:10px;">
+          <img src="${escapeHtmlUI(avatarSrc)}" alt="" aria-hidden="true" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 auto;" />
+          <span style="font-weight:600;">${escapeHtmlUI(alias)}</span>
+        </div>`;
       })
       .join("");
   }

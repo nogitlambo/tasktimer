@@ -1,0 +1,1 @@
+const fs=require('fs');const t=fs.readFileSync('src/app/tasktimer/lib/friendsStore.ts','utf8');const names=['export async function approveFriendRequest','pairRef','setDoc(pairRef','updateDoc(ref'];for(const n of names){const i=t.indexOf(n);console.log('---'+n+' @'+i);console.log(t.substring(Math.max(0,i-250),i+900));}  

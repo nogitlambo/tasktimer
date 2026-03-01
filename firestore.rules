@@ -184,6 +184,10 @@ service cloud.firestore {
         "receiverUid",
         "senderEmail",
         "receiverEmail",
+        "senderAlias",
+        "senderAvatarId",
+        "receiverAlias",
+        "receiverAvatarId",
         "status",
         "createdAt",
         "updatedAt",
@@ -195,6 +199,10 @@ service cloud.firestore {
       && (!("receiverUid" in request.resource.data) || request.resource.data.receiverUid is string)
       && (!("senderEmail" in request.resource.data) || request.resource.data.senderEmail == null || request.resource.data.senderEmail is string)
       && (!("receiverEmail" in request.resource.data) || request.resource.data.receiverEmail == null || request.resource.data.receiverEmail is string)
+      && (!("senderAlias" in request.resource.data) || request.resource.data.senderAlias == null || request.resource.data.senderAlias is string)
+      && (!("senderAvatarId" in request.resource.data) || request.resource.data.senderAvatarId == null || request.resource.data.senderAvatarId is string)
+      && (!("receiverAlias" in request.resource.data) || request.resource.data.receiverAlias == null || request.resource.data.receiverAlias is string)
+      && (!("receiverAvatarId" in request.resource.data) || request.resource.data.receiverAvatarId == null || request.resource.data.receiverAvatarId is string)
       && (!("status" in request.resource.data) || request.resource.data.status in ["pending", "approved", "declined"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
@@ -253,12 +261,14 @@ service cloud.firestore {
       return onlyKeys([
         "pairId",
         "users",
+        "profileByUid",
         "createdAt",
         "createdBy"
       ])
       && request.resource.data.keys().hasAll([
         "pairId",
         "users",
+        "profileByUid",
         "createdAt",
         "createdBy"
       ])
@@ -270,6 +280,9 @@ service cloud.firestore {
       && request.resource.data.users[1] is string
       && request.resource.data.users[0] != request.resource.data.users[1]
       && request.auth.uid in request.resource.data.users
+      && request.resource.data.profileByUid is map
+      && request.resource.data.profileByUid[request.resource.data.users[0]] is map
+      && request.resource.data.profileByUid[request.resource.data.users[1]] is map
       && request.resource.data.createdAt is timestamp
       && request.resource.data.createdBy is string
       && (
@@ -352,7 +365,16 @@ service cloud.firestore {
     }
 
     match /friendships/{pairId} {
-      allow read: if request.auth != null && request.auth.uid in resource.data.users;
+      allow read: if request.auth != null
+        && (
+          // Existing docs: only members can read.
+          (resource != null && request.auth.uid in resource.data.users)
+          // Non-existent docs: allow pre-read for own pair-id lookups during approval flow.
+          || (resource == null && (
+            pairId.matches("^pair:" + request.auth.uid + ":[^:]+$")
+            || pairId.matches("^pair:[^:]+:" + request.auth.uid + "$")
+          ))
+        );
       allow create: if isFriendshipDocCreate();
       allow update, delete: if false;
     }
