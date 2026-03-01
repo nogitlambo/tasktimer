@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import {
   deleteUser,
   getRedirectResult,
@@ -38,6 +39,27 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 }
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
+
+function avatarStorageKeyForUid(uid: string) {
+  return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
+}
+
+function readStoredAvatarId(uid: string): string {
+  if (typeof window === "undefined" || !uid) return "";
+  return String(window.localStorage.getItem(avatarStorageKeyForUid(uid)) || "").trim();
+}
+
+function writeStoredAvatarId(uid: string, avatarId: string) {
+  if (typeof window === "undefined" || !uid) return;
+  const value = String(avatarId || "").trim();
+  if (!value) {
+    window.localStorage.removeItem(avatarStorageKeyForUid(uid));
+    return;
+  }
+  window.localStorage.setItem(avatarStorageKeyForUid(uid), value);
+}
+
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
@@ -139,6 +161,9 @@ export default function SettingsPanel() {
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [avatarOptions] = useState<AvatarOption[]>(AVATAR_CATALOG);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
+  const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
+  const [avatarSyncNoticeIsError, setAvatarSyncNoticeIsError] = useState(false);
+  const avatarSyncNoticeTimerRef = useRef<number | null>(null);
 
   const accountStateDocRef = (uid: string) => {
     const db = getFirebaseFirestoreClient();
@@ -165,6 +190,20 @@ export default function SettingsPanel() {
       { merge: true }
     );
   }, [userDocRef]);
+
+  const showAvatarSyncNotice = useCallback((message: string, isError = false) => {
+    setAvatarSyncNotice(message);
+    setAvatarSyncNoticeIsError(isError);
+    if (typeof window === "undefined") return;
+    if (avatarSyncNoticeTimerRef.current != null) {
+      window.clearTimeout(avatarSyncNoticeTimerRef.current);
+    }
+    avatarSyncNoticeTimerRef.current = window.setTimeout(() => {
+      setAvatarSyncNotice("");
+      setAvatarSyncNoticeIsError(false);
+      avatarSyncNoticeTimerRef.current = null;
+    }, 2200);
+  }, []);
   const navItems = useMemo(
     () => [
       { key: "general" as const, label: "Account" },
@@ -347,23 +386,50 @@ export default function SettingsPanel() {
     }
     let cancelled = false;
     const loadAvatar = async () => {
+      const cached = readStoredAvatarId(authUserUid);
+      if (cached && avatarOptions.some((a) => a.id === cached) && !cancelled) {
+        setSelectedAvatarId(cached);
+      }
       const ref = userDocRef(authUserUid);
       if (!ref) {
-        if (!cancelled) setSelectedAvatarId(avatarOptions[0]?.id || "");
+        if (!cancelled) {
+          const fallback = avatarOptions.some((a) => a.id === cached) ? cached : avatarOptions[0]?.id || "";
+          setSelectedAvatarId(fallback);
+        }
         return;
       }
       const snap = await getDoc(ref);
       const saved = snap.exists() ? String(snap.get("avatarId") || "") : "";
-      const nextId = avatarOptions.some((a) => a.id === saved) ? saved : avatarOptions[0]?.id || "";
+      const validSaved = avatarOptions.some((a) => a.id === saved) ? saved : "";
+      const validCached = avatarOptions.some((a) => a.id === cached) ? cached : "";
+      const nextId = validSaved || validCached || avatarOptions[0]?.id || "";
+      if (validSaved) {
+        writeStoredAvatarId(authUserUid, validSaved);
+      } else if (validCached) {
+        // Backfill missing cloud avatar from local cache.
+        await saveUserDocPatch(authUserUid, { avatarId: validCached });
+      }
       if (!cancelled) setSelectedAvatarId(nextId);
     };
     void loadAvatar().catch(() => {
-      if (!cancelled) setSelectedAvatarId(avatarOptions[0]?.id || "");
+      if (!cancelled) {
+        const cached = readStoredAvatarId(authUserUid);
+        const fallback = avatarOptions.some((a) => a.id === cached) ? cached : avatarOptions[0]?.id || "";
+        setSelectedAvatarId(fallback);
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [authUserUid, avatarOptions, userDocRef]);
+  }, [authUserUid, avatarOptions, saveUserDocPatch, userDocRef]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && avatarSyncNoticeTimerRef.current != null) {
+        window.clearTimeout(avatarSyncNoticeTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleSignOut = async () => {
     const auth = getFirebaseAuthClient();
@@ -541,12 +607,15 @@ export default function SettingsPanel() {
       setAuthStatus("");
       return;
     }
+    writeStoredAvatarId(authUserUid, avatarId);
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, { avatarId });
+      showAvatarSyncNotice("Avatar saved.");
     } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not save avatar selection."));
+      setAuthError(getErrorMessage(err, "Could not save avatar selection to cloud."));
       setAuthStatus("");
+      showAvatarSyncNotice("Avatar saved locally. Cloud sync failed.", true);
     }
     setShowAvatarPickerModal(false);
   };
@@ -771,6 +840,11 @@ export default function SettingsPanel() {
                 ) : null}
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
+                {avatarSyncNotice ? (
+                  <div className={avatarSyncNoticeIsError ? "settingsAuthError" : "settingsAuthNotice"}>
+                    {avatarSyncNotice}
+                  </div>
+                ) : null}
                 {authUserEmail ? (
                   <>
                     <div className="settingsInlineSectionHead settingsDeleteAccountHead">

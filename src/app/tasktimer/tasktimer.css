@@ -6216,6 +6216,13 @@ body.light .settingsMenu .settingsAvatarOptionSelected{
   color:#0b7285;
 }
 
+/* Mobile-only history chart sizing: +25% from the original 260px baseline. */
+@media (max-width: 640px){
+  .historyCanvasWrap{
+    height:325px;
+  }
+}
+
 /* Final route-scoped override: User Guide should not inherit the shared `.menu` width cap. */
 #app[aria-label="TaskTimer User Guide"] .menu,
 #app[aria-label="TaskTimer User Guide"] .userGuideMenu,
