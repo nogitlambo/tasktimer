@@ -123,10 +123,17 @@ export async function sendFriendRequest(
 
     const requestId = requestDocId(senderUid, receiverUid);
     const requestRef = doc(db, "friend_requests", requestId);
+    const pairRef = doc(db, "friendships", friendshipDocId(senderUid, receiverUid));
 
     let failure: string | null = null;
     await runTransaction(db, async (tx) => {
       const existing = await tx.get(requestRef);
+      const friendship = await tx.get(pairRef);
+
+      if (friendship.exists()) {
+        failure = "You are already friends with this user.";
+        return;
+      }
 
       const receiverEmailRawValue = lookupSnap.get("email");
       const receiverEmailValue = receiverEmailRawValue == null ? null : String(receiverEmailRawValue || "");
@@ -136,7 +143,11 @@ export async function sendFriendRequest(
           failure = "A pending request already exists for this user.";
           return;
         }
-        if (status !== "approved" && status !== "declined") {
+        if (status === "approved") {
+          failure = "You are already friends with this user.";
+          return;
+        }
+        if (status !== "declined") {
           failure = "Request state is invalid. Remove or fix the existing request first.";
           return;
         }
@@ -260,6 +271,28 @@ export async function declineFriendRequest(requestId: string, receiverUid: strin
     updatedAt: serverTimestamp(),
     respondedAt: serverTimestamp(),
     respondedBy: receiverUid,
+  });
+  return { ok: true };
+}
+
+export async function cancelOutgoingFriendRequest(
+  requestId: string,
+  senderUid: string
+): Promise<{ ok: boolean; message?: string }> {
+  const db = dbOrNull();
+  if (!db) return { ok: false, message: "Cloud Firestore is not available." };
+  const ref = doc(db, "friend_requests", requestId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return { ok: false, message: "Request not found." };
+  const row = asFriendRequest(requestId, snap.data() as Record<string, unknown>);
+  if (row.senderUid !== senderUid) return { ok: false, message: "You cannot cancel this request." };
+  if (row.status !== "pending") return { ok: false, message: "Request is no longer pending." };
+
+  await updateDoc(ref, {
+    status: "declined",
+    updatedAt: serverTimestamp(),
+    respondedAt: serverTimestamp(),
+    respondedBy: senderUid,
   });
   return { ok: true };
 }
