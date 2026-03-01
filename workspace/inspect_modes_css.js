@@ -1,0 +1,1 @@
+const fs=require('fs');const p='src/app/tasktimer/tasktimer.css';const t=fs.readFileSync(p,'utf8');['modeSwitch','modeBtn','#modeSwitch','#mode1Btn','.modeBtn'].forEach(k=== '+k+' ==');let i=t.indexOf(k);console.log(i);if(i console.log(t.substring(Math.max(0,i-300),i+500));}); 

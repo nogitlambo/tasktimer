@@ -3223,7 +3223,7 @@ optgroup{
 }
 .historyCanvasWrap{
   width:100%;
-  height:260px;
+  height:390px;
   padding-bottom:0;
   border-radius: 0;
   background: #0d0f13 !important;
@@ -6236,4 +6236,36 @@ body.light .settingsMenu .settingsAvatarOptionSelected{
   width:100% !important;
   min-width:0 !important;
   display:block !important;
+}
+
+/* Final Tasks-page override: make mode switches justify and span full width. */
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .topbar{
+  grid-template-columns:auto minmax(0, 1fr) auto;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:8px;
+  align-items:stretch;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn{
+  width:100%;
+  min-width:0;
+  justify-content:center;
+}
+@media (min-width: 981px){
+  body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+    box-sizing:border-box;
+    width:calc(100% - 120px);
+    max-width:none;
+    margin-left:120px;
+    margin-right:0;
+    padding-inline:18px;
+  }
 }
