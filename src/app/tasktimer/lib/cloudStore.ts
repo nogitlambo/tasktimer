@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 
@@ -91,6 +92,35 @@ function taskUiDoc(uid: string) {
   return doc(db, "users", uid, "taskUi", "v1");
 }
 
+function normalizeEmail(raw: unknown): string {
+  return String(raw || "").trim().toLowerCase();
+}
+
+function emailLookupDocKey(email: string): string {
+  return encodeURIComponent(normalizeEmail(email));
+}
+
+async function upsertUserEmailLookup(uid: string): Promise<void> {
+  const db = dbOrNull();
+  if (!db || !uid) return;
+  const auth = getFirebaseAuthClient();
+  const currentUser = auth?.currentUser || null;
+  const authEmail = normalizeEmail(currentUser?.email);
+  if (!authEmail) return;
+  const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
+  await setDoc(
+    doc(db, "userEmailLookup", emailLookupDocKey(authEmail)),
+    {
+      uid,
+      email: authEmail,
+      displayName: authDisplayName,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 function asBool(v: unknown, fallback: boolean) {
   return typeof v === "boolean" ? v : fallback;
 }
@@ -162,15 +192,47 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
 async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
   const root = usersDoc(uid);
   if (!root) return;
+  const db = dbOrNull();
+  if (!db) return;
+  const auth = getFirebaseAuthClient();
+  const currentUser = auth?.currentUser || null;
+  const authEmail = normalizeEmail(currentUser?.email);
+  const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
+  const existing = await getDoc(root);
+  const prevEmail = normalizeEmail(existing.exists() ? existing.get("email") : "");
+
+  if (prevEmail && authEmail && prevEmail !== authEmail) {
+    try {
+      await deleteDoc(doc(db, "userEmailLookup", emailLookupDocKey(prevEmail)));
+    } catch {
+      // Best-effort cleanup; stale lookup removal should not block profile updates.
+    }
+  }
+
   await setDoc(
     root,
     {
       schemaVersion: 1,
+      ...(authEmail ? { email: authEmail } : {}),
+      displayName: authDisplayName,
+      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
       updatedAt: serverTimestamp(),
       ...(patch || {}),
     },
     { merge: true }
   );
+
+  await upsertUserEmailLookup(uid);
+}
+
+export async function ensureUserProfileIndex(uid: string): Promise<void> {
+  if (!uid) return;
+  await upsertUserEmailLookup(uid);
+  try {
+    await upsertUserRoot(uid);
+  } catch {
+    // Keep email lookup available even if root profile shape is currently rejected by rules.
+  }
 }
 
 export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot> {

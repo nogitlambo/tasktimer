@@ -196,9 +196,9 @@ service cloud.firestore {
       && (!("senderEmail" in request.resource.data) || request.resource.data.senderEmail == null || request.resource.data.senderEmail is string)
       && (!("receiverEmail" in request.resource.data) || request.resource.data.receiverEmail == null || request.resource.data.receiverEmail is string)
       && (!("status" in request.resource.data) || request.resource.data.status in ["pending", "approved", "declined"])
-      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
-      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
-      && (!("respondedAt" in request.resource.data) || request.resource.data.respondedAt == null || request.resource.data.respondedAt is timestamp)
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
+      && (!("respondedAt" in request.resource.data) || request.resource.data.respondedAt == null || request.resource.data.respondedAt != null)
       && (!("respondedBy" in request.resource.data) || request.resource.data.respondedBy == null || request.resource.data.respondedBy is string);
     }
 
@@ -334,9 +334,18 @@ service cloud.firestore {
 
     match /friend_requests/{requestId} {
       allow read: if request.auth != null
-        && (request.auth.uid == resource.data.senderUid || request.auth.uid == resource.data.receiverUid);
+        && (
+          // Existing doc reads by sender/receiver.
+          (resource != null && (request.auth.uid == resource.data.senderUid || request.auth.uid == resource.data.receiverUid))
+          // Transaction pre-read on a non-existent pending doc for sender/receiver pair.
+          || (resource == null && (
+            requestId.matches("^pending:" + request.auth.uid + ":[^:]+$")
+            || requestId.matches("^pending:[^:]+:" + request.auth.uid + "$")
+          ))
+        );
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.senderUid
+        && requestId == request.resource.data.requestId
         && isFriendRequestCreateDoc();
       allow update: if isFriendRequestDecisionUpdate() || isFriendRequestRetryUpdate();
       allow delete: if false;
@@ -346,6 +355,24 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid in resource.data.users;
       allow create: if isFriendshipDocCreate();
       allow update, delete: if false;
+    }
+
+    match /userEmailLookup/{emailKey} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.uid is string
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email is string
+        && (!("displayName" in request.resource.data)
+          || request.resource.data.displayName == null
+          || request.resource.data.displayName is string)
+        && (!("createdAt" in request.resource.data)
+          || request.resource.data.createdAt != null)
+        && (!("updatedAt" in request.resource.data)
+          || request.resource.data.updatedAt != null);
+      allow delete: if request.auth != null
+        && resource.data.uid is string
+        && resource.data.uid == request.auth.uid;
     }
   }
 }

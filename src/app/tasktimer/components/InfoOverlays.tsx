@@ -6,16 +6,16 @@ export default function InfoOverlays() {
       <div className="overlay" id="aboutOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="About">
           <div className="aboutHead">
-            <img className="aboutLogo" alt="TaskTimer logo" src="/tasktimer-logo.png" />
+            <img className="aboutLogo" alt="Timebase logo" src="/timebase-logo.svg" />
             <div>
-              <h2 style={{ margin: 0 }}>TaskTimer</h2>
-              <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>Focused task timing with progress and history</div>
+              <h2 style={{ margin: 0 }}>Timebase</h2>
+              <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>Focused time tracking with progress and history</div>
             </div>
           </div>
 
           <div className="aboutText" style={{ marginTop: 10 }}>
             <p style={{ marginTop: 0 }}>
-              TaskTimer is built for tracking focused work across multiple tasks and modes, with a fast workflow for
+              Timebase is built for tracking focused work across multiple tasks and modes, with a fast workflow for
               start/stop timing, reviewing progress, and managing your history.
             </p>
             <p>

@@ -15,6 +15,7 @@ import InfoOverlays from "./components/InfoOverlays";
 import TaskList from "./components/TaskList";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { ensureUserProfileIndex } from "./lib/cloudStore";
 import "./tasktimer.css";
 
 export default function TaskTimerPage() {
@@ -30,6 +31,7 @@ export default function TaskTimerPage() {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setSignedInEmail(user?.email || null);
+      if (user?.uid) void ensureUserProfileIndex(user.uid);
     });
     return () => unsub();
   }, []);
@@ -39,7 +41,7 @@ export default function TaskTimerPage() {
       <div className="wrap" id="app" aria-label="TaskTimer App">
         <div className="topbar">
           <div className="brand">
-            <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
+            <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
           </div>
 
           {signedInEmail ? (
@@ -315,12 +317,8 @@ export default function TaskTimerPage() {
             <h2>Send Friend Request</h2>
           </div>
           <div className="field">
-            <label htmlFor="friendRequestUserIdInput">User ID</label>
-            <input id="friendRequestUserIdInput" type="text" autoComplete="off" />
-          </div>
-          <div className="field">
-            <label htmlFor="friendRequestTokenInput">Secret token</label>
-            <input id="friendRequestTokenInput" type="text" autoComplete="off" />
+            <label htmlFor="friendRequestEmailInput">Email address</label>
+            <input id="friendRequestEmailInput" type="email" autoComplete="email" className="text w100" />
           </div>
           <div className="footerBtns">
             <button className="btn btn-ghost" id="friendRequestCancelBtn" type="button">
@@ -330,6 +328,7 @@ export default function TaskTimerPage() {
               Send Request
             </button>
           </div>
+          <div id="friendRequestModalStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
         </div>
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />

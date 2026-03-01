@@ -6,7 +6,7 @@ export default function SettingsScreen() {
     <div className="wrap" id="app" aria-label="TaskTimer Settings">
       <div className="topbar" aria-label="TaskTimer header">
         <div className="brand">
-          <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
+          <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
         </div>
       </div>
       <div className="list settingsPageList" style={{ paddingTop: 18 }}>

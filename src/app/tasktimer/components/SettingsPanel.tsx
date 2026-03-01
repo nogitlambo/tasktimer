@@ -730,6 +730,9 @@ export default function SettingsPanel() {
                       <div className="settingsInlineSectionTitle">Friend Key</div>
                     </div>
                     <div className="settingsFriendKeyBlock">
+                      {!friendInviteKey ? (
+                        <div className="settingsFriendKeyExpiry">No active key. Generate a 6-digit one-time key.</div>
+                      ) : null}
                       <button
                         className="btn btn-ghost small settingsFriendKeyBtn"
                         type="button"
@@ -762,9 +765,7 @@ export default function SettingsPanel() {
                             <div className="settingsFriendKeyCopyStatus">{friendKeyCopyStatus}</div>
                           ) : null}
                         </>
-                      ) : (
-                        <div className="settingsFriendKeyExpiry">No active key. Generate a 6-digit one-time key.</div>
-                      )}
+                      ) : null}
                     </div>
                   </section>
                 ) : null}
@@ -1051,7 +1052,7 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "privacy"}
             title="Privacy Policy"
-            subtitle="Review TaskTimer's privacy policy, including data handling, local storage behavior, and account deletion information."
+            subtitle="Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1067,7 +1068,7 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "userGuide"}
             title="Support"
-            subtitle="Open the TaskTimer user guide and walkthrough content."
+            subtitle="Open the Timebase user guide and walkthrough content."
           >
             <div className="settingsActionGrid settingsDataTileGrid">
               <button className="menuItem settingsDataTile" data-menu="howto" type="button">
@@ -1083,7 +1084,7 @@ export default function SettingsPanel() {
           >
             <div className="aboutText">
               <p style={{ marginTop: 0 }}>
-                TaskTimer is a focused time-tracking app built to help you create better habits, manage repeatable
+                Timebase is a focused time-tracking app built to help you create better habits, manage repeatable
                 routines, and review progress over time.
               </p>
               <p>
@@ -1091,7 +1092,7 @@ export default function SettingsPanel() {
                 that works well on both mobile and desktop.
               </p>
 
-              <p style={{ marginBottom: 6, fontWeight: 700 }}>What TaskTimer is for</p>
+              <p style={{ marginBottom: 6, fontWeight: 700 }}>What Timebase is for</p>
               <ul style={{ margin: "0 0 12px 18px", padding: 0 }}>
                 <li>Tracking focused work sessions and personal routines</li>
                 <li>Monitoring progress against time checkpoints</li>

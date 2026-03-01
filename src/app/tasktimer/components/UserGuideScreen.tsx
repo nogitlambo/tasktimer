@@ -20,7 +20,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         title: "Overview",
         icon: "/Dashboard.svg",
         paragraphs: [
-          "TaskTimer is a multi-task time tracking app designed for focused work sessions. You can run timers per task, define milestone checkpoints, review session history, and monitor consistency over time.",
+          "Timebase is a multi-task time tracking app designed for focused work sessions. You can run timers per task, define milestone checkpoints, review session history, and monitor consistency over time.",
           "The app is organized around four core flows: tracking active tasks, reviewing history, configuring categories and appearance, and managing backups. Most actions happen on the Tasks page, with Settings used for global controls.",
           "All key interactions are optimized for mobile and desktop: tap/click buttons for actions, swipe history charts to page entries, and use dedicated manager screens for bulk history operations.",
         ],
@@ -219,7 +219,7 @@ export default function UserGuideScreen({ onBack }: Props) {
     <div className="wrap" id="app" aria-label="TaskTimer User Guide">
       <div className="topbar" aria-label="TaskTimer header">
         <div className="brand">
-          <img className="brandLogo" src="/tasktimer-logo.png" alt="TaskTimer" />
+          <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
         </div>
       </div>
       <div className="list settingsPageList userGuidePage" style={{ paddingTop: 18 }}>

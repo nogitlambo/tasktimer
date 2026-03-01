@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 1600 350" width="1600" height="350" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    :root { --tt-primary:#00E5FF; }
+
+    /* Animated dial (no outer logo ring, just the inner dial) */
+    .tt-dial {
+      fill: none;
+      stroke: var(--tt-primary);
+      stroke-width: 10;
+      stroke-linecap: round;
+
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+
+      transform: rotate(-90deg);
+      transform-origin: 175px 175px;
+
+      filter: url(#ttGlow);
+      animation: tt-fill 1.6s linear infinite, tt-glow 1.6s ease-in-out infinite;
+      opacity: 0.92;
+    }
+
+    .tt-face {
+      fill: none;
+      stroke: var(--tt-primary);
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.95;
+      filter: url(#ttGlowSoft);
+    }
+
+    .tt-tick {
+      stroke: var(--tt-primary);
+      stroke-width: 5;
+      stroke-linecap: round;
+      opacity: 0.85;
+      filter: url(#ttGlowSoft);
+    }
+
+    .tt-wordmark {
+      fill: var(--tt-primary);
+      font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-weight: 800;
+      letter-spacing: 2px;
+      filter: url(#ttGlowSoft);
+    }
+
+    @keyframes tt-fill {
+      0%   { stroke-dashoffset: 100; }
+      92%  { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: 100; }
+    }
+
+    @keyframes tt-glow {
+      0%, 100% { opacity: 0.80; }
+      50%      { opacity: 1; }
+    }
+  </style>
+
+  <defs>
+    <!-- Stronger glow for the animated stroke -->
+    <filter id="ttGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Softer glow for static elements + text -->
+    <filter id="ttGlowSoft" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="b1"/>
+      <feMerge>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- ICON: centered at (175,175) -->
+  <g>
+    <!-- Animated dial perimeter -->
+    <circle class="tt-dial" cx="175" cy="175" r="58" pathLength="100"/>
+
+    <!-- Static inner face -->
+    <circle class="tt-face" cx="175" cy="175" r="38" opacity="0.45"/>
+
+    <!-- Ticks -->
+    <line class="tt-tick" x1="175" y1="135" x2="175" y2="145"/>
+    <line class="tt-tick" x1="175" y1="205" x2="175" y2="215"/>
+    <line class="tt-tick" x1="135" y1="175" x2="145" y2="175"/>
+    <line class="tt-tick" x1="205" y1="175" x2="215" y2="175"/>
+
+    <!-- Hands -->
+    <path class="tt-face" d="M175 175 L175 153"/>
+    <path class="tt-face" d="M175 175 L197 185" opacity="0.9"/>
+
+    <!-- Center hub -->
+    <circle cx="175" cy="175" r="5" fill="#00E5FF" opacity="0.95" filter="url(#ttGlowSoft)"/>
+  </g>
+
+  <!-- WORDMARK -->
+  <text class="tt-wordmark" x="320" y="225" font-size="150">TIMEBASE</text>
+</svg>

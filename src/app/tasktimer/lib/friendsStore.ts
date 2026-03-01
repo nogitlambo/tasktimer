@@ -11,6 +11,7 @@ import {
   where,
   type Timestamp,
 } from "firebase/firestore";
+import type { FirebaseError } from "firebase/app";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
@@ -50,6 +51,10 @@ function requestDocId(senderUid: string, receiverUid: string) {
   return `pending:${senderUid}:${receiverUid}`;
 }
 
+function emailLookupDocKey(email: string) {
+  return encodeURIComponent(String(email || "").trim().toLowerCase());
+}
+
 function friendshipDocId(uidA: string, uidB: string) {
   const [a, b] = sortedPair(uidA, uidB);
   return `pair:${a}:${b}`;
@@ -87,76 +92,97 @@ function asFriendship(id: string, row: Record<string, unknown>): Friendship {
 export async function sendFriendRequest(
   senderUid: string,
   senderEmail: string | null,
-  receiverUidRaw: string,
-  secretTokenRaw: string
+  receiverEmailRaw: string
 ): Promise<SendRequestResult> {
-  const db = dbOrNull();
-  if (!db) return { ok: false, message: "Cloud Firestore is not available." };
+  try {
+    const db = dbOrNull();
+    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
 
-  const receiverUid = String(receiverUidRaw || "").trim();
-  const secretToken = String(secretTokenRaw || "").trim();
-  if (!senderUid) return { ok: false, message: "You must be signed in." };
-  if (!receiverUid) return { ok: false, message: "User ID is required." };
-  if (!secretToken) return { ok: false, message: "Secret token is required." };
-  if (receiverUid === senderUid) return { ok: false, message: "You cannot send a request to yourself." };
-
-  const receiverUserRef = doc(db, "users", receiverUid);
-  const accountStateRef = doc(db, "users", receiverUid, "accountState", "v1");
-  const requestId = requestDocId(senderUid, receiverUid);
-  const requestRef = doc(db, "friend_requests", requestId);
-
-  let failure: string | null = null;
-  await runTransaction(db, async (tx) => {
-    const [receiverUserSnap, accountStateSnap, existing] = await Promise.all([
-      tx.get(receiverUserRef),
-      tx.get(accountStateRef),
-      tx.get(requestRef),
-    ]);
-
-    if (!receiverUserSnap.exists()) {
-      failure = "No user found for this User ID.";
-      return;
+    const receiverEmail = String(receiverEmailRaw || "").trim().toLowerCase();
+    if (!senderUid) return { ok: false, message: "You must be signed in." };
+    if (!receiverEmail) return { ok: false, message: "Email address is required." };
+    const senderEmailNorm = String(senderEmail || "").trim().toLowerCase();
+    if (senderEmailNorm && senderEmailNorm === receiverEmail) {
+      return { ok: false, message: "You cannot send a request to yourself." };
     }
 
-    const activeToken = accountStateSnap.exists() ? String(accountStateSnap.get("friendInviteKey") || "") : "";
-    if (!activeToken) {
-      failure = "This user does not have an active secret token.";
-      return;
+    let lookupSnap;
+    try {
+      lookupSnap = await getDoc(doc(db, "userEmailLookup", emailLookupDocKey(receiverEmail)));
+    } catch (err: unknown) {
+      const firebaseErr = err as FirebaseError | undefined;
+      if (String(firebaseErr?.code || "").trim() === "permission-denied") {
+        return { ok: false, message: "Permission denied reading user lookup." };
+      }
+      return { ok: false, message: "Could not read user lookup for this email address." };
     }
-    if (activeToken !== secretToken) {
-      failure = "Secret token is invalid.";
-      return;
-    }
+    if (!lookupSnap.exists()) return { ok: false, message: "No user found for this email address." };
+    const receiverUid = String(lookupSnap.get("uid") || "").trim();
+    if (!receiverUid) return { ok: false, message: "Could not resolve user account." };
+    if (receiverUid === senderUid) return { ok: false, message: "You cannot send a request to yourself." };
 
-    if (existing.exists() && String(existing.get("status") || "pending") === "pending") {
-      failure = "A pending request already exists for this user.";
-      return;
-    }
+    const requestId = requestDocId(senderUid, receiverUid);
+    const requestRef = doc(db, "friend_requests", requestId);
 
-    const receiverEmail = receiverUserSnap.get("email") ? String(receiverUserSnap.get("email")) : null;
-    tx.set(
-      requestRef,
-      {
+    let failure: string | null = null;
+    await runTransaction(db, async (tx) => {
+      const existing = await tx.get(requestRef);
+
+      const receiverEmailRawValue = lookupSnap.get("email");
+      const receiverEmailValue = receiverEmailRawValue == null ? null : String(receiverEmailRawValue || "");
+      if (existing.exists()) {
+        const status = String(existing.get("status") || "pending");
+        if (status === "pending") {
+          failure = "A pending request already exists for this user.";
+          return;
+        }
+        if (status !== "approved" && status !== "declined") {
+          failure = "Request state is invalid. Remove or fix the existing request first.";
+          return;
+        }
+
+        // Retry path: update only mutable fields so immutable-rule comparisons remain intact.
+        tx.update(requestRef, {
+          status: "pending",
+          senderEmail: senderEmail || null,
+          receiverEmail: receiverEmailValue,
+          updatedAt: serverTimestamp(),
+          respondedAt: null,
+          respondedBy: null,
+        });
+        return;
+      }
+
+      tx.set(requestRef, {
         requestId,
         senderUid,
         receiverUid,
         senderEmail: senderEmail || null,
-        receiverEmail,
+        receiverEmail: receiverEmailValue,
         status: "pending",
-        createdAt: existing.exists() ? (existing.get("createdAt") || serverTimestamp()) : serverTimestamp(),
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         respondedAt: null,
         respondedBy: null,
-      },
-      { merge: true }
-    );
-    // One-time key consumption: remove immediately after a valid request is created.
-    tx.set(accountStateRef, { friendInviteKey: null, friendInviteKeyExpiresAt: null, updatedAt: serverTimestamp() }, { merge: true });
-  });
+      });
+    });
 
-  if (failure) return { ok: false, message: failure };
-  const snap = await getDoc(requestRef);
-  return { ok: true, request: asFriendRequest(requestId, (snap.data() || {}) as Record<string, unknown>) };
+    if (failure) return { ok: false, message: failure };
+    const snap = await getDoc(requestRef);
+    return { ok: true, request: asFriendRequest(requestId, (snap.data() || {}) as Record<string, unknown>) };
+  } catch (err: unknown) {
+    const firebaseErr = err as FirebaseError | undefined;
+    const code = String(firebaseErr?.code || "").trim();
+    if (code === "permission-denied") {
+      return { ok: false, message: "Permission denied writing friend request." };
+    }
+    if (code === "failed-precondition") {
+      return { ok: false, message: "Firestore precondition failed. Check indexes/rules." };
+    }
+    const message = String(firebaseErr?.message || "").trim();
+    if (message) return { ok: false, message };
+    return { ok: false, message: "Could not send friend request." };
+  }
 }
 
 export async function loadIncomingRequests(uid: string): Promise<FriendRequest[]> {

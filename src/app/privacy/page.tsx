@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
     <main className="min-h-screen bg-[#0d0f13] px-6 py-10 text-white">
       <div className="mx-auto w-full max-w-3xl">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight">TaskTimer Privacy Policy</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Timebase Privacy Policy</h1>
           <PrivacyBackButton />
         </div>
         <p className="mb-6 text-sm text-white/70">Effective date: {EFFECTIVE_DATE}</p>
@@ -16,8 +16,8 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="mb-2 text-base font-semibold text-white">Summary</h2>
             <p>
-              TaskTimer is a task timing and history tracking app. Most timer, task, settings, and history data is
-              stored locally on your device. If you choose to sign in, TaskTimer uses Firebase Authentication to manage
+              Timebase is a task timing and history tracking app. Most timer, task, settings, and history data is
+              stored locally on your device. If you choose to sign in, Timebase uses Firebase Authentication to manage
               your sign-in account.
             </p>
           </section>
@@ -43,19 +43,19 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="mb-2 text-base font-semibold text-white">Storage and Sharing</h2>
             <p>
-              TaskTimer stores most app data locally on your device using browser/WebView storage. Authentication is
-              handled through Firebase Authentication. TaskTimer does not sell your personal data.
+              Timebase stores most app data locally on your device using browser/WebView storage. Authentication is
+              handled through Firebase Authentication. Timebase does not sell your personal data.
             </p>
           </section>
 
           <section>
             <h2 className="mb-2 text-base font-semibold text-white">Account Deletion</h2>
             <p>
-              If you signed in to TaskTimer, you can delete your sign-in account in the app from{" "}
+              If you signed in to Timebase, you can delete your sign-in account in the app from{" "}
               <strong>Settings &gt; Account &gt; Delete Account</strong>.
             </p>
             <p className="mt-2">
-              Deleting the sign-in account removes the Firebase Authentication account used by TaskTimer. Local task and
+              Deleting the sign-in account removes the Firebase Authentication account used by Timebase. Local task and
               history data stored on your device is not automatically removed by account deletion. You can remove local
               device data separately using <strong>Settings &gt; Reset All</strong>.
             </p>

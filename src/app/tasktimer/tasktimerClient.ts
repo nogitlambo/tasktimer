@@ -302,10 +302,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     groupsFriendsSection: document.getElementById("groupsFriendsSection"),
     openFriendRequestModalBtn: document.getElementById("openFriendRequestModalBtn") as HTMLButtonElement | null,
     friendRequestModal: document.getElementById("friendRequestModal"),
-    friendRequestUserIdInput: document.getElementById("friendRequestUserIdInput") as HTMLInputElement | null,
-    friendRequestTokenInput: document.getElementById("friendRequestTokenInput") as HTMLInputElement | null,
+    friendRequestEmailInput: document.getElementById("friendRequestEmailInput") as HTMLInputElement | null,
     friendRequestCancelBtn: document.getElementById("friendRequestCancelBtn") as HTMLButtonElement | null,
     friendRequestSendBtn: document.getElementById("friendRequestSendBtn") as HTMLButtonElement | null,
+    friendRequestModalStatus: document.getElementById("friendRequestModalStatus"),
     groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
     groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
     groupsFriendsList: document.getElementById("groupsFriendsList"),
@@ -4515,12 +4515,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function openFriendRequestModal() {
     if (!els.friendRequestModal) return;
     (els.friendRequestModal as HTMLElement).style.display = "flex";
-    if (els.friendRequestUserIdInput) els.friendRequestUserIdInput.value = "";
-    if (els.friendRequestTokenInput) els.friendRequestTokenInput.value = "";
-    setGroupsStatus("Enter User ID and secret token.");
+    if (els.friendRequestEmailInput) els.friendRequestEmailInput.value = "";
+    setFriendRequestModalStatus("");
     window.setTimeout(() => {
       try {
-        els.friendRequestUserIdInput?.focus();
+        els.friendRequestEmailInput?.focus();
       } catch {
         // ignore
       }
@@ -4530,6 +4529,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function closeFriendRequestModal() {
     if (!els.friendRequestModal) return;
     (els.friendRequestModal as HTMLElement).style.display = "none";
+    setFriendRequestModalStatus("");
+  }
+
+  function setFriendRequestModalStatus(message: string, tone: "error" | "success" | "info" = "info") {
+    if (!els.friendRequestModalStatus) return;
+    const text = String(message || "").trim();
+    const statusEl = els.friendRequestModalStatus as HTMLElement;
+    statusEl.textContent = text;
+    statusEl.style.display = text ? "block" : "none";
+    statusEl.style.color = "";
+    if (!text) return;
+    if (tone === "error") {
+      statusEl.style.color = "#ff8f8f";
+      return;
+    }
+    if (tone === "success") {
+      statusEl.style.color = "var(--accent, #35e8ff)";
+      return;
+    }
+    statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
   function renderGroupsRequestsList(
@@ -4623,21 +4642,26 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const uid = currentUid();
     const auth = getFirebaseAuthClient();
     const email = auth?.currentUser?.email || null;
-    const receiverUid = String(els.friendRequestUserIdInput?.value || "").trim();
-    const secretToken = String(els.friendRequestTokenInput?.value || "").trim();
+    const receiverEmail = String(els.friendRequestEmailInput?.value || "").trim();
+    setFriendRequestModalStatus("");
     groupsLoading = true;
     renderGroupsPage();
     setGroupsStatus("Sending request...");
     try {
-      const result = await sendFriendRequest(uid, email, receiverUid, secretToken);
+      const result = await sendFriendRequest(uid, email, receiverEmail);
       if (!result.ok) {
+        setFriendRequestModalStatus(`Friend request failed: ${result.message || "Could not find a matching email."}`, "error");
         setGroupsStatus(result.message);
         return;
       }
+      setFriendRequestModalStatus("Friend request success.", "success");
       setGroupsStatus("Friend request sent.");
-      closeFriendRequestModal();
       await refreshGroupsData();
+      window.setTimeout(() => {
+        closeFriendRequestModal();
+      }, 700);
     } catch {
+      setFriendRequestModalStatus("Friend request failed: Could not send request.", "error");
       setGroupsStatus("Could not send friend request.");
     } finally {
       groupsLoading = false;
@@ -4944,7 +4968,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (groupsLoading) return;
       void handleSendFriendRequest();
     });
-    on(els.friendRequestTokenInput, "keydown", (e: any) => {
+    on(els.friendRequestEmailInput, "keydown", (e: any) => {
       if (e?.key !== "Enter") return;
       e?.preventDefault?.();
       if (groupsLoading) return;

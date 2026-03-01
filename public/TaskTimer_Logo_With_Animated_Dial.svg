@@ -44,7 +44,7 @@
   </defs>
 
   <!-- Crop the left icon area from the full TaskTimer logo (1600x350 viewBox). -->
-  <image href="/tasktimer-logo.svg" x="0" y="0" width="914.286" height="200" preserveAspectRatio="xMinYMid slice"/>
+  <image href="/timebase.svg" x="0" y="0" width="914.286" height="200" preserveAspectRatio="xMinYMid slice"/>
 
   <!-- Animated dial overlay -->
   <circle class="tt-dial" cx="100" cy="100" r="58" pathLength="100"/>

@@ -5826,12 +5826,37 @@ body[data-theme="light"] optgroup{
   font-size: 10px;
 }
 #friendRequestModal input[type="text"],
-#friendRequestModal input[type="number"]{
+#friendRequestModal input[type="number"],
+#friendRequestModal input[type="email"]{
+  border: 1px solid rgba(53,232,255,.26);
+  background: rgba(255,255,255,.03);
+  color: #e9fcff;
+  padding-left: 14px;
+  padding-right: 10px;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+#friendRequestModal input[type="text"]:focus,
+#friendRequestModal input[type="number"]:focus,
+#friendRequestModal input[type="email"]:focus{
+  border-color: rgba(53,232,255,.6);
+  outline: 1px solid rgba(53,232,255,.35);
+  outline-offset: 0;
 }
 #friendRequestModal .footerBtns{
   margin-top: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+#friendRequestModal .footerBtns .btn{
+  margin: 0 !important;
 }
 #friendRequestModal .editHead{
   margin-bottom: 8px;

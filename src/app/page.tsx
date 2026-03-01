@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import {
   GoogleAuthProvider,
   getRedirectResult,
@@ -99,6 +100,7 @@ export default function Home() {
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
+  const landingDialProgress = Math.max(0, Math.min(1, (100 - landingRingOffset) / 100));
 
   useEffect(() => {
     const raf = window.requestAnimationFrame(() => setShowLogo(true));
@@ -172,6 +174,7 @@ export default function Home() {
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       setAuthUserEmail(email);
+      if (user?.uid) void ensureUserProfileIndex(user.uid);
       if (!email && bypassAutoRedirect) {
         setBypassAutoRedirect(false);
         try {
@@ -430,16 +433,16 @@ export default function Home() {
         >
           <div className="relative inline-block">
             <img
-              src="/tasktimer-logo.svg"
-              alt="TaskTimer"
+              src="/timebase-logo.svg"
+              alt="Timebase"
               width={420}
               height={94}
               className="h-auto w-[240px] sm:w-[320px] md:w-[380px]"
-              style={{ clipPath: "inset(0 0 0 21.8%)" }}
+              style={{ clipPath: `inset(0 ${(1 - landingDialProgress) * 100}% 0 28%)` }}
             />
             <div
-              className="pointer-events-none absolute top-1/2 aspect-square w-[21.2%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
-              style={{ left: "11.5%" }}
+              className="pointer-events-none absolute top-1/2 aspect-square w-[14.6%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+              style={{ left: "12.2%" }}
               aria-hidden="true"
             >
               <svg viewBox="0 0 200 200" className="h-full w-full overflow-visible">

@@ -1,6 +1,7 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
+  ensureUserProfileIndex,
   deleteDeletedTaskMeta,
   deleteTask,
   loadUserWorkspace,
@@ -46,6 +47,7 @@ export async function hydrateStorageFromCloud(): Promise<void> {
     return;
   }
   if (hydratedUid === uid) return;
+  await ensureUserProfileIndex(uid);
   const snapshot = await loadUserWorkspace(uid);
   cachedTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
   cachedHistory = snapshot.historyByTaskId || {};
