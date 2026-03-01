@@ -16,6 +16,7 @@ import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   approveFriendRequest,
+  cancelOutgoingFriendRequest,
   declineFriendRequest,
   loadFriendships,
   loadIncomingRequests,
@@ -4574,13 +4575,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const status = String(row.status || "pending");
         const statusLabel = status[0].toUpperCase() + status.slice(1);
         const actionBtns =
-          opts.incoming && status === "pending"
-            ? `<div class="footerBtns"><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
-                row.requestId
-              )}">Approve</button><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
-                row.requestId
-              )}">Decline</button></div>`
-            : "";
+          status !== "pending"
+            ? ""
+            : opts.incoming
+              ? `<div class="footerBtns"><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
+                  row.requestId
+                )}">Approve</button><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
+                  row.requestId
+                )}">Decline</button></div>`
+              : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${escapeHtmlUI(
+                  row.requestId
+                )}">Cancel request</button></div>`;
         return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div><div>User ID: ${escapeHtmlUI(
           peerUid
         )}</div>${peerEmail ? `<div>${escapeHtmlUI(peerEmail)}</div>` : ""}${actionBtns}</div>`;
@@ -4682,22 +4687,32 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
-  async function handleIncomingDecision(requestId: string, action: "approve" | "decline") {
+  async function handleFriendRequestAction(requestId: string, action: "approve" | "decline" | "cancel") {
     const uid = currentUid();
     if (!uid || !requestId) return;
     groupsLoading = true;
-    setGroupsStatus(action === "approve" ? "Approving request..." : "Declining request...");
+    const pendingStatus =
+      action === "approve" ? "Approving request..." : action === "decline" ? "Declining request..." : "Cancelling request...";
+    setGroupsStatus(pendingStatus);
     renderGroupsPage();
     try {
       const result =
         action === "approve"
           ? await approveFriendRequest(requestId, uid)
-          : await declineFriendRequest(requestId, uid);
+          : action === "decline"
+            ? await declineFriendRequest(requestId, uid)
+            : await cancelOutgoingFriendRequest(requestId, uid);
       if (!result.ok) {
         setGroupsStatus(result.message || "Action failed.");
         return;
       }
-      setGroupsStatus(action === "approve" ? "Friend request approved." : "Friend request declined.");
+      const completeStatus =
+        action === "approve"
+          ? "Friend request approved."
+          : action === "decline"
+            ? "Friend request declined."
+            : "Friend request cancelled.";
+      setGroupsStatus(completeStatus);
       await refreshGroupsData();
     } catch {
       setGroupsStatus("Could not update friend request.");
@@ -4993,9 +5008,19 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const requestId = String(btn.getAttribute("data-request-id") || "").trim();
       const action = btn.getAttribute("data-friend-action");
       if (!requestId) return;
-      if (action !== "approve" && action !== "decline") return;
+      if (action !== "approve" && action !== "decline" && action !== "cancel") return;
       if (groupsLoading) return;
-      void handleIncomingDecision(requestId, action);
+      void handleFriendRequestAction(requestId, action);
+    });
+    on(els.groupsOutgoingRequestsList, "click", (e: any) => {
+      const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
+      if (!btn) return;
+      const requestId = String(btn.getAttribute("data-request-id") || "").trim();
+      const action = btn.getAttribute("data-friend-action");
+      if (!requestId) return;
+      if (action !== "approve" && action !== "decline" && action !== "cancel") return;
+      if (groupsLoading) return;
+      void handleFriendRequestAction(requestId, action);
     });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
