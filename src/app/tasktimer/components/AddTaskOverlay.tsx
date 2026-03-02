@@ -120,7 +120,7 @@ export default function AddTaskOverlay() {
               Cancel
             </button>
             <button className="btn btn-accent" id="addTaskConfirmBtn" type="submit">
-              Add
+              Done
             </button>
           </div>
         </form>

@@ -244,6 +244,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let groupsIncomingRequests: FriendRequest[] = [];
   let groupsOutgoingRequests: FriendRequest[] = [];
   let groupsFriendships: Friendship[] = [];
+  let exportTaskIndex: number | null = null;
   let groupsLoading = false;
   let groupsStatusMessage = "Ready.";
   const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, item) => {
@@ -313,6 +314,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     friendRequestCancelBtn: document.getElementById("friendRequestCancelBtn") as HTMLButtonElement | null,
     friendRequestSendBtn: document.getElementById("friendRequestSendBtn") as HTMLButtonElement | null,
     friendRequestModalStatus: document.getElementById("friendRequestModalStatus"),
+    exportTaskOverlay: document.getElementById("exportTaskOverlay"),
+    exportTaskTitle: document.getElementById("exportTaskTitle"),
+    exportTaskIncludeHistoryRow: document.getElementById("exportTaskIncludeHistoryRow"),
+    exportTaskIncludeHistory: document.getElementById("exportTaskIncludeHistory") as HTMLInputElement | null,
+    exportTaskIncludeHistoryLabel: document.getElementById("exportTaskIncludeHistoryLabel"),
+    exportTaskCancelBtn: document.getElementById("exportTaskCancelBtn") as HTMLButtonElement | null,
+    exportTaskConfirmBtn: document.getElementById("exportTaskConfirmBtn") as HTMLButtonElement | null,
     groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
     groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
     groupsFriendsList: document.getElementById("groupsFriendsList"),
@@ -647,6 +655,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     if (top.id === "confirmOverlay") {
       closeConfirm();
+      return true;
+    }
+    if (top.id === "exportTaskOverlay") {
+      closeTaskExportModal();
       return true;
     }
     closeOverlay(top);
@@ -1319,8 +1331,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     };
   }
 
-  function makeSingleTaskExportPayload(t: Task) {
+  function makeSingleTaskExportPayload(t: Task, opts?: { includeHistory?: boolean }) {
     const taskId = String(t?.id || "");
+    const includeHistory = opts?.includeHistory !== false;
     return {
       schema: "taskticka_backup_v1",
       exportedAt: new Date().toISOString(),
@@ -1350,7 +1363,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           presetIntervalNextSeq: getPresetIntervalNextSeqNum(t),
         },
       ],
-      history: taskId ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] } : {},
+      history:
+        includeHistory && taskId
+          ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] }
+          : {},
     };
   }
 
@@ -1368,7 +1384,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     closeOverlay(els.menuOverlay as HTMLElement | null);
   }
 
-  function exportTask(i: number) {
+  function exportTask(i: number, opts?: { includeHistory?: boolean }) {
     const t = tasks[i];
     if (!t) return;
     const d = new Date();
@@ -1381,7 +1397,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "task";
     const filename = `tasktimer-export-${safeTaskName}${dd}${mm}${yyyy}.json`;
-    const payload = makeSingleTaskExportPayload(t);
+    const payload = makeSingleTaskExportPayload(t, opts);
     downloadTextFile(filename, JSON.stringify(payload, null, 2));
   }
 
@@ -1810,6 +1826,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       on(desc, "input", (e: any) => {
         m.description = e?.target?.value || "";
         t.milestones = ms;
+        syncEditSaveAvailability(t);
       });
 
       const rm = row.querySelector('[data-action="rmMs"]');
@@ -3627,8 +3644,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const desc = String(row.item.description || "").trim();
         return `
           <div class="focusCheckpointLogItem${idx === 0 ? " isLatest" : ""}">
-            <div class="focusCheckpointLogItemTime">${escapeHtmlUI(timeText)}</div>
-            ${desc ? `<div class="focusCheckpointLogItemDesc">${escapeHtmlUI(desc)}</div>` : ""}
+            <div class="focusCheckpointLogItemLine">
+              <span class="focusCheckpointLogItemTime">${escapeHtmlUI(timeText)}</span>${desc ? `<span class="focusCheckpointLogItemSep"> - </span><span class="focusCheckpointLogItemDesc">${escapeHtmlUI(desc)}</span>` : ""}
+            </div>
           </div>
         `;
       })
@@ -4329,12 +4347,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.saveEditBtn.title = "";
       return;
     }
-    const requiresCheckpoint = !!task.milestonesEnabled;
-    const isDirty = buildEditDraftSnapshot(task) !== editDraftSnapshot;
-    const disabled = !isDirty;
-    els.saveEditBtn.disabled = disabled;
-    els.saveEditBtn.title =
-      !isDirty ? "No changes to save" : requiresCheckpoint ? "Save Changes" : "";
+    els.saveEditBtn.disabled = false;
+    els.saveEditBtn.title = "Save Changes";
   }
 
   function maybeToggleEditPresetIntervals(nextEnabled: boolean) {
@@ -4351,31 +4365,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncEditCheckpointAlertUi(t);
       return;
     }
-    const hasExisting = Array.isArray(t.milestones) && t.milestones.length > 0;
-    if (!hasExisting) {
-      t.presetIntervalsEnabled = true;
-      syncEditCheckpointAlertUi(t);
-      return;
-    }
-    confirm("Use Preset Intervals", "Enabling preset intervals will clear the current checkpoints. Confirm?", {
-      okLabel: "Confirm",
-      cancelLabel: "Cancel",
-      onOk: () => {
-        t.milestones = [];
-        t.presetIntervalLastMilestoneId = null;
-        t.presetIntervalNextSeq = 1;
-        t.presetIntervalsEnabled = true;
-        renderMilestoneEditor(t);
-        syncEditCheckpointAlertUi(t);
-        syncEditSaveAvailability(t);
-        closeConfirm();
-      },
-      onCancel: () => {
-        t.presetIntervalsEnabled = false;
-        syncEditCheckpointAlertUi(t);
-        closeConfirm();
-      },
-    });
+    t.presetIntervalsEnabled = true;
+    syncEditCheckpointAlertUi(t);
   }
 
   function processCheckpointAlertsForTask(t: Task, elapsedSecNow: number) {
@@ -4519,6 +4510,52 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function openTaskExportModal(i: number) {
+    const t = tasks[i];
+    if (!t || !els.exportTaskOverlay) return;
+    exportTaskIndex = i;
+    const taskId = String(t.id || "");
+    const hasHistoryEntries = taskId ? Array.isArray(historyByTaskId?.[taskId]) && (historyByTaskId[taskId] || []).length > 0 : false;
+    if (els.exportTaskTitle) {
+      const taskName = String(t.name || "Task").trim() || "Task";
+      els.exportTaskTitle.textContent = `Export ${taskName}`;
+    }
+    if (els.exportTaskIncludeHistory) {
+      els.exportTaskIncludeHistory.checked = false;
+      els.exportTaskIncludeHistory.disabled = !hasHistoryEntries;
+    }
+    if (els.exportTaskIncludeHistoryLabel) {
+      els.exportTaskIncludeHistoryLabel.textContent = hasHistoryEntries ? "Include history entries" : "No history entries to export";
+    }
+    if (els.exportTaskIncludeHistoryRow) {
+      els.exportTaskIncludeHistoryRow.classList.toggle("is-disabled", !hasHistoryEntries);
+    }
+    openOverlay(els.exportTaskOverlay as HTMLElement | null);
+  }
+
+  function closeTaskExportModal() {
+    exportTaskIndex = null;
+    if (els.exportTaskTitle) els.exportTaskTitle.textContent = "Export Task";
+    if (els.exportTaskIncludeHistory) {
+      els.exportTaskIncludeHistory.checked = false;
+      els.exportTaskIncludeHistory.disabled = false;
+    }
+    if (els.exportTaskIncludeHistoryLabel) {
+      els.exportTaskIncludeHistoryLabel.textContent = "Include history entries";
+    }
+    if (els.exportTaskIncludeHistoryRow) {
+      els.exportTaskIncludeHistoryRow.classList.remove("is-disabled");
+    }
+    closeOverlay(els.exportTaskOverlay as HTMLElement | null);
+  }
+
+  function submitTaskExportModal() {
+    if (exportTaskIndex == null) return;
+    const includeHistory = !!els.exportTaskIncludeHistory?.checked;
+    exportTask(exportTaskIndex, { includeHistory });
+    closeTaskExportModal();
+  }
+
   function openFriendRequestModal() {
     if (!els.friendRequestModal) return;
     (els.friendRequestModal as HTMLElement).style.display = "flex";
@@ -4565,9 +4602,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   ) {
     if (!container) return;
     if (!rows.length) {
+      container.classList.add("isEmptyStatus");
       container.textContent = opts.incoming ? "No incoming requests." : "No outgoing requests.";
       return;
     }
+    container.classList.remove("isEmptyStatus");
     container.innerHTML = rows
       .map((row) => {
         const peerUid = opts.incoming ? row.senderUid : row.receiverUid;
@@ -4767,6 +4806,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         // ignore history API failures
       }
     }
+    closeTaskExportModal();
     if (page === "test2") {
       renderGroupsPage();
       void refreshGroupsData();
@@ -5002,6 +5042,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (groupsLoading) return;
       void handleSendFriendRequest();
     });
+    on(els.exportTaskCancelBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      closeTaskExportModal();
+    });
+    on(els.exportTaskConfirmBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      submitTaskExportModal();
+    });
+    on(els.exportTaskOverlay, "click", (e: any) => {
+      if (e?.target === els.exportTaskOverlay) closeTaskExportModal();
+    });
+    on(els.exportTaskIncludeHistory, "keydown", (e: any) => {
+      if (e?.key !== "Enter") return;
+      e?.preventDefault?.();
+      submitTaskExportModal();
+    });
     on(els.groupsIncomingRequestsList, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
       if (!btn) return;
@@ -5219,7 +5275,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       else if (action === "duplicate") duplicateTask(i);
       else if (action === "editName") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
-      else if (action === "exportTask") exportTask(i);
+      else if (action === "exportTask") openTaskExportModal(i);
       else if (action === "muteCheckpointAlert") {
         stopCheckpointRepeatAlert();
         return;

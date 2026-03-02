@@ -8,6 +8,7 @@ import AddTaskOverlay from "./components/AddTaskOverlay";
 import ConfirmOverlay from "./components/ConfirmOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
+import ExportTaskOverlay from "./components/ExportTaskOverlay";
 import FocusModeScreen from "./components/FocusModeScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
@@ -309,6 +310,7 @@ export default function TaskTimerPage() {
       <InfoOverlays />
       <EditTaskOverlay />
       <ElapsedPadOverlay />
+      <ExportTaskOverlay />
       <ConfirmOverlay />
       <HistoryAnalysisOverlay />
       <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
