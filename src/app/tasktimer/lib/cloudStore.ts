@@ -175,17 +175,45 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
 }
 
 function mapTaskToFirestore(task: Task): Record<string, unknown> {
-  const row = { ...(task as unknown as Record<string, unknown>) };
-  row.checkpointsEnabled = !!task.milestonesEnabled;
-  row.checkpointTimeUnit = task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour";
-  row.checkpoints = Array.isArray(task.milestones) ? task.milestones : [];
-  row.presetIntervalLastCheckpointId = task.presetIntervalLastMilestoneId ?? null;
+  const source = task as unknown as Record<string, unknown>;
+  const modeRaw = String(source.mode || "").trim();
+  const mode = modeRaw === "mode2" || modeRaw === "mode3" ? modeRaw : "mode1";
 
-  delete row.milestonesEnabled;
-  delete row.milestoneTimeUnit;
-  delete row.milestones;
-  delete row.presetIntervalLastMilestoneId;
-
+  // Firestore rules for users/{uid}/tasks/{taskId} are strict (`hasOnly(...)`), so
+  // only persist explicitly allowed keys to prevent permission-denied on legacy/extra fields.
+  const row: Record<string, unknown> = {
+    id: String(task.id || ""),
+    name: String(task.name || ""),
+    order: Number.isFinite(Number(task.order)) ? Math.floor(Number(task.order)) : 0,
+    collapsed: !!task.collapsed,
+    color: task.color == null ? null : String(task.color),
+    accumulatedMs: Number.isFinite(Number(task.accumulatedMs)) ? Math.max(0, Math.floor(Number(task.accumulatedMs))) : 0,
+    running: !!task.running,
+    startMs: task.startMs == null ? null : (Number.isFinite(Number(task.startMs)) ? Math.floor(Number(task.startMs)) : null),
+    hasStarted: !!task.hasStarted,
+    checkpointsEnabled: !!task.milestonesEnabled,
+    checkpointTimeUnit:
+      task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+    checkpoints: Array.isArray(task.milestones) ? task.milestones : [],
+    checkpointSoundEnabled: !!task.checkpointSoundEnabled,
+    checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
+    checkpointToastEnabled: !!task.checkpointToastEnabled,
+    checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
+    finalCheckpointAction:
+      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        ? task.finalCheckpointAction
+        : "continue",
+    presetIntervalsEnabled: !!task.presetIntervalsEnabled,
+    presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
+    presetIntervalLastCheckpointId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
+    presetIntervalNextSeq:
+      Number.isFinite(Number(task.presetIntervalNextSeq)) && Number(task.presetIntervalNextSeq) > 0
+        ? Math.floor(Number(task.presetIntervalNextSeq))
+        : 1,
+    mode,
+  };
+  if (source.createdAt) row.createdAt = source.createdAt;
+  if (source.updatedAt) row.updatedAt = source.updatedAt;
   return row;
 }
 
@@ -343,11 +371,14 @@ export async function deleteTask(uid: string, taskId: string): Promise<void> {
 export async function appendHistoryEntry(uid: string, taskId: string, entry: HistoryEntry): Promise<void> {
   const col = taskHistoryCollection(uid, taskId);
   if (!col) return;
-  const entryId = `${Number(entry.ts || Date.now())}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
-  await setDoc(doc(col, entryId), {
-    ...entry,
-    createdAt: serverTimestamp(),
-  });
+  const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : Date.now();
+  const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
+  const name = String(entry?.name || "");
+  const color = entry?.color == null ? null : String(entry.color);
+  const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
+  const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
+  if (color) payload.color = color;
+  await setDoc(doc(col, entryId), payload);
 }
 
 function historyEntryFingerprint(entry: HistoryEntry): string {
@@ -398,7 +429,10 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
   await Promise.all(
     deduped.map((entry) =>
       setDoc(doc(col, stableHistoryEntryDocId(entry)), {
-        ...entry,
+        ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
+        ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
+        name: String(entry?.name || ""),
+        ...(entry?.color != null ? { color: String(entry.color) } : {}),
         createdAt: serverTimestamp(),
       })
     )

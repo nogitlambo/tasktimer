@@ -6,7 +6,6 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
 type UserPreferencesV1 = {
   schemaVersion: 1;
-  avatarId: string;
   theme: "light" | "dark";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
@@ -17,6 +16,7 @@ type UserPreferencesV1 = {
 };
 
 type StartSyncOptions = {
+  // Kept for call-site compatibility; avatar selection is synced via users/{uid}, not preferences/v1.
   avatarSelectionStoragePrefix: string;
   storageKeys: {
     theme: string;
@@ -78,8 +78,7 @@ function parseModeSettings(raw: string | null): Record<string, unknown> | null {
 }
 
 function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferencesV1 {
-  const { storageKeys, avatarSelectionStoragePrefix } = opts;
-  const avatarId = String(localStorage.getItem(`${avatarSelectionStoragePrefix}${uid}`) || "").trim();
+  const { storageKeys } = opts;
   const theme = parseTheme(localStorage.getItem(storageKeys.theme));
   const defaultTaskTimerFormat = parseTimerFormat(localStorage.getItem(storageKeys.defaultTaskTimerFormat));
   const dynamicColorsEnabled = parseBooleanLike(localStorage.getItem(storageKeys.dynamicColorsEnabled), true);
@@ -89,7 +88,6 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
 
   return {
     schemaVersion: 1,
-    avatarId,
     theme,
     defaultTaskTimerFormat,
     dynamicColorsEnabled,
@@ -101,7 +99,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
 }
 
 function applyCloudPreferencesToLocal(uid: string, prefs: UserPreferencesV1, opts: StartSyncOptions) {
-  const { storageKeys, avatarSelectionStoragePrefix } = opts;
+  const { storageKeys } = opts;
   localStorage.setItem(storageKeys.theme, prefs.theme);
   localStorage.setItem(storageKeys.defaultTaskTimerFormat, prefs.defaultTaskTimerFormat);
   localStorage.setItem(storageKeys.dynamicColorsEnabled, prefs.dynamicColorsEnabled ? "true" : "false");
@@ -110,7 +108,6 @@ function applyCloudPreferencesToLocal(uid: string, prefs: UserPreferencesV1, opt
   if (prefs.modeSettings && typeof prefs.modeSettings === "object") {
     localStorage.setItem(storageKeys.modeSettings, JSON.stringify(prefs.modeSettings));
   }
-  if (prefs.avatarId) localStorage.setItem(`${avatarSelectionStoragePrefix}${uid}`, prefs.avatarId);
   window.dispatchEvent(new CustomEvent("tasktimer:preferences-cloud-applied"));
 }
 
@@ -119,7 +116,6 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
     data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null;
   return {
     schemaVersion: 1,
-    avatarId: String(data.avatarId || "").trim(),
     theme: parseTheme(String(data.theme || "")),
     defaultTaskTimerFormat: parseTimerFormat(String(data.defaultTaskTimerFormat || "")),
     dynamicColorsEnabled: parseBooleanLike(String(data.dynamicColorsEnabled || ""), true),
@@ -132,7 +128,6 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
 
 function hashPreferences(prefs: UserPreferencesV1) {
   return JSON.stringify({
-    avatarId: prefs.avatarId,
     theme: prefs.theme,
     defaultTaskTimerFormat: prefs.defaultTaskTimerFormat,
     dynamicColorsEnabled: prefs.dynamicColorsEnabled,

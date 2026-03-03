@@ -184,6 +184,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let addTaskPresetIntervalsEnabled = false;
   let addTaskPresetIntervalValue = 0;
   let addTaskFinalCheckpointAction: "continue" | "resetLog" | "resetNoLog" = "continue";
+  let addTaskWizardStep: 1 | 2 | 3 = 1;
+  let addTaskDurationValue = 5;
+  let addTaskDurationUnit: "minute" | "hour" = "hour";
+  let addTaskDurationPeriod: "day" | "week" = "week";
+  let addTaskNoTimeGoal = false;
   let elapsedPadTarget: HTMLInputElement | null = null;
   let elapsedPadMilestoneRef: {
     task: Task;
@@ -274,6 +279,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskNameDivider: document.getElementById("addTaskNameDivider"),
     addTaskNamePresetTitle: document.getElementById("addTaskNamePresetTitle"),
     addTaskNamePresetList: document.getElementById("addTaskNamePresetList"),
+    addTaskWizardProgress: document.getElementById("addTaskWizardProgress"),
+    addTaskStep1: document.getElementById("addTaskStep1"),
+    addTaskStep2: document.getElementById("addTaskStep2"),
+    addTaskStep3: document.getElementById("addTaskStep3"),
+    addTaskCheckpointInfoBtn: document.getElementById("addTaskCheckpointInfoBtn"),
+    addTaskCheckpointInfoDialog: document.getElementById("addTaskCheckpointInfoDialog"),
+    addTaskDurationRow: document.getElementById("addTaskDurationRow"),
+    addTaskDurationValueInput: document.getElementById("addTaskDurationValueInput") as HTMLInputElement | null,
+    addTaskDurationUnitSelect: document.getElementById("addTaskDurationUnitSelect") as HTMLSelectElement | null,
+    addTaskDurationPeriodSelect: document.getElementById("addTaskDurationPeriodSelect") as HTMLSelectElement | null,
+    addTaskDurationReadout: document.getElementById("addTaskDurationReadout"),
+    addTaskNoGoalCheckbox: document.getElementById("addTaskNoGoalCheckbox") as HTMLInputElement | null,
+    addTaskStep1NextBtn: document.getElementById("addTaskStep1NextBtn"),
+    addTaskStep2BackBtn: document.getElementById("addTaskStep2BackBtn"),
+    addTaskStep2NextBtn: document.getElementById("addTaskStep2NextBtn"),
+    addTaskStep3BackBtn: document.getElementById("addTaskStep3BackBtn"),
+    addTaskConfirmBtn: document.getElementById("addTaskConfirmBtn"),
     addTaskError: document.getElementById("addTaskError"),
     addTaskMsToggle: document.getElementById("addTaskMsToggle"),
     addTaskMsUnitRow: document.getElementById("addTaskMsUnitRow"),
@@ -296,6 +318,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     addTaskTimerSettingsGroup: document.getElementById("addTaskTimerSettingsGroup"),
     addTaskPresetIntervalsToggleRow: document.getElementById("addTaskPresetIntervalsToggleRow"),
     addTaskPresetIntervalsToggle: document.getElementById("addTaskPresetIntervalsToggle"),
+    addTaskPresetIntervalsInfoBtn: document.getElementById("addTaskPresetIntervalsInfoBtn"),
+    addTaskPresetIntervalsInfoDialog: document.getElementById("addTaskPresetIntervalsInfoDialog"),
     addTaskPresetIntervalField: document.getElementById("addTaskPresetIntervalField"),
     addTaskPresetIntervalInput: document.getElementById("addTaskPresetIntervalInput") as HTMLInputElement | null,
     addTaskPresetIntervalNote: document.getElementById("addTaskPresetIntervalNote"),
@@ -442,6 +466,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     editTimerSettingsGroup: document.getElementById("editTimerSettingsGroup"),
     editPresetIntervalsToggleRow: document.getElementById("editPresetIntervalsToggleRow"),
     editPresetIntervalsToggle: document.getElementById("editPresetIntervalsToggle"),
+    editPresetIntervalsInfoBtn: document.getElementById("editPresetIntervalsInfoBtn"),
+    editPresetIntervalsInfoDialog: document.getElementById("editPresetIntervalsInfoDialog"),
     editPresetIntervalField: document.getElementById("editPresetIntervalField"),
     editPresetIntervalInput: document.getElementById("editPresetIntervalInput") as HTMLInputElement | null,
     editPresetIntervalNote: document.getElementById("editPresetIntervalNote"),
@@ -2174,6 +2200,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.addTaskError?.classList.remove("isOn");
     if (els.addTaskError) els.addTaskError.textContent = "";
     els.addTaskName?.classList.remove("isInvalid");
+    els.addTaskDurationValueInput?.classList.remove("isInvalid");
     els.addTaskMsArea?.classList.remove("isInvalid");
     els.addTaskPresetIntervalField?.classList.remove("isInvalid");
     els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
@@ -2181,12 +2208,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function applyAddTaskCheckpointValidationHighlights(opts?: {
     name?: boolean;
+    duration?: boolean;
     checkpoints?: boolean;
     checkpointRows?: boolean;
     presetInterval?: boolean;
   }) {
     const options = opts || {};
     els.addTaskName?.classList.toggle("isInvalid", !!options.name);
+    els.addTaskDurationValueInput?.classList.toggle("isInvalid", !!options.duration);
     els.addTaskMsArea?.classList.toggle("isInvalid", !!options.checkpoints || !!options.checkpointRows);
     els.addTaskPresetIntervalField?.classList.toggle("isInvalid", !!options.presetInterval);
     const rows = Array.from(els.addTaskMsList?.querySelectorAll?.(".msRow") || []);
@@ -2199,7 +2228,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function showAddTaskValidationError(
     msg: string,
-    opts?: { name?: boolean; checkpoints?: boolean; checkpointRows?: boolean; presetInterval?: boolean }
+    opts?: { name?: boolean; duration?: boolean; checkpoints?: boolean; checkpointRows?: boolean; presetInterval?: boolean }
   ) {
     clearAddTaskValidationState();
     applyAddTaskCheckpointValidationHighlights(opts);
@@ -2207,6 +2236,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.addTaskError.textContent = msg;
       els.addTaskError.classList.add("isOn");
     }
+  }
+
+  function syncAddTaskDurationReadout() {
+    if (els.addTaskDurationReadout) {
+      if (addTaskNoTimeGoal) {
+        els.addTaskDurationReadout.textContent = "No time goal set";
+        return;
+      }
+      const value = Math.max(0, Math.floor(Number(addTaskDurationValue) || 0));
+      const unit =
+        addTaskDurationUnit === "minute" ? (value === 1 ? "minute" : "minutes") : value === 1 ? "hour" : "hours";
+      const period = addTaskDurationPeriod === "day" ? "day" : "week";
+      els.addTaskDurationReadout.textContent = `${value} ${unit} per ${period}`;
+    }
+  }
+
+  function getAddTaskDurationMaxForPeriod(unit: "minute" | "hour", period: "day" | "week") {
+    if (unit === "hour") return period === "day" ? 24 : 168;
+    return period === "day" ? 1440 : 10080;
   }
 
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
@@ -3791,7 +3839,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     elapsedPadMilestoneRef = { task, milestone, ms, onApplied };
     elapsedPadOriginal = String(+milestone.hours || 0);
     elapsedPadDraft = elapsedPadOriginal;
-    if (els.elapsedPadTitle) els.elapsedPadTitle.textContent = "Set Checkpoint <days> <hours> <minutes>";
+    if (els.elapsedPadTitle) {
+      const unit = task?.milestoneTimeUnit === "day" ? "days" : task?.milestoneTimeUnit === "minute" ? "minutes" : "hours";
+      els.elapsedPadTitle.textContent = `Set Checkpoint <${unit}>`;
+    }
     clearElapsedPadError();
     renderElapsedPadDisplay();
     (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
@@ -5617,6 +5668,140 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncAddTaskCheckpointAlertUi();
     };
 
+    const syncAddTaskDurationUi = () => {
+      addTaskNoTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
+      els.addTaskDurationRow?.classList.toggle("isDisabled", addTaskNoTimeGoal);
+      els.addTaskDurationReadout?.classList.toggle("isDisabled", addTaskNoTimeGoal);
+      if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = addTaskNoTimeGoal;
+      if (els.addTaskDurationUnitSelect) els.addTaskDurationUnitSelect.disabled = addTaskNoTimeGoal;
+      if (els.addTaskDurationPeriodSelect) els.addTaskDurationPeriodSelect.disabled = addTaskNoTimeGoal;
+      if (addTaskNoTimeGoal) {
+        syncAddTaskDurationReadout();
+        return;
+      }
+      const parsedValue = Math.max(0, Math.floor(parseFloat(els.addTaskDurationValueInput?.value || "0") || 0));
+      addTaskDurationValue = parsedValue;
+      addTaskDurationUnit = els.addTaskDurationUnitSelect?.value === "minute" ? "minute" : "hour";
+      const maxDay = getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "day");
+      const canUseDay = Number(addTaskDurationValue) <= maxDay;
+      const selectedPeriod = els.addTaskDurationPeriodSelect?.value === "day" ? "day" : "week";
+      if (els.addTaskDurationPeriodSelect) {
+        const dayOption = Array.from(els.addTaskDurationPeriodSelect.options).find((opt) => opt.value === "day");
+        if (dayOption) dayOption.disabled = !canUseDay;
+      }
+      addTaskDurationPeriod = canUseDay && selectedPeriod === "day" ? "day" : "week";
+      if (els.addTaskDurationValueInput && String(parsedValue || "") !== String(els.addTaskDurationValueInput.value || "")) {
+        els.addTaskDurationValueInput.value = String(parsedValue || 0);
+      }
+      if (els.addTaskDurationUnitSelect) {
+        els.addTaskDurationUnitSelect.value = addTaskDurationUnit;
+      }
+      if (els.addTaskDurationPeriodSelect) {
+        els.addTaskDurationPeriodSelect.value = addTaskDurationPeriod;
+      }
+      syncAddTaskDurationReadout();
+    };
+
+    const setAddTaskCheckpointInfoOpen = (open: boolean) => {
+      const dialog = els.addTaskCheckpointInfoDialog as HTMLElement | null;
+      dialog?.classList.toggle("isOpen", open);
+      if (els.addTaskCheckpointInfoBtn) {
+        els.addTaskCheckpointInfoBtn.setAttribute("aria-expanded", String(open));
+      }
+    };
+    const setAddTaskPresetIntervalsInfoOpen = (open: boolean) => {
+      const dialog = els.addTaskPresetIntervalsInfoDialog as HTMLElement | null;
+      dialog?.classList.toggle("isOpen", open);
+      if (els.addTaskPresetIntervalsInfoBtn) {
+        els.addTaskPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
+      }
+    };
+    const setEditPresetIntervalsInfoOpen = (open: boolean) => {
+      const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
+      dialog?.classList.toggle("isOpen", open);
+      if (els.editPresetIntervalsInfoBtn) {
+        els.editPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
+      }
+    };
+
+    const syncAddTaskWizardUi = () => {
+      els.addTaskStep1?.classList.toggle("isActive", addTaskWizardStep === 1);
+      els.addTaskStep2?.classList.toggle("isActive", addTaskWizardStep === 2);
+      els.addTaskStep3?.classList.toggle("isActive", addTaskWizardStep === 3);
+      if (els.addTaskWizardProgress) {
+        els.addTaskWizardProgress.textContent = `Step ${addTaskWizardStep} of 3`;
+      }
+      els.addTaskStep1NextBtn?.classList.toggle("isHidden", addTaskWizardStep !== 1);
+      els.addTaskStep2BackBtn?.classList.toggle("isHidden", addTaskWizardStep !== 2);
+      els.addTaskStep2NextBtn?.classList.toggle("isHidden", addTaskWizardStep !== 2);
+      els.addTaskStep3BackBtn?.classList.toggle("isHidden", addTaskWizardStep !== 3);
+      els.addTaskConfirmBtn?.classList.toggle("isHidden", addTaskWizardStep !== 3);
+      if (addTaskWizardStep !== 1) setAddTaskNameMenuOpen(false);
+      syncAddTaskDurationUi();
+    };
+
+    const setAddTaskWizardStep = (step: 1 | 2 | 3) => {
+      addTaskWizardStep = step;
+      clearAddTaskValidationState();
+      syncAddTaskWizardUi();
+    };
+
+    const validateAddTaskStep1 = () => {
+      const name = (els.addTaskName?.value || "").trim();
+      if (!name) {
+        showAddTaskValidationError("Task name is required", { name: true });
+        return false;
+      }
+      return true;
+    };
+
+    const validateAddTaskStep2 = () => {
+      syncAddTaskDurationUi();
+      if (addTaskNoTimeGoal) return true;
+      if (!(Number(addTaskDurationValue) > 0)) {
+        showAddTaskValidationError("Enter a time amount greater than 0", { duration: true });
+        return false;
+      }
+      const maxWeek = getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "week");
+      if (Number(addTaskDurationValue) > maxWeek) {
+        const unitLabel = addTaskDurationUnit === "minute" ? "minutes" : "hours";
+        showAddTaskValidationError(`Enter ${maxWeek} ${unitLabel} or less per week`, { duration: true });
+        return false;
+      }
+      return true;
+    };
+
+    const validateAddTaskStep3 = () => {
+      if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
+        showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
+        return false;
+      }
+      if (addTaskMilestonesEnabled && hasNonPositiveCheckpoint(addTaskMilestones)) {
+        showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
+        return false;
+      }
+      if (addTaskMilestonesEnabled && addTaskPresetIntervalsEnabled && !(Number(addTaskPresetIntervalValue) > 0)) {
+        showAddTaskValidationError("Enter a preset interval greater than 0", { presetInterval: true });
+        return false;
+      }
+      return true;
+    };
+
+    const resetAddTaskWizardState = () => {
+      addTaskWizardStep = 1;
+      addTaskDurationValue = 5;
+      addTaskDurationUnit = "hour";
+      addTaskDurationPeriod = "week";
+      addTaskNoTimeGoal = false;
+      if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = String(addTaskDurationValue);
+      if (els.addTaskDurationUnitSelect) els.addTaskDurationUnitSelect.value = addTaskDurationUnit;
+      if (els.addTaskDurationPeriodSelect) els.addTaskDurationPeriodSelect.value = addTaskDurationPeriod;
+      if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
+      setAddTaskCheckpointInfoOpen(false);
+      setAddTaskPresetIntervalsInfoOpen(false);
+      syncAddTaskWizardUi();
+    };
+
     const resetAddTaskMilestones = () => {
       addTaskMilestonesEnabled = false;
       addTaskMilestoneTimeUnit = defaultTaskTimerFormat;
@@ -5638,6 +5823,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const openAddTaskModal = () => {
       resetAddTaskMilestones();
+      resetAddTaskWizardState();
       setAddTaskError("");
       renderAddTaskNameMenu("");
       setAddTaskNameMenuOpen(false);
@@ -5659,12 +5845,89 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       setAddTaskNameMenuOpen(false);
       setAddTaskError("");
       resetAddTaskMilestones();
+      resetAddTaskWizardState();
     };
 
     on(els.openAddTaskBtn, "click", openAddTaskModal);
     on(els.addTaskCancelBtn, "click", closeAddTaskModal);
-    on(els.addTaskOverlay, "click", (e: any) => {
-      if (e.target === els.addTaskOverlay) closeAddTaskModal();
+    on(els.addTaskStep1NextBtn, "click", () => {
+      if (!validateAddTaskStep1()) return;
+      setAddTaskWizardStep(2);
+      try {
+        els.addTaskDurationValueInput?.focus();
+      } catch {
+        // ignore
+      }
+    });
+    on(els.addTaskStep2BackBtn, "click", () => {
+      setAddTaskWizardStep(1);
+      try {
+        els.addTaskName?.focus();
+      } catch {
+        // ignore
+      }
+    });
+    on(els.addTaskStep2NextBtn, "click", () => {
+      if (!validateAddTaskStep2()) return;
+      setAddTaskWizardStep(3);
+    });
+    on(els.addTaskStep3BackBtn, "click", () => {
+      setAddTaskWizardStep(2);
+      try {
+        els.addTaskDurationValueInput?.focus();
+      } catch {
+        // ignore
+      }
+    });
+    on(els.addTaskDurationValueInput, "input", () => {
+      clearAddTaskValidationState();
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskDurationValueInput, "change", () => {
+      clearAddTaskValidationState();
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskDurationUnitSelect, "change", () => {
+      clearAddTaskValidationState();
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskDurationPeriodSelect, "change", () => {
+      clearAddTaskValidationState();
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskNoGoalCheckbox, "change", () => {
+      clearAddTaskValidationState();
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskCheckpointInfoBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const isOpen = (els.addTaskCheckpointInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
+      setAddTaskCheckpointInfoOpen(!isOpen);
+    });
+    on(els.addTaskPresetIntervalsInfoBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const isOpen = (els.addTaskPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
+      setAddTaskPresetIntervalsInfoOpen(!isOpen);
+    });
+    on(els.editPresetIntervalsInfoBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const isOpen = (els.editPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
+      setEditPresetIntervalsInfoOpen(!isOpen);
+    });
+    on(document as any, "click", (e: any) => {
+      const target = e?.target as HTMLElement | null;
+      if (target?.closest?.("#addTaskCheckpointInfoBtn")) return;
+      if (target?.closest?.("#addTaskCheckpointInfoDialog")) return;
+      if (target?.closest?.("#addTaskPresetIntervalsInfoBtn")) return;
+      if (target?.closest?.("#addTaskPresetIntervalsInfoDialog")) return;
+      if (target?.closest?.("#editPresetIntervalsInfoBtn")) return;
+      if (target?.closest?.("#editPresetIntervalsInfoDialog")) return;
+      setAddTaskCheckpointInfoOpen(false);
+      setAddTaskPresetIntervalsInfoOpen(false);
+      setEditPresetIntervalsInfoOpen(false);
     });
 
     on(els.addTaskMsToggle, "click", (e: any) => {
@@ -5827,7 +6090,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncAddTaskCheckpointAlertUi();
     });
     on(els.addTaskPresetIntervalsToggleRow, "click", (e: any) => {
-      if (!addTaskMilestonesEnabled || e.target?.closest?.("#addTaskPresetIntervalsToggle")) return;
+      if (
+        !addTaskMilestonesEnabled ||
+        e.target?.closest?.("#addTaskPresetIntervalsToggle") ||
+        e.target?.closest?.("#addTaskPresetIntervalsInfoBtn") ||
+        e.target?.closest?.("#addTaskPresetIntervalsInfoSlot") ||
+        e.target?.closest?.("#addTaskPresetIntervalsInfoDialog")
+      )
+        return;
       addTaskPresetIntervalsEnabled = !addTaskPresetIntervalsEnabled;
       syncAddTaskCheckpointAlertUi();
     });
@@ -5902,23 +6172,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.addTaskForm, "submit", (e: any) => {
       e.preventDefault();
       clearAddTaskValidationState();
+      if (addTaskWizardStep !== 3) return;
+      if (!validateAddTaskStep1()) return;
+      if (!validateAddTaskStep3()) return;
       const name = (els.addTaskName?.value || "").trim();
-      if (!name) {
-        showAddTaskValidationError("Task name is required", { name: true });
-        return;
-      }
-      if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
-        showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
-        return;
-      }
-      if (addTaskMilestonesEnabled && hasNonPositiveCheckpoint(addTaskMilestones)) {
-        showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
-        return;
-      }
-      if (addTaskMilestonesEnabled && addTaskPresetIntervalsEnabled && !(Number(addTaskPresetIntervalValue) > 0)) {
-        showAddTaskValidationError("Enter a preset interval greater than 0", { presetInterval: true });
-        return;
-      }
       rememberCustomTaskName(name);
       setAddTaskError("");
       const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
@@ -6676,7 +6933,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.editPresetIntervalsToggleRow, "click", (e: any) => {
       if (editIndex == null || !tasks[editIndex]) return;
-      if (e.target?.closest?.("#editPresetIntervalsToggle")) return;
+      if (
+        e.target?.closest?.("#editPresetIntervalsToggle") ||
+        e.target?.closest?.("#editPresetIntervalsInfoBtn") ||
+        e.target?.closest?.("#editPresetIntervalsInfoSlot") ||
+        e.target?.closest?.("#editPresetIntervalsInfoDialog")
+      )
+        return;
       const t = tasks[editIndex];
       maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
       syncEditSaveAvailability(t);

@@ -118,6 +118,21 @@ export default function EditTaskOverlay() {
           <div className="toggleRow" id="editPresetIntervalsToggleRow">
             <span>Use Preset Intervals</span>
             <div className="switch" id="editPresetIntervalsToggle" role="switch" aria-checked="false" />
+            <span className="presetIntervalsInfoSlot" id="editPresetIntervalsInfoSlot">
+              <button
+                className="iconBtn editPresetIntervalsInfoBtn"
+                id="editPresetIntervalsInfoBtn"
+                type="button"
+                aria-label="What are preset intervals?"
+                aria-expanded="false"
+                aria-controls="editPresetIntervalsInfoDialog"
+              >
+                ?
+              </button>
+            </span>
+          </div>
+          <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
+            Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
           </div>
           <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
             <label htmlFor="editPresetIntervalInput">Preset interval</label>
@@ -166,7 +181,7 @@ export default function EditTaskOverlay() {
             Cancel
           </button>
           <button className="btn btn-accent" id="saveEditBtn" type="button">
-            Save Changes
+            Save
           </button>
         </div>
       </div>
