@@ -200,6 +200,38 @@ export default function TaskTimerPage() {
                   </div>
                 </section>
 
+                <section
+                  className="dashboardCard dashboardAvgSessionCard"
+                  data-dashboard-id="avg-session-by-task"
+                  aria-label="Average completed session duration by task"
+                >
+                  <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">
+                    Avg Session by Task (Past 7 Days)
+                  </div>
+                  <div className="historyCanvasWrap">
+                    <canvas className="historyChartInline" id="dashboardAvgSessionChart" />
+                  </div>
+                  <p className="dashboardAvgSessionEmpty" id="dashboardAvgSessionEmpty" style={{ display: "none" }}>
+                    No completed sessions in this range.
+                  </p>
+                  <div className="historyRangeRow dashboardAvgSessionRangeRow">
+                    <div className="historyRangeToggleRow" aria-label="Average session range">
+                      <button className="historyRangeModePill isOn" type="button" data-dashboard-avg-range="past7" aria-pressed="true">
+                        Past 7 Days
+                      </button>
+                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="currentWeek" aria-pressed="false">
+                        Current Week
+                      </button>
+                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="past30" aria-pressed="false">
+                        Past 30 Days
+                      </button>
+                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="currentMonth" aria-pressed="false">
+                        Current Month
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
                 <section className="dashboardCard dashboardDonutCard" data-dashboard-id="mode-distribution" aria-label="Category distribution">
                   <div className="dashboardCardTitle">Mode Distribution</div>
                   <div className="dashboardDonutWrap">

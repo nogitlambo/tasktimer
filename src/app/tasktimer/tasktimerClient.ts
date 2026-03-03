@@ -27,10 +27,12 @@ import {
 } from "./lib/friendsStore";
 import {
   hydrateStorageFromCloud,
+  refreshHistoryFromCloud,
   loadTasks,
   saveTasks,
   loadHistory,
   saveHistory,
+  saveHistoryAndWait,
   loadDeletedMeta,
   saveDeletedMeta,
   cleanupHistory,
@@ -196,6 +198,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let dashboardDragEl: HTMLElement | null = null;
   let taskDragEl: HTMLElement | null = null;
   let dashboardOrderDraftBeforeEdit: string[] | null = null;
+  type DashboardCardSize = "full" | "half" | "quarter";
+  let dashboardCardSizes: Record<string, DashboardCardSize> = {};
+  let dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null = null;
+  type DashboardAvgRange = "past7" | "currentWeek" | "past30" | "currentMonth";
+  let dashboardAvgRange: DashboardAvgRange = "past7";
   let currentAppPage: "tasks" | "dashboard" | "test1" | "test2" = "tasks";
   let suppressNavStackPush = false;
   let removeCapBackListener: null | (() => void) = null;
@@ -335,11 +342,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
     dashboardEditDoneBtn: document.getElementById("dashboardEditDoneBtn") as HTMLButtonElement | null,
     dashboardGrid: document.querySelector(".dashboardGrid") as HTMLElement | null,
+    dashboardAvgSessionChart: document.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
+    dashboardAvgSessionEmpty: document.getElementById("dashboardAvgSessionEmpty"),
+    dashboardAvgSessionTitle: document.getElementById("dashboardAvgSessionTitle"),
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
     historyManagerScreen: document.getElementById("historyManagerScreen"),
     historyManagerBtn: document.getElementById("historyManagerBtn"),
+    historyManagerExportBtn: document.getElementById("historyManagerExportBtn") as HTMLButtonElement | null,
+    historyManagerImportBtn: document.getElementById("historyManagerImportBtn") as HTMLButtonElement | null,
+    historyManagerGenerateBtn: document.getElementById("historyManagerGenerateBtn") as HTMLButtonElement | null,
+    historyManagerImportFile: document.getElementById("historyManagerImportFile") as HTMLInputElement | null,
     historyManagerBulkBtn: document.getElementById("historyManagerBulkBtn") as HTMLButtonElement | null,
     historyManagerBulkDeleteBtn: document.getElementById("historyManagerBulkDeleteBtn") as HTMLButtonElement | null,
     historyManagerBackBtn: document.getElementById("historyManagerBackBtn"),
@@ -982,10 +996,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     saveTasks(tasks);
   }
 
+  function historySignature(history: HistoryByTaskId) {
+    const parts: string[] = [];
+    Object.keys(history || {})
+      .sort()
+      .forEach((taskId) => {
+        const rows = Array.isArray(history?.[taskId]) ? history[taskId] : [];
+        const rowSig = rows.map((e: any) => `${Number(e?.ts || 0)}|${Number(e?.ms || 0)}|${String(e?.name || "")}`).join(",");
+        parts.push(`${taskId}:${rowSig}`);
+      });
+    return parts.join("||");
+  }
+
   function loadHistoryIntoMemory() {
-    historyByTaskId = loadHistory();
-    historyByTaskId = cleanupHistory(historyByTaskId);
-    saveHistory(historyByTaskId);
+    const loadedHistory = loadHistory();
+    const cleanedHistory = cleanupHistory(loadedHistory);
+    historyByTaskId = cleanedHistory;
+    if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
+      saveHistory(historyByTaskId);
+    }
   }
 
   function loadHistoryRangePrefs() {
@@ -1015,29 +1044,169 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     persistTaskUiToCloud();
   }
 
+  function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
+    const raw = String(value || "").trim();
+    if (raw === "currentWeek" || raw === "past30" || raw === "currentMonth") return raw;
+    return "past7";
+  }
+
+  function loadDashboardWidgetState() {
+    const dashboard = cloudDashboardCache || loadCachedDashboard();
+    const widgets =
+      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
+    dashboardAvgRange = sanitizeDashboardAvgRange((widgets as any).avgSessionByTaskRange);
+    const nextSizes: Record<string, DashboardCardSize> = {};
+    const rawSizes = (widgets as any).cardSizes;
+    if (rawSizes && typeof rawSizes === "object") {
+      Object.entries(rawSizes as Record<string, unknown>).forEach(([cardId, size]) => {
+        const nextSize = sanitizeDashboardCardSize(size);
+        if (!cardId || !nextSize) return;
+        nextSizes[cardId] = nextSize;
+      });
+    }
+    dashboardCardSizes = nextSizes;
+  }
+
+  function saveDashboardAvgRange(range: DashboardAvgRange) {
+    dashboardAvgRange = sanitizeDashboardAvgRange(range);
+    const dashboard = cloudDashboardCache || loadCachedDashboard();
+    const existingWidgets =
+      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
+    const existingOrder = Array.isArray(dashboard?.order) ? dashboard!.order : getCurrentDashboardOrder();
+    const widgets = {
+      ...existingWidgets,
+      avgSessionByTaskRange: dashboardAvgRange,
+    };
+    cloudDashboardCache = { order: existingOrder, widgets };
+    saveCloudDashboard(cloudDashboardCache);
+  }
+
+  function sanitizeDashboardCardSize(value: unknown): DashboardCardSize | null {
+    if (value === "full" || value === "half" || value === "quarter") return value;
+    return null;
+  }
+
+  function getDashboardCardSizeMapForStorage() {
+    const out: Record<string, DashboardCardSize> = {};
+    Object.entries(dashboardCardSizes || {}).forEach(([cardId, size]) => {
+      if (!cardId) return;
+      if (size === "full" || size === "half" || size === "quarter") out[cardId] = size;
+    });
+    return out;
+  }
+
+  function applyDashboardCardSizes() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
+      const card = el as HTMLElement;
+      const cardId = String(card.getAttribute("data-dashboard-id") || "");
+      if (!cardId) return;
+      const size = sanitizeDashboardCardSize(dashboardCardSizes[cardId]);
+      if (size) card.setAttribute("data-dashboard-size", size);
+      else card.removeAttribute("data-dashboard-size");
+    });
+  }
+
+  function ensureDashboardCardSizeControls() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
+      const card = el as HTMLElement;
+      if (card.querySelector(".dashboardSizeControl")) return;
+      const control = document.createElement("div");
+      control.className = "dashboardSizeControl";
+      control.innerHTML = `
+        <button class="iconBtn dashboardSizeBtn" type="button" data-dashboard-size-toggle="true" aria-label="Panel size options" title="Panel size options" aria-expanded="false">
+          <span class="dashboardSizeGlyph" aria-hidden="true"></span>
+        </button>
+        <div class="dashboardSizeMenu" data-dashboard-size-menu="true" role="menu" aria-label="Panel size options">
+          <button class="dashboardSizeOption" type="button" data-dashboard-size="full" role="menuitemradio" aria-checked="false">Full width</button>
+          <button class="dashboardSizeOption" type="button" data-dashboard-size="half" role="menuitemradio" aria-checked="false">Half width</button>
+          <button class="dashboardSizeOption" type="button" data-dashboard-size="quarter" role="menuitemradio" aria-checked="false">Quarter width</button>
+        </div>
+      `;
+      card.prepend(control);
+    });
+  }
+
+  function syncDashboardCardSizeControlState() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
+      const card = el as HTMLElement;
+      const cardId = String(card.getAttribute("data-dashboard-id") || "");
+      if (!cardId) return;
+      const selectedSize = sanitizeDashboardCardSize(dashboardCardSizes[cardId]);
+      const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
+      const menuOpen = card.classList.contains("isSizeMenuOpen");
+      if (toggle) toggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+      Array.from(card.querySelectorAll(".dashboardSizeOption[data-dashboard-size]")).forEach((btn) => {
+        const option = btn as HTMLButtonElement;
+        const optionSize = sanitizeDashboardCardSize(option.getAttribute("data-dashboard-size"));
+        const isSelected = !!optionSize && !!selectedSize && optionSize === selectedSize;
+        option.classList.toggle("isOn", isSelected);
+        option.setAttribute("aria-checked", isSelected ? "true" : "false");
+      });
+    });
+  }
+
+  function closeDashboardCardSizeMenus() {
+    const grid = els.dashboardGrid;
+    if (!grid) return;
+    Array.from(grid.querySelectorAll(".dashboardCard.isSizeMenuOpen")).forEach((el) => {
+      (el as HTMLElement).classList.remove("isSizeMenuOpen");
+    });
+    syncDashboardCardSizeControlState();
+  }
+
+  function applyOrderedDashboardCards(grid: HTMLElement, order: string[] | null | undefined) {
+    if (!Array.isArray(order) || !order.length) return;
+    const cards = Array.from(grid.querySelectorAll(".dashboardCard")) as HTMLElement[];
+    if (!cards.length) return;
+    const byId = new Map<string, HTMLElement>();
+    cards.forEach((card) => {
+      const id = card.getAttribute("data-dashboard-id");
+      if (id) byId.set(id, card);
+    });
+    const ordered: HTMLElement[] = [];
+    const seen = new Set<string>();
+    order.forEach((idRaw) => {
+      const id = String(idRaw || "");
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      const card = byId.get(id);
+      if (card) ordered.push(card);
+    });
+    const unordered = cards.filter((card) => {
+      const id = card.getAttribute("data-dashboard-id") || "";
+      return !seen.has(id);
+    });
+    [...ordered, ...unordered].forEach((card) => grid.appendChild(card));
+  }
+
   function applyDashboardOrderFromStorage() {
     const grid = els.dashboardGrid;
     if (!grid) return;
     const dashboard = cloudDashboardCache || loadCachedDashboard();
     const order = Array.isArray(dashboard?.order) ? dashboard?.order : [];
     if (!order.length) return;
-    const byId = new Map<string, HTMLElement>();
-    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-      const card = el as HTMLElement;
-      const id = card.getAttribute("data-dashboard-id");
-      if (id) byId.set(id, card);
-    });
-    order.forEach((id: any) => {
-      const card = byId.get(String(id || ""));
-      if (card) grid.appendChild(card);
-    });
+    applyOrderedDashboardCards(grid, order);
   }
 
   function saveDashboardOrder() {
     const grid = els.dashboardGrid;
     if (!grid) return;
     const order = getCurrentDashboardOrder();
-    cloudDashboardCache = { order };
+    const existingWidgets =
+      cloudDashboardCache?.widgets && typeof cloudDashboardCache.widgets === "object"
+        ? (cloudDashboardCache.widgets as Record<string, unknown>)
+        : {};
+    const widgets = {
+      ...existingWidgets,
+      cardSizes: getDashboardCardSizeMapForStorage(),
+    };
+    cloudDashboardCache = { order, widgets };
     saveCloudDashboard(cloudDashboardCache);
   }
 
@@ -1052,21 +1221,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   function applyDashboardOrder(order: string[] | null | undefined) {
     const grid = els.dashboardGrid;
     if (!grid || !Array.isArray(order) || !order.length) return;
-    const byId = new Map<string, HTMLElement>();
-    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-      const card = el as HTMLElement;
-      const id = card.getAttribute("data-dashboard-id");
-      if (id) byId.set(id, card);
-    });
-    order.forEach((id) => {
-      const card = byId.get(String(id || ""));
-      if (card) grid.appendChild(card);
-    });
+    applyOrderedDashboardCards(grid, order);
   }
 
   function beginDashboardEditMode() {
     if (dashboardEditMode) return;
     dashboardOrderDraftBeforeEdit = getCurrentDashboardOrder();
+    dashboardCardSizesDraftBeforeEdit = { ...dashboardCardSizes };
     dashboardEditMode = true;
     applyDashboardEditMode();
   }
@@ -1076,8 +1237,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (dashboardOrderDraftBeforeEdit && dashboardOrderDraftBeforeEdit.length) {
       applyDashboardOrder(dashboardOrderDraftBeforeEdit);
     }
+    dashboardCardSizes = dashboardCardSizesDraftBeforeEdit ? { ...dashboardCardSizesDraftBeforeEdit } : {};
+    applyDashboardCardSizes();
     dashboardEditMode = false;
     dashboardOrderDraftBeforeEdit = null;
+    dashboardCardSizesDraftBeforeEdit = null;
     applyDashboardEditMode();
   }
 
@@ -1086,16 +1250,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     saveDashboardOrder();
     dashboardEditMode = false;
     dashboardOrderDraftBeforeEdit = null;
+    dashboardCardSizesDraftBeforeEdit = null;
     applyDashboardEditMode();
+    if (currentAppPage === "dashboard") {
+      renderDashboardAvgSessionChart();
+    }
   }
 
   function applyDashboardEditMode() {
     const grid = els.dashboardGrid;
     if (!grid) return;
+    ensureDashboardCardSizeControls();
+    if (!dashboardEditMode) closeDashboardCardSizeMenus();
     grid.classList.toggle("isEditMode", dashboardEditMode);
     Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
       (el as HTMLElement).setAttribute("draggable", dashboardEditMode ? "true" : "false");
     });
+    syncDashboardCardSizeControlState();
     if (els.dashboardEditBtn) {
       els.dashboardEditBtn.classList.toggle("isOn", dashboardEditMode);
       (els.dashboardEditBtn as HTMLElement).style.display = dashboardEditMode ? "none" : "inline-flex";
@@ -1299,6 +1470,291 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }, 0);
   }
 
+  function downloadCsvFile(filename: string, text: string) {
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
+  }
+
+  function csvEscape(value: unknown): string {
+    const text = String(value ?? "");
+    if (!/[",\n\r]/.test(text)) return text;
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function parseCsvRows(input: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let cell = "";
+    let i = 0;
+    let inQuotes = false;
+
+    while (i < input.length) {
+      const ch = input[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (input[i + 1] === '"') {
+            cell += '"';
+            i += 2;
+            continue;
+          }
+          inQuotes = false;
+          i += 1;
+          continue;
+        }
+        cell += ch;
+        i += 1;
+        continue;
+      }
+
+      if (ch === '"') {
+        inQuotes = true;
+        i += 1;
+        continue;
+      }
+      if (ch === ",") {
+        row.push(cell);
+        cell = "";
+        i += 1;
+        continue;
+      }
+      if (ch === "\n" || ch === "\r") {
+        row.push(cell);
+        cell = "";
+        rows.push(row);
+        row = [];
+        if (ch === "\r" && input[i + 1] === "\n") i += 2;
+        else i += 1;
+        continue;
+      }
+      cell += ch;
+      i += 1;
+    }
+
+    if (cell.length || row.length) {
+      row.push(cell);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function exportHistoryManagerCsv() {
+    const rows: string[] = [];
+    rows.push(["taskId", "taskName", "entryName", "ts", "dateTimeIso", "ms", "color"].join(","));
+
+    const taskIds = Object.keys(historyByTaskId || {});
+    taskIds.sort((a, b) => {
+      const ai = tasks.findIndex((t) => String(t.id || "") === String(a));
+      const bi = tasks.findIndex((t) => String(t.id || "") === String(b));
+      if (ai >= 0 && bi >= 0) return ai - bi;
+      if (ai >= 0) return -1;
+      if (bi >= 0) return 1;
+      return String(a).localeCompare(String(b));
+    });
+
+    taskIds.forEach((taskId) => {
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [];
+      if (!entries.length) return;
+      entries.sort((a: any, b: any) => (+a.ts || 0) - (+b.ts || 0));
+      const taskMeta = getTaskMetaForHistoryId(taskId);
+      const taskName = String(taskMeta?.name || "").trim() || "Task";
+      entries.forEach((entry: any) => {
+        const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
+        const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
+        if (ts <= 0) return;
+        const dateTimeIso = new Date(ts).toISOString();
+        const entryName = String(entry?.name || "").trim() || taskName;
+        const color = entry?.color == null ? "" : String(entry.color);
+        rows.push(
+          [
+            csvEscape(taskId),
+            csvEscape(taskName),
+            csvEscape(entryName),
+            csvEscape(ts),
+            csvEscape(dateTimeIso),
+            csvEscape(ms),
+            csvEscape(color),
+          ].join(",")
+        );
+      });
+    });
+
+    const d = new Date();
+    const y = d.getFullYear();
+    const mo = formatTwo(d.getMonth() + 1);
+    const da = formatTwo(d.getDate());
+    const hh = formatTwo(d.getHours());
+    const mi = formatTwo(d.getMinutes());
+    const ss = formatTwo(d.getSeconds());
+    const filename = `tasktimer-history-${y}${mo}${da}-${hh}${mi}${ss}.csv`;
+    downloadCsvFile(filename, rows.join("\n"));
+  }
+
+  function importHistoryManagerCsvFromFile(file: File | null) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      const parsed = parseCsvRows(text);
+      if (!parsed.length) {
+        alert("The CSV file is empty.");
+        return;
+      }
+
+      const header = parsed[0].map((v, idx) => {
+        const raw = String(v || "");
+        const noBom = idx === 0 ? raw.replace(/^\uFEFF/, "") : raw;
+        return noBom.trim().toLowerCase();
+      });
+      const idxTaskId = header.indexOf("taskid");
+      const idxTaskName = header.indexOf("taskname");
+      const idxEntryName = header.indexOf("entryname");
+      const idxTs = header.indexOf("ts");
+      const idxMs = header.indexOf("ms");
+      const idxColor = header.indexOf("color");
+      if (idxTaskId < 0 || idxTs < 0 || idxMs < 0) {
+        alert("Invalid CSV format. Expected columns: taskId, ts, ms.");
+        return;
+      }
+
+      const nextHistory: HistoryByTaskId = { ...(historyByTaskId || {}) };
+      const seenByTask = new Map<string, Set<string>>();
+      Object.keys(nextHistory).forEach((taskId) => {
+        const set = new Set<string>();
+        const arr = Array.isArray(nextHistory[taskId]) ? nextHistory[taskId] : [];
+        arr.forEach((entry) => {
+          set.add(`${Math.floor(+entry.ts || 0)}|${Math.floor(+entry.ms || 0)}|${String(entry.name || "")}`);
+        });
+        seenByTask.set(taskId, set);
+      });
+
+      let imported = 0;
+      let skipped = 0;
+
+      parsed.slice(1).forEach((row) => {
+        const taskId = String(row[idxTaskId] || "").trim();
+        if (!taskId) {
+          skipped += 1;
+          return;
+        }
+        const ts = Math.floor(Number(row[idxTs] || 0));
+        const ms = Math.floor(Number(row[idxMs] || 0));
+        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms < 0) {
+          skipped += 1;
+          return;
+        }
+        const task = tasks.find((t) => String(t.id || "") === taskId);
+        const taskName = String(row[idxTaskName] || "").trim();
+        const entryNameRaw = idxEntryName >= 0 ? String(row[idxEntryName] || "").trim() : "";
+        const entryName = entryNameRaw || taskName || String(task?.name || "").trim() || "Task";
+        const color = idxColor >= 0 ? String(row[idxColor] || "").trim() : "";
+        const key = `${ts}|${ms}|${entryName}`;
+
+        let seen = seenByTask.get(taskId);
+        if (!seen) {
+          seen = new Set<string>();
+          seenByTask.set(taskId, seen);
+        }
+        if (seen.has(key)) {
+          skipped += 1;
+          return;
+        }
+
+        if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
+        nextHistory[taskId].push({
+          ts,
+          ms,
+          name: entryName,
+          ...(color ? { color } : {}),
+        });
+        seen.add(key);
+        imported += 1;
+      });
+
+      if (imported <= 0) {
+        alert("No valid history rows were imported.");
+        return;
+      }
+
+      Object.keys(nextHistory).forEach((taskId) => {
+        if (!Array.isArray(nextHistory[taskId])) return;
+        nextHistory[taskId].sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+      });
+      historyByTaskId = nextHistory;
+      saveHistory(historyByTaskId);
+      render();
+      renderHistoryManager();
+      alert(`Imported ${imported} row(s).${skipped ? ` Skipped ${skipped} duplicate/invalid row(s).` : ""}`);
+    };
+    reader.onerror = () => alert("Could not read the CSV file.");
+    reader.readAsText(file);
+  }
+
+  async function generateHistoryManagerTestData(replaceExisting: boolean) {
+    const taskList = (tasks || []).filter((t) => String(t.id || "").trim());
+    if (!taskList.length) {
+      alert("Add at least one task before generating test history.");
+      return;
+    }
+
+    const nextHistory: HistoryByTaskId = replaceExisting ? {} : { ...(historyByTaskId || {}) };
+    const now = new Date();
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const days = 90;
+    let generated = 0;
+
+    for (let dayOffset = days - 1; dayOffset >= 0; dayOffset -= 1) {
+      const day = new Date(todayLocal);
+      day.setDate(todayLocal.getDate() - dayOffset);
+
+      taskList.forEach((task, taskIdx) => {
+        const taskId = String(task.id || "").trim();
+        if (!taskId) return;
+        const sessions = 1 + Math.floor(Math.random() * 3);
+        if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
+
+        for (let i = 0; i < sessions; i += 1) {
+          const startHour = 6 + Math.floor(Math.random() * 14);
+          const startMinute = Math.floor(Math.random() * 60);
+          const tsDate = new Date(day);
+          tsDate.setHours(startHour, startMinute, 0, 0);
+          const ts = tsDate.getTime() + i * 37_000 + taskIdx * 1_000;
+          const baseMinutes = 18 + ((taskIdx * 7) % 35);
+          const varianceMinutes = Math.floor(Math.random() * 55);
+          const durationMinutes = Math.max(5, baseMinutes + varianceMinutes);
+          const ms = durationMinutes * 60 * 1000;
+          nextHistory[taskId].push({
+            ts,
+            name: String(task.name || "").trim() || "Task",
+            ms,
+            color: sessionColorForTaskMs(task, ms),
+          });
+          generated += 1;
+        }
+      });
+    }
+
+    Object.keys(nextHistory).forEach((taskId) => {
+      const arr = Array.isArray(nextHistory[taskId]) ? nextHistory[taskId] : [];
+      arr.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+      nextHistory[taskId] = arr;
+    });
+
+    historyByTaskId = nextHistory;
+    await saveHistoryAndWait(historyByTaskId);
+    render();
+    renderHistoryManager();
+    alert(`Generated ${generated} test history entries across the past 90 days.`);
+  }
+
   function makeBackupPayload() {
     return {
       schema: "taskticka_backup_v1",
@@ -1492,10 +1948,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     tasks = nextTasks;
-    historyByTaskId = nextHistory;
+    historyByTaskId = cleanupHistory(nextHistory);
     save();
-    saveHistory(historyByTaskId);
-    historyByTaskId = cleanupHistory(historyByTaskId);
     saveHistory(historyByTaskId);
     render();
 
@@ -2128,6 +2582,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     for (const taskId of openHistoryTaskIds) {
       renderHistory(taskId);
     }
+    if (currentAppPage === "dashboard") {
+      renderDashboardAvgSessionChart();
+    }
   }
 
   function startTask(i: number) {
@@ -2662,6 +3119,206 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
+  function startOfCurrentWeekMondayMs(nowValue: number) {
+    const d = new Date(nowValue);
+    const dow = d.getDay();
+    const delta = dow === 0 ? 6 : dow - 1;
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - delta);
+    return d.getTime();
+  }
+
+  function startOfCurrentMonthMs(nowValue: number) {
+    const d = new Date(nowValue);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function getDashboardAvgRangeWindow(range: DashboardAvgRange, nowValue: number) {
+    const endMs = nowValue;
+    if (range === "currentWeek") return { startMs: startOfCurrentWeekMondayMs(nowValue), endMs };
+    if (range === "past30") return { startMs: nowValue - 30 * 24 * 60 * 60 * 1000, endMs };
+    if (range === "currentMonth") return { startMs: startOfCurrentMonthMs(nowValue), endMs };
+    return { startMs: nowValue - 7 * 24 * 60 * 60 * 1000, endMs };
+  }
+
+  function dashboardAvgRangeLabel(range: DashboardAvgRange) {
+    if (range === "currentWeek") return "Current Week";
+    if (range === "past30") return "Past 30 Days";
+    if (range === "currentMonth") return "Current Month";
+    return "Past 7 Days";
+  }
+
+  function formatDashboardDurationShort(ms: number) {
+    const safeMs = Math.max(0, Math.floor(ms || 0));
+    const totalMinutes = Math.floor(safeMs / 60000);
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
+  function getDashboardAvgSessionRows(range: DashboardAvgRange, nowValue: number) {
+    const { startMs, endMs } = getDashboardAvgRangeWindow(range, nowValue);
+    const taskNameById = new Map<string, string>();
+    tasks.forEach((task) => {
+      const id = String(task.id || "").trim();
+      if (!id) return;
+      taskNameById.set(id, String(task.name || "").trim() || "Task");
+    });
+
+    const rows: Array<{ taskId: string; taskName: string; avgMs: number; count: number }> = [];
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      if (!entries.length) return;
+      let sumMs = 0;
+      let count = 0;
+      entries.forEach((entry: any) => {
+        const ts = Number(entry?.ts);
+        const ms = Number(entry?.ms);
+        if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
+        if (ts < startMs || ts > endMs) return;
+        sumMs += ms;
+        count += 1;
+      });
+      if (count < 1) return;
+      const deletedName = String((deletedTaskMeta as any)?.[taskId]?.name || "").trim();
+      const taskName = taskNameById.get(taskId) || deletedName || "Task";
+      rows.push({
+        taskId,
+        taskName,
+        avgMs: sumMs / count,
+        count,
+      });
+    });
+
+    rows.sort((a, b) => {
+      if (b.avgMs !== a.avgMs) return b.avgMs - a.avgMs;
+      const nameCmp = a.taskName.localeCompare(b.taskName);
+      if (nameCmp !== 0) return nameCmp;
+      return a.taskId.localeCompare(b.taskId);
+    });
+    return rows;
+  }
+
+  function truncateDashboardLabel(label: string, maxChars: number) {
+    const clean = String(label || "").trim();
+    if (clean.length <= maxChars) return clean;
+    return `${clean.slice(0, Math.max(1, maxChars - 1))}...`;
+  }
+
+  function renderDashboardAvgSessionChart() {
+    const titleEl = els.dashboardAvgSessionTitle as HTMLElement | null;
+    const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
+    const canvas = els.dashboardAvgSessionChart;
+    const card = canvas?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
+    const rangeBtns = Array.from((card || document).querySelectorAll("[data-dashboard-avg-range]")) as HTMLElement[];
+    const range = sanitizeDashboardAvgRange(dashboardAvgRange);
+    dashboardAvgRange = range;
+
+    if (titleEl) titleEl.textContent = `Avg Session by Task (${dashboardAvgRangeLabel(range)})`;
+    rangeBtns.forEach((btn) => {
+      const isOn = btn.getAttribute("data-dashboard-avg-range") === range;
+      btn.classList.toggle("isOn", isOn);
+      btn.setAttribute("aria-pressed", String(isOn));
+    });
+
+    if (!canvas) return;
+    const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
+    if (!wrap) return;
+    const rows = getDashboardAvgSessionRows(range, nowMs());
+
+    const rect = wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const measuredWidth = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
+    const measuredHeight = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
+    if (measuredWidth <= 0 || measuredHeight <= 0) return;
+    // Match canvas backing size to the rendered size to avoid CSS downscaling blur/skew.
+    const width = measuredWidth;
+    const height = measuredHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    if (!rows.length) {
+      if (emptyEl) emptyEl.style.display = "block";
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = "none";
+
+    const chartTop = 14;
+    const chartBottom = height - 56;
+    const chartHeight = Math.max(80, chartBottom - chartTop);
+    const maxAvgMs = Math.max(...rows.map((row) => row.avgMs), 1);
+    const tickCount = 4;
+    const tickLabelFont = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+    ctx.font = tickLabelFont;
+    let maxTickLabelWidth = 0;
+    for (let i = 1; i <= tickCount; i += 1) {
+      const pct = i / tickCount;
+      const tickMs = maxAvgMs * pct;
+      maxTickLabelWidth = Math.max(maxTickLabelWidth, ctx.measureText(formatDashboardDurationShort(tickMs)).width);
+    }
+    const chartLeft = 12 + Math.ceil(maxTickLabelWidth) + 10;
+    const chartRight = width - 12;
+    const chartWidth = Math.max(120, chartRight - chartLeft);
+    const barCount = rows.length;
+    const gap = barCount > 10 ? 4 : 8;
+    const barWidth = Math.max(8, Math.floor((chartWidth - gap * (barCount - 1)) / Math.max(1, barCount)));
+    const totalBarsWidth = barWidth * barCount + gap * (barCount - 1);
+    const startX = chartLeft + Math.max(0, Math.floor((chartWidth - totalBarsWidth) / 2));
+
+    ctx.strokeStyle = "rgba(255,255,255,.20)";
+    ctx.fillStyle = "rgba(255,255,255,.68)";
+    ctx.font = tickLabelFont;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i <= tickCount; i += 1) {
+      const pct = i / tickCount;
+      const y = Math.round(chartBottom - chartHeight * pct) + 0.5;
+      ctx.globalAlpha = i === 0 ? 0.5 : 0.24;
+      ctx.beginPath();
+      ctx.moveTo(chartLeft, y);
+      ctx.lineTo(chartRight, y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (i === 0) continue;
+      const tickMs = maxAvgMs * pct;
+      ctx.fillText(formatDashboardDurationShort(tickMs), chartLeft - 6, y - 8);
+    }
+
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#00cfc8";
+    rows.forEach((row, idx) => {
+      const ratio = Math.max(0, Math.min(1, row.avgMs / maxAvgMs));
+      const x = startX + idx * (barWidth + gap);
+      const barHeight = Math.max(2, Math.round(chartHeight * ratio));
+      const y = chartBottom - barHeight;
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = 0.92;
+      ctx.fillRect(x, y, barWidth, barHeight);
+      ctx.globalAlpha = 1;
+
+      const label = truncateDashboardLabel(row.taskName, width <= 420 ? 8 : 13);
+      ctx.save();
+      ctx.translate(x + barWidth / 2, chartBottom + 10);
+      ctx.rotate((-42 * Math.PI) / 180);
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(255,255,255,.72)";
+      ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    });
+  }
+
   function renderHistory(taskId: string) {
     if (!taskId) return;
     const ui = getHistoryUi(taskId);
@@ -2707,13 +3364,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     const display = isDayMode ? groupedByDay : all;
     const total = display.length;
+    const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+    if (state.page > maxPage) state.page = maxPage;
+    if (state.page < 0) state.page = 0;
 
     const end = Math.max(0, total - state.page * pageSize);
     const start = Math.max(0, end - pageSize);
     const slice = display.slice(start, end);
-
-    const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-    if (state.page > maxPage) state.page = maxPage;
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
@@ -2934,6 +3591,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.editH) els.editH.value = String(h);
     if (els.editM) els.editM.value = String(m);
     if (els.editS) els.editS.value = String(s);
+    [els.editD, els.editH, els.editM, els.editS].forEach((input) => {
+      if (!input) return;
+      input.dataset.autoclearPending = "1";
+    });
     setEditElapsedOverrideEnabled(false);
     syncEditCheckpointAlertUi(t);
     syncEditSaveAvailability(t);
@@ -3039,15 +3700,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     editDraftSnapshot = "";
   }
 
-  function elapsedPadLabelForInput(input: HTMLInputElement | null) {
-    if (!input) return "Value";
-    if (input === els.editD) return "Days";
-    if (input === els.editH) return "Hours";
-    if (input === els.editM) return "Minutes";
-    if (input === els.editS) return "Seconds";
-    return "Value";
-  }
-
   function isEditElapsedOverrideEnabled() {
     return !!els.editOverrideElapsedToggle?.classList.contains("on");
   }
@@ -3056,6 +3708,37 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.editOverrideElapsedToggle?.classList.toggle("on", enabled);
     els.editOverrideElapsedToggle?.setAttribute("aria-checked", String(enabled));
     els.editOverrideElapsedFields?.classList.toggle("isDisabled", !enabled);
+  }
+
+  function normalizeEditElapsedValue(input: HTMLInputElement | null) {
+    if (!input) return;
+    const raw = String(input.value || "").trim();
+    if (!raw) {
+      input.value = "0";
+      return;
+    }
+    const parsed = Math.floor(Number(raw));
+    if (!Number.isFinite(parsed) || isNaN(parsed)) {
+      input.value = "0";
+      return;
+    }
+    if (input === els.editM || input === els.editS) {
+      input.value = String(Math.min(59, Math.max(0, parsed)));
+      return;
+    }
+    if (input === els.editH && isEditMilestoneUnitDay()) {
+      input.value = String(Math.min(23, Math.max(0, parsed)));
+      return;
+    }
+    input.value = String(Math.max(0, parsed));
+  }
+
+  function maybeAutoClearEditElapsedField(input: HTMLInputElement | null) {
+    if (!input) return;
+    if (!isEditElapsedOverrideEnabled()) return;
+    if (input.dataset.autoclearPending !== "1") return;
+    input.value = "";
+    input.dataset.autoclearPending = "0";
   }
 
   function elapsedPadRangeForInput(input: HTMLInputElement | null) {
@@ -3095,18 +3778,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (!els.elapsedPadDisplay) return;
     const text = (elapsedPadDraft || "0").replace(/^0+(?=\d)/, "") || "0";
     els.elapsedPadDisplay.textContent = text;
-  }
-
-  function openElapsedPad(input: HTMLInputElement | null) {
-    if (!input || !els.elapsedPadOverlay) return;
-    elapsedPadMilestoneRef = null;
-    elapsedPadTarget = input;
-    elapsedPadOriginal = input.value || "0";
-    elapsedPadDraft = elapsedPadOriginal;
-    if (els.elapsedPadTitle) els.elapsedPadTitle.textContent = `Enter ${elapsedPadLabelForInput(input)}`;
-    clearElapsedPadError();
-    renderElapsedPadDisplay();
-    (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
   }
 
   function openElapsedPadForMilestone(
@@ -3343,7 +4014,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
     })();
 
-    let hb: Record<string, any[]> = (loadHistory() as Record<string, any[]>) || {};
+    let hb: Record<string, any[]> = (historyByTaskId as Record<string, any[]>) || {};
     if (!hb || typeof hb !== "object") hb = {};
 
     const idsWithHistory = Object.keys(hb || {}).filter((id) => {
@@ -3511,7 +4182,24 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       (els.historyManagerScreen as HTMLElement).style.display = "block";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
-    renderHistoryManager();
+    if (els.hmList) {
+      els.hmList.innerHTML = `<div class="hmEmpty">Loading history...</div>`;
+    }
+    void refreshHistoryManagerFromCloud().then(() => {
+      if (destroyed) return;
+      renderHistoryManager();
+    });
+  }
+
+  async function refreshHistoryManagerFromCloud() {
+    try {
+      await refreshHistoryFromCloud();
+      deletedTaskMeta = loadDeletedMeta();
+      load();
+      historyByTaskId = loadHistory();
+    } catch {
+      // Keep last known in-memory state if cloud refresh fails.
+    }
   }
 
   function closeHistoryManager() {
@@ -4813,7 +5501,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     closeFriendRequestModal();
-    if (page === "tasks") render();
+    if (page === "tasks") {
+      render();
+      return;
+    }
+    if (page === "dashboard") {
+      renderDashboardAvgSessionChart();
+    }
   }
 
   function deleteTasksInMode(mode: MainMode) {
@@ -5514,6 +6208,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     let swipeStartY: number | null = null;
     let swipeWrap: HTMLElement | null = null;
     let swipePointerId: number | null = null;
+    const clearHistorySwipeState = () => {
+      swipeStartX = null;
+      swipeStartY = null;
+      swipeWrap = null;
+      swipePointerId = null;
+    };
 
     const runHistorySwipe = (endX: number, endY: number) => {
       if (!swipeWrap) return;
@@ -5522,11 +6222,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const dx = endX - swipeStartX;
       const dy = endY - swipeStartY;
 
-      swipeStartX = null;
-      swipeStartY = null;
       const currentWrap = swipeWrap;
-      swipeWrap = null;
-      swipePointerId = null;
+      clearHistorySwipeState();
 
       if (Math.abs(dx) < 24) return;
       if (Math.abs(dy) > 60) return;
@@ -5572,6 +6269,13 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
         if (!wrap) return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (typeof e.pointerId === "number" && typeof e.target?.setPointerCapture === "function") {
+          try {
+            e.target.setPointerCapture(e.pointerId);
+          } catch {
+            // Ignore capture failures; delegated handlers still run.
+          }
+        }
         swipeWrap = wrap;
         swipePointerId = typeof e.pointerId === "number" ? e.pointerId : null;
         swipeStartX = e.clientX;
@@ -5579,15 +6283,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       });
 
       on(els.taskList, "pointerup", (e: any) => {
+        if (!swipeWrap) return;
+        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
+        runHistorySwipe(e.clientX, e.clientY);
+      });
+
+      on(window, "pointerup", (e: any) => {
+        if (!swipeWrap) return;
         if (swipePointerId != null && e.pointerId !== swipePointerId) return;
         runHistorySwipe(e.clientX, e.clientY);
       });
 
       on(els.taskList, "pointercancel", () => {
-        swipeStartX = null;
-        swipeStartY = null;
-        swipeWrap = null;
-        swipePointerId = null;
+        clearHistorySwipeState();
+      });
+      on(window, "pointercancel", () => {
+        clearHistorySwipeState();
       });
     } else {
       on(
@@ -5615,16 +6326,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       );
 
       on(els.taskList, "touchcancel", () => {
-        swipeStartX = null;
-        swipeStartY = null;
-        swipeWrap = null;
-        swipePointerId = null;
+        clearHistorySwipeState();
       });
     }
 
     on(window, "resize", () => {
       for (const taskId of openHistoryTaskIds) {
         renderHistory(taskId);
+      }
+      if (currentAppPage === "dashboard") {
+        renderDashboardAvgSessionChart();
       }
     });
 
@@ -5634,8 +6345,56 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
     on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
+    on(els.dashboardGrid, "click", (e: any) => {
+      const sizeToggle = e.target?.closest?.("[data-dashboard-size-toggle]") as HTMLElement | null;
+      if (sizeToggle) {
+        if (!dashboardEditMode) return;
+        const card = sizeToggle.closest(".dashboardCard") as HTMLElement | null;
+        if (!card || !els.dashboardGrid?.contains(card)) return;
+        const wasOpen = card.classList.contains("isSizeMenuOpen");
+        closeDashboardCardSizeMenus();
+        card.classList.toggle("isSizeMenuOpen", !wasOpen);
+        syncDashboardCardSizeControlState();
+        e.preventDefault();
+        return;
+      }
+      const sizeOption = e.target?.closest?.(".dashboardSizeOption[data-dashboard-size]") as HTMLElement | null;
+      if (sizeOption) {
+        if (!dashboardEditMode) return;
+        const card = sizeOption.closest(".dashboardCard") as HTMLElement | null;
+        const cardId = String(card?.getAttribute("data-dashboard-id") || "");
+        const nextSize = sanitizeDashboardCardSize(sizeOption.getAttribute("data-dashboard-size"));
+        if (!card || !cardId || !nextSize) return;
+        dashboardCardSizes[cardId] = nextSize;
+        applyDashboardCardSizes();
+        closeDashboardCardSizeMenus();
+        if (currentAppPage === "dashboard") {
+          renderDashboardAvgSessionChart();
+        }
+        e.preventDefault();
+        return;
+      }
+      const btn = e.target?.closest?.("[data-dashboard-avg-range]") as HTMLElement | null;
+      if (!btn) return;
+      const nextRange = sanitizeDashboardAvgRange(btn.getAttribute("data-dashboard-avg-range"));
+      if (nextRange === dashboardAvgRange) {
+        renderDashboardAvgSessionChart();
+        return;
+      }
+      saveDashboardAvgRange(nextRange);
+      renderDashboardAvgSessionChart();
+    });
+    on(document as any, "click", (e: any) => {
+      if (!dashboardEditMode) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(".dashboardSizeControl")) return;
+      closeDashboardCardSizeMenus();
+    });
     on(els.dashboardGrid, "dragstart", (e: any) => {
       if (!dashboardEditMode) return;
+      if (e.target?.closest?.(".dashboardSizeControl")) return;
+      closeDashboardCardSizeMenus();
       const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
       if (!card || !els.dashboardGrid?.contains(card)) return;
       dashboardDragEl = card;
@@ -5949,42 +6708,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncEditCheckpointAlertUi(tasks[editIndex]);
       syncEditSaveAvailability(tasks[editIndex]);
     });
-    on(els.editD, "click", (e: any) => {
+    const onEditElapsedInputChanged = (input: HTMLInputElement | null, normalize: boolean) => {
       if (!isEditElapsedOverrideEnabled()) return;
-      e.preventDefault();
-      openElapsedPad(els.editD);
-    });
-    on(els.editH, "click", (e: any) => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      e.preventDefault();
-      openElapsedPad(els.editH);
-    });
-    on(els.editM, "click", (e: any) => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      e.preventDefault();
-      openElapsedPad(els.editM);
-    });
-    on(els.editS, "click", (e: any) => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      e.preventDefault();
-      openElapsedPad(els.editS);
-    });
-    on(els.editD, "focus", () => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      openElapsedPad(els.editD);
-    });
-    on(els.editH, "focus", () => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      openElapsedPad(els.editH);
-    });
-    on(els.editM, "focus", () => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      openElapsedPad(els.editM);
-    });
-    on(els.editS, "focus", () => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      openElapsedPad(els.editS);
-    });
+      if (normalize) normalizeEditElapsedValue(input);
+      if (editIndex == null || !tasks[editIndex]) return;
+      clearEditValidationState();
+      syncEditSaveAvailability(tasks[editIndex]);
+    };
+    on(els.editD, "input", () => onEditElapsedInputChanged(els.editD, false));
+    on(els.editH, "input", () => onEditElapsedInputChanged(els.editH, false));
+    on(els.editM, "input", () => onEditElapsedInputChanged(els.editM, false));
+    on(els.editS, "input", () => onEditElapsedInputChanged(els.editS, false));
+    on(els.editD, "change", () => onEditElapsedInputChanged(els.editD, true));
+    on(els.editH, "change", () => onEditElapsedInputChanged(els.editH, true));
+    on(els.editM, "change", () => onEditElapsedInputChanged(els.editM, true));
+    on(els.editS, "change", () => onEditElapsedInputChanged(els.editS, true));
+    on(els.editD, "focus", () => maybeAutoClearEditElapsedField(els.editD));
+    on(els.editH, "focus", () => maybeAutoClearEditElapsedField(els.editH));
+    on(els.editM, "focus", () => maybeAutoClearEditElapsedField(els.editM));
+    on(els.editS, "focus", () => maybeAutoClearEditElapsedField(els.editS));
+    on(els.editD, "click", () => maybeAutoClearEditElapsedField(els.editD));
+    on(els.editH, "click", () => maybeAutoClearEditElapsedField(els.editH));
+    on(els.editM, "click", () => maybeAutoClearEditElapsedField(els.editM));
+    on(els.editS, "click", () => maybeAutoClearEditElapsedField(els.editS));
 
     on(els.elapsedPadOverlay, "click", (e: any) => {
       if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
@@ -6117,6 +6863,35 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.historyManagerBtn, "click", () => {
       navigateToAppRoute("/tasktimer/history-manager");
     });
+    on(els.historyManagerExportBtn, "click", () => {
+      exportHistoryManagerCsv();
+    });
+    on(els.historyManagerImportBtn, "click", () => {
+      els.historyManagerImportFile?.click();
+    });
+    on(els.historyManagerImportFile, "change", (e: any) => {
+      const f = e.target?.files && e.target.files[0] ? e.target.files[0] : null;
+      e.target.value = "";
+      if (f) importHistoryManagerCsvFromFile(f);
+    });
+    on(els.historyManagerGenerateBtn, "click", () => {
+      confirm(
+        "Generate Test Data",
+        "Generate synthetic history entries covering the past 90 days for all tasks?",
+        {
+          okLabel: "Generate",
+          cancelLabel: "Cancel",
+          checkboxLabel: "Replace existing history",
+          checkboxChecked: true,
+          onOk: () => {
+            const replaceExisting = !!els.confirmDeleteAll?.checked;
+            void generateHistoryManagerTestData(replaceExisting);
+            closeConfirm();
+          },
+          onCancel: () => closeConfirm(),
+        }
+      );
+    });
     on(els.historyManagerBulkBtn, "click", () => {
       hmBulkEditMode = !hmBulkEditMode;
       if (!hmBulkEditMode) hmBulkSelectedRows = new Set<string>();
@@ -6165,6 +6940,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             hmBulkSelectedRows = new Set<string>();
             renderHistoryManager();
             closeConfirm();
+            void refreshHistoryFromCloud()
+              .then((nextHistory) => {
+                historyByTaskId = nextHistory || {};
+                renderHistoryManager();
+              })
+              .catch(() => {
+                // Keep local post-delete state when cloud refresh is unavailable.
+              });
           },
           onCancel: () => closeConfirm(),
         }
@@ -6396,6 +7179,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     loadDefaultTaskTimerFormat();
     loadDynamicColorsSetting();
     loadCheckpointAlertSettings();
+    loadDashboardWidgetState();
     // Keep Preferences controls in sync with hydrated cloud values on both
     // /tasktimer and /tasktimer/settings routes.
     syncTaskSettingsUi();
@@ -6407,7 +7191,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     applyMainMode("mode1");
     applyAppPage(getInitialAppPageFromQuery(), { syncUrl: "replace" });
     applyDashboardOrderFromStorage();
+    applyDashboardCardSizes();
     applyDashboardEditMode();
+    if (currentAppPage === "dashboard") {
+      renderDashboardAvgSessionChart();
+    }
   }
 
   // Init

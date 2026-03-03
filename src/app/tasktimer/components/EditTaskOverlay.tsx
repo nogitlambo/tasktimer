@@ -66,19 +66,19 @@ export default function EditTaskOverlay() {
           <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
             <div className="field" style={{ margin: 0 }}>
               <label style={{ textTransform: "none", letterSpacing: 0 }}>Days</label>
-              <input type="number" id="editD" min={0} step={1} readOnly />
+              <input type="number" id="editD" min={0} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label style={{ textTransform: "none", letterSpacing: 0 }}>Hours</label>
-              <input type="number" id="editH" min={0} step={1} readOnly />
+              <input type="number" id="editH" min={0} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label style={{ textTransform: "none", letterSpacing: 0 }}>Minutes</label>
-              <input type="number" id="editM" min={0} max={59} step={1} readOnly />
+              <input type="number" id="editM" min={0} max={59} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label style={{ textTransform: "none", letterSpacing: 0 }}>Seconds</label>
-              <input type="number" id="editS" min={0} max={59} step={1} readOnly />
+              <input type="number" id="editS" min={0} max={59} step={1} />
             </div>
           </div>
         </div>

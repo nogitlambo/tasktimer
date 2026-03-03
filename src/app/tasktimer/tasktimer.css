@@ -352,10 +352,102 @@ body[data-app-page="dashboard"] .appPages{
   100%{ transform: translateX(0) rotate(0deg); }
 }
 .dashboardCard{
+  position:relative;
   border:1px solid rgba(121,226,255,.2);
   background:#0d0f13;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
   padding:12px;
+}
+.dashboardSizeControl{
+  position:absolute;
+  top:8px;
+  right:8px;
+  z-index:4;
+  display:none;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+}
+.dashboardGrid.isEditMode .dashboardSizeControl{
+  display:flex;
+}
+.dashboardGrid.isEditMode .dashboardCard{
+  padding-top:40px;
+}
+.dashboardSizeBtn{
+  width:26px;
+  height:26px;
+  min-width:26px;
+  border-color: rgba(121,226,255,.32);
+  background: rgba(4,12,22,.85);
+}
+.dashboardSizeGlyph{
+  width:4px;
+  height:4px;
+  background: currentColor;
+  box-shadow: 6px 0 0 currentColor, 0 6px 0 currentColor, 6px 6px 0 currentColor;
+}
+.dashboardSizeMenu{
+  min-width:112px;
+  display:none;
+  flex-direction:column;
+  gap:4px;
+  padding:6px;
+  border:1px solid rgba(121,226,255,.34);
+  background:#0d0f13;
+  box-shadow: 0 10px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.dashboardCard.isSizeMenuOpen .dashboardSizeMenu{
+  display:flex;
+}
+.dashboardSizeOption{
+  width:100%;
+  min-height:28px;
+  border:1px solid rgba(121,226,255,.2);
+  background: rgba(255,255,255,.03);
+  color: rgba(225,247,255,.93);
+  font-family:var(--font-tight);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  text-align:left;
+  cursor:pointer;
+  padding:6px 8px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.dashboardSizeOption:hover{
+  border-color: rgba(121,226,255,.38);
+  background: rgba(53,232,255,.1);
+}
+.dashboardSizeOption.isOn{
+  border-color: rgba(53,232,255,.62);
+  background: linear-gradient(180deg, rgba(53,232,255,.2), rgba(255,255,255,.06));
+  box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
+}
+body[data-theme="light"] .dashboardSizeBtn{
+  border-color: rgba(0,133,160,.34);
+  background: rgba(255,255,255,.95);
+  color:#0d3041;
+}
+body[data-theme="light"] .dashboardSizeMenu{
+  border-color: rgba(0,133,160,.3);
+  background:#ffffff;
+  box-shadow: 0 10px 20px rgba(13,39,53,.12), inset 0 0 0 1px rgba(0,133,160,.08);
+}
+body[data-theme="light"] .dashboardSizeOption{
+  border-color: rgba(0,133,160,.2);
+  background: rgba(0,133,160,.05);
+  color:#17343c;
+}
+body[data-theme="light"] .dashboardSizeOption:hover{
+  border-color: rgba(0,133,160,.35);
+  background: rgba(0,133,160,.12);
+}
+body[data-theme="light"] .dashboardSizeOption.isOn{
+  border-color: rgba(0,133,160,.5);
+  background: linear-gradient(180deg, rgba(0,133,160,.2), rgba(255,255,255,.85));
+  box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset;
 }
 .dashboardCardTitle{
   font-size:11px;
@@ -368,9 +460,39 @@ body[data-app-page="dashboard"] .appPages{
 .dashboardStreakCard{ grid-column: span 3; }
 .dashboardStatCard{ grid-column: span 2; }
 .dashboardMainGraphCard{ grid-column: span 7; }
+.dashboardAvgSessionCard{ grid-column: span 7; }
 .dashboardDonutCard{ grid-column: span 5; }
 .dashboardTimelineCard{ grid-column: span 7; }
 .dashboardHeatCard{ grid-column: span 5; }
+.dashboardCard[data-dashboard-size="full"]{ grid-column: span 12; }
+.dashboardCard[data-dashboard-size="half"]{ grid-column: span 6; }
+.dashboardCard[data-dashboard-size="quarter"]{ grid-column: span 3; }
+.dashboardAvgSessionCard .historyCanvasWrap{
+  margin-top:10px;
+  height:230px;
+}
+.dashboardAvgSessionCard .historyChartInline{
+  width:100%;
+  height:100%;
+  display:block;
+}
+.dashboardAvgSessionRangeRow{
+  margin-top:10px;
+}
+.dashboardAvgSessionRangeRow .historyRangeToggleRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.dashboardAvgSessionRangeRow .historyRangeModePill{
+  min-height:28px;
+  padding:6px 10px;
+}
+.dashboardAvgSessionEmpty{
+  margin:10px 0 0;
+  color: rgba(188,214,230,.78);
+  font-size:12px;
+}
 .dashboardProfileHead{
   display:flex;
   align-items:center;
@@ -3341,7 +3463,16 @@ optgroup{
 /* History Manager */
 #historyManagerScreen{
   display:none;
+  height:100%;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling: touch;
   padding:18px;
+}
+#historyManagerScreen[aria-hidden="false"]{
+  display:flex;
+  flex-direction:column;
 }
 .focusModeHead{
   display:grid;
@@ -3813,9 +3944,17 @@ optgroup{
   display:flex;
   align-items:center;
   gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
 }
 .hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
-.hmList{ display:flex; flex-direction:column; gap:12px; }
+.hmList{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  flex:1 1 auto;
+  min-height:0;
+}
 .hmEmpty{
   color: rgba(255,255,255,.65);
   padding:16px 14px;
@@ -4656,11 +4795,15 @@ body[data-theme="light"] input[type="number"]{
   .dashboardStreakCard,
   .dashboardStatCard,
   .dashboardMainGraphCard,
+  .dashboardAvgSessionCard,
   .dashboardDonutCard,
   .dashboardTimelineCard,
   .dashboardHeatCard{
     grid-column: span 3;
   }
+  .dashboardCard[data-dashboard-size="full"]{ grid-column: span 6; }
+  .dashboardCard[data-dashboard-size="half"]{ grid-column: span 3; }
+  .dashboardCard[data-dashboard-size="quarter"]{ grid-column: span 2; }
   .list{
     padding:12px;
     padding-bottom:20px;
@@ -4904,9 +5047,15 @@ body[data-theme="light"] input[type="number"]{
   .dashboardStreakCard,
   .dashboardStatCard,
   .dashboardMainGraphCard,
+  .dashboardAvgSessionCard,
   .dashboardDonutCard,
   .dashboardTimelineCard,
   .dashboardHeatCard{
+    grid-column: auto;
+  }
+  .dashboardCard[data-dashboard-size="full"],
+  .dashboardCard[data-dashboard-size="half"],
+  .dashboardCard[data-dashboard-size="quarter"]{
     grid-column: auto;
   }
   .taskMenuList{

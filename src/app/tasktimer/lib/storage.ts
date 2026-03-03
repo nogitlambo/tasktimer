@@ -34,7 +34,7 @@ function currentUid(): string {
   return String(auth?.currentUser?.uid || "").trim();
 }
 
-export async function hydrateStorageFromCloud(): Promise<void> {
+export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promise<void> {
   const uid = currentUid();
   if (!uid) {
     cachedTasks = [];
@@ -46,7 +46,7 @@ export async function hydrateStorageFromCloud(): Promise<void> {
     hydratedUid = "";
     return;
   }
-  if (hydratedUid === uid) return;
+  if (!opts?.force && hydratedUid === uid) return;
   await ensureUserProfileIndex(uid);
   const snapshot = await loadUserWorkspace(uid);
   cachedTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
@@ -56,6 +56,11 @@ export async function hydrateStorageFromCloud(): Promise<void> {
   cachedDashboard = snapshot.dashboard || null;
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
+}
+
+export async function refreshHistoryFromCloud(): Promise<HistoryByTaskId> {
+  await hydrateStorageFromCloud({ force: true });
+  return loadHistory();
 }
 
 export function loadCachedPreferences() {
@@ -122,6 +127,14 @@ export function saveHistory(historyByTaskId: HistoryByTaskId): void {
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
   void Promise.all(entries.map(([taskId, rows]) => replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])));
+}
+
+export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Promise<void> {
+  cachedHistory = historyByTaskId || {};
+  const uid = currentUid();
+  if (!uid) return;
+  const entries = Object.entries(cachedHistory || {});
+  await Promise.all(entries.map(([taskId, rows]) => replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])));
 }
 
 export function loadDeletedMeta(): DeletedTaskMeta {

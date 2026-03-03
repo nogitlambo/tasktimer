@@ -350,14 +350,54 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   });
 }
 
+function historyEntryFingerprint(entry: HistoryEntry): string {
+  const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
+  const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
+  const name = String(entry?.name || "");
+  return `${ts}|${ms}|${name}`;
+}
+
+function fnv1a32(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+function stableHistoryEntryDocId(entry: HistoryEntry): string {
+  const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
+  const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
+  return `${ts}-${ms}-${fnv1a32(historyEntryFingerprint(entry))}`;
+}
+
 export async function replaceTaskHistory(uid: string, taskId: string, entries: HistoryEntry[]): Promise<void> {
   const col = taskHistoryCollection(uid, taskId);
   if (!col) return;
+  const deduped: HistoryEntry[] = [];
+  const seen = new Set<string>();
+  (entries || []).forEach((entry) => {
+    const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
+    const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : -1;
+    if (ts <= 0 || ms < 0) return;
+    const normalized: HistoryEntry = {
+      ...entry,
+      ts,
+      ms,
+      name: String(entry?.name || ""),
+      ...(entry?.color != null ? { color: String(entry.color) } : {}),
+    };
+    const key = historyEntryFingerprint(normalized);
+    if (seen.has(key)) return;
+    seen.add(key);
+    deduped.push(normalized);
+  });
   const current = await getDocs(col);
   await Promise.all(current.docs.map((d) => deleteDoc(d.ref)));
   await Promise.all(
-    (entries || []).map((entry, idx) =>
-      setDoc(doc(col, `${Number(entry.ts || Date.now())}-${idx}`), {
+    deduped.map((entry) =>
+      setDoc(doc(col, stableHistoryEntryDocId(entry)), {
         ...entry,
         createdAt: serverTimestamp(),
       })
