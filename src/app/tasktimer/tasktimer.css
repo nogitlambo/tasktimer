@@ -6728,6 +6728,26 @@ body.light #editOverlay .editPresetIntervalsInfoDialog{
   min-width: 92px;
   justify-content: center;
 }
+
+/* Final mobile width override for main app pages (Dashboard/Tasks/Friends). */
+@media (max-width: 640px){
+  #app[aria-label="TaskTimer App"] .appPages{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #app[aria-label="TaskTimer App"] .appPageTasks .list{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #app[aria-label="TaskTimer App"] #appPageDashboard .dashboardShell,
+  #app[aria-label="TaskTimer App"] #appPageDashboard .dashboardShowcase,
+  #app[aria-label="TaskTimer App"] #appPageDashboard .appPagePlaceholder,
+  #app[aria-label="TaskTimer App"] #appPageTasks .modePanel,
+  #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardShell{
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
 body.light #addTaskOverlay .addTaskDurationReadout{
   color: rgba(23,52,60,.82);
 }
