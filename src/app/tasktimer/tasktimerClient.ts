@@ -136,7 +136,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
-  let themeMode: "light" | "dark" = "dark";
+  let themeMode: "light" | "dark" | "command" = "dark";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let dynamicColorsEnabled = true;
@@ -437,7 +437,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     categorySaveBtn: document.getElementById("categorySaveBtn"),
     categoryResetBtn: document.getElementById("categoryResetBtn"),
     themeToggleRow: document.getElementById("themeToggleRow"),
-    themeToggle: document.getElementById("themeToggle"),
+    themeSelect: document.getElementById("themeSelect") as HTMLSelectElement | null,
     contactOverlay: document.getElementById("contactOverlay"),
 
     exportBtn: document.getElementById("exportBtn"),
@@ -1368,7 +1368,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       },
       updatedAtMs: Date.now(),
     };
-    saveCloudPreferences(cloudPreferencesCache);
+    if (cloudPreferencesCache) {
+      saveCloudPreferences(cloudPreferencesCache);
+    }
   }
 
   function persistTaskUiToCloud() {
@@ -2597,9 +2599,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ${
               t.running
                 ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                : '<button class="btn btn-accent small" data-action="start" title="Start">Start</button>'
+                : `<button class="btn btn-accent small" data-action="start" title="${
+                    themeMode === "command" ? "Deploy Session" : "Start"
+                  }">${themeMode === "command" ? "Deploy Session" : "Start"}</button>`
             }
-            <button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>
+            ${
+              themeMode === "command"
+                ? '<button class="btn btn-ghost small" data-action="reset" title="Secure Session">Secure Session</button>'
+                : '<button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>'
+            }
             <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
             <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
               isHistoryPinned ? "isPinned" : ""
@@ -3559,12 +3567,23 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const t = tasks[i];
     if (!t) return;
 
+    const applyResetTaskConfirmState = () => {
+      const shouldLog = !!els.confirmDeleteAll?.checked;
+      if (els.confirmOkBtn) els.confirmOkBtn.textContent = shouldLog ? "Log and Reset" : "Reset";
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
+    };
+    const clearResetTaskConfirmState = () => {
+      if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = null;
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetTaskConfirm");
+    };
+
     confirm("Reset Task", "Reset timer to zero?", {
       okLabel: "Reset",
       cancelLabel: "Cancel",
       checkboxLabel: "Log this entry",
       checkboxChecked: true,
       onOk: () => {
+        clearResetTaskConfirmState();
         const doLog = !!els.confirmDeleteAll?.checked;
 
         resetTaskStateImmediate(t, { logHistory: doLog });
@@ -3573,8 +3592,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         render();
         closeConfirm();
       },
-      onCancel: () => closeConfirm(),
+      onCancel: () => {
+        clearResetTaskConfirmState();
+        closeConfirm();
+      },
     });
+
+    applyResetTaskConfirmState();
+    if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = applyResetTaskConfirmState;
   }
 
   function resetAll() {
@@ -4618,17 +4643,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (map[which]) openOverlay(map[which]);
   }
 
-  function applyTheme(mode: "light" | "dark") {
+  function applyTheme(mode: "light" | "dark" | "command") {
     themeMode = mode;
     const body = document.body;
     body.setAttribute("data-theme", mode);
-    const isDark = mode === "dark";
-    els.themeToggle?.classList.toggle("on", isDark);
-    els.themeToggle?.setAttribute("aria-checked", String(isDark));
+    if (els.themeSelect && els.themeSelect.value !== mode) {
+      els.themeSelect.value = mode;
+    }
   }
 
   function loadThemePreference() {
-    const mode: "light" | "dark" = (cloudPreferencesCache || loadCachedPreferences())?.theme === "light" ? "light" : "dark";
+    const raw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
+    const mode: "light" | "dark" | "command" = raw === "light" ? "light" : raw === "command" ? "command" : "dark";
     applyTheme(mode);
   }
 
@@ -5236,8 +5262,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.addTaskNamePresetTitle) (els.addTaskNamePresetTitle as HTMLElement).style.display = presets.length ? "block" : "none";
   }
 
-  function toggleThemeMode() {
-    const next: "light" | "dark" = themeMode === "dark" ? "light" : "dark";
+  function setThemeMode(next: "light" | "dark" | "command") {
     applyTheme(next);
     persistPreferencesToCloud();
   }
@@ -6727,10 +6752,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
       else navigateToAppRoute("/tasktimer?page=dashboard");
     });
-    on(els.themeToggle, "click", toggleThemeMode);
-    on(els.themeToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#themeToggle")) return;
-      toggleThemeMode();
+    on(els.themeSelect, "change", () => {
+      const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
+      const next: "light" | "dark" | "command" = raw === "light" ? "light" : raw === "command" ? "command" : "dark";
+      setThemeMode(next);
     });
     on(els.taskDefaultFormatDay, "click", () => {
       defaultTaskTimerFormat = "day";

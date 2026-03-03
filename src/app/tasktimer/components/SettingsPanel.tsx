@@ -21,6 +21,7 @@ import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCat
 type SettingsPaneKey =
   | "general"
   | "preferences"
+  | "appearance"
   | "notifications"
   | "privacy"
   | "userGuide"
@@ -208,6 +209,7 @@ export default function SettingsPanel() {
     () => [
       { key: "general" as const, label: "Account" },
       { key: "preferences" as const, label: "Preferences" },
+      { key: "appearance" as const, label: "Appearance" },
       { key: "notifications" as const, label: "Notifications" },
       { key: "privacy" as const, label: "Privacy Policy" },
       { key: "userGuide" as const, label: "Support" },
@@ -704,53 +706,61 @@ export default function SettingsPanel() {
                         <div className="settingsAvatarPickerLabel">Tap avatar to change</div>
                       </div>
                       <div className="settingsAccountMeta">
-                        <div className="settingsAccountFieldRow">
-                          <div className="settingsAccountFieldLabel">Name/Alias</div>
-                          {isEditingAlias ? (
-                            <div className="settingsAccountAliasEditor">
-                              <input
-                                type="text"
-                                value={aliasDraft}
-                                maxLength={15}
-                                onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
-                                className="settingsAccountAliasInput"
-                                aria-label="Edit name alias"
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-ghost small"
-                                onClick={handleSaveAlias}
-                                disabled={authBusy}
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost small"
-                                onClick={() => {
-                                  setAliasDraft(authUserAlias);
-                                  setIsEditingAlias(false);
-                                }}
-                                disabled={authBusy}
-                              >
-                                Cancel
-                              </button>
+                        <div className="settingsAccountTopRow">
+                          <div className="settingsAccountFieldRow settingsAccountAliasCol">
+                            <div className="settingsAccountFieldLabel">Name/Alias</div>
+                            {isEditingAlias ? (
+                              <div className="settingsAccountAliasEditor">
+                                <input
+                                  type="text"
+                                  value={aliasDraft}
+                                  maxLength={15}
+                                  onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
+                                  className="settingsAccountAliasInput"
+                                  aria-label="Edit name alias"
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost small"
+                                  onClick={handleSaveAlias}
+                                  disabled={authBusy}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost small"
+                                  onClick={() => {
+                                    setAliasDraft(authUserAlias);
+                                    setIsEditingAlias(false);
+                                  }}
+                                  disabled={authBusy}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="settingsAccountFieldValueRow">
+                                <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
+                                <button
+                                  type="button"
+                                  className="iconBtn settingsAliasEditBtn"
+                                  aria-label="Edit alias"
+                                  onClick={() => setIsEditingAlias(true)}
+                                >
+                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="settingsAccountFieldRow settingsAccountRankCol">
+                            <div className="settingsAccountFieldLabel">Rank</div>
+                            <div className="settingsAccountRankPlaceholder" aria-hidden="true">
+                              <div className="settingsAccountRankPlaceholderInner" />
                             </div>
-                          ) : (
-                            <div className="settingsAccountFieldValueRow">
-                              <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
-                              <button
-                                type="button"
-                                className="iconBtn settingsAliasEditBtn"
-                                aria-label="Edit alias"
-                                onClick={() => setIsEditingAlias(true)}
-                              >
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                  <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
+                          </div>
                         </div>
                         <div className="settingsAccountFieldRow">
                           <div className="settingsAccountFieldLabel">Member since</div>
@@ -982,7 +992,7 @@ export default function SettingsPanel() {
           <SettingsDetailPane
             active={activePane === "preferences"}
             title="Preferences"
-            subtitle="Configure task behavior, modes, dashboard options, and appearance."
+            subtitle="Configure task behavior, modes, and dashboard options."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1058,21 +1068,6 @@ export default function SettingsPanel() {
 
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Appearance</div>
-                </div>
-                <div className="toggleRow" id="themeToggleRow">
-                  <span>Toggle between light and dark mode</span>
-                  <button className="switch on" id="themeToggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="toggleRow" id="taskDynamicColorsToggleRow">
-                  <span>Dynamic colors for progress and history</span>
-                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
-                </div>
-              </section>
-
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Dashboard Settings</div>
                 </div>
@@ -1094,6 +1089,33 @@ export default function SettingsPanel() {
               <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
                 Reset Defaults
               </button>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "appearance"}
+            title="Appearance"
+            subtitle="Choose your theme and visual display options."
+          >
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Appearance</div>
+                </div>
+                <div className="field" id="themeToggleRow">
+                  <label htmlFor="themeSelect">Theme</label>
+                  <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="command">Command Base Console</option>
+                  </select>
+                </div>
+                <div className="toggleRow" id="taskDynamicColorsToggleRow">
+                  <span>Dynamic colors for progress and history</span>
+                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
+                </div>
+              </section>
             </div>
           </SettingsDetailPane>
 

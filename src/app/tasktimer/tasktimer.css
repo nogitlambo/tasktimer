@@ -5981,6 +5981,18 @@ body[data-theme="light"] optgroup{
   z-index: 1;
 }
 
+/* Reset Task confirm: match standard slanted modal treatment */
+#confirmOverlay.isResetTaskConfirm .modal{
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+}
+body[data-theme="light"] #confirmOverlay.isResetTaskConfirm .modal{
+  background: #f7fbff;
+  border: 1px solid rgba(27,138,160,.22);
+}
+
 /* Friend Request modal: match Edit Task modal style */
 #friendRequestModal .modal{
   background: #0d0f13;
@@ -6183,6 +6195,20 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   gap:10px;
   padding-top:2px;
 }
+.settingsMenu .settingsAccountTopRow{
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.settingsMenu .settingsAccountAliasCol{
+  flex:1 1 220px;
+  min-width:180px;
+}
+.settingsMenu .settingsAccountRankCol{
+  flex:0 0 auto;
+  min-width:60px;
+}
 .settingsMenu .settingsAccountFieldRow{
   display:flex;
   flex-direction:column;
@@ -6207,6 +6233,20 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   font-size:14px;
   color:#eefcff;
   word-break:break-word;
+}
+.settingsMenu .settingsAccountRankPlaceholder{
+  width:44px;
+  height:44px;
+  border:1px solid rgba(53,232,255,.28);
+  background:rgba(255,255,255,.02);
+  display:grid;
+  place-items:center;
+}
+.settingsMenu .settingsAccountRankPlaceholderInner{
+  width:24px;
+  height:24px;
+  border:1px dashed rgba(53,232,255,.3);
+  opacity:.8;
 }
 .settingsMenu .settingsAliasEditBtn{
   width:26px;
@@ -6414,6 +6454,13 @@ body.light .settingsMenu .settingsAccountFieldLabel{
 }
 body.light .settingsMenu .settingsAccountFieldValue{
   color:#17343c;
+}
+body.light .settingsMenu .settingsAccountRankPlaceholder{
+  border-color:rgba(0,133,160,.28);
+  background:rgba(0,0,0,.02);
+}
+body.light .settingsMenu .settingsAccountRankPlaceholderInner{
+  border-color:rgba(0,133,160,.35);
 }
 body.light .settingsMenu .settingsAccountAliasInput{
   border-color:rgba(0,0,0,.14);
@@ -6748,11 +6795,137 @@ body.light #editOverlay .editPresetIntervalsInfoDialog{
     margin-right: 0 !important;
   }
 }
+
+/* Final Tasks-only Command Base Console theme experiment */
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .modePanel{
+  border-color: rgba(116,184,208,.28);
+  background:
+    linear-gradient(180deg, rgba(104,184,212,.06), rgba(255,255,255,0)),
+    #0a1117;
+  box-shadow: 0 12px 26px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .list{
+  gap: 10px;
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task{
+  border: 1px solid rgba(120,178,198,.3);
+  background:
+    linear-gradient(180deg, rgba(114,174,196,.08), rgba(255,255,255,0)),
+    #0b141b;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .name{
+  color: rgba(207,236,247,.95);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-family: var(--font-tight);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .time{
+  color: #9be2ff;
+  font-family: var(--font-tight);
+  letter-spacing: .05em;
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .timePanel{
+  border-color: rgba(109,181,208,.35);
+  background: rgba(8,20,30,.7);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .timeChunk{
+  background: rgba(9,23,34,.86);
+  border-color: rgba(109,181,208,.32);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn,
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn{
+  border-color: rgba(120,178,198,.35);
+  background: rgba(14,28,39,.9);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn.btn-accent{
+  border-color: rgba(116,198,226,.55);
+  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32));
+  color: #eaf7ff;
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn.btn-warn{
+  border-color: rgba(190,130,130,.5);
+  background: linear-gradient(180deg, rgba(138,86,86,.4), rgba(90,54,54,.28));
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .progressTrack{
+  background: rgba(20,42,56,.58);
+  border-color: rgba(110,173,197,.3);
+}
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .historyInline,
+body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .historyCanvasWrap{
+  border-color: rgba(120,178,198,.24);
+  background: rgba(8,18,26,.82);
+}
 body.light #addTaskOverlay .addTaskDurationReadout{
   color: rgba(23,52,60,.82);
 }
 body.light #addTaskOverlay .addTaskNoGoalRow{
   color: rgba(23,52,60,.82);
+}
+
+/* Final Settings Account-module override: footer-style border outline language on account controls. */
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  border-color: rgba(53,232,255,.42);
+  box-shadow: 0 0 0 1px rgba(53,232,255,.18) inset, 0 0 10px rgba(0,220,255,.14);
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+  border-color: rgba(53,232,255,.56);
+  box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 12px rgba(0,220,255,.2);
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:focus-visible .accountAvatarPlaceholder,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
+  border-color: rgba(53,232,255,.64);
+  box-shadow: 0 0 0 1px rgba(53,232,255,.25) inset, 0 0 14px rgba(0,220,255,.24);
+}
+
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+  border-color: rgba(0,133,160,.42);
+  box-shadow: 0 0 0 1px rgba(0,133,160,.16) inset, 0 0 8px rgba(0,133,160,.14);
+}
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+  border-color: rgba(0,133,160,.52);
+  box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset, 0 0 10px rgba(0,133,160,.16);
 }
 
 /* Final elapsed keypad overrides: match standard modal/button language */
@@ -6798,4 +6971,28 @@ body.light #elapsedPadOverlay .elapsedPadDisplay{
   border-color: rgba(0,133,160,.24);
   background: rgba(255,255,255,.9);
   color: #17343c;
+}
+
+/* Final Settings-nav override: footer menu geometry + border language for module buttons. */
+#app[aria-label="TaskTimer Settings"] .settingsNavTile{
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
+  border-color: rgba(53,232,255,.28) !important;
+  background: #0d0f13 !important;
+  box-shadow: inset 0 0 0 1px rgba(53,232,255,.1), 0 0 8px rgba(0,220,255,.1) !important;
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isActive{
+  border-color: rgba(53,232,255,.55) !important;
+  background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08)) !important;
+  box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 10px rgba(0,220,255,.22) !important;
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger{
+  border-color: rgba(255,77,77,.4) !important;
+  background: #0d0f13 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.14), 0 0 8px rgba(255,77,77,.08) !important;
+}
+#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger.isActive{
+  border-color: rgba(255,77,77,.58) !important;
+  background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,255,255,.03)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.18), 0 0 10px rgba(255,77,77,.14) !important;
 }

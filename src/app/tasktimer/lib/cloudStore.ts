@@ -16,7 +16,7 @@ import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./typ
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "command";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
@@ -314,7 +314,12 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const preferences: UserPreferencesV1 | null = prefSnap.exists()
     ? {
         schemaVersion: 1,
-        theme: prefSnap.get("theme") === "light" ? "light" : "dark",
+        theme:
+          prefSnap.get("theme") === "light"
+            ? "light"
+            : prefSnap.get("theme") === "command"
+              ? "command"
+              : "dark",
         defaultTaskTimerFormat:
           prefSnap.get("defaultTaskTimerFormat") === "day" || prefSnap.get("defaultTaskTimerFormat") === "minute"
             ? prefSnap.get("defaultTaskTimerFormat")
@@ -482,7 +487,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   const data = snap.data();
   return {
     schemaVersion: 1,
-    theme: data.theme === "light" ? "light" : "dark",
+    theme: data.theme === "light" ? "light" : data.theme === "command" ? "command" : "dark",
     defaultTaskTimerFormat:
       data.defaultTaskTimerFormat === "day" || data.defaultTaskTimerFormat === "minute"
         ? data.defaultTaskTimerFormat

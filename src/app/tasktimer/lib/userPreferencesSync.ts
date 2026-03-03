@@ -6,7 +6,7 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
 type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "command";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
@@ -58,8 +58,9 @@ function parseBooleanLike(raw: string | null | undefined, fallback: boolean) {
   return fallback;
 }
 
-function parseTheme(raw: string | null | undefined): "light" | "dark" {
-  return raw === "light" ? "light" : "dark";
+function parseTheme(raw: string | null | undefined): "light" | "dark" | "command" {
+  if (raw === "light" || raw === "command") return raw;
+  return "dark";
 }
 
 function parseTimerFormat(raw: string | null | undefined): "day" | "hour" | "minute" {

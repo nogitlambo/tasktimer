@@ -69,7 +69,7 @@ Doc ID:
 Allowed fields (`isPreferencesV1`):
 
 - `schemaVersion: int`
-- `theme: "light" | "dark"`
+- `theme: "light" | "dark" | "command"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
 - `dynamicColorsEnabled: bool`
 - `checkpointAlertSoundEnabled: bool`
