@@ -663,21 +663,63 @@ body[data-theme="light"] .dashboardSizeOption.isOn{
   font-size:13px;
   color: rgba(210,230,246,.82);
 }
-.dashboardHeatGrid{
+.dashboardHeatHeaderRow{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.dashboardHeatMonthLabel{
+  font-family:var(--font-tight);
+  font-size:12px;
+  letter-spacing:.06em;
+  color: rgba(210,230,246,.86);
+}
+.dashboardHeatWeekdays{
   margin-top:8px;
   display:grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns:repeat(7,minmax(0,1fr));
   gap:6px;
 }
-.dashboardHeatGrid > span{
+.dashboardHeatWeekdays > span{
+  text-align:center;
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: rgba(170,205,224,.8);
+}
+.dashboardHeatCalendarGrid{
+  margin-top:6px;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:6px;
+}
+.dashboardHeatDayCell{
   aspect-ratio:1/1;
   border:1px solid rgba(117,231,255,.18);
-  background: rgba(255,255,255,.06);
+  background: rgba(255,255,255,.05);
+  display:grid;
+  place-items:center;
+  min-width:0;
 }
-.dashboardHeatGrid > span.h1{ background: rgba(53,232,255,.22); }
-.dashboardHeatGrid > span.h2{ background: rgba(53,232,255,.36); }
-.dashboardHeatGrid > span.h3{ background: rgba(53,232,255,.52); }
-.dashboardHeatGrid > span.h4{ background: rgba(53,232,255,.7); }
+.dashboardHeatDayCell.isActive{
+  background: var(--heat-color, rgba(106,196,86,.58));
+  border-color: rgba(255,255,255,.25);
+}
+.dashboardHeatDayCell.isFiller{
+  background: rgba(255,255,255,.02);
+  border-color: rgba(255,255,255,.08);
+}
+.dashboardHeatDayNum{
+  font-size:11px;
+  line-height:1;
+  color: rgba(226,242,250,.92);
+  user-select:none;
+}
+.dashboardHeatDayCell.isFiller .dashboardHeatDayNum{
+  opacity:.35;
+}
 .appFooterNav{
   display:grid;
   grid-template-columns: 1fr;
@@ -4715,6 +4757,26 @@ body[data-theme="light"] input[type="number"]{
   background: rgba(255,255,255,.9);
   border-color: rgba(0,0,0,.2);
 }
+body[data-theme="light"] .dashboardHeatMonthLabel{
+  color: rgba(0,0,0,.8);
+}
+body[data-theme="light"] .dashboardHeatWeekdays > span{
+  color: rgba(0,0,0,.62);
+}
+body[data-theme="light"] .dashboardHeatDayCell{
+  background: rgba(0,0,0,.05);
+  border-color: rgba(0,0,0,.14);
+}
+body[data-theme="light"] .dashboardHeatDayCell.isActive{
+  border-color: rgba(0,0,0,.24);
+}
+body[data-theme="light"] .dashboardHeatDayCell.isFiller{
+  background: rgba(0,0,0,.02);
+  border-color: rgba(0,0,0,.08);
+}
+body[data-theme="light"] .dashboardHeatDayNum{
+  color:#111111;
+}
 
 @media (max-width: 980px){
   body{
@@ -6995,4 +7057,11 @@ body.light #elapsedPadOverlay .elapsedPadDisplay{
   border-color: rgba(255,77,77,.58) !important;
   background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,255,255,.03)) !important;
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.18), 0 0 10px rgba(255,77,77,.14) !important;
+}
+
+/* Final Tasks-page override: align task icon buttons + counter dial to the same square border style. */
+#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn,
+#app[aria-label="TaskTimer App"] #appPageTasks .task .timePanel{
+  border-radius: 0 !important;
+  clip-path: none !important;
 }

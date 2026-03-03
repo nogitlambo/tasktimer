@@ -235,13 +235,19 @@ export default function TaskTimerPage() {
                 <section className="dashboardCard dashboardDonutCard" data-dashboard-id="mode-distribution" aria-label="Category distribution">
                   <div className="dashboardCardTitle">Mode Distribution</div>
                   <div className="dashboardDonutWrap">
-                    <div className="dashboardDonut" />
-                    <div className="dashboardDonutCenter">68%</div>
+                    <div className="dashboardDonut" id="dashboardModeDonut" />
+                    <div className="dashboardDonutCenter" id="dashboardModeDonutCenter">0%</div>
                   </div>
                   <div className="dashboardLegend">
-                    <span><i className="dot mode1" /> Mode 1</span>
-                    <span><i className="dot mode2" /> Mode 2</span>
-                    <span><i className="dot mode3" /> Mode 3</span>
+                    <span>
+                      <i className="dot mode1" /> <span id="dashboardMode1Label">Mode 1</span> <strong id="dashboardMode1Value">0%</strong>
+                    </span>
+                    <span>
+                      <i className="dot mode2" /> <span id="dashboardMode2Label">Mode 2</span> <strong id="dashboardMode2Value">0%</strong>
+                    </span>
+                    <span>
+                      <i className="dot mode3" /> <span id="dashboardMode3Label">Mode 3</span> <strong id="dashboardMode3Value">0%</strong>
+                    </span>
                   </div>
                 </section>
 
@@ -257,9 +263,23 @@ export default function TaskTimerPage() {
 
                 <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" aria-label="Activity heatmap">
                   <div className="dashboardCardTitle">Focus Heatmap</div>
-                  <div className="dashboardHeatGrid">
-                    {Array.from({ length: 35 }).map((_, idx) => (
-                      <span key={`hm-${idx}`} className={`h${(idx * 7) % 5}`} />
+                  <div className="dashboardHeatHeaderRow">
+                    <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite">
+                      -
+                    </div>
+                  </div>
+                  <div className="dashboardHeatWeekdays" id="dashboardHeatWeekdays" aria-hidden="true">
+                    <span>Sun</span>
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                  </div>
+                  <div className="dashboardHeatCalendarGrid" id="dashboardHeatCalendarGrid" role="grid" aria-label="Monthly focus heatmap calendar">
+                    {Array.from({ length: 42 }).map((_, idx) => (
+                      <span key={`hm-cal-${idx}`} className="dashboardHeatDayCell isFiller" aria-hidden="true" />
                     ))}
                   </div>
                 </section>

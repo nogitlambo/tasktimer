@@ -1014,6 +1014,10 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
+                <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
+                  <span>Auto switch to Focus Mode on launch</span>
+                  <button className="switch on" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="true" />
+                </div>
               </section>
 
               <section className="settingsInlineSection">

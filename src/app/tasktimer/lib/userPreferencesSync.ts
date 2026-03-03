@@ -9,6 +9,7 @@ type UserPreferencesV1 = {
   theme: "light" | "dark" | "command";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
+  autoFocusOnTaskLaunchEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   modeSettings: Record<string, unknown> | null;
@@ -22,6 +23,7 @@ type StartSyncOptions = {
     theme: string;
     defaultTaskTimerFormat: string;
     dynamicColorsEnabled: string;
+    autoFocusOnTaskLaunchEnabled: string;
     checkpointAlertSoundEnabled: string;
     checkpointAlertToastEnabled: string;
     modeSettings: string;
@@ -83,6 +85,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
   const theme = parseTheme(localStorage.getItem(storageKeys.theme));
   const defaultTaskTimerFormat = parseTimerFormat(localStorage.getItem(storageKeys.defaultTaskTimerFormat));
   const dynamicColorsEnabled = parseBooleanLike(localStorage.getItem(storageKeys.dynamicColorsEnabled), true);
+  const autoFocusOnTaskLaunchEnabled = parseBooleanLike(localStorage.getItem(storageKeys.autoFocusOnTaskLaunchEnabled), true);
   const checkpointAlertSoundEnabled = parseBooleanLike(localStorage.getItem(storageKeys.checkpointAlertSoundEnabled), true);
   const checkpointAlertToastEnabled = parseBooleanLike(localStorage.getItem(storageKeys.checkpointAlertToastEnabled), true);
   const modeSettings = parseModeSettings(localStorage.getItem(storageKeys.modeSettings));
@@ -92,6 +95,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
     theme,
     defaultTaskTimerFormat,
     dynamicColorsEnabled,
+    autoFocusOnTaskLaunchEnabled,
     checkpointAlertSoundEnabled,
     checkpointAlertToastEnabled,
     modeSettings,
@@ -104,6 +108,7 @@ function applyCloudPreferencesToLocal(uid: string, prefs: UserPreferencesV1, opt
   localStorage.setItem(storageKeys.theme, prefs.theme);
   localStorage.setItem(storageKeys.defaultTaskTimerFormat, prefs.defaultTaskTimerFormat);
   localStorage.setItem(storageKeys.dynamicColorsEnabled, prefs.dynamicColorsEnabled ? "true" : "false");
+  localStorage.setItem(storageKeys.autoFocusOnTaskLaunchEnabled, prefs.autoFocusOnTaskLaunchEnabled ? "true" : "false");
   localStorage.setItem(storageKeys.checkpointAlertSoundEnabled, prefs.checkpointAlertSoundEnabled ? "true" : "false");
   localStorage.setItem(storageKeys.checkpointAlertToastEnabled, prefs.checkpointAlertToastEnabled ? "true" : "false");
   if (prefs.modeSettings && typeof prefs.modeSettings === "object") {
@@ -120,6 +125,7 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
     theme: parseTheme(String(data.theme || "")),
     defaultTaskTimerFormat: parseTimerFormat(String(data.defaultTaskTimerFormat || "")),
     dynamicColorsEnabled: parseBooleanLike(String(data.dynamicColorsEnabled || ""), true),
+    autoFocusOnTaskLaunchEnabled: parseBooleanLike(String(data.autoFocusOnTaskLaunchEnabled || ""), true),
     checkpointAlertSoundEnabled: parseBooleanLike(String(data.checkpointAlertSoundEnabled || ""), true),
     checkpointAlertToastEnabled: parseBooleanLike(String(data.checkpointAlertToastEnabled || ""), true),
     modeSettings: maybeModeSettings,
@@ -132,6 +138,7 @@ function hashPreferences(prefs: UserPreferencesV1) {
     theme: prefs.theme,
     defaultTaskTimerFormat: prefs.defaultTaskTimerFormat,
     dynamicColorsEnabled: prefs.dynamicColorsEnabled,
+    autoFocusOnTaskLaunchEnabled: prefs.autoFocusOnTaskLaunchEnabled,
     checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled,
     checkpointAlertToastEnabled: prefs.checkpointAlertToastEnabled,
     modeSettings: prefs.modeSettings,

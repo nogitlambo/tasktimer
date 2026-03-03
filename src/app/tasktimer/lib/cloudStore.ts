@@ -19,6 +19,7 @@ export type UserPreferencesV1 = {
   theme: "light" | "dark" | "command";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
+  autoFocusOnTaskLaunchEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   modeSettings: Record<string, unknown> | null;
@@ -325,6 +326,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             ? prefSnap.get("defaultTaskTimerFormat")
             : "hour",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
+        autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
         modeSettings:
@@ -493,6 +495,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         ? data.defaultTaskTimerFormat
         : "hour",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
+    autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
     modeSettings: data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null,

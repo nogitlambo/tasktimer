@@ -31,6 +31,7 @@ service cloud.firestore {
         "schemaVersion",
         "theme",
         "defaultTaskTimerFormat",
+        "autoFocusOnTaskLaunchEnabled",
         "dynamicColorsEnabled",
         "checkpointAlertSoundEnabled",
         "checkpointAlertToastEnabled",
@@ -41,6 +42,7 @@ service cloud.firestore {
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
       && (!("theme" in request.resource.data) || request.resource.data.theme in ["light", "dark", "command"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
+      && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)

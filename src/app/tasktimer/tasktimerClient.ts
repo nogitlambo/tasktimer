@@ -26,6 +26,7 @@ import {
   type Friendship,
 } from "./lib/friendsStore";
 import {
+  STORAGE_KEY,
   hydrateStorageFromCloud,
   refreshHistoryFromCloud,
   loadTasks,
@@ -52,6 +53,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
   }
+  const AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled`;
 
   const listeners: Array<{
     el: EventTarget;
@@ -140,6 +142,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let dynamicColorsEnabled = true;
+  let autoFocusOnTaskLaunchEnabled = true;
   let checkpointAlertSoundEnabled = true;
   let checkpointAlertToastEnabled = true;
 
@@ -369,6 +372,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     dashboardAvgSessionChart: document.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
     dashboardAvgSessionEmpty: document.getElementById("dashboardAvgSessionEmpty"),
     dashboardAvgSessionTitle: document.getElementById("dashboardAvgSessionTitle"),
+    dashboardModeDonut: document.getElementById("dashboardModeDonut"),
+    dashboardModeDonutCenter: document.getElementById("dashboardModeDonutCenter"),
+    dashboardMode1Label: document.getElementById("dashboardMode1Label"),
+    dashboardMode2Label: document.getElementById("dashboardMode2Label"),
+    dashboardMode3Label: document.getElementById("dashboardMode3Label"),
+    dashboardMode1Value: document.getElementById("dashboardMode1Value"),
+    dashboardMode2Value: document.getElementById("dashboardMode2Value"),
+    dashboardMode3Value: document.getElementById("dashboardMode3Value"),
+    dashboardHeatMonthLabel: document.getElementById("dashboardHeatMonthLabel"),
+    dashboardHeatCalendarGrid: document.getElementById("dashboardHeatCalendarGrid"),
 
     menuIcon: document.getElementById("menuIcon"),
     menuOverlay: document.getElementById("menuOverlay"),
@@ -409,6 +422,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     taskDefaultFormatDay: document.getElementById("taskDefaultFormatDay"),
     taskDefaultFormatHour: document.getElementById("taskDefaultFormatHour"),
     taskDefaultFormatMinute: document.getElementById("taskDefaultFormatMinute"),
+    taskAutoFocusOnLaunchToggleRow: document.getElementById("taskAutoFocusOnLaunchToggleRow"),
+    taskAutoFocusOnLaunchToggle: document.getElementById("taskAutoFocusOnLaunchToggle"),
     taskDynamicColorsToggleRow: document.getElementById("taskDynamicColorsToggleRow"),
     taskDynamicColorsToggle: document.getElementById("taskDynamicColorsToggle"),
     taskCheckpointSoundToggleRow: document.getElementById("taskCheckpointSoundToggleRow"),
@@ -640,9 +655,24 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     window.location.href = appRoute(path);
   }
 
+  function getCapAppPlugin() {
+    const cap = (window as any)?.Capacitor;
+    if (!cap) return null;
+    const direct = cap?.Plugins?.App || cap?.App;
+    if (direct) return direct;
+    if (typeof cap?.registerPlugin === "function") {
+      try {
+        return cap.registerPlugin("App");
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
   function exitAppNow() {
     try {
-      const capApp = (window as any)?.Capacitor?.Plugins?.App;
+      const capApp = getCapAppPlugin();
       if (capApp?.exitApp) {
         capApp.exitApp();
         return;
@@ -767,7 +797,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
 
     try {
-      const capApp = (window as any)?.Capacitor?.Plugins?.App;
+      const capApp = getCapAppPlugin();
       if (capApp?.addListener) {
         const maybePromise = capApp.addListener("backButton", (ev: any) => {
           try {
@@ -1280,6 +1310,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
       renderDashboardAvgSessionChart();
+      renderDashboardHeatCalendar();
     }
   }
 
@@ -1352,12 +1383,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function persistPreferencesToCloud() {
-    const uid = currentUid();
-    if (!uid) return;
     cloudPreferencesCache = {
       schemaVersion: 1,
       theme: themeMode,
       defaultTaskTimerFormat,
+      autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled,
       checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled,
@@ -1368,6 +1398,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       },
       updatedAtMs: Date.now(),
     };
+    const uid = currentUid();
+    if (!uid) return;
     if (cloudPreferencesCache) {
       saveCloudPreferences(cloudPreferencesCache);
     }
@@ -2599,13 +2631,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ${
               t.running
                 ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                : `<button class="btn btn-accent small" data-action="start" title="${
-                    themeMode === "command" ? "Deploy Session" : "Start"
-                  }">${themeMode === "command" ? "Deploy Session" : "Start"}</button>`
+                : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
             }
             ${
               themeMode === "command"
-                ? '<button class="btn btn-ghost small" data-action="reset" title="Secure Session">Secure Session</button>'
+                ? '<button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>'
                 : '<button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>'
             }
             <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
@@ -2639,7 +2669,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       renderHistory(taskId);
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
+      renderDashboardHeatCalendar();
     }
   }
 
@@ -2652,6 +2684,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     clearCheckpointBaseline(t.id);
     save();
     render();
+    if (autoFocusOnTaskLaunchEnabled && String(focusModeTaskId || "") !== String(t.id || "")) {
+      openFocusMode(i);
+    }
   }
 
   function stopTask(i: number) {
@@ -3217,6 +3252,96 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return `${minutes}m`;
   }
 
+  function localDayKey(ts: number) {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
+  }
+
+  function formatDashboardHeatMonthLabel(year: number, monthIndex: number) {
+    const d = new Date(year, monthIndex, 1);
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+
+  function renderDashboardHeatCalendar() {
+    const monthLabelEl = els.dashboardHeatMonthLabel as HTMLElement | null;
+    const gridEl = els.dashboardHeatCalendarGrid as HTMLElement | null;
+    if (!gridEl) return;
+
+    const nowValue = nowMs();
+    const nowDate = new Date(nowValue);
+    const year = nowDate.getFullYear();
+    const monthIndex = nowDate.getMonth();
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex + 1, 1);
+    const firstDow = monthStart.getDay();
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+    if (monthLabelEl) {
+      monthLabelEl.textContent = formatDashboardHeatMonthLabel(year, monthIndex);
+    }
+
+    const byDayMs = new Map<string, number>();
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = Number(entry?.ts);
+        const ms = Number(entry?.ms);
+        if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
+        if (ts < monthStart.getTime() || ts >= monthEnd.getTime()) return;
+        const key = localDayKey(ts);
+        byDayMs.set(key, (byDayMs.get(key) || 0) + ms);
+      });
+    });
+
+    let maxDayMs = 0;
+    byDayMs.forEach((v) => {
+      if (v > maxDayMs) maxDayMs = v;
+    });
+
+    const totalSlots = 42;
+    const trailingFillers = Math.max(0, totalSlots - firstDow - daysInMonth);
+    const html: string[] = [];
+
+    for (let i = 0; i < firstDow; i += 1) {
+      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
+    }
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dayDate = new Date(year, monthIndex, day);
+      const key = localDayKey(dayDate.getTime());
+      const dayMs = Math.max(0, byDayMs.get(key) || 0);
+      const ratio = maxDayMs > 0 ? Math.max(0, Math.min(1, dayMs / maxDayMs)) : 0;
+      const hue = Math.round(120 - ratio * 120);
+      const sat = 76;
+      const light = 42;
+      const colorCss = dayMs > 0 ? `hsl(${hue} ${sat}% ${light}%)` : "";
+      const activityLevel = dayMs <= 0 ? "none" : ratio < 0.34 ? "low" : ratio < 0.67 ? "medium" : "high";
+      const dateText = dayDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      const durationText = formatDashboardDurationShort(dayMs);
+      const aria = `${dateText}: ${durationText} of focused time`;
+      const styleAttr = colorCss ? ` style="--heat-color:${colorCss}"` : "";
+      html.push(
+        `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></span>`
+      );
+    }
+
+    for (let i = 0; i < trailingFillers; i += 1) {
+      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
+    }
+
+    // Guarantee a fixed 6-row calendar footprint for stable card layout.
+    while (html.length < totalSlots) {
+      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
+    }
+
+    gridEl.innerHTML = html.join("");
+  }
+
   function getDashboardAvgSessionRows(range: DashboardAvgRange, nowValue: number) {
     const { startMs, endMs } = getDashboardAvgRangeWindow(range, nowValue);
     const taskNameById = new Map<string, string>();
@@ -3266,6 +3391,56 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const clean = String(label || "").trim();
     if (clean.length <= maxChars) return clean;
     return `${clean.slice(0, Math.max(1, maxChars - 1))}...`;
+  }
+
+  function renderDashboardModeDistribution() {
+    const donutEl = els.dashboardModeDonut as HTMLElement | null;
+    const centerEl = els.dashboardModeDonutCenter as HTMLElement | null;
+    const mode1LabelEl = els.dashboardMode1Label as HTMLElement | null;
+    const mode2LabelEl = els.dashboardMode2Label as HTMLElement | null;
+    const mode3LabelEl = els.dashboardMode3Label as HTMLElement | null;
+    const mode1ValueEl = els.dashboardMode1Value as HTMLElement | null;
+    const mode2ValueEl = els.dashboardMode2Value as HTMLElement | null;
+    const mode3ValueEl = els.dashboardMode3Value as HTMLElement | null;
+
+    if (mode1LabelEl) mode1LabelEl.textContent = getModeLabel("mode1");
+    if (mode2LabelEl) mode2LabelEl.textContent = getModeLabel("mode2");
+    if (mode3LabelEl) mode3LabelEl.textContent = getModeLabel("mode3");
+
+    const totalsMs: Record<MainMode, number> = { mode1: 0, mode2: 0, mode3: 0 };
+    tasks.forEach((task) => {
+      const mode = taskModeOf(task);
+      totalsMs[mode] += Math.max(0, getElapsedMs(task));
+    });
+    const totalMs = totalsMs.mode1 + totalsMs.mode2 + totalsMs.mode3;
+
+    const percentages: Record<MainMode, number> =
+      totalMs > 0
+        ? {
+            mode1: (totalsMs.mode1 / totalMs) * 100,
+            mode2: (totalsMs.mode2 / totalMs) * 100,
+            mode3: (totalsMs.mode3 / totalMs) * 100,
+          }
+        : { mode1: 0, mode2: 0, mode3: 0 };
+
+    if (mode1ValueEl) mode1ValueEl.textContent = `${Math.round(percentages.mode1)}%`;
+    if (mode2ValueEl) mode2ValueEl.textContent = `${Math.round(percentages.mode2)}%`;
+    if (mode3ValueEl) mode3ValueEl.textContent = `${Math.round(percentages.mode3)}%`;
+
+    if (centerEl) {
+      const dominantPct = Math.round(Math.max(percentages.mode1, percentages.mode2, percentages.mode3));
+      centerEl.textContent = `${dominantPct}%`;
+    }
+
+    if (!donutEl) return;
+    if (totalMs <= 0) {
+      donutEl.style.background =
+        "conic-gradient(var(--mode1-accent) 0 33.333%, var(--mode2-accent) 33.333% 66.666%, var(--mode3-accent) 66.666% 100%)";
+      return;
+    }
+    const mode1End = percentages.mode1;
+    const mode2End = percentages.mode1 + percentages.mode2;
+    donutEl.style.background = `conic-gradient(var(--mode1-accent) 0 ${mode1End}%, var(--mode2-accent) ${mode1End}% ${mode2End}%, var(--mode3-accent) ${mode2End}% 100%)`;
   }
 
   function renderDashboardAvgSessionChart() {
@@ -4674,6 +4849,37 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     persistPreferencesToCloud();
   }
 
+  function loadAutoFocusOnTaskLaunchSetting() {
+    const cloudValue = (cloudPreferencesCache || loadCachedPreferences())?.autoFocusOnTaskLaunchEnabled;
+    if (typeof cloudValue === "boolean") {
+      autoFocusOnTaskLaunchEnabled = cloudValue;
+      return;
+    }
+    try {
+      const raw = String(localStorage.getItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY) || "").trim().toLowerCase();
+      if (raw === "false" || raw === "0" || raw === "off") {
+        autoFocusOnTaskLaunchEnabled = false;
+        return;
+      }
+      if (raw === "true" || raw === "1" || raw === "on") {
+        autoFocusOnTaskLaunchEnabled = true;
+        return;
+      }
+    } catch {
+      // ignore localStorage read failures
+    }
+    autoFocusOnTaskLaunchEnabled = true;
+  }
+
+  function saveAutoFocusOnTaskLaunchSetting() {
+    try {
+      localStorage.setItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY, autoFocusOnTaskLaunchEnabled ? "true" : "false");
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function toggleSwitchElement(el: HTMLElement | null | undefined, enabled: boolean) {
     el?.classList.toggle("on", enabled);
     el?.setAttribute("aria-checked", String(enabled));
@@ -4687,6 +4893,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
     els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
+    toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, autoFocusOnTaskLaunchEnabled);
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, dynamicColorsEnabled);
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, checkpointAlertSoundEnabled);
     toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, checkpointAlertToastEnabled);
@@ -5582,7 +5789,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       return;
     }
     if (page === "dashboard") {
+      renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
+      renderDashboardHeatCalendar();
     }
   }
 
@@ -5632,6 +5841,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     };
     const persistInlineTaskSettingsImmediate = () => {
       saveDefaultTaskTimerFormat();
+      saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveCheckpointAlertSettings();
       render();
@@ -6617,7 +6827,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         renderHistory(taskId);
       }
       if (currentAppPage === "dashboard") {
+        renderDashboardModeDistribution();
         renderDashboardAvgSessionChart();
+        renderDashboardHeatCalendar();
       }
     });
 
@@ -6652,6 +6864,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         closeDashboardCardSizeMenus();
         if (currentAppPage === "dashboard") {
           renderDashboardAvgSessionChart();
+          renderDashboardHeatCalendar();
         }
         e.preventDefault();
         return;
@@ -6661,10 +6874,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const nextRange = sanitizeDashboardAvgRange(btn.getAttribute("data-dashboard-avg-range"));
       if (nextRange === dashboardAvgRange) {
         renderDashboardAvgSessionChart();
+        renderDashboardHeatCalendar();
         return;
       }
       saveDashboardAvgRange(nextRange);
       renderDashboardAvgSessionChart();
+      renderDashboardHeatCalendar();
     });
     on(document as any, "click", (e: any) => {
       if (!dashboardEditMode) return;
@@ -6772,6 +6987,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
+    on(els.taskAutoFocusOnLaunchToggle, "click", () => {
+      autoFocusOnTaskLaunchEnabled = !autoFocusOnTaskLaunchEnabled;
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+    on(els.taskAutoFocusOnLaunchToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#taskAutoFocusOnLaunchToggle")) return;
+      autoFocusOnTaskLaunchEnabled = !autoFocusOnTaskLaunchEnabled;
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
     on(els.taskDynamicColorsToggle, "click", () => {
       dynamicColorsEnabled = !dynamicColorsEnabled;
       syncTaskSettingsUi();
@@ -6809,6 +7035,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.taskSettingsSaveBtn, "click", () => {
       saveDefaultTaskTimerFormat();
+      saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveCheckpointAlertSettings();
       render();
@@ -7452,6 +7679,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (activeCheckpointToast) {
       renderCheckpointToast();
     }
+    if (currentAppPage === "dashboard") {
+      renderDashboardModeDistribution();
+      renderDashboardHeatCalendar();
+    }
 
     tickRaf = window.requestAnimationFrame(() => {
       tickTimeout = window.setTimeout(tick, 200);
@@ -7465,6 +7696,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     load();
     loadAddTaskCustomNames();
     loadDefaultTaskTimerFormat();
+    loadAutoFocusOnTaskLaunchSetting();
     loadDynamicColorsSetting();
     loadCheckpointAlertSettings();
     loadDashboardWidgetState();
@@ -7482,7 +7714,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     applyDashboardCardSizes();
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
+      renderDashboardHeatCalendar();
     }
   }
 

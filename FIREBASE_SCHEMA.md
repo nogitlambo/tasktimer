@@ -71,6 +71,7 @@ Allowed fields (`isPreferencesV1`):
 - `schemaVersion: int`
 - `theme: "light" | "dark" | "command"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
+- `autoFocusOnTaskLaunchEnabled: bool`
 - `dynamicColorsEnabled: bool`
 - `checkpointAlertSoundEnabled: bool`
 - `checkpointAlertToastEnabled: bool`
@@ -81,6 +82,7 @@ Allowed fields (`isPreferencesV1`):
 Notes:
 
 - `userPreferencesSync.ts` also reads/writes `avatarId` in this doc, but `firestore.rules` currently do not allow `avatarId` in `preferences/v1`.
+- Client runtime also keeps a local fallback key for this setting: ``${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled``.
 
 ---
 
