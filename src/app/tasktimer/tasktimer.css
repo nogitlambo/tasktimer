@@ -6373,6 +6373,8 @@ body[data-theme="light"] #exportTaskOverlay .modal{
 .settingsMenu .settingsAccountRankCol{
   flex:0 0 auto;
   min-width:60px;
+  display:flex;
+  justify-content:center;
 }
 .settingsMenu .settingsAccountFieldRow{
   display:flex;
@@ -7554,8 +7556,104 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   z-index: 1200;
 }
 
+/* Final Settings Account override: center Rank placeholder reliably. */
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+  display: flex !important;
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: flex-start;
+  text-align: center;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankPlaceholder{
+  margin-left: auto;
+  margin-right: auto;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountTopRow{
+  display: block;
+  align-items: start;
+  justify-content: flex-start;
+  gap: 16px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasCol{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow > .settingsAccountFieldLabel{
+  margin: 0;
+  white-space: nowrap;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRankRow{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasValueWrap{
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankUnderAlias{
+  align-items: flex-start !important;
+  margin-top: 0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankUnderAlias .settingsAccountRankPlaceholder{
+  margin-left: 0;
+  margin-right: 0;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountMemberSinceInline{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #c8ecf2;
+  white-space: nowrap;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountFieldRow > .settingsAccountMemberSinceInline{
+  min-height: 20px;
+}
+#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+  margin-left: 0;
+  margin-right: 0;
+}
+
 /* Final mobile Settings full-width override: use full available panel width on narrow screens. */
 @media (max-width: 640px){
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountTopRow{
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 12px;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasCol{
+    width: 100%;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow{
+    align-items: flex-start;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRankRow{
+    flex-wrap: nowrap;
+    row-gap: 0;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasValueWrap{
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountMemberSinceInline{
+    white-space: normal;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+    justify-self: center;
+    margin-left: 0;
+  }
   #app[aria-label="TaskTimer Settings"] .list{
     padding-left: 0 !important;
     padding-right: 0 !important;
@@ -7576,5 +7674,171 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
     width: 100% !important;
     max-width: none !important;
+  }
+}
+
+/* Final Dashboard Panels dropdown override:
+   - Mobile: use full available width.
+   - Web: 50% wider and show full list without internal clipping. */
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] .appPages{
+    overflow-x: visible;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardEditActions{
+    position: relative;
+    width: 100%;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenu{
+    position: relative;
+    width: auto;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuBtn{
+    width: auto;
+    justify-content: flex-start;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuList{
+    position: absolute;
+    top: calc(100% + 6px);
+    left: auto;
+    right: 0;
+    width: calc(100vw - 24px);
+    min-width: 220px;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+}
+@media (min-width: 641px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenu{
+    position: relative;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuList{
+    min-width: 330px;
+    max-height: none;
+    overflow: visible;
+    right: 0;
+    left: auto;
+  }
+}
+
+/* Final Dashboard Avg Session range control override:
+   replace inline pills with a dropdown menu while preserving existing dashboard styling language. */
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgSessionRangeRow{
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu{
+  position: relative;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu > summary{
+  list-style: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu > summary::-webkit-details-marker{
+  display: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuBtn{
+  min-height: 36px;
+  min-width: 168px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuLabelPrefix{
+  opacity: .82;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuBtn::after{
+  content: "▾";
+  font-size: 11px;
+  line-height: 1;
+  opacity: .9;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu[open] .dashboardAvgRangeMenuBtn::after{
+  content: "▴";
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  max-height: 280px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid rgba(121,226,255,.34);
+  background: #0d0f13;
+  box-shadow: 0 10px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu:not([open]) .dashboardAvgRangeMenuList{
+  display: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid rgba(121,226,255,.2);
+  background: rgba(255,255,255,.03);
+  color: rgba(225,247,255,.93);
+  font-family: var(--font-tight);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  cursor: pointer;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem:hover{
+  border-color: rgba(121,226,255,.38);
+  background: rgba(53,232,255,.1);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem.isOn{
+  border-color: rgba(53,232,255,.62) !important;
+  background: linear-gradient(180deg, rgba(53,232,255,.2), rgba(255,255,255,.06)) !important;
+  box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
+}
+
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+  border-color: rgba(0,133,160,.3);
+  background:#ffffff;
+  box-shadow: 0 10px 20px rgba(13,39,53,.12), inset 0 0 0 1px rgba(0,133,160,.08);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem{
+  border-color: rgba(0,133,160,.2);
+  background: rgba(0,133,160,.05);
+  color:#17343c;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem:hover{
+  border-color: rgba(0,133,160,.35);
+  background: rgba(0,133,160,.12);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem.isOn{
+  border-color: rgba(0,133,160,.5) !important;
+  background: linear-gradient(180deg, rgba(0,133,160,.2), rgba(255,255,255,.85)) !important;
+  box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset;
+}
+
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgSessionRangeRow{
+    width: 100%;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu{
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }

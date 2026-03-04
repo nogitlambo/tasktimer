@@ -3649,14 +3649,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const canvas = els.dashboardAvgSessionChart;
     const card = canvas?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
     const rangeBtns = Array.from((card || document).querySelectorAll("[data-dashboard-avg-range]")) as HTMLElement[];
+    const rangeLabelEl = document.getElementById("dashboardAvgRangeMenuLabel") as HTMLElement | null;
     const range = sanitizeDashboardAvgRange(dashboardAvgRange);
     dashboardAvgRange = range;
 
     if (titleEl) titleEl.textContent = `Avg Session by Task (${dashboardAvgRangeLabel(range)})`;
+    if (rangeLabelEl) rangeLabelEl.textContent = dashboardAvgRangeLabel(range);
     rangeBtns.forEach((btn) => {
       const isOn = btn.getAttribute("data-dashboard-avg-range") === range;
       btn.classList.toggle("isOn", isOn);
-      btn.setAttribute("aria-pressed", String(isOn));
+      btn.setAttribute("aria-checked", String(isOn));
     });
 
     if (!canvas) return;
@@ -7672,6 +7674,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       const btn = e.target?.closest?.("[data-dashboard-avg-range]") as HTMLElement | null;
       if (!btn) return;
       const nextRange = sanitizeDashboardAvgRange(btn.getAttribute("data-dashboard-avg-range"));
+      const rangeMenu = btn.closest("details") as HTMLDetailsElement | null;
+      if (rangeMenu) rangeMenu.open = false;
       if (nextRange === dashboardAvgRange) {
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
@@ -7689,6 +7693,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       }
       if (!target.closest("#dashboardPanelMenu")) {
         closeDashboardPanelMenu();
+      }
+      const avgRangeMenu = document.getElementById("dashboardAvgRangeMenu") as HTMLDetailsElement | null;
+      if (avgRangeMenu && !target.closest("#dashboardAvgRangeMenu")) {
+        avgRangeMenu.open = false;
       }
     });
     on(els.dashboardGrid, "dragstart", (e: any) => {

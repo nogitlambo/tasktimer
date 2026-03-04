@@ -41,14 +41,25 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
+const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 
 function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
+}
+function avatarCustomStorageKeyForUid(uid: string) {
+  return `${AVATAR_CUSTOM_STORAGE_PREFIX}${uid}`;
+}
+function customAvatarIdForUid(uid: string) {
+  return `custom-upload:${uid}`;
 }
 
 function readStoredAvatarId(uid: string): string {
   if (typeof window === "undefined" || !uid) return "";
   return String(window.localStorage.getItem(avatarStorageKeyForUid(uid)) || "").trim();
+}
+function readStoredCustomAvatarSrc(uid: string): string {
+  if (typeof window === "undefined" || !uid) return "";
+  return String(window.localStorage.getItem(avatarCustomStorageKeyForUid(uid)) || "").trim();
 }
 
 function writeStoredAvatarId(uid: string, avatarId: string) {
@@ -59,6 +70,15 @@ function writeStoredAvatarId(uid: string, avatarId: string) {
     return;
   }
   window.localStorage.setItem(avatarStorageKeyForUid(uid), value);
+}
+function writeStoredCustomAvatarSrc(uid: string, src: string) {
+  if (typeof window === "undefined" || !uid) return;
+  const value = String(src || "").trim();
+  if (!value) {
+    window.localStorage.removeItem(avatarCustomStorageKeyForUid(uid));
+    return;
+  }
+  window.localStorage.setItem(avatarCustomStorageKeyForUid(uid), value);
 }
 
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
@@ -160,11 +180,12 @@ export default function SettingsPanel() {
   const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
-  const [avatarOptions] = useState<AvatarOption[]>(AVATAR_CATALOG);
+  const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
   const [avatarSyncNoticeIsError, setAvatarSyncNoticeIsError] = useState(false);
   const avatarSyncNoticeTimerRef = useRef<number | null>(null);
+  const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const accountStateDocRef = (uid: string) => {
     const db = getFirebaseFirestoreClient();
@@ -226,8 +247,9 @@ export default function SettingsPanel() {
     const groups = new Map<string, AvatarOption[]>();
     for (const avatar of avatarOptions) {
       const normalizedId = String(avatar.id || "").replace(/\\/g, "/");
+      const isCustomUpload = normalizedId.startsWith("custom-upload:");
       const parts = normalizedId.split("/");
-      const folder = parts.length > 1 ? parts[parts.length - 2] || "misc" : "misc";
+      const folder = isCustomUpload ? "uploads" : (parts.length > 1 ? parts[parts.length - 2] || "misc" : "misc");
       const key = folder.trim() || "misc";
       const existing = groups.get(key);
       if (existing) existing.push(avatar);
@@ -325,12 +347,20 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     if (!authUserUid) {
-      setSelectedAvatarId((prev) => prev || avatarOptions[0]?.id || "");
+      setAvatarOptions(AVATAR_CATALOG.slice());
+      setSelectedAvatarId(AVATAR_CATALOG[0]?.id || "");
       return;
     }
-    const nextId = avatarOptions.some((a) => a.id === selectedAvatarId) ? selectedAvatarId : avatarOptions[0]?.id || "";
-    if (nextId !== selectedAvatarId) setSelectedAvatarId(nextId);
-  }, [authUserUid, avatarOptions, selectedAvatarId]);
+    const customSrc = readStoredCustomAvatarSrc(authUserUid);
+    const baseOptions = AVATAR_CATALOG.slice();
+    if (customSrc) {
+      const customId = customAvatarIdForUid(authUserUid);
+      baseOptions.push({ id: customId, label: "Custom Upload", src: customSrc });
+      setAvatarOptions(baseOptions);
+    } else {
+      setAvatarOptions(baseOptions);
+    }
+  }, [authUserUid]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -628,6 +658,60 @@ export default function SettingsPanel() {
     setShowAvatarPickerModal(false);
   };
 
+  const handleUploadAvatarClick = () => {
+    avatarUploadInputRef.current?.click();
+  };
+
+  const handleUploadAvatarFile = async (file: File | null) => {
+    if (!file) return;
+    if (!authUserUid) {
+      setAuthError("Sign in is required to upload an avatar.");
+      setAuthStatus("");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setAuthError("Please choose an image file.");
+      setAuthStatus("");
+      return;
+    }
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setAuthError("Image is too large. Max size is 2MB.");
+      setAuthStatus("");
+      return;
+    }
+    const fileReader = new FileReader();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      fileReader.onload = () => resolve(String(fileReader.result || ""));
+      fileReader.onerror = () => reject(new Error("Could not read selected image."));
+      fileReader.readAsDataURL(file);
+    });
+    if (!dataUrl) {
+      setAuthError("Could not read selected image.");
+      setAuthStatus("");
+      return;
+    }
+    const customId = customAvatarIdForUid(authUserUid);
+    const customAvatar: AvatarOption = { id: customId, label: "Custom Upload", src: dataUrl };
+    setAvatarOptions((prev) => {
+      const base = prev.filter((opt) => !String(opt.id).startsWith("custom-upload:"));
+      return [...base, customAvatar];
+    });
+    setSelectedAvatarId(customId);
+    writeStoredCustomAvatarSrc(authUserUid, dataUrl);
+    writeStoredAvatarId(authUserUid, customId);
+    setAuthError("");
+    try {
+      await saveUserDocPatch(authUserUid, { avatarId: customId });
+      showAvatarSyncNotice("Avatar uploaded.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not save uploaded avatar selection to cloud."));
+      setAuthStatus("");
+      showAvatarSyncNotice("Avatar uploaded locally. Cloud sync failed.", true);
+    }
+    setShowAvatarPickerModal(false);
+  };
+
   const selectedAvatar = avatarOptions.find((a) => a.id === selectedAvatarId) || avatarOptions[0] || null;
 
   return (
@@ -709,68 +793,68 @@ export default function SettingsPanel() {
                             )}
                           </div>
                         </button>
-                        <div className="settingsAvatarPickerLabel">Tap avatar to change</div>
+                        <div className="settingsAccountMemberSinceInline">Member since: {formatMemberSinceDate(authMemberSince)}</div>
                       </div>
                       <div className="settingsAccountMeta">
                         <div className="settingsAccountTopRow">
                           <div className="settingsAccountFieldRow settingsAccountAliasCol">
-                            <div className="settingsAccountFieldLabel">Name/Alias</div>
-                            {isEditingAlias ? (
-                              <div className="settingsAccountAliasEditor">
-                                <input
-                                  type="text"
-                                  value={aliasDraft}
-                                  maxLength={15}
-                                  onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
-                                  className="settingsAccountAliasInput"
-                                  aria-label="Edit name alias"
-                                />
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost small"
-                                  onClick={handleSaveAlias}
-                                  disabled={authBusy}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost small"
-                                  onClick={() => {
-                                    setAliasDraft(authUserAlias);
-                                    setIsEditingAlias(false);
-                                  }}
-                                  disabled={authBusy}
-                                >
-                                  Cancel
-                                </button>
+                            <div className="settingsAccountAliasRow">
+                              <div className="settingsAccountFieldLabel">Username:</div>
+                              <div className="settingsAccountAliasValueWrap">
+                                {isEditingAlias ? (
+                                  <div className="settingsAccountAliasEditor">
+                                    <input
+                                      type="text"
+                                      value={aliasDraft}
+                                      maxLength={15}
+                                      onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
+                                      className="settingsAccountAliasInput"
+                                      aria-label="Edit name alias"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost small"
+                                      onClick={handleSaveAlias}
+                                      disabled={authBusy}
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost small"
+                                      onClick={() => {
+                                        setAliasDraft(authUserAlias);
+                                        setIsEditingAlias(false);
+                                      }}
+                                      disabled={authBusy}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="settingsAccountFieldValueRow">
+                                    <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
+                                    <button
+                                      type="button"
+                                      className="iconBtn settingsAliasEditBtn"
+                                      aria-label="Edit alias"
+                                      onClick={() => setIsEditingAlias(true)}
+                                    >
+                                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="settingsAccountFieldValueRow">
-                                <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
-                                <button
-                                  type="button"
-                                  className="iconBtn settingsAliasEditBtn"
-                                  aria-label="Edit alias"
-                                  onClick={() => setIsEditingAlias(true)}
-                                >
-                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                    <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
-                                  </svg>
-                                </button>
+                            </div>
+                            <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountRankUnderAlias">
+                              <div className="settingsAccountFieldLabel">Rank</div>
+                              <div className="settingsAccountRankPlaceholder" aria-hidden="true">
+                                <div className="settingsAccountRankPlaceholderInner" />
                               </div>
-                            )}
-                          </div>
-                          <div className="settingsAccountFieldRow settingsAccountRankCol">
-                            <div className="settingsAccountFieldLabel">Rank</div>
-                            <div className="settingsAccountRankPlaceholder" aria-hidden="true">
-                              <div className="settingsAccountRankPlaceholderInner" />
                             </div>
                           </div>
-                        </div>
-                        <div className="settingsAccountFieldRow">
-                          <div className="settingsAccountFieldLabel">Member since</div>
-                          <div className="settingsAccountFieldValue">{formatMemberSinceDate(authMemberSince)}</div>
                         </div>
                       </div>
                     </div>
@@ -986,6 +1070,20 @@ export default function SettingsPanel() {
                     ))}
                   </div>
                   <div className="footerBtns settingsInlineConfirmBtns">
+                    <input
+                      ref={avatarUploadInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
+                        void handleUploadAvatarFile(file);
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                    <button className="btn btn-accent" type="button" onClick={handleUploadAvatarClick}>
+                      Upload
+                    </button>
                     <button className="btn btn-ghost" type="button" onClick={() => setShowAvatarPickerModal(false)}>
                       Cancel
                     </button>

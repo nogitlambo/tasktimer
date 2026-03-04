@@ -226,20 +226,55 @@ export default function TaskTimerPage() {
                     No completed sessions in this range.
                   </p>
                   <div className="historyRangeRow dashboardAvgSessionRangeRow">
-                    <div className="historyRangeToggleRow" aria-label="Average session range">
-                      <button className="historyRangeModePill isOn" type="button" data-dashboard-avg-range="past7" aria-pressed="true">
-                        Past 7 Days
-                      </button>
-                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="currentWeek" aria-pressed="false">
-                        Current Week
-                      </button>
-                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="past30" aria-pressed="false">
-                        Past 30 Days
-                      </button>
-                      <button className="historyRangeModePill" type="button" data-dashboard-avg-range="currentMonth" aria-pressed="false">
-                        Current Month
-                      </button>
-                    </div>
+                    <details className="dashboardAvgRangeMenu" id="dashboardAvgRangeMenu">
+                      <summary
+                        className="btn btn-ghost small dashboardAvgRangeMenuBtn"
+                        id="dashboardAvgRangeMenuBtn"
+                        role="button"
+                        aria-label="Select average session range"
+                      >
+                        <span className="dashboardAvgRangeMenuLabelPrefix">Range:</span>
+                        <span id="dashboardAvgRangeMenuLabel">Past 7 Days</span>
+                      </summary>
+                      <div className="dashboardAvgRangeMenuList" role="menu" aria-label="Average session range options">
+                        <button
+                          className="dashboardAvgRangeMenuItem isOn"
+                          type="button"
+                          data-dashboard-avg-range="past7"
+                          role="menuitemradio"
+                          aria-checked="true"
+                        >
+                          Past 7 Days
+                        </button>
+                        <button
+                          className="dashboardAvgRangeMenuItem"
+                          type="button"
+                          data-dashboard-avg-range="currentWeek"
+                          role="menuitemradio"
+                          aria-checked="false"
+                        >
+                          Current Week
+                        </button>
+                        <button
+                          className="dashboardAvgRangeMenuItem"
+                          type="button"
+                          data-dashboard-avg-range="past30"
+                          role="menuitemradio"
+                          aria-checked="false"
+                        >
+                          Past 30 Days
+                        </button>
+                        <button
+                          className="dashboardAvgRangeMenuItem"
+                          type="button"
+                          data-dashboard-avg-range="currentMonth"
+                          role="menuitemradio"
+                          aria-checked="false"
+                        >
+                          Current Month
+                        </button>
+                      </div>
+                    </details>
                   </div>
                 </section>
 
@@ -370,7 +405,7 @@ export default function TaskTimerPage() {
             <span className="appFooterLabel">Tasks</span>
           </button>
           <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Groups">
-            <img className="appFooterIconImage" src="/Feedback.svg" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/Groups.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Friends</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
