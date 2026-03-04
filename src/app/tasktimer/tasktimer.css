@@ -7209,6 +7209,17 @@ body[data-control-style="square"] .switch::after{
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouTitle{
+  padding: 8px 12px;
+  line-height: 1.25;
+}
+#app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCardTitle,
+#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskTimer App"] #appPageTest2 .settingsDetailNote,
+#app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap{
+  padding: 8px 12px;
+  line-height: 1.25;
+}
 
 .friendSharedTaskCard {
   border: 1px solid rgba(134, 170, 196, 0.35);
@@ -7216,6 +7227,12 @@ body[data-control-style="square"] .switch::after{
   padding: 10px 14px 10px 16px;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.friendSharedTaskCard.friendSharedTaskCardState-running {
+  border-color: rgba(134, 170, 196, 0.58);
+}
+.friendSharedTaskCard.friendSharedTaskCardState-stopped {
+  border-color: rgba(255, 77, 77, 0.62);
 }
 
 .friendSharedTaskCard.isJumpCard {
@@ -7312,12 +7329,15 @@ body[data-control-style="square"] .switch::after{
   border: 1px solid rgba(121, 226, 255, 0.2);
 }
 
-.friendSharedTaskTrend polyline {
-  fill: none;
-  stroke: var(--accent, #35e8ff);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.friendSharedTaskTrend .friendSharedTrendBar {
+  fill: var(--accent, #35e8ff);
+  opacity: 0.9;
+}
+
+.friendSharedTaskTrend .friendSharedTrendCheckpointLine {
+  stroke: rgba(188, 214, 230, 0.72);
+  stroke-width: 1.2;
+  shape-rendering: crispEdges;
 }
 
 .friendSharedTaskTrendDays {
@@ -7372,6 +7392,12 @@ body.light .friendSharedTaskCard {
   background: rgba(235, 244, 250, 0.9);
   border-color: rgba(94, 124, 148, 0.35);
 }
+body.light .friendSharedTaskCard.friendSharedTaskCardState-running {
+  border-color: rgba(94, 124, 148, 0.56);
+}
+body.light .friendSharedTaskCard.friendSharedTaskCardState-stopped {
+  border-color: rgba(198, 40, 40, 0.58);
+}
 
 body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:hover,
 body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:focus-visible {
@@ -7403,6 +7429,10 @@ body.light .friendSharedTaskTrendLabel {
 body.light .friendSharedTaskTrend svg {
   background: rgba(255, 255, 255, 0.66);
   border-color: rgba(72, 98, 112, 0.24);
+}
+
+body.light .friendSharedTaskTrend .friendSharedTrendCheckpointLine {
+  stroke: rgba(37, 52, 65, 0.58);
 }
 
 body.light .friendSharedTaskTrendDays {
@@ -7522,4 +7552,29 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
 }
 #app[aria-label="TaskTimer App"] #appPageTasks .task .taskMenuList{
   z-index: 1200;
+}
+
+/* Final mobile Settings full-width override: use full available panel width on narrow screens. */
+@media (max-width: 640px){
+  #app[aria-label="TaskTimer Settings"] .list{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsDashboardShell{
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+    width: 100% !important;
+    max-width: none !important;
+  }
+  #app[aria-label="TaskTimer Settings"] .settingsNavPanel,
+  #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+    width: 100% !important;
+    max-width: none !important;
+  }
 }

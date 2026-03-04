@@ -3990,6 +3990,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       onOk: () => {
         const alsoDelete = !!els.confirmDeleteAll?.checked;
         const doLog = eligibleTasks.length ? !!els.confirmLogChk?.checked : false;
+        const affectedTaskIds = (tasks || []).map((row) => String(row.id || "")).filter(Boolean);
+        const uid = String(currentUid() || "");
 
         if (doLog) {
           eligibleTasks.forEach((t) => {
@@ -4015,6 +4017,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         }
 
         save();
+        if (alsoDelete) {
+          if (uid && affectedTaskIds.length) {
+            void Promise.all(affectedTaskIds.map((taskId) => deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
+              .then(() => refreshOwnSharedSummaries())
+              .catch(() => {});
+          }
+        } else if (affectedTaskIds.length) {
+          void syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
+        }
         render();
         closeConfirm();
       },
@@ -5891,7 +5902,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return parts.join(" ");
   }
 
-  function buildSharedTrendPolyline(msByDay: number[], checkpointScaleMs?: number | null): string {
+  function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
     const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
     const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
     const maxVal = Math.max(...vals, scaleRef || 0, 1);
@@ -5901,13 +5912,34 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const padY = 6;
     const usableW = width - padX * 2;
     const usableH = height - padY * 2;
-    return vals
+    const step = usableW / 7;
+    const barW = Math.max(6, Math.min(14, step - 4));
+    const checkpointLines: string[] = [];
+    if (scaleRef > 0) {
+      let n = 1;
+      while (n <= 8) {
+        const yVal = scaleRef * n;
+        if (yVal > maxVal) break;
+        const y = padY + usableH - (usableH * yVal) / maxVal;
+        checkpointLines.push(
+          `<line class="friendSharedTrendCheckpointLine" x1="${padX.toFixed(1)}" y1="${y.toFixed(
+            1
+          )}" x2="${(padX + usableW).toFixed(1)}" y2="${y.toFixed(1)}" />`
+        );
+        n += 1;
+      }
+    }
+    const bars = vals
       .map((v, i) => {
-        const x = padX + (usableW * i) / 6;
-        const y = padY + usableH - (usableH * v) / maxVal;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
+        const h = (usableH * v) / maxVal;
+        const x = padX + i * step + (step - barW) / 2;
+        const y = padY + usableH - h;
+        return `<rect class="friendSharedTrendBar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(
+          1
+        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1" />`;
       })
-      .join(" ");
+      .join("");
+    return `${checkpointLines.join("")}${bars}`;
   }
 
   function isTaskSharedByOwner(taskId: string): boolean {
@@ -6012,6 +6044,34 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     } catch {
       ownSharedSummaries = [];
     }
+  }
+
+  function getOwnedSharedSummaryMismatchedTaskIds(): string[] {
+    const uid = String(currentUid() || "");
+    if (!uid || !Array.isArray(ownSharedSummaries) || !ownSharedSummaries.length) return [];
+    const runningByTaskId = new Map<string, boolean>();
+    (tasks || []).forEach((t) => {
+      const taskId = String(t?.id || "").trim();
+      if (!taskId) return;
+      runningByTaskId.set(taskId, !!t.running);
+    });
+    const mismatched = new Set<string>();
+    ownSharedSummaries.forEach((row) => {
+      const ownerUid = String(row?.ownerUid || "").trim();
+      if (!ownerUid || ownerUid !== uid) return;
+      const taskId = String(row?.taskId || "").trim();
+      if (!taskId || !runningByTaskId.has(taskId)) return;
+      const summaryRunning = String(row?.timerState || "").trim().toLowerCase() === "running";
+      const taskRunning = !!runningByTaskId.get(taskId);
+      if (summaryRunning !== taskRunning) mismatched.add(taskId);
+    });
+    return Array.from(mismatched);
+  }
+
+  async function reconcileOwnedSharedSummaryStates() {
+    const mismatchedTaskIds = getOwnedSharedSummaryMismatchedTaskIds();
+    if (!mismatchedTaskIds.length) return;
+    await syncSharedTaskSummariesForTasks(mismatchedTaskIds);
   }
 
   async function syncSharedTaskSummariesForTask(taskId: string) {
@@ -6177,21 +6237,21 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 ? new Date(Number(entry.taskCreatedAtMs)).toLocaleDateString()
                 : "Unknown";
             const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
+            const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
             const timerStateClass =
               String(entry.timerState || "stopped").toLowerCase() === "running"
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
             const taskMode: "mode1" | "mode2" | "mode3" =
               entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
-            const modeBorderColor = getModeColor(taskMode);
-            const trendPoints = buildSharedTrendPolyline(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
-            return `<div class="friendSharedTaskCard" style="border-color:${escapeHtmlUI(modeBorderColor)};">
+            const trendBars = buildSharedTrendBarSvgMarkup(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
+            return `<div class="friendSharedTaskCard friendSharedTaskCardState-${escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
                   <div class="friendSharedTaskTitle">${escapeHtmlUI(entry.taskName)}</div>
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${escapeHtmlUI(timerState)}</span></div>
                   <div class="friendSharedTaskMeta">Created: ${escapeHtmlUI(createdDate)}</div>
-                  <div class="friendSharedTaskMeta">Daily avg this week: ${escapeHtmlUI(
+                  <div class="friendSharedTaskMeta">Daily avg: ${escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(entry.avgTimeLoggedThisWeekMs || 0))
                   )}</div>
                   <div class="friendSharedTaskMeta">Total logged: ${escapeHtmlUI(
@@ -6201,7 +6261,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
                 <div class="friendSharedTaskTrend" aria-label="Focus Trend chart">
                   <div class="friendSharedTaskTrendLabel">Focus Trend</div>
                   <svg viewBox="0 0 170 56" role="img" aria-label="Focus trend over this week">
-                    <polyline points="${escapeHtmlUI(trendPoints)}" />
+                    ${trendBars}
                   </svg>
                   <div class="friendSharedTaskTrendDays" aria-hidden="true">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
@@ -6869,6 +6929,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings");
+    });
+    on(els.signedInHeaderBadge, "click", (e: any) => {
+      e?.preventDefault?.();
+      navigateToAppRoute("/tasktimer/settings?pane=general");
     });
     on(els.openFriendRequestModalBtn, "click", (e: any) => {
       e?.preventDefault?.();
@@ -8472,7 +8536,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   // Init
   const bootstrap = () => {
     hydrateUiStateFromCaches();
-    void refreshOwnSharedSummaries().then(() => render()).catch(() => {});
+    void refreshOwnSharedSummaries()
+      .then(() => reconcileOwnedSharedSummaryStates())
+      .then(() => render())
+      .catch(() => {});
     initMobileBackHandling();
     if (!eventsWired) {
       wireEvents();
