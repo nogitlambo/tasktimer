@@ -244,6 +244,12 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const initialPane = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
+    if (initialPane === "general") {
+      setActivePane((prev) => prev ?? "general");
+      setMobileDetailOpen(true);
+      return;
+    }
     const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
     if (!isMobileViewport) {
       setActivePane((prev) => prev ?? "general");
@@ -1119,6 +1125,13 @@ export default function SettingsPanel() {
                   <span>Dynamic colors for progress and history</span>
                   <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
+                <div className="field" id="menuButtonStyleRow">
+                  <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
+                  <select id="menuButtonStyleSelect" defaultValue="parallelogram" aria-label="Menu and button style">
+                    <option value="parallelogram">Parralelogram (default)</option>
+                    <option value="square">Square</option>
+                  </select>
+                </div>
               </section>
             </div>
           </SettingsDetailPane>
@@ -1156,8 +1169,8 @@ export default function SettingsPanel() {
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
-                  <a className="menuItem settingsActionRow" href="/privacy">
+                <div className="settingsActionGrid settingsDataTileGrid">
+                  <a className="menuItem settingsDataTile settingsPrivacyTile" href="/privacy">
                     <MenuIconLabel icon="/file.svg" label="Privacy Policy" />
                   </a>
                 </div>
@@ -1272,7 +1285,7 @@ export default function SettingsPanel() {
                 </div>
 
                 <div className="settingsInlineFooter">
-                  <button className="btn btn-accent" id="feedbackBtn" type="button" disabled={!canSubmitFeedback}>
+                  <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={!canSubmitFeedback}>
                     Submit Feedback
                   </button>
                 </div>

@@ -20,7 +20,7 @@ import { ensureUserProfileIndex } from "./lib/cloudStore";
 import "./tasktimer.css";
 
 export default function TaskTimerPage() {
-  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [signedInUserLabel, setSignedInUserLabel] = useState<string | null>(null);
 
   useEffect(() => {
     const { destroy } = initTaskTimerClient();
@@ -31,7 +31,9 @@ export default function TaskTimerPage() {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
-      setSignedInEmail(user?.email || null);
+      const displayName = String(user?.displayName || "").trim();
+      const email = String(user?.email || "").trim();
+      setSignedInUserLabel(displayName || email || null);
       if (user?.uid) void ensureUserProfileIndex(user.uid);
     });
     return () => unsub();
@@ -45,9 +47,10 @@ export default function TaskTimerPage() {
             <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
           </div>
 
-          {signedInEmail ? (
-            <div
+          {signedInUserLabel ? (
+            <a
               id="signedInHeaderBadge"
+              href="/tasktimer/settings?pane=general"
               style={{
                 justifySelf: "end",
                 gridColumn: 3,
@@ -63,8 +66,10 @@ export default function TaskTimerPage() {
                 lineHeight: 1.2,
                 maxWidth: 280,
                 justifyContent: "flex-end",
+                textDecoration: "none",
               }}
-              aria-label={`Signed in as ${signedInEmail}`}
+              aria-label={`Welcome ${signedInUserLabel}`}
+              title="Open Account settings"
             >
               <span
                 aria-hidden="true"
@@ -81,7 +86,7 @@ export default function TaskTimerPage() {
                   color: "#8ff6ff",
                 }}
               >
-                {signedInEmail.slice(0, 1).toUpperCase()}
+                {signedInUserLabel.slice(0, 1).toUpperCase()}
               </span>
               <span
                 style={{
@@ -90,11 +95,11 @@ export default function TaskTimerPage() {
                   whiteSpace: "nowrap",
                   textAlign: "right",
                 }}
-                title={signedInEmail}
+                title={signedInUserLabel}
               >
-                Signed in as: {signedInEmail}
+                Welcome {signedInUserLabel}
               </span>
-            </div>
+            </a>
           ) : null}
         </div>
         <div className="modeSwitchWrap modeSwitchNoBrackets" style={{ display: "flex", justifyContent: "center" }}>
@@ -136,6 +141,12 @@ export default function TaskTimerPage() {
                   <h2 className="dashboardTitle">Mission Dashboard</h2>
                 </div>
                 <div className="dashboardEditActions">
+                  <details className="dashboardPanelMenu" id="dashboardPanelMenu">
+                    <summary className="btn btn-ghost small dashboardPanelMenuBtn" id="dashboardPanelMenuBtn" role="button" aria-label="Show or hide dashboard panels">
+                      Panels
+                    </summary>
+                    <div className="dashboardPanelMenuList" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels" />
+                  </details>
                   <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
                     &#9998;
                   </button>
@@ -320,6 +331,17 @@ export default function TaskTimerPage() {
                   </div>
                 </section>
 
+                <section className="dashboardCard" aria-label="Tasks shared by you">
+                  <details id="groupsSharedByYouDetails">
+                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
+                      0 shared by you
+                    </summary>
+                    <div id="groupsSharedByYouList" className="settingsDetailNote">
+                      No shared tasks.
+                    </div>
+                  </details>
+                </section>
+
                 <section className="dashboardCard" aria-label="Incoming requests">
                   <div className="dashboardCardTitle">Incoming Requests</div>
                   <div id="groupsIncomingRequestsList" className="settingsDetailNote">
@@ -383,6 +405,33 @@ export default function TaskTimerPage() {
             </button>
           </div>
           <div id="friendRequestModalStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
+        </div>
+      </div>
+      <div className="overlay" id="shareTaskModal" style={{ display: "none" }}>
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Share Task">
+          <div className="editHead">
+            <h2 id="shareTaskTitle">Share Task</h2>
+          </div>
+          <div className="field">
+            <label htmlFor="shareTaskScopeSelect">Sharing scope</label>
+            <select id="shareTaskScopeSelect" className="text w100" defaultValue="all">
+              <option value="all">Share with all friends</option>
+              <option value="specific">Share with specific friend(s)</option>
+            </select>
+          </div>
+          <div className="field" id="shareTaskFriendsField" style={{ display: "none" }}>
+            <label>Select friend(s)</label>
+            <div id="shareTaskFriendsList" />
+          </div>
+          <div id="shareTaskStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
+          <div className="footerBtns">
+            <button className="btn btn-ghost" id="shareTaskCancelBtn" type="button">
+              Cancel
+            </button>
+            <button className="btn btn-accent" id="shareTaskConfirmBtn" type="button">
+              Share
+            </button>
+          </div>
         </div>
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />

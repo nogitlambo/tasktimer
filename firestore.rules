@@ -30,6 +30,7 @@ service cloud.firestore {
       return onlyKeys([
         "schemaVersion",
         "theme",
+        "menuButtonStyle",
         "defaultTaskTimerFormat",
         "autoFocusOnTaskLaunchEnabled",
         "dynamicColorsEnabled",
@@ -41,6 +42,7 @@ service cloud.firestore {
       ])
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
       && (!("theme" in request.resource.data) || request.resource.data.theme in ["light", "dark", "command"])
+      && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["parallelogram", "square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
@@ -299,6 +301,80 @@ service cloud.firestore {
       );
     }
 
+    function friendshipPairId(uidA, uidB) {
+      return uidA < uidB
+        ? ("pair:" + uidA + ":" + uidB)
+        : ("pair:" + uidB + ":" + uidA);
+    }
+
+    function friendshipExists(uidA, uidB) {
+      return exists(/databases/$(database)/documents/friendships/$(friendshipPairId(uidA, uidB)));
+    }
+
+    function isSharedTaskSummaryV1(shareDocId) {
+      return onlyKeys([
+        "shareDocId",
+        "ownerUid",
+        "friendUid",
+        "taskId",
+        "taskName",
+        "taskMode",
+        "timerState",
+        "focusTrend7dMs",
+        "checkpointScaleMs",
+        "taskCreatedAtMs",
+        "avgTimeLoggedThisWeekMs",
+        "totalTimeLoggedMs",
+        "sharedAt",
+        "updatedAt",
+        "schemaVersion"
+      ])
+      && request.resource.data.keys().hasAll([
+        "shareDocId",
+        "ownerUid",
+        "friendUid",
+        "taskId",
+        "taskName",
+        "taskMode",
+        "timerState",
+        "focusTrend7dMs",
+        "checkpointScaleMs",
+        "taskCreatedAtMs",
+        "avgTimeLoggedThisWeekMs",
+        "totalTimeLoggedMs",
+        "sharedAt",
+        "updatedAt",
+        "schemaVersion"
+      ])
+      && request.resource.data.shareDocId is string
+      && request.resource.data.ownerUid is string
+      && request.resource.data.friendUid is string
+      && request.resource.data.taskId is string
+      && request.resource.data.taskName is string
+      && request.resource.data.taskMode in ["mode1", "mode2", "mode3"]
+      && request.resource.data.timerState in ["running", "stopped"]
+      && request.resource.data.focusTrend7dMs is list
+      && request.resource.data.focusTrend7dMs.size() == 7
+      && request.resource.data.focusTrend7dMs[0] is int
+      && request.resource.data.focusTrend7dMs[1] is int
+      && request.resource.data.focusTrend7dMs[2] is int
+      && request.resource.data.focusTrend7dMs[3] is int
+      && request.resource.data.focusTrend7dMs[4] is int
+      && request.resource.data.focusTrend7dMs[5] is int
+      && request.resource.data.focusTrend7dMs[6] is int
+      && (request.resource.data.checkpointScaleMs == null || request.resource.data.checkpointScaleMs is int)
+      && (request.resource.data.taskCreatedAtMs == null || request.resource.data.taskCreatedAtMs is int)
+      && request.resource.data.avgTimeLoggedThisWeekMs is int
+      && request.resource.data.totalTimeLoggedMs is int
+      && request.resource.data.sharedAt is timestamp
+      && request.resource.data.updatedAt is timestamp
+      && request.resource.data.schemaVersion is int
+      && request.resource.data.ownerUid != request.resource.data.friendUid
+      && request.resource.data.shareDocId == shareDocId
+      && request.resource.data.shareDocId == ("share:" + request.resource.data.ownerUid + ":" + request.resource.data.friendUid + ":" + request.resource.data.taskId)
+      && friendshipExists(request.resource.data.ownerUid, request.resource.data.friendUid);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
@@ -379,6 +455,21 @@ service cloud.firestore {
         );
       allow create: if isFriendshipDocCreate();
       allow update, delete: if false;
+    }
+
+    match /shared_task_summaries/{shareDocId} {
+      allow read: if request.auth != null
+        && resource != null
+        && (
+          request.auth.uid == resource.data.ownerUid
+          || request.auth.uid == resource.data.friendUid
+        );
+      allow create, update: if request.auth != null
+        && request.auth.uid == request.resource.data.ownerUid
+        && isSharedTaskSummaryV1(shareDocId);
+      allow delete: if request.auth != null
+        && resource != null
+        && request.auth.uid == resource.data.ownerUid;
     }
 
     match /userEmailLookup/{emailKey} {

@@ -27,6 +27,7 @@ Configured database ID (`firebase.json`): `timebase`
 2. `friend_requests`
 3. `friendships`
 4. `userEmailLookup`
+5. `shared_task_summaries`
 
 ---
 
@@ -301,6 +302,37 @@ Access:
 Runtime usage:
 
 - Used to resolve receiver UID from email during friend request flow
+
+---
+
+### `shared_task_summaries/{shareDocId}`
+
+Doc ID convention:
+
+- `share:{ownerUid}:{friendUid}:{taskId}`
+
+Allowed fields:
+
+- `shareDocId: string`
+- `ownerUid: string`
+- `friendUid: string`
+- `taskId: string`
+- `taskName: string`
+- `taskCreatedAtMs: int | null`
+- `avgTimeLoggedThisWeekMs: int`
+- `totalTimeLoggedMs: int`
+- `sharedAt: timestamp`
+- `updatedAt: timestamp`
+- `schemaVersion: int`
+
+Access:
+
+- Read by `ownerUid` or `friendUid`
+- Create/update/delete by `ownerUid` only
+
+Runtime usage:
+
+- Drives Friends page task summary cards under each friend row.
 
 ---
 

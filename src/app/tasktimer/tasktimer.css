@@ -206,6 +206,9 @@ body[data-app-page="test2"] #openAddTaskBtn{
 body[data-app-page="dashboard"] .appPages{
   padding-left: 104px !important;
 }
+body[data-app-page="test2"] .appPages{
+  padding-left: 104px !important;
+}
 .modeBtn{
   min-width:84px;
 }
@@ -295,6 +298,81 @@ body[data-app-page="dashboard"] .appPages{
   gap:8px;
   flex-wrap:wrap;
   justify-content:flex-end;
+}
+.dashboardPanelMenu{
+  position:relative;
+}
+.dashboardPanelMenu > summary{
+  list-style:none;
+}
+.dashboardPanelMenu > summary::-webkit-details-marker{
+  display:none;
+}
+.dashboardPanelMenuBtn{
+  min-height:36px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.dashboardPanelMenuBtn::after{
+  content:"▾";
+  font-size:11px;
+  line-height:1;
+  opacity:.9;
+}
+.dashboardPanelMenu[open] .dashboardPanelMenuBtn::after{
+  content:"▴";
+}
+.dashboardPanelMenuList{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  z-index:20;
+  min-width:220px;
+  max-height:280px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:8px;
+  border:1px solid rgba(121,226,255,.34);
+  background:#0d0f13;
+  box-shadow: 0 10px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.dashboardPanelMenu:not([open]) .dashboardPanelMenuList{
+  display:none;
+}
+.dashboardPanelMenuItem{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:28px;
+  padding:6px 8px;
+  border:1px solid rgba(121,226,255,.2);
+  background: rgba(255,255,255,.03);
+  color: rgba(225,247,255,.93);
+  font-family:var(--font-tight);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  cursor:pointer;
+}
+.dashboardPanelMenuItem:hover{
+  border-color: rgba(121,226,255,.38);
+  background: rgba(53,232,255,.1);
+}
+.dashboardPanelMenuItem > input{
+  margin:0;
+  accent-color: #35e8ff;
+}
+.dashboardPanelMenuItem > input:disabled{
+  opacity:.6;
+}
+.dashboardPanelMenuItem > span{
+  flex:1 1 auto;
+  min-width:0;
 }
 #dashboardEditBtn{
   width:36px;
@@ -448,6 +526,20 @@ body[data-theme="light"] .dashboardSizeOption.isOn{
   border-color: rgba(0,133,160,.5);
   background: linear-gradient(180deg, rgba(0,133,160,.2), rgba(255,255,255,.85));
   box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset;
+}
+body[data-theme="light"] .dashboardPanelMenuList{
+  border-color: rgba(0,133,160,.3);
+  background:#ffffff;
+  box-shadow: 0 10px 20px rgba(13,39,53,.12), inset 0 0 0 1px rgba(0,133,160,.08);
+}
+body[data-theme="light"] .dashboardPanelMenuItem{
+  border-color: rgba(0,133,160,.2);
+  background: rgba(0,133,160,.05);
+  color:#17343c;
+}
+body[data-theme="light"] .dashboardPanelMenuItem:hover{
+  border-color: rgba(0,133,160,.35);
+  background: rgba(0,133,160,.12);
 }
 .dashboardCardTitle{
   font-size:11px;
@@ -2693,6 +2785,9 @@ optgroup{
   text-transform:none;
   letter-spacing:.02em;
 }
+#app[aria-label="TaskTimer Settings"] .settingsPrivacyTile{
+  border-radius:0;
+}
 #app[aria-label="TaskTimer Settings"] .settingsActionRow .settingsMenuItemIcon{
   width:40px;
   height:40px;
@@ -2720,6 +2815,7 @@ optgroup{
   aspect-ratio: 1 / 1;
   width:100%;
   padding: 8px 6px;
+  border-radius: 0;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -5052,6 +5148,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
   #app[aria-label="TaskTimer Settings"] .settingsDataTile{
     min-height:63px;
     padding:6px 5px;
+    border-radius:0;
   }
   #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
     max-width:30px;
@@ -5219,6 +5316,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
   #app[aria-label="TaskTimer Settings"] .settingsDataTile{
     min-height:57px;
     padding:6px 3px;
+    border-radius:0;
   }
   #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
     max-width:26px;
@@ -6195,6 +6293,11 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;
 }
+
+#appPageTest2 .sharedTasksEmpty{
+  color: rgba(170, 178, 190, 0.82);
+  font-style: italic;
+}
 @keyframes taskNewGlowFade {
   0% {
     box-shadow:
@@ -7064,4 +7167,359 @@ body.light #elapsedPadOverlay .elapsedPadDisplay{
 #app[aria-label="TaskTimer App"] #appPageTasks .task .timePanel{
   border-radius: 0 !important;
   clip-path: none !important;
+}
+/* Tasks-page action controls: restore slanted/parallelogram style for key task buttons. */
+#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="reset"],
+#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="edit"],
+#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="history"],
+#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .taskMenu > summary.taskMenuBtn{
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
+}
+/* Appearance setting: Menu and button style */
+body[data-control-style="square"] .btn,
+body[data-control-style="square"] .iconBtn,
+body[data-control-style="square"] .menuIcon,
+body[data-control-style="square"] .menuItem,
+body[data-control-style="square"] .taskMenuItem,
+body[data-control-style="square"] .historyTrashBtn,
+body[data-control-style="square"] .hmDelBtn,
+body[data-control-style="square"] .timerTypePill,
+body[data-control-style="square"] .switch,
+body[data-control-style="square"] .switch::after{
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+.friendEntryWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.friendIdentityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCard,
+#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails,
+#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskTimer App"] #appPageTest2 #openFriendRequestModalBtn,
+#app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap {
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.friendSharedTaskCard {
+  border: 1px solid rgba(134, 170, 196, 0.35);
+  background: rgba(9, 15, 24, 0.55);
+  padding: 10px 14px 10px 16px;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.friendSharedTaskCard.isJumpCard {
+  cursor: pointer;
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1 {
+  border-color: var(--mode1-accent);
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2 {
+  border-color: var(--mode2-accent);
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3 {
+  border-color: var(--mode3-accent);
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:focus-visible {
+  border-color: var(--mode1-accent);
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:focus-visible {
+  border-color: var(--mode2-accent);
+}
+
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:focus-visible {
+  border-color: var(--mode3-accent);
+}
+
+.friendSharedTaskTitle {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.friendSharedTasksSection {
+  margin-top: 8px;
+}
+
+.friendSharedTasksHeading {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(188, 214, 230, 0.88);
+}
+
+.friendSharedTasksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.friendSharedTaskCard {
+  min-width: 0;
+}
+
+.friendSharedTaskCardLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 10px;
+  align-items: center;
+}
+
+.friendSharedTaskInfo {
+  min-width: 0;
+}
+
+.friendSharedTaskTrend {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.friendSharedTaskTrendLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(188, 214, 230, 0.72);
+  text-align: right;
+}
+
+.friendSharedTaskTrend svg {
+  width: 100%;
+  height: 56px;
+  display: block;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(121, 226, 255, 0.2);
+}
+
+.friendSharedTaskTrend polyline {
+  fill: none;
+  stroke: var(--accent, #35e8ff);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.friendSharedTaskTrendDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(188, 214, 230, 0.7);
+}
+
+.friendSharedTaskTrendDays span {
+  text-align: center;
+}
+
+.friendSharedTaskState {
+  display: inline;
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.friendSharedTaskState.isRunning {
+  color: var(--accent, #35e8ff);
+}
+
+.friendSharedTaskState.isStopped {
+  color: #ff4d4d;
+}
+
+.friendSharedTaskMeta {
+  font-size: 12px;
+  color: rgba(188, 214, 230, 0.88);
+  line-height: 1.45;
+}
+
+.shareTaskFriendOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+body.light .friendSharedTaskCard {
+  background: rgba(235, 244, 250, 0.9);
+  border-color: rgba(94, 124, 148, 0.35);
+}
+
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:hover,
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:focus-visible {
+  border-color: var(--mode1-accent);
+}
+
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:hover,
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:focus-visible {
+  border-color: var(--mode2-accent);
+}
+
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:hover,
+body.light .friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:focus-visible {
+  border-color: var(--mode3-accent);
+}
+
+body.light .friendSharedTaskMeta {
+  color: rgba(37, 52, 65, 0.88);
+}
+
+body.light .friendSharedTasksHeading {
+  color: rgba(37, 52, 65, 0.84);
+}
+
+body.light .friendSharedTaskTrendLabel {
+  color: rgba(37, 52, 65, 0.72);
+}
+
+body.light .friendSharedTaskTrend svg {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: rgba(72, 98, 112, 0.24);
+}
+
+body.light .friendSharedTaskTrendDays {
+  color: rgba(37, 52, 65, 0.68);
+}
+
+body.light .friendSharedTaskState.isRunning {
+  color: var(--accent, #0085a0);
+}
+
+body.light .friendSharedTaskState.isStopped {
+  color: #c62828;
+}
+
+body.light #appPageTest2 .sharedTasksEmpty{
+  color: rgba(89, 100, 113, 0.88);
+}
+
+body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCard,
+body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails,
+body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #openFriendRequestModalBtn,
+body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap {
+  clip-path: none !important;
+}
+
+#appPageTest2 #groupsSharedByYouDetails[open] #groupsSharedByYouList{
+  padding: 10px 10px 0;
+}
+
+@media (max-width: 720px) {
+  .friendSharedTasksGrid {
+    grid-template-columns: 1fr;
+  }
+  .friendSharedTaskCardLayout {
+    grid-template-columns: 1fr;
+  }
+  .friendSharedTaskTrendLabel {
+    text-align: left;
+  }
+}
+
+/* Final Tasks-page mode accent override: apply selected mode color to active mode button + task card glow. */
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mode-accent) 28%, transparent));
+}
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn{
+  border-color: color-mix(in srgb, var(--mode-accent) 72%, #ffffff 28%) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--mode-accent) 26%, transparent),
+      color-mix(in srgb, var(--mode-accent) 8%, transparent)
+    ) !important;
+  color: #eafbff;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--mode-accent) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mode-accent) 24%, transparent) inset,
+    0 0 12px color-mix(in srgb, var(--mode-accent) 30%, transparent) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+  border-color: color-mix(in srgb, var(--mode-accent) 32%, rgba(140,182,207,.46));
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.28),
+    inset 0 0 0 1px color-mix(in srgb, var(--mode-accent) 13%, transparent),
+    0 0 16px color-mix(in srgb, var(--mode-accent) 16%, transparent);
+}
+
+/* Light-theme parity: keep mode accent visible but subtler. */
+body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--mode-accent) 16%, transparent));
+}
+body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn{
+  border-color: color-mix(in srgb, var(--mode-accent) 58%, #ffffff 42%) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--mode-accent) 15%, #ffffff 85%),
+      color-mix(in srgb, var(--mode-accent) 7%, #ffffff 93%)
+    ) !important;
+  color: #15333b;
+  text-shadow: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mode-accent) 18%, transparent) inset,
+    0 0 8px color-mix(in srgb, var(--mode-accent) 14%, transparent) !important;
+}
+body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse),
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+  border-color: color-mix(in srgb, var(--mode-accent) 20%, rgba(0,133,160,.24));
+  box-shadow:
+    0 10px 24px rgba(13,39,53,.10),
+    inset 0 0 0 1px color-mix(in srgb, var(--mode-accent) 12%, transparent),
+    0 0 10px color-mix(in srgb, var(--mode-accent) 10%, transparent);
+}
+/* Final Tasks-page override: keep existing card color logic, but use footer/tile-style clipped outline geometry. */
+#app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+/* Keep the task ellipsis dropdown above neighboring task cards. */
+#app[aria-label="TaskTimer App"] #appPageTasks .task{
+  position: relative;
+}
+#app[aria-label="TaskTimer App"] #appPageTasks .task:has(.taskMenu[open]){
+  z-index: 30;
+  clip-path: none;
+}
+#app[aria-label="TaskTimer App"] #appPageTasks .task:focus-within{
+  z-index: 30;
+  clip-path: none;
+}
+#app[aria-label="TaskTimer App"] #appPageTasks .task .taskMenu[open]{
+  position: relative;
+  z-index: 110;
+}
+#app[aria-label="TaskTimer App"] #appPageTasks .task .taskMenuList{
+  z-index: 1200;
 }

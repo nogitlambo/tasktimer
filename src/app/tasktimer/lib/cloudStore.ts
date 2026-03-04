@@ -17,6 +17,7 @@ import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./typ
 export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "light" | "dark" | "command";
+  menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
@@ -321,6 +322,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             : prefSnap.get("theme") === "command"
               ? "command"
               : "dark",
+        menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
         defaultTaskTimerFormat:
           prefSnap.get("defaultTaskTimerFormat") === "day" || prefSnap.get("defaultTaskTimerFormat") === "minute"
             ? prefSnap.get("defaultTaskTimerFormat")
@@ -490,6 +492,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   return {
     schemaVersion: 1,
     theme: data.theme === "light" ? "light" : data.theme === "command" ? "command" : "dark",
+    menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
     defaultTaskTimerFormat:
       data.defaultTaskTimerFormat === "day" || data.defaultTaskTimerFormat === "minute"
         ? data.defaultTaskTimerFormat

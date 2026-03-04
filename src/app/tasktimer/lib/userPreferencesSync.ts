@@ -7,6 +7,7 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "light" | "dark" | "command";
+  menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
@@ -21,6 +22,7 @@ type StartSyncOptions = {
   avatarSelectionStoragePrefix: string;
   storageKeys: {
     theme: string;
+    menuButtonStyle?: string;
     defaultTaskTimerFormat: string;
     dynamicColorsEnabled: string;
     autoFocusOnTaskLaunchEnabled: string;
@@ -70,6 +72,10 @@ function parseTimerFormat(raw: string | null | undefined): "day" | "hour" | "min
   return "hour";
 }
 
+function parseMenuButtonStyle(raw: string | null | undefined): "parallelogram" | "square" {
+  return raw === "square" ? "square" : "parallelogram";
+}
+
 function parseModeSettings(raw: string | null): Record<string, unknown> | null {
   if (!raw) return null;
   try {
@@ -83,6 +89,7 @@ function parseModeSettings(raw: string | null): Record<string, unknown> | null {
 function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferencesV1 {
   const { storageKeys } = opts;
   const theme = parseTheme(localStorage.getItem(storageKeys.theme));
+  const menuButtonStyle = parseMenuButtonStyle(localStorage.getItem(storageKeys.menuButtonStyle || ""));
   const defaultTaskTimerFormat = parseTimerFormat(localStorage.getItem(storageKeys.defaultTaskTimerFormat));
   const dynamicColorsEnabled = parseBooleanLike(localStorage.getItem(storageKeys.dynamicColorsEnabled), true);
   const autoFocusOnTaskLaunchEnabled = parseBooleanLike(localStorage.getItem(storageKeys.autoFocusOnTaskLaunchEnabled), true);
@@ -93,6 +100,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
   return {
     schemaVersion: 1,
     theme,
+    menuButtonStyle,
     defaultTaskTimerFormat,
     dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled,
@@ -106,6 +114,9 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
 function applyCloudPreferencesToLocal(uid: string, prefs: UserPreferencesV1, opts: StartSyncOptions) {
   const { storageKeys } = opts;
   localStorage.setItem(storageKeys.theme, prefs.theme);
+  if (storageKeys.menuButtonStyle) {
+    localStorage.setItem(storageKeys.menuButtonStyle, prefs.menuButtonStyle);
+  }
   localStorage.setItem(storageKeys.defaultTaskTimerFormat, prefs.defaultTaskTimerFormat);
   localStorage.setItem(storageKeys.dynamicColorsEnabled, prefs.dynamicColorsEnabled ? "true" : "false");
   localStorage.setItem(storageKeys.autoFocusOnTaskLaunchEnabled, prefs.autoFocusOnTaskLaunchEnabled ? "true" : "false");
@@ -123,6 +134,7 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
   return {
     schemaVersion: 1,
     theme: parseTheme(String(data.theme || "")),
+    menuButtonStyle: parseMenuButtonStyle(String(data.menuButtonStyle || "")),
     defaultTaskTimerFormat: parseTimerFormat(String(data.defaultTaskTimerFormat || "")),
     dynamicColorsEnabled: parseBooleanLike(String(data.dynamicColorsEnabled || ""), true),
     autoFocusOnTaskLaunchEnabled: parseBooleanLike(String(data.autoFocusOnTaskLaunchEnabled || ""), true),
@@ -136,6 +148,7 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
 function hashPreferences(prefs: UserPreferencesV1) {
   return JSON.stringify({
     theme: prefs.theme,
+    menuButtonStyle: prefs.menuButtonStyle,
     defaultTaskTimerFormat: prefs.defaultTaskTimerFormat,
     dynamicColorsEnabled: prefs.dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled: prefs.autoFocusOnTaskLaunchEnabled,
