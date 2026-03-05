@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
@@ -83,7 +83,7 @@ function logFirebaseAuthError(stage: string, err: unknown) {
   });
 }
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showLogo, setShowLogo] = useState(false);
@@ -452,5 +452,13 @@ export default function Home() {
     <LandingClassic
       {...landingProps}
     />
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
