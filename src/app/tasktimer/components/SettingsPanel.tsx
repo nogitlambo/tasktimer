@@ -877,7 +877,7 @@ export default function SettingsPanel() {
                               </div>
                             </div>
                             <div className="settingsAccountFieldRow settingsAccountRankCol">
-                              <div className="settingsAccountFieldLabel">Rank</div>
+                              <div className="settingsAccountFieldLabel">Rank:</div>
                               <button
                                 type="button"
                                 className="settingsAccountRankBtn"
@@ -1196,14 +1196,9 @@ export default function SettingsPanel() {
                 <div className="field" id="themeToggleRow">
                   <label htmlFor="themeSelect">Theme</label>
                   <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
-                    <option value="light">Light</option>
                     <option value="dark">Dark</option>
                     <option value="command">Command Base Console</option>
                   </select>
-                </div>
-                <div className="toggleRow" id="taskDynamicColorsToggleRow">
-                  <span>Dynamic colors for progress and history</span>
-                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
                 <div className="field" id="menuButtonStyleRow">
                   <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
@@ -1211,6 +1206,10 @@ export default function SettingsPanel() {
                     <option value="parallelogram">Parralelogram (default)</option>
                     <option value="square">Square</option>
                   </select>
+                </div>
+                <div className="toggleRow" id="taskDynamicColorsToggleRow">
+                  <span>Use dynamic colors on progress bar and charts</span>
+                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
               </section>
             </div>

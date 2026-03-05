@@ -5336,7 +5336,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function loadThemePreference() {
     const raw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
-    const mode: "light" | "dark" | "command" = raw === "light" ? "light" : raw === "command" ? "command" : "dark";
+    const mode: "light" | "dark" | "command" = raw === "command" ? "command" : "dark";
     applyTheme(mode);
   }
 
@@ -8227,7 +8227,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.themeSelect, "change", () => {
       const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
-      const next: "light" | "dark" | "command" = raw === "light" ? "light" : raw === "command" ? "command" : "dark";
+      const next: "light" | "dark" | "command" = raw === "command" ? "command" : "dark";
       setThemeMode(next);
     });
     on(els.menuButtonStyleSelect, "change", () => {
