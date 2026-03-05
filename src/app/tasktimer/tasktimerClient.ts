@@ -54,6 +54,26 @@ export type TaskTimerClientHandle = {
   destroy: () => void;
 };
 
+const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
+const ARCHITECT_EMAIL = "aniven82@gmail.com";
+
+type HistoryGenParams = {
+  taskIds: string[];
+  daysBack: number;
+  entriesPerDayMin: number;
+  entriesPerDayMax: number;
+  windowStartMinute: number;
+  windowEndMinute: number;
+  replaceExisting: boolean;
+};
+
+type HistoryGenPreview = {
+  params: HistoryGenParams;
+  perTaskCount: Record<string, number>;
+  totalGenerated: number;
+  nextHistory: HistoryByTaskId;
+};
+
 export function initTaskTimerClient(): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
@@ -275,6 +295,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let shareTaskIndex: number | null = null;
   let exportTaskIndex: number | null = null;
   let groupsLoading = false;
+  let activeFriendProfileUid: string | null = null;
+  let activeFriendProfileName = "";
   let groupsStatusMessage = "Ready.";
   const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, item) => {
     const key = String(item.id || "").trim();
@@ -362,6 +384,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     friendRequestCancelBtn: document.getElementById("friendRequestCancelBtn") as HTMLButtonElement | null,
     friendRequestSendBtn: document.getElementById("friendRequestSendBtn") as HTMLButtonElement | null,
     friendRequestModalStatus: document.getElementById("friendRequestModalStatus"),
+    friendProfileModal: document.getElementById("friendProfileModal"),
+    friendProfileAvatar: document.getElementById("friendProfileAvatar") as HTMLImageElement | null,
+    friendProfileName: document.getElementById("friendProfileName"),
+    friendProfileRankImage: document.getElementById("friendProfileRankImage") as HTMLImageElement | null,
+    friendProfileRank: document.getElementById("friendProfileRank"),
+    friendProfileMemberSince: document.getElementById("friendProfileMemberSince"),
+    friendProfileDeleteBtn: document.getElementById("friendProfileDeleteBtn") as HTMLButtonElement | null,
+    friendProfileCloseBtn: document.getElementById("friendProfileCloseBtn") as HTMLButtonElement | null,
     shareTaskModal: document.getElementById("shareTaskModal"),
     shareTaskTitle: document.getElementById("shareTaskTitle"),
     shareTaskScopeSelect: document.getElementById("shareTaskScopeSelect") as HTMLSelectElement | null,
@@ -378,6 +408,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     exportTaskCancelBtn: document.getElementById("exportTaskCancelBtn") as HTMLButtonElement | null,
     exportTaskConfirmBtn: document.getElementById("exportTaskConfirmBtn") as HTMLButtonElement | null,
     groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
+    groupsIncomingRequestsDetails: document.getElementById("groupsIncomingRequestsDetails") as HTMLDetailsElement | null,
+    groupsIncomingRequestsTitle: document.getElementById("groupsIncomingRequestsTitle"),
     groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
     groupsFriendsList: document.getElementById("groupsFriendsList"),
     groupsSharedByYouList: document.getElementById("groupsSharedByYouList"),
@@ -387,6 +419,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     footerDashboardBtn: document.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
+    footerTest2AlertBadge: document.getElementById("footerTest2AlertBadge") as HTMLElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
     signedInHeaderBadge: document.getElementById("signedInHeaderBadge") as HTMLElement | null,
     dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
@@ -1566,6 +1599,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
   }
 
+  function currentEmail() {
+    return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
+  }
+
+  function isArchitectUser() {
+    const uid = currentUid();
+    if (uid !== ARCHITECT_UID) return false;
+    const email = currentEmail();
+    if (!email) return true;
+    return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
+  }
+
   function persistPreferencesToCloud() {
     cloudPreferencesCache = {
       schemaVersion: 1,
@@ -1954,38 +1999,142 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     reader.readAsText(file);
   }
 
-  async function generateHistoryManagerTestData(replaceExisting: boolean) {
-    const taskList = (tasks || []).filter((t) => String(t.id || "").trim());
-    if (!taskList.length) {
-      alert("Add at least one task before generating test history.");
-      return;
+  function parseHistoryGenTimeToMinute(value: string): number | null {
+    const raw = String(value || "").trim();
+    const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return null;
+    const hh = Number(m[1]);
+    const mm = Number(m[2]);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+    return hh * 60 + mm;
+  }
+
+  function formatHistoryGenMinute(minute: number): string {
+    const clamped = Math.max(0, Math.min(24 * 60 - 1, Math.floor(minute || 0)));
+    const hh = Math.floor(clamped / 60);
+    const mm = clamped % 60;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+  function readHistoryManagerGenerateParamsFromConfirm(): HistoryGenParams | null {
+    const host = els.confirmText as HTMLElement | null;
+    if (!host) return null;
+    const selectedTaskIds = Array.from(
+      host.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-history-gen-task-id]:checked')
+    )
+      .map((el) => String(el.getAttribute("data-history-gen-task-id") || "").trim())
+      .filter(Boolean);
+    if (!selectedTaskIds.length) {
+      alert("Select at least one task.");
+      return null;
     }
 
-    const nextHistory: HistoryByTaskId = replaceExisting ? {} : { ...(historyByTaskId || {}) };
+    const daysBack = Math.floor(Number((host.querySelector("#historyGenDaysBack") as HTMLInputElement | null)?.value || 0));
+    if (!Number.isFinite(daysBack) || daysBack <= 0) {
+      alert("Enter a valid date range in days (greater than 0).");
+      return null;
+    }
+
+    const entriesPerDayMin = Math.floor(
+      Number((host.querySelector("#historyGenEntriesMin") as HTMLInputElement | null)?.value || 0)
+    );
+    const entriesPerDayMax = Math.floor(
+      Number((host.querySelector("#historyGenEntriesMax") as HTMLInputElement | null)?.value || 0)
+    );
+    if (!Number.isFinite(entriesPerDayMin) || !Number.isFinite(entriesPerDayMax) || entriesPerDayMin <= 0 || entriesPerDayMax <= 0) {
+      alert("Entries per day must be positive numbers.");
+      return null;
+    }
+    if (entriesPerDayMin > entriesPerDayMax) {
+      alert("Entries/day minimum cannot be greater than maximum.");
+      return null;
+    }
+
+    const startRaw = (host.querySelector("#historyGenStartTime") as HTMLInputElement | null)?.value || "";
+    const endRaw = (host.querySelector("#historyGenEndTime") as HTMLInputElement | null)?.value || "";
+    const windowStartMinute = parseHistoryGenTimeToMinute(startRaw);
+    const windowEndMinute = parseHistoryGenTimeToMinute(endRaw);
+    if (windowStartMinute == null || windowEndMinute == null || windowStartMinute >= windowEndMinute) {
+      alert("Enter a valid time window where start is earlier than end.");
+      return null;
+    }
+
+    return {
+      taskIds: selectedTaskIds,
+      daysBack,
+      entriesPerDayMin,
+      entriesPerDayMax,
+      windowStartMinute,
+      windowEndMinute,
+      replaceExisting: !!els.confirmDeleteAll?.checked,
+    };
+  }
+
+  function buildHistoryManagerTestDataPreview(params: HistoryGenParams): HistoryGenPreview {
+    const cloneHistory: HistoryByTaskId = {};
+    if (!params.replaceExisting) {
+      Object.keys(historyByTaskId || {}).forEach((taskId) => {
+        cloneHistory[taskId] = Array.isArray(historyByTaskId[taskId]) ? (historyByTaskId[taskId] || []).slice() : [];
+      });
+    }
+    const nextHistory: HistoryByTaskId = cloneHistory;
+
+    const taskOrderById = new Map<string, number>();
+    (tasks || []).forEach((task, idx) => {
+      const taskId = String(task.id || "").trim();
+      if (taskId) taskOrderById.set(taskId, idx);
+    });
+    const selectedTasks = params.taskIds
+      .map((taskId) => tasks.find((task) => String(task.id || "").trim() === String(taskId)))
+      .filter((task): task is Task => !!task);
+    const perTaskCount: Record<string, number> = {};
+    selectedTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
+      perTaskCount[taskId] = 0;
+      if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
+    });
+
+    const unitToMinute = (task: Task) => {
+      if (task.milestoneTimeUnit === "day") return 24 * 60;
+      if (task.milestoneTimeUnit === "minute") return 1;
+      return 60;
+    };
+    const randInt = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
     const now = new Date();
     const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const days = 90;
-    let generated = 0;
+    let totalGenerated = 0;
 
-    for (let dayOffset = days - 1; dayOffset >= 0; dayOffset -= 1) {
+    for (let dayOffset = params.daysBack - 1; dayOffset >= 0; dayOffset -= 1) {
       const day = new Date(todayLocal);
       day.setDate(todayLocal.getDate() - dayOffset);
 
-      taskList.forEach((task, taskIdx) => {
+      selectedTasks.forEach((task) => {
         const taskId = String(task.id || "").trim();
         if (!taskId) return;
-        const sessions = 1 + Math.floor(Math.random() * 3);
-        if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
+        const taskIdx = taskOrderById.get(taskId) || 0;
+        const sessions = randInt(params.entriesPerDayMin, params.entriesPerDayMax);
+        const milestonesMinutes = sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : [])
+          .map((m) => Math.floor(Math.max(0, Number(m.hours || 0)) * unitToMinute(task)))
+          .filter((m) => m > 0);
 
         for (let i = 0; i < sessions; i += 1) {
-          const startHour = 6 + Math.floor(Math.random() * 14);
-          const startMinute = Math.floor(Math.random() * 60);
+          const windowMinute = randInt(params.windowStartMinute, params.windowEndMinute - 1);
           const tsDate = new Date(day);
-          tsDate.setHours(startHour, startMinute, 0, 0);
-          const ts = tsDate.getTime() + i * 37_000 + taskIdx * 1_000;
-          const baseMinutes = 18 + ((taskIdx * 7) % 35);
-          const varianceMinutes = Math.floor(Math.random() * 55);
-          const durationMinutes = Math.max(5, baseMinutes + varianceMinutes);
+          tsDate.setHours(0, 0, 0, 0);
+          const ts = tsDate.getTime() + windowMinute * 60_000 + i * 37_000 + taskIdx * 1_000;
+
+          let durationMinutes = 0;
+          if (milestonesMinutes.length) {
+            const target = milestonesMinutes[(dayOffset + i + taskIdx) % milestonesMinutes.length];
+            const variance = Math.max(5, Math.floor(target * 0.2));
+            durationMinutes = Math.max(5, target + randInt(-variance, variance));
+          } else {
+            const baseMinutes = 18 + ((taskIdx * 7) % 35);
+            const varianceMinutes = Math.floor(Math.random() * 55);
+            durationMinutes = Math.max(5, baseMinutes + varianceMinutes);
+          }
+
           const ms = durationMinutes * 60 * 1000;
           nextHistory[taskId].push({
             ts,
@@ -1993,7 +2142,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             ms,
             color: sessionColorForTaskMs(task, ms),
           });
-          generated += 1;
+          perTaskCount[taskId] += 1;
+          totalGenerated += 1;
         }
       });
     }
@@ -2004,11 +2154,122 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       nextHistory[taskId] = arr;
     });
 
-    historyByTaskId = nextHistory;
+    return {
+      params,
+      perTaskCount,
+      totalGenerated,
+      nextHistory,
+    };
+  }
+
+  async function applyHistoryManagerTestData(preview: HistoryGenPreview): Promise<void> {
+    historyByTaskId = preview.nextHistory;
     await saveHistoryAndWait(historyByTaskId);
     render();
     renderHistoryManager();
-    alert(`Generated ${generated} test history entries across the past 90 days.`);
+    alert(`Generated ${preview.totalGenerated} test history entries.`);
+  }
+
+  function openHistoryManagerGeneratePreviewDialog(preview: HistoryGenPreview) {
+    const perTaskRows = Object.entries(preview.perTaskCount)
+      .map(([taskId, count]) => {
+        const taskName = String(tasks.find((task) => String(task.id || "") === String(taskId))?.name || taskId || "Task").trim();
+        return `<li><b>${escapeHtmlUI(taskName)}</b>: ${count}</li>`;
+      })
+      .join("");
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - (preview.params.daysBack - 1));
+    const endDate = new Date();
+    endDate.setHours(0, 0, 0, 0);
+    confirm("Preview Test Data", "", {
+      okLabel: "Generate",
+      cancelLabel: "Cancel",
+      textHtml: `
+        <div class="hmGenConfirm">
+          <p style="margin:0 0 8px;">Selected tasks: <b>${preview.params.taskIds.length}</b></p>
+          <p style="margin:0 0 8px;">Date span: <b>${escapeHtmlUI(startDate.toLocaleDateString())}</b> to <b>${escapeHtmlUI(
+            endDate.toLocaleDateString()
+          )}</b> (${preview.params.daysBack} days)</p>
+          <p style="margin:0 0 8px;">Entries/day: <b>${preview.params.entriesPerDayMin}</b> to <b>${
+            preview.params.entriesPerDayMax
+          }</b></p>
+          <p style="margin:0 0 8px;">Entry window: <b>${formatHistoryGenMinute(preview.params.windowStartMinute)}</b> to <b>${formatHistoryGenMinute(
+            preview.params.windowEndMinute
+          )}</b></p>
+          <p style="margin:0 0 8px;">Replace existing: <b>${preview.params.replaceExisting ? "Yes" : "No"}</b></p>
+          <p style="margin:0 0 8px;">Total generated: <b>${preview.totalGenerated}</b></p>
+          <ul style="margin:0; padding-left:20px;">${perTaskRows || "<li>No tasks</li>"}</ul>
+        </div>
+      `,
+      onOk: () => {
+        void applyHistoryManagerTestData(preview);
+        closeConfirm();
+      },
+      onCancel: () => closeConfirm(),
+    });
+  }
+
+  function openHistoryManagerGenerateConfigDialog() {
+    const taskList = (tasks || []).filter((task) => String(task.id || "").trim());
+    if (!taskList.length) {
+      alert("Add at least one task before generating test history.");
+      return;
+    }
+    const taskOptions = taskList
+      .map((task) => {
+        const taskId = String(task.id || "").trim();
+        const taskName = String(task.name || "").trim() || "Task";
+        return `<label class="hmGenTaskRow" style="display:flex; align-items:center; gap:8px; margin:4px 0;">
+          <input type="checkbox" data-history-gen-task-id="${escapeHtmlUI(taskId)}" />
+          <span>${escapeHtmlUI(taskName)}</span>
+        </label>`;
+      })
+      .join("");
+
+    confirm("Generate Test Data", "", {
+      okLabel: "Preview",
+      cancelLabel: "Cancel",
+      checkboxLabel: "Replace existing history",
+      checkboxChecked: true,
+      textHtml: `
+        <div class="hmGenConfirm">
+          <div style="margin:0 0 8px;"><b>Select tasks</b></div>
+          <div id="historyGenTaskList" style="max-height:180px; overflow:auto; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:10px; padding:8px;">
+            ${taskOptions}
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span>Days back</span>
+              <input id="historyGenDaysBack" type="number" min="1" max="3650" value="90" />
+            </label>
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span>Entries/day min</span>
+              <input id="historyGenEntriesMin" type="number" min="1" max="1000" value="1" />
+            </label>
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span>Entries/day max</span>
+              <input id="historyGenEntriesMax" type="number" min="1" max="1000" value="3" />
+            </label>
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span>Start time</span>
+              <input id="historyGenStartTime" type="time" value="06:00" />
+            </label>
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span>End time</span>
+              <input id="historyGenEndTime" type="time" value="20:00" />
+            </label>
+          </div>
+        </div>
+      `,
+      onOk: () => {
+        const params = readHistoryManagerGenerateParamsFromConfirm();
+        if (!params) return;
+        const preview = buildHistoryManagerTestDataPreview(params);
+        openHistoryManagerGeneratePreviewDialog(preview);
+      },
+      onCancel: () => closeConfirm(),
+    });
   }
 
   function makeBackupPayload() {
@@ -4454,6 +4715,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function renderHistoryManager() {
+    if (els.historyManagerGenerateBtn) {
+      els.historyManagerGenerateBtn.style.display = isArchitectUser() ? "" : "none";
+    }
     const listEl = document.getElementById("hmList");
     if (!listEl) return;
     if (listEl.children.length) {
@@ -4647,6 +4911,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function openHistoryManager() {
     if (els.menuOverlay) (els.menuOverlay as HTMLElement).style.display = "none";
+    if (els.historyManagerGenerateBtn) {
+      els.historyManagerGenerateBtn.style.display = isArchitectUser() ? "" : "none";
+    }
     if (els.historyManagerScreen) {
       (els.historyManagerScreen as HTMLElement).style.display = "block";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
@@ -5804,6 +6071,72 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
+  function closeFriendProfileModal() {
+    if (!els.friendProfileModal) return;
+    (els.friendProfileModal as HTMLElement).style.display = "none";
+    activeFriendProfileUid = null;
+    activeFriendProfileName = "";
+  }
+
+  function openFriendProfileModal(friendUid: string) {
+    const uid = currentUid();
+    if (!uid || !els.friendProfileModal) return;
+    const targetUid = String(friendUid || "").trim();
+    if (!targetUid) return;
+
+    const rankedFriends = groupsFriendships
+      .map((row) => {
+        const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
+        if (!peerUid) return null;
+        const profile = row.profileByUid?.[peerUid];
+        const alias = String(profile?.alias || "").trim() || peerUid;
+        const avatarId = String(profile?.avatarId || "").trim();
+        const rankThumbnailSrc = String(profile?.rankThumbnailSrc || "").trim();
+        const avatarSrc = avatarSrcById[avatarId] || "/avatars/initials/initials-AN.svg";
+        const sharedCount = groupsSharedSummaries.filter((entry) => entry.ownerUid === peerUid).length;
+        const createdAtMs =
+          row.createdAt && typeof (row.createdAt as any).toMillis === "function"
+            ? Number((row.createdAt as any).toMillis())
+            : Number.NaN;
+        return { peerUid, alias, avatarSrc, rankThumbnailSrc, sharedCount, createdAtMs };
+      })
+      .filter(
+        (row): row is { peerUid: string; alias: string; avatarSrc: string; rankThumbnailSrc: string; sharedCount: number; createdAtMs: number } =>
+          !!row
+      )
+      .sort((a, b) => {
+        if (b.sharedCount !== a.sharedCount) return b.sharedCount - a.sharedCount;
+        const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
+        if (byAlias !== 0) return byAlias;
+        return a.peerUid.localeCompare(b.peerUid, undefined, { sensitivity: "base" });
+      });
+
+    const row = rankedFriends.find((entry) => entry.peerUid === targetUid);
+    if (!row) return;
+    const rankPosition = rankedFriends.findIndex((entry) => entry.peerUid === targetUid) + 1;
+    const memberSinceText = Number.isFinite(row.createdAtMs) ? new Date(row.createdAtMs).toLocaleDateString() : "Unknown";
+
+    if (els.friendProfileAvatar) {
+      els.friendProfileAvatar.src = row.avatarSrc;
+      els.friendProfileAvatar.alt = `${row.alias} avatar`;
+    }
+    if (els.friendProfileName) els.friendProfileName.textContent = row.alias;
+    if (els.friendProfileRankImage) {
+      if (row.rankThumbnailSrc) {
+        els.friendProfileRankImage.src = row.rankThumbnailSrc;
+        els.friendProfileRankImage.style.display = "block";
+      } else {
+        els.friendProfileRankImage.removeAttribute("src");
+        els.friendProfileRankImage.style.display = "none";
+      }
+    }
+    if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: #${rankPosition}`;
+    if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
+    activeFriendProfileUid = row.peerUid;
+    activeFriendProfileName = row.alias;
+    (els.friendProfileModal as HTMLElement).style.display = "flex";
+  }
+
   function getTaskCreatedAtMs(taskId: string): number | null {
     const t = tasks.find((row) => String(row.id || "") === String(taskId));
     const raw = (t as any)?.createdAt;
@@ -6181,6 +6514,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     rows: FriendRequest[],
     opts: { incoming: boolean }
   ) {
+    if (opts.incoming) {
+      const incomingTitleEl = els.groupsIncomingRequestsTitle as HTMLElement | null;
+      const incomingDetailsEl = els.groupsIncomingRequestsDetails as HTMLDetailsElement | null;
+      if (incomingTitleEl) incomingTitleEl.textContent = `${rows.length} Incoming Requests`;
+      if (incomingDetailsEl) incomingDetailsEl.open = rows.length > 0;
+    }
     if (!container) return;
     if (!rows.length) {
       container.classList.add("isEmptyStatus");
@@ -6191,24 +6530,46 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     container.innerHTML = rows
       .map((row) => {
         const peerUid = opts.incoming ? row.senderUid : row.receiverUid;
+        const peerAliasRaw = opts.incoming ? row.senderAlias : row.receiverAlias;
+        const peerAlias = String(peerAliasRaw || "").trim() || peerUid;
         const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
+        const requestedAtMs =
+          row.createdAt && typeof (row.createdAt as any).toMillis === "function"
+            ? Number((row.createdAt as any).toMillis())
+            : Number.NaN;
+        const requestedDate = Number.isFinite(requestedAtMs) ? new Date(requestedAtMs).toLocaleString() : "Unknown";
         const status = String(row.status || "pending");
         const statusLabel = status[0].toUpperCase() + status.slice(1);
         const actionBtns =
           status !== "pending"
             ? ""
             : opts.incoming
-              ? `<div class="footerBtns"><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
+              ? `<div class="footerBtns groupsIncomingRequestActions"><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
                   row.requestId
-                )}">Approve</button><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
+                )}">Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
                   row.requestId
-                )}">Decline</button></div>`
+                )}">Approve</button></div>`
               : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${escapeHtmlUI(
                   row.requestId
                 )}">Cancel request</button></div>`;
-        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div><div>User ID: ${escapeHtmlUI(
-          peerUid
-        )}</div>${peerEmail ? `<div>${escapeHtmlUI(peerEmail)}</div>` : ""}${actionBtns}</div>`;
+        const identityAvatarId = String((opts.incoming ? row.senderAvatarId : row.receiverAvatarId) || "").trim();
+        const identityAvatarSrc = avatarSrcById[identityAvatarId] || "/avatars/initials/initials-AN.svg";
+        const identityHtml = `<div class="friendRequestIdentityRow">
+          <img src="${escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
+          <div class="friendRequestIdentityText">
+            <div class="friendRequestAlias">${escapeHtmlUI(peerAlias)}</div>
+            <div class="friendRequestUid">${escapeHtmlUI(peerUid)}</div>
+          </div>
+        </div>`;
+        if (opts.incoming) {
+          const incomingSentence = `<b>${escapeHtmlUI(peerAlias)}</b>${peerEmail ? ` (${escapeHtmlUI(peerEmail)})` : ""} has sent you a friend request!`;
+          return `<div class="settingsDetailNote"><div>${incomingSentence}</div><div>Date Requested: ${escapeHtmlUI(
+            requestedDate
+          )}</div>${identityHtml}${actionBtns}</div>`;
+        }
+        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div>${identityHtml}${
+          peerEmail ? `<div>${escapeHtmlUI(peerEmail)}</div>` : ""
+        }${actionBtns}</div>`;
       })
       .join("");
   }
@@ -6224,7 +6585,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       els.groupsFriendsList.textContent = "No friends yet.";
       return;
     }
-    els.groupsFriendsList.innerHTML = groupsFriendships
+    const friendRows = groupsFriendships
       .map((row) => {
         const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
         const profile = row.profileByUid?.[friendUid];
@@ -6232,7 +6593,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const avatarId = String(profile?.avatarId || "").trim();
         const avatarSrc = avatarSrcById[avatarId] || "/avatars/initials/initials-AN.svg";
         const summaries = groupsSharedSummaries.filter((entry) => entry.ownerUid === friendUid);
-        const summaryHtml = summaries
+        return { friendUid, alias, avatarSrc, summaries };
+      })
+      .sort((a, b) => {
+        const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
+        if (byAlias !== 0) return byAlias;
+        return a.friendUid.localeCompare(b.friendUid, undefined, { sensitivity: "base" });
+      });
+
+    els.groupsFriendsList.innerHTML = friendRows
+      .map((row) => {
+        const summaryHtml = row.summaries
           .map((entry) => {
             const createdDate =
               entry.taskCreatedAtMs != null && Number.isFinite(Number(entry.taskCreatedAtMs))
@@ -6273,19 +6644,33 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
             </div>`;
           })
           .join("");
+        const taskCount = row.summaries.length;
+        const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
         return `<div class="friendEntryWrap">
-          <div class="settingsDetailNote friendIdentityRow">
-            <img src="${escapeHtmlUI(avatarSrc)}" alt="" aria-hidden="true" style="width:84px;height:84px;border-radius:50%;object-fit:cover;flex:0 0 auto;" />
-            <span style="font-weight:600;">${escapeHtmlUI(alias)}</span>
-          </div>
-          <div class="friendSharedTasksSection">
-            <div class="friendSharedTasksHeading">Tasks shared with you</div>
-            ${
-              summaryHtml
-                ? `<div class="friendSharedTasksGrid">${summaryHtml}</div>`
-                : `<div class="settingsDetailNote sharedTasksEmpty">No shared tasks.</div>`
-            }
-          </div>
+          <details class="friendSharedTasksDetails">
+            <summary class="settingsDetailNote friendIdentityRow">
+              <button class="friendIdentityProfileBtn friendIdentityAvatarBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
+                row.friendUid
+              )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
+                <img src="${escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" style="width:63px;height:63px;border-radius:50%;object-fit:cover;flex:0 0 auto;" />
+              </button>
+              <button class="friendIdentityProfileBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
+                row.friendUid
+              )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
+                <span class="friendIdentityNameBlock">
+                  <span class="friendIdentityName">${escapeHtmlUI(row.alias)}</span>
+                </span>
+              </button>
+              <span class="friendSharedTasksCountText">${escapeHtmlUI(sharedCountLabel)}</span>
+            </summary>
+            <div class="friendSharedTasksSection">
+              ${
+                summaryHtml
+                  ? `<div class="friendSharedTasksGrid">${summaryHtml}</div>`
+                  : `<div class="settingsDetailNote sharedTasksEmpty">No shared tasks.</div>`
+              }
+            </div>
+          </details>
         </div>`;
       })
       .join("");
@@ -6338,11 +6723,29 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function renderGroupsPage() {
+    renderFriendsFooterAlertBadge();
     renderGroupsRequestsList(els.groupsIncomingRequestsList as HTMLElement | null, groupsIncomingRequests, { incoming: true });
     renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, groupsOutgoingRequests, { incoming: false });
     renderGroupsFriendsList();
     renderGroupsSharedByYouList();
     if (els.friendRequestSendBtn) els.friendRequestSendBtn.disabled = groupsLoading;
+  }
+
+  function renderFriendsFooterAlertBadge() {
+    const badgeEl = els.footerTest2AlertBadge as HTMLElement | null;
+    if (!badgeEl) return;
+    const uid = currentUid();
+    const count = uid ? Math.max(0, Number(groupsIncomingRequests.length) || 0) : 0;
+    if (count <= 0) {
+      badgeEl.style.display = "none";
+      badgeEl.textContent = "";
+      badgeEl.setAttribute("aria-label", "No incoming friend requests");
+      return;
+    }
+    const countLabel = count > 99 ? "99+" : String(count);
+    badgeEl.style.display = "inline-flex";
+    badgeEl.textContent = countLabel;
+    badgeEl.setAttribute("aria-label", `${count} incoming friend request${count === 1 ? "" : "s"}`);
   }
 
   async function refreshGroupsData() {
@@ -6484,6 +6887,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (els.signedInHeaderBadge) {
       els.signedInHeaderBadge.style.display = page === "dashboard" || page === "test2" ? "inline-flex" : "none";
     }
+    renderFriendsFooterAlertBadge();
     const syncUrlMode = opts?.syncUrl;
     const canSyncMainPageUrl = /\/tasktimer$/.test(normalizedPathname()) || /\/tasktimer\/index\.html$/i.test(normalizedPathname());
     if (syncUrlMode && canSyncMainPageUrl) {
@@ -6503,6 +6907,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       void refreshGroupsData();
       return;
     }
+    closeFriendProfileModal();
     closeFriendRequestModal();
     if (page === "tasks") {
       render();
@@ -6947,6 +7352,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     on(els.friendRequestModal, "click", (e: any) => {
       if (e?.target === els.friendRequestModal) closeFriendRequestModal();
     });
+    on(els.friendProfileCloseBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      closeFriendProfileModal();
+    });
+    on(els.friendProfileModal, "click", (e: any) => {
+      if (e?.target === els.friendProfileModal) closeFriendProfileModal();
+    });
+    on(els.friendProfileDeleteBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      const fallbackName = String(els.friendProfileName?.textContent || "").trim();
+      const friendName = String(activeFriendProfileName || fallbackName || "this user").trim();
+      confirm("Delete Friend", `Are you sure you want to delete ${friendName} as a friend?`, {
+        okLabel: "Delete",
+        onOk: () => {
+          closeConfirm();
+          if (activeFriendProfileUid) setGroupsStatus("Delete Friend is not available yet.");
+        },
+      });
+    });
     on(els.friendRequestSendBtn, "click", (e: any) => {
       e?.preventDefault?.();
       if (groupsLoading) return;
@@ -7008,6 +7432,15 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (action !== "approve" && action !== "decline" && action !== "cancel") return;
       if (groupsLoading) return;
       void handleFriendRequestAction(requestId, action);
+    });
+    on(els.groupsFriendsList, "click", (e: any) => {
+      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
+      if (!btn) return;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
+      if (!friendUid) return;
+      openFriendProfileModal(friendUid);
     });
     on(els.groupsSharedByYouList, "click", (e: any) => {
       const card = e.target?.closest?.("[data-shared-owned-task-id]") as HTMLElement | null;
@@ -8206,22 +8639,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       if (f) importHistoryManagerCsvFromFile(f);
     });
     on(els.historyManagerGenerateBtn, "click", () => {
-      confirm(
-        "Generate Test Data",
-        "Generate synthetic history entries covering the past 90 days for all tasks?",
-        {
-          okLabel: "Generate",
-          cancelLabel: "Cancel",
-          checkboxLabel: "Replace existing history",
-          checkboxChecked: true,
-          onOk: () => {
-            const replaceExisting = !!els.confirmDeleteAll?.checked;
-            void generateHistoryManagerTestData(replaceExisting);
-            closeConfirm();
-          },
-          onCancel: () => closeConfirm(),
-        }
-      );
+      if (!isArchitectUser()) {
+        alert("Generate Test Data is architect-only.");
+        return;
+      }
+      openHistoryManagerGenerateConfigDialog();
     });
     on(els.historyManagerBulkBtn, "click", () => {
       hmBulkEditMode = !hmBulkEditMode;

@@ -285,14 +285,26 @@ export default function TaskTimerPage() {
                     <div className="dashboardDonutCenter" id="dashboardModeDonutCenter">0%</div>
                   </div>
                   <div className="dashboardLegend">
-                    <span>
-                      <i className="dot mode1" /> <span id="dashboardMode1Label">Mode 1</span> <strong id="dashboardMode1Value">0%</strong>
+                    <span className="dashboardLegendRow">
+                      <span className="dashboardLegendName">
+                        <i className="dot mode1" />
+                        <span id="dashboardMode1Label">Mode 1</span>
+                      </span>
+                      <strong id="dashboardMode1Value">0%</strong>
                     </span>
-                    <span>
-                      <i className="dot mode2" /> <span id="dashboardMode2Label">Mode 2</span> <strong id="dashboardMode2Value">0%</strong>
+                    <span className="dashboardLegendRow">
+                      <span className="dashboardLegendName">
+                        <i className="dot mode2" />
+                        <span id="dashboardMode2Label">Mode 2</span>
+                      </span>
+                      <strong id="dashboardMode2Value">0%</strong>
                     </span>
-                    <span>
-                      <i className="dot mode3" /> <span id="dashboardMode3Label">Mode 3</span> <strong id="dashboardMode3Value">0%</strong>
+                    <span className="dashboardLegendRow">
+                      <span className="dashboardLegendName">
+                        <i className="dot mode3" />
+                        <span id="dashboardMode3Label">Mode 3</span>
+                      </span>
+                      <strong id="dashboardMode3Value">0%</strong>
                     </span>
                   </div>
                 </section>
@@ -360,7 +372,6 @@ export default function TaskTimerPage() {
                 </div>
 
                 <section className="dashboardCard" aria-label="Friends list">
-                  <div className="dashboardCardTitle">Friends</div>
                   <div id="groupsFriendsList" className="settingsDetailNote">
                     No friends yet.
                   </div>
@@ -378,10 +389,14 @@ export default function TaskTimerPage() {
                 </section>
 
                 <section className="dashboardCard" aria-label="Incoming requests">
-                  <div className="dashboardCardTitle">Incoming Requests</div>
-                  <div id="groupsIncomingRequestsList" className="settingsDetailNote">
-                    No incoming requests.
-                  </div>
+                  <details id="groupsIncomingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
+                      0 Incoming Requests
+                    </summary>
+                    <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                      No incoming requests.
+                    </div>
+                  </details>
                 </section>
 
                 <section className="dashboardCard" aria-label="Outgoing requests">
@@ -406,6 +421,13 @@ export default function TaskTimerPage() {
           </button>
           <button className="btn btn-ghost small appFooterBtn" id="footerTest2Btn" type="button" aria-label="Groups">
             <img className="appFooterIconImage" src="/Groups.svg" alt="" aria-hidden="true" />
+            <span
+              id="footerTest2AlertBadge"
+              className="appFooterAlertBadge"
+              aria-live="polite"
+              aria-atomic="true"
+              style={{ display: "none" }}
+            />
             <span className="appFooterLabel">Friends</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
@@ -424,9 +446,8 @@ export default function TaskTimerPage() {
       <HistoryAnalysisOverlay />
       <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
-          <div className="editHead">
-            <h2>Send Friend Request</h2>
-          </div>
+          <h2>Send Friend Request</h2>
+          <p className="modalSubtext friendRequestModalSubtext">Send a request by entering your friend&apos;s email address.</p>
           <div className="field">
             <label htmlFor="friendRequestEmailInput">Email address</label>
             <input id="friendRequestEmailInput" type="email" autoComplete="email" className="text w100" />
@@ -444,9 +465,8 @@ export default function TaskTimerPage() {
       </div>
       <div className="overlay" id="shareTaskModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Share Task">
-          <div className="editHead">
-            <h2 id="shareTaskTitle">Share Task</h2>
-          </div>
+          <h2 id="shareTaskTitle">Share Task</h2>
+          <p className="modalSubtext shareTaskModalSubtext">Choose who should receive this task and its live progress.</p>
           <div className="field">
             <label htmlFor="shareTaskScopeSelect">Sharing scope</label>
             <select id="shareTaskScopeSelect" className="text w100" defaultValue="all">
@@ -465,6 +485,37 @@ export default function TaskTimerPage() {
             </button>
             <button className="btn btn-accent" id="shareTaskConfirmBtn" type="button">
               Share
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Friend Profile">
+          <h2>Friend Info</h2>
+          <div className="chkRow" id="friendProfileIdentityRow">
+            <img id="friendProfileAvatar" src="/avatars/initials/initials-AN.svg" alt="" aria-hidden="true" />
+            <div className="friendProfileIdentityText">
+              <div id="friendProfileName">Friend</div>
+              <div id="friendProfileMemberSince">Member since --</div>
+            </div>
+          </div>
+          <div className="modalSubtext">
+            <img
+              id="friendProfileRankImage"
+              src={undefined}
+              alt="Rank insignia"
+              style={{ display: "none", width: 72, height: 72, objectFit: "contain", borderRadius: 10, marginBottom: 10 }}
+            />
+            <div id="friendProfileRank">Rank: --</div>
+          </div>
+          <div className="footerBtns friendProfileDeleteRow">
+            <button className="btn btn-warn" id="friendProfileDeleteBtn" type="button">
+              Delete Friend
+            </button>
+          </div>
+          <div className="footerBtns friendProfileCloseRow">
+            <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
+              Close
             </button>
           </div>
         </div>

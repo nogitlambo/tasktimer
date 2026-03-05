@@ -70,6 +70,32 @@
   - Keep visual parity between dark and light theme overrides for any new UI surface.
   - Any newly created modal must use the same visual style and interaction pattern as the Edit Task modal by default.
 
+## Modal Contract (Required)
+- Canonical pattern: new modals must match the structure and class usage used by `src/app/tasktimer/components/ConfirmOverlay.tsx` and existing edit-style overlays.
+- Visual reference: match the Add Task modal style (dark glass panel, subtle border, compact heading/subheading, outlined secondary action, cyan primary action).
+- Required structure:
+  - Overlay container: `<div className="overlay" id="...Overlay">`
+  - Modal container: `<div className="modal" role="dialog" aria-modal="true" aria-label="...">`
+  - Body content uses existing modal utility classes already in `tasktimer.css` (for example `confirmText`, `modalSubtext`, `chkRow`, `confirmBtns`) instead of new one-off class systems.
+- Required control classes:
+  - Primary actions: `btn btn-accent`
+  - Secondary actions: `btn btn-ghost`
+  - Destructive actions: `btn btn-warn`
+  - Icon-only actions: `iconBtn`
+- Required styling behavior:
+  - Do not introduce new font stacks in modal code.
+  - Do not introduce standalone modal color palettes; use existing tokens/colors from `tasktimer.css`.
+  - Light theme parity is mandatory for any new modal-specific class added to `tasktimer.css`.
+  - Avoid inline styles except transient visibility/state toggles (for example `display: none`).
+- Required interaction behavior:
+  - Preserve existing close/cancel behavior patterns used by current overlays.
+  - Preserve ID/data-attribute hooks consumed by `tasktimerClient.ts` delegated handlers.
+- Compliance checklist for any PR that adds/modifies a modal:
+  - Modal uses required overlay/modal/button classes above.
+  - Modal is visually consistent in both dark and light themes.
+  - No custom font stack or one-off modal palette introduced.
+  - No delegated event hook regressions (`id`, `data-action`, `data-menu`, `data-history-action`, `data-move-mode` as applicable).
+
 ## Development rules
 - Keep behavior changes minimal and scoped to the request.
 - Prefer ASCII text in JSX/UI labels unless Unicode is explicitly required.

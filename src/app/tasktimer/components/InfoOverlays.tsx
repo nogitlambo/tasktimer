@@ -8,20 +8,18 @@ export default function InfoOverlays() {
           <div className="aboutHead">
             <img className="aboutLogo" alt="Timebase logo" src="/timebase-logo.svg" />
             <div>
-              <h2 style={{ margin: 0 }}>Timebase</h2>
-              <div style={{ color: "rgba(255,255,255,.65)", fontWeight: 700 }}>Focused time tracking with progress and history</div>
+              <h2 className="aboutTitle">Timebase</h2>
+              <div className="aboutKicker">Focused time tracking with progress and history</div>
             </div>
           </div>
 
-          <div className="aboutText" style={{ marginTop: 10 }}>
-            <p style={{ marginTop: 0 }}>
+          <div className="aboutText aboutTextBody">
+            <p className="aboutLead">
               Timebase is built for tracking focused work across multiple tasks and modes, with a fast workflow for
               start/stop timing, reviewing progress, and managing your history.
             </p>
-            <p>
-              Key features include:
-            </p>
-            <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+            <p>Key features include:</p>
+            <ul className="aboutFeatureList">
               <li>Multiple task categories (Mode 1, Mode 2, Mode 3) with configurable labels and colors</li>
               <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
               <li>Checkpoint milestones and progress tracking on each task</li>
@@ -43,7 +41,7 @@ export default function InfoOverlays() {
       <div className="overlay" id="howtoOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="How To">
           <h2>How To</h2>
-          <div className="modalSubtext" style={{ lineHeight: 1.5 }}>
+          <div className="modalSubtext howtoBody">
             <p>
               <b>Tracking:</b> Use Start to start, Stop to stop, and Reset to reset. Reset can optionally log a
               history entry.
@@ -94,7 +92,7 @@ export default function InfoOverlays() {
           <h2>Task Settings</h2>
           <p className="modalSubtext">Task settings are now available in Settings &gt; Preferences.</p>
           <div className="footerBtns">
-            <button className="btn btn-ghost closePopup" type="button">
+            <button className="btn btn-accent closePopup" type="button">
               Close
             </button>
           </div>
@@ -106,7 +104,7 @@ export default function InfoOverlays() {
           <h2>Configure Modes</h2>
           <p className="modalSubtext">Mode configuration is now available in Settings &gt; Preferences.</p>
           <div className="footerBtns">
-            <button className="btn btn-ghost closePopup" type="button">
+            <button className="btn btn-accent closePopup" type="button">
               Close
             </button>
           </div>

@@ -17,6 +17,7 @@ import {
 } from "firebase/auth";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
+import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 
 type SettingsPaneKey =
   | "general"
@@ -42,6 +43,7 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
+const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 
 function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
@@ -52,6 +54,12 @@ function avatarCustomStorageKeyForUid(uid: string) {
 function customAvatarIdForUid(uid: string) {
   return `custom-upload:${uid}`;
 }
+function googleAvatarIdForUid(uid: string) {
+  return `google/profile-photo:${uid}`;
+}
+function rankThumbnailStorageKeyForUid(uid: string) {
+  return `${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`;
+}
 
 function readStoredAvatarId(uid: string): string {
   if (typeof window === "undefined" || !uid) return "";
@@ -60,6 +68,10 @@ function readStoredAvatarId(uid: string): string {
 function readStoredCustomAvatarSrc(uid: string): string {
   if (typeof window === "undefined" || !uid) return "";
   return String(window.localStorage.getItem(avatarCustomStorageKeyForUid(uid)) || "").trim();
+}
+function readStoredRankThumbnailSrc(uid: string): string {
+  if (typeof window === "undefined" || !uid) return "";
+  return String(window.localStorage.getItem(rankThumbnailStorageKeyForUid(uid)) || "").trim();
 }
 
 function writeStoredAvatarId(uid: string, avatarId: string) {
@@ -80,6 +92,15 @@ function writeStoredCustomAvatarSrc(uid: string, src: string) {
   }
   window.localStorage.setItem(avatarCustomStorageKeyForUid(uid), value);
 }
+function writeStoredRankThumbnailSrc(uid: string, src: string) {
+  if (typeof window === "undefined" || !uid) return;
+  const value = String(src || "").trim();
+  if (!value) {
+    window.localStorage.removeItem(rankThumbnailStorageKeyForUid(uid));
+    return;
+  }
+  window.localStorage.setItem(rankThumbnailStorageKeyForUid(uid), value);
+}
 
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
 function formatMemberSinceDate(value: string | null) {
@@ -95,16 +116,6 @@ function getErrorMessage(err: unknown, fallback: string) {
   }
   return fallback;
 }
-function generateFriendInviteKey() {
-  let value = Math.floor(Math.random() * 1_000_000);
-  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-    const arr = new Uint32Array(1);
-    window.crypto.getRandomValues(arr);
-    value = arr[0] % 1_000_000;
-  }
-  return String(value).padStart(6, "0");
-}
-
 function shouldUseRedirectAuth() {
   if (typeof window === "undefined") return false;
   const w = window as Window & { Capacitor?: unknown };
@@ -169,15 +180,14 @@ export default function SettingsPanel() {
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [authUserAlias, setAuthUserAlias] = useState("");
   const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
+  const [authHasGoogleProvider, setAuthHasGoogleProvider] = useState(false);
+  const [authGooglePhotoUrl, setAuthGooglePhotoUrl] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [isEditingAlias, setIsEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
-  const [friendInviteKey, setFriendInviteKey] = useState<string | null>(null);
-  const [friendKeyCopyStatus, setFriendKeyCopyStatus] = useState("");
-  const [showRemoveFriendKeyConfirm, setShowRemoveFriendKeyConfirm] = useState(false);
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
@@ -186,6 +196,8 @@ export default function SettingsPanel() {
   const [avatarSyncNoticeIsError, setAvatarSyncNoticeIsError] = useState(false);
   const avatarSyncNoticeTimerRef = useRef<number | null>(null);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
+  const rankThumbnailUploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
 
   const accountStateDocRef = (uid: string) => {
     const db = getFirebaseFirestoreClient();
@@ -288,6 +300,14 @@ export default function SettingsPanel() {
       setAuthUserAlias(nextAlias);
       setAliasDraft(nextAlias);
       setAuthMemberSince(user?.metadata?.creationTime || null);
+      const providerIds = new Set((user?.providerData || []).map((provider) => String(provider?.providerId || "")));
+      const hasGoogleProvider = providerIds.has("google.com");
+      const googleProviderProfile = (user?.providerData || []).find(
+        (provider) => String(provider?.providerId || "") === "google.com"
+      );
+      const googlePhotoCandidate = String(user?.photoURL || googleProviderProfile?.photoURL || "").trim();
+      setAuthHasGoogleProvider(hasGoogleProvider);
+      setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
       setIsEditingAlias(false);
       if (user?.uid) {
         void saveUserDocPatch(user.uid, {
@@ -310,49 +330,22 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     if (!authUserUid) {
-      setFriendInviteKey(null);
-      return;
-    }
-    let cancelled = false;
-    const loadAccountState = async () => {
-      const ref = accountStateDocRef(authUserUid);
-      if (!ref) {
-        setFriendInviteKey(null);
-        return;
-      }
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        if (!cancelled) {
-          setFriendInviteKey(null);
-        }
-        return;
-      }
-      const parsed = snap.data() as { friendInviteKey?: unknown };
-      const key = typeof parsed.friendInviteKey === "string" ? parsed.friendInviteKey : "";
-      if (!key) {
-        if (!cancelled) setFriendInviteKey(null);
-        return;
-      }
-      if (!cancelled) {
-        setFriendInviteKey(key);
-      }
-    };
-    void loadAccountState().catch(() => {
-      if (!cancelled) setFriendInviteKey(null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [authUserUid]);
-
-  useEffect(() => {
-    if (!authUserUid) {
       setAvatarOptions(AVATAR_CATALOG.slice());
       setSelectedAvatarId(AVATAR_CATALOG[0]?.id || "");
+      setRankThumbnailSrc("");
       return;
     }
     const customSrc = readStoredCustomAvatarSrc(authUserUid);
+    const savedRankThumbnail = readStoredRankThumbnailSrc(authUserUid);
+    setRankThumbnailSrc(savedRankThumbnail);
     const baseOptions = AVATAR_CATALOG.slice();
+    if (authHasGoogleProvider && authGooglePhotoUrl) {
+      baseOptions.push({
+        id: googleAvatarIdForUid(authUserUid),
+        label: "Google Profile Photo",
+        src: authGooglePhotoUrl,
+      });
+    }
     if (customSrc) {
       const customId = customAvatarIdForUid(authUserUid);
       baseOptions.push({ id: customId, label: "Custom Upload", src: customSrc });
@@ -360,7 +353,7 @@ export default function SettingsPanel() {
     } else {
       setAvatarOptions(baseOptions);
     }
-  }, [authUserUid]);
+  }, [authGooglePhotoUrl, authHasGoogleProvider, authUserUid]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -438,15 +431,24 @@ export default function SettingsPanel() {
       }
       const snap = await getDoc(ref);
       const saved = snap.exists() ? String(snap.get("avatarId") || "") : "";
+      const savedRankThumbnail = snap.exists() ? String(snap.get("rankThumbnailSrc") || "").trim() : "";
       const validSaved = avatarOptions.some((a) => a.id === saved) ? saved : "";
       const validCached = avatarOptions.some((a) => a.id === cached) ? cached : "";
       const nextId = validSaved || validCached || avatarOptions[0]?.id || "";
+      const cachedRankThumbnail = readStoredRankThumbnailSrc(authUserUid);
+      const nextRankThumbnail = savedRankThumbnail || cachedRankThumbnail;
       if (validSaved) {
         writeStoredAvatarId(authUserUid, validSaved);
       } else if (validCached) {
         // Backfill missing cloud avatar from local cache.
         await saveUserDocPatch(authUserUid, { avatarId: validCached });
       }
+      if (savedRankThumbnail) {
+        writeStoredRankThumbnailSrc(authUserUid, savedRankThumbnail);
+      } else if (cachedRankThumbnail) {
+        await saveUserDocPatch(authUserUid, { rankThumbnailSrc: cachedRankThumbnail });
+      }
+      if (!cancelled) setRankThumbnailSrc(nextRankThumbnail);
       if (!cancelled) setSelectedAvatarId(nextId);
     };
     void loadAvatar().catch(() => {
@@ -583,6 +585,8 @@ export default function SettingsPanel() {
     setAuthStatus("Saving alias...");
     try {
       await updateProfile(user, { displayName: nextAlias || null });
+      await saveUserDocPatch(user.uid, { displayName: nextAlias || null });
+      await syncOwnFriendshipProfile(user.uid, { alias: nextAlias || null });
       setAuthUserAlias(nextAlias);
       setAliasDraft(nextAlias);
       setIsEditingAlias(false);
@@ -592,37 +596,6 @@ export default function SettingsPanel() {
       setAuthStatus("");
     } finally {
       setAuthBusy(false);
-    }
-  };
-
-  const handleGenerateFriendKey = () => {
-    if (!authUserUid) return;
-    const key = generateFriendInviteKey();
-    setFriendInviteKey(key);
-    const ref = accountStateDocRef(authUserUid);
-    if (ref) void setDoc(ref, { friendInviteKey: key, friendInviteKeyExpiresAt: null, updatedAt: serverTimestamp() }, { merge: true });
-    setFriendKeyCopyStatus("");
-  };
-
-  const handleRemoveFriendKey = () => {
-    if (authUserUid) {
-      const ref = accountStateDocRef(authUserUid);
-      if (ref) void setDoc(ref, { friendInviteKey: null, friendInviteKeyExpiresAt: null, updatedAt: serverTimestamp() }, { merge: true });
-    }
-    setFriendInviteKey(null);
-    setFriendKeyCopyStatus("");
-    setShowRemoveFriendKeyConfirm(false);
-  };
-
-  const handleCopyFriendKey = async () => {
-    if (!friendInviteKey) return;
-    try {
-      await navigator.clipboard.writeText(friendInviteKey);
-      setFriendKeyCopyStatus("Copied");
-      window.setTimeout(() => setFriendKeyCopyStatus(""), 1500);
-    } catch {
-      setFriendKeyCopyStatus("Copy failed");
-      window.setTimeout(() => setFriendKeyCopyStatus(""), 1500);
     }
   };
 
@@ -649,6 +622,7 @@ export default function SettingsPanel() {
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, { avatarId });
+      await syncOwnFriendshipProfile(authUserUid, { avatarId });
       showAvatarSyncNotice("Avatar saved.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not save avatar selection to cloud."));
@@ -660,6 +634,10 @@ export default function SettingsPanel() {
 
   const handleUploadAvatarClick = () => {
     avatarUploadInputRef.current?.click();
+  };
+
+  const handleUploadRankThumbnailClick = () => {
+    rankThumbnailUploadInputRef.current?.click();
   };
 
   const handleUploadAvatarFile = async (file: File | null) => {
@@ -703,6 +681,7 @@ export default function SettingsPanel() {
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, { avatarId: customId });
+      await syncOwnFriendshipProfile(authUserUid, { avatarId: customId });
       showAvatarSyncNotice("Avatar uploaded.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not save uploaded avatar selection to cloud."));
@@ -710,6 +689,55 @@ export default function SettingsPanel() {
       showAvatarSyncNotice("Avatar uploaded locally. Cloud sync failed.", true);
     }
     setShowAvatarPickerModal(false);
+  };
+
+  const handleUploadRankThumbnailFile = async (file: File | null) => {
+    if (!file) return;
+    if (!authUserUid) {
+      setAuthError("Sign in is required to upload a rank thumbnail.");
+      setAuthStatus("");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setAuthError("Please choose an image file.");
+      setAuthStatus("");
+      return;
+    }
+    const maxBytes = 300 * 1024;
+    if (file.size > maxBytes) {
+      setAuthError("Image is too large. Max size is 300KB.");
+      setAuthStatus("");
+      return;
+    }
+    const fileReader = new FileReader();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      fileReader.onload = () => resolve(String(fileReader.result || ""));
+      fileReader.onerror = () => reject(new Error("Could not read selected image."));
+      fileReader.readAsDataURL(file);
+    });
+    if (!dataUrl) {
+      setAuthError("Could not read selected image.");
+      setAuthStatus("");
+      return;
+    }
+    setRankThumbnailSrc(dataUrl);
+    setAuthError("");
+    try {
+      await saveUserDocPatch(authUserUid, { rankThumbnailSrc: dataUrl });
+      writeStoredRankThumbnailSrc(authUserUid, dataUrl);
+      showAvatarSyncNotice("Rank thumbnail saved.");
+    } catch (err: unknown) {
+      writeStoredRankThumbnailSrc(authUserUid, dataUrl);
+      setAuthError(getErrorMessage(err, "Could not save rank thumbnail to cloud."));
+      setAuthStatus("");
+      showAvatarSyncNotice("Rank thumbnail saved locally. Cloud sync failed.", true);
+      return;
+    }
+    try {
+      await syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: dataUrl });
+    } catch {
+      showAvatarSyncNotice("Rank thumbnail saved to your profile. Friend sync failed.", true);
+    }
   };
 
   const selectedAvatar = avatarOptions.find((a) => a.id === selectedAvatarId) || avatarOptions[0] || null;
@@ -848,11 +876,34 @@ export default function SettingsPanel() {
                                 )}
                               </div>
                             </div>
-                            <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountRankUnderAlias">
+                            <div className="settingsAccountFieldRow settingsAccountRankCol">
                               <div className="settingsAccountFieldLabel">Rank</div>
-                              <div className="settingsAccountRankPlaceholder" aria-hidden="true">
-                                <div className="settingsAccountRankPlaceholderInner" />
-                              </div>
+                              <button
+                                type="button"
+                                className="settingsAccountRankBtn"
+                                onClick={handleUploadRankThumbnailClick}
+                                aria-label="Upload rank thumbnail"
+                                title="Upload rank thumbnail"
+                              >
+                                <div className="settingsAccountRankPlaceholder">
+                                  {rankThumbnailSrc ? (
+                                    <img className="settingsAccountRankImage" src={rankThumbnailSrc} alt="Rank thumbnail" />
+                                  ) : (
+                                    <div className="settingsAccountRankPlaceholderInner" />
+                                  )}
+                                </div>
+                              </button>
+                              <input
+                                ref={rankThumbnailUploadInputRef}
+                                type="file"
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                onChange={(e) => {
+                                  const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
+                                  void handleUploadRankThumbnailFile(file);
+                                  e.currentTarget.value = "";
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
@@ -892,51 +943,6 @@ export default function SettingsPanel() {
                       </button>
                     </div>
                   </div>
-                ) : null}
-                {authUserUid ? (
-                  <section className="settingsInlineSection">
-                    <div className="settingsInlineSectionHead">
-                      <div className="settingsInlineSectionTitle">Friend Key</div>
-                    </div>
-                    <div className="settingsFriendKeyBlock">
-                      {!friendInviteKey ? (
-                        <div className="settingsFriendKeyExpiry">No active key. Generate a 6-digit one-time key.</div>
-                      ) : null}
-                      <button
-                        className="btn btn-ghost small settingsFriendKeyBtn"
-                        type="button"
-                        onClick={handleGenerateFriendKey}
-                      >
-                        Generate OTC
-                      </button>
-                      {friendInviteKey ? (
-                        <>
-                          <div className="settingsFriendKeyRow">
-                            <div className="settingsFriendKeyValue">{friendInviteKey}</div>
-                            <div className="settingsFriendKeyActions">
-                              <button
-                                className="btn btn-ghost small settingsFriendKeyActionBtn"
-                                type="button"
-                                onClick={handleCopyFriendKey}
-                              >
-                                Copy
-                              </button>
-                                <button
-                                  className="btn btn-ghost small settingsFriendKeyActionBtn settingsFriendKeyRemoveBtn"
-                                  type="button"
-                                  onClick={() => setShowRemoveFriendKeyConfirm(true)}
-                                >
-                                  Remove
-                                </button>
-                            </div>
-                          </div>
-                          {friendKeyCopyStatus ? (
-                            <div className="settingsFriendKeyCopyStatus">{friendKeyCopyStatus}</div>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </div>
-                  </section>
                 ) : null}
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
@@ -1003,30 +1009,6 @@ export default function SettingsPanel() {
                     </button>
                     <button className="btn btn-warn" type="button" onClick={handleDeleteAccount} disabled={authBusy}>
                       Delete Account
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {showRemoveFriendKeyConfirm ? (
-              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
-                <div
-                  className="modal settingsInlineConfirmModal"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label="Remove Random Key"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="settingsInlineConfirmTitle">Remove Random Key</h3>
-                  <p className="settingsInlineConfirmText">
-                    Remove the current random key? This key will no longer be available to share.
-                  </p>
-                  <div className="footerBtns settingsInlineConfirmBtns">
-                    <button className="btn btn-ghost" type="button" onClick={() => setShowRemoveFriendKeyConfirm(false)}>
-                      Cancel
-                    </button>
-                    <button className="btn btn-accent" type="button" onClick={handleRemoveFriendKey}>
-                      Remove
                     </button>
                   </div>
                 </div>
