@@ -410,6 +410,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
     groupsIncomingRequestsDetails: document.getElementById("groupsIncomingRequestsDetails") as HTMLDetailsElement | null,
     groupsIncomingRequestsTitle: document.getElementById("groupsIncomingRequestsTitle"),
+    groupsOutgoingRequestsDetails: document.getElementById("groupsOutgoingRequestsDetails") as HTMLDetailsElement | null,
+    groupsOutgoingRequestsTitle: document.getElementById("groupsOutgoingRequestsTitle"),
     groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
     groupsFriendsList: document.getElementById("groupsFriendsList"),
     groupsSharedByYouList: document.getElementById("groupsSharedByYouList"),
@@ -2646,6 +2648,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
   function closeConfirm() {
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "none";
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     confirmAction = null;
     confirmActionAlt = null;
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
@@ -4639,12 +4642,18 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const t = tasks[i];
     if (!t) return;
 
-    confirm("Delete Task", `Delete "${t.name}"?`, {
+    const clearDeleteTaskConfirmState = () => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
+    };
+    const safeTaskName = escapeHtmlUI(t.name || "this task");
+    confirm("Delete Task", "", {
       okLabel: "Delete",
       cancelLabel: "Cancel",
       checkboxLabel: "Delete history logs",
       checkboxChecked: true,
+      textHtml: `<span class="confirmDanger">Delete "${safeTaskName}"?</span>`,
       onOk: () => {
+        clearDeleteTaskConfirmState();
         const deleteHistory = !!els.confirmDeleteAll?.checked;
 
         tasks.splice(i, 1);
@@ -4670,8 +4679,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         render();
         closeConfirm();
       },
-      onCancel: () => closeConfirm(),
+      onCancel: () => {
+        clearDeleteTaskConfirmState();
+        closeConfirm();
+      },
     });
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
   }
 
   function getTaskMetaForHistoryId(taskId: string) {
@@ -6514,12 +6527,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     rows: FriendRequest[],
     opts: { incoming: boolean }
   ) {
-    if (opts.incoming) {
-      const incomingTitleEl = els.groupsIncomingRequestsTitle as HTMLElement | null;
-      const incomingDetailsEl = els.groupsIncomingRequestsDetails as HTMLDetailsElement | null;
-      if (incomingTitleEl) incomingTitleEl.textContent = `${rows.length} Incoming Requests`;
-      if (incomingDetailsEl) incomingDetailsEl.open = rows.length > 0;
-    }
+    const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
+    const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
+    const titleSuffix = opts.incoming ? "Incoming Requests" : "Outgoing Requests";
+    if (titleEl) titleEl.textContent = `${rows.length} ${titleSuffix}`;
+    if (detailsEl) detailsEl.open = rows.length > 0;
     if (!container) return;
     if (!rows.length) {
       container.classList.add("isEmptyStatus");
@@ -7337,7 +7349,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings");
     });
-    on(els.signedInHeaderBadge, "click", (e: any) => {
+    on(document as any, "click", (e: any) => {
+      const badge = e?.target?.closest?.("#signedInHeaderBadge");
+      if (!badge) return;
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings?pane=general");
     });

@@ -6805,6 +6805,23 @@ body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBt
 }
 
 /* Final Add Task wizard overrides */
+#confirmOverlay.isDeleteTaskConfirm .modal{
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#confirmOverlay.isDeleteTaskConfirm .confirmText{
+  color: rgba(226,246,255,.9);
+}
+#confirmOverlay.isDeleteTaskConfirm .confirmBtns{
+  margin-top: 6px;
+  gap: 8px;
+}
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn,
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
+  min-width: 92px;
+  justify-content: center;
+}
 #addTaskOverlay .addTaskWizardProgress{
   margin: 4px 0 2px;
   font-family: var(--font-tight);
@@ -7098,6 +7115,9 @@ body.light #addTaskOverlay .addTaskDurationReadout{
 }
 body.light #addTaskOverlay .addTaskNoGoalRow{
   color: rgba(23,52,60,.82);
+}
+body.light #confirmOverlay.isDeleteTaskConfirm .confirmText{
+  color: #17343c;
 }
 
 /* Final Settings Account-module override: footer-style border outline language on account controls. */
@@ -8200,6 +8220,12 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer A
     max-width: 100%;
     box-sizing: border-box;
   }
+}
+
+/* Final footer icon parity override: increase Friends footer icon size to match visual weight. */
+#app[aria-label="TaskTimer App"] #footerTest2Btn .appFooterIconImage{
+  width: 46px;
+  height: 46px;
 }
 
 /* Final modal parity overrides: keep all legacy modals aligned with Add Task/Edit Task styling. */

@@ -400,10 +400,14 @@ export default function TaskTimerPage() {
                 </section>
 
                 <section className="dashboardCard" aria-label="Outgoing requests">
-                  <div className="dashboardCardTitle">Outgoing Requests</div>
-                  <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
-                    No outgoing requests.
-                  </div>
+                  <details id="groupsOutgoingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
+                      0 Outgoing Requests
+                    </summary>
+                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                      No outgoing requests.
+                    </div>
+                  </details>
                 </section>
               </div>
             </div>
