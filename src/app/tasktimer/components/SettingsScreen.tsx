@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import SettingsPanel from "./SettingsPanel";
+import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
 export default function SettingsScreen() {
   return (
@@ -8,6 +11,7 @@ export default function SettingsScreen() {
         <div className="brand">
           <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
         </div>
+        <SignedInHeaderBadge />
       </div>
       <div className="list settingsPageList" style={{ paddingTop: 18 }}>
         <div className="settingsSceneBackdrop" aria-hidden="true">

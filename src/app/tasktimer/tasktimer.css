@@ -63,13 +63,19 @@ body{
   position:relative;
 }
 #app[aria-label="TaskLaunch App"]{
-  width: min(1220px, 100%);
+  width: 100%;
+  max-width: 1625px;
   margin-bottom:0;
   border: none;
   box-shadow: none;
 }
 #app[aria-label="TaskLaunch Settings"],
-#app[aria-label="TaskLaunch User Guide"]{
+#app[aria-label="TaskLaunch User Guide"],
+#app[aria-label="TaskLaunch History Manager"]{
+  width: 100%;
+  max-width: 1625px;
+  margin-left: auto;
+  margin-right: auto;
   background: #0d0f13 !important;
   overflow-y:auto;
   overflow-x:hidden;
@@ -8080,6 +8086,10 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   body[data-app-page="dashboard"] .appPages{
     overflow-x: visible;
   }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTopRow,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
+    overflow: visible;
+  }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
     position: relative;
     width: 100%;
@@ -8097,9 +8107,12 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
     top: calc(100% + 6px);
     left: auto;
     right: 0;
-    width: calc(100vw - 24px);
+    width: min(360px, calc(100dvw - var(--safe-left) - var(--safe-right) - 16px));
     min-width: 220px;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100dvw - var(--safe-left) - var(--safe-right) - 16px);
+    max-height: min(65dvh, 360px);
+    overflow-x: hidden;
+    overflow-y: auto;
     box-sizing: border-box;
   }
 }
@@ -8656,4 +8669,419 @@ body[data-theme="dark"] #editOverlay .milestonesSummaryCollapseLabel::after{
 body[data-theme="dark"] #editOverlay .editMoveMenu .taskMenuList{
   border-color: rgba(214,96,229,.42) !important;
   background: #120a1d !important;
+}
+
+/* Final Purple-theme enforcement pass: keep all major controls on purple accents. */
+body[data-theme="dark"] .menu,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .taskMenuList,
+body[data-theme="dark"] .taskMenuItem,
+body[data-theme="dark"] .menuItem,
+body[data-theme="dark"] .settingsNavTile,
+body[data-theme="dark"] .dashboardPanelMenuList,
+body[data-theme="dark"] .dashboardPanelMenuItem,
+body[data-theme="dark"] .dashboardSizeMenu,
+body[data-theme="dark"] .dashboardSizeOption,
+body[data-theme="dark"] .dashboardAvgRangeMenuList,
+body[data-theme="dark"] .dashboardAvgRangeMenuItem{
+  border-color: rgba(214,96,229,.42) !important;
+}
+
+body[data-theme="dark"] .menuItem:hover,
+body[data-theme="dark"] .taskMenuItem:hover,
+body[data-theme="dark"] .settingsNavTile:hover,
+body[data-theme="dark"] .dashboardPanelMenuItem:hover,
+body[data-theme="dark"] .dashboardSizeOption:hover,
+body[data-theme="dark"] .dashboardAvgRangeMenuItem:hover{
+  border-color: rgba(233,134,245,.62) !important;
+  background: rgba(217,85,231,.16) !important;
+}
+
+body[data-theme="dark"] .btn,
+body[data-theme="dark"] .iconBtn,
+body[data-theme="dark"] .appFooterBtn{
+  border-color: rgba(214,96,229,.44) !important;
+}
+
+body[data-theme="dark"] .btn-accent,
+body[data-theme="dark"] .unitBtn.isOn,
+body[data-theme="dark"] .timerTypePill.isOn{
+  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  border-color: rgba(233,134,245,.72) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
+}
+
+body[data-theme="dark"] .switch{
+  border-color: rgba(214,96,229,.38) !important;
+  background: rgba(36,22,52,.84) !important;
+}
+body[data-theme="dark"] .switch.on{
+  border-color: rgba(233,134,245,.6) !important;
+  background: rgba(217,85,231,.24) !important;
+}
+body[data-theme="dark"] .switch.on::after{
+  background: var(--accent3) !important;
+}
+
+body[data-theme="dark"] .appFooterNav{
+  border-top-color: rgba(214,96,229,.28) !important;
+}
+body[data-theme="dark"] .appFooterBtn.isOn{
+  border-color: rgba(233,134,245,.72) !important;
+  background: rgba(217,85,231,.18) !important;
+}
+
+body[data-theme="dark"] select,
+body[data-theme="dark"] input[type="text"],
+body[data-theme="dark"] input[type="number"],
+body[data-theme="dark"] input[type="email"]{
+  border-color: rgba(214,96,229,.44) !important;
+}
+body[data-theme="dark"] select:focus,
+body[data-theme="dark"] input[type="text"]:focus,
+body[data-theme="dark"] input[type="number"]:focus,
+body[data-theme="dark"] input[type="email"]:focus{
+  border-color: rgba(233,134,245,.72) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
+}
+body[data-theme="dark"] option,
+body[data-theme="dark"] optgroup{
+  background: #140b20;
+  color: #f3e8ff;
+}
+
+/* Final Purple text/icon pass: footer and title/label language. */
+body[data-theme="dark"] .appFooterLabel{
+  color: rgba(245,218,255,.96) !important;
+  text-shadow: 0 0 8px rgba(212,71,210,.55) !important;
+}
+body[data-theme="dark"] .appFooterIconImage{
+  filter:
+    brightness(0) saturate(100%)
+    invert(57%) sepia(41%) saturate(1412%) hue-rotate(264deg) brightness(94%) contrast(97%)
+    drop-shadow(0 0 7px rgba(212,71,210,.5)) !important;
+}
+body[data-theme="dark"] .appFooterBtn.isOn .appFooterLabel{
+  color: rgba(252,234,255,.98) !important;
+}
+body[data-theme="dark"] .appFooterBtn.isOn .appFooterIconImage{
+  filter:
+    brightness(0) saturate(100%)
+    invert(72%) sepia(37%) saturate(1166%) hue-rotate(268deg) brightness(102%) contrast(101%)
+    drop-shadow(0 0 10px rgba(240,110,224,.62)) !important;
+}
+
+body[data-theme="dark"] .dashboardTitle,
+body[data-theme="dark"] .modePanelTitle,
+body[data-theme="dark"] .historyTitle,
+body[data-theme="dark"] .hmTitle,
+body[data-theme="dark"] .menuTitle,
+body[data-theme="dark"] .dashboardCardTitle,
+body[data-theme="dark"] .settingsDetailTitle,
+body[data-theme="dark"] .settingsInlineSectionTitle,
+body[data-theme="dark"] .settingsSectionLabel,
+body[data-theme="dark"] .checkpointAlertsTitle,
+body[data-theme="dark"] .userGuideTocTitle,
+body[data-theme="dark"] .focusInsightsTitle{
+  color: rgba(245,218,255,.96) !important;
+  text-shadow: 0 0 8px rgba(212,71,210,.42);
+}
+
+body[data-theme="dark"] label,
+body[data-theme="dark"] .dashboardKicker,
+body[data-theme="dark"] .modeSwitchesLabel,
+body[data-theme="dark"] .settingsDetailNote,
+body[data-theme="dark"] .historyMeta{
+  color: rgba(229,196,245,.86) !important;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTileColumn{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  height: auto;
+  width: 100%;
+  margin: 0;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .row{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "name"
+    "time"
+    "actions";
+  gap: 14px;
+  align-items: center;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
+  grid-area: name;
+  max-width: none;
+  width: 100%;
+  text-align: center;
+  justify-self: center;
+  align-self: start;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time,
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyInline,
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyCanvasWrap{
+  width: 100%;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time{
+  grid-area: time;
+  justify-self: center;
+  justify-content: center;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
+  width: auto;
+  min-width: min(100%, 236px);
+  max-width: 100%;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
+  grid-area: actions;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  justify-self: center;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenu{
+  flex: 0 0 auto;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
+  min-width: 54px;
+}
+
+body[data-theme="light"][data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse){
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.10);
+}
+
+@media (min-width: 720px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="2"]{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="3"]{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="1"]{
+    grid-template-columns: 1fr;
+  }
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+  justify-self:end;
+  grid-column:3;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  max-width:min(320px, 42vw);
+  color:#d3faff;
+  text-decoration:none;
+  border:none;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInitial,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInitial{
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:1px solid rgba(53,232,255,.6);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:700;
+  color:#8ff6ff;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaWrap,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsigniaWrap{
+  flex:0 0 auto;
+  width:20px;
+  height:20px;
+  overflow:hidden;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsignia,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsignia{
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  border-radius:4px;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeBody,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeBody{
+  display:grid;
+  min-width:0;
+  text-align:right;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgePane,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePane{
+  display:none;
+  min-width:0;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgePane.isOn,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePane.isOn{
+  display:grid;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgePaneXp.isOn,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePaneXp.isOn{
+  grid-template-columns:auto minmax(96px, 1fr);
+  align-items:center;
+  column-gap:10px;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeMeta{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeXpMeta,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeXpMeta{
+  display:grid;
+  min-width:0;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle{
+  font-size:11px;
+  line-height:1.2;
+  color:#d3faff;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeMeta{
+  margin-top:2px;
+  font-size:10px;
+  line-height:1.2;
+  color:rgba(143,246,255,.82);
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
+  display:block;
+  width:clamp(88px, 10vw, 132px);
+  height:5px;
+  overflow:hidden;
+  border:1px solid rgba(117,231,255,.24);
+  background:rgba(6,18,34,.55);
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeFill,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill{
+  display:block;
+  height:100%;
+  background:linear-gradient(90deg, rgba(53,232,255,.9), rgba(0,207,200,.88));
+  box-shadow:0 0 10px rgba(53,232,255,.26);
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle{
+  color:#f4fdff;
+}
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadge.isXpView .signedInHeaderBadgeInitial,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge.isXpView .signedInHeaderBadgeInitial{
+  border-color:rgba(0,207,200,.64);
+  color:#b9fffb;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+  color:#17343c;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInitial,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInitial{
+  border-color:rgba(0,133,160,.34);
+  color:#0d5b70;
+  background:rgba(255,255,255,.92);
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsignia,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsignia{
+  box-shadow:0 0 0 1px rgba(0,133,160,.12) inset;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle{
+  color:#17343c;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeMeta{
+  color:rgba(23,52,60,.78);
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
+  border-color:rgba(0,133,160,.24);
+  background:rgba(255,255,255,.88);
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeFill,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill{
+  background:linear-gradient(90deg, rgba(0,151,199,.9), rgba(0,133,160,.85));
+  box-shadow:none;
+}
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+    max-width:min(260px, 48vw);
+  }
+}
+@media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+    max-width:min(200px, 46vw);
+    gap:6px;
+  }
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaWrap,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsigniaWrap{
+    width:18px;
+    height:18px;
+  }
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgePaneXp.isOn,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePaneXp.isOn{
+    grid-template-columns:auto minmax(72px, 1fr);
+    column-gap:8px;
+  }
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle{
+    font-size:10px;
+  }
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeMeta{
+    font-size:9px;
+  }
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
+    width:clamp(72px, 14vw, 104px);
+  }
 }

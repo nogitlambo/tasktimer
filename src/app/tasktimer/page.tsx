@@ -1,9 +1,6 @@
-﻿"use client";
-
 "use client";
 
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { useEffect } from "react";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import ConfirmOverlay from "./components/ConfirmOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
@@ -13,30 +10,15 @@ import FocusModeScreen from "./components/FocusModeScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import InfoOverlays from "./components/InfoOverlays";
+import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import TaskList from "./components/TaskList";
 import { initTaskTimerClient } from "./tasktimerClient";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { ensureUserProfileIndex } from "./lib/cloudStore";
 import "./tasktimer.css";
 
 export default function TaskTimerPage() {
-  const [signedInUserLabel, setSignedInUserLabel] = useState<string | null>(null);
-
   useEffect(() => {
     const { destroy } = initTaskTimerClient();
     return () => destroy();
-  }, []);
-
-  useEffect(() => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) return;
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const displayName = String(user?.displayName || "").trim();
-      const email = String(user?.email || "").trim();
-      setSignedInUserLabel(displayName || email || null);
-      if (user?.uid) void ensureUserProfileIndex(user.uid);
-    });
-    return () => unsub();
   }, []);
 
   return (
@@ -47,60 +29,7 @@ export default function TaskTimerPage() {
             <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
           </div>
 
-          {signedInUserLabel ? (
-            <a
-              id="signedInHeaderBadge"
-              href="/tasktimer/settings?pane=general"
-              style={{
-                justifySelf: "end",
-                gridColumn: 3,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                border: "none",
-                borderRadius: 0,
-                padding: 0,
-                background: "transparent",
-                color: "#d3faff",
-                fontSize: 11,
-                lineHeight: 1.2,
-                maxWidth: 280,
-                justifyContent: "flex-end",
-                textDecoration: "none",
-              }}
-              aria-label={`Welcome ${signedInUserLabel}`}
-              title="Open Account settings"
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  border: "1px solid rgba(53,232,255,.6)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "#8ff6ff",
-                }}
-              >
-                {signedInUserLabel.slice(0, 1).toUpperCase()}
-              </span>
-              <span
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  textAlign: "right",
-                }}
-                title={signedInUserLabel}
-              >
-                Welcome {signedInUserLabel}
-              </span>
-            </a>
-          ) : null}
+          <SignedInHeaderBadge />
         </div>
         <div className="modeSwitchWrap modeSwitchNoBrackets" style={{ display: "flex", justifyContent: "center" }}>
           <div className="modeSwitch" id="modeSwitch" aria-label="View modes">

@@ -13,17 +13,20 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "light" | "dark" | "command";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
+  taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   modeSettings: Record<string, unknown> | null;
+  rewards: RewardProgressV1;
   updatedAtMs: number;
 };
 
@@ -327,6 +330,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
           prefSnap.get("defaultTaskTimerFormat") === "day" || prefSnap.get("defaultTaskTimerFormat") === "minute"
             ? prefSnap.get("defaultTaskTimerFormat")
             : "hour",
+        taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
@@ -335,6 +339,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
           prefSnap.get("modeSettings") && typeof prefSnap.get("modeSettings") === "object"
             ? (prefSnap.get("modeSettings") as Record<string, unknown>)
             : null,
+        rewards: normalizeRewardProgress(prefSnap.get("rewards") || DEFAULT_REWARD_PROGRESS),
         updatedAtMs: Number(prefSnap.get("updatedAtMs") || Date.now()),
       }
     : null;
@@ -497,11 +502,13 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
       data.defaultTaskTimerFormat === "day" || data.defaultTaskTimerFormat === "minute"
         ? data.defaultTaskTimerFormat
         : "hour",
+    taskView: data.taskView === "tile" ? "tile" : "list",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
     modeSettings: data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null,
+    rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Number(data.updatedAtMs || Date.now()),
   };
 }

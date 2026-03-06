@@ -9,6 +9,7 @@ type UserPreferencesV1 = {
   theme: "light" | "dark" | "command";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
+  taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
@@ -24,6 +25,7 @@ type StartSyncOptions = {
     theme: string;
     menuButtonStyle?: string;
     defaultTaskTimerFormat: string;
+    taskView: string;
     dynamicColorsEnabled: string;
     autoFocusOnTaskLaunchEnabled: string;
     checkpointAlertSoundEnabled: string;
@@ -72,6 +74,10 @@ function parseTimerFormat(raw: string | null | undefined): "day" | "hour" | "min
   return "hour";
 }
 
+function parseTaskView(raw: string | null | undefined): "list" | "tile" {
+  return raw === "tile" ? "tile" : "list";
+}
+
 function parseMenuButtonStyle(raw: string | null | undefined): "parallelogram" | "square" {
   return raw === "square" ? "square" : "parallelogram";
 }
@@ -91,6 +97,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
   const theme = parseTheme(localStorage.getItem(storageKeys.theme));
   const menuButtonStyle = parseMenuButtonStyle(localStorage.getItem(storageKeys.menuButtonStyle || ""));
   const defaultTaskTimerFormat = parseTimerFormat(localStorage.getItem(storageKeys.defaultTaskTimerFormat));
+  const taskView = parseTaskView(localStorage.getItem(storageKeys.taskView));
   const dynamicColorsEnabled = parseBooleanLike(localStorage.getItem(storageKeys.dynamicColorsEnabled), true);
   const autoFocusOnTaskLaunchEnabled = parseBooleanLike(localStorage.getItem(storageKeys.autoFocusOnTaskLaunchEnabled), true);
   const checkpointAlertSoundEnabled = parseBooleanLike(localStorage.getItem(storageKeys.checkpointAlertSoundEnabled), true);
@@ -102,6 +109,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
     theme,
     menuButtonStyle,
     defaultTaskTimerFormat,
+    taskView,
     dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled,
     checkpointAlertSoundEnabled,
@@ -118,6 +126,7 @@ function applyCloudPreferencesToLocal(uid: string, prefs: UserPreferencesV1, opt
     localStorage.setItem(storageKeys.menuButtonStyle, prefs.menuButtonStyle);
   }
   localStorage.setItem(storageKeys.defaultTaskTimerFormat, prefs.defaultTaskTimerFormat);
+  localStorage.setItem(storageKeys.taskView, prefs.taskView);
   localStorage.setItem(storageKeys.dynamicColorsEnabled, prefs.dynamicColorsEnabled ? "true" : "false");
   localStorage.setItem(storageKeys.autoFocusOnTaskLaunchEnabled, prefs.autoFocusOnTaskLaunchEnabled ? "true" : "false");
   localStorage.setItem(storageKeys.checkpointAlertSoundEnabled, prefs.checkpointAlertSoundEnabled ? "true" : "false");
@@ -136,6 +145,7 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
     theme: parseTheme(String(data.theme || "")),
     menuButtonStyle: parseMenuButtonStyle(String(data.menuButtonStyle || "")),
     defaultTaskTimerFormat: parseTimerFormat(String(data.defaultTaskTimerFormat || "")),
+    taskView: parseTaskView(String(data.taskView || "")),
     dynamicColorsEnabled: parseBooleanLike(String(data.dynamicColorsEnabled || ""), true),
     autoFocusOnTaskLaunchEnabled: parseBooleanLike(String(data.autoFocusOnTaskLaunchEnabled || ""), true),
     checkpointAlertSoundEnabled: parseBooleanLike(String(data.checkpointAlertSoundEnabled || ""), true),
@@ -150,6 +160,7 @@ function hashPreferences(prefs: UserPreferencesV1) {
     theme: prefs.theme,
     menuButtonStyle: prefs.menuButtonStyle,
     defaultTaskTimerFormat: prefs.defaultTaskTimerFormat,
+    taskView: prefs.taskView,
     dynamicColorsEnabled: prefs.dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled: prefs.autoFocusOnTaskLaunchEnabled,
     checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled,

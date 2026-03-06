@@ -16,6 +16,7 @@ import {
   saveTask,
 } from "./cloudStore";
 import { nowMs } from "./time";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./rewards";
 
 export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
@@ -35,6 +36,17 @@ let cachedPreferences: Awaited<ReturnType<typeof loadPreferences>> = null;
 let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
 let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
+const preferenceListeners = new Set<(prefs: Awaited<ReturnType<typeof loadPreferences>>) => void>();
+
+function emitPreferenceChange() {
+  for (const listener of preferenceListeners) {
+    try {
+      listener(cachedPreferences);
+    } catch {
+      // ignore listener failures
+    }
+  }
+}
 
 function safeParseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -223,6 +235,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     cachedTaskUi = null;
     saveShadowDashboard(null);
     hydratedUid = "";
+    emitPreferenceChange();
     return;
   }
   if (!opts?.force && hydratedUid === uid) return;
@@ -268,6 +281,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
+  emitPreferenceChange();
 }
 
 export async function refreshHistoryFromCloud(): Promise<HistoryByTaskId> {
@@ -279,6 +293,37 @@ export function loadCachedPreferences() {
   return cachedPreferences;
 }
 
+export function subscribeCachedPreferences(
+  listener: (prefs: Awaited<ReturnType<typeof loadPreferences>>) => void
+): () => void {
+  preferenceListeners.add(listener);
+  try {
+    listener(cachedPreferences);
+  } catch {
+    // ignore immediate listener failures
+  }
+  return () => {
+    preferenceListeners.delete(listener);
+  };
+}
+
+export function buildDefaultCloudPreferences() {
+  return {
+    schemaVersion: 1 as const,
+    theme: "dark" as const,
+    menuButtonStyle: "parallelogram" as const,
+    defaultTaskTimerFormat: "hour" as const,
+    taskView: "list" as const,
+    dynamicColorsEnabled: true,
+    autoFocusOnTaskLaunchEnabled: true,
+    checkpointAlertSoundEnabled: true,
+    checkpointAlertToastEnabled: true,
+    modeSettings: null,
+    rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
+    updatedAtMs: Date.now(),
+  };
+}
+
 export function loadCachedDashboard() {
   return cachedDashboard;
 }
@@ -288,10 +333,14 @@ export function loadCachedTaskUi() {
 }
 
 export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences>) {
-  cachedPreferences = prefs;
+  cachedPreferences = {
+    ...prefs,
+    rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
+  };
+  emitPreferenceChange();
   const uid = currentUid();
   if (!uid) return;
-  void savePreferences(uid, prefs).catch(() => {
+  void savePreferences(uid, cachedPreferences).catch(() => {
     // Keep local cached preferences when cloud write is denied/unavailable.
   });
 }

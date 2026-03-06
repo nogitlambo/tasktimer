@@ -118,8 +118,14 @@ function getErrorMessage(err: unknown, fallback: string) {
 }
 function shouldUseRedirectAuth() {
   if (typeof window === "undefined") return false;
-  const w = window as Window & { Capacitor?: unknown };
-  return !!w.Capacitor || window.location.protocol === "file:";
+  const w = window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  };
+  const isNativePlatform =
+    !!w.Capacitor &&
+    typeof w.Capacitor.isNativePlatform === "function" &&
+    w.Capacitor.isNativePlatform();
+  return isNativePlatform || window.location.protocol === "file:";
 }
 
 function SettingsNavTile({
@@ -1153,6 +1159,13 @@ export default function SettingsPanel() {
                   <span>Auto switch to Focus Mode on launch</span>
                   <button className="switch on" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="true" />
                 </div>
+                <div className="field" id="taskViewRow">
+                  <label htmlFor="taskViewSelect">Task View</label>
+                  <select id="taskViewSelect" defaultValue="list" aria-label="Task view">
+                    <option value="list">List</option>
+                    <option value="tile">Tile</option>
+                  </select>
+                </div>
               </section>
 
               <section className="settingsInlineSection">
@@ -1252,7 +1265,7 @@ export default function SettingsPanel() {
                 <div className="field" id="menuButtonStyleRow">
                   <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
                   <select id="menuButtonStyleSelect" defaultValue="parallelogram" aria-label="Menu and button style">
-                    <option value="parallelogram">Parralelogram (default)</option>
+                    <option value="parallelogram">Parallelogram (default)</option>
                     <option value="square">Square</option>
                   </select>
                 </div>

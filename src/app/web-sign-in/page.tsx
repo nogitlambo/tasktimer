@@ -18,8 +18,6 @@ import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
-const LOGO_PHASE_MS = 1200;
-const DIAL_PHASE_MS = 3000;
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -40,10 +38,6 @@ function shouldUseRedirectAuth() {
 
 export default function WebSignInPage() {
   const router = useRouter();
-  const [showLogo, setShowLogo] = useState(false);
-  const [landingHandAngle, setLandingHandAngle] = useState(0);
-  const [landingRingOffset, setLandingRingOffset] = useState(100);
-  const [landingAnimRun] = useState(0);
   const [authEmail, setAuthEmail] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
@@ -52,38 +46,9 @@ export default function WebSignInPage() {
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [googlePopupPending, setGooglePopupPending] = useState(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
-  const landingDialProgress = Math.max(0, Math.min(1, (100 - landingRingOffset) / 100));
-
-  useEffect(() => {
-    const raf = window.requestAnimationFrame(() => setShowLogo(true));
-    return () => window.cancelAnimationFrame(raf);
-  }, []);
-
-  useEffect(() => {
-    if (!showLogo) return;
-    let rafId = 0;
-    const startedAt = performance.now();
-
-    const tick = (now: number) => {
-      const elapsed = now - startedAt;
-      const progress = Math.min(elapsed / DIAL_PHASE_MS, 1);
-      setLandingHandAngle(progress * 360);
-      setLandingRingOffset(100 - progress * 100);
-      if (progress < 1) rafId = window.requestAnimationFrame(tick);
-    };
-
-    const delay = window.setTimeout(() => {
-      rafId = window.requestAnimationFrame(tick);
-    }, LOGO_PHASE_MS);
-
-    return () => {
-      window.clearTimeout(delay);
-      window.cancelAnimationFrame(rafId);
-    };
-  }, [showLogo, landingAnimRun]);
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "";
@@ -99,6 +64,7 @@ export default function WebSignInPage() {
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       setAuthUserEmail(email);
+      if (email) setGooglePopupPending(false);
       if (user?.uid) void ensureUserProfileIndex(user.uid);
       if (email && !hasRedirected) {
         setHasRedirected(true);
@@ -181,6 +147,17 @@ export default function WebSignInPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!googlePopupPending) return;
+    const onFocus = () => {
+      const auth = getFirebaseAuthClient();
+      if (auth?.currentUser) return;
+      if (typeof window !== "undefined") window.location.reload();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [googlePopupPending]);
 
   const getEmailLinkContinueUrl = () => {
     if (typeof window !== "undefined") {
@@ -292,9 +269,19 @@ export default function WebSignInPage() {
         return;
       }
       const provider = new GoogleAuthProvider();
+      setGooglePopupPending(true);
       await signInWithPopup(auth, provider);
+      setGooglePopupPending(false);
       setAuthStatus("Signed in successfully.");
     } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code || "") : "";
+      if (code === "auth/popup-closed-by-user") {
+        setGooglePopupPending(false);
+        if (typeof window !== "undefined") window.location.reload();
+        return;
+      }
+      setGooglePopupPending(false);
       setAuthError(getErrorMessage(err, "Could not sign in with Google."));
       setAuthStatus("");
     } finally {
@@ -304,10 +291,6 @@ export default function WebSignInPage() {
 
   return (
     <WebSignIn
-      showLogo={showLogo}
-      landingDialProgress={landingDialProgress}
-      landingHandAngle={landingHandAngle}
-      landingAnimRun={landingAnimRun}
       authUserEmail={authUserEmail}
       showEmailLoginForm={showEmailLoginForm}
       isEmailLinkFlow={isEmailLinkFlow}
