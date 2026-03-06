@@ -5351,7 +5351,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       // ignore localStorage read failures
     }
     const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
-    const raw = localRaw || cloudRaw;
+    const raw = cloudRaw || localRaw;
     const mode: "light" | "dark" | "command" =
       raw === "light" ? "light" : raw === "command" ? "command" : "dark";
     applyTheme(mode);
@@ -5370,7 +5370,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       // ignore localStorage read failures
     }
     const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.menuButtonStyle || "").trim().toLowerCase();
-    const raw = localRaw || cloudRaw;
+    const raw = cloudRaw || localRaw;
     const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
     applyMenuButtonStyle(next);
     try {

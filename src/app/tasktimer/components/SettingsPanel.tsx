@@ -447,8 +447,21 @@ export default function SettingsPanel() {
       }
       const snap = await getDoc(ref);
       const saved = snap.exists() ? String(snap.get("avatarId") || "") : "";
+      const savedCustomSrc = snap.exists() ? String(snap.get("avatarCustomSrc") || "").trim() : "";
       const savedRankThumbnail = snap.exists() ? String(snap.get("rankThumbnailSrc") || "").trim() : "";
-      const validSaved = avatarOptions.some((a) => a.id === saved) ? saved : "";
+      const customId = customAvatarIdForUid(authUserUid);
+      const cachedCustomSrc = readStoredCustomAvatarSrc(authUserUid);
+      if (savedCustomSrc) {
+        setAvatarOptions((prev) => {
+          const base = prev.filter((opt) => String(opt.id) !== customId);
+          return [...base, { id: customId, label: "Custom Upload", src: savedCustomSrc }];
+        });
+        writeStoredCustomAvatarSrc(authUserUid, savedCustomSrc);
+      } else if (cachedCustomSrc) {
+        await saveUserDocPatch(authUserUid, { avatarCustomSrc: cachedCustomSrc });
+      }
+      const validSaved =
+        avatarOptions.some((a) => a.id === saved) || (saved === customId && !!savedCustomSrc) ? saved : "";
       const validCached = avatarOptions.some((a) => a.id === cached) ? cached : "";
       const nextId = validSaved || validCached || avatarOptions[0]?.id || "";
       const cachedRankThumbnail = readStoredRankThumbnailSrc(authUserUid);
@@ -646,10 +659,18 @@ export default function SettingsPanel() {
       setAuthStatus("");
       return;
     }
+    const customId = customAvatarIdForUid(authUserUid);
+    const isCustomAvatar = avatarId === customId;
+    const customAvatarSrc = readStoredCustomAvatarSrc(authUserUid);
+    const patch: Record<string, unknown> = {
+      avatarId,
+      avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
+    };
+    if (!isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, "");
     writeStoredAvatarId(authUserUid, avatarId);
     setAuthError("");
     try {
-      await saveUserDocPatch(authUserUid, { avatarId });
+      await saveUserDocPatch(authUserUid, patch);
       await syncOwnFriendshipProfile(authUserUid, { avatarId });
       showAvatarSyncNotice("Avatar saved.");
     } catch (err: unknown) {
@@ -708,7 +729,7 @@ export default function SettingsPanel() {
     writeStoredAvatarId(authUserUid, customId);
     setAuthError("");
     try {
-      await saveUserDocPatch(authUserUid, { avatarId: customId });
+      await saveUserDocPatch(authUserUid, { avatarId: customId, avatarCustomSrc: dataUrl });
       await syncOwnFriendshipProfile(authUserUid, { avatarId: customId });
       showAvatarSyncNotice("Avatar uploaded.");
     } catch (err: unknown) {
@@ -1224,8 +1245,8 @@ export default function SettingsPanel() {
                 <div className="field" id="themeToggleRow">
                   <label htmlFor="themeSelect">Theme</label>
                   <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
-                    <option value="dark">Dark</option>
-                    <option value="command">Command Base Console</option>
+                    <option value="dark">Purple</option>
+                    <option value="command">Cyan</option>
                   </select>
                 </div>
                 <div className="field" id="menuButtonStyleRow">
