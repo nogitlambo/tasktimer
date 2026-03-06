@@ -3,10 +3,10 @@ import SettingsPanel from "./SettingsPanel";
 
 export default function SettingsScreen() {
   return (
-    <div className="wrap" id="app" aria-label="TaskTimer Settings">
-      <div className="topbar" aria-label="TaskTimer header">
+    <div className="wrap" id="app" aria-label="TaskLaunch Settings">
+      <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
+          <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
         </div>
       </div>
       <div className="list settingsPageList" style={{ paddingTop: 18 }}>

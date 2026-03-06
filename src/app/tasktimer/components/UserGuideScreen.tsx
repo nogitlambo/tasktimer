@@ -216,10 +216,10 @@ export default function UserGuideScreen({ onBack }: Props) {
   const selectedTopic = sections.find((s) => s.id === selectedTopicId) || null;
 
   return (
-    <div className="wrap" id="app" aria-label="TaskTimer User Guide">
-      <div className="topbar" aria-label="TaskTimer header">
+    <div className="wrap" id="app" aria-label="TaskLaunch User Guide">
+      <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
+          <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
         </div>
       </div>
       <div className="list settingsPageList userGuidePage" style={{ paddingTop: 18 }}>

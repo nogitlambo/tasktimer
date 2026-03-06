@@ -365,21 +365,37 @@ export default function SettingsPanel() {
       if (!uid) return;
       const ref = accountStateDocRef(uid);
       if (!ref) return;
-      const stateSnap = await getDoc(ref);
+      let stateSnap;
+      try {
+        stateSnap = await getDoc(ref);
+      } catch (err: unknown) {
+        const code =
+          err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code || "") : "";
+        if (code === "permission-denied") return;
+        throw err;
+      }
       const pendingDelete = stateSnap.exists() && stateSnap.get("deleteReauthPending") === true;
       if (!pendingDelete) return;
       try {
         await getRedirectResult(auth);
       } catch (err: unknown) {
         if (cancelled) return;
-        await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+        try {
+          await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+        } catch {
+          // ignore account-state write failures
+        }
         setAuthError(getErrorMessage(err, "Could not complete Google re-authentication for account deletion."));
         setAuthStatus("");
         return;
       }
       if (cancelled) return;
       if (!auth.currentUser) return;
-      await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+      try {
+        await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+      } catch {
+        // ignore account-state write failures
+      }
       setShowDeleteAccountConfirm(false);
       setAuthStatus("Re-authentication complete. Deleting account...");
       setAuthError("");
@@ -542,7 +558,13 @@ export default function SettingsPanel() {
             setAuthError("");
             if (shouldUseRedirectAuth()) {
               const ref = accountStateDocRef(user.uid);
-              if (ref) await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true });
+              if (ref) {
+                try {
+                  await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true });
+                } catch {
+                  // ignore account-state write failures
+                }
+              }
               await reauthenticateWithRedirect(user, provider);
               return;
             }
@@ -554,7 +576,13 @@ export default function SettingsPanel() {
             setAuthError(getErrorMessage(reauthErr, "Could not re-authenticate to delete your account."));
             setAuthStatus("");
             const ref = accountStateDocRef(user.uid);
-            if (ref) await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+            if (ref) {
+              try {
+                await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true });
+              } catch {
+                // ignore account-state write failures
+              }
+            }
             return;
           }
         }

@@ -23,6 +23,7 @@ export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
 const SHADOW_TASKS_KEY = `${STORAGE_KEY}:shadow:tasks`;
 const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
 const SHADOW_DELETED_META_KEY = `${STORAGE_KEY}:shadow:deletedMeta`;
+const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
@@ -74,6 +75,16 @@ function loadShadowDeletedMeta(): DeletedTaskMeta {
   }
 }
 
+function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = safeParseJson<Awaited<ReturnType<typeof loadDashboard>>>(window.localStorage.getItem(SHADOW_DASHBOARD_KEY));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function saveShadowTasks(tasks: Task[]): void {
   if (typeof window === "undefined") return;
   try {
@@ -96,6 +107,19 @@ function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(SHADOW_DELETED_META_KEY, JSON.stringify(meta || {}));
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
+function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!dashboard) {
+      window.localStorage.removeItem(SHADOW_DASHBOARD_KEY);
+      return;
+    }
+    window.localStorage.setItem(SHADOW_DASHBOARD_KEY, JSON.stringify(dashboard));
   } catch {
     // ignore localStorage failures
   }
@@ -181,6 +205,7 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
 cachedTasks = loadShadowTasks();
 cachedHistory = loadShadowHistory();
 cachedDeletedMeta = loadShadowDeletedMeta();
+cachedDashboard = loadShadowDashboard();
 
 function currentUid(): string {
   const auth = getFirebaseAuthClient();
@@ -196,6 +221,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     cachedPreferences = null;
     cachedDashboard = null;
     cachedTaskUi = null;
+    saveShadowDashboard(null);
     hydratedUid = "";
     return;
   }
@@ -239,6 +265,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDeletedMeta(cachedDeletedMeta);
   cachedPreferences = snapshot.preferences || null;
   cachedDashboard = snapshot.dashboard || null;
+  saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
 }
@@ -264,21 +291,33 @@ export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences
   cachedPreferences = prefs;
   const uid = currentUid();
   if (!uid) return;
-  void savePreferences(uid, prefs);
+  void savePreferences(uid, prefs).catch(() => {
+    // Keep local cached preferences when cloud write is denied/unavailable.
+  });
 }
 
 export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard>) {
   cachedDashboard = dashboard;
+  saveShadowDashboard(cachedDashboard);
   const uid = currentUid();
   if (!uid) return;
-  void saveDashboard(uid, dashboard);
+  void saveDashboard(uid, dashboard).catch(() => {
+    // Keep local cached dashboard config when cloud write is denied/unavailable.
+  });
+}
+
+export function primeDashboardCacheFromShadow() {
+  if (cachedDashboard) return;
+  cachedDashboard = loadShadowDashboard();
 }
 
 export function saveCloudTaskUi(taskUi: NonNullable<typeof cachedTaskUi>) {
   cachedTaskUi = taskUi;
   const uid = currentUid();
   if (!uid) return;
-  void saveTaskUi(uid, taskUi);
+  void saveTaskUi(uid, taskUi).catch(() => {
+    // Keep local cached task-ui config when cloud write is denied/unavailable.
+  });
 }
 
 export function loadTasks(): Task[] | null {
@@ -299,7 +338,9 @@ export function saveTasks(tasks: Task[]): void {
     next
       .filter((t) => String(t.id || ""))
       .map((t) => saveTask(uid, t))
-  );
+  ).catch(() => {
+    // Keep local shadow tasks when cloud write is denied/unavailable.
+  });
   for (const taskId of removedTaskIds) {
     void deleteTask(uid, taskId)
       .then(() => {
@@ -375,10 +416,18 @@ export function saveDeletedMeta(meta: DeletedTaskMeta): void {
   const uid = currentUid();
   if (!uid) return;
   for (const [taskId, row] of Object.entries(next)) {
-    if (row) void saveDeletedTaskMeta(uid, taskId, row);
+    if (row) {
+      void saveDeletedTaskMeta(uid, taskId, row).catch(() => {
+        // Keep local deleted-meta cache when cloud write is denied/unavailable.
+      });
+    }
   }
   for (const taskId of Object.keys(prev)) {
-    if (!next[taskId]) void deleteDeletedTaskMeta(uid, taskId);
+    if (!next[taskId]) {
+      void deleteDeletedTaskMeta(uid, taskId).catch(() => {
+        // Keep local deleted-meta cache when cloud delete is denied/unavailable.
+      });
+    }
   }
 }
 

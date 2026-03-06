@@ -62,23 +62,23 @@ body{
   flex-direction:column;
   position:relative;
 }
-#app[aria-label="TaskTimer App"]{
+#app[aria-label="TaskLaunch App"]{
   width: min(1220px, 100%);
   margin-bottom:0;
   border: none;
   box-shadow: none;
 }
-#app[aria-label="TaskTimer Settings"],
-#app[aria-label="TaskTimer User Guide"]{
+#app[aria-label="TaskLaunch Settings"],
+#app[aria-label="TaskLaunch User Guide"]{
   background: #0d0f13 !important;
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling: touch;
 }
-#app[aria-label="TaskTimer Settings"] .list{
+#app[aria-label="TaskLaunch Settings"] .list{
   min-height:100%;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuidePage{
+#app[aria-label="TaskLaunch User Guide"] .userGuidePage{
   height:auto;
   min-height:100%;
   overflow:visible;
@@ -109,9 +109,9 @@ body{
 }
 .brandLogo{
   display:block;
-  height:56px;
+  height:42px;
   width:auto;
-  max-width:440px;
+  max-width:330px;
   object-fit:contain;
   margin-left:0;
   align-self:center;
@@ -1248,10 +1248,10 @@ body[data-theme="light"] .appFooterAlertBadge{
 }
 
 /* Use more available width on the Tasks page without affecting route screens that reuse `.list`. */
-#app[aria-label="TaskTimer App"] .appPageTasks .list{
+#app[aria-label="TaskLaunch App"] .appPageTasks .list{
   padding:0;
 }
-#app[aria-label="TaskTimer App"] .appPageTasks .task{
+#app[aria-label="TaskLaunch App"] .appPageTasks .task{
   padding:14px 10px 12px;
   width:100%;
   max-width:none;
@@ -1261,7 +1261,7 @@ body[data-theme="light"] .appFooterAlertBadge{
 }
 
 @media (max-width: 1320px){
-  #app[aria-label="TaskTimer App"] .appPageTasks .row{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .row{
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "name actions"
@@ -1269,41 +1269,41 @@ body[data-theme="light"] .appFooterAlertBadge{
     gap:10px 12px;
     align-items:center;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .name{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .name{
     align-self:center;
     min-width:0;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .time{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .time{
     justify-self:start;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .actions{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .actions{
     justify-self:end;
   }
 }
 
 @media (max-width: 1100px){
-  #app[aria-label="TaskTimer App"] .appPageTasks .task .actions{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .actions{
     gap:6px;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .task .actions .iconBtn{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .actions .iconBtn{
     width:48px;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .task .actions > .btn.small{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .actions > .btn.small{
     min-width:74px;
     padding-left:10px;
     padding-right:10px;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .timePanel{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .timePanel{
     padding:8px 14px;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .timeChunk{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .timeChunk{
     min-width:56px;
   }
 }
-#app[aria-label="TaskTimer App"] .appPageTasks .task[draggable="true"]{
+#app[aria-label="TaskLaunch App"] .appPageTasks .task[draggable="true"]{
   cursor: grab;
 }
-#app[aria-label="TaskTimer App"] .appPageTasks .task.isDragging{
+#app[aria-label="TaskLaunch App"] .appPageTasks .task.isDragging{
   opacity:.72;
   box-shadow: 0 0 0 1px rgba(53,232,255,.35), 0 10px 22px rgba(0,0,0,.28);
 }
@@ -2242,7 +2242,7 @@ optgroup{
   border:1px solid rgba(255,255,255,.14);
   box-shadow: var(--shadow);
 }
-#app[aria-label="TaskTimer Settings"] .menu{
+#app[aria-label="TaskLaunch Settings"] .menu{
   width: 100%;
 }
 .settingsPageList{
@@ -2521,17 +2521,17 @@ optgroup{
 }
 
 /* Settings screen restyled to match dashboard surface language */
-#app[aria-label="TaskTimer Settings"] .settingsDashboardShell{
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
   margin:18px;
   padding:14px;
   border:1px solid rgba(121,226,255,.2);
   background:#0d0f13 !important;
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
 }
-#app[aria-label="TaskTimer Settings"] .settingsSceneBackdrop{
+#app[aria-label="TaskLaunch Settings"] .settingsSceneBackdrop{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .menuHead{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuHead{
   min-height:auto;
   margin-bottom:12px;
   border-bottom:1px solid rgba(121,226,255,.18);
@@ -2539,7 +2539,7 @@ optgroup{
   border-radius:0;
   padding:4px 4px 10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .menuTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuTitle{
   font-family:var(--font-tight);
   font-size:24px;
   font-weight:800;
@@ -2548,27 +2548,27 @@ optgroup{
   color: rgba(142,242,255,.96);
   text-shadow:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .menuList{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuList{
   gap:12px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroPanel,
-#app[aria-label="TaskTimer Settings"] .settingsModuleGroup{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroPanel,
+#app[aria-label="TaskLaunch Settings"] .settingsModuleGroup{
   border:1px solid rgba(121,226,255,.2);
   background:#0d0f13 !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroPanel{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroPanel{
   background:
     linear-gradient(150deg, rgba(46,232,255,.06), rgba(0,0,0,0) 28%),
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
     #0d0f13 !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroKicker{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroKicker{
   color: rgba(190,240,255,.72);
   font-size:11px;
   letter-spacing:.12em;
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroTitle{
   font-family:var(--font-tight);
   font-size:24px;
   font-weight:800;
@@ -2576,54 +2576,54 @@ optgroup{
   line-height:1.1;
   color: rgba(142,242,255,.96);
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroText{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroText{
   color: rgba(210,230,246,.8);
   font-size:14px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroStat,
-#app[aria-label="TaskTimer Settings"] .settingsPreviewCard{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroStat,
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewCard{
   border:1px solid rgba(121,226,255,.2);
   background: rgba(255,255,255,.02);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
-#app[aria-label="TaskTimer Settings"] .settingsHeroStatValue{
+#app[aria-label="TaskLaunch Settings"] .settingsHeroStatValue{
   color: rgba(240,250,255,.96);
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreviewCardHeader{
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewCardHeader{
   color: rgba(190,240,255,.8);
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreviewRow,
-#app[aria-label="TaskTimer Settings"] .settingsPreviewMeta,
-#app[aria-label="TaskTimer Settings"] .settingsHeroStatLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewRow,
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeta,
+#app[aria-label="TaskLaunch Settings"] .settingsHeroStatLabel{
   color: rgba(188,214,230,.76);
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreviewMeter{
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeter{
   border-color: rgba(117,231,255,.2);
   background: rgba(0,0,0,.28);
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreviewMeterFill{
+#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeterFill{
   background: linear-gradient(90deg, var(--accent), var(--accent3));
   box-shadow: 0 0 8px rgba(53,232,255,.28);
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsModuleGroup .settingsSectionLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsModuleGroup .settingsSectionLabel{
   color: rgba(190,240,255,.8);
   font-size:11px;
   font-weight:800;
   letter-spacing:.1em;
   text-transform:uppercase;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .menuItem{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem{
   border:1px solid rgba(121,226,255,.2);
   background:#0d0f13 !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .menuItem:hover{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem:hover{
   background: linear-gradient(180deg, rgba(53,232,255,.10), rgba(255,255,255,.02)) !important;
   border-color: rgba(53,232,255,.34);
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.10), 0 0 10px rgba(0,220,255,.12);
   transform: translateY(-1px);
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthItem{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthItem{
   min-height:52px;
   aspect-ratio:auto;
   justify-content:center;
@@ -2631,19 +2631,19 @@ optgroup{
   letter-spacing:.04em;
   text-transform:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenuItemText{
+#app[aria-label="TaskLaunch Settings"] .settingsMenuItemText{
   color: rgba(228,248,255,.94);
 }
-#app[aria-label="TaskTimer Settings"] #resetAllBtn{
+#app[aria-label="TaskLaunch Settings"] #resetAllBtn{
   border-color: rgba(255,77,77,.32);
   background: rgba(255,77,77,.08) !important;
 }
-#app[aria-label="TaskTimer Settings"] #resetAllBtn .settingsMenuItemText,
-#app[aria-label="TaskTimer Settings"] #resetAllBtn{
+#app[aria-label="TaskLaunch Settings"] #resetAllBtn .settingsMenuItemText,
+#app[aria-label="TaskLaunch Settings"] #resetAllBtn{
   color:#ff8a8a;
 }
 
-#app[aria-label="TaskTimer Settings"] .settingsDashboardShell.dashboardShell{
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell.dashboardShell{
   margin:0;
   border:none;
   box-shadow:none;
@@ -2651,14 +2651,14 @@ optgroup{
   padding:0;
 }
 
-#app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+#app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
   display:grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap:12px;
   align-items:start;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavPanel,
-#app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
   margin:0;
   padding:12px;
   max-height: calc(100dvh - 180px - var(--safe-top) - var(--safe-bottom));
@@ -2666,28 +2666,28 @@ optgroup{
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavPanel{
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
   padding-left:4px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavPanel{
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
   position:sticky;
   top:0;
   border:none;
   box-shadow:none;
   background:transparent;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSideLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsSideLabel{
   text-align:left;
   margin:0 0 8px;
   padding:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTopActions{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTopActions{
   display:flex;
   justify-content:flex-start;
   margin:0 0 14px;
   padding:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavExitBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsNavExitBtn{
   position:static;
   right:auto;
   top:auto;
@@ -2697,12 +2697,12 @@ optgroup{
   justify-content:flex-start;
   text-align:left;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavGrid{
+#app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
   display:flex;
   flex-direction:column;
   gap:8px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile{
   min-height:46px;
   aspect-ratio:auto;
   padding:10px 12px;
@@ -2714,13 +2714,13 @@ optgroup{
   text-transform:uppercase;
   letter-spacing:.08em;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile .settingsMenuItemIcon{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile .settingsMenuItemText{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemText{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavRowText{
+#app[aria-label="TaskLaunch Settings"] .settingsNavRowText{
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
@@ -2728,34 +2728,34 @@ optgroup{
   width:100%;
   text-align:center;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isActive{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.03)) !important;
   border-color: rgba(53,232,255,.45) !important;
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.14), 0 0 10px rgba(0,220,255,.15) !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger{
   border-color: rgba(255,77,77,.35);
   background: rgba(255,77,77,.10);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.08);
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger .settingsNavRowText{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger .settingsNavRowText{
   color: rgba(255,170,170,.95);
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger.isActive{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger.isActive{
   border-color: rgba(255,77,77,.55) !important;
   background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,255,255,.02)) !important;
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.16), 0 0 10px rgba(255,77,77,.14) !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
   position:relative;
   min-height:520px;
   border:none;
   box-shadow:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMobileDetailHead{
+#app[aria-label="TaskLaunch Settings"] .settingsMobileDetailHead{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMobileDetailHeadTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsMobileDetailHeadTitle{
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
@@ -2763,15 +2763,15 @@ optgroup{
   text-transform:uppercase;
   color: rgba(190,240,255,.88);
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailPane{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane{
   display:none;
   flex-direction:column;
   gap:12px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailPane.isActive{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isActive{
   display:flex;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailEmpty{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty{
   border:1px solid rgba(121,226,255,.14);
   background: rgba(255,255,255,.02);
   color: rgba(188,214,230,.8);
@@ -2779,18 +2779,18 @@ optgroup{
   font-size:12px;
   line-height:1.4;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailHead{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailHead{
   border-bottom:1px solid rgba(121,226,255,.16);
   padding-bottom:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailKicker{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailKicker{
   margin:0 0 6px;
   color: rgba(190,240,255,.72);
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.12em;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailTitle{
   margin:0;
   font-family:var(--font-tight);
   font-size:22px;
@@ -2799,33 +2799,33 @@ optgroup{
   text-transform:uppercase;
   color: rgba(142,242,255,.96);
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailText{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailText{
   margin:8px 0 0;
   color: rgba(210,230,246,.8);
   font-size:13px;
   line-height:1.45;
   max-width:60ch;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailBody{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailBody{
   display:flex;
   flex-direction:column;
   gap:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionGrid{
+#app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionGridStack{
+#app[aria-label="TaskLaunch Settings"] .settingsActionGridStack{
   grid-template-columns: 1fr;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionWide{
+#app[aria-label="TaskLaunch Settings"] .settingsActionWide{
   grid-column: 1 / -1;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionRows{
+#app[aria-label="TaskLaunch Settings"] .settingsActionRows{
   gap:8px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionRow{
+#app[aria-label="TaskLaunch Settings"] .settingsActionRow{
   min-height:54px;
   aspect-ratio:auto;
   padding:10px 12px;
@@ -2837,10 +2837,10 @@ optgroup{
   text-transform:none;
   letter-spacing:.02em;
 }
-#app[aria-label="TaskTimer Settings"] .settingsPrivacyTile{
+#app[aria-label="TaskLaunch Settings"] .settingsPrivacyTile{
   border-radius:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionRow .settingsMenuItemIcon{
+#app[aria-label="TaskLaunch Settings"] .settingsActionRow .settingsMenuItemIcon{
   width:40px;
   height:40px;
   max-width:40px;
@@ -2848,7 +2848,7 @@ optgroup{
   margin:0;
   flex:0 0 auto;
 }
-#app[aria-label="TaskTimer Settings"] .settingsActionRow .settingsMenuItemText{
+#app[aria-label="TaskLaunch Settings"] .settingsActionRow .settingsMenuItemText{
   margin-top:0;
   text-align:left;
   line-height:1.2;
@@ -2856,12 +2856,12 @@ optgroup{
   letter-spacing:.05em;
   text-transform:uppercase;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+#app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
   grid-template-columns: repeat(3, minmax(0, 144px));
   gap:8px;
   justify-content:flex-start;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDataTile{
+#app[aria-label="TaskLaunch Settings"] .settingsDataTile{
   min-height: 72px;
   max-width: 144px;
   aspect-ratio: 1 / 1;
@@ -2875,7 +2875,7 @@ optgroup{
   gap:4px;
   text-align:center;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+#app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
   width:100%;
   height:100%;
   max-width:34px;
@@ -2883,7 +2883,7 @@ optgroup{
   margin:0;
   flex:0 0 auto;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+#app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
   margin-top:0;
   text-align:center;
   line-height:1.15;
@@ -2891,7 +2891,7 @@ optgroup{
   letter-spacing:.05em;
   text-transform:uppercase;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDetailNote{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailNote{
   border:1px solid rgba(121,226,255,.16);
   background: rgba(255,255,255,.02);
   padding:10px 12px;
@@ -2899,24 +2899,24 @@ optgroup{
   font-size:12px;
   line-height:1.4;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosure{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosure{
   padding:0;
   position:relative;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDeleteAccountHead{
+#app[aria-label="TaskLaunch Settings"] .settingsDeleteAccountHead{
   padding-top:50px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureBody{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureBody{
   padding:10px 56px 0 12px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureToggle{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureToggle{
   margin-top:0;
   position:relative;
   display:block;
   width:100%;
   padding:0 12px 10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureSummary{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureSummary{
   list-style:none;
   cursor:pointer;
   padding:0;
@@ -2942,19 +2942,19 @@ optgroup{
   width:36px;
   flex:0 0 36px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureSummary::-webkit-details-marker{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureSummary::-webkit-details-marker{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureSummary::after{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureSummary::after{
   content:"\25B8";
   color: rgba(190,240,255,.82);
   font-size:36px;
   line-height:1;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureToggle[open] .settingsDangerDisclosureSummary::after{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureToggle[open] .settingsDangerDisclosureSummary::after{
   content:"\25BE";
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureActions{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureActions{
   display:flex;
   width:100%;
   justify-content:center;
@@ -2962,12 +2962,12 @@ optgroup{
   padding:0;
   padding-top:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsDangerDisclosureActions .btn{
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureActions .btn{
   margin:0 auto;
   min-height:28px;
   padding:4px 10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsAuthNotice{
+#app[aria-label="TaskLaunch Settings"] .settingsAuthNotice{
   border:1px solid rgba(121,226,255,.22);
   background: rgba(53,232,255,.06);
   color: rgba(224,248,255,.96);
@@ -2975,7 +2975,7 @@ optgroup{
   font-size:12px;
   line-height:1.4;
 }
-#app[aria-label="TaskTimer Settings"] .settingsAuthError{
+#app[aria-label="TaskLaunch Settings"] .settingsAuthError{
   border:1px solid rgba(255,77,77,.30);
   background: rgba(255,77,77,.08);
   color: #ffb1b1;
@@ -2983,16 +2983,16 @@ optgroup{
   font-size:12px;
   line-height:1.4;
 }
-#app[aria-label="TaskTimer Settings"] .settingsAuthActions{
+#app[aria-label="TaskLaunch Settings"] .settingsAuthActions{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
   justify-content:flex-start;
 }
-#app[aria-label="TaskTimer Settings"] .settingsAuthActions .btn{
+#app[aria-label="TaskLaunch Settings"] .settingsAuthActions .btn{
   min-width:148px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatus{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatus{
   margin-top:8px;
   display:flex;
   align-items:center;
@@ -3000,41 +3000,41 @@ optgroup{
   font-size:11px;
   line-height:1.35;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatusDot{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatusDot{
   width:8px;
   height:8px;
   border-radius:50%;
   background:rgba(188,214,230,.65);
   flex:0 0 auto;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-syncing .settingsSyncStatusDot{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatus.is-syncing .settingsSyncStatusDot{
   background:#f0c85a;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-synced .settingsSyncStatusDot{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatus.is-synced .settingsSyncStatusDot{
   background:#35e8ff;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatus.is-error .settingsSyncStatusDot{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatus.is-error .settingsSyncStatusDot{
   background:#ff8f8f;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatusText{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatusText{
   color:rgba(224,248,255,.94);
 }
-#app[aria-label="TaskTimer Settings"] .settingsSyncStatusTime{
+#app[aria-label="TaskLaunch Settings"] .settingsSyncStatusTime{
   color:rgba(188,214,230,.8);
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyBlock{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyBlock{
   margin-top:10px;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
   gap:6px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyBtn{
   min-height:28px;
   padding:4px 10px;
   font-size:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyValue{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyValue{
   font-family: var(--font-tight);
   font-size:12px;
   letter-spacing:.08em;
@@ -3042,7 +3042,7 @@ optgroup{
   white-space: nowrap;
   line-height: 1;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyRow{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyRow{
   width:100%;
   display:flex;
   flex-wrap:nowrap;
@@ -3050,38 +3050,38 @@ optgroup{
   justify-content:flex-start;
   gap:8px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyActions{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyActions{
   display:flex;
   gap:6px;
   align-items:center;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyActionBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyActionBtn{
   min-height:24px;
   padding:3px 8px;
   font-size:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsAuthActionsInline{
+#app[aria-label="TaskLaunch Settings"] .settingsAuthActionsInline{
   justify-content:flex-end;
   margin-top:8px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsSignOutBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsSignOutBtn{
   min-height:28px;
   padding:4px 10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsUidCopyBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyBtn{
   min-height:24px;
   padding:3px 8px;
   font-size:10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyRemoveBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyRemoveBtn{
   border-color: rgba(255,77,77,.28);
   color:#ffb1b1;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyCopyStatus{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyCopyStatus{
   font-size:11px;
   color: rgba(190,240,255,.88);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmOverlay{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmOverlay{
   position: fixed;
   inset: 0;
   display: grid;
@@ -3090,20 +3090,20 @@ optgroup{
   z-index: 180;
   padding: 14px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal{
   width: min(420px, calc(100vw - 28px));
   background: #0d0f13;
   border: 1px solid rgba(255,255,255,.14);
   box-shadow: var(--shadow);
   padding: 14px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal.settingsAvatarModal{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal.settingsAvatarModal{
   width: 100%;
   max-width: none;
   margin: 0 auto;
   max-height: min(75vh, 560px);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmTitle{
   margin: 0 0 8px;
   font-family: var(--font-tight);
   font-size: 15px;
@@ -3112,25 +3112,25 @@ optgroup{
   text-transform: uppercase;
   color: rgba(228,248,255,.96);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmText{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmText{
   margin: 0;
   color: rgba(188,214,230,.86);
   font-size: 13px;
   line-height: 1.45;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmBtns{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmBtns{
   margin-top: 12px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsFriendKeyExpiry{
+#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyExpiry{
   font-size:11px;
   color: rgba(188,214,230,.82);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineStack{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineStack{
   display:flex;
   flex-direction:column;
   gap:12px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection{
   border:none;
   background: transparent;
   padding:10px;
@@ -3140,39 +3140,39 @@ optgroup{
   box-shadow:none;
   border-radius:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionHead{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionHead{
   display:flex;
   align-items:center;
   gap:10px;
   padding-bottom:8px;
   border-bottom:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead{
   cursor:pointer;
   list-style:none;
   margin:0;
   user-select:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::-webkit-details-marker{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::-webkit-details-marker{
   display:none;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::after{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionCollapsible > .settingsInlineSectionHead::after{
   content:"\25B8";
   margin-left:auto;
   color: rgba(190,240,255,.82);
   font-size:24px;
   line-height:1;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionCollapsible[open] > .settingsInlineSectionHead::after{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionCollapsible[open] > .settingsInlineSectionHead::after{
   content:"\25BE";
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionIcon{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionIcon{
   width:28px;
   height:28px;
   object-fit:contain;
   flex:0 0 auto;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSectionTitle{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionTitle{
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:800;
@@ -3180,78 +3180,78 @@ optgroup{
   text-transform:uppercase;
   color: rgba(190,240,255,.88);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .toggleRow,
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .unitRow{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow{
   margin:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .toggleRow,
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .unitRow,
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .field{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
   border:1px solid rgba(121,226,255,.16);
   background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding:8px 10px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .switch{
   width:39px;
   height:21px;
   min-width:39px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch::after{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .switch::after{
   width:18px;
   height:18px;
   top:1px;
   left:1px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .switch.on::after{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .switch.on::after{
   left:19px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineFooter{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineFooter{
   display:flex;
   gap:8px;
   justify-content:flex-end;
   flex-wrap:wrap;
   padding-top:2px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .field{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
   margin-bottom:0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .field label{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field label{
   margin-bottom:6px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl{
   gap:8px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"],
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="color"],
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > button{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"],
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > input[type="color"],
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > button{
   border-radius:0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"]{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"]{
   border:1px solid rgba(255,255,255,.14);
   background: rgba(0,0,0,.22);
   color: var(--text);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryColorInput{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryColorInput{
   border:1px solid rgba(121,226,255,.18);
   background: rgba(255,255,255,.03);
   padding:2px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection .categoryTrashBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryTrashBtn{
   border:1px solid rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreferencesFooter{
+#app[aria-label="TaskLaunch Settings"] .settingsPreferencesFooter{
   justify-content:space-between;
   align-items:center;
 }
-#app[aria-label="TaskTimer Settings"] .settingsPreferencesFooter .btn:last-child{
+#app[aria-label="TaskLaunch Settings"] .settingsPreferencesFooter .btn:last-child{
   margin-left:auto;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection select,
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection textarea{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection select,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   width:100%;
   border:1px solid rgba(255,255,255,.14);
   background: rgba(0,0,0,.22);
@@ -3259,12 +3259,12 @@ optgroup{
   border-radius:0;
   font: inherit;
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection select{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection select{
   min-height:38px;
   padding:8px 10px;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-#app[aria-label="TaskTimer Settings"] .settingsInlineSection textarea{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   min-height:120px;
   padding:10px;
   resize:vertical;
@@ -3365,16 +3365,16 @@ optgroup{
     transform: translateY(-1px);
   }
 }
-#app[aria-label="TaskTimer Settings"],
-#app[aria-label="TaskTimer Settings"] .menu,
-#app[aria-label="TaskTimer Settings"] .menuTitle,
-#app[aria-label="TaskTimer Settings"] .settingsSectionLabel,
-#app[aria-label="TaskTimer Settings"] .menuItem,
-#app[aria-label="TaskTimer Settings"] h1,
-#app[aria-label="TaskTimer Settings"] h2,
-#app[aria-label="TaskTimer Settings"] h3,
-#app[aria-label="TaskTimer Settings"] h4,
-#app[aria-label="TaskTimer Settings"] label,
+#app[aria-label="TaskLaunch Settings"],
+#app[aria-label="TaskLaunch Settings"] .menu,
+#app[aria-label="TaskLaunch Settings"] .menuTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsSectionLabel,
+#app[aria-label="TaskLaunch Settings"] .menuItem,
+#app[aria-label="TaskLaunch Settings"] h1,
+#app[aria-label="TaskLaunch Settings"] h2,
+#app[aria-label="TaskLaunch Settings"] h3,
+#app[aria-label="TaskLaunch Settings"] h4,
+#app[aria-label="TaskLaunch Settings"] label,
 #aboutOverlay .modal,
 #aboutOverlay .modal h1,
 #aboutOverlay .modal h2,
@@ -4962,8 +4962,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
     min-width:0;
   }
   .brandLogo{
-    height:44px;
-    max-width:240px;
+    height:33px;
+    max-width:180px;
   }
   .appPages{
     padding-left:0;
@@ -5088,28 +5088,28 @@ body[data-theme="light"] .dashboardHeatDayNum{
     gap:10px;
     padding:12px;
   }
-  #app[aria-label="TaskTimer Settings"] .list{
+  #app[aria-label="TaskLaunch Settings"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDashboardShell{
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
     margin:0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
     grid-template-columns: 1fr;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
     position:static;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
     min-height:0;
     max-height:none;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
     display:grid;
     grid-template-columns: repeat(3, minmax(0,1fr));
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavTile{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
     min-height:86px;
     aspect-ratio:1/1;
     padding:10px 8px;
@@ -5118,7 +5118,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
     justify-content:center;
     text-align:center;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavTile .settingsNavRowText{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
     font-size:11px;
     text-align:center;
   }
@@ -5135,7 +5135,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
   .settingsModuleGridWide{
     grid-template-columns: 1fr;
   }
-  #app[aria-label="TaskTimer User Guide"] .list{
+  #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
   }
   .userGuideToc{
@@ -5165,48 +5165,48 @@ body[data-theme="light"] .dashboardHeatDayNum{
 }
 
 @media (min-width: 641px) and (max-width: 980px){
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
     grid-template-columns: 200px minmax(0, 1fr);
     gap:10px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
     position:sticky;
     top:0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
     display:flex;
     flex-direction:column;
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavTile{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
     min-height:44px;
     aspect-ratio:auto;
     padding:9px 10px;
     justify-content:flex-start;
     text-align:left;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavRowText{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavRowText{
     font-size:11px;
     text-align:left;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsActionGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
     grid-template-columns: 1fr;
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
     min-height:63px;
     padding:6px 5px;
     border-radius:0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
     max-width:30px;
     max-height:30px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
     font-size:9px;
     letter-spacing:.04em;
   }
@@ -5225,8 +5225,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
     padding:10px;
   }
   .brandLogo{
-    height:36px;
-    max-width:190px;
+    height:27px;
+    max-width:142.5px;
   }
   #openAddTaskBtn{
     min-height:34px;
@@ -5291,20 +5291,20 @@ body[data-theme="light"] .dashboardHeatDayNum{
     display:flex;
     flex-direction:column;
   }
-  #app[aria-label="TaskTimer Settings"] .list{
+  #app[aria-label="TaskLaunch Settings"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDashboardShell{
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
     padding:10px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
     gap:10px;
     position:relative;
     overflow-x:hidden;
     overflow-y:visible;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavPanel,
-  #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
     min-height:0;
     max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
     overflow-y:auto;
@@ -5312,12 +5312,12 @@ body[data-theme="light"] .dashboardHeatDayNum{
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
     display:flex;
     flex-direction:column;
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavTile{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
     width:100%;
     min-height:44px;
     aspect-ratio:auto;
@@ -5330,22 +5330,22 @@ body[data-theme="light"] .dashboardHeatDayNum{
     text-transform:uppercase;
     letter-spacing:.08em;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavTile .settingsNavRowText{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
     text-align:left;
     font-size:12px;
     line-height:1.15;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
     display:none;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsNavPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsNavPanel{
     display:none;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsDetailPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsDetailPanel{
     display:block;
     animation: settingsDetailSlideIn .22s ease-out;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMobileDetailHead{
+  #app[aria-label="TaskLaunch Settings"] .settingsMobileDetailHead{
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -5354,27 +5354,27 @@ body[data-theme="light"] .dashboardHeatDayNum{
     padding-bottom:8px;
     border-bottom:1px solid rgba(121,226,255,.14);
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMobileBackBtn{
+  #app[aria-label="TaskLaunch Settings"] .settingsMobileBackBtn{
     min-width:72px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsActionGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
     grid-template-columns: 1fr;
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTileGrid{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap:8px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
     min-height:57px;
     padding:6px 3px;
     border-radius:0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemIcon{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
     max-width:26px;
     max-height:26px;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDataTile .settingsMenuItemText{
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
     font-size:8px;
     letter-spacing:.03em;
   }
@@ -5394,7 +5394,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap:8px;
   }
-  #app[aria-label="TaskTimer User Guide"] .list{
+  #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
   }
   .userGuideGrid{
@@ -5439,8 +5439,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
     padding:8px;
   }
   .brandLogo{
-    height:30px;
-    max-width:160px;
+    height:22.5px;
+    max-width:120px;
   }
   #openAddTaskBtn{
     min-height:36px;
@@ -5930,14 +5930,14 @@ body[data-theme="light"] optgroup{
 }
 
 /* User Guide route aligned to Settings split-panel layout */
-#app[aria-label="TaskTimer User Guide"] .userGuideMenu{
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu{
   margin:0;
   border:none;
   box-shadow:none;
   background:transparent;
   padding:0;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideMenu .menuHead{
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuHead{
   min-height:auto;
   margin-bottom:12px;
   border-bottom:1px solid rgba(121,226,255,.18);
@@ -5945,7 +5945,7 @@ body[data-theme="light"] optgroup{
   border-radius:0;
   padding:4px 4px 10px;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideMenu .menuTitle{
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuTitle{
   font-family:var(--font-tight);
   font-size:24px;
   font-weight:800;
@@ -5954,14 +5954,14 @@ body[data-theme="light"] optgroup{
   color: rgba(142,242,255,.96);
   text-shadow:none;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+#app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
   display:grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap:12px;
   align-items:start;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel,
-#app[aria-label="TaskTimer User Guide"] .userGuideDetailPanel{
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+#app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
   margin:0;
   padding:12px;
   max-height: calc(100dvh - 180px - var(--safe-top) - var(--safe-bottom));
@@ -5969,7 +5969,7 @@ body[data-theme="light"] optgroup{
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel{
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel{
   position:sticky;
   top:0;
   border:none;
@@ -5977,18 +5977,18 @@ body[data-theme="light"] optgroup{
   background:transparent;
   padding-left:4px;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsSideLabel{
+#app[aria-label="TaskLaunch User Guide"] .settingsSideLabel{
   text-align:left;
   margin:0 0 8px;
   padding:0;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsNavTopActions{
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTopActions{
   display:flex;
   justify-content:flex-start;
   margin:0 0 14px;
   padding:0;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsNavExitBtn{
+#app[aria-label="TaskLaunch User Guide"] .settingsNavExitBtn{
   position:static;
   right:auto;
   top:auto;
@@ -5998,12 +5998,12 @@ body[data-theme="light"] optgroup{
   justify-content:flex-start;
   text-align:left;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideNavGrid{
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavGrid{
   display:flex;
   flex-direction:column;
   gap:8px;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel .settingsNavTile{
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile{
   min-height:46px;
   aspect-ratio:auto;
   padding:10px 12px;
@@ -6015,7 +6015,7 @@ body[data-theme="light"] optgroup{
   background:#0d0f13 !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
 }
-#app[aria-label="TaskTimer User Guide"] .settingsNavRowText{
+#app[aria-label="TaskLaunch User Guide"] .settingsNavRowText{
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
@@ -6023,20 +6023,20 @@ body[data-theme="light"] optgroup{
   width:100%;
   text-align:left;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideNavPanel .settingsNavTile.isActive{
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile.isActive{
   background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.03)) !important;
   border-color: rgba(53,232,255,.45) !important;
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.14), 0 0 10px rgba(0,220,255,.15) !important;
 }
 @media (hover: hover) and (pointer: fine){
-  #app[aria-label="TaskTimer User Guide"] .userGuideNavPanel .settingsNavTile:hover{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:hover{
     background: linear-gradient(180deg, rgba(53,232,255,.10), rgba(255,255,255,.02)) !important;
     border-color: rgba(53,232,255,.34);
     box-shadow: inset 0 0 0 1px rgba(53,232,255,.10), 0 0 10px rgba(0,220,255,.12);
     transform: translateY(-1px);
   }
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideDetailPanel{
+#app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
   position:relative;
   min-height:520px;
   border:none;
@@ -6047,10 +6047,10 @@ body[data-theme="light"] optgroup{
   flex-direction:column;
   align-items:stretch;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsMobileDetailHead{
+#app[aria-label="TaskLaunch User Guide"] .settingsMobileDetailHead{
   display:none;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsMobileDetailHeadTitle{
+#app[aria-label="TaskLaunch User Guide"] .settingsMobileDetailHeadTitle{
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
@@ -6058,7 +6058,7 @@ body[data-theme="light"] optgroup{
   text-transform:uppercase;
   color: rgba(190,240,255,.88);
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicPane{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicPane{
   display:flex;
   flex-direction:column;
   gap:12px;
@@ -6068,13 +6068,13 @@ body[data-theme="light"] optgroup{
   align-self:stretch;
   min-width:0;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicHead{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicHead{
   border-bottom:1px solid rgba(121,226,255,.16);
   padding-bottom:10px;
   width:100%;
   max-width:none;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsDetailTitle{
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailTitle{
   margin:0;
   font-family:var(--font-tight);
   font-size:22px;
@@ -6083,27 +6083,27 @@ body[data-theme="light"] optgroup{
   text-transform:uppercase;
   color: rgba(142,242,255,.96);
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicTitleInline{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicTitleInline{
   display:flex;
   align-items:center;
   gap:8px;
   margin:0;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicTitleInline .userGuideIcon{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicTitleInline .userGuideIcon{
   width:22px;
   height:22px;
   max-width:22px;
   max-height:22px;
   margin:0;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody{
   display:flex;
   flex-direction:column;
   gap:10px;
   width:100%;
   max-width:none;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsDetailText{
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailText{
   margin:8px 0 0;
   color: rgba(210,230,246,.8);
   font-size:13px;
@@ -6111,23 +6111,23 @@ body[data-theme="light"] optgroup{
   max-width:none;
   width:100%;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideSection{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideSection{
   width:100%;
   max-width:none;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsDetailPane,
-#app[aria-label="TaskTimer User Guide"] .settingsDetailBody,
-#app[aria-label="TaskTimer User Guide"] .userGuideText,
-#app[aria-label="TaskTimer User Guide"] .modalSubtext{
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailPane,
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailBody,
+#app[aria-label="TaskLaunch User Guide"] .userGuideText,
+#app[aria-label="TaskLaunch User Guide"] .modalSubtext{
   width:100%;
   max-width:none;
 }
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideShotPlaceholder,
-#app[aria-label="TaskTimer User Guide"] .userGuideTopicBody .userGuideShotImage{
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideShotPlaceholder,
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideShotImage{
   width:100%;
   max-width:100%;
 }
-#app[aria-label="TaskTimer User Guide"] .settingsDetailEmpty{
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailEmpty{
   border:1px solid rgba(121,226,255,.14);
   background: rgba(255,255,255,.02);
   color: rgba(188,214,230,.8);
@@ -6137,7 +6137,7 @@ body[data-theme="light"] optgroup{
 }
 
 @media (min-width: 641px) and (max-width: 980px){
-  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
     grid-template-columns: 200px minmax(0, 1fr);
     gap:10px;
   }
@@ -6148,15 +6148,15 @@ body[data-theme="light"] optgroup{
     width:100%;
     max-width:100%;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
     gap:10px;
     position:relative;
     overflow-x:hidden;
     overflow-y:visible;
     grid-template-columns: 1fr;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideNavPanel,
-  #app[aria-label="TaskTimer User Guide"] .userGuideDetailPanel{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+  #app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
     min-height:0;
     max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
     overflow-y:auto;
@@ -6164,21 +6164,21 @@ body[data-theme="light"] optgroup{
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideNavPanel{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel{
     position:static;
     padding-left:0;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout:not(.isMobileDetailOpen) .userGuideDetailPanel{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout:not(.isMobileDetailOpen) .userGuideDetailPanel{
     display:none;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideNavPanel{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideNavPanel{
     display:none;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideDetailPanel{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideDetailPanel{
     display:block;
     animation: settingsDetailSlideIn .22s ease-out;
   }
-  #app[aria-label="TaskTimer User Guide"] .userGuideMenu .settingsMobileDetailHead{
+  #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .settingsMobileDetailHead{
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -6370,7 +6370,7 @@ body[data-theme="light"] #exportTaskOverlay .modal{
 .task.isNewTaskGlow {
   animation: taskNewGlowFade 3s ease-out forwards;
 }
-#app[aria-label="TaskTimer Settings"] .accountAvatarPlaceholder{
+#app[aria-label="TaskLaunch Settings"] .accountAvatarPlaceholder{
   width:112px;
   height:112px;
   margin:6px 0 10px;
@@ -6381,7 +6381,7 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   place-items:center;
   clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
 }
-#app[aria-label="TaskTimer Settings"] .accountAvatarPlaceholderInner{
+#app[aria-label="TaskLaunch Settings"] .accountAvatarPlaceholderInner{
   width:56px;
   height:56px;
   border:1px dashed rgba(53,232,255,.28);
@@ -6745,50 +6745,50 @@ body.light .settingsMenu .settingsAvatarOptionSelected{
 }
 
 /* Final route-scoped override: User Guide should not inherit the shared `.menu` width cap. */
-#app[aria-label="TaskTimer User Guide"] .menu,
-#app[aria-label="TaskTimer User Guide"] .userGuideMenu,
-#app[aria-label="TaskTimer User Guide"] .settingsDashboardShell.dashboardShell{
+#app[aria-label="TaskLaunch User Guide"] .menu,
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu,
+#app[aria-label="TaskLaunch User Guide"] .settingsDashboardShell.dashboardShell{
   width:100%;
   max-width:none;
 }
 
 /* Final Tasks-page override: make + Add Task span full panel width. */
-#app[aria-label="TaskTimer App"] #appPageTasks .controls{
+#app[aria-label="TaskLaunch App"] #appPageTasks .controls{
   width:100% !important;
   display:grid !important;
   grid-template-columns:minmax(0, 1fr);
   justify-self:stretch !important;
   box-sizing:border-box;
 }
-#app[aria-label="TaskTimer App"] #appPageTasks #openAddTaskBtn{
+#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
   width:100% !important;
   min-width:0 !important;
   display:block !important;
 }
 
 /* Final Tasks-page override: make mode switches justify and span full width. */
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .topbar{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .topbar{
   grid-template-columns:auto minmax(0, 1fr) auto;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   width:100%;
   max-width:none;
   min-width:0;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch{
   width:100%;
   display:grid;
   grid-template-columns:repeat(3, minmax(0, 1fr));
   gap:8px;
   align-items:stretch;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn{
   width:100%;
   min-width:0;
   justify-content:center;
 }
 @media (min-width: 981px){
-  body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
     box-sizing:border-box;
     width:calc(100% - 120px);
     max-width:none;
@@ -7032,81 +7032,81 @@ body.light #editOverlay .editPresetIntervalsInfoDialog{
 
 /* Final mobile width override for main app pages (Dashboard/Tasks/Friends). */
 @media (max-width: 640px){
-  #app[aria-label="TaskTimer App"] .appPages{
+  #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  #app[aria-label="TaskTimer App"] .appPageTasks .list{
+  #app[aria-label="TaskLaunch App"] .appPageTasks .list{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  #app[aria-label="TaskTimer App"] #appPageDashboard .dashboardShell,
-  #app[aria-label="TaskTimer App"] #appPageDashboard .dashboardShowcase,
-  #app[aria-label="TaskTimer App"] #appPageDashboard .appPagePlaceholder,
-  #app[aria-label="TaskTimer App"] #appPageTasks .modePanel,
-  #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardShell{
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell,
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShowcase,
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .appPagePlaceholder,
+  #app[aria-label="TaskLaunch App"] #appPageTasks .modePanel,
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell{
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
 }
 
 /* Final Tasks-only Command Base Console theme experiment */
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .modePanel{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .modePanel{
   border-color: rgba(116,184,208,.28);
   background:
     linear-gradient(180deg, rgba(104,184,212,.06), rgba(255,255,255,0)),
     #0a1117;
   box-shadow: 0 12px 26px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .list{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
   gap: 10px;
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
   border: 1px solid rgba(120,178,198,.3);
   background:
     linear-gradient(180deg, rgba(114,174,196,.08), rgba(255,255,255,0)),
     #0b141b;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .name{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
   color: rgba(207,236,247,.95);
   letter-spacing: .04em;
   text-transform: uppercase;
   font-family: var(--font-tight);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .time{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time{
   color: #9be2ff;
   font-family: var(--font-tight);
   letter-spacing: .05em;
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .timePanel{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
   border-color: rgba(109,181,208,.35);
   background: rgba(8,20,30,.7);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .timeChunk{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
   background: rgba(9,23,34,.86);
   border-color: rgba(109,181,208,.32);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn,
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn{
   border-color: rgba(120,178,198,.35);
   background: rgba(14,28,39,.9);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn.btn-accent{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
   border-color: rgba(116,198,226,.55);
   background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32));
   color: #eaf7ff;
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .actions .btn.btn-warn{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
   border-color: rgba(190,130,130,.5);
   background: linear-gradient(180deg, rgba(138,86,86,.4), rgba(90,54,54,.28));
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .progressTrack{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
   background: rgba(20,42,56,.58);
   border-color: rgba(110,173,197,.3);
 }
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .historyInline,
-body[data-theme="command"] #app[aria-label="TaskTimer App"] #appPageTasks .task .historyCanvasWrap{
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyInline,
+body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyCanvasWrap{
   border-color: rgba(120,178,198,.24);
   background: rgba(8,18,26,.82);
 }
@@ -7121,76 +7121,76 @@ body.light #confirmOverlay.isDeleteTaskConfirm .confirmText{
 }
 
 /* Final Settings Account-module override: footer-style border outline language on account controls. */
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   border-color: rgba(53,232,255,.42);
   box-shadow: 0 0 0 1px rgba(53,232,255,.18) inset, 0 0 10px rgba(0,220,255,.14);
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(53,232,255,.56);
   box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 12px rgba(0,220,255,.2);
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:focus-visible .accountAvatarPlaceholder,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:focus-visible .accountAvatarPlaceholder,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
   border-color: rgba(53,232,255,.64);
   box-shadow: 0 0 0 1px rgba(53,232,255,.25) inset, 0 0 14px rgba(0,220,255,.24);
 }
 
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-color: rgba(0,133,160,.42);
   box-shadow: 0 0 0 1px rgba(0,133,160,.16) inset, 0 0 8px rgba(0,133,160,.14);
 }
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
-body.light #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(0,133,160,.52);
   box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset, 0 0 10px rgba(0,133,160,.16);
 }
 
 /* Final Settings avatar-frame sizing override: prevent account avatar clipping in preview frame. */
-#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarPlaceholder{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarPlaceholder{
   width: 116px;
   height: 116px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarImage{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarImage{
   object-fit: contain;
 }
 
@@ -7240,40 +7240,40 @@ body.light #elapsedPadOverlay .elapsedPadDisplay{
 }
 
 /* Final Settings-nav override: footer menu geometry + border language for module buttons. */
-#app[aria-label="TaskTimer Settings"] .settingsNavTile{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile{
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
   border-color: rgba(53,232,255,.28) !important;
   background: #0d0f13 !important;
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.1), 0 0 8px rgba(0,220,255,.1) !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isActive{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   border-color: rgba(53,232,255,.55) !important;
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08)) !important;
   box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 10px rgba(0,220,255,.22) !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger{
   border-color: rgba(255,77,77,.4) !important;
   background: #0d0f13 !important;
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.14), 0 0 8px rgba(255,77,77,.08) !important;
 }
-#app[aria-label="TaskTimer Settings"] .settingsNavTile.isDanger.isActive{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger.isActive{
   border-color: rgba(255,77,77,.58) !important;
   background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,255,255,.03)) !important;
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.18), 0 0 10px rgba(255,77,77,.14) !important;
 }
 
 /* Final Tasks-page override: align task icon buttons + counter dial to the same square border style. */
-#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn,
-#app[aria-label="TaskTimer App"] #appPageTasks .task .timePanel{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
   border-radius: 0 !important;
   clip-path: none !important;
 }
 /* Tasks-page action controls: restore slanted/parallelogram style for key task buttons. */
-#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="reset"],
-#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="edit"],
-#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .iconBtn[data-action="history"],
-#app[aria-label="TaskTimer App"] #appPageTasks .task .actions .taskMenu > summary.taskMenuBtn{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn[data-action="reset"],
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn[data-action="edit"],
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn[data-action="history"],
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenu > summary.taskMenuBtn{
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
 }
@@ -7292,10 +7292,10 @@ body[data-control-style="square"] .timerTypePill,
 body[data-control-style="square"] .switch,
 body[data-control-style="square"] .switch::after,
 body[data-control-style="square"] .timePanel,
-body[data-control-style="square"] #app[aria-label="TaskTimer Settings"] .accountAvatarPlaceholder,
-body[data-control-style="square"] #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasInput,
-body[data-control-style="square"] #app[aria-label="TaskTimer Settings"] .settingsMenu .accountAvatarPlaceholder,
-body[data-control-style="square"] #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAvatarOption{
+body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .accountAvatarPlaceholder,
+body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasInput,
+body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarPlaceholder,
+body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAvatarOption{
   border-radius: 0 !important;
   clip-path: none !important;
 }
@@ -7442,22 +7442,22 @@ body[data-control-style="square"] #app[aria-label="TaskTimer Settings"] .setting
   content: "▴";
 }
 
-#app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCard,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-#app[aria-label="TaskTimer App"] #appPageTest2 #openFriendRequestModalBtn,
-#app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap {
+#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouTitle{
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouTitle{
   padding: 8px 12px;
   line-height: 1.25;
 }
-#app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCardTitle,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-#app[aria-label="TaskTimer App"] #appPageTest2 .settingsDetailNote,
-#app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap{
+#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCardTitle,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .settingsDetailNote,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap{
   padding: 8px 12px;
   line-height: 1.25;
 }
@@ -7610,21 +7610,21 @@ body.light #friendProfileMemberSince {
 
 /* Final Friends list width override:
    use full card width and disable clipped slants on friend rows/summaries. */
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList{
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList{
   width: 100%;
   max-width: none;
   padding: 0;
   box-sizing: border-box;
 }
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
   width: 100%;
   max-width: none;
   box-sizing: border-box;
 }
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
-#app[aria-label="TaskTimer App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
   clip-path: none;
 }
 
@@ -7823,11 +7823,11 @@ body.light #appPageTest2 .sharedTasksEmpty{
   color: rgba(89, 100, 113, 0.88);
 }
 
-body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCard,
-body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails,
-body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 #openFriendRequestModalBtn,
-body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2 .friendEntryWrap {
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
   clip-path: none !important;
 }
 
@@ -7858,10 +7858,10 @@ body[data-control-style="square"] #app[aria-label="TaskTimer App"] #appPageTest2
 }
 
 /* Final Tasks-page mode accent override: apply selected mode color to active mode button + task card glow. */
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mode-accent) 28%, transparent));
 }
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn.isOn{
   border-color: color-mix(in srgb, var(--mode-accent) 72%, #ffffff 28%) !important;
   background:
     linear-gradient(
@@ -7875,7 +7875,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBt
     0 0 0 1px color-mix(in srgb, var(--mode-accent) 24%, transparent) inset,
     0 0 12px color-mix(in srgb, var(--mode-accent) 30%, transparent) !important;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse){
   border-color: color-mix(in srgb, var(--mode-accent) 32%, rgba(140,182,207,.46));
   box-shadow:
     0 14px 34px rgba(0,0,0,.28),
@@ -7884,12 +7884,12 @@ body[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task
 }
 
 /* Light-theme parity: keep mode accent visible but subtler. */
-body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap,
-body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] .modeSwitchWrap{
+body.light[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--mode-accent) 16%, transparent));
 }
-body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn,
-body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] #modeSwitch .modeBtn.isOn{
+body.light[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn.isOn,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn.isOn{
   border-color: color-mix(in srgb, var(--mode-accent) 58%, #ffffff 42%) !important;
   background:
     linear-gradient(
@@ -7903,8 +7903,8 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
     0 0 0 1px color-mix(in srgb, var(--mode-accent) 18%, transparent) inset,
     0 0 8px color-mix(in srgb, var(--mode-accent) 14%, transparent) !important;
 }
-body.light[data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse),
-body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+body.light[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse),
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse){
   border-color: color-mix(in srgb, var(--mode-accent) 20%, rgba(0,133,160,.24));
   box-shadow:
     0 10px 24px rgba(13,39,53,.10),
@@ -7912,32 +7912,32 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
     0 0 10px color-mix(in srgb, var(--mode-accent) 10%, transparent);
 }
 /* Final Tasks-page override: keep existing card color logic, but use footer/tile-style clipped outline geometry. */
-#app[aria-label="TaskTimer App"] #appPageTasks .task:not(.taskAlertPulse){
+#app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse){
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 /* Keep the task ellipsis dropdown above neighboring task cards. */
-#app[aria-label="TaskTimer App"] #appPageTasks .task{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task{
   position: relative;
 }
-#app[aria-label="TaskTimer App"] #appPageTasks .task:has(.taskMenu[open]){
+#app[aria-label="TaskLaunch App"] #appPageTasks .task:has(.taskMenu[open]){
   z-index: 30;
   clip-path: none;
 }
-#app[aria-label="TaskTimer App"] #appPageTasks .task:focus-within{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task:focus-within{
   z-index: 30;
   clip-path: none;
 }
-#app[aria-label="TaskTimer App"] #appPageTasks .task .taskMenu[open]{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu[open]{
   position: relative;
   z-index: 110;
 }
-#app[aria-label="TaskTimer App"] #appPageTasks .task .taskMenuList{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuList{
   z-index: 1200;
 }
 
 /* Final Settings Account override: keep Rank section top-justified under Username. */
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
   display: flex !important;
   flex-direction: column;
   align-items: flex-start !important;
@@ -7947,58 +7947,58 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   gap: 4px;
   margin-top: 0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankPlaceholder{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankPlaceholder{
   margin-left: 0;
   margin-right: 0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountFieldLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountFieldLabel{
   margin: 0;
   line-height: 1.15;
   align-self: flex-start;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountRankBtn{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountRankBtn{
   align-self: flex-start;
   margin-top: 0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountTopRow{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountTopRow{
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: nowrap;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasCol{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasCol{
   flex: 1 1 auto;
   min-width: 0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRow{
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow > .settingsAccountFieldLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRow > .settingsAccountFieldLabel{
   margin: 0;
   white-space: nowrap;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRankRow{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRankRow{
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasValueWrap{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap{
   flex: 0 0 auto;
   width: fit-content;
   max-width: 100%;
   min-width: 0;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasValueWrap .settingsAccountFieldValue{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap .settingsAccountFieldValue{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountMemberSinceInline{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountMemberSinceInline{
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8007,54 +8007,54 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   color: #c8ecf2;
   white-space: nowrap;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountFieldRow > .settingsAccountMemberSinceInline{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountFieldRow > .settingsAccountMemberSinceInline{
   min-height: 20px;
 }
-#app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
   margin-left: 0;
   margin-right: 0;
 }
 
 /* Final mobile Settings full-width override: use full available panel width on narrow screens. */
 @media (max-width: 640px){
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountTopRow{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountTopRow{
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: nowrap;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasCol{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasCol{
     flex: 1 1 auto;
     min-width: 0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRow{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRow{
     align-items: center;
     flex-wrap: nowrap;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasRankRow{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRankRow{
     flex-wrap: nowrap;
     row-gap: 0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountAliasValueWrap{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap{
     flex: 0 0 auto;
     width: fit-content;
     max-width: 100%;
     min-width: 0;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountMemberSinceInline{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountMemberSinceInline{
     white-space: normal;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsMenu .settingsAccountRankCol{
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
     margin-left: 0;
     margin-right: 0;
     justify-content: flex-start;
   }
-  #app[aria-label="TaskTimer Settings"] .list{
+  #app[aria-label="TaskLaunch Settings"] .list{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsDashboardShell{
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
     width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
@@ -8062,12 +8062,12 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsSplitLayout{
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
     width: 100% !important;
     max-width: none !important;
   }
-  #app[aria-label="TaskTimer Settings"] .settingsNavPanel,
-  #app[aria-label="TaskTimer Settings"] .settingsDetailPanel{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
     width: 100% !important;
     max-width: none !important;
   }
@@ -8080,19 +8080,19 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   body[data-app-page="dashboard"] .appPages{
     overflow-x: visible;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardEditActions{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
     position: relative;
     width: 100%;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenu{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenu{
     position: relative;
     width: auto;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuBtn{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuBtn{
     width: auto;
     justify-content: flex-start;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuList{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuList{
     position: absolute;
     top: calc(100% + 6px);
     left: auto;
@@ -8104,10 +8104,10 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
   }
 }
 @media (min-width: 641px){
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenu{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenu{
     position: relative;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardPanelMenuList{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuList{
     min-width: 330px;
     max-height: none;
     overflow: visible;
@@ -8118,20 +8118,20 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskTimer App"]
 
 /* Final Dashboard Avg Session range control override:
    replace inline pills with a dropdown menu while preserving existing dashboard styling language. */
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgSessionRangeRow{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionRangeRow{
   margin-top: 10px;
   justify-content: flex-end;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu{
   position: relative;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu > summary{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu > summary{
   list-style: none;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu > summary::-webkit-details-marker{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu > summary::-webkit-details-marker{
   display: none;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuBtn{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuBtn{
   min-height: 36px;
   min-width: 168px;
   display: inline-flex;
@@ -8139,19 +8139,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRa
   justify-content: flex-start;
   gap: 6px;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuLabelPrefix{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuLabelPrefix{
   opacity: .82;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuBtn::after{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuBtn::after{
   content: "▾";
   font-size: 11px;
   line-height: 1;
   opacity: .9;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu[open] .dashboardAvgRangeMenuBtn::after{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu[open] .dashboardAvgRangeMenuBtn::after{
   content: "▴";
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -8167,10 +8167,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRa
   background: #0d0f13;
   box-shadow: 0 10px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu:not([open]) .dashboardAvgRangeMenuList{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu:not([open]) .dashboardAvgRangeMenuList{
   display: none;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8189,47 +8189,47 @@ body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRa
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   cursor: pointer;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem:hover{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
   border-color: rgba(121,226,255,.38);
   background: rgba(53,232,255,.1);
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem.isOn{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
   border-color: rgba(53,232,255,.62) !important;
   background: linear-gradient(180deg, rgba(53,232,255,.2), rgba(255,255,255,.06)) !important;
   box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
 }
 
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
   border-color: rgba(0,133,160,.3);
   background:#ffffff;
   box-shadow: 0 10px 20px rgba(13,39,53,.12), inset 0 0 0 1px rgba(0,133,160,.08);
 }
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem{
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
   border-color: rgba(0,133,160,.2);
   background: rgba(0,133,160,.05);
   color:#17343c;
 }
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem:hover{
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
   border-color: rgba(0,133,160,.35);
   background: rgba(0,133,160,.12);
 }
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuItem.isOn{
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
   border-color: rgba(0,133,160,.5) !important;
   background: linear-gradient(180deg, rgba(0,133,160,.2), rgba(255,255,255,.85)) !important;
   box-shadow: 0 0 0 1px rgba(0,133,160,.2) inset;
 }
 
 @media (max-width: 640px){
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgSessionRangeRow{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionRangeRow{
     width: 100%;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenu{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu{
     position: relative;
     width: 100%;
     display: flex;
     justify-content: flex-end;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskTimer App"] .dashboardAvgRangeMenuList{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
     left: 0;
     right: 0;
     width: 100%;
@@ -8240,7 +8240,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer A
 }
 
 /* Final footer icon parity override: increase Friends footer icon size to match visual weight. */
-#app[aria-label="TaskTimer App"] #footerTest2Btn .appFooterIconImage{
+#app[aria-label="TaskLaunch App"] #footerTest2Btn .appFooterIconImage{
   width: 46px;
   height: 46px;
 }
@@ -8267,7 +8267,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer A
   line-height: 1.5;
 }
 #shareTaskModal .modal,
-#app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal{
+#app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal{
   background: #0d0f13;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
@@ -8344,7 +8344,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskTimer A
 }
 @media (max-width: 980px){
   #shareTaskModal .modal,
-  #app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal{
+  #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal{
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -8359,8 +8359,8 @@ body[data-theme="light"] #friendRequestModal .modal,
 body.light #friendRequestModal .modal,
 body[data-theme="light"] #shareTaskModal .modal,
 body.light #shareTaskModal .modal,
-body.light #app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal,
-body[data-theme="light"] #app[aria-label="TaskTimer Settings"] .settingsInlineConfirmModal{
+body.light #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmModal{
   background: #f7fbff;
   border: 1px solid rgba(27,138,160,.22);
 }
@@ -8383,7 +8383,7 @@ body.light #shareTaskModal .shareTaskFriendOption{
 }
 
 /* Friends page incoming-request action row: keep Decline/Approve on one line and right-aligned. */
-#app[aria-label="TaskTimer App"] #appPageTest2 .groupsIncomingRequestActions{
+#app[aria-label="TaskLaunch App"] #appPageTest2 .groupsIncomingRequestActions{
   display: flex !important;
   flex-direction: row !important;
   justify-content: flex-end;
@@ -8395,15 +8395,15 @@ body.light #shareTaskModal .shareTaskFriendOption{
 /* Final Friends-page responsive width override:
    remove sidebar-era left inset on small/tablet viewports and use full viewport width. */
 @media (max-width: 980px){
-  body[data-app-page="test2"] #app[aria-label="TaskTimer App"] .appPages{
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  body[data-app-page="test2"] #app[aria-label="TaskTimer App"] #appPageTest2{
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  body[data-app-page="test2"] #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardShell{
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell{
     width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
@@ -8412,15 +8412,248 @@ body.light #shareTaskModal .shareTaskFriendOption{
     padding-right: 0 !important;
     box-sizing: border-box;
   }
-  body[data-app-page="test2"] #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardGrid{
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardGrid{
     width: 100%;
     max-width: none;
   }
-  body[data-app-page="test2"] #app[aria-label="TaskTimer App"] #appPageTest2 .dashboardCard{
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard{
     width: 100%;
     max-width: none;
     margin-left: 0 !important;
     margin-right: 0 !important;
     box-sizing: border-box;
   }
+}
+
+/* Global Dark Theme Skin (VR neon purple) */
+body[data-theme="dark"]{
+  --bg:#05010b;
+  --panel:#130b1d;
+  --card:#161026;
+  --card-2:#1a1230;
+  --text:#f4f2ff;
+  --muted:rgba(227,214,255,.78);
+  --accent:#d447d2;
+  --accent2:#b63bc3;
+  --accent3:#f06ee0;
+  --warn:#ff5a8d;
+}
+
+body[data-theme="dark"]{
+  background:
+    radial-gradient(58% 40% at 50% -8%, rgba(163,37,219,.52), rgba(20,4,30,0) 62%),
+    radial-gradient(42% 32% at 4% 52%, rgba(110,22,167,.28), rgba(10,2,18,0) 70%),
+    radial-gradient(45% 35% at 96% 57%, rgba(110,22,167,.26), rgba(10,2,18,0) 70%),
+    #05010b !important;
+  color:var(--text);
+}
+
+body[data-theme="dark"] .wrap{
+  background: rgba(8,4,14,.96) !important;
+  border:1px solid rgba(210,94,223,.32);
+  box-shadow: 0 24px 70px rgba(0,0,0,.55), inset 0 0 0 1px rgba(243,127,241,.08);
+}
+
+body[data-theme="dark"] .topbar{
+  border-bottom:1px solid rgba(218,112,235,.24);
+  background:
+    linear-gradient(180deg, rgba(201,78,220,.14), rgba(0,0,0,0)),
+    rgba(12,7,20,.72);
+}
+
+body[data-theme="dark"] .task,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .menu,
+body[data-theme="dark"] .historyInline,
+body[data-theme="dark"] .historyCanvasWrap,
+body[data-theme="dark"] .hmGroup,
+body[data-theme="dark"] .dashboardShell,
+body[data-theme="dark"] .dashboardCard{
+  border-color: rgba(216,99,235,.28);
+  background:
+    linear-gradient(160deg, rgba(187,63,215,.1), rgba(0,0,0,0) 26%),
+    rgba(16,10,28,.92);
+  box-shadow: inset 0 0 0 1px rgba(239,134,245,.05);
+}
+
+body[data-theme="dark"] .btn,
+body[data-theme="dark"] .iconBtn,
+body[data-theme="dark"] .menuItem{
+  border-color: rgba(223,112,241,.36);
+  background: rgba(32,18,46,.88);
+  color:#f6f0ff;
+}
+
+body[data-theme="dark"] .btn-accent,
+body[data-theme="dark"] .unitBtn.isOn,
+body[data-theme="dark"] .modeBtn.isOn{
+  background: linear-gradient(180deg, #df55df, #ad35c1) !important;
+  border-color: rgba(240,138,245,.72) !important;
+  color:#fff !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset, 0 0 14px rgba(211,86,230,.28);
+}
+
+body[data-theme="dark"] .btn-ghost,
+body[data-theme="dark"] .iconBtn{
+  background: rgba(24,13,35,.9);
+  color:#ecdfff;
+}
+
+body[data-theme="dark"] .appFooterNav{
+  border-top:1px solid rgba(214,96,229,.24);
+  background:
+    linear-gradient(180deg, rgba(221,95,238,.1), rgba(0,0,0,0)),
+    rgba(11,6,20,.96);
+}
+
+body[data-theme="dark"] .appFooterBtn.isOn{
+  border-color: rgba(233,134,245,.58);
+  background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(176,56,202,.22));
+  box-shadow: 0 0 14px rgba(198,73,216,.22);
+}
+
+body[data-theme="dark"] .progressFill{
+  background: linear-gradient(90deg, #d447d2, #f06ee0) !important;
+}
+
+body[data-theme="dark"] .name,
+body[data-theme="dark"] .time,
+body[data-theme="dark"] .dashboardTitle,
+body[data-theme="dark"] .menuTitle{
+  color:#f7f1ff;
+}
+
+body[data-theme="dark"] .settingsSectionLabel,
+body[data-theme="dark"] .historyMeta,
+body[data-theme="dark"] .settingsDetailNote{
+  color:rgba(226,210,252,.82);
+}
+
+/* Dark-theme parity pass: replace remaining blue/cyan accents with purple language. */
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+  border-color: rgba(214,96,229,.52) !important;
+  box-shadow: 0 0 0 1px rgba(233,134,245,.22) inset, 0 0 12px rgba(198,73,216,.2) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+  border-color: rgba(233,134,245,.66) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.26) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+  border-color: rgba(214,96,229,.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(233,134,245,.14), 0 0 10px rgba(198,73,216,.16) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
+  border-color: rgba(233,134,245,.7) !important;
+  background: linear-gradient(180deg, rgba(217,85,231,.3), rgba(255,255,255,.08)) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.26) inset, 0 0 12px rgba(211,86,230,.28) !important;
+}
+
+body[data-theme="dark"] #elapsedPadOverlay .elapsedPadDisplay,
+body[data-theme="dark"] #shareTaskModal select,
+body[data-theme="dark"] #shareTaskModal input[type="text"],
+body[data-theme="dark"] #shareTaskModal input[type="number"],
+body[data-theme="dark"] #shareTaskModal input[type="email"],
+body[data-theme="dark"] #shareTaskModal .shareTaskFriendOption{
+  border-color: rgba(214,96,229,.42) !important;
+}
+body[data-theme="dark"] #shareTaskModal select:focus,
+body[data-theme="dark"] #shareTaskModal input[type="text"]:focus,
+body[data-theme="dark"] #shareTaskModal input[type="number"]:focus,
+body[data-theme="dark"] #shareTaskModal input[type="email"]:focus{
+  border-color: rgba(233,134,245,.68) !important;
+  outline: 1px solid rgba(255,164,250,.3) !important;
+}
+
+body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
+  border-color: rgba(214,96,229,.42) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
+  border-color: rgba(214,96,229,.3) !important;
+  color: rgba(245,235,255,.92) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
+  border-color: rgba(233,134,245,.54) !important;
+  background: rgba(217,85,231,.16) !important;
+}
+body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
+  border-color: rgba(233,134,245,.74) !important;
+  background: linear-gradient(180deg, rgba(217,85,231,.28), rgba(255,255,255,.07)) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
+}
+
+body[data-theme="dark"] .friendIdentityProfileBtn:focus-visible{
+  outline-color: rgba(233,134,245,.78) !important;
+}
+body[data-theme="dark"] .friendRequestAvatar{
+  border-color: rgba(214,96,229,.42) !important;
+}
+body[data-theme="dark"] .friendIdentityUid,
+body[data-theme="dark"] .friendRequestUid,
+body[data-theme="dark"] .friendSharedTasksCountText{
+  color: rgba(230,208,250,.84) !important;
+}
+body[data-theme="dark"] .friendSharedTaskCard{
+  border-color: rgba(214,96,229,.4) !important;
+  background: rgba(22,12,34,.7) !important;
+}
+body[data-theme="dark"] .friendSharedTaskCard.friendSharedTaskCardState-running{
+  border-color: rgba(233,134,245,.62) !important;
+}
+
+/* Final dark-theme parity override for Edit Task modal controls. */
+body[data-theme="dark"] #editOverlay input[type="text"],
+body[data-theme="dark"] #editOverlay input[type="number"],
+body[data-theme="dark"] #editOverlay .checkpointAlertSoundModeField select{
+  border-color: rgba(214,96,229,.44) !important;
+  background: rgba(22,12,34,.86) !important;
+  color: rgba(245,235,255,.94) !important;
+}
+body[data-theme="dark"] #editOverlay input[type="text"]:focus,
+body[data-theme="dark"] #editOverlay input[type="number"]:focus,
+body[data-theme="dark"] #editOverlay .checkpointAlertSoundModeField select:focus{
+  border-color: rgba(233,134,245,.7) !important;
+  outline: 1px solid rgba(255,164,250,.3) !important;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset !important;
+}
+body[data-theme="dark"] #editOverlay option,
+body[data-theme="dark"] #editOverlay optgroup{
+  background: #140b20;
+  color: #f3e8ff;
+}
+body[data-theme="dark"] #editOverlay .timerTypePill.isOn{
+  border-color: rgba(233,134,245,.66) !important;
+  background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(255,255,255,.05)) !important;
+  color: #fff6ff !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.22) inset !important;
+}
+body[data-theme="dark"] #editOverlay .switch.on{
+  background: rgba(217,85,231,.22) !important;
+  border-color: rgba(233,134,245,.56) !important;
+}
+body[data-theme="dark"] #editOverlay .milestonesSummaryCollapseLabel{
+  color: rgba(240,214,255,.92) !important;
+}
+body[data-theme="dark"] #editOverlay .milestonesSummaryCollapseLabel::after{
+  color: rgba(233,134,245,.9) !important;
+}
+body[data-theme="dark"] #editOverlay .editMoveMenu .taskMenuList{
+  border-color: rgba(214,96,229,.42) !important;
+  background: #120a1d !important;
 }

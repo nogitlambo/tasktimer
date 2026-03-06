@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tasktimer.app',
-  appName: 'TaskTimer',
+  appName: 'TaskLaunch',
   webDir: 'out',
   plugins: {
     FirebaseAuthentication: {

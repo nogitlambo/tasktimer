@@ -43,6 +43,7 @@ import {
   saveDeletedMeta,
   cleanupHistory,
   loadCachedDashboard,
+  primeDashboardCacheFromShadow,
   loadCachedPreferences,
   loadCachedTaskUi,
   saveCloudDashboard,
@@ -79,6 +80,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return { destroy: () => {} };
   }
   const AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled`;
+  const THEME_KEY = `${STORAGE_KEY}:theme`;
+  const MENU_BUTTON_STYLE_KEY = `${STORAGE_KEY}:menuButtonStyle`;
   const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
   const NAV_STACK_MAX = 50;
   const NATIVE_BACK_DEBOUNCE_MS = 200;
@@ -1614,6 +1617,12 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function persistPreferencesToCloud() {
+    try {
+      localStorage.setItem(THEME_KEY, themeMode);
+      localStorage.setItem(MENU_BUTTON_STYLE_KEY, menuButtonStyle);
+    } catch {
+      // ignore localStorage write failures
+    }
     cloudPreferencesCache = {
       schemaVersion: 1,
       theme: themeMode,
@@ -5335,15 +5344,40 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function loadThemePreference() {
-    const raw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
-    const mode: "light" | "dark" | "command" = raw === "command" ? "command" : "dark";
+    let localRaw = "";
+    try {
+      localRaw = String(localStorage.getItem(THEME_KEY) || "").trim().toLowerCase();
+    } catch {
+      // ignore localStorage read failures
+    }
+    const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
+    const raw = localRaw || cloudRaw;
+    const mode: "light" | "dark" | "command" =
+      raw === "light" ? "light" : raw === "command" ? "command" : "dark";
     applyTheme(mode);
+    try {
+      localStorage.setItem(THEME_KEY, mode);
+    } catch {
+      // ignore localStorage write failures
+    }
   }
 
   function loadMenuButtonStylePreference() {
-    const raw = String((cloudPreferencesCache || loadCachedPreferences())?.menuButtonStyle || "").trim().toLowerCase();
+    let localRaw = "";
+    try {
+      localRaw = String(localStorage.getItem(MENU_BUTTON_STYLE_KEY) || "").trim().toLowerCase();
+    } catch {
+      // ignore localStorage read failures
+    }
+    const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.menuButtonStyle || "").trim().toLowerCase();
+    const raw = localRaw || cloudRaw;
     const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
     applyMenuButtonStyle(next);
+    try {
+      localStorage.setItem(MENU_BUTTON_STYLE_KEY, next);
+    } catch {
+      // ignore localStorage write failures
+    }
   }
 
   function loadAddTaskCustomNames() {
@@ -8944,6 +8978,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   }
 
   function hydrateUiStateFromCaches() {
+    primeDashboardCacheFromShadow();
     deletedTaskMeta = loadDeletedMeta();
     loadHistoryIntoMemory();
     loadHistoryRangePrefs();

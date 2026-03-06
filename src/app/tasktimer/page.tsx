@@ -41,10 +41,10 @@ export default function TaskTimerPage() {
 
   return (
     <>
-      <div className="wrap" id="app" aria-label="TaskTimer App">
+      <div className="wrap" id="app" aria-label="TaskLaunch App">
         <div className="topbar">
           <div className="brand">
-            <img className="brandLogo" src="/timebase-logo.svg" alt="Timebase" />
+            <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
           </div>
 
           {signedInUserLabel ? (
