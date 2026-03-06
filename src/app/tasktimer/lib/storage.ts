@@ -1,4 +1,4 @@
-import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
+import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   ensureUserProfileIndex,
