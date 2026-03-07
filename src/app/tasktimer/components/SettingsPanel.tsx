@@ -18,6 +18,8 @@ import {
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
+import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "@/app/tasktimer/lib/rewards";
+import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 
 type SettingsPaneKey =
   | "general"
@@ -204,6 +206,7 @@ export default function SettingsPanel() {
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const rankThumbnailUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
+  const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
 
   const accountStateDocRef = (uid: string) => {
     const db = getFirebaseFirestoreClient();
@@ -424,6 +427,20 @@ export default function SettingsPanel() {
   }, [authUserUid]);
 
   useEffect(() => {
+    const unsubscribe = subscribeCachedPreferences((prefs) => {
+      setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!authUserUid) return;
+    void syncOwnFriendshipProfile(authUserUid, { currentRankId: rewardProgress.currentRankId }).catch(() => {
+      // Ignore friendship profile rank sync failures from the settings surface.
+    });
+  }, [authUserUid, rewardProgress.currentRankId]);
+
+  useEffect(() => {
     if (!showAvatarPickerModal) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowAvatarPickerModal(false);
@@ -431,6 +448,8 @@ export default function SettingsPanel() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showAvatarPickerModal]);
+
+  const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -677,7 +696,10 @@ export default function SettingsPanel() {
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, patch);
-      await syncOwnFriendshipProfile(authUserUid, { avatarId });
+      await syncOwnFriendshipProfile(authUserUid, {
+        avatarId,
+        avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
+      });
       showAvatarSyncNotice("Avatar saved.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not save avatar selection to cloud."));
@@ -736,7 +758,7 @@ export default function SettingsPanel() {
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, { avatarId: customId, avatarCustomSrc: dataUrl });
-      await syncOwnFriendshipProfile(authUserUid, { avatarId: customId });
+      await syncOwnFriendshipProfile(authUserUid, { avatarId: customId, avatarCustomSrc: dataUrl });
       showAvatarSyncNotice("Avatar uploaded.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not save uploaded avatar selection to cloud."));
@@ -933,6 +955,7 @@ export default function SettingsPanel() {
                             </div>
                             <div className="settingsAccountFieldRow settingsAccountRankCol">
                               <div className="settingsAccountFieldLabel">Rank:</div>
+                              <div className="settingsAccountFieldValue">{rewardsHeader.rankLabel}</div>
                               <button
                                 type="button"
                                 className="settingsAccountRankBtn"

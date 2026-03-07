@@ -364,7 +364,7 @@ export default function TaskTimerPage() {
             <span className="appFooterLabel">Friends</span>
           </button>
           <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
-            <img className="appFooterIconImage" src="/icon-settings.png" alt="" aria-hidden="true" />
+            <img className="appFooterIconImage" src="/Settings.svg" alt="" aria-hidden="true" />
             <span className="appFooterLabel">Settings</span>
           </a>
         </div>

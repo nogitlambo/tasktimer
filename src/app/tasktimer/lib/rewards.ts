@@ -32,18 +32,28 @@ const XP_PER_COMPLETED_SESSION = 25;
 
 export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
   totalXp: 0,
-  currentRankId: "cadet",
+  currentRankId: "unranked",
   lastAwardedAt: null,
   completedSessions: 0,
 };
 
 export const RANK_LADDER: RankDefinition[] = [
-  { id: "cadet", label: "Cadet", minXp: 0 },
-  { id: "operator", label: "Operator", minXp: 100 },
-  { id: "specialist", label: "Specialist", minXp: 250 },
-  { id: "vanguard", label: "Vanguard", minXp: 500 },
-  { id: "architect", label: "Architect", minXp: 900 },
+  { id: "unranked", label: "Unranked", minXp: 0 },
+  { id: "initiate", label: "Initiate", minXp: 100 },
+  { id: "operator", label: "Operator", minXp: Number.POSITIVE_INFINITY },
+  { id: "technician", label: "Technician", minXp: Number.POSITIVE_INFINITY },
+  { id: "engineer", label: "Engineer", minXp: Number.POSITIVE_INFINITY },
+  { id: "analyst", label: "Analyst", minXp: Number.POSITIVE_INFINITY },
+  { id: "specialist", label: "Specialist", minXp: Number.POSITIVE_INFINITY },
+  { id: "integrator", label: "Integrator", minXp: Number.POSITIVE_INFINITY },
+  { id: "strategist", label: "Strategist", minXp: Number.POSITIVE_INFINITY },
+  { id: "director", label: "Director", minXp: Number.POSITIVE_INFINITY },
+  { id: "ascendent", label: "Ascendent", minXp: Number.POSITIVE_INFINITY },
+  { id: "commander", label: "Commander", minXp: Number.POSITIVE_INFINITY },
+  { id: "architect", label: "Architect", minXp: Number.POSITIVE_INFINITY },
 ];
+
+const RANK_BY_ID = new Map(RANK_LADDER.map((rank) => [rank.id, rank] as const));
 
 export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   if (!input || typeof input !== "object") return { ...DEFAULT_REWARD_PROGRESS };
@@ -76,7 +86,16 @@ export function getNextRank(totalXp: number): RankDefinition | null {
   const current = getRankForXp(totalXp);
   const index = RANK_LADDER.findIndex((rank) => rank.id === current.id);
   if (index < 0 || index >= RANK_LADDER.length - 1) return null;
-  return RANK_LADDER[index + 1];
+  const next = RANK_LADDER[index + 1];
+  return Number.isFinite(next.minXp) ? next : null;
+}
+
+export function getRankById(rankId: string): RankDefinition {
+  return RANK_BY_ID.get(String(rankId || "").trim().toLowerCase()) || RANK_LADDER[0];
+}
+
+export function getRankLabelById(rankId: string): string {
+  return getRankById(rankId).label;
 }
 
 export function awardSessionCompletionXp(progress: RewardProgressV1, awardedAt: number): RewardAwardResult {

@@ -40,7 +40,9 @@ export type FriendRequest = {
 export type FriendProfile = {
   alias: string | null;
   avatarId: string | null;
+  avatarCustomSrc: string | null;
   rankThumbnailSrc: string | null;
+  currentRankId: string | null;
 };
 
 export type Friendship = {
@@ -125,6 +127,11 @@ function normalizeAvatarId(value: unknown): string | null {
   return out ? out.slice(0, 120) : null;
 }
 
+function normalizeAvatarCustomSrc(value: unknown): string | null {
+  const out = String(value || "").trim();
+  return out ? out.slice(0, 900_000) : null;
+}
+
 function normalizeRankThumbnailSrc(value: unknown): string | null {
   const out = String(value || "").trim();
   return out ? out.slice(0, 900_000) : null;
@@ -132,18 +139,24 @@ function normalizeRankThumbnailSrc(value: unknown): string | null {
 
 async function loadOwnProfile(uid: string): Promise<FriendProfile> {
   const db = dbOrNull();
-  if (!db || !uid) return { alias: null, avatarId: null, rankThumbnailSrc: null };
+  if (!db || !uid) return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
   try {
     const snap = await getDoc(doc(db, "users", uid));
-    if (!snap.exists()) return { alias: null, avatarId: null, rankThumbnailSrc: null };
+    if (!snap.exists()) return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
     return {
       alias: normalizeAlias(snap.get("displayName")),
       avatarId: normalizeAvatarId(snap.get("avatarId")),
+      avatarCustomSrc: normalizeAvatarCustomSrc(snap.get("avatarCustomSrc")),
       rankThumbnailSrc: normalizeRankThumbnailSrc(snap.get("rankThumbnailSrc")),
+      currentRankId: normalizeAvatarId(snap.get("rewardCurrentRankId")),
     };
   } catch {
-    return { alias: null, avatarId: null, rankThumbnailSrc: null };
+    return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
   }
+}
+
+export async function loadFriendProfile(uid: string): Promise<FriendProfile> {
+  return loadOwnProfile(uid);
 }
 
 function asFriendRequest(id: string, row: Record<string, unknown>): FriendRequest {
@@ -182,7 +195,9 @@ function asFriendship(id: string, row: Record<string, unknown>): Friendship {
     profileByUid[uid] = {
       alias: normalizeAlias(valueObj.alias),
       avatarId: normalizeAvatarId(valueObj.avatarId),
+      avatarCustomSrc: normalizeAvatarCustomSrc(valueObj.avatarCustomSrc),
       rankThumbnailSrc: normalizeRankThumbnailSrc(valueObj.rankThumbnailSrc),
+      currentRankId: normalizeAvatarId(valueObj.currentRankId),
     };
   });
   return {
@@ -292,9 +307,11 @@ export async function sendFriendRequest(
           senderAlias: senderProfile.alias,
           senderAvatarId: senderProfile.avatarId,
           senderRankThumbnailSrc: senderProfile.rankThumbnailSrc,
+          senderCurrentRankId: senderProfile.currentRankId,
           receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
           receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
           receiverRankThumbnailSrc: normalizeRankThumbnailSrc(lookupSnap.get("rankThumbnailSrc")),
+          receiverCurrentRankId: normalizeAvatarId(lookupSnap.get("rewardCurrentRankId")),
           updatedAt: serverTimestamp(),
           respondedAt: null,
           respondedBy: null,
@@ -311,9 +328,11 @@ export async function sendFriendRequest(
         senderAlias: senderProfile.alias,
         senderAvatarId: senderProfile.avatarId,
         senderRankThumbnailSrc: senderProfile.rankThumbnailSrc,
+        senderCurrentRankId: senderProfile.currentRankId,
         receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
         receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
         receiverRankThumbnailSrc: normalizeRankThumbnailSrc(lookupSnap.get("rankThumbnailSrc")),
+        receiverCurrentRankId: normalizeAvatarId(lookupSnap.get("rewardCurrentRankId")),
         status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -481,19 +500,24 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
 
     const pairId = friendshipDocId(row.senderUid, row.receiverUid);
     const pair = sortedPair(row.senderUid, row.receiverUid);
+    const senderProfile = await loadOwnProfile(row.senderUid);
     const receiverProfile = await loadOwnProfile(receiverUid);
     const pairRef = doc(db, "friendships", pairId);
     const pairSnap = await getDoc(pairRef);
     const profileByUid = {
       [row.senderUid]: {
-        alias: normalizeAlias(row.senderAlias || row.senderEmail),
-        avatarId: normalizeAvatarId(row.senderAvatarId),
-        rankThumbnailSrc: normalizeRankThumbnailSrc(row.senderRankThumbnailSrc),
+        alias: normalizeAlias(senderProfile.alias || row.senderAlias || row.senderEmail),
+        avatarId: normalizeAvatarId(senderProfile.avatarId || row.senderAvatarId),
+        avatarCustomSrc: normalizeAvatarCustomSrc(senderProfile.avatarCustomSrc),
+        rankThumbnailSrc: normalizeRankThumbnailSrc(senderProfile.rankThumbnailSrc || row.senderRankThumbnailSrc),
+        currentRankId: normalizeAvatarId(senderProfile.currentRankId || (snap.data() as Record<string, unknown>)?.senderCurrentRankId),
       },
       [row.receiverUid]: {
         alias: normalizeAlias(receiverProfile.alias || row.receiverAlias || row.receiverEmail),
         avatarId: normalizeAvatarId(receiverProfile.avatarId || row.receiverAvatarId),
+        avatarCustomSrc: normalizeAvatarCustomSrc(receiverProfile.avatarCustomSrc),
         rankThumbnailSrc: normalizeRankThumbnailSrc(receiverProfile.rankThumbnailSrc || row.receiverRankThumbnailSrc),
+        currentRankId: normalizeAvatarId(receiverProfile.currentRankId || (snap.data() as Record<string, unknown>)?.receiverCurrentRankId),
       },
     };
     if (!pairSnap.exists()) {
@@ -561,7 +585,7 @@ export async function cancelOutgoingFriendRequest(
 
 export async function syncOwnFriendshipProfile(
   uid: string,
-  patch: Partial<Pick<FriendProfile, "alias" | "avatarId" | "rankThumbnailSrc">>
+  patch: Partial<Pick<FriendProfile, "alias" | "avatarId" | "avatarCustomSrc" | "rankThumbnailSrc" | "currentRankId">>
 ): Promise<void> {
   const db = dbOrNull();
   const ownUid = String(uid || "").trim();
@@ -573,8 +597,14 @@ export async function syncOwnFriendshipProfile(
   if (Object.prototype.hasOwnProperty.call(patch, "avatarId")) {
     profilePatch[`profileByUid.${ownUid}.avatarId`] = normalizeAvatarId(patch.avatarId);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, "avatarCustomSrc")) {
+    profilePatch[`profileByUid.${ownUid}.avatarCustomSrc`] = normalizeAvatarCustomSrc(patch.avatarCustomSrc);
+  }
   if (Object.prototype.hasOwnProperty.call(patch, "rankThumbnailSrc")) {
     profilePatch[`profileByUid.${ownUid}.rankThumbnailSrc`] = normalizeRankThumbnailSrc(patch.rankThumbnailSrc);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "currentRankId")) {
+    profilePatch[`profileByUid.${ownUid}.currentRankId`] = normalizeAvatarId(patch.currentRankId);
   }
   if (!Object.keys(profilePatch).length) return;
   const snap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", ownUid)));

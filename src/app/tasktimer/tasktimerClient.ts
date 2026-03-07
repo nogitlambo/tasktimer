@@ -19,13 +19,16 @@ import {
   cancelOutgoingFriendRequest,
   deleteSharedTaskSummariesForTask,
   declineFriendRequest,
+  loadFriendProfile,
   loadFriendships,
   loadIncomingRequests,
   loadOutgoingRequests,
   loadSharedTaskSummariesForViewer,
   loadSharedTaskSummariesForOwner,
   sendFriendRequest,
+  syncOwnFriendshipProfile,
   upsertSharedTaskSummary,
+  type FriendProfile,
   type FriendRequest,
   type Friendship,
   type SharedTaskSummary,
@@ -52,7 +55,7 @@ import {
   saveCloudPreferences,
   saveCloudTaskUi,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardSessionCompletionXp, normalizeRewardProgress } from "./lib/rewards";
+import { DEFAULT_REWARD_PROGRESS, awardSessionCompletionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
 
 export type TaskTimerClientHandle = {
   destroy: () => void;
@@ -314,6 +317,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let activeFriendProfileUid: string | null = null;
   let activeFriendProfileName = "";
   let groupsStatusMessage = "Ready.";
+  let friendProfileCacheByUid: Record<string, FriendProfile> = {};
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
@@ -323,6 +327,25 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (key) acc[key] = item.src;
     return acc;
   }, {});
+  const defaultFriendAvatarSrc = "/avatars/initials/initials-AN.svg";
+
+  function getMergedFriendProfile(friendUid: string, baseProfile?: FriendProfile | null): FriendProfile {
+    const cachedProfile = friendProfileCacheByUid[String(friendUid || "").trim()] || null;
+    return {
+      alias: cachedProfile?.alias ?? baseProfile?.alias ?? null,
+      avatarId: cachedProfile?.avatarId ?? baseProfile?.avatarId ?? null,
+      avatarCustomSrc: cachedProfile?.avatarCustomSrc ?? baseProfile?.avatarCustomSrc ?? null,
+      rankThumbnailSrc: cachedProfile?.rankThumbnailSrc ?? baseProfile?.rankThumbnailSrc ?? null,
+      currentRankId: cachedProfile?.currentRankId ?? baseProfile?.currentRankId ?? null,
+    };
+  }
+
+  function getFriendAvatarSrc(profile?: FriendProfile | null): string {
+    const customSrc = String(profile?.avatarCustomSrc || "").trim();
+    if (customSrc) return customSrc;
+    const avatarId = String(profile?.avatarId || "").trim();
+    return avatarSrcById[avatarId] || defaultFriendAvatarSrc;
+  }
 
   const els = {
     taskList: document.getElementById("taskList"),
@@ -2609,6 +2632,11 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const uid = currentUid();
     if (!uid) return;
     saveCloudPreferences(cloudPreferencesCache);
+    void syncOwnFriendshipProfile(uid, {
+      currentRankId: normalizeRewardProgress(rewardProgress).currentRankId,
+    }).catch(() => {
+      // Keep local/cloud preference persistence even if friendship profile sync fails.
+    });
   }
 
   function awardXpForCompletedSession(completedAtMs: number) {
@@ -4074,9 +4102,17 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const chartWidth = Math.max(120, chartRight - chartLeft);
     const barCount = rows.length;
     const gap = barCount > 10 ? 4 : 8;
-    const barWidth = Math.max(8, Math.floor((chartWidth - gap * (barCount - 1)) / Math.max(1, barCount)));
-    const totalBarsWidth = barWidth * barCount + gap * (barCount - 1);
-    const startX = chartLeft + Math.max(0, Math.floor((chartWidth - totalBarsWidth) / 2));
+    const labelMaxChars = width <= 420 ? 8 : 13;
+    const labelFont = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+    ctx.font = labelFont;
+    const longestLabelWidth = rows.reduce((maxWidth, row) => {
+      const label = truncateDashboardLabel(row.taskName, labelMaxChars);
+      return Math.max(maxWidth, ctx.measureText(label).width);
+    }, 0);
+    const preferredBarWidth = Math.ceil(longestLabelWidth + 10);
+    const maxBarWidthByChart = Math.max(8, Math.floor((chartWidth - gap * (barCount - 1)) / Math.max(1, barCount)));
+    const barWidth = Math.max(8, Math.min(preferredBarWidth, maxBarWidthByChart));
+    const startX = chartLeft;
 
     ctx.strokeStyle = "rgba(255,255,255,.20)";
     ctx.fillStyle = "rgba(255,255,255,.68)";
@@ -4094,7 +4130,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.globalAlpha = 1;
       if (i === 0) continue;
       const tickMs = maxAvgMs * pct;
-      ctx.fillText(formatDashboardDurationShort(tickMs), chartLeft - 6, y - 8);
+      ctx.fillText(formatDashboardDurationShort(tickMs), chartLeft - 6, y);
     }
 
     rows.forEach((row, idx) => {
@@ -4110,14 +4146,14 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       ctx.fillRect(x, y, barWidth, barHeight);
       ctx.globalAlpha = 1;
 
-      const label = truncateDashboardLabel(row.taskName, width <= 420 ? 8 : 13);
+      const label = truncateDashboardLabel(row.taskName, labelMaxChars);
       ctx.save();
       ctx.translate(x + barWidth / 2, chartBottom + 10);
       ctx.rotate((-42 * Math.PI) / 180);
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "rgba(255,255,255,.72)";
-      ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.font = labelFont;
       ctx.fillText(label, 0, 0);
       ctx.restore();
     });
@@ -6272,20 +6308,28 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       .map((row) => {
         const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
         if (!peerUid) return null;
-        const profile = row.profileByUid?.[peerUid];
+        const profile = getMergedFriendProfile(peerUid, row.profileByUid?.[peerUid]);
         const alias = String(profile?.alias || "").trim() || peerUid;
-        const avatarId = String(profile?.avatarId || "").trim();
         const rankThumbnailSrc = String(profile?.rankThumbnailSrc || "").trim();
-        const avatarSrc = avatarSrcById[avatarId] || "/avatars/initials/initials-AN.svg";
+        const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
+        const avatarSrc = getFriendAvatarSrc(profile);
         const sharedCount = groupsSharedSummaries.filter((entry) => entry.ownerUid === peerUid).length;
         const createdAtMs =
           row.createdAt && typeof (row.createdAt as any).toMillis === "function"
             ? Number((row.createdAt as any).toMillis())
             : Number.NaN;
-        return { peerUid, alias, avatarSrc, rankThumbnailSrc, sharedCount, createdAtMs };
+        return { peerUid, alias, avatarSrc, rankThumbnailSrc, currentRankId, sharedCount, createdAtMs };
       })
       .filter(
-        (row): row is { peerUid: string; alias: string; avatarSrc: string; rankThumbnailSrc: string; sharedCount: number; createdAtMs: number } =>
+        (row): row is {
+          peerUid: string;
+          alias: string;
+          avatarSrc: string;
+          rankThumbnailSrc: string;
+          currentRankId: string;
+          sharedCount: number;
+          createdAtMs: number;
+        } =>
           !!row
       )
       .sort((a, b) => {
@@ -6297,7 +6341,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const row = rankedFriends.find((entry) => entry.peerUid === targetUid);
     if (!row) return;
-    const rankPosition = rankedFriends.findIndex((entry) => entry.peerUid === targetUid) + 1;
     const memberSinceText = Number.isFinite(row.createdAtMs) ? new Date(row.createdAtMs).toLocaleDateString() : "Unknown";
 
     if (els.friendProfileAvatar) {
@@ -6314,7 +6357,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         els.friendProfileRankImage.style.display = "none";
       }
     }
-    if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: #${rankPosition}`;
+    if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: ${getRankLabelById(row.currentRankId)}`;
     if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
     activeFriendProfileUid = row.peerUid;
     activeFriendProfileName = row.alias;
@@ -6771,10 +6814,9 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const friendRows = groupsFriendships
       .map((row) => {
         const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        const profile = row.profileByUid?.[friendUid];
+        const profile = getMergedFriendProfile(friendUid, row.profileByUid?.[friendUid]);
         const alias = String(profile?.alias || "").trim() || friendUid;
-        const avatarId = String(profile?.avatarId || "").trim();
-        const avatarSrc = avatarSrcById[avatarId] || "/avatars/initials/initials-AN.svg";
+        const avatarSrc = getFriendAvatarSrc(profile);
         const summaries = groupsSharedSummaries.filter((entry) => entry.ownerUid === friendUid);
         return { friendUid, alias, avatarSrc, summaries };
       })
@@ -6939,6 +6981,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       groupsFriendships = [];
       groupsSharedSummaries = [];
       ownSharedSummaries = [];
+      friendProfileCacheByUid = {};
       setGroupsStatus("Sign in to use Groups.");
       renderGroupsPage();
       return;
@@ -6954,6 +6997,22 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
       groupsIncomingRequests = incoming;
       groupsOutgoingRequests = outgoing;
       groupsFriendships = friendships;
+      const profileEntries = await Promise.allSettled(
+        friendships.map(async (row) => {
+          const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
+          if (!peerUid) return null;
+          const profile = await loadFriendProfile(peerUid);
+          return [peerUid, profile] as const;
+        })
+      );
+      const nextFriendProfileCache: Record<string, FriendProfile> = {};
+      profileEntries.forEach((result) => {
+        if (result.status !== "fulfilled" || !result.value) return;
+        const [peerUid, profile] = result.value;
+        if (!peerUid) return;
+        nextFriendProfileCache[peerUid] = profile;
+      });
+      friendProfileCacheByUid = nextFriendProfileCache;
 
       const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
         loadSharedTaskSummariesForViewer(uid),

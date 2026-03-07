@@ -214,6 +214,7 @@ body[data-app-page="dashboard"] .appPages{
 }
 body[data-app-page="test2"] .appPages{
   padding-left: 104px !important;
+  padding-right: 18px !important;
 }
 .modeBtn{
   min-width:84px;
@@ -8410,11 +8411,11 @@ body.light #shareTaskModal .shareTaskFriendOption{
 @media (max-width: 980px){
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-right: 12px !important;
   }
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
     padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-right: 12px !important;
   }
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell{
     width: 100% !important;
@@ -8436,6 +8437,16 @@ body.light #shareTaskModal .shareTaskFriendOption{
     margin-right: 0 !important;
     box-sizing: border-box;
   }
+}
+
+/* Final Friends-page width guardrail:
+   keep a right-side gutter so card content does not clip against the viewport edge. */
+body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
+  padding-right: 18px !important;
+}
+body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
+  padding-right: 18px !important;
+  box-sizing: border-box;
 }
 
 /* Global Dark Theme Skin (VR neon purple) */
@@ -8966,6 +8977,7 @@ body[data-theme="light"][data-task-view="tile"][data-app-page="tasks"] #app[aria
   grid-template-columns:auto minmax(96px, 1fr);
   align-items:center;
   column-gap:10px;
+  animation:signedInHeaderBadgeXpSlideIn .32s ease-out;
 }
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
@@ -8997,7 +9009,7 @@ body[data-theme="light"][data-task-view="tile"][data-app-page="tasks"] #app[aria
 #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
   display:block;
   width:clamp(88px, 10vw, 132px);
-  height:5px;
+  height:10px;
   overflow:hidden;
   border:1px solid rgba(117,231,255,.24);
   background:rgba(6,18,34,.55);
@@ -9049,6 +9061,16 @@ body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeF
 body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill{
   background:linear-gradient(90deg, rgba(0,151,199,.9), rgba(0,133,160,.85));
   box-shadow:none;
+}
+@keyframes signedInHeaderBadgeXpSlideIn{
+  from{
+    opacity:0;
+    transform:translateX(10px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
 }
 @media (max-width: 980px){
   #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,

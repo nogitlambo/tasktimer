@@ -39,11 +39,12 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
 
   useEffect(() => {
     if (!signedInUserLabel) return;
-    const timer = window.setInterval(() => {
-      setHeaderView((current) => (current === "welcome" ? "xp" : "welcome"));
-    }, 4200);
-    return () => window.clearInterval(timer);
-  }, [signedInUserLabel]);
+    if (headerView === "xp") return;
+    const timer = window.setTimeout(() => {
+      setHeaderView("xp");
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [headerView, signedInUserLabel]);
 
   if (!signedInUserLabel) return null;
 

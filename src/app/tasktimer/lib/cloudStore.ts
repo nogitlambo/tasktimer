@@ -475,13 +475,24 @@ export async function deleteDeletedTaskMeta(uid: string, taskId: string): Promis
 export async function savePreferences(uid: string, prefs: UserPreferencesV1): Promise<void> {
   const ref = preferencesDoc(uid);
   if (!ref) return;
+  const normalizedRewards = normalizeRewardProgress(prefs.rewards || DEFAULT_REWARD_PROGRESS);
   await upsertUserRoot(uid);
   await setDoc(
     ref,
     {
       ...prefs,
+      rewards: normalizedRewards,
       schemaVersion: 1,
       updatedAtMs: Date.now(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  await setDoc(
+    usersDoc(uid)!,
+    {
+      rewardCurrentRankId: normalizedRewards.currentRankId,
+      rewardTotalXp: normalizedRewards.totalXp,
       updatedAt: serverTimestamp(),
     },
     { merge: true }
