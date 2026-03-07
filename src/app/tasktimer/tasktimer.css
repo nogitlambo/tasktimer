@@ -8020,6 +8020,14 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
   margin-left: 0;
   margin-right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountFieldValue{
+  min-height: 0;
+  white-space: nowrap;
 }
 
 /* Final mobile Settings full-width override: use full available panel width on narrow screens. */
@@ -8055,7 +8063,11 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
     margin-left: 0;
     margin-right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: flex-start;
+    gap: 8px;
   }
   #app[aria-label="TaskLaunch Settings"] .list{
     padding-left: 0 !important;
