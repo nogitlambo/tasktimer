@@ -26,6 +26,7 @@ const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
 const SHADOW_DELETED_META_KEY = `${STORAGE_KEY}:shadow:deletedMeta`;
 const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
+const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
 
@@ -180,6 +181,57 @@ function markPendingTaskDeletes(taskIds: string[]): void {
   savePendingMap(PENDING_TASK_DELETES_KEY, next);
 }
 
+function taskSignature(task: Task | null | undefined): string {
+  if (!task) return "";
+  const sourceMode = (task as Task & { mode?: unknown }).mode;
+  return JSON.stringify({
+    id: String(task.id || ""),
+    name: String(task.name || ""),
+    order: Number(task.order || 0),
+    accumulatedMs: Number(task.accumulatedMs || 0),
+    running: !!task.running,
+    startMs: task.startMs == null ? null : Number(task.startMs || 0),
+    collapsed: !!task.collapsed,
+    milestonesEnabled: !!task.milestonesEnabled,
+    milestoneTimeUnit: task.milestoneTimeUnit || "hour",
+    milestones: Array.isArray(task.milestones) ? task.milestones : [],
+    hasStarted: !!task.hasStarted,
+    color: task.color == null ? null : String(task.color),
+    checkpointSoundEnabled: !!task.checkpointSoundEnabled,
+    checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
+    checkpointToastEnabled: !!task.checkpointToastEnabled,
+    checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
+    finalCheckpointAction:
+      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        ? task.finalCheckpointAction
+        : "continue",
+    presetIntervalsEnabled: !!task.presetIntervalsEnabled,
+    presetIntervalValue: Number(task.presetIntervalValue || 0),
+    presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
+    presetIntervalNextSeq: Number(task.presetIntervalNextSeq || 0),
+    mode: String(sourceMode || "mode1"),
+  });
+}
+
+function markPendingTaskSync(taskIds: string[]): void {
+  if (!taskIds.length) return;
+  const next = loadPendingMap(PENDING_TASK_SYNC_KEY);
+  const ts = nowMs();
+  taskIds.forEach((taskId) => {
+    if (!taskId) return;
+    next[taskId] = ts;
+  });
+  savePendingMap(PENDING_TASK_SYNC_KEY, next);
+}
+
+function clearPendingTaskSync(taskId: string): void {
+  if (!taskId) return;
+  const next = loadPendingMap(PENDING_TASK_SYNC_KEY);
+  if (!next[taskId]) return;
+  delete next[taskId];
+  savePendingMap(PENDING_TASK_SYNC_KEY, next);
+}
+
 function clearPendingTaskDelete(taskId: string): void {
   if (!taskId) return;
   const next = loadPendingMap(PENDING_TASK_DELETES_KEY);
@@ -245,7 +297,9 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   const nextHistory = snapshot.historyByTaskId || {};
   const nextDeletedMeta = snapshot.deletedTaskMeta || {};
   const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
+  const pendingTaskSync = loadPendingMap(PENDING_TASK_SYNC_KEY);
   const pendingHistorySync = loadPendingMap(PENDING_HISTORY_SYNC_KEY);
+  const shadowTasks = loadShadowTasks();
   const shadowHistory = loadShadowHistory();
 
   const filteredTasks = nextTasks.filter((task) => !pendingTaskDeletes[String(task?.id || "")]);
@@ -253,6 +307,20 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   Object.keys(pendingTaskDeletes).forEach((taskId) => {
     delete filteredHistory[taskId];
   });
+
+  if (Object.keys(pendingTaskSync).length) {
+    const shadowTaskById = new Map(shadowTasks.map((task) => [String(task?.id || ""), task] as const));
+    const filteredTaskById = new Map(filteredTasks.map((task) => [String(task?.id || ""), task] as const));
+    Object.keys(pendingTaskSync).forEach((taskId) => {
+      const shadowTask = shadowTaskById.get(taskId);
+      if (!shadowTask) return;
+      filteredTaskById.set(taskId, shadowTask);
+    });
+    filteredTasks.length = 0;
+    filteredTaskById.forEach((task) => {
+      filteredTasks.push(task);
+    });
+  }
 
   Object.keys(pendingHistorySync).forEach((taskId) => {
     if (Object.prototype.hasOwnProperty.call(shadowHistory, taskId)) {
@@ -263,6 +331,19 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   const cloudTaskIdSet = new Set(nextTasks.map((task) => String(task?.id || "")));
   Object.keys(pendingTaskDeletes).forEach((taskId) => {
     if (!cloudTaskIdSet.has(taskId)) clearPendingTaskDelete(taskId);
+  });
+  const cloudTaskById = new Map(nextTasks.map((task) => [String(task?.id || ""), task] as const));
+  const shadowTaskById = new Map(shadowTasks.map((task) => [String(task?.id || ""), task] as const));
+  Object.keys(pendingTaskSync).forEach((taskId) => {
+    const cloudTask = cloudTaskById.get(taskId);
+    const shadowTask = shadowTaskById.get(taskId);
+    if (!shadowTask) {
+      clearPendingTaskSync(taskId);
+      return;
+    }
+    if (cloudTask && taskSignature(cloudTask) === taskSignature(shadowTask)) {
+      clearPendingTaskSync(taskId);
+    }
   });
   Object.keys(pendingHistorySync).forEach((taskId) => {
     const cloudSig = historyRowsSignature(nextHistory[taskId] || []);
@@ -380,13 +461,18 @@ export function saveTasks(tasks: Task[]): void {
   cachedTasks = next;
   saveShadowTasks(cachedTasks);
   const removedTaskIds = Array.from(prevById.keys()).filter((taskId) => !!taskId && !nextById.has(taskId));
+  markPendingTaskSync(Array.from(nextById.keys()).filter(Boolean));
   markPendingTaskDeletes(removedTaskIds);
   const uid = currentUid();
   if (!uid) return;
   void Promise.all(
     next
       .filter((t) => String(t.id || ""))
-      .map((t) => saveTask(uid, t))
+      .map((t) =>
+        saveTask(uid, t).then(() => {
+          clearPendingTaskSync(String(t.id || ""));
+        })
+      )
   ).catch(() => {
     // Keep local shadow tasks when cloud write is denied/unavailable.
   });

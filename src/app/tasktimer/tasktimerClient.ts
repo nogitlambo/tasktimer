@@ -55,7 +55,7 @@ import {
   saveCloudPreferences,
   saveCloudTaskUi,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardSessionCompletionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
+import { DEFAULT_REWARD_PROGRESS, awardLoggedSessionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
 
 export type TaskTimerClientHandle = {
   destroy: () => void;
@@ -1657,39 +1657,6 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
   }
 
-  function persistPreferencesToCloud() {
-    try {
-      localStorage.setItem(THEME_KEY, themeMode);
-      localStorage.setItem(MENU_BUTTON_STYLE_KEY, menuButtonStyle);
-      localStorage.setItem(TASK_VIEW_KEY, taskView);
-    } catch {
-      // ignore localStorage write failures
-    }
-    cloudPreferencesCache = {
-      schemaVersion: 1,
-      theme: themeMode,
-      menuButtonStyle,
-      defaultTaskTimerFormat,
-      taskView,
-      autoFocusOnTaskLaunchEnabled,
-      dynamicColorsEnabled,
-      checkpointAlertSoundEnabled,
-      checkpointAlertToastEnabled,
-      modeSettings: {
-        mode1: { label: modeLabels.mode1, enabled: true, color: modeColors.mode1 },
-        mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2, color: modeColors.mode2 },
-        mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3, color: modeColors.mode3 },
-      },
-      rewards: normalizeRewardProgress(rewardProgress),
-      updatedAtMs: Date.now(),
-    };
-    const uid = currentUid();
-    if (!uid) return;
-    if (cloudPreferencesCache) {
-      saveCloudPreferences(cloudPreferencesCache);
-    }
-  }
-
   function persistTaskUiToCloud() {
     const uid = currentUid();
     if (!uid) return;
@@ -2639,8 +2606,40 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
   }
 
-  function awardXpForCompletedSession(completedAtMs: number) {
-    const nextAward = awardSessionCompletionXp(rewardProgress, completedAtMs);
+  function countReachedCheckpointsForElapsedMs(t: Task, elapsedMs: number) {
+    if (!t.milestonesEnabled || !Array.isArray(t.milestones) || t.milestones.length === 0) return 0;
+    const elapsedSec = Math.floor(Math.max(0, elapsedMs) / 1000);
+    if (elapsedSec <= 0) return 0;
+    return sortMilestones((t.milestones || []).slice()).filter((milestone) => {
+      const targetSec = Math.max(0, Math.round((+milestone.hours || 0) * milestoneUnitSec(t)));
+      return targetSec > 0 && targetSec <= elapsedSec;
+    }).length;
+  }
+
+  function appendCompletedSessionHistoryAndAwardXp(t: Task, completedAtMs: number, elapsedMs: number) {
+    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    if (!t || !t.id || safeElapsedMs <= 0) return;
+    appendHistory(t.id, {
+      ts: completedAtMs,
+      name: t.name,
+      ms: safeElapsedMs,
+      color: sessionColorForTaskMs(t, safeElapsedMs),
+    });
+    const reachedCheckpointCount = countReachedCheckpointsForElapsedMs(t, safeElapsedMs);
+    const totalValidCheckpoints =
+      t.milestonesEnabled && Array.isArray(t.milestones)
+        ? sortMilestones((t.milestones || []).slice()).filter((milestone) => {
+            const targetSec = Math.max(0, Math.round((+milestone.hours || 0) * milestoneUnitSec(t)));
+            return targetSec > 0;
+          }).length
+        : 0;
+    const nextAward = awardLoggedSessionXp(rewardProgress, {
+      taskId: String(t.id || ""),
+      completedAt: completedAtMs,
+      elapsedMs: safeElapsedMs,
+      checkpointCount: reachedCheckpointCount,
+      reachedFinalCheckpoint: totalValidCheckpoints > 0 && reachedCheckpointCount >= totalValidCheckpoints,
+    });
     rewardProgress = nextAward.next;
     persistPreferencesToCloud();
   }
@@ -3276,13 +3275,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     t.running = false;
     t.startMs = null;
     if (canLogSession(t) && t.accumulatedMs > 0) {
-      appendHistory(t.id, {
-        ts: completedAtMs,
-        name: t.name,
-        ms: t.accumulatedMs,
-        color: sessionColorForTaskMs(t, t.accumulatedMs),
-      });
-      awardXpForCompletedSession(completedAtMs);
+      appendCompletedSessionHistoryAndAwardXp(t, completedAtMs, t.accumulatedMs);
     }
     clearCheckpointBaseline(t.id);
     save();
@@ -3301,7 +3294,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     if (!t) return;
     if (!!opts?.logHistory && canLogSession(t)) {
       const ms = getTaskElapsedMs(t);
-      if (ms > 0) appendHistory(t.id, { ts: nowMs(), name: t.name, ms, color: sessionColorForTaskMs(t, ms) });
+      const completedAtMs = nowMs();
+      if (ms > 0) appendCompletedSessionHistoryAndAwardXp(t, completedAtMs, ms);
     }
     t.accumulatedMs = 0;
     t.running = false;
@@ -4406,7 +4400,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
           eligibleTasks.forEach((t) => {
             const ms = getTaskElapsedMs(t);
             if (ms > 0) {
-              appendHistory(t.id, { ts: nowMs(), name: t.name, ms, color: sessionColorForTaskMs(t, ms) });
+              appendCompletedSessionHistoryAndAwardXp(t, nowMs(), ms);
             }
           });
         }
