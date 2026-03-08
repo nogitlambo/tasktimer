@@ -21,7 +21,7 @@ import Image from "next/image";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankLabelForThumbnailSrc,
+  getRankLadderThumbnailSrc,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
@@ -474,7 +474,11 @@ export default function SettingsPanel() {
     [rewardProgress.currentRankId]
   );
   const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
-  const displayedRankLabel = getRankLabelForThumbnailSrc(rankThumbnailSrc) || rewardsHeader.rankLabel;
+  const displayedRankLabel = rewardsHeader.rankLabel;
+  const displayedRankThumbnailSrc = useMemo(
+    () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
+    [rewardProgress.currentRankId, rankThumbnailSrc]
+  );
 
   useEffect(() => {
     if (!authUserUid) {
@@ -934,8 +938,8 @@ export default function SettingsPanel() {
                           title="Open rank ladder"
                         >
                           <div className="settingsAccountRankPlaceholder">
-                            {rankThumbnailSrc ? (
-                              <img className="settingsAccountRankImage" src={rankThumbnailSrc} alt="Rank thumbnail" />
+                            {displayedRankThumbnailSrc ? (
+                              <img className="settingsAccountRankImage" src={displayedRankThumbnailSrc} alt="Rank thumbnail" />
                             ) : (
                               <div className="settingsAccountRankPlaceholderInner" />
                             )}

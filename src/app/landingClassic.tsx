@@ -26,7 +26,10 @@ export default function LandingClassic({
   onAuthEmailChange,
 }: LandingProps) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d0f13] px-6 text-white">
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d0f13] px-6 text-white"
+      style={{ fontFamily: "var(--font-orbitron), 'Segoe UI Variable', 'Segoe UI', Arial, sans-serif" }}
+    >
       <div
         className="pointer-events-none absolute inset-0"
         style={{

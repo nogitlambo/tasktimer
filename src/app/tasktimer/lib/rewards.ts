@@ -179,6 +179,17 @@ export function getRankLabelById(rankId: string): string {
   return getRankById(rankId).label;
 }
 
+export function getRankThumbnailById(rankId: string): string {
+  return String(RANK_MODAL_THUMBNAIL_BY_ID[String(rankId || "").trim().toLowerCase()] || "").trim();
+}
+
+export function getRankLadderThumbnailSrc(currentRankId: string, storedThumbnailSrc: string): string {
+  const currentRankThumbnail = getRankThumbnailById(currentRankId);
+  if (currentRankThumbnail) return currentRankThumbnail;
+  const storedRankId = getRankIdForThumbnailSrc(storedThumbnailSrc);
+  return storedRankId ? getRankThumbnailById(storedRankId) : "";
+}
+
 export function getRankIdForThumbnailSrc(src: string): string | null {
   const normalizedSrc = String(src || "").trim();
   return normalizedSrc ? RANK_ID_BY_MODAL_THUMBNAIL.get(normalizedSrc) || null : null;

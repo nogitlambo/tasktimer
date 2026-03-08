@@ -2,17 +2,16 @@
 
 import Image from "next/image";
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { ensureUserProfileIndex } from "../lib/cloudStore";
-import { AVATAR_CATALOG } from "../lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankLabelForThumbnailSrc,
+  getRankThumbnailById,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
@@ -25,62 +24,10 @@ type SignedInHeaderBadgeProps = {
 
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
-const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
-const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
-const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
-const AVATAR_SRC_BY_ID = AVATAR_CATALOG.reduce<Record<string, string>>((acc, item) => {
-  const id = String(item.id || "").trim();
-  const src = String(item.src || "").trim();
-  if (id && src) acc[id] = src;
-  return acc;
-}, {});
 
 function readStoredRankThumbnailSrc(uid: string): string {
   if (typeof window === "undefined" || !uid) return "";
   return String(window.localStorage.getItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`) || "").trim();
-}
-
-function readStoredAvatarId(uid: string): string {
-  if (typeof window === "undefined" || !uid) return "";
-  return String(window.localStorage.getItem(`${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`) || "").trim();
-}
-
-function readStoredCustomAvatarSrc(uid: string): string {
-  if (typeof window === "undefined" || !uid) return "";
-  return String(window.localStorage.getItem(`${AVATAR_CUSTOM_STORAGE_PREFIX}${uid}`) || "").trim();
-}
-
-function customAvatarIdForUid(uid: string): string {
-  return `custom-upload:${uid}`;
-}
-
-function googleAvatarIdForUid(uid: string): string {
-  return `google/profile-photo:${uid}`;
-}
-
-function resolveGooglePhotoUrl(user: User | null | undefined): string {
-  const googleProviderProfile = (user?.providerData || []).find(
-    (provider) => String(provider?.providerId || "").trim() === "google.com"
-  );
-  return String(user?.photoURL || googleProviderProfile?.photoURL || "").trim();
-}
-
-function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string): string {
-  const normalizedUid = String(uid || "").trim();
-  const normalizedAvatarId = String(avatarId || "").trim();
-  const normalizedCustomSrc = String(avatarCustomSrc || "").trim();
-  const normalizedGooglePhotoUrl = String(googlePhotoUrl || "").trim();
-  if (!normalizedUid) return "";
-  if (normalizedAvatarId === customAvatarIdForUid(normalizedUid) && normalizedCustomSrc) return normalizedCustomSrc;
-  if (normalizedAvatarId === googleAvatarIdForUid(normalizedUid) && normalizedGooglePhotoUrl) return normalizedGooglePhotoUrl;
-  if (normalizedAvatarId && AVATAR_SRC_BY_ID[normalizedAvatarId]) return AVATAR_SRC_BY_ID[normalizedAvatarId];
-  if (normalizedCustomSrc) return normalizedCustomSrc;
-  if (normalizedGooglePhotoUrl) return normalizedGooglePhotoUrl;
-  const cachedAvatarId = readStoredAvatarId(normalizedUid);
-  if (cachedAvatarId === customAvatarIdForUid(normalizedUid) && normalizedCustomSrc) return normalizedCustomSrc;
-  if (cachedAvatarId === googleAvatarIdForUid(normalizedUid) && normalizedGooglePhotoUrl) return normalizedGooglePhotoUrl;
-  if (cachedAvatarId && AVATAR_SRC_BY_ID[cachedAvatarId]) return AVATAR_SRC_BY_ID[cachedAvatarId];
-  return AVATAR_CATALOG[0]?.src || "";
 }
 
 export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=general" }: SignedInHeaderBadgeProps) {
@@ -89,7 +36,6 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [headerView, setHeaderView] = useState<"welcome" | "xp">("welcome");
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
-  const [avatarSrc, setAvatarSrc] = useState("");
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
 
   useEffect(() => {
@@ -102,8 +48,6 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
       setHeaderView("welcome");
       const uid = String(user?.uid || "").trim();
       setSignedInUserUid(uid);
-      const googlePhotoUrl = resolveGooglePhotoUrl(user);
-      setAvatarSrc(resolveAvatarSrc(uid, readStoredAvatarId(uid), readStoredCustomAvatarSrc(uid), googlePhotoUrl));
       setRankThumbnailSrc(readStoredRankThumbnailSrc(uid));
       if (!uid) return;
       void ensureUserProfileIndex(uid);
@@ -113,10 +57,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
         try {
           const snap = await getDoc(doc(db, "users", uid));
           if (!snap.exists()) return;
-          const remoteAvatarId = String(snap.get("avatarId") || "").trim();
-          const remoteAvatarCustomSrc = String(snap.get("avatarCustomSrc") || "").trim();
           const remoteThumbnailSrc = String(snap.get("rankThumbnailSrc") || "").trim();
-          setAvatarSrc(resolveAvatarSrc(uid, remoteAvatarId, remoteAvatarCustomSrc, googlePhotoUrl));
           if (!remoteThumbnailSrc) return;
           setRankThumbnailSrc(remoteThumbnailSrc);
           if (typeof window !== "undefined") {
@@ -127,32 +68,17 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
         }
       })();
     });
-    const syncAvatarFromStorage = () => {
-      const user = auth.currentUser;
-      const uid = String(user?.uid || "").trim();
-      if (!uid) return;
-      setAvatarSrc(resolveAvatarSrc(uid, readStoredAvatarId(uid), readStoredCustomAvatarSrc(uid), resolveGooglePhotoUrl(user)));
-      setRankThumbnailSrc(readStoredRankThumbnailSrc(uid));
-    };
     const onStorage = (event: StorageEvent) => {
       const user = auth.currentUser;
       const uid = String(user?.uid || "").trim();
       if (!uid || event.storageArea !== window.localStorage) return;
       const key = String(event.key || "");
-      if (
-        key !== `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}` &&
-        key !== `${AVATAR_CUSTOM_STORAGE_PREFIX}${uid}` &&
-        key !== `${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`
-      ) {
-        return;
-      }
-      syncAvatarFromStorage();
+      if (key !== `${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`) return;
+      setRankThumbnailSrc(readStoredRankThumbnailSrc(uid));
     };
     window.addEventListener("storage", onStorage);
-    window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, syncAvatarFromStorage);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, syncAvatarFromStorage);
       unsub();
     };
   }, []);
@@ -187,7 +113,8 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
   const rewardsHeader = buildRewardsHeaderViewModel(rewardProgress);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
   const canSelectRankInsignia = signedInUserUid === RANK_INSIGNIA_ADMIN_UID;
-  const displayedRankLabel = getRankLabelForThumbnailSrc(rankThumbnailSrc) || rewardsHeader.rankLabel;
+  const displayedRankLabel = rewardsHeader.rankLabel;
+  const displayedRankThumbnailSrc = getRankThumbnailById(rewardProgress.currentRankId) || rankThumbnailSrc;
   const headerBadgeLabel =
     headerView === "xp"
       ? `${displayedRankLabel}. ${rewardsHeader.progressLabel}${rewardsHeader.xpToNext != null ? `. ${rewardsHeader.xpToNext} XP to next rank.` : "."}`
@@ -210,7 +137,6 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
     setRankThumbnailSrc(nextSrc);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${signedInUserUid}`, nextSrc);
-      window.dispatchEvent(new Event(ACCOUNT_AVATAR_UPDATED_EVENT));
     }
     try {
       const db = getFirebaseFirestoreClient();
@@ -241,14 +167,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
         aria-label={headerBadgeLabel}
         title="Open Account settings"
       >
-        <span aria-hidden="true" className="signedInHeaderBadgeInitial">
-          {avatarSrc ? (
-            <Image className="signedInHeaderBadgeAvatar" src={avatarSrc} alt="" width={18} height={18} unoptimized />
-          ) : (
-            signedInUserLabel.slice(0, 1).toUpperCase()
-          )}
-        </span>
-        {headerView === "xp" && rankThumbnailSrc ? (
+        {headerView === "xp" && displayedRankThumbnailSrc ? (
           <span
             className="signedInHeaderBadgeInsigniaWrap signedInHeaderBadgeInsigniaTrigger"
             role="button"
@@ -259,7 +178,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
               if (event.key === "Enter" || event.key === " ") openRankLadderModal(event);
             }}
           >
-            <Image className="signedInHeaderBadgeInsignia" src={rankThumbnailSrc} alt="" width={20} height={20} unoptimized />
+            <Image className="signedInHeaderBadgeInsignia" src={displayedRankThumbnailSrc} alt="" width={20} height={20} unoptimized />
           </span>
         ) : null}
         <span className="signedInHeaderBadgeBody">

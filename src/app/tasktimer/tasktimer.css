@@ -7345,8 +7345,17 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 }
 
 .friendIdentityAvatarBtn {
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
+}
+
+.friendIdentityAvatar {
+  width: 63px;
+  height: 63px;
+  border-radius: 0;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 1px solid rgba(121, 226, 255, 0.3);
 }
 
 .friendIdentityNameBtn {
@@ -7395,7 +7404,7 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 .friendRequestAvatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 0;
   object-fit: cover;
   border: 1px solid rgba(121, 226, 255, 0.3);
 }
@@ -7573,7 +7582,7 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 #friendProfileAvatar {
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: 0;
   object-fit: cover;
   border: 1px solid rgba(117, 231, 255, 0.3);
 }
@@ -7798,6 +7807,10 @@ body.light .friendRequestUid {
 }
 
 body.light .friendRequestAvatar {
+  border-color: rgba(0, 133, 160, 0.34);
+}
+
+body.light .friendIdentityAvatar {
   border-color: rgba(0, 133, 160, 0.34);
 }
 

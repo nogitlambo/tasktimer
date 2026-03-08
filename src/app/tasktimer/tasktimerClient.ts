@@ -1060,14 +1060,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return t;
   }
 
-  function defaultTasks(): Task[] {
-    const prevMode = currentMode;
-    currentMode = "mode1";
-    const out = [makeTask("Exercise", 1), makeTask("Study", 2), makeTask("Meditation", 3)];
-    currentMode = prevMode;
-    return out;
-  }
-
   function taskModeOf(t: Task): "mode1" | "mode2" | "mode3" {
     const m = String((t as any)?.mode || "mode1");
     if (m === "mode2" || m === "mode3") return m;
@@ -1077,16 +1069,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function load() {
     const loaded = loadTasks();
     if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
-      // Prevent duplicate default-task writes for signed-in users.
-      // Cloud hydration runs asynchronously; creating defaults before it completes
-      // can repeatedly insert new task IDs into Firestore across app startups.
-      const uid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
-      if (uid) {
-        tasks = [];
-        return;
-      }
-      tasks = defaultTasks();
-      saveTasks(tasks);
+      tasks = [];
       return;
     }
     tasks = loaded;
@@ -6919,7 +6902,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               <button class="friendIdentityProfileBtn friendIdentityAvatarBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
                 row.friendUid
               )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
-                <img src="${escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" style="width:63px;height:63px;border-radius:50%;object-fit:cover;flex:0 0 auto;" />
+                <img src="${escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" class="friendIdentityAvatar" />
               </button>
               <button class="friendIdentityProfileBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
                 row.friendUid
@@ -6967,16 +6950,39 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       friendNameByUid.set(friendUid, alias || friendUid);
     });
 
-    const listHtml = ownSharedSummaries
+    const sharedByTaskId = new Map<
+      string,
+      { taskId: string; taskName: string; taskMode: "mode1" | "mode2" | "mode3"; friendLabels: string[] }
+    >();
+    ownSharedSummaries.forEach((entry) => {
+      const taskId = String(entry.taskId || "").trim();
+      if (!taskId) return;
+      const friendLabel = friendNameByUid.get(entry.friendUid) || String(entry.friendUid || "").trim() || "Unknown friend";
+      const taskMode: "mode1" | "mode2" | "mode3" =
+        entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
+      const existing = sharedByTaskId.get(taskId);
+      if (existing) {
+        if (existing.friendLabels.indexOf(friendLabel) === -1) existing.friendLabels.push(friendLabel);
+        return;
+      }
+      sharedByTaskId.set(taskId, {
+        taskId,
+        taskName: String(entry.taskName || "").trim() || "Untitled task",
+        taskMode,
+        friendLabels: [friendLabel],
+      });
+    });
+
+    const listHtml = Array.from(sharedByTaskId.values())
+      .sort((a, b) => a.taskName.localeCompare(b.taskName, undefined, { sensitivity: "base" }))
       .map((entry) => {
-        const friendLabel = friendNameByUid.get(entry.friendUid) || String(entry.friendUid || "").trim() || "Unknown friend";
-        const taskMode: "mode1" | "mode2" | "mode3" =
-          entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
+        const friendLabel = entry.friendLabels
+          .slice()
+          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+          .join(", ");
         return `<div class="friendSharedTaskCard isJumpCard friendSharedTaskCardMode-${escapeHtmlUI(
-          taskMode
-        )}" role="button" tabindex="0" data-shared-owned-task-id="${escapeHtmlUI(
-          String(entry.taskId || "")
-        )}" title="Open task">
+          entry.taskMode
+        )}" role="button" tabindex="0" data-shared-owned-task-id="${escapeHtmlUI(entry.taskId)}" title="Open task">
           <div class="friendSharedTaskInfo">
             <div class="friendSharedTaskTitle">${escapeHtmlUI(entry.taskName)}</div>
             <div class="friendSharedTaskMeta">Shared with: ${escapeHtmlUI(friendLabel)}</div>

@@ -16,7 +16,7 @@ export default function Landing({
   const heroSignal = `${heroSignalPrefix}${heroSignalText}`;
   const heroSuffix = " minds.";
   const fullHeroText = `${heroPrefix}${heroSignal}${heroSuffix}`;
-  const typeMsPerChar = Math.max(14, Math.round(1800 / fullHeroText.length));
+  const typeMsPerChar = Math.max(14, Math.round(1000 / fullHeroText.length));
   const [typedHero, setTypedHero] = useState("");
   const [flickerSignal, setFlickerSignal] = useState(false);
   const [showSubHeroText, setShowSubHeroText] = useState(false);
@@ -86,7 +86,10 @@ export default function Landing({
       : "";
 
   return (
-    <main className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white">
+    <main
+      className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white"
+      style={{ fontFamily: "var(--font-orbitron), 'Segoe UI Variable', 'Segoe UI', Arial, sans-serif" }}
+    >
       <div className="landingV2Glow landingV2GlowTop" aria-hidden="true" />
       <div className="landingV2Glow landingV2GlowBottom" aria-hidden="true" />
 
@@ -112,9 +115,6 @@ export default function Landing({
             </Link>
           </nav>
 
-          <Link href="/web-sign-in" className="landingV2Signup displayFont">
-            Sign Up/In
-          </Link>
         </header>
 
         <section className="landingV2Hero grid grid-cols-1 gap-12 pt-12 lg:grid-cols-[1.02fr_1fr] lg:items-start">
@@ -160,10 +160,10 @@ export default function Landing({
               aria-hidden={showSubHeroText ? "false" : "true"}
             >
               <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
-                Get the App
+                Sign In
               </Link>
-              <Link href="/blueberry" className="landingV2TextBtn displayFont">
-                Boysenberry
+              <Link href="https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu-0b/view?usp=drive_link" className="landingV2TextBtn displayFont">
+                Get the App
               </Link>
             </div>
           </div>
