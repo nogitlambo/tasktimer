@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
-import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
+import { clearScopedStorageState, STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import {
   deleteUser,
   getRedirectResult,
@@ -562,11 +562,12 @@ export default function SettingsPanel() {
       return;
     }
     setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("");
-    try {
-      await signOut(auth);
-      setAuthStatus("Signed out.");
+    setAuthError("");
+    setAuthStatus("");
+    try {
+      await signOut(auth);
+      clearScopedStorageState();
+      setAuthStatus("Signed out.");
       if (typeof window !== "undefined") {
         try {
           sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");

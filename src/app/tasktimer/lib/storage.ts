@@ -31,11 +31,46 @@ const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
+const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
 
 function currentUid(): string {
   const auth = getFirebaseAuthClient();
   return String(auth?.currentUser?.uid || "").trim();
+}
+
+function readStoredActiveUid(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return String(window.localStorage.getItem(ACTIVE_UID_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredActiveUid(uid: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const normalizedUid = String(uid || "").trim();
+    if (!normalizedUid) {
+      window.localStorage.removeItem(ACTIVE_UID_KEY);
+      return;
+    }
+    window.localStorage.setItem(ACTIVE_UID_KEY, normalizedUid);
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
+function scopedUid(): string {
+  const uid = currentUid();
+  if (uid) {
+    writeStoredActiveUid(uid);
+    return uid;
+  }
+  const hydrated = String(hydratedUid || "").trim();
+  if (hydrated) return hydrated;
+  return readStoredActiveUid();
 }
 
 let cachedTasks: Task[] = [];
@@ -98,17 +133,17 @@ function saveScopedShadowData<T>(key: string, uid: string, data: T): void {
   }
 }
 
-function loadShadowTasks(uid = currentUid()): Task[] {
+function loadShadowTasks(uid = scopedUid()): Task[] {
   const parsed = loadScopedShadowData<Task[]>(SHADOW_TASKS_KEY, uid, []);
   return Array.isArray(parsed) ? parsed : [];
 }
 
-function loadShadowHistory(uid = currentUid()): HistoryByTaskId {
+function loadShadowHistory(uid = scopedUid()): HistoryByTaskId {
   const parsed = loadScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, uid, {});
   return parsed && typeof parsed === "object" ? parsed : {};
 }
 
-function loadShadowDeletedMeta(uid = currentUid()): DeletedTaskMeta {
+function loadShadowDeletedMeta(uid = scopedUid()): DeletedTaskMeta {
   const parsed = loadScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, uid, {});
   return parsed && typeof parsed === "object" ? parsed : {};
 }
@@ -145,15 +180,15 @@ function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
 }
 
 function saveShadowTasks(tasks: Task[]): void {
-  saveScopedShadowData<Task[]>(SHADOW_TASKS_KEY, currentUid(), Array.isArray(tasks) ? tasks : []);
+  saveScopedShadowData<Task[]>(SHADOW_TASKS_KEY, scopedUid(), Array.isArray(tasks) ? tasks : []);
 }
 
 function saveShadowHistory(historyByTaskId: HistoryByTaskId): void {
-  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, currentUid(), historyByTaskId || {});
+  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, scopedUid(), historyByTaskId || {});
 }
 
 function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
-  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, currentUid(), meta || {});
+  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, scopedUid(), meta || {});
 }
 
 function saveShadowPreferences(uid: string, prefs: Awaited<ReturnType<typeof loadPreferences>>): void {
@@ -192,7 +227,7 @@ function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>
 }
 
 function loadPendingMap(key: string): Record<string, number> {
-  const uid = currentUid();
+  const uid = scopedUid();
   const parsed = loadScopedShadowData<Record<string, number>>(key, uid, {});
   if (!parsed || typeof parsed !== "object") return {};
   try {
@@ -263,7 +298,7 @@ function savePendingPreferencesSync(prefs: NonNullable<Awaited<ReturnType<typeof
 }
 
 function savePendingMap(key: string, value: Record<string, number>): void {
-  const uid = currentUid();
+  const uid = scopedUid();
   if (!uid || !value || !Object.keys(value).length) {
     if (typeof window !== "undefined") {
       try {
@@ -376,37 +411,22 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
 cachedTasks = loadShadowTasks();
 cachedHistory = loadShadowHistory();
 cachedDeletedMeta = loadShadowDeletedMeta();
-cachedPreferences = loadShadowPreferences(currentUid());
+cachedPreferences = loadShadowPreferences(scopedUid());
 cachedDashboard = loadShadowDashboard();
 
 export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promise<void> {
   const uid = currentUid();
   if (!uid) {
-    cachedTasks = [];
-    cachedHistory = {};
-    cachedDeletedMeta = {};
-    cachedPreferences = null;
-    cachedDashboard = null;
-    cachedTaskUi = null;
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem(SHADOW_TASKS_KEY);
-        window.localStorage.removeItem(SHADOW_HISTORY_KEY);
-      window.localStorage.removeItem(SHADOW_DELETED_META_KEY);
-      window.localStorage.removeItem(PENDING_TASK_DELETES_KEY);
-      window.localStorage.removeItem(PENDING_TASK_SYNC_KEY);
-      window.localStorage.removeItem(PENDING_HISTORY_SYNC_KEY);
-      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
-    } catch {
-      // ignore localStorage failures
-    }
-    }
-    saveShadowPreferences("", null);
-    saveShadowDashboard(null);
-    hydratedUid = "";
+    const retainedUid = scopedUid();
+    cachedTasks = loadShadowTasks(retainedUid);
+    cachedHistory = loadShadowHistory(retainedUid);
+    cachedDeletedMeta = loadShadowDeletedMeta(retainedUid);
+    cachedPreferences = loadShadowPreferences(retainedUid);
+    cachedDashboard = loadShadowDashboard();
     emitPreferenceChange();
     return;
   }
+  writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
   await ensureUserProfileIndex(uid);
   const snapshot = await loadUserWorkspace(uid);
@@ -500,6 +520,33 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
+  emitPreferenceChange();
+}
+
+export function clearScopedStorageState(): void {
+  hydratedUid = "";
+  cachedTasks = [];
+  cachedHistory = {};
+  cachedDeletedMeta = {};
+  cachedPreferences = null;
+  cachedDashboard = null;
+  cachedTaskUi = null;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(SHADOW_TASKS_KEY);
+      window.localStorage.removeItem(SHADOW_HISTORY_KEY);
+      window.localStorage.removeItem(SHADOW_DELETED_META_KEY);
+      window.localStorage.removeItem(SHADOW_PREFERENCES_KEY);
+      window.localStorage.removeItem(SHADOW_DASHBOARD_KEY);
+      window.localStorage.removeItem(PENDING_TASK_DELETES_KEY);
+      window.localStorage.removeItem(PENDING_TASK_SYNC_KEY);
+      window.localStorage.removeItem(PENDING_HISTORY_SYNC_KEY);
+      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
+      window.localStorage.removeItem(ACTIVE_UID_KEY);
+    } catch {
+      // ignore localStorage failures
+    }
+  }
   emitPreferenceChange();
 }
 
