@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import { browserLocalPersistence, getAuth, indexedDBLocalPersistence, initializeAuth, type Auth } from "firebase/auth";
 
 function shouldUseMobileAuthDomain() {
   if (typeof window === "undefined") return false;
@@ -51,7 +51,13 @@ function createFirebaseAuth(): Auth | null {
       mode: shouldUseMobileAuthDomain() ? "mobile" : "web",
     });
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    return getAuth(app);
+    try {
+      return initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      });
+    } catch {
+      return getAuth(app);
+    }
   } catch {
     return null;
   }

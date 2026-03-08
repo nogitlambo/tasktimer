@@ -19,6 +19,7 @@ export default function Landing({
   const typeMsPerChar = Math.max(14, Math.round(1000 / fullHeroText.length));
   const [typedHero, setTypedHero] = useState("");
   const [flickerSignal, setFlickerSignal] = useState(false);
+  const [showPreHeroText, setShowPreHeroText] = useState(false);
   const [showSubHeroText, setShowSubHeroText] = useState(false);
   const typingFrameRef = useRef<number | null>(null);
 
@@ -61,10 +62,14 @@ export default function Landing({
     const run = async () => {
       setTypedHero("");
       setFlickerSignal(false);
+      setShowPreHeroText(false);
       setShowSubHeroText(false);
       await typeInto(fullHeroText, setTypedHero);
       if (cancelled) return;
       setFlickerSignal(false);
+      setShowPreHeroText(true);
+      await wait(160);
+      if (cancelled) return;
       setShowSubHeroText(true);
     };
     void run();
@@ -119,7 +124,12 @@ export default function Landing({
 
         <section className="landingV2Hero grid grid-cols-1 gap-12 pt-12 lg:grid-cols-[1.02fr_1fr] lg:items-start">
           <div className={`space-y-8 transition-all duration-700 ${showTitlePhase ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
-            <p className="displayFont text-[12px] tracking-[0.22em] text-[#e7ccf5]">
+            <p
+              className={`landingV2PreHero displayFont text-[12px] tracking-[0.22em] text-[#e7ccf5]${
+                showPreHeroText ? " isVisible" : ""
+              }`}
+              aria-hidden={showPreHeroText ? "false" : "true"}
+            >
               <span className="mr-2 text-[24px] leading-none text-[#d447d2]">{">"}</span>
               <span>{preHeroText}</span>
             </p>

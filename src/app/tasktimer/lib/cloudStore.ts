@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -65,6 +66,12 @@ function taskDoc(uid: string, taskId: string) {
   const db = dbOrNull();
   if (!db) return null;
   return doc(db, "users", uid, "tasks", taskId);
+}
+
+function tasksCollection(uid: string) {
+  const db = dbOrNull();
+  if (!db) return null;
+  return collection(db, "users", uid, "tasks");
 }
 
 function taskHistoryCollection(uid: string, taskId: string) {
@@ -374,6 +381,27 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
     },
     { merge: true }
   );
+}
+
+export function subscribeToTaskCollection(uid: string, listener: () => void): () => void {
+  const col = tasksCollection(uid);
+  if (!col || !uid) return () => {};
+  const unsub = onSnapshot(
+    col,
+    () => {
+      listener();
+    },
+    () => {
+      // Ignore transient listener failures; focus/poll refresh remains as fallback.
+    }
+  );
+  return () => {
+    try {
+      unsub();
+    } catch {
+      // ignore unsubscribe failures
+    }
+  };
 }
 
 export async function deleteTask(uid: string, taskId: string): Promise<void> {

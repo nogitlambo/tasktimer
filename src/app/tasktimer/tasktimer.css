@@ -8060,15 +8060,14 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankText{
   display:flex;
-  flex-direction:row;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:4px;
   width:100%;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankText > .settingsAccountFieldValue{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankText > .settingsAccountFieldLabel{
   margin:0;
-  justify-content:center;
   text-align:center;
   white-space:normal;
 }
@@ -8542,11 +8541,11 @@ body.light #shareTaskModal .shareTaskFriendOption{
 @media (max-width: 980px){
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
-    padding-right: 12px !important;
+    padding-right: 0 !important;
   }
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
     padding-left: 0 !important;
-    padding-right: 12px !important;
+    padding-right: 0 !important;
   }
   body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell{
     width: 100% !important;
@@ -8570,14 +8569,21 @@ body.light #shareTaskModal .shareTaskFriendOption{
   }
 }
 
-/* Final Friends-page width guardrail:
-   keep a right-side gutter so card content does not clip against the viewport edge. */
-body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
-  padding-right: 18px !important;
-}
-body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
-  padding-right: 18px !important;
-  box-sizing: border-box;
+/* Final Friends-page width lock:
+   keep the mobile route flush with the viewport instead of restoring a side gutter. */
+@media (max-width: 980px){
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages,
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2,
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardGrid{
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box;
+  }
 }
 
 /* Global Dark Theme Skin (VR neon purple) */

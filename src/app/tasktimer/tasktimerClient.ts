@@ -54,8 +54,10 @@ import {
   saveCloudDashboard,
   saveCloudPreferences,
   saveCloudTaskUi,
+  subscribeCloudTaskCollection,
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardLoggedSessionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
+import { onAuthStateChanged } from "firebase/auth";
 
 type AppPage = "tasks" | "dashboard" | "test1" | "test2";
 
@@ -116,15 +118,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let destroyed = false;
   let tickTimeout: number | null = null;
   let tickRaf: number | null = null;
+  let cloudRefreshInterval: number | null = null;
   let newTaskHighlightTimer: number | null = null;
   let eventsWired = false;
   let tickStarted = false;
+  let removeCapAppStateListener: null | (() => void) = null;
+  let removeCloudTaskCollectionListener: null | (() => void) = null;
+  let removeAuthStateListener: null | (() => void) = null;
 
   const destroy = () => {
     destroyed = true;
 
     if (tickTimeout != null) window.clearTimeout(tickTimeout);
     if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
+    if (cloudRefreshInterval != null) window.clearInterval(cloudRefreshInterval);
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
     if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
@@ -136,6 +143,30 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         // ignore
       }
       removeCapBackListener = null;
+    }
+    if (removeCapAppStateListener) {
+      try {
+        removeCapAppStateListener();
+      } catch {
+        // ignore
+      }
+      removeCapAppStateListener = null;
+    }
+    if (removeCloudTaskCollectionListener) {
+      try {
+        removeCloudTaskCollectionListener();
+      } catch {
+        // ignore
+      }
+      removeCloudTaskCollectionListener = null;
+    }
+    if (removeAuthStateListener) {
+      try {
+        removeAuthStateListener();
+      } catch {
+        // ignore
+      }
+      removeAuthStateListener = null;
     }
 
     for (const l of listeners) {
@@ -320,6 +351,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let activeFriendProfileName = "";
   let groupsStatusMessage = "Ready.";
   let friendProfileCacheByUid: Record<string, FriendProfile> = {};
+  let cloudRefreshInFlight: Promise<void> | null = null;
+  let lastCloudRefreshAtMs = 0;
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
@@ -1004,6 +1037,89 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         onNativeBackPressed(e);
       });
     }
+  }
+
+  function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
+    if (destroyed) return Promise.resolve();
+    if (cloudRefreshInFlight) return cloudRefreshInFlight;
+    cloudRefreshInFlight = hydrateStorageFromCloud(opts)
+      .then(() => {
+        if (destroyed) return;
+        hydrateUiStateFromCaches();
+        render();
+        lastCloudRefreshAtMs = nowMs();
+      })
+      .catch(() => {
+        // Keep current in-memory state when cloud refresh is unavailable.
+      })
+      .finally(() => {
+        cloudRefreshInFlight = null;
+      });
+    return cloudRefreshInFlight;
+  }
+
+  function refreshCloudStateIfStale(minIntervalMs = 3000) {
+    const currentMs = nowMs();
+    if (currentMs - lastCloudRefreshAtMs < minIntervalMs) return;
+    void rehydrateFromCloudAndRender({ force: true });
+  }
+
+  function syncCloudTaskCollectionListener() {
+    if (removeCloudTaskCollectionListener) {
+      try {
+        removeCloudTaskCollectionListener();
+      } catch {
+        // ignore
+      }
+      removeCloudTaskCollectionListener = null;
+    }
+    const uid = currentUid();
+    if (!uid) return;
+    removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
+      refreshCloudStateIfStale(0);
+    });
+  }
+
+  function initCloudRefreshSync() {
+    on(window, "focus", () => {
+      refreshCloudStateIfStale(0);
+    });
+    on(document, "visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshCloudStateIfStale(0);
+    });
+    cloudRefreshInterval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      refreshCloudStateIfStale(4000);
+    }, 4000);
+
+    try {
+      const capApp = getCapAppPlugin();
+      if (capApp?.addListener) {
+        const maybePromise = capApp.addListener("appStateChange", (state: { isActive?: boolean } | null) => {
+          if (state?.isActive) refreshCloudStateIfStale(0);
+        });
+        if (maybePromise && typeof (maybePromise as any).then === "function") {
+          (maybePromise as Promise<any>)
+            .then((h: any) => {
+              if (h?.remove) removeCapAppStateListener = () => h.remove();
+            })
+            .catch(() => {});
+        } else if ((maybePromise as any)?.remove) {
+          removeCapAppStateListener = () => (maybePromise as any).remove();
+        }
+      }
+    } catch {
+      // ignore native app-state listener failures
+    }
+
+    const auth = getFirebaseAuthClient();
+    if (auth) {
+      removeAuthStateListener = onAuthStateChanged(auth, () => {
+        syncCloudTaskCollectionListener();
+        refreshCloudStateIfStale(0);
+      });
+    }
+    syncCloudTaskCollectionListener();
   }
 
   function maybeOpenImportFromQuery() {
@@ -9273,6 +9389,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .then(() => render())
       .catch(() => {});
     initMobileBackHandling();
+    initCloudRefreshSync();
     if (!eventsWired) {
       wireEvents();
       eventsWired = true;
@@ -9290,13 +9407,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   };
 
   bootstrap();
-  void hydrateStorageFromCloud().then(() => {
-    if (destroyed) return;
-    hydrateUiStateFromCaches();
-    render();
-  }).catch(() => {
-    // Keep the already-initialized in-memory fallback state.
-  });
+  void rehydrateFromCloudAndRender();
 
   return { destroy };
 }

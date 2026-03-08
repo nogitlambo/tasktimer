@@ -14,6 +14,7 @@ import {
   saveTaskUi,
   saveDeletedTaskMeta,
   saveTask,
+  subscribeToTaskCollection,
 } from "./cloudStore";
 import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./rewards";
@@ -29,6 +30,7 @@ const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
+const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
 
 function currentUid(): string {
@@ -64,34 +66,51 @@ function safeParseJson<T>(raw: string | null): T | null {
   }
 }
 
-function loadShadowTasks(): Task[] {
-  if (typeof window === "undefined") return [];
+function loadScopedShadowData<T>(key: string, uid: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
   try {
-    const parsed = safeParseJson<Task[]>(window.localStorage.getItem(SHADOW_TASKS_KEY));
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = safeParseJson<{ uid?: string; data?: T } | T>(window.localStorage.getItem(key));
+    const normalizedUid = String(uid || "").trim();
+    if (!parsed || typeof parsed !== "object") return fallback;
+    if (Object.prototype.hasOwnProperty.call(parsed, "data")) {
+      const scoped = parsed as { uid?: string; data?: T };
+      const shadowUid = String(scoped.uid || "").trim();
+      if (normalizedUid && shadowUid && shadowUid !== normalizedUid) return fallback;
+      return (scoped.data as T) ?? fallback;
+    }
+    return normalizedUid ? fallback : (parsed as T);
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-function loadShadowHistory(): HistoryByTaskId {
-  if (typeof window === "undefined") return {};
+function saveScopedShadowData<T>(key: string, uid: string, data: T): void {
+  if (typeof window === "undefined") return;
   try {
-    const parsed = safeParseJson<HistoryByTaskId>(window.localStorage.getItem(SHADOW_HISTORY_KEY));
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const normalizedUid = String(uid || "").trim();
+    if (!normalizedUid) {
+      window.localStorage.removeItem(key);
+      return;
+    }
+    window.localStorage.setItem(key, JSON.stringify({ uid: normalizedUid, data }));
   } catch {
-    return {};
+    // ignore localStorage failures
   }
 }
 
-function loadShadowDeletedMeta(): DeletedTaskMeta {
-  if (typeof window === "undefined") return {};
-  try {
-    const parsed = safeParseJson<DeletedTaskMeta>(window.localStorage.getItem(SHADOW_DELETED_META_KEY));
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+function loadShadowTasks(uid = currentUid()): Task[] {
+  const parsed = loadScopedShadowData<Task[]>(SHADOW_TASKS_KEY, uid, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function loadShadowHistory(uid = currentUid()): HistoryByTaskId {
+  const parsed = loadScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, uid, {});
+  return parsed && typeof parsed === "object" ? parsed : {};
+}
+
+function loadShadowDeletedMeta(uid = currentUid()): DeletedTaskMeta {
+  const parsed = loadScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, uid, {});
+  return parsed && typeof parsed === "object" ? parsed : {};
 }
 
 function loadShadowPreferences(uid?: string): Awaited<ReturnType<typeof loadPreferences>> {
@@ -126,30 +145,15 @@ function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
 }
 
 function saveShadowTasks(tasks: Task[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(SHADOW_TASKS_KEY, JSON.stringify(Array.isArray(tasks) ? tasks : []));
-  } catch {
-    // ignore localStorage failures
-  }
+  saveScopedShadowData<Task[]>(SHADOW_TASKS_KEY, currentUid(), Array.isArray(tasks) ? tasks : []);
 }
 
 function saveShadowHistory(historyByTaskId: HistoryByTaskId): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(SHADOW_HISTORY_KEY, JSON.stringify(historyByTaskId || {}));
-  } catch {
-    // ignore localStorage failures
-  }
+  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, currentUid(), historyByTaskId || {});
 }
 
 function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(SHADOW_DELETED_META_KEY, JSON.stringify(meta || {}));
-  } catch {
-    // ignore localStorage failures
-  }
+  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, currentUid(), meta || {});
 }
 
 function saveShadowPreferences(uid: string, prefs: Awaited<ReturnType<typeof loadPreferences>>): void {
@@ -188,10 +192,10 @@ function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>
 }
 
 function loadPendingMap(key: string): Record<string, number> {
-  if (typeof window === "undefined") return {};
+  const uid = currentUid();
+  const parsed = loadScopedShadowData<Record<string, number>>(key, uid, {});
+  if (!parsed || typeof parsed !== "object") return {};
   try {
-    const parsed = safeParseJson<Record<string, number>>(window.localStorage.getItem(key));
-    if (!parsed || typeof parsed !== "object") return {};
     const now = nowMs();
     const next: Record<string, number> = {};
     Object.entries(parsed).forEach(([id, ts]) => {
@@ -206,17 +210,71 @@ function loadPendingMap(key: string): Record<string, number> {
   }
 }
 
-function savePendingMap(key: string, value: Record<string, number>): void {
+type PendingPreferencesSync = {
+  ts: number;
+  preferences: NonNullable<Awaited<ReturnType<typeof loadPreferences>>>;
+};
+
+function loadPendingPreferencesSync(): PendingPreferencesSync | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = safeParseJson<PendingPreferencesSync>(window.localStorage.getItem(PENDING_PREFERENCES_SYNC_KEY));
+    if (!parsed || typeof parsed !== "object") return null;
+    const ts = Number(parsed.ts || 0);
+    if (!Number.isFinite(ts) || ts <= 0) return null;
+    if (nowMs() - ts > PENDING_SYNC_TTL_MS) {
+      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
+      return null;
+    }
+    const prefs = parsed.preferences;
+    if (!prefs || typeof prefs !== "object") return null;
+    return {
+      ts,
+      preferences: {
+        ...prefs,
+        rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePendingPreferencesSync(prefs: NonNullable<Awaited<ReturnType<typeof loadPreferences>>> | null): void {
   if (typeof window === "undefined") return;
   try {
-    if (!value || !Object.keys(value).length) {
-      window.localStorage.removeItem(key);
+    if (!prefs) {
+      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
       return;
     }
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(
+      PENDING_PREFERENCES_SYNC_KEY,
+      JSON.stringify({
+        ts: nowMs(),
+        preferences: {
+          ...prefs,
+          rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
+        },
+      } satisfies PendingPreferencesSync)
+    );
   } catch {
     // ignore localStorage failures
   }
+}
+
+function savePendingMap(key: string, value: Record<string, number>): void {
+  const uid = currentUid();
+  if (!uid || !value || !Object.keys(value).length) {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // ignore localStorage failures
+      }
+    }
+    return;
+  }
+  saveScopedShadowData<Record<string, number>>(key, uid, value);
 }
 
 function markPendingTaskDeletes(taskIds: string[]): void {
@@ -330,6 +388,19 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     cachedPreferences = null;
     cachedDashboard = null;
     cachedTaskUi = null;
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(SHADOW_TASKS_KEY);
+        window.localStorage.removeItem(SHADOW_HISTORY_KEY);
+      window.localStorage.removeItem(SHADOW_DELETED_META_KEY);
+      window.localStorage.removeItem(PENDING_TASK_DELETES_KEY);
+      window.localStorage.removeItem(PENDING_TASK_SYNC_KEY);
+      window.localStorage.removeItem(PENDING_HISTORY_SYNC_KEY);
+      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
+    } catch {
+      // ignore localStorage failures
+    }
+    }
     saveShadowPreferences("", null);
     saveShadowDashboard(null);
     hydratedUid = "";
@@ -345,8 +416,8 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
   const pendingTaskSync = loadPendingMap(PENDING_TASK_SYNC_KEY);
   const pendingHistorySync = loadPendingMap(PENDING_HISTORY_SYNC_KEY);
-  const shadowTasks = loadShadowTasks();
-  const shadowHistory = loadShadowHistory();
+  const shadowTasks = loadShadowTasks(uid);
+  const shadowHistory = loadShadowHistory(uid);
 
   const filteredTasks = nextTasks.filter((task) => !pendingTaskDeletes[String(task?.id || "")]);
   const filteredHistory: HistoryByTaskId = { ...nextHistory };
@@ -405,10 +476,26 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDeletedMeta(cachedDeletedMeta);
   const shadowPreferences = loadShadowPreferences(uid);
   const cloudPreferences = snapshot.preferences || null;
+  const pendingPreferences = loadPendingPreferencesSync()?.preferences || null;
   const shadowUpdatedAtMs = Number(shadowPreferences?.updatedAtMs || 0);
   const cloudUpdatedAtMs = Number(cloudPreferences?.updatedAtMs || 0);
-  cachedPreferences = shadowUpdatedAtMs > cloudUpdatedAtMs ? shadowPreferences : cloudPreferences || shadowPreferences || null;
+  const pendingUpdatedAtMs = Number(pendingPreferences?.updatedAtMs || 0);
+  cachedPreferences =
+    pendingUpdatedAtMs > Math.max(shadowUpdatedAtMs, cloudUpdatedAtMs)
+      ? pendingPreferences
+      : shadowUpdatedAtMs > cloudUpdatedAtMs
+        ? shadowPreferences
+        : cloudPreferences || shadowPreferences || pendingPreferences || null;
   saveShadowPreferences(uid, cachedPreferences);
+  if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
+    void savePreferences(uid, pendingPreferences)
+      .then(() => {
+        savePendingPreferencesSync(null);
+      })
+      .catch(() => {
+        // Keep pending preferences queued until a later successful sync.
+      });
+  }
   cachedDashboard = snapshot.dashboard || null;
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
@@ -469,11 +556,17 @@ export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences
     ...prefs,
     rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
   };
-  saveShadowPreferences(currentUid(), cachedPreferences);
-  emitPreferenceChange();
   const uid = currentUid();
+  if (uid) {
+    saveShadowPreferences(uid, cachedPreferences);
+    savePendingPreferencesSync(null);
+  } else {
+    savePendingPreferencesSync(cachedPreferences);
+  }
+  emitPreferenceChange();
   if (!uid) return;
   void savePreferences(uid, cachedPreferences).catch(() => {
+    savePendingPreferencesSync(cachedPreferences);
     // Keep local cached preferences when cloud write is denied/unavailable.
   });
 }
@@ -593,6 +686,11 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Prom
 
 export function loadDeletedMeta(): DeletedTaskMeta {
   return cachedDeletedMeta && typeof cachedDeletedMeta === "object" ? cachedDeletedMeta : {};
+}
+
+export function subscribeCloudTaskCollection(uid: string, listener: () => void): () => void {
+  if (!uid) return () => {};
+  return subscribeToTaskCollection(uid, listener);
 }
 
 export function saveDeletedMeta(meta: DeletedTaskMeta): void {
