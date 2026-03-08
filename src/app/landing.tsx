@@ -2,14 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Orbitron } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
 import type { LandingProps } from "./landing.types";
-
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  weight: ["600", "700", "800", "900"],
-});
 
 export default function Landing({
   showTitlePhase,
@@ -107,29 +101,29 @@ export default function Landing({
           </Link>
 
           <nav className="hidden items-center gap-9 md:flex">
-            <Link href="/" className={`landingV2NavLink isActive ${orbitron.className}`}>
+            <Link href="/" className="landingV2NavLink isActive displayFont">
               Home
             </Link>
-            <Link href="/privacy" className={`landingV2NavLink ${orbitron.className}`}>
+            <Link href="/privacy" className="landingV2NavLink displayFont">
               Privacy
             </Link>
-            <Link href="/tasktimer/user-guide" className={`landingV2NavLink ${orbitron.className}`}>
+            <Link href="/tasktimer/user-guide" className="landingV2NavLink displayFont">
               Features
             </Link>
           </nav>
 
-          <Link href="/web-sign-in" className={`landingV2Signup ${orbitron.className}`}>
+          <Link href="/web-sign-in" className="landingV2Signup displayFont">
             Sign Up/In
           </Link>
         </header>
 
         <section className="landingV2Hero grid grid-cols-1 gap-12 pt-12 lg:grid-cols-[1.02fr_1fr] lg:items-start">
           <div className={`space-y-8 transition-all duration-700 ${showTitlePhase ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
-            <p className={`text-[12px] tracking-[0.22em] text-[#e7ccf5] ${orbitron.className}`}>
+            <p className="displayFont text-[12px] tracking-[0.22em] text-[#e7ccf5]">
               <span className="mr-2 text-[24px] leading-none text-[#d447d2]">{">"}</span>
               <span>{preHeroText}</span>
             </p>
-            <h1 className={`landingV2Title text-[#f5f4fc] ${orbitron.className}`}>
+            <h1 className="landingV2Title displayFont text-[#f5f4fc]">
               <span>{typedPrefix}</span>
               {typedNeuro ? <span className="landingV2SignalGradient">{typedNeuro}</span> : null}
               {typedDivergent ? (
@@ -150,7 +144,7 @@ export default function Landing({
             </h1>
 
             <p
-              className={`landingV2Lead text-[#f1f2ff] transition-all duration-500 ${orbitron.className} ${
+              className={`landingV2Lead displayFont text-[#f1f2ff] transition-all duration-500 ${
                 showSubHeroText ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
               }`}
               aria-hidden={showSubHeroText ? "false" : "true"}
@@ -165,27 +159,33 @@ export default function Landing({
               }`}
               aria-hidden={showSubHeroText ? "false" : "true"}
             >
-              <Link href="/web-sign-in" className={`landingV2PrimaryBtn ${orbitron.className}`}>
+              <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
                 Get the App
               </Link>
-              <Link href="/blueberry" className={`landingV2TextBtn ${orbitron.className}`}>
+              <Link href="/blueberry" className="landingV2TextBtn displayFont">
                 Boysenberry
               </Link>
             </div>
           </div>
-          <div className={`landingV2HeroMedia transition-all duration-700 ${showTitlePhase ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
-            <div className="landingV2HeroImageFrame">
-              <div className="landingV2HeroImageGlow" aria-hidden="true" />
-              <Image
-                src="/dashboard.PNG"
-                alt="TaskLaunch dashboard preview"
-                width={1407}
-                height={938}
-                priority
-                className="landingV2HeroImage"
-              />
+          {showSubHeroText ? (
+            <div
+              className={`landingV2HeroMedia transition-all duration-700 ${
+                showSubHeroText ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+              }`}
+            >
+              <div className="landingV2HeroImageFrame">
+                <div className="landingV2HeroImageGlow" aria-hidden="true" />
+                <Image
+                  src="/dashboard.PNG"
+                  alt="TaskLaunch dashboard preview"
+                  width={1407}
+                  height={938}
+                  priority
+                  className="landingV2HeroImage"
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
         </section>
 
       </div>

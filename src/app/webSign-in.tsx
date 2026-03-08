@@ -1,12 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { Orbitron } from "next/font/google";
-
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  weight: ["600", "700", "800", "900"],
-});
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -73,7 +67,7 @@ export default function WebSignIn(props: WebSignInProps) {
             className="relative w-full px-6 pb-4 pt-2 text-left sm:max-w-[560px] sm:px-8"
           >
             <div className="relative">
-              <p className={`text-center text-[12px] uppercase tracking-[0.22em] text-[#f1c9ff] ${orbitron.className}`}>
+              <p className="displayFont text-center text-[12px] uppercase tracking-[0.22em] text-[#f1c9ff]">
                 LAUNCH YOUR INTENTION TODAY
               </p>
             </div>
@@ -85,7 +79,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   onClick={onToggleEmailLoginForm}
                   aria-expanded={showEmailLoginForm ? "true" : "false"}
                   disabled={authBusy}
-                  className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
                     <path
@@ -100,7 +94,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   type="button"
                   onClick={onGoogleSignIn}
                   disabled={authBusy}
-                  className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
                   style={showEmailLoginForm ? { display: "none" } : undefined}
                 >
                   <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
@@ -142,7 +136,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onToggleEmailLoginForm}
                       disabled={authBusy}
-                      className={`min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#331345] hover:via-[#4b1d68] hover:to-[#2a1039] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 ${orbitron.className}`}
+                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#331345] hover:via-[#4b1d68] hover:to-[#2a1039] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Cancel
                     </button>
@@ -152,7 +146,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onSendEmailLink}
                       disabled={authBusy || !isValidAuthEmail}
-                      className={`min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#ffd7fb] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 ${orbitron.className}`}
+                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#ffd7fb] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Send Link
                     </button>
@@ -162,7 +156,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onCompleteEmailLink}
                       disabled={authBusy || !isValidAuthEmail}
-                      className={`min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 ${orbitron.className}`}
+                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Complete Sign-In
                     </button>

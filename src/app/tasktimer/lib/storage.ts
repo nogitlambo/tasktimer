@@ -24,11 +24,17 @@ export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
 const SHADOW_TASKS_KEY = `${STORAGE_KEY}:shadow:tasks`;
 const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
 const SHADOW_DELETED_META_KEY = `${STORAGE_KEY}:shadow:deletedMeta`;
+const SHADOW_PREFERENCES_KEY = `${STORAGE_KEY}:shadow:preferences`;
 const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
+
+function currentUid(): string {
+  const auth = getFirebaseAuthClient();
+  return String(auth?.currentUser?.uid || "").trim();
+}
 
 let cachedTasks: Task[] = [];
 let cachedHistory: HistoryByTaskId = {};
@@ -88,6 +94,27 @@ function loadShadowDeletedMeta(): DeletedTaskMeta {
   }
 }
 
+function loadShadowPreferences(uid?: string): Awaited<ReturnType<typeof loadPreferences>> {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = safeParseJson<{ uid?: string; preferences?: Awaited<ReturnType<typeof loadPreferences>> }>(
+      window.localStorage.getItem(SHADOW_PREFERENCES_KEY)
+    );
+    if (!parsed || typeof parsed !== "object") return null;
+    const shadowUid = String(parsed.uid || "").trim();
+    const normalizedUid = String(uid || "").trim();
+    if (normalizedUid && shadowUid && shadowUid !== normalizedUid) return null;
+    const prefs = parsed.preferences;
+    if (!prefs || typeof prefs !== "object") return null;
+    return {
+      ...prefs,
+      rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
   if (typeof window === "undefined") return null;
   try {
@@ -120,6 +147,28 @@ function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(SHADOW_DELETED_META_KEY, JSON.stringify(meta || {}));
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
+function saveShadowPreferences(uid: string, prefs: Awaited<ReturnType<typeof loadPreferences>>): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!uid || !prefs) {
+      window.localStorage.removeItem(SHADOW_PREFERENCES_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      SHADOW_PREFERENCES_KEY,
+      JSON.stringify({
+        uid,
+        preferences: {
+          ...prefs,
+          rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
+        },
+      })
+    );
   } catch {
     // ignore localStorage failures
   }
@@ -269,12 +318,8 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
 cachedTasks = loadShadowTasks();
 cachedHistory = loadShadowHistory();
 cachedDeletedMeta = loadShadowDeletedMeta();
+cachedPreferences = loadShadowPreferences(currentUid());
 cachedDashboard = loadShadowDashboard();
-
-function currentUid(): string {
-  const auth = getFirebaseAuthClient();
-  return String(auth?.currentUser?.uid || "").trim();
-}
 
 export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promise<void> {
   const uid = currentUid();
@@ -285,6 +330,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     cachedPreferences = null;
     cachedDashboard = null;
     cachedTaskUi = null;
+    saveShadowPreferences("", null);
     saveShadowDashboard(null);
     hydratedUid = "";
     emitPreferenceChange();
@@ -357,7 +403,12 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowTasks(cachedTasks);
   saveShadowHistory(cachedHistory);
   saveShadowDeletedMeta(cachedDeletedMeta);
-  cachedPreferences = snapshot.preferences || null;
+  const shadowPreferences = loadShadowPreferences(uid);
+  const cloudPreferences = snapshot.preferences || null;
+  const shadowUpdatedAtMs = Number(shadowPreferences?.updatedAtMs || 0);
+  const cloudUpdatedAtMs = Number(cloudPreferences?.updatedAtMs || 0);
+  cachedPreferences = shadowUpdatedAtMs > cloudUpdatedAtMs ? shadowPreferences : cloudPreferences || shadowPreferences || null;
+  saveShadowPreferences(uid, cachedPreferences);
   cachedDashboard = snapshot.dashboard || null;
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
@@ -418,6 +469,7 @@ export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences
     ...prefs,
     rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
   };
+  saveShadowPreferences(currentUid(), cachedPreferences);
   emitPreferenceChange();
   const uid = currentUid();
   if (!uid) return;

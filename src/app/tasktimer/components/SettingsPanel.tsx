@@ -13,12 +13,19 @@ import {
   reauthenticateWithRedirect,
   signOut,
   type User,
-  updateProfile,
 } from "firebase/auth";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
-import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "@/app/tasktimer/lib/rewards";
+import Image from "next/image";
+import {
+  buildRewardsHeaderViewModel,
+  DEFAULT_REWARD_PROGRESS,
+  getRankLabelForThumbnailSrc,
+  normalizeRewardProgress,
+  RANK_LADDER,
+  RANK_MODAL_THUMBNAIL_BY_ID,
+} from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 
 type SettingsPaneKey =
@@ -43,9 +50,11 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 }
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
+const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 
 function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
@@ -102,6 +111,11 @@ function writeStoredRankThumbnailSrc(uid: string, src: string) {
     return;
   }
   window.localStorage.setItem(rankThumbnailStorageKeyForUid(uid), value);
+}
+
+function notifyAccountAvatarUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ACCOUNT_AVATAR_UPDATED_EVENT));
 }
 
 type AvatarGroup = { key: string; title: string; items: AvatarOption[] };
@@ -193,11 +207,10 @@ export default function SettingsPanel() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
-  const [isEditingAlias, setIsEditingAlias] = useState(false);
-  const [aliasDraft, setAliasDraft] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
@@ -258,7 +271,6 @@ export default function SettingsPanel() {
       { key: "about" as const, label: "About" },
       { key: "feedback" as const, label: "Feedback" },
       { key: "data" as const, label: "Data" },
-      { key: "reset" as const, label: "Reset All" },
     ],
     []
   );
@@ -307,7 +319,6 @@ export default function SettingsPanel() {
       setAuthUserUid(user?.uid || null);
       const nextAlias = (user?.displayName || "").trim();
       setAuthUserAlias(nextAlias);
-      setAliasDraft(nextAlias);
       setAuthMemberSince(user?.metadata?.creationTime || null);
       const providerIds = new Set((user?.providerData || []).map((provider) => String(provider?.providerId || "")));
       const hasGoogleProvider = providerIds.has("google.com");
@@ -317,7 +328,6 @@ export default function SettingsPanel() {
       const googlePhotoCandidate = String(user?.photoURL || googleProviderProfile?.photoURL || "").trim();
       setAuthHasGoogleProvider(hasGoogleProvider);
       setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
-      setIsEditingAlias(false);
       if (user?.uid) {
         void saveUserDocPatch(user.uid, {
           email: user.email || "",
@@ -449,7 +459,22 @@ export default function SettingsPanel() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showAvatarPickerModal]);
 
+  useEffect(() => {
+    if (!showRankLadderModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowRankLadderModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showRankLadderModal]);
+
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
+  const currentRankIndex = useMemo(
+    () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)),
+    [rewardProgress.currentRankId]
+  );
+  const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
+  const displayedRankLabel = getRankLabelForThumbnailSrc(rankThumbnailSrc) || rewardsHeader.rankLabel;
 
   useEffect(() => {
     if (!authUserUid) {
@@ -637,34 +662,6 @@ export default function SettingsPanel() {
     }
   };
 
-  const handleSaveAlias = async () => {
-    const auth = getFirebaseAuthClient();
-    const user = auth?.currentUser || null;
-    if (!auth || !user) {
-      setAuthError("You must be signed in to update your alias.");
-      setAuthStatus("");
-      return;
-    }
-    const nextAlias = aliasDraft.trim().slice(0, 15);
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Saving alias...");
-    try {
-      await updateProfile(user, { displayName: nextAlias || null });
-      await saveUserDocPatch(user.uid, { displayName: nextAlias || null });
-      await syncOwnFriendshipProfile(user.uid, { alias: nextAlias || null });
-      setAuthUserAlias(nextAlias);
-      setAliasDraft(nextAlias);
-      setIsEditingAlias(false);
-      setAuthStatus("Alias updated.");
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not update alias."));
-      setAuthStatus("");
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
   const handleCopyUid = async () => {
     if (!authUserUid) return;
     try {
@@ -693,6 +690,7 @@ export default function SettingsPanel() {
     };
     if (!isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, "");
     writeStoredAvatarId(authUserUid, avatarId);
+    notifyAccountAvatarUpdated();
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, patch);
@@ -711,10 +709,6 @@ export default function SettingsPanel() {
 
   const handleUploadAvatarClick = () => {
     avatarUploadInputRef.current?.click();
-  };
-
-  const handleUploadRankThumbnailClick = () => {
-    rankThumbnailUploadInputRef.current?.click();
   };
 
   const handleUploadAvatarFile = async (file: File | null) => {
@@ -755,6 +749,7 @@ export default function SettingsPanel() {
     setSelectedAvatarId(customId);
     writeStoredCustomAvatarSrc(authUserUid, dataUrl);
     writeStoredAvatarId(authUserUid, customId);
+    notifyAccountAvatarUpdated();
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, { avatarId: customId, avatarCustomSrc: dataUrl });
@@ -815,6 +810,31 @@ export default function SettingsPanel() {
     } catch {
       showAvatarSyncNotice("Rank thumbnail saved to your profile. Friend sync failed.", true);
     }
+  };
+
+  const handleSelectRankThumbnail = async (rankId: string) => {
+    if (!authUserUid || authUserUid !== RANK_INSIGNIA_ADMIN_UID) return;
+    const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
+    if (!nextSrc) return;
+    setRankThumbnailSrc(nextSrc);
+    writeStoredRankThumbnailSrc(authUserUid, nextSrc);
+    notifyAccountAvatarUpdated();
+    setAuthError("");
+    try {
+      await saveUserDocPatch(authUserUid, { rankThumbnailSrc: nextSrc });
+      showAvatarSyncNotice("Rank insignia saved.");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Could not save rank insignia to cloud."));
+      setAuthStatus("");
+      showAvatarSyncNotice("Rank insignia saved locally. Cloud sync failed.", true);
+      return;
+    }
+    try {
+      await syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: nextSrc });
+    } catch {
+      showAvatarSyncNotice("Rank insignia saved to your profile. Friend sync failed.", true);
+    }
+    setShowRankLadderModal(false);
   };
 
   const selectedAvatar = avatarOptions.find((a) => a.id === selectedAvatarId) || avatarOptions[0] || null;
@@ -898,108 +918,66 @@ export default function SettingsPanel() {
                             )}
                           </div>
                         </button>
-                        <div className="settingsAccountMemberSinceInline">Member since: {formatMemberSinceDate(authMemberSince)}</div>
-                      </div>
-                      <div className="settingsAccountMeta">
-                        <div className="settingsAccountTopRow">
-                          <div className="settingsAccountFieldRow settingsAccountAliasCol">
-                            <div className="settingsAccountAliasRow">
-                              <div className="settingsAccountFieldLabel">Username:</div>
-                              <div className="settingsAccountAliasValueWrap">
-                                {isEditingAlias ? (
-                                  <div className="settingsAccountAliasEditor">
-                                    <input
-                                      type="text"
-                                      value={aliasDraft}
-                                      maxLength={15}
-                                      onChange={(e) => setAliasDraft(e.target.value.slice(0, 15))}
-                                      className="settingsAccountAliasInput"
-                                      aria-label="Edit name alias"
-                                    />
-                                    <button
-                                      type="button"
-                                      className="btn btn-ghost small"
-                                      onClick={handleSaveAlias}
-                                      disabled={authBusy}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-ghost small"
-                                      onClick={() => {
-                                        setAliasDraft(authUserAlias);
-                                        setIsEditingAlias(false);
-                                      }}
-                                      disabled={authBusy}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="settingsAccountFieldValueRow">
-                                    <div className="settingsAccountFieldValue">{authUserAlias || "-"}</div>
-                                    <button
-                                      type="button"
-                                      className="iconBtn settingsAliasEditBtn"
-                                      aria-label="Edit alias"
-                                      onClick={() => setIsEditingAlias(true)}
-                                    >
-                                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                        <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75 1.13-1.14z" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="settingsAccountFieldRow settingsAccountRankCol">
-                              <div className="settingsAccountFieldLabel">Rank:</div>
-                              <div className="settingsAccountFieldValue">{rewardsHeader.rankLabel}</div>
-                              <button
-                                type="button"
-                                className="settingsAccountRankBtn"
-                                onClick={handleUploadRankThumbnailClick}
-                                aria-label="Upload rank thumbnail"
-                                title="Upload rank thumbnail"
-                              >
-                                <div className="settingsAccountRankPlaceholder">
-                                  {rankThumbnailSrc ? (
-                                    <img className="settingsAccountRankImage" src={rankThumbnailSrc} alt="Rank thumbnail" />
-                                  ) : (
-                                    <div className="settingsAccountRankPlaceholderInner" />
-                                  )}
-                                </div>
-                              </button>
-                              <input
-                                ref={rankThumbnailUploadInputRef}
-                                type="file"
-                                accept="image/*"
-                                style={{ display: "none" }}
-                                onChange={(e) => {
-                                  const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
-                                  void handleUploadRankThumbnailFile(file);
-                                  e.currentTarget.value = "";
-                                }}
-                              />
-                            </div>
-                          </div>
+                        <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
+                          <div className="settingsAccountFieldLabel">Username:</div>
+                          <div className="settingsAccountFieldValue settingsAccountFieldValueWrap">{authUserAlias || "-"}</div>
                         </div>
+                      </div>
+                      <div className="settingsAccountFieldRow settingsAccountRankCol">
+                        <div className="settingsAccountRankText">
+                          <div className="settingsAccountFieldValue">Rank: {displayedRankLabel}</div>
+                        </div>
+                        <button
+                          type="button"
+                          className="settingsAccountRankBtn"
+                          onClick={() => setShowRankLadderModal(true)}
+                          aria-label="Open rank ladder"
+                          title="Open rank ladder"
+                        >
+                          <div className="settingsAccountRankPlaceholder">
+                            {rankThumbnailSrc ? (
+                              <img className="settingsAccountRankImage" src={rankThumbnailSrc} alt="Rank thumbnail" />
+                            ) : (
+                              <div className="settingsAccountRankPlaceholderInner" />
+                            )}
+                          </div>
+                        </button>
+                        <input
+                          ref={rankThumbnailUploadInputRef}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
+                            void handleUploadRankThumbnailFile(file);
+                            e.currentTarget.value = "";
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
                 ) : null}
                 {authUserEmail ? (
                   <div className="settingsDetailNote">
-                    <div>Signed in as: {authUserEmail}</div>
-                    {authUserUid ? (
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                        <span>UID: {authUserUid}</span>
-                        <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={handleCopyUid}>
-                          {uidCopyStatus || "Copy"}
-                        </button>
+                    <div className="settingsAccountMetaSummary">
+                      <div className="settingsAccountMemberSinceRow">
+                        <span className="settingsAccountUidLabel">Email Address:</span>
+                        <span className="settingsAccountUidValue">{authUserEmail}</span>
                       </div>
-                    ) : null}
+                      {authUserUid ? (
+                        <div className="settingsAccountUidRow">
+                          <span className="settingsAccountUidLabel">UID:</span>
+                          <span className="settingsAccountUidValue">{authUserUid}</span>
+                          <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={handleCopyUid}>
+                            {uidCopyStatus || "Copy"}
+                          </button>
+                        </div>
+                      ) : null}
+                      <div className="settingsAccountMemberSinceRow">
+                        <span className="settingsAccountUidLabel">Member since:</span>
+                        <span className="settingsAccountUidValue">{formatMemberSinceDate(authMemberSince)}</span>
+                      </div>
+                    </div>
                     <div className={`settingsSyncStatus is-${syncState}`}>
                       <span className="settingsSyncStatusDot" aria-hidden="true" />
                       <span className="settingsSyncStatusText">{syncMessage}</span>
@@ -1151,12 +1129,87 @@ export default function SettingsPanel() {
                 </div>
               </div>
             ) : null}
+            {showRankLadderModal ? (
+              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRankLadderModal(false)}>
+                <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(e) => e.stopPropagation()}>
+                  <h2>Rank Ladder</h2>
+                  <p className="modalSubtext">
+                    {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP.{" "}
+                    {rewardsHeader.xpToNext != null
+                      ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
+                      : "You have reached the highest configured rank."}
+                  </p>
+                  {canSelectRankInsignia ? (
+                    <p className="modalSubtext">Click an insignia thumbnail to use it as your profile rank badge.</p>
+                  ) : null}
+                  <div className="rankLadderList" role="list" aria-label="Available ranks">
+                    {RANK_LADDER.map((rank, index) => {
+                      const isCurrent = rank.id === rewardProgress.currentRankId;
+                      const isUnlocked = index <= currentRankIndex;
+                      const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
+                      const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
+                      const isSelectable = canSelectRankInsignia && !!rankThumbnail;
+                      const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
+                      const content = (
+                        <>
+                          <div className="rankLadderItemBadge" aria-hidden="true">
+                            {rankThumbnail ? (
+                              <Image className="rankLadderItemBadgeImage" src={rankThumbnail} alt="" width={34} height={34} unoptimized />
+                            ) : (
+                              index === 0 ? "U" : index
+                            )}
+                          </div>
+                          <div className="rankLadderItemBody">
+                            <div className="rankLadderItemTitleRow">
+                              <span className="rankLadderItemTitle">{rank.label}</span>
+                              {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
+                              {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
+                              {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
+                            </div>
+                            <div className="rankLadderItemMeta">
+                              Unlocks at {thresholdLabel}
+                              {isSelectable ? " Click to select this insignia." : ""}
+                            </div>
+                          </div>
+                        </>
+                      );
+                      if (isSelectable) {
+                        return (
+                          <button
+                            key={rank.id}
+                            type="button"
+                            className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                            onClick={() => void handleSelectRankThumbnail(rank.id)}
+                          >
+                            {content}
+                          </button>
+                        );
+                      }
+                      return (
+                        <div
+                          key={rank.id}
+                          className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                          role="listitem"
+                        >
+                          {content}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="confirmBtns">
+                    <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </SettingsDetailPane>
 
           <SettingsDetailPane
             active={activePane === "preferences"}
             title="Preferences"
-            subtitle="Configure task behavior, modes, and dashboard options."
+            subtitle="Configure task behavior and dashboard options."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1188,6 +1241,63 @@ export default function SettingsPanel() {
                     <option value="list">List</option>
                     <option value="tile">Tile</option>
                   </select>
+                </div>
+              </section>
+
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Dashboard Settings</div>
+                </div>
+                <div className="settingsDetailNote">
+                  Dashboard settings controls can be added here. The section is now part of Preferences and no longer opens a separate modal.
+                </div>
+                <button className="menuItem settingsActionRow" id="dashboardSettingsBtn" type="button">
+                  <MenuIconLabel icon="/Dashboard.svg" label="Dashboard Settings" />
+                </button>
+              </section>
+            </div>
+            <div style={{ display: "none" }} aria-hidden="true">
+              <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
+                Save Task Settings
+              </button>
+              <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
+                Save Category
+              </button>
+              <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
+                Reset Defaults
+              </button>
+            </div>
+          </SettingsDetailPane>
+
+          <SettingsDetailPane
+            active={activePane === "appearance"}
+            title="Appearance"
+            subtitle="Choose your theme, mode styling, and visual display options."
+          >
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Appearance</div>
+                </div>
+                <div className="field" id="themeToggleRow">
+                  <label htmlFor="themeSelect">Theme</label>
+                  <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
+                    <option value="dark">Purple</option>
+                    <option value="command">Cyan</option>
+                  </select>
+                </div>
+                <div className="field" id="menuButtonStyleRow">
+                  <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
+                  <select id="menuButtonStyleSelect" defaultValue="parallelogram" aria-label="Menu and button style">
+                    <option value="parallelogram">Parallelogram (default)</option>
+                    <option value="square">Square</option>
+                  </select>
+                </div>
+                <div className="toggleRow" id="taskDynamicColorsToggleRow">
+                  <span>Use dynamic colors on progress bar and charts</span>
+                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
               </section>
 
@@ -1238,63 +1348,6 @@ export default function SettingsPanel() {
                       </svg>
                     </button>
                   </div>
-                </div>
-              </section>
-
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Dashboard Settings</div>
-                </div>
-                <div className="settingsDetailNote">
-                  Dashboard settings controls can be added here. The section is now part of Preferences and no longer opens a separate modal.
-                </div>
-                <button className="menuItem settingsActionRow" id="dashboardSettingsBtn" type="button">
-                  <MenuIconLabel icon="/Dashboard.svg" label="Dashboard Settings" />
-                </button>
-              </section>
-            </div>
-            <div style={{ display: "none" }} aria-hidden="true">
-              <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
-                Save Task Settings
-              </button>
-              <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
-                Save Category
-              </button>
-              <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
-                Reset Defaults
-              </button>
-            </div>
-          </SettingsDetailPane>
-
-          <SettingsDetailPane
-            active={activePane === "appearance"}
-            title="Appearance"
-            subtitle="Choose your theme and visual display options."
-          >
-            <div className="settingsInlineStack">
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Appearance</div>
-                </div>
-                <div className="field" id="themeToggleRow">
-                  <label htmlFor="themeSelect">Theme</label>
-                  <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
-                    <option value="dark">Purple</option>
-                    <option value="command">Cyan</option>
-                  </select>
-                </div>
-                <div className="field" id="menuButtonStyleRow">
-                  <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
-                  <select id="menuButtonStyleSelect" defaultValue="parallelogram" aria-label="Menu and button style">
-                    <option value="parallelogram">Parallelogram (default)</option>
-                    <option value="square">Square</option>
-                  </select>
-                </div>
-                <div className="toggleRow" id="taskDynamicColorsToggleRow">
-                  <span>Use dynamic colors on progress bar and charts</span>
-                  <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
               </section>
             </div>
@@ -1475,16 +1528,7 @@ export default function SettingsPanel() {
               <button className="menuItem settingsDataTile" id="importBtn" type="button">
                 <MenuIconLabel icon="/Import.svg" label="Import Backup" />
               </button>
-            </div>
-          </SettingsDetailPane>
-
-          <SettingsDetailPane
-            active={activePane === "reset"}
-            title="Reset All"
-            subtitle="Clear local app data and reset the app state on this device."
-          >
-            <div className="settingsActionGrid settingsActionGridStack settingsActionRows">
-              <button className="menuItem settingsActionRow" id="resetAllBtn" type="button">
+              <button className="menuItem settingsDataTile" id="resetAllBtn" type="button">
                 <MenuIconLabel icon="/Reset.svg" label="Reset All Data" />
               </button>
             </div>

@@ -57,6 +57,8 @@ import {
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardLoggedSessionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
 
+type AppPage = "tasks" | "dashboard" | "test1" | "test2";
+
 export type TaskTimerClientHandle = {
   destroy: () => void;
 };
@@ -81,7 +83,7 @@ type HistoryGenPreview = {
   nextHistory: HistoryByTaskId;
 };
 
-export function initTaskTimerClient(): TaskTimerClientHandle {
+export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
   }
@@ -258,7 +260,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
   let dashboardCardVisibility: Record<string, boolean> = {};
   type DashboardAvgRange = "past7" | "currentWeek" | "past30" | "currentMonth";
   let dashboardAvgRange: DashboardAvgRange = "past7";
-  let currentAppPage: "tasks" | "dashboard" | "test1" | "test2" = "tasks";
+  let currentAppPage: AppPage = initialAppPage;
   let currentTileColumnCount = 1;
   let suppressNavStackPush = false;
   let removeCapBackListener: null | (() => void) = null;
@@ -654,7 +656,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     const normalized = pathname.replace(/\/+$/, "");
     const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
     if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
-    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide)$/, "");
+    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|dashboard|friends)$/, "");
     return pageStyleRoot || normalized || "/tasktimer";
   }
 
@@ -698,8 +700,34 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     return `${noTrailingSlash}/index.html${resolvedTrailing}`;
   }
 
-  function getInitialAppPageFromQuery(): "tasks" | "dashboard" | "test1" | "test2" {
+  function isTaskTimerTasksPath(path: string) {
+    return /\/tasktimer$/i.test(path) || /\/tasktimer\/index\.html$/i.test(path);
+  }
+
+  function isTaskTimerDashboardPath(path: string) {
+    return /\/tasktimer\/dashboard$/i.test(path) || /\/tasktimer\/dashboard\/index\.html$/i.test(path);
+  }
+
+  function isTaskTimerFriendsPath(path: string) {
+    return /\/tasktimer\/friends$/i.test(path) || /\/tasktimer\/friends\/index\.html$/i.test(path);
+  }
+
+  function isTaskTimerMainAppPath(path: string) {
+    return isTaskTimerTasksPath(path) || isTaskTimerDashboardPath(path) || isTaskTimerFriendsPath(path);
+  }
+
+  function appPathForPage(page: AppPage) {
+    if (page === "dashboard") return appRoute("/tasktimer/dashboard");
+    if (page === "test1") return `${appRoute("/tasktimer")}?page=test1`;
+    if (page === "test2") return appRoute("/tasktimer/friends");
+    return appRoute("/tasktimer");
+  }
+
+  function getInitialAppPageFromLocation(defaultPage: AppPage = initialAppPage): AppPage {
     try {
+      const path = normalizedPathname();
+      if (isTaskTimerDashboardPath(path)) return "dashboard";
+      if (isTaskTimerFriendsPath(path)) return "test2";
       const params = new URLSearchParams(window.location.search || "");
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
@@ -708,7 +736,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     } catch {
       // ignore
     }
-    return "tasks";
+    return isTaskTimerTasksPath(normalizedPathname()) ? "tasks" : defaultPage;
   }
 
   function normalizedPathname() {
@@ -719,16 +747,16 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
-  function screenTokenForCurrent(pageOverride?: "tasks" | "dashboard" | "test1" | "test2") {
+  function screenTokenForCurrent(pageOverride?: AppPage) {
     const path = normalizedPathname();
-    if (/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path)) {
+    if (isTaskTimerMainAppPath(path)) {
       const page = pageOverride || currentAppPage || "tasks";
-      return `app:${path}|page=${page}`;
+      return `app:tasktimer|page=${page}`;
     }
     return `route:${path}`;
   }
 
-  function parseAppPageFromToken(token: string | null | undefined): "tasks" | "dashboard" | "test1" | "test2" | null {
+  function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
     const m = String(token || "").match(/\|page=(tasks|dashboard|test1|test2)$/);
     if (!m) return null;
     const p = m[1];
@@ -772,7 +800,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
   }
 
-  function pushCurrentScreenToNavStack(pageOverride?: "tasks" | "dashboard" | "test1" | "test2") {
+  function pushCurrentScreenToNavStack(pageOverride?: AppPage) {
     if (suppressNavStackPush) return;
     const token = screenTokenForCurrent(pageOverride);
     const stack = loadNavStack();
@@ -900,7 +928,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     const prevAppPage = parseAppPageFromToken(prevToken);
-    const prevIsSameRoot = prevToken.startsWith("app:") && (/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path));
+    const prevIsSameRoot = prevToken.startsWith("app:") && isTaskTimerMainAppPath(path);
     if (prevIsSameRoot && prevAppPage) {
       suppressNavStackPush = true;
       applyAppPage(prevAppPage);
@@ -916,10 +944,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
 
     if (prevToken.startsWith("app:")) {
-      const routePart = prevToken.slice("app:".length).split("|")[0] || "/tasktimer";
       const page = prevAppPage;
-      const qs = page && page !== "tasks" ? `?page=${page}` : "";
-      window.location.href = `${routePart}${qs}`;
+      window.location.href = appPathForPage(page || "tasks");
       return true;
     }
 
@@ -944,8 +970,8 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
 
     const onPopState = () => {
       const path = normalizedPathname();
-      if (!(/\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path))) return;
-      const nextPage = getInitialAppPageFromQuery();
+      if (!isTaskTimerMainAppPath(path)) return;
+      const nextPage = getInitialAppPageFromLocation();
       suppressNavStackPush = true;
       applyAppPage(nextPage);
       suppressNavStackPush = false;
@@ -4395,6 +4421,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         const doLog = eligibleTasks.length ? !!els.confirmLogChk?.checked : false;
         const affectedTaskIds = (tasks || []).map((row) => String(row.id || "")).filter(Boolean);
         const uid = String(currentUid() || "");
+        const deletedTaskCount = alsoDelete ? (tasks || []).length : 0;
 
         if (doLog) {
           eligibleTasks.forEach((t) => {
@@ -4406,9 +4433,36 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         }
 
         if (alsoDelete) {
+          const deletedHistoryEntryCount = Object.values(historyByTaskId || {}).reduce(
+            (sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0),
+            0
+          );
           tasks = [];
           historyByTaskId = {};
           saveHistory(historyByTaskId);
+          deletedTaskMeta = {} as DeletedTaskMeta;
+          saveDeletedMeta(deletedTaskMeta);
+          save();
+          if (uid && affectedTaskIds.length) {
+            void Promise.all(affectedTaskIds.map((taskId) => deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
+              .then(() => refreshOwnSharedSummaries())
+              .catch(() => {});
+          }
+          render();
+          closeConfirm();
+          confirm(
+            "Reset Complete",
+            `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
+              deletedHistoryEntryCount === 1 ? "y" : "ies"
+            } deleted.`,
+            {
+              okLabel: "Close",
+              cancelLabel: "Done",
+              onOk: () => closeConfirm(),
+              onCancel: () => closeConfirm(),
+            }
+          );
+          return;
         } else {
           tasks.forEach((t) => {
             t.accumulatedMs = 0;
@@ -4420,13 +4474,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
         }
 
         save();
-        if (alsoDelete) {
-          if (uid && affectedTaskIds.length) {
-            void Promise.all(affectedTaskIds.map((taskId) => deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
-              .then(() => refreshOwnSharedSummaries())
-              .catch(() => {});
-          }
-        } else if (affectedTaskIds.length) {
+        if (affectedTaskIds.length) {
           void syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
         }
         render();
@@ -7104,10 +7152,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     render();
   }
 
-  function applyAppPage(
-    page: "tasks" | "dashboard" | "test1" | "test2",
-    opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }
-  ) {
+  function applyAppPage(page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }) {
     currentAppPage = page;
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
     document.body.setAttribute("data-app-page", page);
@@ -7125,11 +7170,10 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     }
     renderFriendsFooterAlertBadge();
     const syncUrlMode = opts?.syncUrl;
-    const canSyncMainPageUrl = /\/tasktimer$/.test(normalizedPathname()) || /\/tasktimer\/index\.html$/i.test(normalizedPathname());
+    const canSyncMainPageUrl = isTaskTimerMainAppPath(normalizedPathname());
     if (syncUrlMode && canSyncMainPageUrl) {
       try {
-        const path = appRoute("/tasktimer");
-        const nextUrl = page === "tasks" ? path : `${path}?page=${page}`;
+        const nextUrl = appPathForPage(page);
         if (syncUrlMode === "replace") window.history.replaceState({ page }, "", nextUrl);
         else window.history.pushState({ page }, "", nextUrl);
       } catch {
@@ -8453,7 +8497,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     });
     on(els.closeMenuBtn, "click", () => {
       if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else navigateToAppRoute("/tasktimer?page=dashboard");
+      else navigateToAppRoute("/tasktimer/dashboard");
     });
     on(els.themeSelect, "change", () => {
       const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
@@ -9202,7 +9246,7 @@ export function initTaskTimerClient(): TaskTimerClientHandle {
     backfillHistoryColorsFromSessionLogic();
     syncModeLabelsUi();
     applyMainMode("mode1");
-    applyAppPage(getInitialAppPageFromQuery(), { syncUrl: "replace" });
+    applyAppPage(getInitialAppPageFromLocation(initialAppPage), { syncUrl: "replace" });
     applyDashboardOrderFromStorage();
     applyDashboardCardSizes();
     renderDashboardPanelMenu();

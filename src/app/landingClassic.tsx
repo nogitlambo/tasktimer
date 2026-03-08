@@ -119,7 +119,7 @@ export default function LandingClassic({
           }`}
           aria-hidden={!showTitlePhase}
         >
-          <h1 className="max-w-[26ch] text-center text-[15px] font-extrabold uppercase tracking-[0.16em] text-white sm:text-[18px]">
+          <h1 className="displayFont max-w-[26ch] text-center text-[15px] font-extrabold uppercase tracking-[0.16em] text-white sm:text-[18px]">
             Build better habits with smarter time tracking.
           </h1>
         </div>
@@ -137,7 +137,7 @@ export default function LandingClassic({
                 onClick={onToggleEmailLoginForm}
                 aria-expanded={showEmailLoginForm ? "true" : "false"}
                 disabled={authBusy}
-                className="flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
+                className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
                 style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
               >
                 <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
@@ -152,7 +152,7 @@ export default function LandingClassic({
                 type="button"
                 onClick={onGoogleSignIn}
                 disabled={authBusy}
-                className="flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
+                className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 border border-white/15 bg-black/35 px-6 py-2 text-base font-bold text-white transition hover:border-[#35e8ff]/35 disabled:cursor-not-allowed disabled:opacity-55"
                 style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
               >
                 <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
@@ -195,7 +195,7 @@ export default function LandingClassic({
                     type="button"
                     onClick={onSendEmailLink}
                     disabled={authBusy || !isValidAuthEmail}
-                    className="min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)] disabled:cursor-not-allowed disabled:opacity-45"
+                    className="displayFont min-w-[190px] border border-[#35e8ff]/70 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] shadow-[0_0_10px_rgba(0,220,255,.14)] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] hover:shadow-[0_0_16px_rgba(0,220,255,.3)] disabled:cursor-not-allowed disabled:opacity-45"
                     style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
                   >
                     Send Link
@@ -206,7 +206,7 @@ export default function LandingClassic({
                     type="button"
                     onClick={onCompleteEmailLink}
                     disabled={authBusy || !isValidAuthEmail}
-                    className="min-w-[190px] border border-[#35e8ff]/50 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] disabled:cursor-not-allowed disabled:opacity-45"
+                    className="displayFont min-w-[190px] border border-[#35e8ff]/50 bg-transparent px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#8ff6ff] transition hover:bg-gradient-to-r hover:from-[#2ea7ff] hover:via-[#35e8ff] hover:to-[#00cfc8] hover:text-[#04131c] disabled:cursor-not-allowed disabled:opacity-45"
                     style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
                   >
                     Complete Sign-In

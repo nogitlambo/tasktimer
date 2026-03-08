@@ -68,7 +68,7 @@ export default function WebSignInPage() {
       if (user?.uid) void ensureUserProfileIndex(user.uid);
       if (email && !hasRedirected) {
         setHasRedirected(true);
-        router.replace("/tasktimer?page=dashboard");
+        router.replace("/tasktimer/dashboard");
       }
     });
     return () => unsub();

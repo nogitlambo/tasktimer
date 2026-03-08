@@ -104,7 +104,7 @@ function HomeContent() {
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
   const landingDialProgress = Math.max(0, Math.min(1, (100 - landingRingOffset) / 100));
-  const isExperimentalLanding = searchParams.get("landing") === "v2";
+  const isExperimentalLanding = searchParams.get("landing") !== "classic";
 
   useEffect(() => {
     const raf = window.requestAnimationFrame(() => setShowLogo(true));
@@ -200,7 +200,7 @@ function HomeContent() {
       }
       if (email && !hasRedirected && !bypassAutoRedirect) {
         setHasRedirected(true);
-        router.replace("/tasktimer?page=dashboard");
+        router.replace("/tasktimer/dashboard");
       }
     });
     return () => unsub();

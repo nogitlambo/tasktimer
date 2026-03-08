@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-readable: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
 @theme inline {
@@ -22,9 +24,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-readable);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+.displayFont {
+  font-family: var(--font-display-ui);
 }
 
 * {

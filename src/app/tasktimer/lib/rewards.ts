@@ -80,7 +80,17 @@ export const RANK_LADDER: RankDefinition[] = [
   { id: "architect", label: "Architect", minXp: Number.POSITIVE_INFINITY },
 ];
 
+export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
+  director: "/insignias/director.png",
+  ascendent: "/insignias/ascendent.png",
+  commander: "/insignias/commander.png",
+  architect: "/insignias/architect.png",
+};
+
 const RANK_BY_ID = new Map(RANK_LADDER.map((rank) => [rank.id, rank] as const));
+const RANK_ID_BY_MODAL_THUMBNAIL = new Map(
+  Object.entries(RANK_MODAL_THUMBNAIL_BY_ID).map(([rankId, src]) => [String(src || "").trim(), rankId] as const)
+);
 
 export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   if (!input || typeof input !== "object") return { ...DEFAULT_REWARD_PROGRESS };
@@ -167,6 +177,16 @@ export function getRankById(rankId: string): RankDefinition {
 
 export function getRankLabelById(rankId: string): string {
   return getRankById(rankId).label;
+}
+
+export function getRankIdForThumbnailSrc(src: string): string | null {
+  const normalizedSrc = String(src || "").trim();
+  return normalizedSrc ? RANK_ID_BY_MODAL_THUMBNAIL.get(normalizedSrc) || null : null;
+}
+
+export function getRankLabelForThumbnailSrc(src: string): string | null {
+  const rankId = getRankIdForThumbnailSrc(src);
+  return rankId ? getRankLabelById(rankId) : null;
 }
 
 export function awardSessionCompletionXp(progress: RewardProgressV1, awardedAt: number): RewardAwardResult {

@@ -17,7 +17,7 @@ export default function PrivacyBackButton() {
     <button
       type="button"
       onClick={handleBack}
-      className="border border-white/15 bg-black/30 px-3 py-2 text-sm font-semibold hover:border-[#35e8ff]/35"
+      className="displayFont border border-white/15 bg-black/30 px-3 py-2 text-sm font-semibold hover:border-[#35e8ff]/35"
       style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
     >
       Back
