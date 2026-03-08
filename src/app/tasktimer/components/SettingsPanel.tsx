@@ -860,7 +860,6 @@ export default function SettingsPanel() {
                 key={item.key}
                 label={item.label}
                 active={activePane === item.key}
-                danger={item.key === "reset"}
                 onClick={() => {
                   setActivePane(item.key);
                   setMobileDetailOpen(true);
