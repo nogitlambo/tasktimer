@@ -74,8 +74,8 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                 <div className="dashboardShell">
                   <div className="dashboardTopRow">
                     <div className="dashboardTitleWrap">
-                      <p className="dashboardKicker">Performance Overview</p>
-                      <h2 className="dashboardTitle">Mission Dashboard</h2>
+                      <p className="dashboardKicker">Launch Dashboard</p>
+                      <h2 className="dashboardTitle" />
                     </div>
                     <div className="dashboardEditActions">
                       <details className="dashboardPanelMenu" id="dashboardPanelMenu">
@@ -176,9 +176,14 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <div className="dashboardDelta">2 carried over</div>
                     </section>
 
-                    <section className="dashboardCard dashboardMainGraphCard" data-dashboard-id="focus-trend" aria-label="Focus trend graph">
+                    <section
+                      className="dashboardCard dashboardMainGraphCard"
+                      data-dashboard-id="focus-trend"
+                      id="dashboardFocusTrendCard"
+                      aria-label="Focus trend graph"
+                    >
                       <div className="dashboardCardTitle">Focus Trend (7 Days)</div>
-                      <div className="dashboardGraphBars">
+                      <div className="dashboardGraphBars" id="dashboardFocusTrendBars">
                         <span style={{ height: "36%" }} />
                         <span style={{ height: "52%" }} />
                         <span style={{ height: "40%" }} />
@@ -187,7 +192,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         <span style={{ height: "82%" }} />
                         <span style={{ height: "76%" }} />
                       </div>
-                      <div className="dashboardGraphAxis">
+                      <div className="dashboardGraphAxis" id="dashboardFocusTrendAxis">
                         <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
                       </div>
                     </section>

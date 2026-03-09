@@ -3,12 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { LandingProps } from "./landing.types";
+import type { LandingExperimentalProps } from "./landing.types";
 
 export default function Landing({
   showTitlePhase,
   showActions,
-}: LandingProps) {
+}: LandingExperimentalProps) {
   const preHeroText = "YOUR DAILY PRODUCTIVITY ENGINE";
   const heroPrefix = "A smarter task tracker built for ";
   const heroSignalPrefix = "neuro";
@@ -77,7 +77,7 @@ export default function Landing({
       cancelled = true;
       clearTypingFrame();
     };
-  }, [fullHeroText, showActions]);
+  }, [fullHeroText, showActions, typeMsPerChar]);
 
   const isTypingHero = showActions && typedHero.length < fullHeroText.length;
   const typedPrefix = typedHero.slice(0, heroPrefix.length);

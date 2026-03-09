@@ -99,7 +99,7 @@ function readLocalPreferences(uid: string, opts: StartSyncOptions): UserPreferen
   const defaultTaskTimerFormat = parseTimerFormat(localStorage.getItem(storageKeys.defaultTaskTimerFormat));
   const taskView = parseTaskView(localStorage.getItem(storageKeys.taskView));
   const dynamicColorsEnabled = parseBooleanLike(localStorage.getItem(storageKeys.dynamicColorsEnabled), true);
-  const autoFocusOnTaskLaunchEnabled = parseBooleanLike(localStorage.getItem(storageKeys.autoFocusOnTaskLaunchEnabled), true);
+  const autoFocusOnTaskLaunchEnabled = parseBooleanLike(localStorage.getItem(storageKeys.autoFocusOnTaskLaunchEnabled), false);
   const checkpointAlertSoundEnabled = parseBooleanLike(localStorage.getItem(storageKeys.checkpointAlertSoundEnabled), true);
   const checkpointAlertToastEnabled = parseBooleanLike(localStorage.getItem(storageKeys.checkpointAlertToastEnabled), true);
   const modeSettings = parseModeSettings(localStorage.getItem(storageKeys.modeSettings));
@@ -147,7 +147,7 @@ function normalizeCloudDoc(data: Record<string, unknown>): UserPreferencesV1 {
     defaultTaskTimerFormat: parseTimerFormat(String(data.defaultTaskTimerFormat || "")),
     taskView: parseTaskView(String(data.taskView || "")),
     dynamicColorsEnabled: parseBooleanLike(String(data.dynamicColorsEnabled || ""), true),
-    autoFocusOnTaskLaunchEnabled: parseBooleanLike(String(data.autoFocusOnTaskLaunchEnabled || ""), true),
+    autoFocusOnTaskLaunchEnabled: parseBooleanLike(String(data.autoFocusOnTaskLaunchEnabled || ""), false),
     checkpointAlertSoundEnabled: parseBooleanLike(String(data.checkpointAlertSoundEnabled || ""), true),
     checkpointAlertToastEnabled: parseBooleanLike(String(data.checkpointAlertToastEnabled || ""), true),
     modeSettings: maybeModeSettings,

@@ -245,28 +245,47 @@ export default function DesktopAppRail({ activePage, useClientNavButtons = false
       </nav>
 
       <div className="dashboardRailSectionLabel">Profile</div>
-      <div className="dashboardRailStatusCard">
-        <div className="dashboardRailStatusHeader">
+      <section className="dashboardCard dashboardProfileCard dashboardRailProfileSummary" aria-label="Profile summary">
+        <div className="dashboardCardTitle">Profile Summary</div>
+        <div className="dashboardProfileHead dashboardRailProfileHead">
           {profileAvatarSrc ? (
-            <img className="dashboardAvatarImage dashboardAvatarSmall" src={profileAvatarSrc} alt="" aria-hidden="true" />
+            <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
           ) : (
-            <div className="dashboardAvatar dashboardAvatarSmall">{profileInitials}</div>
+            <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
           )}
-          <div className="dashboardRailStatusIdentity">
-            <div className="dashboardRailStatusName">{profileLabel}</div>
-            <div className="dashboardRailStatusMeta">{profileEmail || "Signed in account"}</div>
+          <div className="dashboardRailProfileIdentity">
+            <div className="dashboardProfileName">{profileLabel}</div>
+            <a className="dashboardProfileMeta dashboardRailProfileEditLink" href="/tasktimer/settings?pane=general">
+              Edit Profile
+            </a>
           </div>
-        </div>
-        <div className="dashboardRailStatusMetric dashboardRailRankMetric">
-          <span className="dashboardRailStatusLabel">Rank</span>
-          <div className="dashboardRailRankRow">
+          <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
             {displayedRankThumbnailSrc ? (
               <img className="dashboardRailRankBadge" src={displayedRankThumbnailSrc} alt="" aria-hidden="true" />
             ) : null}
-            <strong>{rewardsHeader.rankLabel}</strong>
           </div>
         </div>
-      </div>
+        <div className="dashboardTagRow dashboardRailProfileTags">
+          <span className="dashboardTag">{profileEmail || "Signed in account"}</span>
+        </div>
+        <div className="dashboardProfileGrid dashboardRailProfileGrid">
+          <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">
+            <div className="dashboardRailProfileXpHead">
+              <span>XP Progress</span>
+              <strong>{rewardsHeader.totalXp} XP</strong>
+            </div>
+            <div className="progressTrack dashboardRailProfileXpTrack" aria-hidden="true">
+              <div className="progressFill dashboardRailProfileXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+            </div>
+            <div className="dashboardRailProfileXpMeta">
+              <span>{rewardsHeader.progressLabel}</span>
+              <span>
+                {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="dashboardRailPromo">
         <span className="dashboardRailPromoBadge">Pro</span>

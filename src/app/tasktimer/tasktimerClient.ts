@@ -224,7 +224,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let taskView: "list" | "tile" = "list";
   let dynamicColorsEnabled = true;
-  let autoFocusOnTaskLaunchEnabled = true;
+  let autoFocusOnTaskLaunchEnabled = false;
   let checkpointAlertSoundEnabled = true;
   let checkpointAlertToastEnabled = true;
   let rewardProgress = normalizeRewardProgress(DEFAULT_REWARD_PROGRESS);
@@ -523,6 +523,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardAvgSessionChart: document.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
     dashboardAvgSessionEmpty: document.getElementById("dashboardAvgSessionEmpty"),
     dashboardAvgSessionTitle: document.getElementById("dashboardAvgSessionTitle"),
+    dashboardFocusTrendCard: document.getElementById("dashboardFocusTrendCard"),
+    dashboardFocusTrendBars: document.getElementById("dashboardFocusTrendBars"),
+    dashboardFocusTrendAxis: document.getElementById("dashboardFocusTrendAxis"),
     dashboardModeDonut: document.getElementById("dashboardModeDonut"),
     dashboardModeDonutCenter: document.getElementById("dashboardModeDonutCenter"),
     dashboardMode1Label: document.getElementById("dashboardMode1Label"),
@@ -1750,6 +1753,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardCardSizesDraftBeforeEdit = null;
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
     }
@@ -2829,6 +2833,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             return targetSec > 0;
           }).length
         : 0;
+    if (t.xpDisqualifiedUntilReset) return;
     const nextAward = awardLoggedSessionXp(rewardProgress, {
       taskId: String(t.id || ""),
       completedAt: completedAtMs,
@@ -3442,6 +3447,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderHistory(taskId);
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
@@ -3497,6 +3503,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     t.running = false;
     t.startMs = null;
     t.hasStarted = false;
+    t.xpDisqualifiedUntilReset = false;
     resetCheckpointAlertTracking(t.id);
     checkpointAutoResetDirty = true;
   }
@@ -4050,6 +4057,84 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function formatDashboardHeatMonthLabel(year: number, monthIndex: number) {
     const d = new Date(year, monthIndex, 1);
     return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+
+  function renderDashboardFocusTrend() {
+    const cardEl = els.dashboardFocusTrendCard as HTMLElement | null;
+    const barsEl = els.dashboardFocusTrendBars as HTMLElement | null;
+    const axisEl = els.dashboardFocusTrendAxis as HTMLElement | null;
+    if (!barsEl || !axisEl) return;
+
+    const nowValue = nowMs();
+    const today = new Date(nowValue);
+    today.setHours(0, 0, 0, 0);
+
+    const days = Array.from({ length: 7 }, (_, idx) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - idx));
+      date.setHours(0, 0, 0, 0);
+      return {
+        startMs: date.getTime(),
+        endMs: date.getTime() + 86400000,
+        label: date.toLocaleDateString(undefined, { weekday: "narrow" }),
+        longLabel: date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
+        totalMs: 0,
+      };
+    });
+
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = Number(entry?.ts);
+        const ms = Number(entry?.ms);
+        if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
+        for (const day of days) {
+          if (ts >= day.startMs && ts < day.endMs) {
+            day.totalMs += ms;
+            break;
+          }
+        }
+      });
+    });
+
+    const maxMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
+    const weekTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
+    const prevWeekStartMs = days[0]!.startMs - 7 * 86400000;
+    const prevWeekEndMs = days[0]!.startMs;
+    let prevWeekTotalMs = 0;
+
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = Number(entry?.ts);
+        const ms = Number(entry?.ms);
+        if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
+        if (ts >= prevWeekStartMs && ts < prevWeekEndMs) prevWeekTotalMs += ms;
+      });
+    });
+
+    barsEl.innerHTML = days
+      .map((day) => {
+        const ratio = maxMs > 0 ? day.totalMs / maxMs : 0;
+        const aria = `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)}`;
+        return `<span style="height:${Math.round(ratio * 100)}%;" role="img" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(aria)}"></span>`;
+      })
+      .join("");
+
+    axisEl.innerHTML = days.map((day) => `<span>${escapeHtmlUI(day.label)}</span>`).join("");
+
+    if (cardEl) {
+      const deltaPct = prevWeekTotalMs > 0 ? Math.round(((weekTotalMs - prevWeekTotalMs) / prevWeekTotalMs) * 100) : null;
+      const summary =
+        deltaPct === null
+          ? `Focus trend for the last 7 days. ${formatDashboardDurationShort(weekTotalMs)} logged.`
+          : `Focus trend for the last 7 days. ${formatDashboardDurationShort(weekTotalMs)} logged, ${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs previous 7 days.`;
+      cardEl.setAttribute("aria-description", summary);
+    }
   }
 
   function renderDashboardHeatCalendar() {
@@ -4676,7 +4761,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!input) return;
       input.dataset.autoclearPending = "1";
     });
-    setEditElapsedOverrideEnabled(false);
+    setEditElapsedOverrideEnabled(!!t.xpDisqualifiedUntilReset);
     syncEditCheckpointAlertUi(t);
     syncEditSaveAvailability(t);
     {
@@ -4749,6 +4834,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (newMs < prevElapsedMs) resetCheckpointAlertTracking(t.id);
         else clearCheckpointBaseline(t.id);
       }
+      t.xpDisqualifiedUntilReset = isEditElapsedOverrideEnabled();
 
       t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
       t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
@@ -4790,6 +4876,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.editOverrideElapsedToggle?.classList.toggle("on", enabled);
     els.editOverrideElapsedToggle?.setAttribute("aria-checked", String(enabled));
     els.editOverrideElapsedFields?.classList.toggle("isDisabled", !enabled);
+  }
+
+  function confirmEnableElapsedOverride() {
+    confirm(
+      "Manual Time Override",
+      "Manual time override will disqualify this task from earning XP until the next reset. Proceed?",
+      {
+        okLabel: "Proceed",
+        cancelLabel: "Cancel",
+        onOk: () => {
+          setEditElapsedOverrideEnabled(true);
+          if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
+          closeConfirm();
+        },
+        onCancel: () => closeConfirm(),
+      }
+    );
   }
 
   function normalizeEditElapsedValue(input: HTMLInputElement | null) {
@@ -5797,7 +5900,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     } catch {
       // ignore localStorage read failures
     }
-    autoFocusOnTaskLaunchEnabled = true;
+    autoFocusOnTaskLaunchEnabled = false;
   }
 
   function saveAutoFocusOnTaskLaunchSetting() {
@@ -7394,6 +7497,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     if (page === "dashboard") {
+      renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
@@ -8536,6 +8640,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         renderHistory(taskId);
       }
       if (currentAppPage === "dashboard") {
+        renderDashboardFocusTrend();
         renderDashboardModeDistribution();
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
@@ -8568,6 +8673,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         avgSessionByTaskRange: dashboardAvgRange,
       });
       if (currentAppPage === "dashboard") {
+        renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
       }
@@ -8596,6 +8702,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         applyDashboardCardSizes();
         closeDashboardCardSizeMenus();
         if (currentAppPage === "dashboard") {
+          renderDashboardFocusTrend();
           renderDashboardAvgSessionChart();
           renderDashboardHeatCalendar();
         }
@@ -8608,11 +8715,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const rangeMenu = btn.closest("details") as HTMLDetailsElement | null;
       if (rangeMenu) rangeMenu.open = false;
       if (nextRange === dashboardAvgRange) {
+        renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
         return;
       }
       saveDashboardAvgRange(nextRange);
+      renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
     });
@@ -8865,8 +8974,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncEditSaveAvailability(tasks[editIndex]);
     });
     on(els.editOverrideElapsedToggle, "click", () => {
-      setEditElapsedOverrideEnabled(!isEditElapsedOverrideEnabled());
-      if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
+      if (isEditElapsedOverrideEnabled()) {
+        setEditElapsedOverrideEnabled(false);
+        if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
+        return;
+      }
+      confirmEnableElapsedOverride();
     });
     on(els.editCheckpointSoundToggle, "click", () => {
       if (!checkpointAlertSoundEnabled) return;
@@ -9424,6 +9537,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderCheckpointToast();
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardHeatCalendar();
     }
@@ -9463,6 +9577,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     applyDashboardCardVisibility();
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();

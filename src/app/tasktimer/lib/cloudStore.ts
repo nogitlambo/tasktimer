@@ -183,6 +183,8 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.presetIntervalLastMilestoneId = presetLastCheckpointId;
   }
 
+  row.xpDisqualifiedUntilReset = !!row.xpDisqualifiedUntilReset;
+
   return row as Task;
 }
 
@@ -215,6 +217,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
         ? task.finalCheckpointAction
         : "continue",
+    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
     presetIntervalLastCheckpointId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),

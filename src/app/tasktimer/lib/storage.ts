@@ -82,6 +82,14 @@ let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
 const preferenceListeners = new Set<(prefs: Awaited<ReturnType<typeof loadPreferences>>) => void>();
 
+function normalizeTaskShape(task: Task | null | undefined): Task | null {
+  if (!task) return null;
+  return {
+    ...task,
+    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
+  };
+}
+
 function emitPreferenceChange() {
   for (const listener of preferenceListeners) {
     try {
@@ -135,7 +143,7 @@ function saveScopedShadowData<T>(key: string, uid: string, data: T): void {
 
 function loadShadowTasks(uid = scopedUid()): Task[] {
   const parsed = loadScopedShadowData<Task[]>(SHADOW_TASKS_KEY, uid, []);
-  return Array.isArray(parsed) ? parsed : [];
+  return Array.isArray(parsed) ? parsed.map((task) => normalizeTaskShape(task)).filter((task): task is Task => !!task) : [];
 }
 
 function loadShadowHistory(uid = scopedUid()): HistoryByTaskId {
@@ -180,7 +188,13 @@ function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
 }
 
 function saveShadowTasks(tasks: Task[]): void {
-  saveScopedShadowData<Task[]>(SHADOW_TASKS_KEY, scopedUid(), Array.isArray(tasks) ? tasks : []);
+  saveScopedShadowData<Task[]>(
+    SHADOW_TASKS_KEY,
+    scopedUid(),
+    Array.isArray(tasks)
+      ? tasks.map((task) => normalizeTaskShape(task)).filter((task): task is Task => !!task)
+      : []
+  );
 }
 
 function saveShadowHistory(historyByTaskId: HistoryByTaskId): void {
@@ -347,6 +361,7 @@ function taskSignature(task: Task | null | undefined): string {
       task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
         ? task.finalCheckpointAction
         : "continue",
+    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number(task.presetIntervalValue || 0),
     presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
@@ -408,7 +423,18 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
     .join(",");
 }
 
-cachedTasks = loadShadowTasks();
+function cloneTasks(tasks: Task[] | null | undefined): Task[] {
+  if (!Array.isArray(tasks) || tasks.length === 0) return [];
+  try {
+    return (JSON.parse(JSON.stringify(tasks)) as Task[])
+      .map((task) => normalizeTaskShape(task))
+      .filter((task): task is Task => !!task);
+  } catch {
+    return tasks.map((task) => normalizeTaskShape(task)).filter((task): task is Task => !!task);
+  }
+}
+
+cachedTasks = cloneTasks(loadShadowTasks());
 cachedHistory = loadShadowHistory();
 cachedDeletedMeta = loadShadowDeletedMeta();
 cachedPreferences = loadShadowPreferences(scopedUid());
@@ -488,7 +514,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     if (cloudSig === shadowSig) clearPendingHistorySync(taskId);
   });
 
-  cachedTasks = filteredTasks;
+  cachedTasks = cloneTasks(filteredTasks);
   cachedHistory = filteredHistory;
   cachedDeletedMeta = nextDeletedMeta;
   saveShadowTasks(cachedTasks);
@@ -581,7 +607,7 @@ export function buildDefaultCloudPreferences() {
     defaultTaskTimerFormat: "hour" as const,
     taskView: "list" as const,
     dynamicColorsEnabled: true,
-    autoFocusOnTaskLaunchEnabled: true,
+    autoFocusOnTaskLaunchEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     modeSettings: null,
@@ -643,12 +669,12 @@ export function saveCloudTaskUi(taskUi: NonNullable<typeof cachedTaskUi>) {
 }
 
 export function loadTasks(): Task[] | null {
-  return Array.isArray(cachedTasks) ? cachedTasks : null;
+  return Array.isArray(cachedTasks) ? cloneTasks(cachedTasks) : null;
 }
 
 export function saveTasks(tasks: Task[]): void {
-  const next = Array.isArray(tasks) ? tasks : [];
-  const prevById = new Map((cachedTasks || []).map((t) => [String(t.id || ""), t]));
+  const next = cloneTasks(tasks);
+  const prevById = new Map(cloneTasks(cachedTasks || []).map((t) => [String(t.id || ""), t]));
   const nextById = new Map(next.map((t) => [String(t.id || ""), t]));
   cachedTasks = next;
   saveShadowTasks(cachedTasks);

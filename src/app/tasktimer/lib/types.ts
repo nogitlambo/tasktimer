@@ -23,6 +23,7 @@ export type Task = {
   checkpointToastEnabled?: boolean;
   checkpointToastMode?: "auto5s" | "auto3s" | "manual";
   finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog";
+  xpDisqualifiedUntilReset?: boolean;
   presetIntervalsEnabled?: boolean;
   presetIntervalValue?: number;
   presetIntervalLastMilestoneId?: string | null;

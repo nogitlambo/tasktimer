@@ -6,6 +6,7 @@ import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import LandingClassic from "./landingClassic";
 import LandingExperimental from "./landing";
+import type { LandingClassicProps, LandingExperimentalProps } from "./landing.types";
 import {
   GoogleAuthProvider,
   getRedirectResult,
@@ -421,7 +422,12 @@ function HomeContent() {
     }
   };
 
-  const landingProps = {
+  const experimentalLandingProps: LandingExperimentalProps = {
+    showTitlePhase,
+    showActions,
+  };
+
+  const classicLandingProps: LandingClassicProps = {
     showLogo,
     showTitlePhase,
     showActions,
@@ -448,11 +454,11 @@ function HomeContent() {
 
   return isExperimentalLanding ? (
     <LandingExperimental
-      {...landingProps}
+      {...experimentalLandingProps}
     />
   ) : (
     <LandingClassic
-      {...landingProps}
+      {...classicLandingProps}
     />
   );
 }

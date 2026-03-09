@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import type { LandingProps } from "./landing.types";
+import type { LandingClassicProps } from "./landing.types";
 
 export default function LandingClassic({
   showLogo,
@@ -24,7 +24,7 @@ export default function LandingClassic({
   onSendEmailLink,
   onCompleteEmailLink,
   onAuthEmailChange,
-}: LandingProps) {
+}: LandingClassicProps) {
   return (
     <main
       className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d0f13] px-6 text-white"

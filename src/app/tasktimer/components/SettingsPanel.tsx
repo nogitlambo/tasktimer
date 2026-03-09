@@ -1227,10 +1227,10 @@ export default function SettingsPanel() {
                     </button>
                   </div>
                 </div>
-                <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
-                  <span>Auto switch to Focus Mode on launch</span>
-                  <button className="switch on" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="true" />
-                </div>
+                <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
+                  <span>Auto switch to Focus Mode on launch</span>
+                  <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
+                </div>
                 <div className="field" id="taskViewRow">
                   <label htmlFor="taskViewSelect">Task View</label>
                   <select id="taskViewSelect" defaultValue="list" aria-label="Task view">
