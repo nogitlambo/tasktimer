@@ -9529,3 +9529,1063 @@ body[data-theme="light"] #app[aria-label="TaskLaunch App"] .rankLadderItemMeta,
 body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .rankLadderItemMeta{
   color:rgba(15,23,42,0.72);
 }
+
+/* Final Dashboard Neon reskin:
+   dashboard-only rail + hero composition, preserving existing dashboard IDs and interactions. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
+  padding-bottom: 28px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+  display: grid;
+  grid-template-columns: minmax(375px, 435px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin: 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRail,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardShell,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroPanel,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardCard{
+  border: 1px solid rgba(121,226,255,.16);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(0,224,255,.10), rgba(0,0,0,0) 36%),
+    radial-gradient(120% 120% at 100% 0%, rgba(240,110,224,.16), rgba(0,0,0,0) 34%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    #05080f;
+  box-shadow:
+    0 26px 60px rgba(0,0,0,.48),
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRail{
+  position: sticky;
+  top: calc(var(--safe-top) + 18px);
+  padding: 18px 18px 20px;
+  min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 36px);
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailLogoMark{
+  width: 44px;
+  height: 44px;
+  background:
+    linear-gradient(135deg, rgba(53,232,255,.98), rgba(53,232,255,.68));
+  box-shadow: 0 0 22px rgba(53,232,255,.34);
+  clip-path: polygon(0 26%, 36% 10%, 100% 0, 74% 74%, 38% 90%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrandText{
+  display: grid;
+  gap: 2px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrandName{
+  font-family: var(--font-tight);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #f7fbff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrandMeta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailSectionLabel,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroEyebrow,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStatLabel{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(198,223,237,.64);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailSearchBtn{
+  min-height: 56px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
+  color: rgba(231,245,252,.82);
+  font-family: var(--font-tight);
+  font-size: 14px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailSearchIcon{
+  color: rgba(229,248,255,.96);
+  font-size: 22px;
+  line-height: 1;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailNav{
+  display: grid;
+  gap: 10px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn{
+  width: 100%;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(233,246,252,.84);
+  text-decoration: none;
+  background: rgba(255,255,255,.03);
+  font-family: var(--font-tight);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn:hover{
+  border-color: rgba(121,226,255,.34);
+  background: rgba(255,255,255,.06);
+  transform: translateX(2px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn.isOn{
+  border-color: rgba(53,232,255,.58);
+  background:
+    linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
+    rgba(255,255,255,.04);
+  box-shadow:
+    0 0 20px rgba(0,220,255,.12),
+    inset 0 0 0 1px rgba(53,232,255,.14);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuIconImage{
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 8px rgba(0,190,255,.35));
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuLabel{
+  line-height: 1.1;
+  white-space: nowrap;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
+  color: rgba(142,242,255,.98);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn.isOn .dashboardRailMenuIconImage{
+  filter: drop-shadow(0 0 10px rgba(53,232,255,.48));
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo{
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusHeader{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvatarSmall{
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusName{
+  font-family: var(--font-tight);
+  font-size: 15px;
+  font-weight: 800;
+  color: #f2fbff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusMeta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo p{
+  margin: 0;
+  font-size: 12px;
+  color: rgba(206,225,236,.76);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusMetric{
+  margin-top: 14px;
+  display: grid;
+  gap: 4px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusMetric strong{
+  font-family: var(--font-tight);
+  font-size: 22px;
+  color: #f7fdff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusLabel{
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(190,215,230,.64);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo{
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromoBadge{
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(53,232,255,.95), rgba(0,207,200,.88));
+  color: #031019;
+  font-family: var(--font-tight);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo h3{
+  margin: 0;
+  font-family: var(--font-tight);
+  font-size: 28px;
+  line-height: 1.05;
+  color: #f8fbff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardMain{
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardShell{
+  margin: 0;
+  padding: 22px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTopRow{
+  margin-bottom: 18px;
+  align-items: flex-start;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardKicker{
+  color: rgba(210,226,237,.68);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTitle{
+  margin-top: 8px;
+  font-size: clamp(34px, 4vw, 60px);
+  line-height: .95;
+  letter-spacing: .02em;
+  text-transform: none;
+  color: #f6fbff;
+  text-shadow: 0 0 34px rgba(0,220,255,.10);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroPanel{
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(240px, .95fr);
+  gap: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroCopy{
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroTitle{
+  margin: 0;
+  font-family: var(--font-tight);
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: .92;
+  color: #f9fcff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroValue{
+  font-family: var(--font-tight);
+  font-size: clamp(30px, 3vw, 52px);
+  font-weight: 800;
+  color: #ffffff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroSubtext{
+  margin: 0;
+  font-size: 16px;
+  color: rgba(217,232,240,.82);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroDelta{
+  color: #64ffa2;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroBars{
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+  min-height: 240px;
+  padding: 10px 0 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroBars > span{
+  min-height: 72px;
+  border: 1px solid rgba(255,255,255,.04);
+  background:
+    linear-gradient(180deg, rgba(244,110,228,.98), rgba(62,15,70,.28));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 0 24px rgba(240,110,224,.18);
+  clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStats{
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStat{
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  display: grid;
+  gap: 6px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStat strong{
+  font-family: var(--font-tight);
+  font-size: 22px;
+  color: #f8fdff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardGrid{
+  gap: 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardCard{
+  padding: 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardCardTitle{
+  color: rgba(216,231,239,.68);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileCard{ grid-column: span 4; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardStreakCard{ grid-column: span 3; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardWeekHoursCard{ grid-column: span 2; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTasksCompletedCard{ grid-column: span 3; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardMainGraphCard{ grid-column: span 7; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionCard{ grid-column: span 7; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardDonutCard{ grid-column: span 5; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTimelineCard{ grid-column: span 5; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatCard{ grid-column: span 7; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileGrid{
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric{
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  display: grid;
+  gap: 4px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric span{
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(188,211,225,.6);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric strong{
+  font-family: var(--font-tight);
+  font-size: 20px;
+  color: #f6fbff;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardStreakValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardBigValue{
+  font-size: clamp(26px, 3vw, 40px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardGraphBars{
+  min-height: 240px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    rgba(2,8,16,.52);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardGraphBars > span{
+  background: linear-gradient(180deg, rgba(240,110,224,.98), rgba(58,18,76,.22));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 16px rgba(240,110,224,.16);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionCard .historyCanvasWrap{
+  min-height: 290px;
+  margin-top: 14px;
+  border: 1px solid rgba(255,255,255,.06);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    rgba(3,10,18,.55);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardDonutWrap{
+  width: 160px;
+  height: 160px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTimeline{
+  gap: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTimeline li{
+  grid-template-columns: 64px 1fr;
+  padding-top: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatCalendarGrid{
+  gap: 8px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatDayCell{
+  min-height: 44px;
+  background: rgba(255,255,255,.035);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatDayCell.isActive{
+  border-color: rgba(53,232,255,.22);
+  box-shadow: 0 0 18px rgba(0,220,255,.10);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRail,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardShell,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroPanel,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardCard{
+  border-color: rgba(0,133,160,.16);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(0,151,199,.08), rgba(0,0,0,0) 36%),
+    radial-gradient(120% 120% at 100% 0%, rgba(222,99,204,.10), rgba(0,0,0,0) 34%),
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(244,249,252,.94)),
+    #f4f9fc;
+  box-shadow:
+    0 24px 48px rgba(17,44,61,.12),
+    inset 0 0 0 1px rgba(255,255,255,.52);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrandName,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTitle,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroTitle,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroValue,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo h3,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric strong,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusMetric strong{
+  color: #17343c;
+  text-shadow: none;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailBrandMeta,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailSectionLabel,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroEyebrow,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStatLabel,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardCardTitle,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric span{
+  color: rgba(23,52,60,.66);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailSearchBtn,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusCard,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStat,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileMetric{
+  border-color: rgba(0,133,160,.16);
+  background: rgba(255,255,255,.72);
+  color: #17343c;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuBtn.isOn{
+  border-color: rgba(0,151,199,.34);
+  box-shadow: inset 0 0 0 1px rgba(0,151,199,.10);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailMenuIconImage{
+  filter: none;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroSubtext,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailStatusMeta,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRailPromo p{
+  color: rgba(23,52,60,.76);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardGraphBars,
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionCard .historyCanvasWrap{
+  border-color: rgba(0,133,160,.14);
+  background: rgba(255,255,255,.7);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatDayCell{
+  border-color: rgba(0,133,160,.14);
+  background: rgba(255,255,255,.7);
+}
+@media (max-width: 1180px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+    grid-template-columns: 1fr;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardRail{
+    display: none;
+  }
+}
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+    margin: 12px;
+    gap: 12px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardShell{
+    padding: 16px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroPanel{
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroBars{
+    min-height: 180px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroStats{
+    grid-template-columns: 1fr;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardStreakCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardWeekHoursCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTasksCompletedCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardMainGraphCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardDonutCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTimelineCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeatCard{
+    grid-column: span 12;
+  }
+}
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+    margin: 8px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardShell{
+    padding: 14px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTopRow{
+    gap: 10px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
+    width: 100%;
+    justify-content: flex-start;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTitle{
+    font-size: 34px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroValue{
+    font-size: 28px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardProfileGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Desktop footer navigation: lay out menu buttons horizontally instead of as a left rail. */
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .appPages{
+    padding-left: 0 !important;
+    padding-bottom: 102px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    padding-bottom: 24px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages,
+  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages{
+    padding-left: 0 !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    position: fixed;
+    left: 18px;
+    right: 18px;
+    top: auto;
+    bottom: 14px;
+    width: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 10px 12px;
+    border-right: none;
+    border-top: 1px solid rgba(117,231,255,.28);
+    box-shadow: 0 -10px 24px rgba(0,0,0,.34);
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterBtn{
+    width: auto;
+    min-height: 64px;
+    padding: 8px 14px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+    text-align: left;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterIconImage{
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterLabel{
+    display: inline;
+    font-size: 11px;
+    letter-spacing: .08em;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterAlertBadge{
+    top: 7px;
+    right: 10px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: none;
+  }
+}
+
+/* Final desktop app rail: use the left navigation panel across main app screens and Settings.
+   Footer navigation is mobile-only. */
+.desktopAppRail{
+  display: none;
+}
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    display: grid;
+    position: fixed;
+    left: 18px;
+    top: calc(88px + var(--safe-top));
+    bottom: 18px;
+    width: min(435px, calc(100vw - 48px));
+    padding: 18px 18px 20px;
+    gap: 16px;
+    align-content: start;
+    border: 1px solid rgba(121,226,255,.16);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(0,224,255,.10), rgba(0,0,0,0) 36%),
+      radial-gradient(120% 120% at 100% 0%, rgba(240,110,224,.16), rgba(0,0,0,0) 34%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+      #05080f;
+    box-shadow:
+      0 26px 60px rgba(0,0,0,.48),
+      inset 0 0 0 1px rgba(255,255,255,.04),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+    z-index: 7;
+    overflow-y: auto;
+  }
+  #app[aria-label="TaskLaunch App"] .appPages{
+    padding-left: 470px !important;
+    padding-bottom: 20px !important;
+  }
+  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    padding-left: 470px !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: none !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+    display: block;
+    margin: 18px;
+  }
+}
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    display: none !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: grid;
+  }
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrand,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrand{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailLogoMark,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailLogoMark{
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, rgba(53,232,255,.98), rgba(53,232,255,.68));
+    box-shadow: 0 0 22px rgba(53,232,255,.34);
+    clip-path: polygon(0 26%, 36% 10%, 100% 0, 74% 74%, 38% 90%);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandText,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandText{
+    display: grid;
+    gap: 2px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandName,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandName{
+    font-family: var(--font-tight);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: #f7fbff;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandMeta,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusLabel,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandMeta,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSectionLabel,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusLabel{
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(198,223,237,.64);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSearchBtn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSearchBtn{
+    min-height: 56px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.03);
+    color: rgba(231,245,252,.82);
+    font-family: var(--font-tight);
+    font-size: 14px;
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSearchIcon,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSearchIcon{
+    color: rgba(229,248,255,.96);
+    font-size: 22px;
+    line-height: 1;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailNav,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailNav{
+    display: grid;
+    gap: 10px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn{
+    width: 100%;
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 10px 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    color: rgba(233,246,252,.84);
+    text-decoration: none;
+    background: rgba(255,255,255,.03);
+    font-family: var(--font-tight);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn{
+    border-color: rgba(53,232,255,.58);
+    background:
+      linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
+      rgba(255,255,255,.04);
+    box-shadow: 0 0 20px rgba(0,220,255,.12), inset 0 0 0 1px rgba(53,232,255,.14);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuIconImage{
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    display: block;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 0 8px rgba(0,190,255,.35));
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuLabel,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuLabel{
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusCard,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusCard,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusHeader,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusHeader{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardAvatarSmall,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardAvatarSmall{
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusName,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusName{
+    font-family: var(--font-tight);
+    font-size: 15px;
+    font-weight: 800;
+    color: #f2fbff;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMeta,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo p,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMeta,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo p{
+    margin: 0;
+    font-size: 12px;
+    color: rgba(206,225,236,.76);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric{
+    margin-top: 14px;
+    display: grid;
+    gap: 4px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric strong,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric strong{
+    font-family: var(--font-tight);
+    font-size: 22px;
+    color: #f7fdff;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
+    margin-top: auto;
+    display: grid;
+    gap: 10px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromoBadge,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromoBadge{
+    justify-self: start;
+    min-height: 28px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(53,232,255,.95), rgba(0,207,200,.88));
+    color: #031019;
+    font-family: var(--font-tight);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo h3,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo h3{
+    margin: 0;
+    font-family: var(--font-tight);
+    font-size: 28px;
+    line-height: 1.05;
+    color: #f8fbff;
+  }
+}
+@media (min-width: 981px){
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    border-color: rgba(0,133,160,.16);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(0,151,199,.08), rgba(0,0,0,0) 36%),
+      radial-gradient(120% 120% at 100% 0%, rgba(222,99,204,.10), rgba(0,0,0,0) 34%),
+      linear-gradient(180deg, rgba(255,255,255,.92), rgba(244,249,252,.94)),
+      #f4f9fc;
+    box-shadow:
+      0 24px 48px rgba(17,44,61,.12),
+      inset 0 0 0 1px rgba(255,255,255,.52);
+  }
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandName,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusName,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric strong,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo h3,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandName,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusName,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric strong,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo h3{
+    color: #17343c;
+  }
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandMeta,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusLabel,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMeta,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo p,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandMeta,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSectionLabel,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusLabel,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMeta,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo p{
+    color: rgba(23,52,60,.70);
+  }
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSearchBtn,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusCard,
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSearchBtn,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusCard,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
+    border-color: rgba(0,133,160,.16);
+    background: rgba(255,255,255,.72);
+    color: #17343c;
+  }
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn{
+    border-color: rgba(0,151,199,.34);
+    box-shadow: inset 0 0 0 1px rgba(0,151,199,.10);
+  }
+  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage,
+  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuIconImage{
+    filter: none;
+  }
+}
+
+/* Final desktop shell correction: keep the left rail attached to app/settings content and
+   restore dashboard/task/friends rendering inside the shared desktop layout. */
+.desktopAppShell{
+  display: block;
+}
+.desktopAppMain{
+  min-width: 0;
+}
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .desktopAppShell,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppShell{
+    display: grid;
+    grid-template-columns: minmax(375px, 435px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    margin: 18px;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    position: sticky;
+    left: auto;
+    top: calc(var(--safe-top) + 18px);
+    bottom: auto;
+    width: auto;
+    min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 36px);
+    overflow-y: auto;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppMain,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppMain{
+    min-width: 0;
+  }
+  #app[aria-label="TaskLaunch App"] .appPages,
+  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    padding-left: 0 !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appPages{
+    padding-bottom: 0 !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: none !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardNeonLayout{
+    display: block;
+    margin: 0;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
+    padding-bottom: 0;
+  }
+}
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .desktopAppShell,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppShell{
+    display: block;
+    margin: 0;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: grid !important;
+  }
+}
+
+/* Dashboard typography: match the landing page Orbitron display styling immediately,
+   without depending on body[data-app-page] being hydrated first. */
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroEyebrow,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStatLabel,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStat strong,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCardTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardBigValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileName,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric strong,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandName,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandMeta,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailSectionLabel,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailMenuLabel{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardAvatarImage,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardAvatarImage{
+  display:block;
+  border-radius:50%;
+  object-fit:cover;
+  background:rgba(3, 10, 18, 0.92);
+  box-shadow:0 0 0 1px rgba(61, 240, 255, 0.22), 0 0 24px rgba(0, 217, 255, 0.18);
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusIdentity,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusIdentity{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusName,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusName,
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMeta,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMeta{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailRankMetric,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailRankMetric{
+  gap:10px;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailRankRow,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailRankRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailRankBadge,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailRankBadge{
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  object-fit:contain;
+  background:rgba(5, 12, 20, 0.9);
+  box-shadow:0 0 0 1px rgba(245, 112, 255, 0.2);
+}
+
+/* Reduce primary heading sizes by 25% across the active app surfaces. */
+.modal h2{
+  font-size:15px;
+}
+
+.appPagePlaceholder h2{
+  font-size:1.125rem;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailTitle{
+  font-size:16.5px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
+  font-size:18px;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardHeroTitle{
+  font-size:clamp(30px, 3.75vw, 54px);
+}
+
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTitle{
+    font-size:26px;
+  }
+}
+
+/* Settings route is a standalone full-width page; do not apply the shared desktop rail shell. */
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+  display:none !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .desktopAppShell,
+#app[aria-label="TaskLaunch Settings"] .desktopAppMain{
+  display:block;
+  min-width:0;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPageList{
+  width:100%;
+  max-width:none;
+  padding-left:0 !important;
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    margin:18px;
+  }
+}

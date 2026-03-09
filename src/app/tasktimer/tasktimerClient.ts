@@ -508,6 +508,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
     footerTest2AlertBadge: document.getElementById("footerTest2AlertBadge") as HTMLElement | null,
     footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
+    commandCenterTasksBtn: document.getElementById("commandCenterTasksBtn") as HTMLButtonElement | null,
+    commandCenterDashboardBtn: document.getElementById("commandCenterDashboardBtn") as HTMLButtonElement | null,
+    commandCenterGroupsBtn: document.getElementById("commandCenterGroupsBtn") as HTMLButtonElement | null,
+    commandCenterSettingsBtn: document.getElementById("commandCenterSettingsBtn") as HTMLElement | null,
     signedInHeaderBadge: document.getElementById("signedInHeaderBadge") as HTMLElement | null,
     dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
     dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
@@ -7354,6 +7358,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
     els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
     els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
+    els.commandCenterTasksBtn?.classList.toggle("isOn", page === "tasks");
+    els.commandCenterDashboardBtn?.classList.toggle("isOn", page === "dashboard");
+    els.commandCenterGroupsBtn?.classList.toggle("isOn", page === "test2");
+    if (els.commandCenterDashboardBtn) {
+      if (page === "dashboard") els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
+      else els.commandCenterDashboardBtn.removeAttribute("aria-current");
+    }
     if (els.signedInHeaderBadge) {
       els.signedInHeaderBadge.style.display = "inline-flex";
     }
@@ -7804,6 +7815,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
     });
     on(els.footerSettingsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      navigateToAppRoute("/tasktimer/settings");
+    });
+    on(els.commandCenterTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
+    on(els.commandCenterDashboardBtn, "click", () => applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" }));
+    on(els.commandCenterGroupsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+    });
+    on(els.commandCenterSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings");
     });
