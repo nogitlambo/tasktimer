@@ -653,13 +653,22 @@ export function saveTasks(tasks: Task[]): void {
   cachedTasks = next;
   saveShadowTasks(cachedTasks);
   const removedTaskIds = Array.from(prevById.keys()).filter((taskId) => !!taskId && !nextById.has(taskId));
-  markPendingTaskSync(Array.from(nextById.keys()).filter(Boolean));
+  const changedTaskIds = Array.from(nextById.keys()).filter((taskId) => {
+    if (!taskId) return false;
+    return taskSignature(nextById.get(taskId)) !== taskSignature(prevById.get(taskId));
+  });
+  markPendingTaskSync(changedTaskIds);
   markPendingTaskDeletes(removedTaskIds);
   const uid = currentUid();
   if (!uid) return;
+  if (!changedTaskIds.length && !removedTaskIds.length) return;
+  const changedTaskIdSet = new Set(changedTaskIds);
   void Promise.all(
     next
-      .filter((t) => String(t.id || ""))
+      .filter((t) => {
+        const taskId = String(t.id || "");
+        return !!taskId && changedTaskIdSet.has(taskId);
+      })
       .map((t) =>
         saveTask(uid, t).then(() => {
           clearPendingTaskSync(String(t.id || ""));

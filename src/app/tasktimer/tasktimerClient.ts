@@ -92,7 +92,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled`;
   const THEME_KEY = `${STORAGE_KEY}:theme`;
   const MENU_BUTTON_STYLE_KEY = `${STORAGE_KEY}:menuButtonStyle`;
+  const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
   const TASK_VIEW_KEY = `${STORAGE_KEY}:taskView`;
+  const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
+  const CHECKPOINT_ALERT_SOUND_KEY = `${STORAGE_KEY}:checkpointAlertSoundEnabled`;
+  const CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled`;
+  const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
   const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
   const NAV_STACK_MAX = 50;
   const NATIVE_BACK_DEBOUNCE_MS = 200;
@@ -118,7 +123,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let destroyed = false;
   let tickTimeout: number | null = null;
   let tickRaf: number | null = null;
-  let cloudRefreshInterval: number | null = null;
   let newTaskHighlightTimer: number | null = null;
   let eventsWired = false;
   let tickStarted = false;
@@ -131,7 +135,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     if (tickTimeout != null) window.clearTimeout(tickTimeout);
     if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
-    if (cloudRefreshInterval != null) window.clearInterval(cloudRefreshInterval);
+    if (deferredCloudRefreshTimer != null) window.clearTimeout(deferredCloudRefreshTimer);
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
     if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
     if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
@@ -353,6 +357,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let friendProfileCacheByUid: Record<string, FriendProfile> = {};
   let cloudRefreshInFlight: Promise<void> | null = null;
   let lastCloudRefreshAtMs = 0;
+  let deferredCloudRefreshTimer: number | null = null;
+  let pendingDeferredCloudRefresh = false;
+  let lastUiInteractionAtMs = 0;
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
@@ -1058,7 +1065,41 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return cloudRefreshInFlight;
   }
 
+  function hasActiveFormInteraction() {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || active === document.body) return false;
+    return active.matches('input, textarea, select, [contenteditable="true"]');
+  }
+
+  function noteUiInteraction() {
+    lastUiInteractionAtMs = nowMs();
+  }
+
+  function hasRecentUiInteraction(windowMs = 1200) {
+    return nowMs() - lastUiInteractionAtMs < windowMs;
+  }
+
+  function scheduleDeferredCloudRefresh(minIntervalMs = 0) {
+    pendingDeferredCloudRefresh = true;
+    if (deferredCloudRefreshTimer != null || destroyed) return;
+    deferredCloudRefreshTimer = window.setTimeout(() => {
+      deferredCloudRefreshTimer = null;
+      if (destroyed || !pendingDeferredCloudRefresh) return;
+      if (hasActiveFormInteraction() || hasRecentUiInteraction()) {
+        scheduleDeferredCloudRefresh(minIntervalMs);
+        return;
+      }
+      pendingDeferredCloudRefresh = false;
+      refreshCloudStateIfStale(minIntervalMs);
+    }, 500);
+  }
+
   function refreshCloudStateIfStale(minIntervalMs = 3000) {
+    if (hasActiveFormInteraction() || hasRecentUiInteraction()) {
+      scheduleDeferredCloudRefresh(minIntervalMs);
+      return;
+    }
+    pendingDeferredCloudRefresh = false;
     const currentMs = nowMs();
     if (currentMs - lastCloudRefreshAtMs < minIntervalMs) return;
     void rehydrateFromCloudAndRender({ force: true });
@@ -1081,16 +1122,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function initCloudRefreshSync() {
+    on(document, "pointerdown", () => {
+      noteUiInteraction();
+    });
+    on(document, "focusin", () => {
+      noteUiInteraction();
+    });
+    on(document, "input", () => {
+      noteUiInteraction();
+    });
+    on(document, "change", () => {
+      noteUiInteraction();
+    });
     on(window, "focus", () => {
       refreshCloudStateIfStale(0);
     });
     on(document, "visibilitychange", () => {
       if (document.visibilityState === "visible") refreshCloudStateIfStale(0);
     });
-    cloudRefreshInterval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      refreshCloudStateIfStale(4000);
-    }, 4000);
 
     try {
       const capApp = getCapAppPlugin();
@@ -2719,11 +2768,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     };
   }
 
+  function persistPreferencesToLocalStorage(snapshot: ReturnType<typeof buildCloudPreferencesSnapshot>) {
+    try {
+      localStorage.setItem(THEME_KEY, snapshot.theme);
+      localStorage.setItem(MENU_BUTTON_STYLE_KEY, snapshot.menuButtonStyle);
+      localStorage.setItem(TASK_VIEW_KEY, snapshot.taskView);
+      localStorage.setItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY, snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false");
+      localStorage.setItem(DEFAULT_TASK_TIMER_FORMAT_KEY, snapshot.defaultTaskTimerFormat);
+      localStorage.setItem(DYNAMIC_COLORS_KEY, snapshot.dynamicColorsEnabled ? "true" : "false");
+      localStorage.setItem(CHECKPOINT_ALERT_SOUND_KEY, snapshot.checkpointAlertSoundEnabled ? "true" : "false");
+      localStorage.setItem(CHECKPOINT_ALERT_TOAST_KEY, snapshot.checkpointAlertToastEnabled ? "true" : "false");
+      localStorage.setItem(MODE_SETTINGS_KEY, JSON.stringify(snapshot.modeSettings || null));
+    } catch {
+      // ignore localStorage write failures
+    }
+  }
+
   function persistPreferencesToCloud() {
-    cloudPreferencesCache = buildCloudPreferencesSnapshot();
+    const snapshot = buildCloudPreferencesSnapshot();
+    persistPreferencesToLocalStorage(snapshot);
+    cloudPreferencesCache = snapshot;
+    saveCloudPreferences(snapshot);
     const uid = currentUid();
     if (!uid) return;
-    saveCloudPreferences(cloudPreferencesCache);
     void syncOwnFriendshipProfile(uid, {
       currentRankId: normalizeRewardProgress(rewardProgress).currentRankId,
     }).catch(() => {
