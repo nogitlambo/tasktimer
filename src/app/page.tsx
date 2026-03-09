@@ -2,8 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import LandingClassic from "./landingClassic";
 import LandingExperimental from "./landing";
@@ -33,12 +32,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 }
 
 function shouldUseRedirectAuth() {
-  if (typeof window === "undefined") return false;
-  try {
-    return Capacitor.isNativePlatform() || window.location.protocol === "file:";
-  } catch {
-    return window.location.protocol === "file:";
-  }
+  return isNativeOrFileRuntime();
 }
 
 function maskApiKey(value: string | undefined) {
@@ -57,7 +51,8 @@ function logGoogleAuthDebug(stage: string, auth: ReturnType<typeof getFirebaseAu
     href: window.location.href,
     origin: window.location.origin,
     protocol: window.location.protocol,
-    isNativePlatform: Capacitor.isNativePlatform(),
+    authRuntime: firebaseAuthMode(),
+    isNativePlatform: isNativeOrFileRuntime(),
     authDomain: opts?.authDomain ?? null,
     projectId: opts?.projectId ?? null,
     appId: opts?.appId ?? null,
@@ -75,11 +70,17 @@ function logFirebaseAuthError(stage: string, err: unknown) {
     message?: string;
     customData?: { email?: string; _tokenResponse?: unknown; [key: string]: unknown };
   };
+  const ownProps = Object.fromEntries(
+    Object.getOwnPropertyNames(err).map((key) => [key, (err as Record<string, unknown>)[key]])
+  );
   console.error("[auth-debug] error", {
     stage,
     code: e.code ?? null,
     message: e.message ?? null,
     customData: e.customData ?? null,
+    name: ownProps.name ?? null,
+    stack: ownProps.stack ?? null,
+    details: ownProps,
   });
 }
 
@@ -261,6 +262,7 @@ function HomeContent() {
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
+    if (!shouldUseRedirectAuth()) return;
     let cancelled = false;
     const applyRedirectResult = async () => {
       try {

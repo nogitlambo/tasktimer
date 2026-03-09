@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { clearScopedStorageState, STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import {
@@ -132,17 +132,9 @@ function getErrorMessage(err: unknown, fallback: string) {
   }
   return fallback;
 }
-function shouldUseRedirectAuth() {
-  if (typeof window === "undefined") return false;
-  const w = window as Window & {
-    Capacitor?: { isNativePlatform?: () => boolean };
-  };
-  const isNativePlatform =
-    !!w.Capacitor &&
-    typeof w.Capacitor.isNativePlatform === "function" &&
-    w.Capacitor.isNativePlatform();
-  return isNativePlatform || window.location.protocol === "file:";
-}
+function shouldUseRedirectAuth() {
+  return isNativeOrFileRuntime();
+}
 
 function SettingsNavTile({
   label,

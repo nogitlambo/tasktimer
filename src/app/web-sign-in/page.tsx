@@ -1,6 +1,5 @@
 "use client";
 
-import { Capacitor } from "@capacitor/core";
 import {
   GoogleAuthProvider,
   getRedirectResult,
@@ -13,7 +12,7 @@ import {
 } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
 
@@ -28,12 +27,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 }
 
 function shouldUseRedirectAuth() {
-  if (typeof window === "undefined") return false;
-  try {
-    return Capacitor.isNativePlatform() || window.location.protocol === "file:";
-  } catch {
-    return window.location.protocol === "file:";
-  }
+  return isNativeOrFileRuntime();
 }
 
 export default function WebSignInPage() {
@@ -129,6 +123,7 @@ export default function WebSignInPage() {
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
+    if (!shouldUseRedirectAuth()) return;
     let cancelled = false;
     const applyRedirectResult = async () => {
       try {
