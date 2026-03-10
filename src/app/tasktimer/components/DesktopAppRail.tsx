@@ -137,10 +137,6 @@ function labelFromUser(user: User | null) {
   return "TaskLaunch User";
 }
 
-function emailFromUser(user: User | null) {
-  return String(user?.email || "").trim();
-}
-
 function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
   const normalizedAvatarId = String(avatarId || "").trim();
   if (avatarCustomSrc) return avatarCustomSrc;
@@ -280,7 +276,6 @@ export default function DesktopAppRail({
   showMobileFooter = true,
 }: DesktopAppRailProps) {
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
-  const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
@@ -288,12 +283,10 @@ export default function DesktopAppRail({
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
     const fallbackLabel = labelFromUser(user);
-    const fallbackEmail = emailFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
 
     if (!uid) {
       setProfileLabel(fallbackLabel);
-      setProfileEmail(fallbackEmail);
       setProfileAvatarSrc(googlePhotoUrl);
       setRankThumbnailSrc("");
       return;
@@ -303,7 +296,6 @@ export default function DesktopAppRail({
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
     const storedRankThumbnailSrc = readStoredRankThumbnailSrc(uid);
     setProfileLabel(fallbackLabel);
-    setProfileEmail(fallbackEmail);
     setProfileAvatarSrc(resolveAvatarSrc(uid, storedAvatarId, storedCustomAvatarSrc, googlePhotoUrl));
     setRankThumbnailSrc(storedRankThumbnailSrc);
 
@@ -318,7 +310,6 @@ export default function DesktopAppRail({
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteRankThumbnailSrc = String(snap.get("rankThumbnailSrc") || storedRankThumbnailSrc).trim();
       setProfileLabel(alias || fallbackLabel);
-      setProfileEmail(fallbackEmail);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, googlePhotoUrl));
       setRankThumbnailSrc(remoteRankThumbnailSrc);
     } catch {
@@ -377,7 +368,6 @@ export default function DesktopAppRail({
 
           <div className="dashboardRailSectionLabel">Profile</div>
           <section className="dashboardCard dashboardProfileCard dashboardRailProfileSummary" aria-label="Profile summary">
-            <div className="dashboardCardTitle">Profile Summary</div>
             <div className="dashboardProfileHead dashboardRailProfileHead">
               {profileAvatarSrc ? (
                 <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
@@ -386,18 +376,18 @@ export default function DesktopAppRail({
               )}
               <div className="dashboardRailProfileIdentity">
                 <div className="dashboardProfileName">{profileLabel}</div>
-                <a className="dashboardProfileMeta dashboardRailProfileEditLink" href="/tasktimer/settings?pane=general">
-                  Edit Profile
-                </a>
+                <div className="dashboardTagRow dashboardRailProfileTags">
+                  <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
+                    Edit Profile
+                  </a>
+                </div>
               </div>
               <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
                 {displayedRankThumbnailSrc ? (
                   <img className="dashboardRailRankBadge" src={displayedRankThumbnailSrc} alt="" aria-hidden="true" />
                 ) : null}
+                <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
               </div>
-            </div>
-            <div className="dashboardTagRow dashboardRailProfileTags">
-              <span className="dashboardTag">{profileEmail || "Signed in account"}</span>
             </div>
             <div className="dashboardProfileGrid dashboardRailProfileGrid">
               <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">

@@ -55,8 +55,8 @@ const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
-
-function avatarStorageKeyForUid(uid: string) {
+
+function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
 }
 function avatarCustomStorageKeyForUid(uid: string) {
@@ -203,6 +203,7 @@ export default function SettingsPanel() {
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
+  const [showAdminConsoleModal, setShowAdminConsoleModal] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
@@ -460,17 +461,34 @@ export default function SettingsPanel() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showRankLadderModal]);
 
+  useEffect(() => {
+    if (!showAdminConsoleModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowAdminConsoleModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showAdminConsoleModal]);
+
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentRankIndex = useMemo(
     () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)),
     [rewardProgress.currentRankId]
   );
   const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
+  const canAccessAdminConsole = authUserUid === RANK_INSIGNIA_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
   const displayedRankThumbnailSrc = useMemo(
     () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
     [rewardProgress.currentRankId, rankThumbnailSrc]
   );
+  const handleRankThumbnailClick = useCallback(() => {
+    if (canAccessAdminConsole) {
+      setShowAdminConsoleModal(true);
+      return;
+    }
+    setShowRankLadderModal(true);
+  }, [canAccessAdminConsole]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -926,9 +944,9 @@ export default function SettingsPanel() {
                         <button
                           type="button"
                           className="settingsAccountRankBtn"
-                          onClick={() => setShowRankLadderModal(true)}
-                          aria-label="Open rank ladder"
-                          title="Open rank ladder"
+                          onClick={handleRankThumbnailClick}
+                          aria-label={canAccessAdminConsole ? "Open Admin Console" : "Open rank ladder"}
+                          title={canAccessAdminConsole ? "Open Admin Console" : "Open rank ladder"}
                         >
                           <div className="settingsAccountRankPlaceholder">
                             {displayedRankThumbnailSrc ? (
@@ -1194,6 +1212,44 @@ export default function SettingsPanel() {
                   </div>
                   <div className="confirmBtns">
                     <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            {showAdminConsoleModal && canAccessAdminConsole ? (
+              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowAdminConsoleModal(false)}>
+                <div
+                  className="modal settingsInlineConfirmModal settingsAdminConsoleModal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Admin Console"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="settingsInlineConfirmTitle settingsAdminConsoleTitle">Admin Console</h3>
+                  <p className="confirmText">
+                    Restricted to the authenticated admin account.
+                  </p>
+                  <p className="modalSubtext settingsAdminConsoleSubtext">
+                    No admin functions are currently configured in this console.
+                  </p>
+                  <div className="settingsAdminConsolePanel">
+                    <div className="settingsAdminConsolePanelHead">
+                      <div className="settingsAdminConsolePlaceholderLabel">No functions configured</div>
+                      <div className="settingsAdminConsoleHint">
+                        Additional admin actions can be added here later.
+                      </div>
+                    </div>
+                    <div className="settingsAdminConsolePlaceholder" aria-live="polite">
+                      <div className="settingsAdminConsolePlaceholderLabel">Empty console</div>
+                      <div className="settingsAdminConsolePlaceholderValue">
+                        There are no admin functions available right now.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="confirmBtns settingsInlineConfirmBtns">
+                    <button className="btn btn-ghost" type="button" onClick={() => setShowAdminConsoleModal(false)}>
                       Close
                     </button>
                   </div>

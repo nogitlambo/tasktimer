@@ -2731,6 +2731,34 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return Math.max(0, (t.accumulatedMs || 0) + runMs);
   }
 
+  function addRangeMsToLocalDayMap(dayMap: Map<string, number>, startMs: number, endMs: number) {
+    const safeStart = Math.max(0, Math.floor(Number(startMs) || 0));
+    const safeEnd = Math.max(0, Math.floor(Number(endMs) || 0));
+    if (!(safeEnd > safeStart)) return;
+
+    let cursor = safeStart;
+    while (cursor < safeEnd) {
+      const dayStart = new Date(cursor);
+      dayStart.setHours(0, 0, 0, 0);
+      const nextDayStartMs = new Date(
+        dayStart.getFullYear(),
+        dayStart.getMonth(),
+        dayStart.getDate() + 1,
+        0,
+        0,
+        0,
+        0
+      ).getTime();
+      const sliceEnd = Math.min(safeEnd, nextDayStartMs);
+      const sliceMs = Math.max(0, sliceEnd - cursor);
+      if (sliceMs > 0) {
+        const key = localDayKey(cursor);
+        dayMap.set(key, (dayMap.get(key) || 0) + sliceMs);
+      }
+      cursor = sliceEnd;
+    }
+  }
+
   function canLogSession(t: Task) {
     if (!t.hasStarted) return false;
     return getTaskElapsedMs(t) > 0;
@@ -4151,6 +4179,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const key = localDayKey(ts);
         byDayMs.set(key, (byDayMs.get(key) || 0) + ms);
       });
+    });
+
+    tasks.forEach((task) => {
+      if (!task?.running || typeof task.startMs !== "number") return;
+      const runStartMs = Math.max(monthStart.getTime(), Math.floor(task.startMs));
+      const runEndMs = Math.min(monthEnd.getTime(), nowValue);
+      addRangeMsToLocalDayMap(byDayMs, runStartMs, runEndMs);
     });
 
     let maxDayMs = 0;

@@ -56,18 +56,18 @@ export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
 
 export const RANK_LADDER: RankDefinition[] = [
   { id: "unranked", label: "Unranked", minXp: 0 },
-  { id: "initiate", label: "Initiate", minXp: 100 },
-  { id: "operator", label: "Operator", minXp: Number.POSITIVE_INFINITY },
-  { id: "technician", label: "Technician", minXp: Number.POSITIVE_INFINITY },
-  { id: "engineer", label: "Engineer", minXp: Number.POSITIVE_INFINITY },
-  { id: "analyst", label: "Analyst", minXp: Number.POSITIVE_INFINITY },
-  { id: "specialist", label: "Specialist", minXp: Number.POSITIVE_INFINITY },
-  { id: "integrator", label: "Integrator", minXp: Number.POSITIVE_INFINITY },
-  { id: "strategist", label: "Strategist", minXp: Number.POSITIVE_INFINITY },
-  { id: "director", label: "Director", minXp: Number.POSITIVE_INFINITY },
-  { id: "ascendent", label: "Ascendent", minXp: Number.POSITIVE_INFINITY },
-  { id: "commander", label: "Commander", minXp: Number.POSITIVE_INFINITY },
-  { id: "architect", label: "Architect", minXp: Number.POSITIVE_INFINITY },
+  { id: "initiate", label: "Initiate", minXp: 50 },
+  { id: "operator", label: "Operator", minXp: 100 },
+  { id: "technician", label: "Technician", minXp: 300 },
+  { id: "engineer", label: "Engineer", minXp: 600 },
+  { id: "analyst", label: "Analyst", minXp: 1000 },
+  { id: "specialist", label: "Specialist", minXp: 1600 },
+  { id: "integrator", label: "Integrator", minXp: 2200 },
+  { id: "strategist", label: "Strategist", minXp: 2900 },
+  { id: "director", label: "Director", minXp: 3900 },
+  { id: "ascendent", label: "Ascendent", minXp: 4800 },
+  { id: "commander", label: "Commander", minXp: 5800 },
+  { id: "architect", label: "Architect", minXp: 7000 },
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
