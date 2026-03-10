@@ -56,7 +56,7 @@ import {
   saveCloudTaskUi,
   subscribeCloudTaskCollection,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardLoggedSessionXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
+import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
 
 type AppPage = "tasks" | "dashboard" | "test1" | "test2";
@@ -2806,17 +2806,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
-  function countReachedCheckpointsForElapsedMs(t: Task, elapsedMs: number) {
-    if (!t.milestonesEnabled || !Array.isArray(t.milestones) || t.milestones.length === 0) return 0;
-    const elapsedSec = Math.floor(Math.max(0, elapsedMs) / 1000);
-    if (elapsedSec <= 0) return 0;
-    return sortMilestones((t.milestones || []).slice()).filter((milestone) => {
-      const targetSec = Math.max(0, Math.round((+milestone.hours || 0) * milestoneUnitSec(t)));
-      return targetSec > 0 && targetSec <= elapsedSec;
-    }).length;
-  }
-
-  function appendCompletedSessionHistoryAndAwardXp(t: Task, completedAtMs: number, elapsedMs: number) {
+  function appendCompletedSessionHistory(t: Task, completedAtMs: number, elapsedMs: number) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!t || !t.id || safeElapsedMs <= 0) return;
     appendHistory(t.id, {
@@ -2825,21 +2815,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       ms: safeElapsedMs,
       color: sessionColorForTaskMs(t, safeElapsedMs),
     });
-    const reachedCheckpointCount = countReachedCheckpointsForElapsedMs(t, safeElapsedMs);
-    const totalValidCheckpoints =
-      t.milestonesEnabled && Array.isArray(t.milestones)
-        ? sortMilestones((t.milestones || []).slice()).filter((milestone) => {
-            const targetSec = Math.max(0, Math.round((+milestone.hours || 0) * milestoneUnitSec(t)));
-            return targetSec > 0;
-          }).length
-        : 0;
-    if (t.xpDisqualifiedUntilReset) return;
-    const nextAward = awardLoggedSessionXp(rewardProgress, {
+  }
+
+  function awardLaunchXpForTask(t: Task | null | undefined) {
+    if (!t?.id) return;
+    const nextAward = awardTaskLaunchXp(rewardProgress, {
       taskId: String(t.id || ""),
-      completedAt: completedAtMs,
-      elapsedMs: safeElapsedMs,
-      checkpointCount: reachedCheckpointCount,
-      reachedFinalCheckpoint: totalValidCheckpoints > 0 && reachedCheckpointCount >= totalValidCheckpoints,
+      awardedAt: nowMs(),
     });
     rewardProgress = nextAward.next;
     persistPreferencesToCloud();
@@ -3457,6 +3439,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function startTask(i: number) {
     const t = tasks[i];
     if (!t || t.running) return;
+    awardLaunchXpForTask(t);
     t.running = true;
     t.startMs = nowMs();
     t.hasStarted = true;
@@ -3477,7 +3460,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     t.running = false;
     t.startMs = null;
     if (canLogSession(t) && t.accumulatedMs > 0) {
-      appendCompletedSessionHistoryAndAwardXp(t, completedAtMs, t.accumulatedMs);
+      appendCompletedSessionHistory(t, completedAtMs, t.accumulatedMs);
     }
     clearCheckpointBaseline(t.id);
     save();
@@ -3497,7 +3480,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!!opts?.logHistory && canLogSession(t)) {
       const ms = getTaskElapsedMs(t);
       const completedAtMs = nowMs();
-      if (ms > 0) appendCompletedSessionHistoryAndAwardXp(t, completedAtMs, ms);
+      if (ms > 0) appendCompletedSessionHistory(t, completedAtMs, ms);
     }
     t.accumulatedMs = 0;
     t.running = false;
@@ -4682,7 +4665,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           eligibleTasks.forEach((t) => {
             const ms = getTaskElapsedMs(t);
             if (ms > 0) {
-              appendCompletedSessionHistoryAndAwardXp(t, nowMs(), ms);
+              appendCompletedSessionHistory(t, nowMs(), ms);
             }
           });
         }

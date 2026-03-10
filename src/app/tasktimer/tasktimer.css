@@ -814,7 +814,7 @@ body[data-theme="light"] .dashboardPanelMenuItem:hover{
   opacity:.35;
 }
 .appFooterNav{
-  display:grid;
+  display:none;
   grid-template-columns: 1fr;
   gap:8px;
   padding: 12px 10px;
@@ -8781,6 +8781,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDonutCard{ grid-column: span 5; }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineCard{ grid-column: span 5; }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{ grid-column: span 7; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="full"]{ grid-column: span 12; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="half"]{ grid-column: span 6; }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="quarter"]{ grid-column: span 3; }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileGrid{
   margin-top: 16px;
   display: grid;
@@ -8951,6 +8954,9 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{
     grid-column: span 12;
   }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="full"]{ grid-column: span 6; }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="half"]{ grid-column: span 3; }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="quarter"]{ grid-column: span 2; }
 }
 @media (max-width: 640px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
@@ -8974,6 +8980,11 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileGrid{
     grid-template-columns: 1fr;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="full"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="half"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="quarter"]{
+    grid-column: auto;
   }
 }
 
@@ -9356,6 +9367,24 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   }
   #app[aria-label="TaskLaunch App"] .appFooterNav{
     display: grid !important;
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    top: auto !important;
+    bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+    border-right: none !important;
+    border-top: 1px solid rgba(117,231,255,.28) !important;
+    box-shadow: 0 -10px 24px rgba(0,0,0,.34) !important;
+    z-index: 12 !important;
+  }
+  #app[aria-label="TaskLaunch App"] .appFooterBtn{
+    width: auto !important;
+    min-height: 56px !important;
+    padding: 4px 2px !important;
   }
 }
 

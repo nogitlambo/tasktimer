@@ -19,12 +19,62 @@ type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings";
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
   useClientNavButtons?: boolean;
+  showDesktopRail?: boolean;
+  showMobileFooter?: boolean;
+};
+
+type NavItem = {
+  page: DesktopRailPage;
+  label: string;
+  ariaLabel: string;
+  iconSrc: string;
+  desktopId: string;
+  mobileId: string;
+  href: string;
 };
 
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
+const NAV_ITEMS: NavItem[] = [
+  {
+    page: "dashboard",
+    label: "Dashboard",
+    ariaLabel: "Dashboard",
+    iconSrc: "/Dashboard.svg",
+    desktopId: "commandCenterDashboardBtn",
+    mobileId: "footerDashboardBtn",
+    href: "/tasktimer/dashboard",
+  },
+  {
+    page: "tasks",
+    label: "Tasks",
+    ariaLabel: "Tasks",
+    iconSrc: "/Task_List.svg",
+    desktopId: "commandCenterTasksBtn",
+    mobileId: "footerTasksBtn",
+    href: "/tasktimer",
+  },
+  {
+    page: "test2",
+    label: "Friends",
+    ariaLabel: "Friends",
+    iconSrc: "/Groups.svg",
+    desktopId: "commandCenterGroupsBtn",
+    mobileId: "footerTest2Btn",
+    href: "/tasktimer/friends",
+  },
+  {
+    page: "settings",
+    label: "Settings",
+    ariaLabel: "Settings",
+    iconSrc: "/Settings.svg",
+    desktopId: "commandCenterSettingsBtn",
+    mobileId: "footerSettingsBtn",
+    href: "/tasktimer/settings",
+  },
+];
 
 function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
@@ -95,7 +145,79 @@ function initialsFromLabel(label: string) {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
-export default function DesktopAppRail({ activePage, useClientNavButtons = false }: DesktopAppRailProps) {
+function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
+  const isActive = activePage === item.page;
+  const commonProps = {
+    className: `btn btn-ghost small dashboardRailMenuBtn${isActive ? " isOn" : ""}`,
+    "aria-label": item.ariaLabel,
+    ...(isActive ? { "aria-current": "page" as const } : {}),
+  };
+
+  if (useClientNavButtons && item.page !== "settings") {
+    return (
+      <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button">
+        <img className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+        <span className="dashboardRailMenuLabel">{item.label}</span>
+      </button>
+    );
+  }
+
+  return (
+    <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href}>
+      <img className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+      <span className="dashboardRailMenuLabel">{item.label}</span>
+    </a>
+  );
+}
+
+function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
+  const isActive = activePage === item.page;
+  const commonProps = {
+    className: `btn btn-ghost small appFooterBtn${isActive ? " isOn" : ""}`,
+    "aria-label": item.ariaLabel,
+  };
+
+  if (useClientNavButtons && item.page !== "settings") {
+    return (
+      <button key={item.mobileId} {...commonProps} id={item.mobileId} type="button">
+        <img className="appFooterIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+        {item.page === "test2" ? (
+          <span
+            id="footerTest2AlertBadge"
+            className="appFooterAlertBadge"
+            aria-live="polite"
+            aria-atomic="true"
+            style={{ display: "none" }}
+          />
+        ) : null}
+        <span className="appFooterLabel">{item.label}</span>
+      </button>
+    );
+  }
+
+  return (
+    <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href}>
+      <img className="appFooterIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+      {item.page === "test2" ? (
+        <span
+          id="footerTest2AlertBadge"
+          className="appFooterAlertBadge"
+          aria-live="polite"
+          aria-atomic="true"
+          style={{ display: "none" }}
+        />
+      ) : null}
+      <span className="appFooterLabel">{item.label}</span>
+    </a>
+  );
+}
+
+export default function DesktopAppRail({
+  activePage,
+  useClientNavButtons = false,
+  showDesktopRail = true,
+  showMobileFooter = true,
+}: DesktopAppRailProps) {
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
@@ -174,125 +296,71 @@ export default function DesktopAppRail({ activePage, useClientNavButtons = false
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
 
   return (
-    <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
-      <div className="dashboardRailSectionLabel">Navigation</div>
-      <nav className="dashboardRailNav">
-        {useClientNavButtons ? (
-          <>
-            <button
-              className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "dashboard" ? " isOn" : ""}`}
-              id="commandCenterDashboardBtn"
-              type="button"
-              aria-label="Dashboard"
-              aria-current={activePage === "dashboard" ? "page" : undefined}
-            >
-              <img className="dashboardRailMenuIconImage" src="/Dashboard.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Dashboard</span>
-            </button>
-            <button
-              className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "tasks" ? " isOn" : ""}`}
-              id="commandCenterTasksBtn"
-              type="button"
-              aria-label="Tasks"
-            >
-              <img className="dashboardRailMenuIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Tasks</span>
-            </button>
-            <button
-              className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "test2" ? " isOn" : ""}`}
-              id="commandCenterGroupsBtn"
-              type="button"
-              aria-label="Groups"
-            >
-              <img className="dashboardRailMenuIconImage" src="/Groups.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Groups</span>
-            </button>
-            <a className="btn btn-ghost small dashboardRailMenuBtn" id="commandCenterSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
-              <img className="dashboardRailMenuIconImage" src="/Settings.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Settings</span>
-            </a>
-          </>
-        ) : (
-          <>
-            <a
-              className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "dashboard" ? " isOn" : ""}`}
-              href="/tasktimer/dashboard"
-              aria-label="Dashboard"
-              aria-current={activePage === "dashboard" ? "page" : undefined}
-            >
-              <img className="dashboardRailMenuIconImage" src="/Dashboard.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Dashboard</span>
-            </a>
-            <a className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "tasks" ? " isOn" : ""}`} href="/tasktimer" aria-label="Tasks">
-              <img className="dashboardRailMenuIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Tasks</span>
-            </a>
-            <a className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "test2" ? " isOn" : ""}`} href="/tasktimer/friends" aria-label="Groups">
-              <img className="dashboardRailMenuIconImage" src="/Groups.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Groups</span>
-            </a>
-            <a
-              className={`btn btn-ghost small dashboardRailMenuBtn${activePage === "settings" ? " isOn" : ""}`}
-              href="/tasktimer/settings"
-              aria-label="Settings"
-              aria-current={activePage === "settings" ? "page" : undefined}
-            >
-              <img className="dashboardRailMenuIconImage" src="/Settings.svg" alt="" aria-hidden="true" />
-              <span className="dashboardRailMenuLabel">Settings</span>
-            </a>
-          </>
-        )}
-      </nav>
+    <>
+      {showDesktopRail ? (
+        <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
+          <div className="dashboardRailSectionLabel">Navigation</div>
+          <nav className="dashboardRailNav">
+            {NAV_ITEMS.map((item) => renderDesktopNavItem(item, activePage, useClientNavButtons))}
+          </nav>
 
-      <div className="dashboardRailSectionLabel">Profile</div>
-      <section className="dashboardCard dashboardProfileCard dashboardRailProfileSummary" aria-label="Profile summary">
-        <div className="dashboardCardTitle">Profile Summary</div>
-        <div className="dashboardProfileHead dashboardRailProfileHead">
-          {profileAvatarSrc ? (
-            <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
-          ) : (
-            <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
-          )}
-          <div className="dashboardRailProfileIdentity">
-            <div className="dashboardProfileName">{profileLabel}</div>
-            <a className="dashboardProfileMeta dashboardRailProfileEditLink" href="/tasktimer/settings?pane=general">
-              Edit Profile
-            </a>
-          </div>
-          <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
-            {displayedRankThumbnailSrc ? (
-              <img className="dashboardRailRankBadge" src={displayedRankThumbnailSrc} alt="" aria-hidden="true" />
-            ) : null}
-          </div>
-        </div>
-        <div className="dashboardTagRow dashboardRailProfileTags">
-          <span className="dashboardTag">{profileEmail || "Signed in account"}</span>
-        </div>
-        <div className="dashboardProfileGrid dashboardRailProfileGrid">
-          <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">
-            <div className="dashboardRailProfileXpHead">
-              <span>XP Progress</span>
-              <strong>{rewardsHeader.totalXp} XP</strong>
+          <div className="dashboardRailSectionLabel">Profile</div>
+          <section className="dashboardCard dashboardProfileCard dashboardRailProfileSummary" aria-label="Profile summary">
+            <div className="dashboardCardTitle">Profile Summary</div>
+            <div className="dashboardProfileHead dashboardRailProfileHead">
+              {profileAvatarSrc ? (
+                <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+              ) : (
+                <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+              )}
+              <div className="dashboardRailProfileIdentity">
+                <div className="dashboardProfileName">{profileLabel}</div>
+                <a className="dashboardProfileMeta dashboardRailProfileEditLink" href="/tasktimer/settings?pane=general">
+                  Edit Profile
+                </a>
+              </div>
+              <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
+                {displayedRankThumbnailSrc ? (
+                  <img className="dashboardRailRankBadge" src={displayedRankThumbnailSrc} alt="" aria-hidden="true" />
+                ) : null}
+              </div>
             </div>
-            <div className="progressTrack dashboardRailProfileXpTrack" aria-hidden="true">
-              <div className="progressFill dashboardRailProfileXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+            <div className="dashboardTagRow dashboardRailProfileTags">
+              <span className="dashboardTag">{profileEmail || "Signed in account"}</span>
             </div>
-            <div className="dashboardRailProfileXpMeta">
-              <span>{rewardsHeader.progressLabel}</span>
-              <span>
-                {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
-              </span>
+            <div className="dashboardProfileGrid dashboardRailProfileGrid">
+              <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">
+                <div className="dashboardRailProfileXpHead">
+                  <span>XP Progress</span>
+                  <strong>{rewardsHeader.totalXp} XP</strong>
+                </div>
+                <div className="progressTrack dashboardRailProfileXpTrack" aria-hidden="true">
+                  <div className="progressFill dashboardRailProfileXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                </div>
+                <div className="dashboardRailProfileXpMeta">
+                  <span>{rewardsHeader.progressLabel}</span>
+                  <span>
+                    {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <div className="dashboardRailPromo">
-        <span className="dashboardRailPromoBadge">Pro</span>
-        <h3>Upgrade your mission panel</h3>
-        <p>Unlock more visual modules and deeper reporting without changing your current workflow.</p>
-        <button className="btn btn-accent" type="button">Get Pro Plan</button>
-      </div>
-    </aside>
+          <div className="dashboardRailPromo">
+            <span className="dashboardRailPromoBadge">Pro</span>
+            <h3>Upgrade your mission panel</h3>
+            <p>Unlock more visual modules and deeper reporting without changing your current workflow.</p>
+            <button className="btn btn-accent" type="button">Get Pro Plan</button>
+          </div>
+        </aside>
+      ) : null}
+
+      {showMobileFooter ? (
+        <div className="appFooterNav" aria-label="App pages">
+          {NAV_ITEMS.map((item) => renderMobileNavItem(item, activePage, useClientNavButtons))}
+        </div>
+      ) : null}
+    </>
   );
 }

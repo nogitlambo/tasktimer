@@ -35,7 +35,11 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
           <SignedInHeaderBadge />
         </div>
         <div className="desktopAppShell">
-          <DesktopAppRail activePage={initialAppPage === "dashboard" ? "dashboard" : initialAppPage === "test2" ? "test2" : "tasks"} useClientNavButtons />
+          <DesktopAppRail
+            activePage={initialAppPage === "dashboard" ? "dashboard" : initialAppPage === "test2" ? "test2" : "tasks"}
+            useClientNavButtons
+            showMobileFooter={false}
+          />
           <div className="desktopAppMain">
             <div className="modeSwitchWrap modeSwitchNoBrackets" style={{ display: "flex", justifyContent: "center" }}>
               <div className="modeSwitch" id="modeSwitch" aria-label="View modes">
@@ -340,7 +344,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
             </div>
           </section>
 
-          <section className={`appPage${initialAppPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Groups page">
+          <section className={`appPage${initialAppPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">
               <div className="dashboardTopRow">
                 <div className="dashboardTitleWrap">
@@ -401,33 +405,13 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
             </div>
           </section>
             </div>
-            <div className="appFooterNav" aria-label="App pages">
-              <button className={`btn btn-ghost small appFooterBtn${initialAppPage === "dashboard" ? " isOn" : ""}`} id="footerDashboardBtn" type="button" aria-label="Dashboard">
-                <img className="appFooterIconImage" src="/Dashboard.svg" alt="" aria-hidden="true" />
-                <span className="appFooterLabel">Dashboard</span>
-              </button>
-              <button className={`btn btn-ghost small appFooterBtn${initialAppPage === "tasks" ? " isOn" : ""}`} id="footerTasksBtn" type="button" aria-label="Tasks">
-                <img className="appFooterIconImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-                <span className="appFooterLabel">Tasks</span>
-              </button>
-              <button className={`btn btn-ghost small appFooterBtn${initialAppPage === "test2" ? " isOn" : ""}`} id="footerTest2Btn" type="button" aria-label="Groups">
-                <img className="appFooterIconImage" src="/Groups.svg" alt="" aria-hidden="true" />
-                <span
-                  id="footerTest2AlertBadge"
-                  className="appFooterAlertBadge"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  style={{ display: "none" }}
-                />
-                <span className="appFooterLabel">Friends</span>
-              </button>
-              <a className="btn btn-ghost small appFooterBtn" id="footerSettingsBtn" href="/tasktimer/settings" aria-label="Settings">
-                <img className="appFooterIconImage" src="/Settings.svg" alt="" aria-hidden="true" />
-                <span className="appFooterLabel">Settings</span>
-              </a>
-            </div>
           </div>
         </div>
+        <DesktopAppRail
+          activePage={initialAppPage === "dashboard" ? "dashboard" : initialAppPage === "test2" ? "test2" : "tasks"}
+          useClientNavButtons
+          showDesktopRail={false}
+        />
       </div>
 
       <AddTaskOverlay />
