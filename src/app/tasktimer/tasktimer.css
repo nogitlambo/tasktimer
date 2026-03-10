@@ -174,20 +174,6 @@ body{
 .modeSwitchWrap.modeSwitchNoBrackets::after{
   display:none;
 }
-.modeSwitchLabel{
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color: var(--mode-accent);
-  line-height:1;
-  margin-bottom:2px;
-  position:relative;
-  top:-4px;
-  padding:0 10px;
-  background: transparent;
-  z-index:1;
-}
 body[data-app-page="dashboard"] #modeSwitch,
 body[data-app-page="test1"] #modeSwitch,
 body[data-app-page="test2"] #modeSwitch{
@@ -268,22 +254,6 @@ body[data-app-page="test2"] .appPages{
 .appPagePlaceholder p{
   margin:0;
   color: rgba(210,230,246,.8);
-}
-.dashboardShowcase{
-  margin:18px;
-  padding:14px;
-  border:1px solid rgba(121,226,255,.2);
-  background:
-              linear-gradient(150deg, rgba(46,232,255,.08), rgba(0,0,0,0) 28%),
-              linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-              rgba(14,23,42,.82);
-  box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
-}
-.dashboardShowcaseImage{
-  display:block;
-  width:100%;
-  height:auto;
-  border:1px solid rgba(117,231,255,.26);
 }
 .dashboardShell{
   margin:18px;
@@ -927,29 +897,6 @@ body[data-theme="light"] .appFooterAlertBadge{
   color: rgba(63,233,255,.95);
   text-shadow: 0 0 8px rgba(0,220,255,.5);
   line-height:1;
-}
-.modePanel{
-  margin: 18px;
-  padding: 26px 24px;
-  border:1px solid rgba(121,226,255,.2);
-  background:
-              linear-gradient(150deg, rgba(46,232,255,.08), rgba(0,0,0,0) 28%),
-              linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-              rgba(14,23,42,.82);
-  box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
-}
-.modePanelTitle{
-  font-family:var(--font-tight);
-  font-size:22px;
-  font-weight:800;
-  letter-spacing:.08em;
-  color: rgba(142,242,255,.96);
-  text-transform:uppercase;
-}
-.modePanelText{
-  margin-top:8px;
-  color: rgba(210,230,246,.8);
-  font-size:14px;
 }
 .btn{
   border:none;
@@ -2329,9 +2276,6 @@ optgroup{
 .settingsAuthItem{
   text-align:center;
 }
-.settingsBottomLock{
-  margin-top:auto;
-}
 #resetAllBtn{
   color:#ff4d4d;
 }
@@ -2376,157 +2320,6 @@ optgroup{
   font-weight:700;
   line-height:1;
 }
-.settingsHeroPanel{
-  display:grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(220px, .75fr);
-  gap:14px;
-  padding:14px;
-  border:1px solid rgba(53,232,255,.18);
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(53,232,255,.10), transparent 55%),
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 12px 26px rgba(0,0,0,.24);
-}
-.settingsHeroCopy{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  min-width:0;
-}
-.settingsHeroKicker{
-  font-family:var(--font-tight);
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color: rgba(163,233,246,.88);
-}
-.settingsHeroTitle{
-  margin:0;
-  font-family:var(--font-tight);
-  font-size:clamp(18px, 2vw, 26px);
-  line-height:1.08;
-  color:#f3fbff;
-}
-.settingsHeroText{
-  margin:0;
-  color: rgba(204,224,236,.78);
-  font-size:13px;
-  line-height:1.4;
-  max-width:56ch;
-}
-.settingsHeroStats{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap:8px;
-  margin-top:4px;
-}
-.settingsHeroStat{
-  border:1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.02);
-  padding:8px 10px;
-  min-height:56px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-.settingsHeroStatLabel{
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  color: rgba(190,216,228,.65);
-}
-.settingsHeroStatValue{
-  font-family:var(--font-tight);
-  font-size:12px;
-  letter-spacing:.08em;
-  color:#ffffff;
-}
-.settingsHeroPreview{
-  display:grid;
-  gap:10px;
-  align-content:start;
-}
-.settingsPreviewCard{
-  border:1px solid rgba(255,255,255,.09);
-  background: rgba(255,255,255,.02);
-  padding:10px 12px;
-  min-height:96px;
-}
-.settingsPreviewCardPrimary{
-  background: linear-gradient(180deg, rgba(53,232,255,.10), rgba(255,255,255,.02));
-  border-color: rgba(53,232,255,.18);
-}
-.settingsPreviewCardAccent{
-  border-color: rgba(53,232,255,.14);
-}
-.settingsPreviewCardHeader{
-  font-family:var(--font-tight);
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color: rgba(232,247,255,.92);
-  margin-bottom:8px;
-}
-.settingsPreviewRows{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.settingsPreviewRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  color: rgba(214,231,240,.82);
-  font-size:12px;
-}
-.settingsPreviewDot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:#35e8ff;
-  box-shadow: 0 0 10px rgba(53,232,255,.45);
-  flex:0 0 auto;
-}
-.settingsPreviewMeter{
-  height:8px;
-  border:1px solid rgba(53,232,255,.16);
-  background: rgba(255,255,255,.03);
-  margin:8px 0 10px;
-}
-.settingsPreviewMeterFill{
-  width:78%;
-  height:100%;
-  background: linear-gradient(90deg, rgba(53,232,255,.95), rgba(0,155,255,.9));
-  box-shadow: 0 0 10px rgba(53,232,255,.25);
-}
-.settingsPreviewMeta{
-  color: rgba(197,220,232,.7);
-  font-size:11px;
-}
-.settingsModuleGroup{
-  border:1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.015);
-  padding:10px;
-}
-.settingsMenu .settingsModuleGroup .settingsSectionLabel{
-  text-align:left;
-  margin:0 0 8px;
-  padding:0;
-  color: rgba(176,208,220,.72);
-}
-.settingsModuleGrid{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap:10px;
-  align-items:stretch;
-}
-.settingsModuleGridWide{
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
 /* Settings screen restyled to match dashboard surface language */
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
   margin:18px;
@@ -2558,67 +2351,6 @@ optgroup{
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .menuList{
   gap:12px;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsHeroPanel,
-#app[aria-label="TaskLaunch Settings"] .settingsModuleGroup{
-  border:1px solid rgba(121,226,255,.2);
-  background:#0d0f13 !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroPanel{
-  background:
-    linear-gradient(150deg, rgba(46,232,255,.06), rgba(0,0,0,0) 28%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    #0d0f13 !important;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroKicker{
-  color: rgba(190,240,255,.72);
-  font-size:11px;
-  letter-spacing:.12em;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroTitle{
-  font-family:var(--font-tight);
-  font-size:24px;
-  font-weight:800;
-  letter-spacing:.04em;
-  line-height:1.1;
-  color: rgba(142,242,255,.96);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroText{
-  color: rgba(210,230,246,.8);
-  font-size:14px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroStat,
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewCard{
-  border:1px solid rgba(121,226,255,.2);
-  background: rgba(255,255,255,.02);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsHeroStatValue{
-  color: rgba(240,250,255,.96);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewCardHeader{
-  color: rgba(190,240,255,.8);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewRow,
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeta,
-#app[aria-label="TaskLaunch Settings"] .settingsHeroStatLabel{
-  color: rgba(188,214,230,.76);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeter{
-  border-color: rgba(117,231,255,.2);
-  background: rgba(0,0,0,.28);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsPreviewMeterFill{
-  background: linear-gradient(90deg, var(--accent), var(--accent3));
-  box-shadow: 0 0 8px rgba(53,232,255,.28);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsModuleGroup .settingsSectionLabel{
-  color: rgba(190,240,255,.8);
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem{
   border:1px solid rgba(121,226,255,.2);
   background:#0d0f13 !important;
@@ -2629,14 +2361,6 @@ optgroup{
   border-color: rgba(53,232,255,.34);
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.10), 0 0 10px rgba(0,220,255,.12);
   transform: translateY(-1px);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthItem{
-  min-height:52px;
-  aspect-ratio:auto;
-  justify-content:center;
-  font-size:13px;
-  letter-spacing:.04em;
-  text-transform:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenuItemText{
   color: rgba(228,248,255,.94);
@@ -2822,15 +2546,6 @@ optgroup{
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap:10px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsActionGridStack{
-  grid-template-columns: 1fr;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsActionWide{
-  grid-column: 1 / -1;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsActionRows{
-  gap:8px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsActionRow{
   min-height:54px;
@@ -3029,44 +2744,6 @@ optgroup{
 #app[aria-label="TaskLaunch Settings"] .settingsSyncStatusTime{
   color:rgba(188,214,230,.8);
 }
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyBlock{
-  margin-top:10px;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:6px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyBtn{
-  min-height:28px;
-  padding:4px 10px;
-  font-size:10px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyValue{
-  font-family: var(--font-tight);
-  font-size:12px;
-  letter-spacing:.08em;
-  color:#ffffff;
-  white-space: nowrap;
-  line-height: 1;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyRow{
-  width:100%;
-  display:flex;
-  flex-wrap:nowrap;
-  align-items:center;
-  justify-content:flex-start;
-  gap:8px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyActions{
-  display:flex;
-  gap:6px;
-  align-items:center;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyActionBtn{
-  min-height:24px;
-  padding:3px 8px;
-  font-size:10px;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsAuthActionsInline{
   justify-content:flex-end;
   margin-top:8px;
@@ -3079,14 +2756,6 @@ optgroup{
   min-height:24px;
   padding:3px 8px;
   font-size:10px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyRemoveBtn{
-  border-color: rgba(255,77,77,.28);
-  color:#ffb1b1;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyCopyStatus{
-  font-size:11px;
-  color: rgba(190,240,255,.88);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmOverlay{
   position: fixed;
@@ -3127,10 +2796,6 @@ optgroup{
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmBtns{
   margin-top: 12px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsFriendKeyExpiry{
-  font-size:11px;
-  color: rgba(188,214,230,.82);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineStack{
   display:flex;
@@ -3250,13 +2915,6 @@ optgroup{
   border:1px solid rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
 }
-#app[aria-label="TaskLaunch Settings"] .settingsPreferencesFooter{
-  justify-content:space-between;
-  align-items:center;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsPreferencesFooter .btn:last-child{
-  margin-left:auto;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection select,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   width:100%;
@@ -3355,14 +3013,6 @@ optgroup{
   font-size:12px;
   font-weight:700;
   line-height:1;
-}
-.userGuideMenu .menuList.userGuideMenuBody{
-  display:block;
-  padding-top:2px;
-}
-.userGuideMenu .userGuideToc,
-.userGuideMenu .userGuideTopicScreen{
-  margin:0;
 }
 @media (hover: hover) and (pointer: fine){
   .settingsMenu .menuItem:hover{
@@ -3500,21 +3150,6 @@ optgroup{
   flex-wrap:nowrap;
   color: rgba(255,255,255,.70);
   font-size:12px;
-}
-.historySwipeHint{
-  margin: 0;
-  text-align:left;
-  font-size:12px;
-  font-style:italic;
-  color: rgba(255,255,255,.7);
-  white-space:nowrap;
-}
-.historySwipeHintBottom{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  text-align:center;
-  pointer-events:none;
 }
 .historyRangeToggleRow{
   display:flex;
@@ -4020,14 +3655,6 @@ optgroup{
 #focusStopBtn{
   color:#ff4d4d;
 }
-.focusDialLabel{
-  font-family:var(--font-tight);
-  font-size:clamp(14px, 1.8vw, 20px);
-  letter-spacing:.24em;
-  color: rgba(63,233,255,.95);
-  text-shadow: 0 0 8px rgba(0,220,255,.8);
-  text-transform:uppercase;
-}
 .focusInsights{
   width:min(82vw, 620px);
   margin: 22px auto 0;
@@ -4037,11 +3664,6 @@ optgroup{
   box-shadow: inset 0 0 16px rgba(0,180,255,.08);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-.focusModeExitWrap{
-  display:flex;
-  justify-content:center;
-  margin: 16px 0 8px;
 }
 .focusInsightsTitle{
   margin-bottom:8px;
@@ -4336,168 +3958,10 @@ optgroup{
   justify-content:flex-end;
   align-items:flex-start;
 }
-.userGuideBackBtn{
-  width:auto;
-  min-width:88px;
-  flex:0 0 auto;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-.userGuideToc{
-  grid-column:1 / -1;
-  border:1px solid rgba(255,255,255,.12);
-  background: #0d0f13 !important;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-.userGuideTocHeader{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:2px;
-}
-.userGuideGrid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap:10px;
-}
-.userGuideTopicTile{
-  text-align:center;
-  width:100%;
-  min-height:112px;
-  aspect-ratio:1/1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  padding:12px 14px;
-}
-.userGuideTopicTile .userGuideTocItemMain{
-  flex-direction:column;
-  justify-content:space-between;
-  align-items:center;
-  gap:6px;
-  width:100%;
-  height:100%;
-}
-.userGuideTopicTile .userGuideTocItemMain > span{
-  white-space:normal;
-  text-align:center;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  font-size:12px;
-  font-weight:700;
-  line-height:1.15;
-  margin-top:auto;
-}
-.userGuideTopicTile .userGuideIcon{
-  width:100%;
-  height:100%;
-  max-width:56px;
-  max-height:56px;
-  filter:none;
-}
-.userGuideTopicScreen{
-  margin:0;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-.userGuideTopicScreenHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:10px;
-  padding-bottom:10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.userGuideTopicScreenHead h3{
-  margin:0;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-family:var(--font-tight);
-  font-size:15px;
-  color: rgba(142,242,255,.96);
-}
 .userGuideTopic{
   display:flex;
   flex-direction:column;
   gap:8px;
-}
-.userGuideTopicCard{
-  margin:0;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-.userGuideTopicPanel{
-  margin:0;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-.userGuideTocTitle{
-  font-family:var(--font-tight);
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color: rgba(190,240,255,.9);
-  margin-bottom:4px;
-}
-.userGuideTocSubtext{
-  font-size:11px;
-  color: rgba(170,200,218,.68);
-  text-align:right;
-}
-.userGuideTocItem{
-  text-align:left;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
-  color:var(--text);
-  padding:8px 10px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  font-family:var(--font-tight);
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-}
-.userGuideTocItemMain{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  min-width:0;
-}
-.userGuideTocItemMain > span{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.userGuideTocItemArrow{
-  flex:0 0 auto;
-  width:18px;
-  text-align:center;
-  color: rgba(142,242,255,.85);
-  font-weight:800;
-  line-height:1;
-}
-.userGuideTocItem:hover{
-  background: rgba(255,255,255,.10);
-}
-.userGuideTocItem.isOn{
-  background: linear-gradient(180deg, rgba(53,232,255,.22), rgba(255,255,255,.06));
-  border-color: rgba(53,232,255,.45);
-  box-shadow: 0 0 10px rgba(53,232,255,.2);
-}
-.userGuideScroll{
-  min-height:0;
-  overflow-y:auto;
-  padding-right:4px;
 }
 .userGuideText{
   line-height:1.55;
@@ -4766,8 +4230,7 @@ body[data-theme="light"] .focusDialInner{
   box-shadow: inset 0 0 20px rgba(0,151,199,.12);
 }
 body[data-theme="light"] .focusDialTime,
-body[data-theme="light"] .focusDialDays,
-body[data-theme="light"] .focusDialLabel{
+body[data-theme="light"] .focusDialDays{
   color:#005f7f;
   text-shadow: 0 0 1px rgba(0,151,199,.2);
 }
@@ -4818,11 +4281,8 @@ body[data-theme="light"] .hmExpandIcon{
   color:#111111;
 }
 body[data-theme="light"] .appPagePlaceholder,
-body[data-theme="light"] .dashboardShowcase,
 body[data-theme="light"] .dashboardShell,
 body[data-theme="light"] .dashboardCard,
-body[data-theme="light"] .modePanel,
-body[data-theme="light"] .userGuideToc,
 body[data-theme="light"] .userGuideWindow,
 body[data-theme="light"] .focusInsights{
   background: #0d0f13;
@@ -4830,19 +4290,15 @@ body[data-theme="light"] .focusInsights{
   box-shadow: none;
 }
 body[data-theme="light"] .appPagePlaceholder h2,
-body[data-theme="light"] .modePanelTitle,
 body[data-theme="light"] .historyTitle,
 body[data-theme="light"] .hmTitle,
 body[data-theme="light"] .userGuideSection h3,
-body[data-theme="light"] .userGuideTocTitle,
 body[data-theme="light"] .focusInsightsTitle{
   color:#111111;
   text-shadow:none;
 }
 body[data-theme="light"] .appPagePlaceholder p,
-body[data-theme="light"] .modePanelText,
 body[data-theme="light"] .historyBest,
-body[data-theme="light"] .historySwipeHint,
 body[data-theme="light"] .focusInsightLabel,
 body[data-theme="light"] .focusInsightValue,
 body[data-theme="light"] .userGuideText,
@@ -4850,58 +4306,8 @@ body[data-theme="light"] .userGuideSection p,
 body[data-theme="light"] .userGuideShotPlaceholder{
   color: rgba(0,0,0,.72);
 }
-body[data-theme="light"] .userGuideTocItem{
-  color:#111111;
-  border-color: rgba(0,0,0,.2);
-  background: rgba(255,255,255,.9);
-}
-body[data-theme="light"] .userGuideTopicTile{
-  color:#111111;
-  box-shadow:none;
-}
-body[data-theme="light"] .userGuideTopicScreenHead{
-  border-bottom-color: rgba(0,0,0,.08);
-}
-body[data-theme="light"] .userGuideTopicScreenHead h3{
-  color:#111111;
-}
 body[data-theme="light"] .settingsMenuItemIcon{
   filter:none;
-}
-body[data-theme="light"] .settingsHeroPanel,
-body[data-theme="light"] .settingsModuleGroup,
-body[data-theme="light"] .settingsPreviewCard,
-body[data-theme="light"] .settingsHeroStat{
-  background: #0d0f13;
-  border-color: rgba(0,0,0,.15);
-  box-shadow:none;
-}
-body[data-theme="light"] .settingsHeroTitle,
-body[data-theme="light"] .settingsHeroStatValue,
-body[data-theme="light"] .settingsPreviewCardHeader{
-  color:#111111;
-  text-shadow:none;
-}
-body[data-theme="light"] .settingsHeroKicker,
-body[data-theme="light"] .settingsHeroText,
-body[data-theme="light"] .settingsHeroStatLabel,
-body[data-theme="light"] .settingsPreviewRow,
-body[data-theme="light"] .settingsPreviewMeta{
-  color: rgba(0,0,0,.72);
-}
-body[data-theme="light"] .userGuideTocItem:hover{
-  background: rgba(0,0,0,.06);
-}
-body[data-theme="light"] .userGuideTocItem.isOn{
-  background: rgba(0,207,200,.16);
-  border-color: rgba(0,151,199,.45);
-  box-shadow: none;
-}
-body[data-theme="light"] .modeBracketLine,
-body[data-theme="light"] .modeBracketText{
-  color: #111111;
-  border-color: currentColor;
-  text-shadow:none;
 }
 body[data-theme="light"] .logo{
   filter:none;
@@ -5129,45 +4535,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
     font-size:11px;
     text-align:center;
   }
-  .settingsHeroPanel{
-    grid-template-columns: 1fr;
-    gap:10px;
-  }
-  .settingsHeroPreview{
-    grid-template-columns: 1fr 1fr;
-  }
-  .settingsModuleGrid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .settingsModuleGridWide{
-    grid-template-columns: 1fr;
-  }
   #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
-  }
-  .userGuideToc{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  .userGuideGrid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap:8px;
-  }
-  .userGuideTopicTile{
-    min-height:112px;
-    padding:12px 14px;
-  }
-  .userGuideTocTitle{ grid-column: auto; }
-  .userGuideTocHeader{
-    flex-direction:column;
-    align-items:flex-start;
-  }
-  .userGuideTocSubtext{
-    text-align:left;
-  }
-  .userGuideScroll{
-    padding-right:0;
   }
 }
 
@@ -5244,10 +4613,6 @@ body[data-theme="light"] .dashboardHeatDayNum{
     top:7px;
     width:max(12px, calc(50% - 52px));
   }
-  .modeSwitchLabel{
-    top:0;
-    margin-bottom:4px;
-  }
   .appFooterBtn{
     min-height:62px;
   }
@@ -5292,10 +4657,6 @@ body[data-theme="light"] .dashboardHeatDayNum{
   }
   .row2,
   .row3{
-    flex-direction:column;
-  }
-  .userGuideToc{
-    display:flex;
     flex-direction:column;
   }
   #app[aria-label="TaskLaunch Settings"] .list{
@@ -5388,24 +4749,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
   .settingsMenu .menuTitle{
     font-size:18px;
   }
-  .settingsHeroPanel{
-    padding:10px;
-  }
-  .settingsHeroStats{
-    grid-template-columns: 1fr;
-  }
-  .settingsHeroPreview{
-    grid-template-columns: 1fr;
-  }
-  .settingsModuleGrid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap:8px;
-  }
   #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
-  }
-  .userGuideGrid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .userGuideShotImage{
     min-height:120px;
@@ -5818,27 +5163,6 @@ details.milestones.on:not([open]) > #addTaskMsUnitRow{
   padding:10px 12px;
   border:1px solid rgba(255,220,80,.2);
   background: rgba(255,220,80,.04);
-}
-.checkpointToastCounterInline{
-  margin-top:12px;
-  padding:0;
-}
-.checkpointToastSummaryLabel{
-  margin:0 0 8px;
-  font-family:var(--font-tight);
-  font-size:10px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color: rgba(255,240,180,.92);
-}
-.checkpointToastCounterValue{
-  margin:0;
-  text-align:center;
-  font-family: var(--font-tight);
-  font-weight:700;
-  letter-spacing:.08em;
-  color:#ffffff;
-  text-shadow: 0 0 10px rgba(53,232,255,.16);
 }
 .checkpointToastText{
   margin:0;
@@ -6419,16 +5743,6 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   gap:10px;
   padding-top:2px;
 }
-.settingsMenu .settingsAccountTopRow{
-  display:flex;
-  align-items:flex-start;
-  gap:16px;
-  flex-wrap:wrap;
-}
-.settingsMenu .settingsAccountAliasCol{
-  flex:1 1 220px;
-  min-width:180px;
-}
 .settingsMenu .settingsAccountRankCol{
   flex:0 0 auto;
   min-width:60px;
@@ -6491,84 +5805,6 @@ body[data-theme="light"] #exportTaskOverlay .modal{
   height:100%;
   display:block;
   object-fit:cover;
-}
-.settingsMenu .settingsAliasEditBtn{
-  width:26px;
-  height:26px;
-  min-width:26px;
-  padding:4px;
-}
-.settingsMenu .settingsAliasEditBtn svg{
-  width:16px;
-  height:16px;
-  fill:currentColor;
-}
-.settingsMenu .settingsAccountAliasEditor{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.settingsMenu .settingsAccountAliasInput{
-  min-width:180px;
-  max-width:240px;
-  height:34px;
-  padding:0 10px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.03);
-  color:#fff;
-  clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
-}
-.settingsMenu .settingsAccountAliasInput:focus{
-  outline:1px solid rgba(53,232,255,.55);
-  border-color:rgba(53,232,255,.55);
-}
-.settingsMenu .settingsAuthChooser{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-.settingsMenu .settingsAuthOptionBtn{
-  width:100%;
-  min-height:38px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.35);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  padding:10px 14px;
-  border-radius:999px;
-  cursor:pointer;
-  font-weight:700;
-}
-.settingsMenu .settingsAuthOptionBtn:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-}
-.settingsMenu .settingsAuthOptionBtn:hover:not(:disabled){
-  border-color:rgba(53,232,255,.35);
-}
-.settingsMenu .settingsAuthOptionBtn:focus-visible{
-  outline:2px solid rgba(53,232,255,.6);
-  outline-offset:2px;
-}
-.settingsMenu .settingsAuthOptionIcon{
-  width:18px;
-  height:18px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-.settingsMenu .settingsAuthOptionIcon svg{
-  width:18px;
-  height:18px;
-  display:block;
-  fill:currentColor;
-}
-.settingsMenu .settingsAuthEmailForm{
-  margin-top:2px;
 }
 .settingsMenu .accountAvatarFrameBtn{
   align-self:flex-start;
@@ -6705,26 +5941,6 @@ body.light .settingsMenu .settingsAccountRankPlaceholder{
 }
 body.light .settingsMenu .settingsAccountRankPlaceholderInner{
   border-color:rgba(0,133,160,.35);
-}
-body.light .settingsMenu .settingsAccountAliasInput{
-  border-color:rgba(0,0,0,.14);
-  background:rgba(255,255,255,.8);
-  color:#17343c;
-}
-body.light .settingsMenu .settingsAccountAliasInput:focus{
-  outline:1px solid rgba(0,133,160,.5);
-  border-color:rgba(0,133,160,.5);
-}
-body.light .settingsMenu .settingsAuthOptionBtn{
-  border-color:rgba(0,0,0,.12);
-  background:rgba(255,255,255,.82);
-  color:#12262c;
-}
-body.light .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled){
-  border-color:rgba(0,133,160,.35);
-}
-body.light .settingsMenu .settingsAuthOptionBtn:focus-visible{
-  outline:2px solid rgba(0,133,160,.5);
 }
 body.light .settingsMenu .settingsAvatarOption{
   border-color:rgba(0,0,0,.14);
@@ -7050,7 +6266,6 @@ body.light #editOverlay .editPresetIntervalsInfoDialog{
   #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell,
   #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShowcase,
   #app[aria-label="TaskLaunch App"] #appPageDashboard .appPagePlaceholder,
-  #app[aria-label="TaskLaunch App"] #appPageTasks .modePanel,
   #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell{
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -7058,13 +6273,6 @@ body.light #editOverlay .editPresetIntervalsInfoDialog{
 }
 
 /* Final Tasks-only Command Base Console theme experiment */
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .modePanel{
-  border-color: rgba(116,184,208,.28);
-  background:
-    linear-gradient(180deg, rgba(104,184,212,.06), rgba(255,255,255,0)),
-    #0a1117;
-  box-shadow: 0 12px 26px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
-}
 body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
   gap: 10px;
 }
@@ -7128,13 +6336,9 @@ body.light #confirmOverlay.isDeleteTaskConfirm .confirmText{
 }
 
 /* Final Settings Account-module override: footer-style border outline language on account controls. */
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-radius: 0 !important;
@@ -7142,50 +6346,34 @@ body.light #confirmOverlay.isDeleteTaskConfirm .confirmText{
   border-color: rgba(53,232,255,.42);
   box-shadow: 0 0 0 1px rgba(53,232,255,.18) inset, 0 0 10px rgba(0,220,255,.14);
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(53,232,255,.56);
   box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 12px rgba(0,220,255,.2);
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:focus-visible,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:focus-visible .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:focus-visible,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:focus-visible,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
   border-color: rgba(53,232,255,.64);
   box-shadow: 0 0 0 1px rgba(53,232,255,.25) inset, 0 0 14px rgba(0,220,255,.24);
 }
 
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-color: rgba(0,133,160,.42);
   box-shadow: 0 0 0 1px rgba(0,133,160,.16) inset, 0 0 8px rgba(0,133,160,.14);
 }
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(0,133,160,.52);
@@ -7318,7 +6506,6 @@ body[data-control-style="square"] .switch,
 body[data-control-style="square"] .switch::after,
 body[data-control-style="square"] .timePanel,
 body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .accountAvatarPlaceholder,
-body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasInput,
 body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarPlaceholder,
 body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAvatarOption{
   border-radius: 0 !important;
@@ -8001,13 +7188,6 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   justify-content: center;
   width: 100%;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountTopRow{
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: nowrap;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
   display:grid;
   grid-template-columns:minmax(150px, 1fr) minmax(150px, 1fr) minmax(220px, 1.35fr) minmax(140px, .9fr) minmax(180px, 1fr);
@@ -8027,35 +7207,6 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   line-height:1.2;
   overflow-wrap:anywhere;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRankRow{
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap{
-  flex: 0 0 auto;
-  width: fit-content;
-  max-width: 100%;
-  min-width: 0;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap .settingsAccountFieldValue{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountMemberSinceInline{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  line-height: 1.2;
-  color: #c8ecf2;
-  white-space: nowrap;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountFieldRow > .settingsAccountMemberSinceInline{
-  min-height: 20px;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
   margin-left: 0;
   margin-right: 0;
@@ -8066,15 +7217,6 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   text-align: center;
   gap: 8px;
   min-width: 0;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountEmptyCol{
-  justify-content:flex-start;
-  align-self:stretch;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountEmptyCol{
-  padding-top:12px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankText{
   display:flex;
@@ -8101,13 +7243,6 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   display: block;
   object-fit: contain;
   object-position: center;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountEmptyCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountMetaCol{
-  justify-content: flex-start;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountEmptyCol{
-  min-height: 100%;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountFieldValueWrap{
   min-height: 0;
@@ -8168,33 +7303,9 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 
 /* Final mobile Settings full-width override: use full available panel width on narrow screens. */
 @media (max-width: 640px){
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountTopRow{
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: nowrap;
-  }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
     grid-template-columns:1fr;
     gap:16px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasCol,
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountEmptyCol{
-    padding-top:0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasRankRow{
-    flex-wrap: nowrap;
-    row-gap: 0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueWrap{
-    flex: 0 0 auto;
-    width: fit-content;
-    max-width: 100%;
-    min-width: 0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountMemberSinceInline{
-    white-space: normal;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
     margin-left: 0;
@@ -8710,24 +7821,17 @@ body[data-theme="dark"] .settingsDetailNote{
 
 /* Dark-theme parity pass: replace remaining blue/cyan accents with purple language. */
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-color: rgba(214,96,229,.52) !important;
   box-shadow: 0 0 0 1px rgba(233,134,245,.22) inset, 0 0 12px rgba(198,73,216,.2) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAliasEditBtn:hover:not(:disabled),
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyBtn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsFriendKeyActionBtn:hover:not(:disabled),
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(233,134,245,.66) !important;
@@ -8736,10 +7840,8 @@ body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .se
 
 /* Final Settings Account columns: visible bordered containers for avatar, username, and rank sections. */
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountAliasCol,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountEmptyCol,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMetaCol{
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta{
   padding: 14px;
   border: 1px solid rgba(53,232,255,.34);
   background: rgba(255,255,255,.03);
@@ -8749,28 +7851,19 @@ body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .se
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol{
   align-self: stretch;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountAliasCol{
-  min-height: 100%;
-}
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountAliasCol,
 body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountEmptyCol,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMetaCol,
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta,
 body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountAliasCol,
 body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountEmptyCol,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMetaCol{
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta{
   border-color: rgba(0,133,160,.26);
   background: rgba(255,255,255,.82);
   box-shadow: inset 0 0 0 1px rgba(0,133,160,.1), 0 0 10px rgba(0,133,160,.08);
 }
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountAliasCol,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountEmptyCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMetaCol{
+body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta{
   border-color: rgba(214,96,229,.42);
   background: rgba(39,18,50,.28);
   box-shadow: inset 0 0 0 1px rgba(233,134,245,.14), 0 0 14px rgba(198,73,216,.12);
@@ -9052,7 +8145,6 @@ body[data-theme="dark"] .appFooterBtn.isOn .appFooterIconImage{
 }
 
 body[data-theme="dark"] .dashboardTitle,
-body[data-theme="dark"] .modePanelTitle,
 body[data-theme="dark"] .historyTitle,
 body[data-theme="dark"] .hmTitle,
 body[data-theme="dark"] .menuTitle,
@@ -9061,7 +8153,6 @@ body[data-theme="dark"] .settingsDetailTitle,
 body[data-theme="dark"] .settingsInlineSectionTitle,
 body[data-theme="dark"] .settingsSectionLabel,
 body[data-theme="dark"] .checkpointAlertsTitle,
-body[data-theme="dark"] .userGuideTocTitle,
 body[data-theme="dark"] .focusInsightsTitle{
   color: rgba(245,218,255,.96) !important;
   text-shadow: 0 0 8px rgba(212,71,210,.42);
@@ -9768,17 +8859,14 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   background: #f4f9fc;
   box-shadow: 0 24px 48px rgba(17,44,61,.12);
 }
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandName,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroTitle,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroValue,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailPromo h3,
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric strong,
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailStatusMetric strong{
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric strong{
   color: #17343c;
   text-shadow: none;
 }
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandMeta,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailSectionLabel,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroEyebrow,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStatLabel,
@@ -9788,7 +8876,6 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 }
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailMenuBtn,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailSearchBtn,
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailStatusCard,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailPromo,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStat,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric{
@@ -9815,7 +8902,6 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   filter: none;
 }
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroSubtext,
-body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailStatusMeta,
 body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailPromo p{
   color: rgba(23,52,60,.76);
 }
@@ -10019,25 +9105,9 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     box-shadow: 0 0 22px rgba(53,232,255,.34);
     clip-path: polygon(0 26%, 36% 10%, 100% 0, 74% 74%, 38% 90%);
   }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandText,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandText{
-    display: grid;
-    gap: 2px;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandName,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandName{
-    font-family: var(--font-tight);
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: .04em;
-    color: #f7fbff;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandMeta,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel,
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusLabel,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandMeta,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSectionLabel,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusLabel{
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSectionLabel
+  {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .18em;
@@ -10124,53 +9194,18 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     line-height: 1.1;
     white-space: nowrap;
   }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusCard,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusCard,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
     padding: 16px;
     border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
     clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusHeader,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusHeader{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardAvatarSmall,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardAvatarSmall{
-    width: 40px;
-    height: 40px;
-    font-size: 13px;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusName,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusName{
-    font-family: var(--font-tight);
-    font-size: 15px;
-    font-weight: 800;
-    color: #f2fbff;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMeta,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo p,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMeta,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo p{
     margin: 0;
     font-size: 12px;
     color: rgba(206,225,236,.76);
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric{
-    margin-top: 14px;
-    display: grid;
-    gap: 4px;
-  }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric strong,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric strong{
-    font-family: var(--font-tight);
-    font-size: 22px;
-    color: #f7fdff;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
@@ -10216,35 +9251,21 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
       0 24px 48px rgba(17,44,61,.12),
       inset 0 0 0 1px rgba(255,255,255,.52);
   }
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandName,
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusName,
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMetric strong,
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo h3,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandName,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusName,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMetric strong,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo h3{
     color: #17343c;
   }
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailBrandMeta,
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel,
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusLabel,
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusMeta,
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo p,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailBrandMeta,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSectionLabel,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusLabel,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusMeta,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo p{
     color: rgba(23,52,60,.70);
   }
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSearchBtn,
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
-  body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailStatusCard,
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailSearchBtn,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn,
-  body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailStatusCard,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
     border-color: rgba(0,133,160,.16);
     background: rgba(255,255,255,.72);

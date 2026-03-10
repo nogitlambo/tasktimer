@@ -3,14 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-readable: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-readable: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-orbitron);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -363,7 +363,7 @@ canvas {
   position: relative;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .landingV2 .landingV2HeroImageFrame {
