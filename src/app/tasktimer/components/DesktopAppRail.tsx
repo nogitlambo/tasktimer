@@ -33,6 +33,14 @@ type NavItem = {
   href: string;
 };
 
+type DesktopLinkItem = {
+  label: string;
+  ariaLabel: string;
+  iconSrc: string;
+  id: string;
+  href: string;
+};
+
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
@@ -73,6 +81,16 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
     href: "/tasktimer/settings",
+  },
+];
+
+const DESKTOP_SECONDARY_LINKS: DesktopLinkItem[] = [
+  {
+    label: "Help Center",
+    ariaLabel: "Help Center",
+    iconSrc: "/User_Guide.svg",
+    id: "commandCenterHelpCenterBtn",
+    href: "/tasktimer/user-guide",
   },
 ];
 
@@ -156,7 +174,12 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   if (useClientNavButtons && item.page !== "settings") {
     return (
       <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button">
-        <img className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+        <img
+          className={`dashboardRailMenuIconImage${item.page === "test2" ? " dashboardRailMenuIconImageFriends" : ""}`}
+          src={item.iconSrc}
+          alt=""
+          aria-hidden="true"
+        />
         <span className="dashboardRailMenuLabel">{item.label}</span>
       </button>
     );
@@ -164,10 +187,38 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
 
   return (
     <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href}>
+      <img
+        className={`dashboardRailMenuIconImage${item.page === "test2" ? " dashboardRailMenuIconImageFriends" : ""}`}
+        src={item.iconSrc}
+        alt=""
+        aria-hidden="true"
+      />
+      <span className="dashboardRailMenuLabel">{item.label}</span>
+    </a>
+  );
+}
+
+function renderDesktopLinkItem(item: DesktopLinkItem) {
+  return (
+    <a
+      key={item.id}
+      className="btn btn-ghost small dashboardRailMenuBtn"
+      id={item.id}
+      href={item.href}
+      aria-label={item.ariaLabel}
+    >
       <img className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
       <span className="dashboardRailMenuLabel">{item.label}</span>
     </a>
   );
+}
+
+function isPrimaryDesktopNavItem(item: NavItem) {
+  return item.page !== "settings";
+}
+
+function isSecondaryDesktopNavItem(item: NavItem) {
+  return item.page === "settings";
 }
 
 function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
@@ -180,7 +231,12 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   if (useClientNavButtons && item.page !== "settings") {
     return (
       <button key={item.mobileId} {...commonProps} id={item.mobileId} type="button">
-        <img className="appFooterIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+        <img
+          className={`appFooterIconImage${item.page === "test2" ? " appFooterIconImageFriends" : ""}`}
+          src={item.iconSrc}
+          alt=""
+          aria-hidden="true"
+        />
         {item.page === "test2" ? (
           <span
             id="footerTest2AlertBadge"
@@ -197,7 +253,12 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
 
   return (
     <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href}>
-      <img className="appFooterIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+      <img
+        className={`appFooterIconImage${item.page === "test2" ? " appFooterIconImageFriends" : ""}`}
+        src={item.iconSrc}
+        alt=""
+        aria-hidden="true"
+      />
       {item.page === "test2" ? (
         <span
           id="footerTest2AlertBadge"
@@ -301,7 +362,17 @@ export default function DesktopAppRail({
         <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
           <div className="dashboardRailSectionLabel">Navigation</div>
           <nav className="dashboardRailNav">
-            {NAV_ITEMS.map((item) => renderDesktopNavItem(item, activePage, useClientNavButtons))}
+            {NAV_ITEMS.filter(isPrimaryDesktopNavItem).map((item) =>
+              renderDesktopNavItem(item, activePage, useClientNavButtons)
+            )}
+          </nav>
+
+          <div className="dashboardRailSectionLabel">Settings</div>
+          <nav className="dashboardRailNav">
+            {NAV_ITEMS.filter(isSecondaryDesktopNavItem).map((item) =>
+              renderDesktopNavItem(item, activePage, useClientNavButtons)
+            )}
+            {DESKTOP_SECONDARY_LINKS.map((item) => renderDesktopLinkItem(item))}
           </nav>
 
           <div className="dashboardRailSectionLabel">Profile</div>
@@ -347,12 +418,6 @@ export default function DesktopAppRail({
             </div>
           </section>
 
-          <div className="dashboardRailPromo">
-            <span className="dashboardRailPromoBadge">Pro</span>
-            <h3>Upgrade your mission panel</h3>
-            <p>Unlock more visual modules and deeper reporting without changing your current workflow.</p>
-            <button className="btn btn-accent" type="button">Get Pro Plan</button>
-          </div>
         </aside>
       ) : null}
 

@@ -68,6 +68,9 @@ body{
   margin-bottom:0;
   border: none;
   box-shadow: none;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling: touch;
 }
 #app[aria-label="TaskLaunch Settings"],
 #app[aria-label="TaskLaunch User Guide"],
@@ -193,10 +196,10 @@ body[data-app-page="test2"] #openAddTaskBtn{
 .dashboardShell{
   border: none !important;
   box-shadow: none !important;
-  padding-left: 4px !important;
+  padding-left: 0 !important;
 }
 body[data-app-page="dashboard"] .appPages{
-  padding-left: 104px !important;
+  padding-left: 0 !important;
 }
 body[data-app-page="test2"] .appPages{
   padding-left: 104px !important;
@@ -887,6 +890,9 @@ body[data-theme="light"] .appFooterAlertBadge{
   display:block;
   margin:0 auto;
   filter: drop-shadow(0 0 6px rgba(0,190,255,.35));
+}
+.appFooterIconImageFriends{
+  transform: translateY(3px);
 }
 .appFooterLabel{
   font-family:var(--font-tight);
@@ -8649,11 +8655,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   padding-bottom: 28px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
-  display: grid;
-  grid-template-columns: minmax(375px, 435px) minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-  margin: 18px;
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
@@ -8674,12 +8680,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMain{
   min-width: 0;
+  width: 100%;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
   margin: 0;
-  padding: 22px;
+  padding: 0;
+  width: 100%;
+  max-width: none;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
+  padding: 22px 0 0;
   margin-bottom: 18px;
   align-items: flex-start;
 }
@@ -8927,11 +8937,11 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 }
 @media (max-width: 980px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
-    margin: 12px;
+    margin: 0;
     gap: 12px;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
-    padding: 16px;
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
+    padding: 16px 0 0;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
     grid-template-columns: 1fr;
@@ -8960,12 +8970,10 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 }
 @media (max-width: 640px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
-    margin: 8px;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
-    padding: 14px;
+    margin: 0;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
+    padding: 14px 0 0;
     gap: 10px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
@@ -9163,7 +9171,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     border: 1px solid transparent;
     color: rgba(233,246,252,.84);
     text-decoration: none;
-    background: rgba(255,255,255,.03);
+    background: transparent;
     font-family: var(--font-tight);
     font-size: 15px;
     font-weight: 700;
@@ -9205,6 +9213,10 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     line-height: 1.1;
     white-space: nowrap;
   }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImageFriends,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuIconImageFriends{
+    transform: translateY(3px);
+  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
     padding: 16px;
@@ -9223,6 +9235,10 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     margin-top: auto;
     display: grid;
     gap: 10px;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    align-self: stretch;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromoBadge,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromoBadge{
@@ -9312,10 +9328,17 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 /* Final desktop shell correction: keep the left rail attached to app/settings content and
    restore dashboard/task/friends rendering inside the shared desktop layout. */
 .desktopAppShell{
-  display: block;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 .desktopAppMain{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 @media (min-width: 981px){
   #app[aria-label="TaskLaunch App"] .desktopAppShell,
@@ -9362,8 +9385,18 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 @media (max-width: 980px){
   #app[aria-label="TaskLaunch App"] .desktopAppShell,
   #app[aria-label="TaskLaunch Settings"] .desktopAppShell{
-    display: block;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     margin: 0;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppMain,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppMain{
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
   }
   #app[aria-label="TaskLaunch App"] .appFooterNav{
     display: grid !important;
@@ -9506,12 +9539,54 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 }
 
+/* Final app-page scroll contract:
+   Dashboard, Tasks, and Friends must remain vertically scrollable when content
+   exceeds the available viewport, regardless of later shell/layout overrides. */
+#app[aria-label="TaskLaunch App"] .desktopAppShell,
+#app[aria-label="TaskLaunch App"] .desktopAppMain{
+  min-height: 0;
+}
+
+#app[aria-label="TaskLaunch App"] .appPages{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageDashboard.appPageOn,
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn,
+#app[aria-label="TaskLaunch App"] #appPageTest2.appPageOn{
+  min-height: 100%;
+}
+
 /* Desktop rail visual update: remove cyan panel shading and use purple icon treatment. */
 @media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"]{
+    overflow: hidden;
+  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
     border: 0;
     background: #05080f;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: hidden;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppMain{
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 36px);
+    overflow: hidden;
+  }
+  #app[aria-label="TaskLaunch App"] .appPages{
+    flex: 1 1 0;
+    height: 0;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:hover,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:focus-visible,
@@ -9524,9 +9599,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn{
     border-color: rgba(240,110,224,.52);
-    background:
-      linear-gradient(90deg, rgba(240,110,224,.14), rgba(255,255,255,.03) 55%),
-      rgba(255,255,255,.04);
+    background: transparent;
     box-shadow: 0 0 20px rgba(212,71,210,.12), inset 0 0 0 1px rgba(240,110,224,.14);
   }
 
@@ -9593,6 +9666,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn{
     border-color: rgba(181,89,173,.34);
+    background: transparent;
     box-shadow: inset 0 0 0 1px rgba(181,89,173,.10);
   }
 
@@ -9851,4 +9925,74 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileEditLink:focus-visible{
     color: #005f73;
   }
+}
+
+/* Final Friends-surface override: remove shaded panel treatment on the Friends screen. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+  background: #0d0f13 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection .dashboardTopRow{
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: transparent !important;
+}
+
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails > summary,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails > summary,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+  background: #ffffff !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: rgba(15,23,42,.10) !important;
+}
+
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection .dashboardTopRow{
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: transparent !important;
+}
+
+/* Final Settings detail-pane override: remove shaded treatment from the right module panel. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailNote,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsDetailNote,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
 }
