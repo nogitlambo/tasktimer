@@ -515,6 +515,14 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
           </div>
         </div>
       </div>
+      <div className="historySaveWorkingIndicator" id="historySaveWorkingIndicator" aria-live="polite" aria-atomic="true">
+        <span className="historySaveWorkingDots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span id="historySaveWorkingText">Saving history...</span>
+      </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </>
   );

@@ -3179,6 +3179,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function setResetTaskConfirmBusy(busy: boolean, shouldLog: boolean) {
+    if (els.confirmOkBtn) {
+      els.confirmOkBtn.textContent = busy ? (shouldLog ? "Logging..." : "Resetting...") : shouldLog ? "Log and Reset" : "Reset";
+      (els.confirmOkBtn as HTMLButtonElement).disabled = busy;
+    }
+    if (els.confirmCancelBtn) (els.confirmCancelBtn as HTMLButtonElement).disabled = busy;
+    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = busy;
+    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-disabled", busy);
+  }
+
   function milestoneUnitSec(t: Task | null | undefined): number {
     if (!t) return 3600;
     if (t.milestoneTimeUnit === "day") return 86400;
@@ -5011,11 +5021,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const applyResetTaskConfirmState = () => {
       const shouldLog = !!els.confirmDeleteAll?.checked;
-      if (els.confirmOkBtn) els.confirmOkBtn.textContent = shouldLog ? "Log and Reset" : "Reset";
+      setResetTaskConfirmBusy(false, shouldLog);
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
     };
     const clearResetTaskConfirmState = () => {
       if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = null;
+      setResetTaskConfirmBusy(false, false);
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetTaskConfirm");
     };
 
@@ -5025,24 +5036,26 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkboxLabel: "Log this entry",
       checkboxChecked: true,
       onOk: async () => {
+        const doLog = !!els.confirmDeleteAll?.checked;
+        setResetTaskConfirmBusy(true, doLog);
         const sessionNote = captureResetActionSessionNote(String(t.id || ""));
         if (sessionNote) setFocusSessionDraft(String(t.id || ""), sessionNote);
-        clearResetTaskConfirmState();
-        const doLog = !!els.confirmDeleteAll?.checked;
-
-        resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
-        if (doLog) {
-          try {
-            await saveHistoryAndWait(historyByTaskId);
-          } catch {
-            // Keep local logged history when cloud history sync is temporarily unavailable.
+        try {
+          resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
+          if (doLog) {
+            try {
+              await saveHistoryAndWait(historyByTaskId);
+            } catch {
+              // Keep local logged history when cloud history sync is temporarily unavailable.
+            }
           }
+          save();
+          void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
+          render();
+          closeConfirm();
+        } finally {
+          clearResetTaskConfirmState();
         }
-
-        save();
-        void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-        render();
-        closeConfirm();
       },
       onCancel: () => {
         clearResetTaskConfirmState();
@@ -9818,7 +9831,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!focusModeTaskId) return;
       scheduleFocusSessionNoteSave(String(focusModeTaskId || ""), String(els.focusSessionNotesInput?.value || ""));
     });
-
     on(els.hmList, "click", (ev: any) => {
       const bulkCheckbox = ev.target?.closest?.(".hmBulkCheckbox");
       if (bulkCheckbox) {

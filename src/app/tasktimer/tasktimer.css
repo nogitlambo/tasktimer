@@ -3753,6 +3753,58 @@ optgroup{
 .focusSessionNotesInput::placeholder{
   color: rgba(151,174,192,.9);
 }
+.historySaveWorkingIndicator{
+  position: fixed;
+  right: 18px;
+  bottom: 92px;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(104,220,255,.22);
+  border-radius: 999px;
+  background: rgba(11,18,31,.92);
+  color: rgba(230,245,255,.96);
+  box-shadow: 0 18px 40px rgba(0,0,0,.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(.98);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.historySaveWorkingIndicator.isOn{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.historySaveWorkingDots{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.historySaveWorkingDots i{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #64cde8;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+  animation: historySaveWorkingPulse 1s ease-in-out infinite;
+}
+.historySaveWorkingDots i:nth-child(2){
+  animation-delay: .15s;
+}
+.historySaveWorkingDots i:nth-child(3){
+  animation-delay: .3s;
+}
+@keyframes historySaveWorkingPulse{
+  0%, 80%, 100%{
+    opacity: .35;
+    transform: translateY(0) scale(.82);
+  }
+  40%{
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+}
 .focusTaskTitle{
   margin-top:12px;
   margin-bottom:30px;
@@ -4392,6 +4444,15 @@ body[data-theme="light"] .focusSessionNotesInput{
   color: #111111;
   border-color: rgba(0,0,0,.16);
 }
+body[data-theme="light"] .historySaveWorkingIndicator{
+  background: rgba(255,255,255,.94);
+  color: rgba(15,25,35,.96);
+  border-color: rgba(0,0,0,.12);
+  box-shadow: 0 18px 36px rgba(27,39,54,.16);
+}
+body[data-theme="light"] .historySaveWorkingDots i{
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+}
 body[data-theme="light"] .focusSessionNotesInput::placeholder{
   color: rgba(90,90,90,.92);
 }
@@ -5013,6 +5074,11 @@ body[data-theme="light"] .dashboardHeatDayNum{
   }
   .focusSessionNotesInput{
     min-height: 66px;
+  }
+  .historySaveWorkingIndicator{
+    right: 12px;
+    bottom: 78px;
+    padding: 9px 12px;
   }
   #historyManagerScreen{
     padding:10px;
@@ -10330,249 +10396,6 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineS
   body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:focus-visible{
     border-color: rgba(156,76,211,.34);
     color: #5f2f88;
-  }
-}
-/* Final Settings admin-console override: red warning treatment for the admin-only modal. */
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleModal{
-  border-color: rgba(255, 78, 78, 0.88) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 104, 104, 0.28),
-    0 0 22px rgba(255, 44, 44, 0.26),
-    0 0 44px rgba(255, 24, 24, 0.14) !important;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleTitle{
-  color: #ff5d5d !important;
-  text-shadow: 0 0 12px rgba(255, 48, 48, 0.35);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleSubtext{
-  margin-top: 10px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholder{
-  margin-top: 12px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 88, 88, 0.4);
-  background:
-    linear-gradient(180deg, rgba(255, 60, 60, 0.08), rgba(255, 60, 60, 0)),
-    rgba(34, 10, 10, 0.82);
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderLabel{
-  color: rgba(255, 122, 122, 0.94);
-  font-family: var(--font-tight);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderValue{
-  margin-top: 6px;
-  color: rgba(255, 218, 218, 0.9);
-  font-size: 13px;
-  line-height: 1.45;
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleModal,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleModal{
-  border-color: rgba(190, 34, 34, 0.8) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(220, 38, 38, 0.14),
-    0 0 16px rgba(220, 38, 38, 0.14) !important;
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleTitle,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleTitle{
-  color: #b91c1c !important;
-  text-shadow: none;
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholder,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholder{
-  border-color: rgba(185, 28, 28, 0.28);
-  background:
-    linear-gradient(180deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0)),
-    rgba(255, 245, 245, 0.96);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderLabel,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderLabel{
-  color: #b91c1c;
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderValue,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePlaceholderValue{
-  color: rgba(68, 14, 14, 0.86);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePanel{
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePanelHead{
-  display: grid;
-  gap: 4px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleHint,
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleNotice{
-  color: rgba(255, 206, 206, 0.76);
-  font-size: 12px;
-  line-height: 1.45;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField{
-  display: grid;
-  gap: 8px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleRow{
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField input[type="text"],
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField select{
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid rgba(255, 96, 96, 0.35);
-  background: rgba(24, 9, 9, 0.86);
-  color: rgba(255, 240, 240, 0.94);
-  padding: 9px 12px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupCard,
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleConfirm,
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreview{
-  display: grid;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 88, 88, 0.28);
-  background: rgba(32, 10, 10, 0.56);
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupHead,
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewThumbRow{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupTitle,
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewTitle{
-  color: rgba(255, 236, 236, 0.96);
-  font-family: var(--font-tight);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupMeta{
-  color: rgba(255, 201, 201, 0.68);
-  font-size: 12px;
-  word-break: break-all;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupThumb{
-  width: 52px;
-  height: 52px;
-  object-fit: contain;
-  border: 1px solid rgba(255, 96, 96, 0.35);
-  background: rgba(19, 7, 7, 0.92);
-  padding: 6px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupThumbPlaceholder{
-  display: grid;
-  place-items: center;
-  color: rgba(255, 214, 214, 0.82);
-  font-family: var(--font-tight);
-  font-weight: 800;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStats{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStat{
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 96, 96, 0.2);
-  background: rgba(0, 0, 0, 0.16);
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatLabel{
-  color: rgba(255, 184, 184, 0.72);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatValue{
-  color: rgba(255, 239, 239, 0.96);
-  font-size: 14px;
-  font-weight: 700;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewNote{
-  color: rgba(255, 214, 214, 0.74);
-  font-size: 12px;
-  text-align: right;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage{
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 96, 96, 0.24);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 232, 232, 0.92);
-  font-size: 12px;
-  line-height: 1.45;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage.isError{
-  border-color: rgba(255, 96, 96, 0.36);
-  background: rgba(120, 17, 17, 0.3);
-  color: rgba(255, 219, 219, 0.96);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleHint,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleNotice,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleHint,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleNotice{
-  color: rgba(127, 29, 29, 0.72);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField input[type="text"],
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField select,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField input[type="text"],
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleField select{
-  border-color: rgba(185, 28, 28, 0.24);
-  background: rgba(255, 249, 249, 0.98);
-  color: rgba(68, 14, 14, 0.92);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupCard,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleConfirm,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreview,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupCard,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleConfirm,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreview{
-  border-color: rgba(185, 28, 28, 0.22);
-  background: rgba(255, 249, 249, 0.92);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupTitle,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewTitle,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatValue,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupTitle,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewTitle,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatValue{
-  color: rgba(68, 14, 14, 0.92);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupMeta,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatLabel,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewNote,
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupMeta,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStatLabel,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewNote,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage{
-  color: rgba(91, 33, 33, 0.78);
-}
-body.light #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage.isError,
-body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleMessage.isError{
-  background: rgba(254, 242, 242, 0.98);
-  color: rgba(127, 29, 29, 0.88);
-}
-@media (max-width: 640px){
-  #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleRow,
-  #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleStats{
-    grid-template-columns: minmax(0, 1fr);
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAdminConsoleLookupHead,
-  #app[aria-label="TaskLaunch Settings"] .settingsAdminConsolePreviewThumbRow{
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 @media (min-width: 981px){

@@ -34,6 +34,63 @@ const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
+export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
+const HISTORY_SAVE_WORKING_MIN_VISIBLE_MS = 600;
+let historySaveWorkingActiveCount = 0;
+let historySaveWorkingShownAtMs = 0;
+let historySaveWorkingHideTimer: ReturnType<typeof window.setTimeout> | null = null;
+
+function applyHistorySaveWorkingVisibility(visible: boolean): void {
+  if (typeof document === "undefined") return;
+  const indicator = document.getElementById("historySaveWorkingIndicator");
+  const text = document.getElementById("historySaveWorkingText");
+  if (!indicator) return;
+  indicator.classList.toggle("isOn", visible);
+  indicator.setAttribute("aria-hidden", visible ? "false" : "true");
+  if (text) text.textContent = visible ? "Saving history..." : "";
+}
+
+function dispatchHistorySaveWorking(phase: "start" | "end"): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (phase === "start") {
+      historySaveWorkingActiveCount += 1;
+      historySaveWorkingShownAtMs = nowMs();
+      if (historySaveWorkingHideTimer != null) {
+        window.clearTimeout(historySaveWorkingHideTimer);
+        historySaveWorkingHideTimer = null;
+      }
+      applyHistorySaveWorkingVisibility(true);
+    } else {
+      historySaveWorkingActiveCount = Math.max(0, historySaveWorkingActiveCount - 1);
+      if (historySaveWorkingActiveCount > 0) return;
+      const elapsedMs = Math.max(0, nowMs() - historySaveWorkingShownAtMs);
+      const remainingMs = Math.max(0, HISTORY_SAVE_WORKING_MIN_VISIBLE_MS - elapsedMs);
+      if (remainingMs > 0) {
+        historySaveWorkingHideTimer = window.setTimeout(() => {
+          historySaveWorkingHideTimer = null;
+          if (historySaveWorkingActiveCount === 0) applyHistorySaveWorkingVisibility(false);
+        }, remainingMs);
+      } else {
+        applyHistorySaveWorkingVisibility(false);
+      }
+    }
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent(HISTORY_SAVE_WORKING_EVENT, { detail: { phase } }));
+    }
+  } catch {
+    // ignore browser event failures
+  }
+}
+
+async function runHistorySaveWithSignal<T>(work: () => Promise<T>): Promise<T> {
+  dispatchHistorySaveWorking("start");
+  try {
+    return await work();
+  } finally {
+    dispatchHistorySaveWorking("end");
+  }
+}
 
 function currentUid(): string {
   const auth = getFirebaseAuthClient();
@@ -769,12 +826,14 @@ export function saveHistory(historyByTaskId: HistoryByTaskId): void {
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
-  void Promise.all(
-    entries.map(([taskId, rows]) =>
-      replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
-        .catch(() => {
-          // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
-        })
+  void runHistorySaveWithSignal(() =>
+    Promise.all(
+      entries.map(([taskId, rows]) =>
+        replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
+          .catch(() => {
+            // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
+          })
+      )
     )
   );
 }
@@ -785,9 +844,11 @@ export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
   if (!normalizedTaskId || !normalizedEntry) return;
   const uid = currentUid();
   if (!uid) return;
-  void appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
-    // Keep local history state when direct cloud append is denied/unavailable.
-  });
+  void runHistorySaveWithSignal(() =>
+    appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
+      // Keep local history state when direct cloud append is denied/unavailable.
+    })
+  );
 }
 
 export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Promise<void> {
@@ -801,12 +862,14 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Prom
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
-  await Promise.all(
-    entries.map(([taskId, rows]) =>
-      replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
-        .catch(() => {
-          // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
-        })
+  await runHistorySaveWithSignal(() =>
+    Promise.all(
+      entries.map(([taskId, rows]) =>
+        replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
+          .catch(() => {
+            // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
+          })
+      )
     )
   );
 }

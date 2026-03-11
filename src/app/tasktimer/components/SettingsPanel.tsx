@@ -17,14 +17,11 @@ import {
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
-import Image from "next/image";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   getRankLadderThumbnailSrc,
   normalizeRewardProgress,
-  RANK_LADDER,
-  RANK_MODAL_THUMBNAIL_BY_ID,
 } from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 
@@ -50,7 +47,6 @@ function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
 }
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
-const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
@@ -202,16 +198,13 @@ export default function SettingsPanel() {
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
-  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
-  const [showAdminConsoleModal, setShowAdminConsoleModal] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
   const [avatarSyncNoticeIsError, setAvatarSyncNoticeIsError] = useState(false);
   const avatarSyncNoticeTimerRef = useRef<number | null>(null);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
-  const rankThumbnailUploadInputRef = useRef<HTMLInputElement | null>(null);
-  const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
+  const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
 
   const accountStateDocRef = (uid: string) => {
@@ -452,43 +445,12 @@ export default function SettingsPanel() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showAvatarPickerModal]);
 
-  useEffect(() => {
-    if (!showRankLadderModal) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowRankLadderModal(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showRankLadderModal]);
-
-  useEffect(() => {
-    if (!showAdminConsoleModal) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowAdminConsoleModal(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showAdminConsoleModal]);
-
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
-  const currentRankIndex = useMemo(
-    () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)),
-    [rewardProgress.currentRankId]
-  );
-  const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
-  const canAccessAdminConsole = authUserUid === RANK_INSIGNIA_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
   const displayedRankThumbnailSrc = useMemo(
     () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
     [rewardProgress.currentRankId, rankThumbnailSrc]
   );
-  const handleRankThumbnailClick = useCallback(() => {
-    if (canAccessAdminConsole) {
-      setShowAdminConsoleModal(true);
-      return;
-    }
-    setShowRankLadderModal(true);
-  }, [canAccessAdminConsole]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -778,80 +740,6 @@ export default function SettingsPanel() {
     setShowAvatarPickerModal(false);
   };
 
-  const handleUploadRankThumbnailFile = async (file: File | null) => {
-    if (!file) return;
-    if (!authUserUid) {
-      setAuthError("Sign in is required to upload a rank thumbnail.");
-      setAuthStatus("");
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      setAuthError("Please choose an image file.");
-      setAuthStatus("");
-      return;
-    }
-    const maxBytes = 300 * 1024;
-    if (file.size > maxBytes) {
-      setAuthError("Image is too large. Max size is 300KB.");
-      setAuthStatus("");
-      return;
-    }
-    const fileReader = new FileReader();
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      fileReader.onload = () => resolve(String(fileReader.result || ""));
-      fileReader.onerror = () => reject(new Error("Could not read selected image."));
-      fileReader.readAsDataURL(file);
-    });
-    if (!dataUrl) {
-      setAuthError("Could not read selected image.");
-      setAuthStatus("");
-      return;
-    }
-    setRankThumbnailSrc(dataUrl);
-    setAuthError("");
-    try {
-      await saveUserDocPatch(authUserUid, { rankThumbnailSrc: dataUrl });
-      writeStoredRankThumbnailSrc(authUserUid, dataUrl);
-      showAvatarSyncNotice("Rank thumbnail saved.");
-    } catch (err: unknown) {
-      writeStoredRankThumbnailSrc(authUserUid, dataUrl);
-      setAuthError(getErrorMessage(err, "Could not save rank thumbnail to cloud."));
-      setAuthStatus("");
-      showAvatarSyncNotice("Rank thumbnail saved locally. Cloud sync failed.", true);
-      return;
-    }
-    try {
-      await syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: dataUrl });
-    } catch {
-      showAvatarSyncNotice("Rank thumbnail saved to your profile. Friend sync failed.", true);
-    }
-  };
-
-  const handleSelectRankThumbnail = async (rankId: string) => {
-    if (!authUserUid || authUserUid !== RANK_INSIGNIA_ADMIN_UID) return;
-    const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
-    if (!nextSrc) return;
-    setRankThumbnailSrc(nextSrc);
-    writeStoredRankThumbnailSrc(authUserUid, nextSrc);
-    notifyAccountAvatarUpdated();
-    setAuthError("");
-    try {
-      await saveUserDocPatch(authUserUid, { rankThumbnailSrc: nextSrc });
-      showAvatarSyncNotice("Rank insignia saved.");
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not save rank insignia to cloud."));
-      setAuthStatus("");
-      showAvatarSyncNotice("Rank insignia saved locally. Cloud sync failed.", true);
-      return;
-    }
-    try {
-      await syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: nextSrc });
-    } catch {
-      showAvatarSyncNotice("Rank insignia saved to your profile. Friend sync failed.", true);
-    }
-    setShowRankLadderModal(false);
-  };
-
   const selectedAvatar = avatarOptions.find((a) => a.id === selectedAvatarId) || avatarOptions[0] || null;
 
   return (
@@ -941,13 +829,7 @@ export default function SettingsPanel() {
                         <div className="settingsAccountRankText">
                           <div className="settingsAccountFieldLabel">Rank:</div>
                         </div>
-                        <button
-                          type="button"
-                          className="settingsAccountRankBtn"
-                          onClick={handleRankThumbnailClick}
-                          aria-label={canAccessAdminConsole ? "Open Admin Console" : "Open rank ladder"}
-                          title={canAccessAdminConsole ? "Open Admin Console" : "Open rank ladder"}
-                        >
+                        <div className="settingsAccountRankBtn" aria-label={`${displayedRankLabel} rank thumbnail`}>
                           <div className="settingsAccountRankPlaceholder">
                             {displayedRankThumbnailSrc ? (
                               <img className="settingsAccountRankImage" src={displayedRankThumbnailSrc} alt="Rank thumbnail" />
@@ -955,18 +837,7 @@ export default function SettingsPanel() {
                               <div className="settingsAccountRankPlaceholderInner" />
                             )}
                           </div>
-                        </button>
-                        <input
-                          ref={rankThumbnailUploadInputRef}
-                          type="file"
-                          accept="image/*"
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
-                            void handleUploadRankThumbnailFile(file);
-                            e.currentTarget.value = "";
-                          }}
-                        />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1140,119 +1011,6 @@ export default function SettingsPanel() {
                       Cancel
                     </button>
                   </div>
-                </div>
-              </div>
-            ) : null}
-            {showRankLadderModal ? (
-              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowRankLadderModal(false)}>
-                <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(e) => e.stopPropagation()}>
-                  <h2>Rank Ladder</h2>
-                  <p className="modalSubtext">
-                    {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP.{" "}
-                    {rewardsHeader.xpToNext != null
-                      ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
-                      : "You have reached the highest configured rank."}
-                  </p>
-                  {canSelectRankInsignia ? (
-                    <p className="modalSubtext">Click an insignia thumbnail to use it as your profile rank badge.</p>
-                  ) : null}
-                  <div className="rankLadderList" role="list" aria-label="Available ranks">
-                    {RANK_LADDER.map((rank, index) => {
-                      const isCurrent = rank.id === rewardProgress.currentRankId;
-                      const isUnlocked = index <= currentRankIndex;
-                      const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
-                      const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-                      const isSelectable = canSelectRankInsignia && !!rankThumbnail;
-                      const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
-                      const content = (
-                        <>
-                          <div className="rankLadderItemBadge" aria-hidden="true">
-                            {rankThumbnail ? (
-                              <Image className="rankLadderItemBadgeImage" src={rankThumbnail} alt="" width={34} height={34} unoptimized />
-                            ) : (
-                              index === 0 ? "U" : index
-                            )}
-                          </div>
-                          <div className="rankLadderItemBody">
-                            <div className="rankLadderItemTitleRow">
-                              <span className="rankLadderItemTitle">{rank.label}</span>
-                              {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
-                              {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
-                              {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
-                            </div>
-                            <div className="rankLadderItemMeta">
-                              Unlocks at {thresholdLabel}
-                              {isSelectable ? " Click to select this insignia." : ""}
-                            </div>
-                          </div>
-                        </>
-                      );
-                      if (isSelectable) {
-                        return (
-                          <button
-                            key={rank.id}
-                            type="button"
-                            className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                            onClick={() => void handleSelectRankThumbnail(rank.id)}
-                          >
-                            {content}
-                          </button>
-                        );
-                      }
-                      return (
-                        <div
-                          key={rank.id}
-                          className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                          role="listitem"
-                        >
-                          {content}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="confirmBtns">
-                    <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {showAdminConsoleModal && canAccessAdminConsole ? (
-              <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowAdminConsoleModal(false)}>
-                <div
-                  className="modal settingsInlineConfirmModal settingsAdminConsoleModal"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label="Admin Console"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="settingsInlineConfirmTitle settingsAdminConsoleTitle">Admin Console</h3>
-                  <p className="confirmText">
-                    Restricted to the authenticated admin account.
-                  </p>
-                  <p className="modalSubtext settingsAdminConsoleSubtext">
-                    No admin functions are currently configured in this console.
-                  </p>
-                  <div className="settingsAdminConsolePanel">
-                    <div className="settingsAdminConsolePanelHead">
-                      <div className="settingsAdminConsolePlaceholderLabel">No functions configured</div>
-                      <div className="settingsAdminConsoleHint">
-                        Additional admin actions can be added here later.
-                      </div>
-                    </div>
-                    <div className="settingsAdminConsolePlaceholder" aria-live="polite">
-                      <div className="settingsAdminConsolePlaceholderLabel">Empty console</div>
-                      <div className="settingsAdminConsolePlaceholderValue">
-                        There are no admin functions available right now.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="confirmBtns settingsInlineConfirmBtns">
-                    <button className="btn btn-ghost" type="button" onClick={() => setShowAdminConsoleModal(false)}>
-                      Close
-                    </button>
-                  </div>
                 </div>
               </div>
             ) : null}
