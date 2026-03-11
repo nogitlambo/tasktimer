@@ -15,6 +15,8 @@ service cloud.firestore {
         "displayName",
         "avatarId",
         "rankThumbnailSrc",
+        "rewardCurrentRankId",
+        "rewardTotalXp",
         "createdAt",
         "updatedAt",
         "schemaVersion"
@@ -23,6 +25,8 @@ service cloud.firestore {
       && (!("displayName" in request.resource.data) || request.resource.data.displayName == null || request.resource.data.displayName is string)
       && (!("avatarId" in request.resource.data) || request.resource.data.avatarId is string)
       && (!("rankThumbnailSrc" in request.resource.data) || request.resource.data.rankThumbnailSrc == null || request.resource.data.rankThumbnailSrc is string)
+      && (!("rewardCurrentRankId" in request.resource.data) || request.resource.data.rewardCurrentRankId == null || request.resource.data.rewardCurrentRankId is string)
+      && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int);
@@ -42,11 +46,13 @@ service cloud.firestore {
         "theme",
         "menuButtonStyle",
         "defaultTaskTimerFormat",
+        "taskView",
         "autoFocusOnTaskLaunchEnabled",
         "dynamicColorsEnabled",
         "checkpointAlertSoundEnabled",
         "checkpointAlertToastEnabled",
         "modeSettings",
+        "rewards",
         "updatedAtMs",
         "updatedAt"
       ])
@@ -54,11 +60,13 @@ service cloud.firestore {
       && (!("theme" in request.resource.data) || request.resource.data.theme in ["light", "dark", "command"])
       && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["parallelogram", "square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
+      && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)
       && (!("modeSettings" in request.resource.data) || request.resource.data.modeSettings == null || request.resource.data.modeSettings is map)
+      && (!("rewards" in request.resource.data) || request.resource.data.rewards is map)
       && (!("updatedAtMs" in request.resource.data) || request.resource.data.updatedAtMs is int)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
@@ -122,14 +130,19 @@ service cloud.firestore {
         "checkpointsEnabled",
         "checkpointTimeUnit",
         "checkpoints",
+        "milestonesEnabled",
+        "milestoneTimeUnit",
+        "milestones",
         "checkpointSoundEnabled",
         "checkpointSoundMode",
         "checkpointToastEnabled",
         "checkpointToastMode",
         "finalCheckpointAction",
+        "xpDisqualifiedUntilReset",
         "presetIntervalsEnabled",
         "presetIntervalValue",
         "presetIntervalLastCheckpointId",
+        "presetIntervalLastMilestoneId",
         "presetIntervalNextSeq",
         "mode",
         "createdAt",
@@ -148,14 +161,19 @@ service cloud.firestore {
       && (!("checkpointsEnabled" in request.resource.data) || request.resource.data.checkpointsEnabled is bool)
       && (!("checkpointTimeUnit" in request.resource.data) || request.resource.data.checkpointTimeUnit in ["day", "hour", "minute"])
       && (!("checkpoints" in request.resource.data) || request.resource.data.checkpoints is list)
+      && (!("milestonesEnabled" in request.resource.data) || request.resource.data.milestonesEnabled is bool)
+      && (!("milestoneTimeUnit" in request.resource.data) || request.resource.data.milestoneTimeUnit in ["day", "hour", "minute"])
+      && (!("milestones" in request.resource.data) || request.resource.data.milestones is list)
       && (!("checkpointSoundEnabled" in request.resource.data) || request.resource.data.checkpointSoundEnabled is bool)
       && (!("checkpointSoundMode" in request.resource.data) || request.resource.data.checkpointSoundMode in ["once", "repeat"])
       && (!("checkpointToastEnabled" in request.resource.data) || request.resource.data.checkpointToastEnabled is bool)
-      && (!("checkpointToastMode" in request.resource.data) || request.resource.data.checkpointToastMode in ["auto5s", "manual"])
+      && (!("checkpointToastMode" in request.resource.data) || request.resource.data.checkpointToastMode in ["auto5s", "auto3s", "manual"])
       && (!("finalCheckpointAction" in request.resource.data) || request.resource.data.finalCheckpointAction in ["continue", "resetLog", "resetNoLog"])
+      && (!("xpDisqualifiedUntilReset" in request.resource.data) || request.resource.data.xpDisqualifiedUntilReset is bool)
       && (!("presetIntervalsEnabled" in request.resource.data) || request.resource.data.presetIntervalsEnabled is bool)
       && (!("presetIntervalValue" in request.resource.data) || request.resource.data.presetIntervalValue is int || request.resource.data.presetIntervalValue is float)
       && (!("presetIntervalLastCheckpointId" in request.resource.data) || request.resource.data.presetIntervalLastCheckpointId == null || request.resource.data.presetIntervalLastCheckpointId is string)
+      && (!("presetIntervalLastMilestoneId" in request.resource.data) || request.resource.data.presetIntervalLastMilestoneId == null || request.resource.data.presetIntervalLastMilestoneId is string)
       && (!("presetIntervalNextSeq" in request.resource.data) || request.resource.data.presetIntervalNextSeq is int)
       && (!("mode" in request.resource.data) || request.resource.data.mode in ["mode1", "mode2", "mode3"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
@@ -169,12 +187,14 @@ service cloud.firestore {
         "name",
         "ms",
         "color",
+        "note",
         "createdAt"
       ])
       && (!("ts" in request.resource.data) || request.resource.data.ts is int)
       && (!("name" in request.resource.data) || request.resource.data.name is string)
       && (!("ms" in request.resource.data) || request.resource.data.ms is int)
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
+      && (!("note" in request.resource.data) || request.resource.data.note == null || request.resource.data.note is string)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp);
     }
 

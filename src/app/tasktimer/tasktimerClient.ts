@@ -41,6 +41,7 @@ import {
   loadTasks,
   saveTasks,
   loadHistory,
+  appendHistoryEntry,
   saveHistory,
   saveHistoryAndWait,
   loadDeletedMeta,
@@ -99,6 +100,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled`;
   const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
   const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
+  const FOCUS_SESSION_NOTES_KEY = `${STORAGE_KEY}:focusSessionNotes`;
   const NAV_STACK_MAX = 50;
   const NATIVE_BACK_DEBOUNCE_MS = 200;
 
@@ -274,6 +276,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let addTaskDurationValue = 5;
   let addTaskDurationUnit: "minute" | "hour" = "hour";
   let addTaskDurationPeriod: "day" | "week" = "week";
+  let focusSessionNotesByTaskId: Record<string, string> = {};
+  let focusSessionNoteSaveTimer: number | null = null;
   let addTaskNoTimeGoal = false;
   let elapsedPadTarget: HTMLInputElement | null = null;
   let elapsedPadMilestoneRef: {
@@ -335,6 +339,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let checkpointRepeatCycleTimer: number | null = null;
   let checkpointRepeatActiveTaskId: string | null = null;
   let checkpointAutoResetDirty = false;
+  let historyNoteCloudRepairAttempted = false;
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
   const checkpointBaselineSecByTaskId: Record<string, number> = {};
   let cloudPreferencesCache = loadCachedPreferences();
@@ -360,6 +365,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let deferredCloudRefreshTimer: number | null = null;
   let pendingDeferredCloudRefresh = false;
   let lastUiInteractionAtMs = 0;
+  const dashboardWidgetHasRenderedData = {
+    overview: false,
+    focusTrend: false,
+    heatCalendar: false,
+    modeDistribution: false,
+    avgSession: false,
+  };
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
@@ -520,6 +532,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardPanelMenuBtn: document.getElementById("dashboardPanelMenuBtn") as HTMLElement | null,
     dashboardPanelMenuList: document.getElementById("dashboardPanelMenuList") as HTMLElement | null,
     dashboardGrid: document.querySelector(".dashboardGrid") as HTMLElement | null,
+    dashboardOverviewValue: document.getElementById("dashboardOverviewValue"),
+    dashboardOverviewSubtext: document.getElementById("dashboardOverviewSubtext"),
+    dashboardOverviewSessionsValue: document.getElementById("dashboardOverviewSessionsValue"),
+    dashboardOverviewBestDayValue: document.getElementById("dashboardOverviewBestDayValue"),
+    dashboardOverviewDeltaValue: document.getElementById("dashboardOverviewDeltaValue"),
+    dashboardOverviewChart: document.getElementById("dashboardOverviewChart") as HTMLCanvasElement | null,
+    dashboardOverviewChartEmpty: document.getElementById("dashboardOverviewChartEmpty"),
+    dashboardOverviewAxis: document.getElementById("dashboardOverviewAxis"),
     dashboardAvgSessionChart: document.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
     dashboardAvgSessionEmpty: document.getElementById("dashboardAvgSessionEmpty"),
     dashboardAvgSessionTitle: document.getElementById("dashboardAvgSessionTitle"),
@@ -559,13 +579,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     focusTaskName: document.getElementById("focusTaskName"),
     focusTimerDays: document.getElementById("focusTimerDays"),
     focusTimerClock: document.getElementById("focusTimerClock"),
-    focusStartBtn: document.getElementById("focusStartBtn") as HTMLButtonElement | null,
-    focusStopBtn: document.getElementById("focusStopBtn") as HTMLButtonElement | null,
+    focusDialHint: document.getElementById("focusDialHint"),
     focusResetBtn: document.getElementById("focusResetBtn") as HTMLButtonElement | null,
     focusInsightBest: document.getElementById("focusInsightBest"),
     focusInsightWeekday: document.getElementById("focusInsightWeekday"),
     focusInsightTodayDelta: document.getElementById("focusInsightTodayDelta"),
     focusInsightWeekDelta: document.getElementById("focusInsightWeekDelta"),
+    focusSessionNotesInput: document.getElementById("focusSessionNotesInput") as HTMLTextAreaElement | null,
     hmList: document.getElementById("hmList"),
     closeMenuBtn: document.getElementById("closeMenuBtn"),
 
@@ -683,6 +703,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     historyAnalysisOverlay: document.getElementById("historyAnalysisOverlay"),
     historyAnalysisTitle: document.getElementById("historyAnalysisTitle"),
     historyAnalysisSummary: document.getElementById("historyAnalysisSummary"),
+    historyEntryNoteOverlay: document.getElementById("historyEntryNoteOverlay"),
+    historyEntryNoteTitle: document.getElementById("historyEntryNoteTitle"),
+    historyEntryNoteMeta: document.getElementById("historyEntryNoteMeta"),
+    historyEntryNoteBody: document.getElementById("historyEntryNoteBody"),
 
     historyScreen: document.getElementById("historyScreen"),
     historyBackBtn: document.getElementById("historyBackBtn"),
@@ -1112,6 +1136,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     void rehydrateFromCloudAndRender({ force: true });
   }
 
+  function shouldHoldDashboardWidget<K extends keyof typeof dashboardWidgetHasRenderedData>(widget: K, hasData: boolean) {
+    if (hasData) {
+      dashboardWidgetHasRenderedData[widget] = true;
+      return false;
+    }
+    return !!cloudRefreshInFlight && dashboardWidgetHasRenderedData[widget];
+  }
+
   function syncCloudTaskCollectionListener() {
     if (removeCloudTaskCollectionListener) {
       try {
@@ -1389,8 +1421,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     jumpToTaskById(taskId);
   }
 
-  function save() {
-    saveTasks(tasks);
+  function save(opts?: { deletedTaskIds?: string[] }) {
+    saveTasks(tasks, opts);
   }
 
   function historySignature(history: HistoryByTaskId) {
@@ -1399,10 +1431,145 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .sort()
       .forEach((taskId) => {
         const rows = Array.isArray(history?.[taskId]) ? history[taskId] : [];
-        const rowSig = rows.map((e: any) => `${Number(e?.ts || 0)}|${Number(e?.ms || 0)}|${String(e?.name || "")}`).join(",");
+        const rowSig = rows
+          .map((e: any) => `${Number(e?.ts || 0)}|${Number(e?.ms || 0)}|${String(e?.name || "")}|${String(e?.note || "")}`)
+          .join(",");
         parts.push(`${taskId}:${rowSig}`);
       });
     return parts.join("||");
+  }
+
+  function loadFocusSessionNotes() {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(FOCUS_SESSION_NOTES_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== "object") return {};
+      const next: Record<string, string> = {};
+      Object.keys(parsed).forEach((taskId) => {
+        const value = String(parsed[taskId] || "").trim();
+        if (value) next[taskId] = value;
+      });
+      return next;
+    } catch {
+      return {};
+    }
+  }
+
+  function persistFocusSessionNotes() {
+    if (typeof window === "undefined") return;
+    try {
+      const next: Record<string, string> = {};
+      Object.keys(focusSessionNotesByTaskId || {}).forEach((taskId) => {
+        const value = String(focusSessionNotesByTaskId[taskId] || "").trim();
+        if (value) next[taskId] = value;
+      });
+      if (Object.keys(next).length) window.localStorage.setItem(FOCUS_SESSION_NOTES_KEY, JSON.stringify(next));
+      else window.localStorage.removeItem(FOCUS_SESSION_NOTES_KEY);
+    } catch {
+      // ignore localStorage failures
+    }
+  }
+
+  function setFocusSessionDraft(taskId: string, noteRaw: string) {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey) return;
+    const value = String(noteRaw || "").trim();
+    if (value) focusSessionNotesByTaskId[taskKey] = value;
+    else delete focusSessionNotesByTaskId[taskKey];
+    persistFocusSessionNotes();
+  }
+
+  function getFocusSessionDraft(taskId: string) {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey) return "";
+    return String(focusSessionNotesByTaskId[taskKey] || "");
+  }
+
+  function clearFocusSessionDraft(taskId: string) {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey || !focusSessionNotesByTaskId[taskKey]) return;
+    delete focusSessionNotesByTaskId[taskKey];
+    persistFocusSessionNotes();
+  }
+
+  function syncFocusSessionNotesInput(taskId: string | null) {
+    if (!els.focusSessionNotesInput) return;
+    els.focusSessionNotesInput.value = taskId ? getFocusSessionDraft(taskId) : "";
+  }
+
+  function scheduleFocusSessionNoteSave(taskId: string, noteRaw: string) {
+    if (focusSessionNoteSaveTimer != null) {
+      window.clearTimeout(focusSessionNoteSaveTimer);
+      focusSessionNoteSaveTimer = null;
+    }
+    focusSessionNoteSaveTimer = window.setTimeout(() => {
+      setFocusSessionDraft(taskId, noteRaw);
+      focusSessionNoteSaveTimer = null;
+    }, 250);
+  }
+
+  function flushPendingFocusSessionNoteSave(taskId?: string | null) {
+    const pendingTaskId = String(taskId || focusModeTaskId || "").trim();
+    if (focusSessionNoteSaveTimer != null) {
+      window.clearTimeout(focusSessionNoteSaveTimer);
+      focusSessionNoteSaveTimer = null;
+    }
+    if (!pendingTaskId) return;
+    const isActiveFocusTask = String(focusModeTaskId || "").trim() === pendingTaskId;
+    if (isActiveFocusTask && els.focusSessionNotesInput) {
+      setFocusSessionDraft(pendingTaskId, String(els.focusSessionNotesInput.value || ""));
+    }
+  }
+
+  function getLiveFocusSessionNoteValue(taskId?: string | null): string {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey) return "";
+    if (String(focusModeTaskId || "").trim() !== taskKey) return "";
+    return String(els.focusSessionNotesInput?.value || "").trim();
+  }
+
+  function captureSessionNoteSnapshot(taskId?: string | null): string {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey) return "";
+    flushPendingFocusSessionNoteSave(taskKey);
+    const liveNote = getLiveFocusSessionNoteValue(taskKey);
+    if (liveNote) {
+      setFocusSessionDraft(taskKey, liveNote);
+      return liveNote;
+    }
+    return getFocusSessionDraft(taskKey);
+  }
+
+  function captureResetActionSessionNote(taskId?: string | null): string {
+    const taskKey = String(taskId || "").trim();
+    if (!taskKey) return "";
+    const liveFocusNote = getLiveFocusSessionNoteValue(taskKey);
+    if (liveFocusNote) {
+      setFocusSessionDraft(taskKey, liveFocusNote);
+      return liveFocusNote;
+    }
+    return captureSessionNoteSnapshot(taskKey);
+  }
+
+  function getHistoryEntryNote(entry: any) {
+    const note = String(entry?.note || "").trim();
+    return note || "";
+  }
+
+  function openHistoryEntryNoteOverlay(taskId: string, entry: any) {
+    const note = getHistoryEntryNote(entry);
+    if (!note) return;
+    const taskMeta = getTaskMetaForHistoryId(taskId);
+    const taskName = String(taskMeta?.name || entry?.name || "").trim() || "Task";
+    const ts = normalizeHistoryTimestampMs(entry?.ts);
+    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = taskName;
+    if (els.historyEntryNoteMeta) {
+      els.historyEntryNoteMeta.textContent = ts > 0 ? `Saved ${formatDateTime(ts)}` : "Saved session note";
+    }
+    if (els.historyEntryNoteBody) els.historyEntryNoteBody.textContent = note;
+    openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
   }
 
   function loadHistoryIntoMemory() {
@@ -1412,6 +1579,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
       saveHistory(historyByTaskId);
     }
+  }
+
+  function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
+    return Object.values(history || {}).some(
+      (rows) => Array.isArray(rows) && rows.some((row) => typeof row?.note === "string" && row.note.trim())
+    );
+  }
+
+  function maybeRepairHistoryNotesInCloud() {
+    if (historyNoteCloudRepairAttempted) return;
+    if (!currentUid()) return;
+    if (!hasHistoryEntryNotes(historyByTaskId)) return;
+    historyNoteCloudRepairAttempted = true;
+    saveHistory(historyByTaskId);
   }
 
   function loadHistoryRangePrefs() {
@@ -1753,6 +1934,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardCardSizesDraftBeforeEdit = null;
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
@@ -2053,7 +2235,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function exportHistoryManagerCsv() {
     const rows: string[] = [];
-    rows.push(["taskId", "taskName", "entryName", "ts", "dateTimeIso", "ms", "color"].join(","));
+    rows.push(["taskId", "taskName", "entryName", "ts", "dateTimeIso", "ms", "color", "note"].join(","));
 
     const taskIds = Object.keys(historyByTaskId || {});
     taskIds.sort((a, b) => {
@@ -2078,6 +2260,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const dateTimeIso = new Date(ts).toISOString();
         const entryName = String(entry?.name || "").trim() || taskName;
         const color = entry?.color == null ? "" : String(entry.color);
+        const note = getHistoryEntryNote(entry);
         rows.push(
           [
             csvEscape(taskId),
@@ -2087,6 +2270,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             csvEscape(dateTimeIso),
             csvEscape(ms),
             csvEscape(color),
+            csvEscape(note),
           ].join(",")
         );
       });
@@ -2125,6 +2309,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const idxTs = header.indexOf("ts");
       const idxMs = header.indexOf("ms");
       const idxColor = header.indexOf("color");
+      const idxNote = header.indexOf("note");
       if (idxTaskId < 0 || idxTs < 0 || idxMs < 0) {
         alert("Invalid CSV format. Expected columns: taskId, ts, ms.");
         return;
@@ -2161,6 +2346,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const entryNameRaw = idxEntryName >= 0 ? String(row[idxEntryName] || "").trim() : "";
         const entryName = entryNameRaw || taskName || String(task?.name || "").trim() || "Task";
         const color = idxColor >= 0 ? String(row[idxColor] || "").trim() : "";
+        const note = idxNote >= 0 ? String(row[idxNote] || "").trim() : "";
         const key = `${ts}|${ms}|${entryName}`;
 
         let seen = seenByTask.get(taskId);
@@ -2179,6 +2365,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           ms,
           name: entryName,
           ...(color ? { color } : {}),
+          ...(note ? { note } : {}),
         });
         seen.add(key);
         imported += 1;
@@ -2659,11 +2846,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const ts = Number.isFinite(+e.ts) ? +e.ts : null;
         const ms = Number.isFinite(+e.ms) ? Math.max(0, +e.ms) : null;
         if (!ts || !ms) return;
+        const note = String(e.note || "").trim();
         nextHistory[destId].push({
           name: String(e.name || ""),
           ms,
           ts,
           color: e.color ? String(e.color) : undefined,
+          note: note || undefined,
         });
       });
     });
@@ -2775,8 +2964,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function appendHistory(taskId: string, entry: any) {
     if (!taskId) return;
+    const normalizedEntry = {
+      ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
+      name: String(entry?.name || ""),
+      ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
+      ...(entry?.color != null && String(entry.color).trim() ? { color: String(entry.color).trim() } : {}),
+      ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+    };
     if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
-    historyByTaskId[taskId].push(entry);
+    historyByTaskId[taskId].push(normalizedEntry);
+    appendHistoryEntry(taskId, normalizedEntry);
     saveHistory(historyByTaskId);
     void syncSharedTaskSummariesForTask(taskId).catch(() => {});
   }
@@ -2834,19 +3031,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
-  function appendCompletedSessionHistory(t: Task, completedAtMs: number, elapsedMs: number) {
+  function getCurrentSessionNoteForTask(taskId: string): string {
+    const taskKey = String(taskId || "");
+    if (!taskKey) return "";
+    return captureSessionNoteSnapshot(taskKey);
+  }
+
+  function appendCompletedSessionHistory(t: Task, completedAtMs: number, elapsedMs: number, noteOverride?: string) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!t || !t.id || safeElapsedMs <= 0) return;
+    const taskId = String(t.id || "");
+    const liveNote = getCurrentSessionNoteForTask(taskId);
+    const note = String(noteOverride || liveNote || "").trim();
+    if (note) setFocusSessionDraft(taskId, note);
     appendHistory(t.id, {
       ts: completedAtMs,
       name: t.name,
       ms: safeElapsedMs,
       color: sessionColorForTaskMs(t, safeElapsedMs),
+      ...(note ? { note } : {}),
     });
+    clearFocusSessionDraft(taskId);
+    if (String(focusModeTaskId || "") === taskId) syncFocusSessionNotesInput(taskId);
   }
 
   function awardLaunchXpForTask(t: Task | null | undefined) {
     if (!t?.id) return;
+    if (t.xpDisqualifiedUntilReset) return;
     const nextAward = awardTaskLaunchXp(rewardProgress, {
       taskId: String(t.id || ""),
       awardedAt: nowMs(),
@@ -3457,6 +3668,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderHistory(taskId);
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
@@ -3467,6 +3679,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function startTask(i: number) {
     const t = tasks[i];
     if (!t || t.running) return;
+    flushPendingFocusSessionNoteSave(String(t.id || ""));
     awardLaunchXpForTask(t);
     t.running = true;
     t.startMs = nowMs();
@@ -3483,13 +3696,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function stopTask(i: number) {
     const t = tasks[i];
     if (!t || !t.running) return;
-    const completedAtMs = nowMs();
+    flushPendingFocusSessionNoteSave(String(t.id || ""));
     t.accumulatedMs = getElapsedMs(t);
     t.running = false;
     t.startMs = null;
-    if (canLogSession(t) && t.accumulatedMs > 0) {
-      appendCompletedSessionHistory(t, completedAtMs, t.accumulatedMs);
-    }
     clearCheckpointBaseline(t.id);
     save();
     void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
@@ -3503,12 +3713,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return 1;
   }
 
-  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean }) {
+  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string }) {
     if (!t) return;
+    flushPendingFocusSessionNoteSave(String(t.id || ""));
     if (!!opts?.logHistory && canLogSession(t)) {
       const ms = getTaskElapsedMs(t);
       const completedAtMs = nowMs();
-      if (ms > 0) appendCompletedSessionHistory(t, completedAtMs, ms);
+      if (ms > 0) appendCompletedSessionHistory(t, completedAtMs, ms, opts?.sessionNote);
     }
     t.accumulatedMs = 0;
     t.running = false;
@@ -3520,25 +3731,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncFocusRunButtons(t?: Task | null) {
-    const startBtn = els.focusStartBtn;
-    const stopBtn = els.focusStopBtn;
-    const dial = els.focusDial as HTMLElement | null;
-    if (!startBtn || !stopBtn) return;
+    const dial = els.focusDial as HTMLButtonElement | null;
+    const hint = els.focusDialHint as HTMLElement | null;
+    if (!dial) return;
     if (!t) {
-      startBtn.style.display = "inline-flex";
-      stopBtn.style.display = "none";
-      if (dial) {
-        dial.classList.remove("isRunning", "isStopped");
-      }
+      dial.classList.remove("isRunning", "isStopped");
+      dial.setAttribute("aria-pressed", "false");
+      dial.setAttribute("aria-label", "Focus dial. Tap to launch timer");
+      if (hint) hint.textContent = "Tap to Launch";
       return;
     }
     const isRunning = !!t.running;
-    startBtn.style.display = isRunning ? "none" : "inline-flex";
-    stopBtn.style.display = isRunning ? "inline-flex" : "none";
-    if (dial) {
-      dial.classList.toggle("isRunning", isRunning);
-      dial.classList.toggle("isStopped", !isRunning);
-    }
+    dial.classList.toggle("isRunning", isRunning);
+    dial.classList.toggle("isStopped", !isRunning);
+    dial.setAttribute("aria-pressed", String(isRunning));
+    dial.setAttribute("aria-label", isRunning ? "Focus dial. Tap to stop timer" : "Focus dial. Tap to launch timer");
+    if (hint) hint.textContent = isRunning ? "Tap to Stop" : "Tap to Launch";
   }
 
   function formatSignedDelta(ms: number): string {
@@ -4070,6 +4278,159 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   }
 
+  function renderDashboardOverviewChart() {
+    const valueEl = els.dashboardOverviewValue as HTMLElement | null;
+    const subtextEl = els.dashboardOverviewSubtext as HTMLElement | null;
+    const sessionsEl = els.dashboardOverviewSessionsValue as HTMLElement | null;
+    const bestDayEl = els.dashboardOverviewBestDayValue as HTMLElement | null;
+    const deltaEl = els.dashboardOverviewDeltaValue as HTMLElement | null;
+    const axisEl = els.dashboardOverviewAxis as HTMLElement | null;
+    const emptyEl = els.dashboardOverviewChartEmpty as HTMLElement | null;
+    const canvas = els.dashboardOverviewChart;
+    if (!canvas) return;
+
+    const nowValue = nowMs();
+    const today = new Date(nowValue);
+    today.setHours(0, 0, 0, 0);
+    const days = Array.from({ length: 7 }, (_, idx) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - idx));
+      date.setHours(0, 0, 0, 0);
+      return {
+        startMs: date.getTime(),
+        endMs: date.getTime() + 86400000,
+        label: date.toLocaleDateString(undefined, { weekday: "narrow" }),
+        longLabel: date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
+        totalMs: 0,
+        sessions: 0,
+      };
+    });
+
+    const currentWeekStartMs = days[0]?.startMs || today.getTime();
+    const currentWeekEndMs = (days[days.length - 1]?.endMs || today.getTime() + 86400000) - 1;
+    const previousWeekStartMs = currentWeekStartMs - 7 * 86400000;
+    const previousWeekEndMs = currentWeekStartMs - 1;
+    let currentWeekTotalMs = 0;
+    let currentWeekSessions = 0;
+    let previousWeekTotalMs = 0;
+
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
+        if (ts >= previousWeekStartMs && ts <= previousWeekEndMs) previousWeekTotalMs += ms;
+        if (ts < currentWeekStartMs || ts > currentWeekEndMs) return;
+        currentWeekTotalMs += ms;
+        currentWeekSessions += 1;
+        for (const day of days) {
+          if (ts >= day.startMs && ts < day.endMs) {
+            day.totalMs += ms;
+            day.sessions += 1;
+            break;
+          }
+        }
+      });
+    });
+
+    const bestDay = days.reduce((best, day) => (day.totalMs > best.totalMs ? day : best), days[0]!);
+    const deltaPct = previousWeekTotalMs > 0 ? Math.round(((currentWeekTotalMs - previousWeekTotalMs) / previousWeekTotalMs) * 100) : null;
+    const hasData = currentWeekTotalMs > 0;
+    if (shouldHoldDashboardWidget("overview", hasData)) return;
+
+    if (valueEl) valueEl.textContent = formatDashboardDurationShort(currentWeekTotalMs);
+    if (subtextEl) {
+      subtextEl.textContent =
+        deltaPct == null
+          ? "Logged this week from history"
+          : `Logged this week from history, ${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs last week`;
+    }
+    if (sessionsEl) sessionsEl.textContent = String(currentWeekSessions);
+    if (bestDayEl) {
+      bestDayEl.textContent = bestDay && bestDay.totalMs > 0 ? `${bestDay.label} ${formatDashboardDurationShort(bestDay.totalMs)}` : "-";
+    }
+    if (deltaEl) deltaEl.textContent = deltaPct == null ? "0%" : `${deltaPct >= 0 ? "+" : ""}${deltaPct}%`;
+    if (axisEl) axisEl.innerHTML = days.map((day) => `<span>${escapeHtmlUI(day.label)}</span>`).join("");
+
+    const wrap = canvas.closest(".dashboardOverviewChartWrap") as HTMLElement | null;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
+    const height = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
+    if (width <= 0 || height <= 0) return;
+
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const maxMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
+    if (maxMs <= 0) {
+      if (emptyEl) emptyEl.style.display = "grid";
+      canvas.setAttribute("aria-label", "Weekly history overview chart with no completed history this week");
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = "none";
+
+    const chartLeft = 12;
+    const chartRight = width - 12;
+    const chartTop = 14;
+    const chartBottom = height - 18;
+    const chartWidth = Math.max(120, chartRight - chartLeft);
+    const chartHeight = Math.max(80, chartBottom - chartTop);
+    const points = days.map((day, idx) => ({
+      x: chartLeft + (chartWidth * idx) / Math.max(1, days.length - 1),
+      y: chartBottom - (day.totalMs / maxMs) * chartHeight,
+      day,
+    }));
+
+    ctx.strokeStyle = "rgba(140, 184, 201, 0.22)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i += 1) {
+      const pct = i / 3;
+      const y = Math.round(chartBottom - chartHeight * pct) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(chartLeft, y);
+      ctx.lineTo(chartRight, y);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0]!.x, chartBottom);
+    points.forEach((point) => ctx.lineTo(point.x, point.y));
+    ctx.lineTo(points[points.length - 1]!.x, chartBottom);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(0, 207, 200, 0.12)";
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+      if (idx === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.strokeStyle = "rgba(0, 207, 200, 0.95)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(0, 207, 200, 1)";
+    points.forEach((point) => {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    canvas.setAttribute(
+      "aria-label",
+      `Weekly history overview chart. ${formatDashboardDurationShort(currentWeekTotalMs)} logged across ${currentWeekSessions} completed sessions.`
+    );
+  }
+
   function renderDashboardFocusTrend() {
     const cardEl = els.dashboardFocusTrendCard as HTMLElement | null;
     const barsEl = els.dashboardFocusTrendBars as HTMLElement | null;
@@ -4112,6 +4473,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const maxMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
     const weekTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
+    if (shouldHoldDashboardWidget("focusTrend", weekTotalMs > 0)) return;
     const prevWeekStartMs = days[0]!.startMs - 7 * 86400000;
     const prevWeekEndMs = days[0]!.startMs;
     let prevWeekTotalMs = 0;
@@ -4192,6 +4554,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     byDayMs.forEach((v) => {
       if (v > maxDayMs) maxDayMs = v;
     });
+    if (shouldHoldDashboardWidget("heatCalendar", maxDayMs > 0)) return;
 
     const totalSlots = 42;
     const trailingFillers = Math.max(0, totalSlots - firstDow - daysInMonth);
@@ -4303,6 +4666,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       totalsMs[mode] += Math.max(0, getElapsedMs(task));
     });
     const totalMs = totalsMs.mode1 + totalsMs.mode2 + totalsMs.mode3;
+    if (shouldHoldDashboardWidget("modeDistribution", totalMs > 0)) return;
 
     const percentages: Record<MainMode, number> =
       totalMs > 0
@@ -4355,6 +4719,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
     if (!wrap) return;
     const rows = getDashboardAvgSessionRows(range, nowMs());
+    if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;
 
     const rect = wrap.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -4659,11 +5024,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       cancelLabel: "Cancel",
       checkboxLabel: "Log this entry",
       checkboxChecked: true,
-      onOk: () => {
+      onOk: async () => {
+        const sessionNote = captureResetActionSessionNote(String(t.id || ""));
+        if (sessionNote) setFocusSessionDraft(String(t.id || ""), sessionNote);
         clearResetTaskConfirmState();
         const doLog = !!els.confirmDeleteAll?.checked;
 
-        resetTaskStateImmediate(t, { logHistory: doLog });
+        resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
+        if (doLog) {
+          try {
+            await saveHistoryAndWait(historyByTaskId);
+          } catch {
+            // Keep local logged history when cloud history sync is temporarily unavailable.
+          }
+        }
 
         save();
         void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
@@ -4700,7 +5074,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           eligibleTasks.forEach((t) => {
             const ms = getTaskElapsedMs(t);
             if (ms > 0) {
-              appendCompletedSessionHistory(t, nowMs(), ms);
+              appendCompletedSessionHistory(t, nowMs(), ms, captureResetActionSessionNote(String(t.id || "")));
             }
           });
         }
@@ -5148,8 +5522,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           saveHistory(historyByTaskId);
         }
 
-        save();
         const deletedTaskId = String(t.id || "");
+        save({ deletedTaskIds: deletedTaskId ? [deletedTaskId] : [] });
         void deleteSharedTaskSummariesForTask(String(currentUid() || ""), deletedTaskId).catch(() => {});
         void refreshOwnSharedSummaries().catch(() => {});
         render();
@@ -5452,6 +5826,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderFocusCheckpointCompletionLog(t);
     syncFocusRunButtons(t);
     updateFocusInsights(t);
+    syncFocusSessionNotesInput(String(t.id || ""));
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
@@ -5470,16 +5845,27 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         activeEl.blur();
       }
     }
+    const closingFocusTaskId = String(focusModeTaskId || "").trim();
+    flushPendingFocusSessionNoteSave(closingFocusTaskId);
+    if (closingFocusTaskId && els.focusSessionNotesInput) {
+      setFocusSessionDraft(closingFocusTaskId, String(els.focusSessionNotesInput.value || ""));
+    }
     focusModeTaskId = null;
     focusModeTaskName = "";
     focusShowCheckpoints = true;
+    if (focusSessionNoteSaveTimer != null) {
+      window.clearTimeout(focusSessionNoteSaveTimer);
+      focusSessionNoteSaveTimer = null;
+    }
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "none";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "true");
     }
     if (els.focusTaskName) els.focusTaskName.textContent = "Task";
     if (els.focusTimerDays) els.focusTimerDays.textContent = "00d";
+    syncFocusSessionNotesInput(null);
     if (els.focusTimerClock) els.focusTimerClock.textContent = "00:00:00";
+    if (els.focusDialHint) els.focusDialHint.textContent = "Tap to Launch";
     if (els.focusDial) {
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress", "0%");
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", fillBackgroundForPct(0));
@@ -6465,7 +6851,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       else enqueueCheckpointBeeps(beepCount);
     }
     if (shouldResetAtFinal) {
-      resetTaskStateImmediate(t, { logHistory: shouldResetAtFinal === "resetLog" });
+      resetTaskStateImmediate(t, {
+        logHistory: shouldResetAtFinal === "resetLog",
+        sessionNote: captureResetActionSessionNote(String(t.id || "")),
+      });
     }
   }
 
@@ -7515,6 +7904,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     if (page === "dashboard") {
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();
@@ -7523,8 +7913,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function deleteTasksInMode(mode: MainMode) {
+    const deletedTaskIds = (tasks || [])
+      .filter((t) => taskModeOf(t) === mode)
+      .map((t) => String(t.id || ""))
+      .filter(Boolean);
     tasks = (tasks || []).filter((t) => taskModeOf(t) !== mode);
-    save();
+    save({ deletedTaskIds });
     render();
   }
 
@@ -8509,6 +8903,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           startHistorySelectionAnimation(taskId, null);
           const ui = getHistoryUi(taskId);
           if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
+          const entry = getHistoryForTask(taskId)[hit.abs];
+          if (entry && getHistoryEntryNote(entry)) openHistoryEntryNoteOverlay(taskId, entry);
         } else {
           state.selectedRelIndex = hit.rel;
           state.selectedAbsIndex = hit.abs;
@@ -8525,6 +8921,47 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
 
       renderHistory(taskId);
+    });
+    on(els.taskList, "dblclick", (ev: any) => {
+      const canvas = ev.target?.closest?.(".historyChartInline") as HTMLCanvasElement | null;
+      if (!canvas) return;
+      const taskEl = canvas.closest(".task") as HTMLElement | null;
+      const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+      if (!taskId) return;
+      const state = ensureHistoryViewState(taskId);
+
+      const rect = canvas.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+      let hitAbs: number | null = null;
+
+      for (let i = 0; i < state.barRects.length; i++) {
+        const r = state.barRects[i];
+        if (!r) continue;
+        const hx = typeof r.hitX === "number" ? r.hitX : r.x;
+        const hy = typeof r.hitY === "number" ? r.hitY : r.y;
+        const hw = typeof r.hitW === "number" ? r.hitW : r.w;
+        const hh = typeof r.hitH === "number" ? r.hitH : r.h;
+        if (x >= hx && x <= hx + hw && y >= hy && y <= hy + hh) {
+          hitAbs = typeof r.absIndex === "number" ? r.absIndex : null;
+          break;
+        }
+      }
+
+      if (hitAbs == null) {
+        for (let i = 0; i < state.labelHitRects.length; i++) {
+          const r = state.labelHitRects[i];
+          if (!r) continue;
+          if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+            hitAbs = typeof r.absIndex === "number" ? r.absIndex : null;
+            break;
+          }
+        }
+      }
+
+      if (hitAbs == null) return;
+      const entry = getHistoryForTask(taskId)[hitAbs];
+      if (entry && getHistoryEntryNote(entry)) openHistoryEntryNoteOverlay(taskId, entry);
     });
 
     let swipeStartX: number | null = null;
@@ -8658,6 +9095,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         renderHistory(taskId);
       }
       if (currentAppPage === "dashboard") {
+        renderDashboardOverviewChart();
         renderDashboardFocusTrend();
         renderDashboardModeDistribution();
         renderDashboardAvgSessionChart();
@@ -8691,6 +9129,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         avgSessionByTaskRange: dashboardAvgRange,
       });
       if (currentAppPage === "dashboard") {
+        renderDashboardOverviewChart();
         renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
@@ -8720,6 +9159,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         applyDashboardCardSizes();
         closeDashboardCardSizeMenus();
         if (currentAppPage === "dashboard") {
+          renderDashboardOverviewChart();
           renderDashboardFocusTrend();
           renderDashboardAvgSessionChart();
           renderDashboardHeatCalendar();
@@ -8733,12 +9173,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const rangeMenu = btn.closest("details") as HTMLDetailsElement | null;
       if (rangeMenu) rangeMenu.open = false;
       if (nextRange === dashboardAvgRange) {
+        renderDashboardOverviewChart();
         renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
         renderDashboardHeatCalendar();
         return;
       }
       saveDashboardAvgRange(nextRange);
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
@@ -9357,23 +9799,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       focusShowCheckpoints = !focusShowCheckpoints;
       syncFocusCheckpointToggle(t);
     });
-    on(els.focusStartBtn, "click", () => {
+    on(els.focusDial, "click", () => {
       if (!focusModeTaskId) return;
       const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
       if (idx < 0) return;
-      startTask(idx);
-    });
-    on(els.focusStopBtn, "click", () => {
-      if (!focusModeTaskId) return;
-      const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
-      if (idx < 0) return;
-      stopTask(idx);
+      const t = tasks[idx];
+      if (!t) return;
+      if (t.running) stopTask(idx);
+      else startTask(idx);
     });
     on(els.focusResetBtn, "click", () => {
       if (!focusModeTaskId) return;
       const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
       if (idx < 0) return;
       resetTask(idx);
+    });
+    on(els.focusSessionNotesInput, "input", () => {
+      if (!focusModeTaskId) return;
+      scheduleFocusSessionNoteSave(String(focusModeTaskId || ""), String(els.focusSessionNotesInput?.value || ""));
     });
 
     on(els.hmList, "click", (ev: any) => {
@@ -9555,6 +9998,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderCheckpointToast();
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardHeatCalendar();
@@ -9569,6 +10013,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     primeDashboardCacheFromShadow();
     deletedTaskMeta = loadDeletedMeta();
     loadHistoryIntoMemory();
+    focusSessionNotesByTaskId = loadFocusSessionNotes();
+    maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     load();
     loadAddTaskCustomNames();
@@ -9595,6 +10041,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     applyDashboardCardVisibility();
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
       renderDashboardAvgSessionChart();

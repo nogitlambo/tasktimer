@@ -17,7 +17,13 @@ export default function FocusModeScreen() {
       </div>
       <div className="focusDialWrap">
         <div className="focusDialPanel">
-          <div className="focusDial" id="focusDial">
+          <button
+            className="focusDial"
+            id="focusDial"
+            type="button"
+            aria-label="Focus dial. Tap to launch timer"
+            aria-pressed="false"
+          >
             <div className="focusDialOuter" aria-hidden="true" />
             <div className="focusDialProgress" aria-hidden="true" />
             <div className="focusCheckpointRing" id="focusCheckpointRing" aria-hidden="true" />
@@ -30,26 +36,21 @@ export default function FocusModeScreen() {
                 00:00:00
               </div>
               <div className="focusDialControls">
-                <div className="focusDialRunControls">
-                  <button className="btn btn-accent small" id="focusStartBtn" type="button">
-                    Start
-                  </button>
-                  <button className="btn btn-warn small" id="focusStopBtn" type="button">
-                    Stop
-                  </button>
+                <div className="focusDialHint" id="focusDialHint">
+                  Tap to Launch
                 </div>
-                <button
-                  className="iconBtn"
-                  id="focusResetBtn"
-                  type="button"
-                  title="Reset"
-                  aria-label="Reset"
-                >
-                  &#10227;
-                </button>
               </div>
             </div>
-          </div>
+          </button>
+          <button
+            className="iconBtn"
+            id="focusResetBtn"
+            type="button"
+            title="Reset"
+            aria-label="Reset"
+          >
+            &#10227;
+          </button>
         </div>
       </div>
       <div className="focusCheckpointToggleTop">
@@ -90,6 +91,16 @@ export default function FocusModeScreen() {
           <span className="focusInsightValue" id="focusInsightWeekDelta">
             --
           </span>
+        </div>
+        <div className="focusSessionNotes">
+          <div className="focusInsightsTitle">Notes for this session</div>
+          <textarea
+            className="text focusSessionNotesInput"
+            id="focusSessionNotesInput"
+            rows={3}
+            aria-label="Notes for this session"
+            placeholder="Add an optional note for this session. This note auto-saves while you type."
+          />
         </div>
       </div>
     </section>

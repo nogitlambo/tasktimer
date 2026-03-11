@@ -1,6 +1,7 @@
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
+  appendHistoryEntry as appendHistoryEntryToCloud,
   ensureUserProfileIndex,
   deleteDeletedTaskMeta,
   deleteTask,
@@ -148,7 +149,15 @@ function loadShadowTasks(uid = scopedUid()): Task[] {
 
 function loadShadowHistory(uid = scopedUid()): HistoryByTaskId {
   const parsed = loadScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, uid, {});
-  return parsed && typeof parsed === "object" ? parsed : {};
+  if (!parsed || typeof parsed !== "object") return {};
+  const next: HistoryByTaskId = {};
+  Object.keys(parsed).forEach((taskId) => {
+    const rows = Array.isArray(parsed[taskId]) ? parsed[taskId] : [];
+    next[taskId] = rows
+      .map((row) => normalizeHistoryEntry(row))
+      .filter((row): row is HistoryEntry => !!row);
+  });
+  return next;
 }
 
 function loadShadowDeletedMeta(uid = scopedUid()): DeletedTaskMeta {
@@ -198,7 +207,14 @@ function saveShadowTasks(tasks: Task[]): void {
 }
 
 function saveShadowHistory(historyByTaskId: HistoryByTaskId): void {
-  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, scopedUid(), historyByTaskId || {});
+  const next: HistoryByTaskId = {};
+  Object.keys(historyByTaskId || {}).forEach((taskId) => {
+    const rows = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+    next[taskId] = rows
+      .map((row) => normalizeHistoryEntry(row))
+      .filter((row): row is HistoryEntry => !!row);
+  });
+  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, scopedUid(), next);
 }
 
 function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
@@ -419,8 +435,22 @@ function clearPendingHistorySync(taskId: string): void {
 function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
   const arr = Array.isArray(rows) ? rows : [];
   return arr
-    .map((row) => `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}`)
+    .map((row) => `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}`)
     .join(",");
+}
+
+function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
+  if (!row || typeof row !== "object") return null;
+  const next: HistoryEntry = {
+    ts: Number.isFinite(Number((row as HistoryEntry).ts)) ? Math.floor(Number((row as HistoryEntry).ts)) : 0,
+    name: String((row as HistoryEntry).name || ""),
+    ms: Number.isFinite(Number((row as HistoryEntry).ms)) ? Math.max(0, Math.floor(Number((row as HistoryEntry).ms))) : 0,
+  };
+  const color = (row as HistoryEntry).color;
+  const note = (row as HistoryEntry).note;
+  if (typeof color === "string" && color.trim()) next.color = color;
+  if (typeof note === "string" && note.trim()) next.note = note.trim();
+  return next;
 }
 
 function cloneTasks(tasks: Task[] | null | undefined): Task[] {
@@ -672,13 +702,23 @@ export function loadTasks(): Task[] | null {
   return Array.isArray(cachedTasks) ? cloneTasks(cachedTasks) : null;
 }
 
-export function saveTasks(tasks: Task[]): void {
+type SaveTasksOptions = {
+  deletedTaskIds?: string[];
+};
+
+export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
   const next = cloneTasks(tasks);
   const prevById = new Map(cloneTasks(cachedTasks || []).map((t) => [String(t.id || ""), t]));
   const nextById = new Map(next.map((t) => [String(t.id || ""), t]));
   cachedTasks = next;
   saveShadowTasks(cachedTasks);
-  const removedTaskIds = Array.from(prevById.keys()).filter((taskId) => !!taskId && !nextById.has(taskId));
+  const removedTaskIds = Array.from(
+    new Set(
+      (Array.isArray(opts?.deletedTaskIds) ? opts!.deletedTaskIds : []).filter(
+        (taskId) => !!taskId && prevById.has(taskId) && !nextById.has(taskId)
+      )
+    )
+  );
   const changedTaskIds = Array.from(nextById.keys()).filter((taskId) => {
     if (!taskId) return false;
     return taskSignature(nextById.get(taskId)) !== taskSignature(prevById.get(taskId));
@@ -732,14 +772,22 @@ export function saveHistory(historyByTaskId: HistoryByTaskId): void {
   void Promise.all(
     entries.map(([taskId, rows]) =>
       replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
-        .then(() => {
-          clearPendingHistorySync(taskId);
-        })
         .catch(() => {
-          // Keep pending marker so hydration preserves local edits until sync succeeds.
+          // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
         })
     )
   );
+}
+
+export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
+  const normalizedTaskId = String(taskId || "").trim();
+  const normalizedEntry = normalizeHistoryEntry(entry);
+  if (!normalizedTaskId || !normalizedEntry) return;
+  const uid = currentUid();
+  if (!uid) return;
+  void appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
+    // Keep local history state when direct cloud append is denied/unavailable.
+  });
 }
 
 export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Promise<void> {
@@ -756,11 +804,8 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Prom
   await Promise.all(
     entries.map(([taskId, rows]) =>
       replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
-        .then(() => {
-          clearPendingHistorySync(taskId);
-        })
         .catch(() => {
-          // Keep pending marker so hydration preserves local edits until sync succeeds.
+          // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
         })
     )
   );

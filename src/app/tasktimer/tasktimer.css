@@ -1081,7 +1081,7 @@ body[data-theme="light"] .appFooterAlertBadge{
 .time{
   grid-area:time;
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-sevenseg);
+  font-family: var(--font-tight);
   font-weight:700;
   letter-spacing:.04em;
   color:#46f4ff;
@@ -1122,11 +1122,11 @@ body[data-theme="light"] .appFooterAlertBadge{
   justify-content:center;
 }
 .timeBoxValue{
-  font-family: var(--font-sevenseg);
+  font-family: var(--font-tight);
   font-size:23px;
   line-height:1;
   font-weight:700;
-  letter-spacing:.04em;
+  letter-spacing:.02em;
   color:#46f4ff;
   text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
@@ -3487,10 +3487,21 @@ optgroup{
   aspect-ratio:1/1;
   border-radius:50%;
   container-type: inline-size;
+  border:none;
+  padding:0;
+  background: transparent;
+  cursor:pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  appearance:none;
   --focus-inner-inset: clamp(36px, calc(8.7% + 13px), 54px);
   --focus-progress: 0%;
   --focus-progress-color: rgba(0,238,255,1);
   --focus-marker-radius: 42%;
+}
+.focusDial:focus-visible{
+  outline: 2px solid rgba(117,231,255,.92);
+  outline-offset: 8px;
 }
 .focusDialOuter{
   position:absolute;
@@ -3498,6 +3509,11 @@ optgroup{
   border-radius:50%;
   border:4px solid rgba(0,233,255,.95);
   box-shadow: 0 0 14px rgba(0,233,255,.8), 0 0 42px rgba(0,174,255,.5);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.focusDial:hover .focusDialOuter,
+.focusDial:focus-visible .focusDialOuter{
+  transform: scale(1.01);
 }
 .focusDial.isRunning .focusDialOuter{
   animation: focusDialPulseGlow 2.8s ease-in-out infinite;
@@ -3652,26 +3668,20 @@ optgroup{
 .focusDialControls{
   margin-top:8px;
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:6px;
   min-height:34px;
 }
-.focusDialRunControls{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-}
-#focusStartBtn,
-#focusStopBtn{
-  min-width:88px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
+.focusDialHint{
+  color: rgba(204,242,255,.9);
+  font-family: var(--font-tight);
+  font-size: clamp(11px, 2.6cqw, 16px);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   text-align:center;
-  font-weight:700;
+  white-space: nowrap;
 }
 #focusResetBtn{
   min-width:0;
@@ -3681,9 +3691,7 @@ optgroup{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-}
-#focusStopBtn{
-  color:#ff4d4d;
+  margin-top: 2px;
 }
 .focusInsights{
   width:min(82vw, 620px);
@@ -3728,6 +3736,23 @@ optgroup{
   font-style: italic;
   font-weight:600;
 }
+.focusSessionNotes{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(100,205,232,.14);
+}
+.focusSessionNotesInput{
+  width: 100%;
+  min-height: 74px;
+  margin-top: 6px;
+  resize: vertical;
+  background: rgba(11,18,31,.88);
+  color: rgba(230,245,255,.96);
+  border: 1px solid rgba(104,220,255,.18);
+}
+.focusSessionNotesInput::placeholder{
+  color: rgba(151,174,192,.9);
+}
 .focusTaskTitle{
   margin-top:12px;
   margin-bottom:30px;
@@ -3740,10 +3765,10 @@ optgroup{
   text-transform:uppercase;
 }
 .focusDialTime{
-  font-family: var(--font-sevenseg);
+  font-family: var(--font-tight);
   font-size:clamp(22px, 10.5cqw, 56px);
   font-weight:700;
-  letter-spacing:.04em;
+  letter-spacing:.06em;
   color:#46f4ff;
   text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
@@ -3755,10 +3780,10 @@ optgroup{
   overflow:hidden;
 }
 .focusDialDays{
-  font-family: var(--font-sevenseg);
+  font-family: var(--font-tight);
   font-size:clamp(14px, 4.8cqw, 24px);
   font-weight:700;
-  letter-spacing:.04em;
+  letter-spacing:.08em;
   color:#46f4ff;
   text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
@@ -4236,6 +4261,9 @@ body[data-theme="light"] .focusCheckpointToggleRow > span{
 body[data-theme="light"] .focusDial{
   --focus-progress-color: rgba(0,151,199,1);
 }
+body[data-theme="light"] .focusDial:focus-visible{
+  outline-color: rgba(0,151,199,.8);
+}
 body[data-theme="light"] .focusDialOuter{
   border-color: rgba(0,151,199,.86);
   box-shadow: 0 0 8px rgba(0,151,199,.24), 0 0 20px rgba(0,151,199,.16);
@@ -4280,6 +4308,9 @@ body[data-theme="light"] .focusDialTime,
 body[data-theme="light"] .focusDialDays{
   color:#005f7f;
   text-shadow: 0 0 1px rgba(0,151,199,.2);
+}
+body[data-theme="light"] .focusDialHint{
+  color: rgba(0,95,127,.88);
 }
 body[data-theme="light"] .focusCheckpointMark{
   background: rgba(90,100,116,.8);
@@ -4352,6 +4383,22 @@ body[data-theme="light"] .userGuideText,
 body[data-theme="light"] .userGuideSection p,
 body[data-theme="light"] .userGuideShotPlaceholder{
   color: rgba(0,0,0,.72);
+}
+body[data-theme="light"] .focusSessionNotes{
+  border-top-color: rgba(0,0,0,.12);
+}
+body[data-theme="light"] .focusSessionNotesInput{
+  background: rgba(255,255,255,.84);
+  color: #111111;
+  border-color: rgba(0,0,0,.16);
+}
+body[data-theme="light"] .focusSessionNotesInput::placeholder{
+  color: rgba(90,90,90,.92);
+}
+body[data-theme="light"] .historyEntryNoteBody{
+  background: rgba(255,255,255,.9);
+  border-color: rgba(0,0,0,.12);
+  color: #111111;
 }
 body[data-theme="light"] .settingsMenuItemIcon{
   filter:none;
@@ -4963,6 +5010,9 @@ body[data-theme="light"] .dashboardHeatDayNum{
   .focusInsightLabel,
   .focusInsightValue{
     font-size:11px;
+  }
+  .focusSessionNotesInput{
+    min-height: 66px;
   }
   #historyManagerScreen{
     padding:10px;
@@ -6805,6 +6855,31 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   margin: 2px 0 0;
 }
 
+#historyEntryNoteOverlay{
+  z-index: 96;
+}
+#historyEntryNoteOverlay .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(53,232,255,.26);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+}
+#historyEntryNoteOverlay .modalSubtext{
+  margin: 2px 0 0;
+}
+.historyEntryNoteBody{
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 12px;
+  max-height: min(40vh, 300px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(11,18,31,.78);
+  color: rgba(230,245,255,.94);
+}
+
 #friendProfileModal .footerBtns{
   margin-top: 12px;
   display: flex !important;
@@ -8288,16 +8363,37 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
   grid-area: actions;
   width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
   justify-content: center;
   justify-self: center;
+  align-items: center;
+  min-width: 0;
 }
 
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenu{
+  min-width: 0;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.small{
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 11px;
+}
+
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenu{
-  flex: 0 0 auto;
+  flex: 0 1 40px;
+  width: 40px;
+  min-width: 40px;
+}
+
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn{
+  width: 100%;
+  min-width: 40px;
 }
 
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
@@ -10520,5 +10616,104 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsAdminCo
     white-space: normal;
     margin-top: 0 !important;
     line-height: 1.1;
+  }
+}
+
+/* Final dashboard overview override: history-backed full-width flat hero chart. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 16px;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroCopyFull,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartPanel{
+  width: 100%;
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartPanel{
+  display: block;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap{
+  position: relative;
+  min-height: 252px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px 0 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChart{
+  width: 100%;
+  height: 220px;
+  display: block;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartEmpty{
+  position: absolute;
+  inset: 12px 0 28px;
+  display: none;
+  place-items: center;
+  text-align: center;
+  color: rgba(217,232,240,.72);
+  font-size: 13px;
+  pointer-events: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewAxis{
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  color: rgba(188,211,225,.62);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-align: center;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewStats{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewStats .dashboardHeroStat{
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap .dashboardHeroLegend,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap .dashboardHeroChartMarker{
+  display: none !important;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap{
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewAxis{
+  color: rgba(23,52,60,.62);
+}
+body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartEmpty{
+  color: rgba(23,52,60,.68);
+}
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewStats{
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChart{
+    height: 196px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewAxis{
+    gap: 4px;
+    font-size: 10px;
+    letter-spacing: .08em;
   }
 }

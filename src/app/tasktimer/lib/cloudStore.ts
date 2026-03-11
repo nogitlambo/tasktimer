@@ -52,6 +52,28 @@ export type WorkspaceSnapshot = {
   taskUi: TaskUiConfig | null;
 };
 
+function describeError(error: unknown): Record<string, unknown> {
+  if (!error) return { value: error };
+  if (error instanceof Error) {
+    const withCode = error as Error & { code?: unknown; customData?: unknown };
+    return {
+      name: error.name,
+      message: error.message,
+      code: typeof withCode.code === "string" ? withCode.code : withCode.code,
+      stack: error.stack || null,
+      customData: withCode.customData ?? null,
+    };
+  }
+  if (typeof error === "object") {
+    try {
+      return { ...(error as Record<string, unknown>) };
+    } catch {
+      return { value: String(error) };
+    }
+  }
+  return { value: error };
+}
+
 function dbOrNull() {
   return getFirebaseFirestoreClient();
 }
@@ -78,6 +100,20 @@ function taskHistoryCollection(uid: string, taskId: string) {
   const db = dbOrNull();
   if (!db) return null;
   return collection(db, "users", uid, "tasks", taskId, "history");
+}
+
+function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
+  if (!row || typeof row !== "object") return null;
+  const next: HistoryEntry = {
+    ts: Number.isFinite(Number((row as HistoryEntry).ts)) ? Math.floor(Number((row as HistoryEntry).ts)) : 0,
+    name: String((row as HistoryEntry).name || ""),
+    ms: Number.isFinite(Number((row as HistoryEntry).ms)) ? Math.max(0, Math.floor(Number((row as HistoryEntry).ms))) : 0,
+  };
+  const color = (row as HistoryEntry).color;
+  const note = (row as HistoryEntry).note;
+  if (typeof color === "string" && color.trim()) next.color = color;
+  if (typeof note === "string" && note.trim()) next.note = note.trim();
+  return next;
 }
 
 function deletedTaskDoc(uid: string, taskId: string) {
@@ -114,23 +150,42 @@ function emailLookupDocKey(email: string): string {
 
 async function upsertUserEmailLookup(uid: string): Promise<void> {
   const db = dbOrNull();
-  if (!db || !uid) return;
+  if (!db || !uid) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping userEmailLookup write", {
+        hasDb: !!db,
+        uid,
+      });
+    }
+    return;
+  }
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
   const authEmail = normalizeEmail(currentUser?.email);
   if (!authEmail) return;
   const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
-  await setDoc(
-    doc(db, "userEmailLookup", emailLookupDocKey(authEmail)),
-    {
-      uid,
-      email: authEmail,
-      displayName: authDisplayName,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  try {
+    await setDoc(
+      doc(db, "userEmailLookup", emailLookupDocKey(authEmail)),
+      {
+        uid,
+        email: authEmail,
+        displayName: authDisplayName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[tasktimer-cloud] Failed to write userEmailLookup", {
+        uid,
+        email: authEmail,
+        error: describeError(error),
+      });
+    }
+    throw error;
+  }
 }
 
 function asBool(v: unknown, fallback: boolean) {
@@ -227,16 +282,28 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
         : 1,
     mode,
   };
-  if (source.createdAt) row.createdAt = source.createdAt;
-  if (source.updatedAt) row.updatedAt = source.updatedAt;
   return row;
 }
 
 async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
   const root = usersDoc(uid);
-  if (!root) return;
+  if (!root) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping user root write because document ref is unavailable", {
+        uid,
+      });
+    }
+    return;
+  }
   const db = dbOrNull();
-  if (!db) return;
+  if (!db) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping user root write because Firestore is unavailable", {
+        uid,
+      });
+    }
+    return;
+  }
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
   const authEmail = normalizeEmail(currentUser?.email);
@@ -252,20 +319,32 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
     }
   }
 
-  await setDoc(
-    root,
-    {
-      schemaVersion: 1,
-      ...(authEmail ? { email: authEmail } : {}),
-      displayName: authDisplayName,
-      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      ...(patch || {}),
-    },
-    { merge: true }
-  );
+  try {
+    await setDoc(
+      root,
+      {
+        schemaVersion: 1,
+        ...(authEmail ? { email: authEmail } : {}),
+        displayName: authDisplayName,
+        createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...(patch || {}),
+      },
+      { merge: true }
+    );
 
-  await upsertUserEmailLookup(uid);
+    await upsertUserEmailLookup(uid);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[tasktimer-cloud] Failed to upsert user root", {
+        uid,
+        hasEmail: !!authEmail,
+        patchKeys: Object.keys(patch || {}),
+        error: describeError(error),
+      });
+    }
+    throw error;
+  }
 }
 
 export async function ensureUserProfileIndex(uid: string): Promise<void> {
@@ -298,7 +377,8 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     const task = mapTaskFromFirestore(d.id, d.data() as Record<string, unknown>);
     const histSnap = await getDocs(query(collection(db, "users", uid, "tasks", d.id, "history")));
     const history = histSnap.docs
-      .map((h) => h.data() as HistoryEntry)
+      .map((h) => normalizeHistoryEntryRecord(h.data()))
+      .filter((row): row is HistoryEntry => !!row)
       .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
     return { task, taskId: d.id, history };
   });
@@ -371,19 +451,50 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
 
 export async function saveTask(uid: string, task: Task): Promise<void> {
   const ref = taskDoc(uid, String(task.id || ""));
-  if (!ref) return;
+  if (!ref) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping task save because task ref is unavailable", {
+        uid,
+        taskId: String(task.id || ""),
+      });
+    }
+    return;
+  }
   await upsertUserRoot(uid);
   const taskRow = mapTaskToFirestore(task);
-  await setDoc(
-    ref,
-    {
-      ...taskRow,
-      createdAt: taskRow.createdAt || serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      schemaVersion: 1,
-    },
-    { merge: true }
-  );
+  try {
+    await setDoc(
+      ref,
+      {
+        ...taskRow,
+        createdAt: taskRow.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: 1,
+      },
+      { merge: true }
+    );
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[tasktimer-cloud] Task saved", {
+        uid,
+        taskId: String(task.id || ""),
+        databaseRowKeys: Object.keys(taskRow),
+      });
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      const describedError = describeError(error);
+      console.error("[tasktimer-cloud] Failed to save task", {
+        uid,
+        taskId: String(task.id || ""),
+        databaseRowKeys: Object.keys(taskRow),
+        taskRow,
+        error: describedError,
+        errorMessage: describedError.message ?? null,
+        errorCode: describedError.code ?? null,
+      });
+    }
+    throw error;
+  }
 }
 
 export function subscribeToTaskCollection(uid: string, listener: () => void): () => void {
@@ -420,9 +531,11 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
   const name = String(entry?.name || "");
   const color = entry?.color == null ? null : String(entry.color);
+  const note = typeof entry?.note === "string" ? entry.note.trim() : "";
   const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
   const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
   if (color) payload.color = color;
+  if (note) payload.note = note;
   await setDoc(doc(col, entryId), payload);
 }
 
@@ -430,7 +543,8 @@ function historyEntryFingerprint(entry: HistoryEntry): string {
   const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
   const name = String(entry?.name || "");
-  return `${ts}|${ms}|${name}`;
+  const note = typeof entry?.note === "string" ? entry.note.trim() : "";
+  return `${ts}|${ms}|${name}|${note}`;
 }
 
 function fnv1a32(input: string): string {
@@ -463,6 +577,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
       ms,
       name: String(entry?.name || ""),
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
+      ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
     };
     const key = historyEntryFingerprint(normalized);
     if (seen.has(key)) return;
@@ -478,6 +593,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
         ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
         name: String(entry?.name || ""),
         ...(entry?.color != null ? { color: String(entry.color) } : {}),
+        ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
         createdAt: serverTimestamp(),
       })
     )

@@ -35,6 +35,7 @@ export type HistoryEntry = {
   name: string;
   ms: number;
   color?: string;
+  note?: string;
 };
 
 export type HistoryByTaskId = Record<string, HistoryEntry[]>;

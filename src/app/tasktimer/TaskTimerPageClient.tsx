@@ -9,6 +9,7 @@ import ExportTaskOverlay from "./components/ExportTaskOverlay";
 import FocusModeScreen from "./components/FocusModeScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
+import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import DesktopAppRail from "./components/DesktopAppRail";
@@ -107,125 +108,43 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                   </div>
 
                   <section className="dashboardHeroPanel" aria-label="Overview highlights">
-                    <div className="dashboardHeroCopy">
+                    <div className="dashboardHeroCopy dashboardHeroCopyFull">
                       <h3 className="dashboardHeroTitle">Overview</h3>
-                      <div className="dashboardHeroValue">32h 40m</div>
-                      <p className="dashboardHeroSubtext">
-                        Logged this week
-                        <span className="dashboardHeroDelta"> +14% vs last week</span>
+                      <div className="dashboardHeroValue" id="dashboardOverviewValue">
+                        0m
+                      </div>
+                      <p className="dashboardHeroSubtext" id="dashboardOverviewSubtext">
+                        Logged this week from history
                       </p>
-                    </div>
-                    <div className="dashboardHeroChartPanel" aria-label="Weekly trend chart">
-                      <div className="dashboardHeroChartWrap">
-                        <svg className="dashboardHeroChart" viewBox="0 0 760 290" role="img" aria-label="Weekly trend comparison for control, 3D view, and alternative">
-                          <defs>
-                            <linearGradient id="dashboardHeroBgGlow" x1="0" y1="0" x2="1" y2="1">
-                              <stop offset="0%" stopColor="rgba(31,130,255,0.22)" />
-                              <stop offset="100%" stopColor="rgba(243,72,192,0.04)" />
-                            </linearGradient>
-                            <linearGradient id="dashboardHeroControlStroke" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#ff5dbe" />
-                              <stop offset="100%" stopColor="#ff34aa" />
-                            </linearGradient>
-                            <linearGradient id="dashboardHeroViewStroke" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#f2f7ff" />
-                              <stop offset="100%" stopColor="#87d5ff" />
-                            </linearGradient>
-                            <linearGradient id="dashboardHeroAltStroke" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#0d7fff" />
-                              <stop offset="100%" stopColor="#29c3ff" />
-                            </linearGradient>
-                            <filter id="dashboardHeroGlowPink" x="-30%" y="-30%" width="160%" height="160%">
-                              <feGaussianBlur stdDeviation="6" result="blur" />
-                              <feMerge>
-                                <feMergeNode in="blur" />
-                                <feMergeNode in="SourceGraphic" />
-                              </feMerge>
-                            </filter>
-                            <filter id="dashboardHeroGlowBlue" x="-30%" y="-30%" width="160%" height="160%">
-                              <feGaussianBlur stdDeviation="5" result="blur" />
-                              <feMerge>
-                                <feMergeNode in="blur" />
-                                <feMergeNode in="SourceGraphic" />
-                              </feMerge>
-                            </filter>
-                          </defs>
-
-                          <rect x="0" y="0" width="760" height="290" rx="22" fill="url(#dashboardHeroBgGlow)" opacity="0.48" />
-
-                          <g className="dashboardHeroAxis" aria-hidden="true">
-                            <text x="20" y="50">800</text>
-                            <text x="20" y="102">600</text>
-                            <text x="20" y="154">400</text>
-                            <text x="20" y="206">200</text>
-                            <text x="28" y="258">0</text>
-                          </g>
-
-                          <g className="dashboardHeroGrid" aria-hidden="true">
-                            <line x1="64" y1="40" x2="564" y2="40" />
-                            <line x1="64" y1="92" x2="564" y2="92" />
-                            <line x1="64" y1="144" x2="564" y2="144" />
-                            <line x1="64" y1="196" x2="564" y2="196" />
-                            <line x1="64" y1="248" x2="564" y2="248" />
-                          </g>
-
-                          <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <path
-                              className="dashboardHeroChartLine dashboardHeroChartLineAlt"
-                              d="M64 160 C110 120, 158 86, 214 90 S332 128, 388 118 S472 70, 564 84"
-                              filter="url(#dashboardHeroGlowBlue)"
-                            />
-                            <path
-                              className="dashboardHeroChartLine dashboardHeroChartLineControl"
-                              d="M64 182 C118 132, 160 120, 214 150 S320 242, 388 214 S486 134, 564 176"
-                              filter="url(#dashboardHeroGlowPink)"
-                            />
-                            <path
-                              className="dashboardHeroChartLine dashboardHeroChartLineView"
-                              d="M64 196 C122 210, 170 206, 214 150 S320 74, 388 90 S480 174, 564 112"
-                              filter="url(#dashboardHeroGlowBlue)"
-                            />
-                          </g>
-
-                          <g className="dashboardHeroChartMarker" aria-hidden="true">
-                            <line x1="214" y1="96" x2="214" y2="150" />
-                            <circle cx="214" cy="150" r="7" />
-                            <circle cx="214" cy="150" r="12" className="dashboardHeroChartMarkerRing" />
-                            <g transform="translate(182 74)">
-                              <rect width="78" height="34" rx="6" />
-                              <text x="39" y="22">489.12</text>
-                            </g>
-                          </g>
-                        </svg>
-
-                        <div className="dashboardHeroLegend" aria-label="Chart legend">
-                          <span className="dashboardHeroLegendItem">
-                            <span className="dashboardHeroLegendDot isControl" aria-hidden="true" />
-                            Control
-                          </span>
-                          <span className="dashboardHeroLegendItem">
-                            <span className="dashboardHeroLegendDot isView" aria-hidden="true" />
-                            3D View
-                          </span>
-                          <span className="dashboardHeroLegendItem">
-                            <span className="dashboardHeroLegendDot isAlt" aria-hidden="true" />
-                            Alternative
-                          </span>
+                      <div className="dashboardHeroStats dashboardOverviewStats" aria-label="Overview summary">
+                        <div className="dashboardHeroStat">
+                          <strong id="dashboardOverviewSessionsValue">0</strong>
+                          <span className="dashboardHeroStatLabel">completed sessions</span>
+                        </div>
+                        <div className="dashboardHeroStat">
+                          <strong id="dashboardOverviewBestDayValue">-</strong>
+                          <span className="dashboardHeroStatLabel">best day</span>
+                        </div>
+                        <div className="dashboardHeroStat">
+                          <strong id="dashboardOverviewDeltaValue">0%</strong>
+                          <span className="dashboardHeroStatLabel">vs previous week</span>
                         </div>
                       </div>
-
-                      <div className="dashboardHeroStats">
-                        <div className="dashboardHeroStat">
-                          <strong>33%</strong>
-                          <span className="dashboardHeroStatLabel">Percentile of users who entered goal</span>
+                    </div>
+                    <div className="dashboardHeroChartPanel dashboardOverviewChartPanel" aria-label="Weekly history overview chart">
+                      <div className="dashboardHeroChartWrap dashboardOverviewChartWrap">
+                        <canvas className="dashboardHeroChart dashboardOverviewChart" id="dashboardOverviewChart" role="img" aria-label="Weekly history overview chart" />
+                        <div className="dashboardOverviewChartEmpty" id="dashboardOverviewChartEmpty" style={{ display: "none" }}>
+                          No completed history in the current week.
                         </div>
-                        <div className="dashboardHeroStat">
-                          <strong>20%</strong>
-                          <span className="dashboardHeroStatLabel">New consumers per day</span>
-                        </div>
-                        <div className="dashboardHeroStat">
-                          <strong>23%</strong>
-                          <span className="dashboardHeroStatLabel">Returning focus rate</span>
+                        <div className="dashboardOverviewAxis" id="dashboardOverviewAxis" aria-hidden="true">
+                          <span>M</span>
+                          <span>T</span>
+                          <span>W</span>
+                          <span>T</span>
+                          <span>F</span>
+                          <span>S</span>
+                          <span>S</span>
                         </div>
                       </div>
                     </div>
@@ -519,6 +438,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
       <ExportTaskOverlay />
       <ConfirmOverlay />
       <HistoryAnalysisOverlay />
+      <HistoryEntryNoteOverlay />
       <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
           <h2>Send Friend Request</h2>

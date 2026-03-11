@@ -42,6 +42,10 @@ function getFirebaseClientConfig() {
   };
 }
 
+export function getFirebaseClientConfigSnapshot() {
+  return getFirebaseClientConfig();
+}
+
 function hasFirebaseClientConfig(config: ReturnType<typeof getFirebaseClientConfig>) {
   return Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
 }
@@ -98,6 +102,20 @@ function createFirebaseAuth(): Auth | null {
       verifyFirebaseAuthSetup(auth, firebaseConfig);
       return auth;
     }
+  } catch {
+    return null;
+  }
+}
+
+export function getFirebaseAppClient() {
+  if (typeof window === "undefined") return null;
+  const firebaseConfig = getFirebaseClientConfig();
+  if (!hasFirebaseClientConfig(firebaseConfig)) {
+    warnInvalidFirebaseClientConfig(firebaseConfig);
+    return null;
+  }
+  try {
+    return getApps().length ? getApp() : initializeApp(firebaseConfig);
   } catch {
     return null;
   }
