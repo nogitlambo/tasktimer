@@ -818,6 +818,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function normalizeTaskTimerRoutePath(pathRaw: string) {
+    const trimmed = String(pathRaw || "").trim();
+    if (!trimmed) return "";
+    const withoutQuery = trimmed.split("#")[0]?.split("?")[0] || "";
+    let normalized = withoutQuery.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
+    normalized = normalized.replace(/\/index\.html$/i, "");
+    if (/\/tasktimer\/settings\.html$/i.test(normalized)) return "/tasktimer/settings";
+    if (/\/tasktimer\/history-manager\.html$/i.test(normalized)) return "/tasktimer/history-manager";
+    if (/\/tasktimer\/user-guide\.html$/i.test(normalized)) return "/tasktimer/user-guide";
+    if (/\/tasktimer(?:\/index)?$/i.test(normalized)) return "/tasktimer";
+    return normalized;
+  }
+
+  function isValidTaskTimerBackRoute(pathRaw: string) {
+    const path = normalizeTaskTimerRoutePath(pathRaw);
+    return (
+      path === "/tasktimer" ||
+      path === "/tasktimer/settings" ||
+      path === "/tasktimer/history-manager" ||
+      path === "/tasktimer/user-guide"
+    );
+  }
+
   function screenTokenForCurrent(pageOverride?: AppPage) {
     const path = normalizedPathname();
     if (isTaskTimerMainAppPath(path)) {
@@ -982,6 +1005,43 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return true;
   }
 
+  function resolveBackNavigationTarget(token: string, currentToken: string, currentPath: string) {
+    const rawToken = String(token || "").trim();
+    if (!rawToken || rawToken === currentToken) return null;
+
+    if (rawToken.startsWith("app:")) {
+      const page = parseAppPageFromToken(rawToken);
+      if (!page) return null;
+      if (screenTokenForCurrent(page) === currentToken) return null;
+      return { kind: "app" as const, page };
+    }
+
+    if (rawToken.startsWith("route:")) {
+      const routePath = normalizeTaskTimerRoutePath(rawToken.slice("route:".length));
+      const currentRoutePath = normalizeTaskTimerRoutePath(currentPath);
+      if (!routePath || routePath === currentRoutePath) return null;
+      if (!isValidTaskTimerBackRoute(routePath)) return null;
+      return { kind: "route" as const, path: routePath };
+    }
+
+    return null;
+  }
+
+  function canUseBrowserHistoryFallback(currentPath: string) {
+    try {
+      if ((window.history?.length || 0) <= 1) return false;
+      const referrer = String(document.referrer || "").trim();
+      if (!referrer) return false;
+      const url = new URL(referrer, window.location.href);
+      if (url.origin !== window.location.origin) return false;
+      const refPath = normalizeTaskTimerRoutePath(url.pathname || "");
+      const nowPath = normalizeTaskTimerRoutePath(currentPath);
+      return !!refPath && refPath !== nowPath && isValidTaskTimerBackRoute(refPath);
+    } catch {
+      return false;
+    }
+  }
+
   function handleAppBackNavigation(): boolean {
     if (closeTopOverlayIfOpen()) return true;
     if (closeMobileDetailPanelIfOpen()) return true;
@@ -990,33 +1050,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const stack = loadNavStack();
     const currentToken = screenTokenForCurrent();
     while (stack.length && stack[stack.length - 1] === currentToken) stack.pop();
-    const prevToken = stack.pop() || null;
+    let nextTarget: ReturnType<typeof resolveBackNavigationTarget> = null;
+    while (stack.length && !nextTarget) {
+      const candidate = stack.pop() || "";
+      nextTarget = resolveBackNavigationTarget(candidate, currentToken, path);
+    }
     saveNavStack(stack);
 
-    if (!prevToken) {
-      showExitAppConfirm();
-      return true;
-    }
-
-    const prevAppPage = parseAppPageFromToken(prevToken);
-    const prevIsSameRoot = prevToken.startsWith("app:") && isTaskTimerMainAppPath(path);
-    if (prevIsSameRoot && prevAppPage) {
+    if (nextTarget?.kind === "app") {
       suppressNavStackPush = true;
-      applyAppPage(prevAppPage);
+      applyAppPage(nextTarget.page);
       suppressNavStackPush = false;
+      ensureNavStackCurrentScreen();
       return true;
     }
 
-    if (prevToken.startsWith("route:")) {
-      const routePath = prevToken.slice("route:".length);
-      const target = routePath.endsWith(".html") || window.location.protocol === "file:" ? routePath : `${routePath}`;
-      window.location.href = target;
+    if (nextTarget?.kind === "route") {
+      window.location.href = appRoute(nextTarget.path);
       return true;
     }
 
-    if (prevToken.startsWith("app:")) {
-      const page = prevAppPage;
-      window.location.href = appPathForPage(page || "tasks");
+    if (canUseBrowserHistoryFallback(path)) {
+      window.history.back();
       return true;
     }
 
@@ -1046,6 +1101,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       suppressNavStackPush = true;
       applyAppPage(nextPage);
       suppressNavStackPush = false;
+      ensureNavStackCurrentScreen();
     };
     on(window, "popstate", onPopState as any);
 
@@ -1558,17 +1614,98 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return note || "";
   }
 
-  function openHistoryEntryNoteOverlay(taskId: string, entry: any) {
-    const note = getHistoryEntryNote(entry);
-    if (!note) return;
-    const taskMeta = getTaskMetaForHistoryId(taskId);
-    const taskName = String(taskMeta?.name || entry?.name || "").trim() || "Task";
-    const ts = normalizeHistoryTimestampMs(entry?.ts);
-    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = taskName;
-    if (els.historyEntryNoteMeta) {
-      els.historyEntryNoteMeta.textContent = ts > 0 ? `Saved ${formatDateTime(ts)}` : "Saved session note";
+  function historyLocalDateKey(tsRaw: unknown) {
+    const ts = normalizeHistoryTimestampMs(tsRaw);
+    if (ts <= 0) return "";
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
+  }
+
+  function getHistoryNoteLinesForDisplay(taskId: string, displayEntry: any, rangeMode: "entries" | "day") {
+    const singleNote = getHistoryEntryNote(displayEntry);
+    if (rangeMode !== "day") {
+      if (!singleNote) return [];
+      const ts = normalizeHistoryTimestampMs(displayEntry?.ts);
+      return [
+        {
+          timeText: ts > 0 ? formatDateTime(ts) : "Saved session note",
+          noteText: singleNote,
+          copyText: singleNote,
+        },
+      ];
     }
-    if (els.historyEntryNoteBody) els.historyEntryNoteBody.textContent = note;
+
+    const dayKey = historyLocalDateKey(displayEntry?.ts);
+    if (!dayKey) return [];
+    return getHistoryForTask(taskId)
+      .filter((entry: any) => historyLocalDateKey(entry?.ts) === dayKey)
+      .map((entry: any) => {
+        const note = getHistoryEntryNote(entry);
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        if (!note) return null;
+        return {
+          ts,
+          timeText: ts > 0 ? formatDateTime(ts) : "Saved session note",
+          noteText: note,
+          copyText: note,
+        };
+      })
+      .filter((entry): entry is { ts: number; timeText: string; noteText: string; copyText: string } => !!entry)
+      .sort((a, b) => b.ts - a.ts)
+      .map((entry) => ({ timeText: entry.timeText, noteText: entry.noteText, copyText: entry.copyText }));
+  }
+
+  async function copyTextToClipboard(textRaw: string) {
+    const text = String(textRaw || "");
+    if (!text) return false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // Fall through to execCommand fallback.
+    }
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.setAttribute("readonly", "");
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  function openHistoryEntryNoteOverlay(taskId: string, displayEntry: any, rangeMode: "entries" | "day" = "entries") {
+    const notes = getHistoryNoteLinesForDisplay(taskId, displayEntry, rangeMode);
+    if (!notes.length) return;
+    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Task Notes";
+    if (els.historyEntryNoteMeta) {
+      els.historyEntryNoteMeta.textContent = notes.length > 1 ? `${notes.length} session notes` : "Session note";
+    }
+    if (els.historyEntryNoteBody) {
+      els.historyEntryNoteBody.innerHTML = notes
+        .map(
+          (note, index) => `<div class="historyEntryNoteItem${index < notes.length - 1 ? " historyEntryNoteItem-spaced" : ""}">
+            <div class="historyEntryNoteLine"><span class="historyEntryNoteTime">${escapeHtmlUI(note.timeText)}</span><span class="historyEntryNoteSep"> - </span><span class="historyEntryNoteText">${escapeHtmlUI(note.noteText)}</span></div>
+            <div class="historyEntryNoteCopyCell">
+              <button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtmlUI(note.copyText)}">Copy</button>
+            </div>
+          </div>`
+        )
+        .join("");
+    }
     openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
   }
 
@@ -3638,8 +3775,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             }
             ${
               themeMode === "command"
-                ? '<button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>'
-                : '<button class="iconBtn" data-action="reset" title="Reset">&#10227;</button>'
+                ? `<button class="iconBtn" data-action="reset" title="${
+                    t.running ? "Stop task to reset" : "Reset"
+                  }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
+                : `<button class="iconBtn" data-action="reset" title="${
+                    t.running ? "Stop task to reset" : "Reset"
+                  }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
             }
             <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
             <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
@@ -3743,12 +3884,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function syncFocusRunButtons(t?: Task | null) {
     const dial = els.focusDial as HTMLButtonElement | null;
     const hint = els.focusDialHint as HTMLElement | null;
+    const resetBtn = els.focusResetBtn as HTMLButtonElement | null;
     if (!dial) return;
     if (!t) {
       dial.classList.remove("isRunning", "isStopped");
       dial.setAttribute("aria-pressed", "false");
       dial.setAttribute("aria-label", "Focus dial. Tap to launch timer");
       if (hint) hint.textContent = "Tap to Launch";
+      if (resetBtn) {
+        resetBtn.disabled = false;
+        resetBtn.title = "Reset";
+        resetBtn.setAttribute("aria-label", "Reset");
+      }
       return;
     }
     const isRunning = !!t.running;
@@ -3757,6 +3904,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dial.setAttribute("aria-pressed", String(isRunning));
     dial.setAttribute("aria-label", isRunning ? "Focus dial. Tap to stop timer" : "Focus dial. Tap to launch timer");
     if (hint) hint.textContent = isRunning ? "Tap to Stop" : "Tap to Launch";
+    if (resetBtn) {
+      resetBtn.disabled = isRunning;
+      resetBtn.title = isRunning ? "Stop task to reset" : "Reset";
+      resetBtn.setAttribute("aria-label", isRunning ? "Stop task to reset" : "Reset");
+    }
   }
 
   function formatSignedDelta(ms: number): string {
@@ -4017,6 +4169,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const padR = 12;
     const padT = 14;
     const barCount = Math.max(1, entries.length);
+    const slotCount = Math.max(1, historyPageSize(taskId));
     // Keep consistent label styling between 7-entry and 14-entry views.
     const useAngledLabels = true;
     const padB = useAngledLabels ? (veryCompactLabels ? 110 : 122) : compactLabels ? 84 : 72;
@@ -4057,8 +4210,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         : [];
     const maxGoalMs = milestoneMs.length ? Math.max(...milestoneMs.map((m) => m.ms || 0), 0) : 0;
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
-    const gap = barCount <= 10 ? Math.max(6, Math.floor(plotW * 0.02)) : Math.max(3, Math.floor(plotW * 0.01));
-    const barW = Math.max(4, Math.floor((plotW - gap * (barCount - 1)) / barCount));
+    const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotW * 0.02)) : Math.max(3, Math.floor(plotW * 0.01));
+    const barW = Math.max(4, Math.floor((plotW - gap * (slotCount - 1)) / slotCount));
 
     ctx.textAlign = "center";
 
@@ -4837,14 +4990,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const rangeDays = state.rangeDays || 7;
     const cutoffMs = nowMs() - rangeDays * 24 * 60 * 60 * 1000;
     const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
-    const localDateKey = (ts: number) => {
-      const d = new Date(ts);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const da = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${da}`;
-    };
-    const distinctDayCount = new Set(all.map((e: any) => localDateKey(+e.ts || 0))).size;
+    const distinctDayCount = new Set(all.map((e: any) => historyLocalDateKey(e?.ts))).size;
     const pageSize = historyPageSize(taskId);
     const isDayMode = state.rangeMode === "day";
     const groupedByDay: Array<any> = [];
@@ -4853,7 +4999,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       all.forEach((e: any) => {
         const ts = +e.ts || 0;
         const ms = Math.max(0, +e.ms || 0);
-        const key = localDateKey(ts);
+        const key = historyLocalDateKey(ts);
         const last = groupedByDay[groupedByDay.length - 1];
         if (last && last.dayKey === key) {
           last.ms += ms;
@@ -4950,17 +5096,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const groupedByDay: Array<any> = [];
     const historyTask = tasks.find((task) => String(task.id || "") === String(taskId));
-    const localDateKey = (ts: number) => {
-      const d = new Date(ts);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const da = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${da}`;
-    };
     all.forEach((e: any) => {
       const ts = +e.ts || 0;
       const ms = Math.max(0, +e.ms || 0);
-      const key = localDateKey(ts);
+      const key = historyLocalDateKey(ts);
       const last = groupedByDay[groupedByDay.length - 1];
       if (last && last.dayKey === key) {
         last.ms += ms;
@@ -5018,6 +5157,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function resetTask(i: number) {
     const t = tasks[i];
     if (!t) return;
+    if (t.running) return;
 
     const applyResetTaskConfirmState = () => {
       const shouldLog = !!els.confirmDeleteAll?.checked;
@@ -7490,10 +7630,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     container.classList.remove("isEmptyStatus");
     container.innerHTML = rows
       .map((row) => {
-        const peerUid = opts.incoming ? row.senderUid : row.receiverUid;
         const peerAliasRaw = opts.incoming ? row.senderAlias : row.receiverAlias;
-        const peerAlias = String(peerAliasRaw || "").trim() || peerUid;
         const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
+        const peerAlias = String(peerAliasRaw || "").trim() || String(peerEmail || "").trim() || "Unknown user";
         const requestedAtMs =
           row.createdAt && typeof (row.createdAt as any).toMillis === "function"
             ? Number((row.createdAt as any).toMillis())
@@ -7519,18 +7658,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           <img src="${escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">
             <div class="friendRequestAlias">${escapeHtmlUI(peerAlias)}</div>
-            <div class="friendRequestUid">${escapeHtmlUI(peerUid)}</div>
           </div>
         </div>`;
         if (opts.incoming) {
-          const incomingSentence = `<b>${escapeHtmlUI(peerAlias)}</b>${peerEmail ? ` (${escapeHtmlUI(peerEmail)})` : ""} has sent you a friend request!`;
+          const incomingSentence = `<b>${escapeHtmlUI(peerAlias)}</b> has sent you a friend request!`;
           return `<div class="settingsDetailNote"><div>${incomingSentence}</div><div>Date Requested: ${escapeHtmlUI(
             requestedDate
           )}</div>${identityHtml}${actionBtns}</div>`;
         }
-        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div>${identityHtml}${
-          peerEmail ? `<div>${escapeHtmlUI(peerEmail)}</div>` : ""
-        }${actionBtns}</div>`;
+        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div>${identityHtml}${actionBtns}</div>`;
       })
       .join("");
   }
@@ -8916,8 +9052,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           startHistorySelectionAnimation(taskId, null);
           const ui = getHistoryUi(taskId);
           if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
-          const entry = getHistoryForTask(taskId)[hit.abs];
-          if (entry && getHistoryEntryNote(entry)) openHistoryEntryNoteOverlay(taskId, entry);
+          const display = getHistoryDisplayForTask(taskId, state);
+          const entry = display[hit.abs];
+          if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode);
         } else {
           state.selectedRelIndex = hit.rel;
           state.selectedAbsIndex = hit.abs;
@@ -8973,8 +9110,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
 
       if (hitAbs == null) return;
-      const entry = getHistoryForTask(taskId)[hitAbs];
-      if (entry && getHistoryEntryNote(entry)) openHistoryEntryNoteOverlay(taskId, entry);
+      const display = getHistoryDisplayForTask(taskId, state);
+      const entry = display[hitAbs];
+      if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode);
     });
 
     let swipeStartX: number | null = null;
@@ -9439,6 +9577,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (ov) closeOverlay(ov);
       });
     });
+    on(document, "click", (e: any) => {
+      const copyBtn = e.target?.closest?.("[data-history-note-copy]") as HTMLButtonElement | null;
+      if (!copyBtn) return;
+      const text = String(copyBtn.getAttribute("data-history-note-copy") || "");
+      void copyTextToClipboard(text).then((ok) => {
+        const prev = copyBtn.textContent || "Copy";
+        copyBtn.textContent = ok ? "Copied" : "Copy failed";
+        window.setTimeout(() => {
+          copyBtn.textContent = prev === "Copied" || prev === "Copy failed" ? "Copy" : prev;
+        }, 1200);
+      });
+    });
 
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
@@ -9798,7 +9948,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       );
     });
     on(els.historyManagerBackBtn, "click", () => {
-      navigateToAppRoute("/tasktimer");
+      navigateToAppRoute("/tasktimer/settings");
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {

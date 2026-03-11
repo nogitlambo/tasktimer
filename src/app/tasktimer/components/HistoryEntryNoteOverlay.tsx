@@ -4,10 +4,12 @@ export default function HistoryEntryNoteOverlay() {
   return (
     <div className="overlay" id="historyEntryNoteOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Session Note">
-        <h2 id="historyEntryNoteTitle">Session Note</h2>
-        <p className="modalSubtext" id="historyEntryNoteMeta">
-          Session note
-        </p>
+        <div className="historyEntryNoteHeader">
+          <h2 id="historyEntryNoteTitle">Task Notes</h2>
+          <p className="modalSubtext" id="historyEntryNoteMeta">
+            Session note
+          </p>
+        </div>
         <div className="confirmText historyEntryNoteBody" id="historyEntryNoteBody">
           No note available.
         </div>

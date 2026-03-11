@@ -407,6 +407,7 @@ function HomeContent() {
         return;
       }
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(auth, provider);
       console.info("[auth-debug] google", {
         stage: "afterSignInWithPopup",

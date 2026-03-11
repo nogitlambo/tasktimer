@@ -590,12 +590,13 @@ export default function SettingsPanel() {
         (user.providerData || []).map((provider) => String(provider?.providerId || "")).filter(Boolean)
       );
       const canUseGoogleReauth = providerIds.has("google.com");
-      if (code === "auth/requires-recent-login") {
-        if (canUseGoogleReauth) {
-          const provider = new GoogleAuthProvider();
-          try {
-            setAuthStatus("Recent sign-in required. Re-authenticating with Google...");
-            setAuthError("");
+      if (code === "auth/requires-recent-login") {
+        if (canUseGoogleReauth) {
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+          try {
+            setAuthStatus("Recent sign-in required. Re-authenticating with Google...");
+            setAuthError("");
             if (shouldUseRedirectAuth()) {
               const ref = accountStateDocRef(user.uid);
               if (ref) {

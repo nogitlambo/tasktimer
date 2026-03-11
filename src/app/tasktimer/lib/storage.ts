@@ -38,7 +38,7 @@ export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
 const HISTORY_SAVE_WORKING_MIN_VISIBLE_MS = 600;
 let historySaveWorkingActiveCount = 0;
 let historySaveWorkingShownAtMs = 0;
-let historySaveWorkingHideTimer: ReturnType<typeof window.setTimeout> | null = null;
+let historySaveWorkingHideTimer: number | null = null;
 
 function applyHistorySaveWorkingVisibility(visible: boolean): void {
   if (typeof document === "undefined") return;

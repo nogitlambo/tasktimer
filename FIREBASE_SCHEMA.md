@@ -234,8 +234,12 @@ Allowed fields (`isFriendRequestDocShape`):
 - `receiverEmail: string | null`
 - `senderAlias: string | null`
 - `senderAvatarId: string | null`
+- `senderRankThumbnailSrc: string | null`
+- `senderCurrentRankId: string | null`
 - `receiverAlias: string | null`
 - `receiverAvatarId: string | null`
+- `receiverRankThumbnailSrc: string | null`
+- `receiverCurrentRankId: string | null`
 - `status: "pending" | "approved" | "declined"`
 - `createdAt: timestamp-like (rules check non-null)`
 - `updatedAt: timestamp-like (rules check non-null)`
@@ -266,13 +270,15 @@ Allowed fields (`isFriendshipDocCreate`):
 
 - `pairId: string`
 - `users: [uidA, uidB]` (2-element list, distinct strings)
-- `profileByUid: map` (contains both users as keys, each value map)
+- `profileByUid: map` (contains both users as keys, each value map with `alias`, `avatarId`, `avatarCustomSrc`, `rankThumbnailSrc`, `currentRankId`)
 - `createdAt: timestamp`
 - `createdBy: string`
 
 Write flow:
 
-- Create-only (no update/delete)
+- Create by either member
+- Self-profile updates allowed for a member's own `profileByUid.{uid}` branch
+- Delete disallowed by rules
 
 Query pattern in app:
 

@@ -3693,7 +3693,8 @@ optgroup{
   justify-content:center;
   margin-top: 2px;
 }
-.focusInsights{
+.focusInsights,
+.focusSessionNotes{
   width:min(82vw, 620px);
   margin: 22px auto 0;
   padding: 12px 14px;
@@ -3737,16 +3738,17 @@ optgroup{
   font-weight:600;
 }
 .focusSessionNotes{
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(100,205,232,.14);
+  margin-top: 14px;
 }
 .focusSessionNotesInput{
   width: 100%;
   min-height: 74px;
   margin-top: 6px;
   resize: vertical;
-  background: rgba(11,18,31,.88);
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none;
   color: rgba(230,245,255,.96);
   border: 1px solid rgba(104,220,255,.18);
 }
@@ -4414,7 +4416,8 @@ body[data-theme="light"] .appPagePlaceholder,
 body[data-theme="light"] .dashboardShell,
 body[data-theme="light"] .dashboardCard,
 body[data-theme="light"] .userGuideWindow,
-body[data-theme="light"] .focusInsights{
+body[data-theme="light"] .focusInsights,
+body[data-theme="light"] .focusSessionNotes{
   background: #0d0f13;
   border-color: rgba(0,0,0,.15);
   box-shadow: none;
@@ -4437,10 +4440,13 @@ body[data-theme="light"] .userGuideShotPlaceholder{
   color: rgba(0,0,0,.72);
 }
 body[data-theme="light"] .focusSessionNotes{
-  border-top-color: rgba(0,0,0,.12);
+  background: #0d0f13;
 }
 body[data-theme="light"] .focusSessionNotesInput{
-  background: rgba(255,255,255,.84);
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none;
   color: #111111;
   border-color: rgba(0,0,0,.16);
 }
@@ -4460,6 +4466,12 @@ body[data-theme="light"] .historyEntryNoteBody{
   background: rgba(255,255,255,.9);
   border-color: rgba(0,0,0,.12);
   color: #111111;
+}
+body[data-theme="light"] .historyEntryNoteItem-spaced{
+  border-bottom-color: rgba(70,52,120,.14);
+}
+body[data-theme="light"] .historyEntryNoteTime{
+  color: #7b43d6;
 }
 body[data-theme="light"] .settingsMenuItemIcon{
   filter:none;
@@ -5060,7 +5072,8 @@ body[data-theme="light"] .dashboardHeatDayNum{
   .focusDialDays{
     font-size:clamp(16px, 5vw, 22px);
   }
-  .focusInsights{
+  .focusInsights,
+  .focusSessionNotes{
     width:100%;
     margin:20px auto 0;
     padding:10px 10px;
@@ -6923,27 +6936,81 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 
 #historyEntryNoteOverlay{
   z-index: 96;
+  background: transparent;
 }
 #historyEntryNoteOverlay .modal{
   background: #0d0f13;
   border: 1px solid rgba(53,232,255,.26);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  padding: 14px 14px 12px;
+  width: fit-content;
+  min-width: min(320px, calc(100vw - 28px));
+  max-width: min(560px, calc(100vw - 28px));
+  min-height: 120px;
+  max-height: min(62vh, 440px);
+  padding: 12px 12px 10px;
 }
-#historyEntryNoteOverlay .modalSubtext{
-  margin: 2px 0 0;
+#historyEntryNoteOverlay .historyEntryNoteHeader{
+  display: block;
+  margin-bottom: 10px;
+}
+#historyEntryNoteOverlay .historyEntryNoteHeader h2{
+  margin: 0;
+}
+#historyEntryNoteOverlay .historyEntryNoteHeader .modalSubtext{
+  margin: 3px 0 0;
 }
 .historyEntryNoteBody{
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin-top: 12px;
-  max-height: min(40vh, 300px);
+  margin-top: 0;
+  min-width: min(296px, calc(100vw - 52px));
+  max-width: min(520px, calc(100vw - 52px));
+  min-height: 68px;
+  max-height: min(46vh, 320px);
   overflow: auto;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(11,18,31,.78);
   color: rgba(230,245,255,.94);
+  font-size: 10px;
+  line-height: 1.2;
+}
+.historyEntryNoteItem{
+  display: grid;
+  grid-template-columns: minmax(0, 9fr) minmax(36px, 1fr);
+  align-items: stretch;
+  column-gap: 8px;
+}
+.historyEntryNoteItem-spaced{
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.historyEntryNoteLine{
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.historyEntryNoteTime{
+  color: #b78cff;
+}
+.historyEntryNoteCopyCell{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.historyEntryNoteCopyLink{
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgb(0,207,200);
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#historyEntryNoteOverlay .confirmBtns{
+  margin-top: 10px;
+  justify-content: center;
 }
 
 #friendProfileModal .footerBtns{
@@ -10443,6 +10510,11 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineS
 }
 
 /* Final dashboard overview override: history-backed full-width flat hero chart. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
+body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
+  background: transparent !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
   grid-template-columns: minmax(0, 1fr) !important;
   gap: 16px;

@@ -92,16 +92,15 @@ export default function FocusModeScreen() {
             --
           </span>
         </div>
-        <div className="focusSessionNotes">
-          <div className="focusInsightsTitle">Notes for this session</div>
-          <textarea
-            className="text focusSessionNotesInput"
-            id="focusSessionNotesInput"
-            rows={3}
-            aria-label="Notes for this session"
-            placeholder="Add an optional note for this session. This note auto-saves while you type."
-          />
-        </div>
+      </div>
+      <div className="focusSessionNotes">
+        <div className="focusInsightsTitle">Notes for this session</div>
+        <textarea
+          className="text focusSessionNotesInput"
+          id="focusSessionNotesInput"
+          rows={3}
+          aria-label="Notes for this session"
+        />
       </div>
     </section>
   );
