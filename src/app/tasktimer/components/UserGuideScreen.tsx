@@ -43,7 +43,7 @@ export default function UserGuideScreen({ onBack }: Props) {
       },
       {
         id: "ug-nav",
-        title: "Navigation",
+        title: "Modules",
         icon: "/Dashboard.svg",
         paragraphs: [
           "Use the footer bar to move between Dashboard, Tasks, and additional pages. The Settings button opens the dedicated settings route.",

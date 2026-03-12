@@ -364,6 +364,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let activeFriendProfileName = "";
   let historyEntryNoteAnchorTaskId = "";
   let groupsStatusMessage = "Ready.";
+  const openFriendSharedTaskUids = new Set<string>();
   let friendProfileCacheByUid: Record<string, FriendProfile> = {};
   let cloudRefreshInFlight: Promise<void> | null = null;
   let lastCloudRefreshAtMs = 0;
@@ -7314,10 +7315,39 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function setGroupsStatus(message: string) {
-    groupsStatusMessage = String(message || "").trim() || "Ready.";
+    const nextMessage = String(message || "").trim();
+    groupsStatusMessage = nextMessage || "Ready.";
     if (els.groupsFriendRequestStatus) {
       els.groupsFriendRequestStatus.textContent = groupsStatusMessage;
+      (els.groupsFriendRequestStatus as HTMLElement).style.display =
+        nextMessage && nextMessage !== "Ready." ? "block" : "none";
     }
+  }
+
+  function syncOpenFriendSharedTaskUidsFromDom() {
+    const list = els.groupsFriendsList as HTMLElement | null;
+    if (!list) return;
+    list.querySelectorAll(".friendSharedTasksDetails[data-friend-uid]").forEach((node) => {
+      const details = node as HTMLDetailsElement;
+      const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
+      if (!friendUid) return;
+      if (details.open) openFriendSharedTaskUids.add(friendUid);
+      else openFriendSharedTaskUids.delete(friendUid);
+    });
+  }
+
+  function wireFriendSharedTaskDetailsState() {
+    const list = els.groupsFriendsList as HTMLElement | null;
+    if (!list) return;
+    list.querySelectorAll(".friendSharedTasksDetails[data-friend-uid]").forEach((node) => {
+      const details = node as HTMLDetailsElement;
+      const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
+      if (!friendUid) return;
+      details.addEventListener("toggle", () => {
+        if (details.open) openFriendSharedTaskUids.add(friendUid);
+        else openFriendSharedTaskUids.delete(friendUid);
+      });
+    });
   }
 
   function openTaskExportModal(i: number) {
@@ -8031,12 +8061,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function renderGroupsFriendsList() {
     if (!els.groupsFriendsList) return;
+    syncOpenFriendSharedTaskUidsFromDom();
     const uid = currentUid();
     if (!uid) {
+      openFriendSharedTaskUids.clear();
       els.groupsFriendsList.textContent = "Sign in to view friends.";
       return;
     }
     if (!groupsFriendships.length) {
+      openFriendSharedTaskUids.clear();
       els.groupsFriendsList.textContent = "No friends yet.";
       return;
     }
@@ -8047,13 +8080,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const alias = String(profile?.alias || "").trim() || friendUid;
         const avatarSrc = getFriendAvatarSrc(profile);
         const summaries = groupsSharedSummaries.filter((entry) => entry.ownerUid === friendUid);
-        return { friendUid, alias, avatarSrc, summaries };
+        const isOpen = openFriendSharedTaskUids.has(friendUid);
+        return { friendUid, alias, avatarSrc, summaries, isOpen };
       })
       .sort((a, b) => {
         const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
         if (byAlias !== 0) return byAlias;
         return a.friendUid.localeCompare(b.friendUid, undefined, { sensitivity: "base" });
       });
+
+    const visibleFriendUids = new Set(friendRows.map((row) => row.friendUid).filter(Boolean));
+    openFriendSharedTaskUids.forEach((friendUid) => {
+      if (!visibleFriendUids.has(friendUid)) openFriendSharedTaskUids.delete(friendUid);
+    });
 
     els.groupsFriendsList.innerHTML = friendRows
       .map((row) => {
@@ -8099,7 +8138,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const taskCount = row.summaries.length;
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
         return `<div class="friendEntryWrap">
-          <details class="friendSharedTasksDetails">
+          <details class="friendSharedTasksDetails" data-friend-uid="${escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow">
               <button class="friendIdentityProfileBtn friendIdentityAvatarBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
                 row.friendUid
@@ -8126,6 +8165,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         </div>`;
       })
       .join("");
+    wireFriendSharedTaskDetailsState();
   }
 
   function renderGroupsSharedByYouList() {

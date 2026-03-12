@@ -151,10 +151,6 @@ canvas {
   background-clip: text;
 }
 
-.landingV2 .landingV2SignalGradient.isFlickering {
-  animation: landingV2SignalGradientInterference 1.35s linear;
-}
-
 .landingV2 .landingV2SignalText {
   position: relative;
   display: inline-block;
@@ -188,109 +184,76 @@ canvas {
   transform: translate3d(0.032em, 0.012em, 0);
 }
 
-.landingV2 .landingV2SignalText.isFlickering {
-  animation: landingV2SignalFlicker 1.35s linear;
+.landingV2 .landingV2SignalLetter {
+  display: inline-block;
 }
 
-.landingV2 .landingV2SignalText.isFlickering::before,
-.landingV2 .landingV2SignalText.isFlickering::after {
-  animation: landingV2SignalLayerFlicker 1.35s linear;
+.landingV2 .landingV2SignalLetter.isFlickering {
+  animation-name: landingV2SignalLetterFlicker, landingV2SignalGradientInterference;
+  animation-duration: 2000ms, 2000ms;
+  animation-timing-function: linear, linear;
+  animation-fill-mode: both, both;
+  animation-delay: calc(var(--flicker-index, 0) * 85ms), calc(var(--flicker-index, 0) * 85ms);
 }
 
-@keyframes landingV2SignalFlicker {
+@keyframes landingV2SignalLetterFlicker {
   0%,
   100% {
     opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: brightness(1) saturate(1);
   }
-  6% {
-    opacity: 0.92;
-  }
-  11% {
-    opacity: 0.28;
-  }
-  17% {
-    opacity: 0.84;
-  }
-  23% {
-    opacity: 0.58;
-  }
-  31% {
-    opacity: 0.18;
-  }
-  37% {
-    opacity: 0.9;
-  }
-  43% {
-    opacity: 0.42;
-  }
-  52% {
-    opacity: 0.96;
-  }
-  61% {
-    opacity: 0.24;
-  }
-  67% {
-    opacity: 0.8;
-  }
-  74% {
-    opacity: 0.34;
-  }
-  81% {
-    opacity: 0.88;
-  }
-  89% {
-    opacity: 0.48;
-  }
-  95% {
+  5% {
     opacity: 0.94;
   }
-}
-
-@keyframes landingV2SignalLayerFlicker {
-  0% {
-    opacity: 0.68;
+  9% {
+    opacity: 0.22;
+    transform: translate3d(-0.018em, -0.01em, 0);
+    filter: brightness(1.08) saturate(1.15);
   }
-  7% {
-    opacity: 0.18;
-  }
-  13% {
+  15% {
     opacity: 0.9;
+    transform: translate3d(0.012em, 0, 0);
   }
-  19% {
-    opacity: 0.26;
+  22% {
+    opacity: 0.46;
   }
-  27% {
-    opacity: 0.78;
+  29% {
+    opacity: 0.97;
+    transform: translate3d(-0.01em, 0.008em, 0);
   }
-  35% {
-    opacity: 0.1;
+  34% {
+    opacity: 0.28;
+    filter: brightness(1.12) saturate(1.2);
   }
   41% {
-    opacity: 0.94;
+    opacity: 0.88;
+    transform: translate3d(0.014em, -0.008em, 0);
   }
-  49% {
-    opacity: 0.22;
+  48% {
+    opacity: 0.36;
   }
-  57% {
-    opacity: 0.86;
+  55% {
+    opacity: 0.98;
+    transform: translate3d(-0.012em, 0, 0);
   }
-  64% {
-    opacity: 0.14;
+  63% {
+    opacity: 0.4;
   }
-  72% {
+  69% {
     opacity: 0.92;
+    filter: brightness(1.06) saturate(1.1);
   }
-  79% {
+  76% {
     opacity: 0.3;
+    transform: translate3d(0.01em, 0.01em, 0);
   }
-  87% {
-    opacity: 0.82;
+  83% {
+    opacity: 0.96;
   }
-  94% {
-    opacity: 0.2;
-  }
-  100% {
-    opacity: 0.68;
+  91% {
+    opacity: 0.5;
+    transform: translate3d(-0.006em, 0, 0);
   }
 }
 
@@ -768,7 +731,6 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landingV2 .landingV2SignalGradient.isFlickering,
   .landingV2 .landingV2SignalText::before,
   .landingV2 .landingV2SignalText::after {
     animation: none;
@@ -777,9 +739,7 @@ canvas {
   .landingV2 .landingV2SignalText::after {
     opacity: 0;
   }
-  .landingV2 .landingV2SignalText.isFlickering,
-  .landingV2 .landingV2SignalText.isFlickering::before,
-  .landingV2 .landingV2SignalText.isFlickering::after {
+  .landingV2 .landingV2SignalLetter.isFlickering {
     animation: none;
   }
 }

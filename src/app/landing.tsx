@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { LandingExperimentalProps } from "./landing.types";
 
+const DIVERGENT_FLICKER_MS = 2000;
+
 type LandingIntroSequenceProps = {
   showActions: boolean;
   preHeroText: string;
@@ -67,7 +69,7 @@ function LandingIntroSequence({
         setValue(text.slice(0, idx));
         if (!flickerStarted && idx >= divergentStartIndex) {
           flickerStarted = true;
-          flickerEndsAt = performance.now() + 1350;
+          flickerEndsAt = performance.now() + DIVERGENT_FLICKER_MS;
           setFlickerSignal(true);
         }
         await wait(typeMsPerChar);
@@ -126,10 +128,20 @@ function LandingIntroSequence({
           {typedNeuro ? <span className="landingV2SignalGradient">{typedNeuro}</span> : null}
           {typedDivergent ? (
             <span
-              className={`landingV2SignalText landingV2SignalGradient${flickerSignal ? " isFlickering" : ""}`}
+              className="landingV2SignalText landingV2SignalGradient"
               data-text={typedDivergent}
+              aria-label={typedDivergent}
             >
-              {typedDivergent}
+              {typedDivergent.split("").map((letter, index) => (
+                <span
+                  key={`${letter}-${index}`}
+                  className={`landingV2SignalLetter${flickerSignal ? " isFlickering" : ""}`}
+                  style={{ ["--flicker-index" as string]: index } as React.CSSProperties}
+                  aria-hidden="true"
+                >
+                  {letter}
+                </span>
+              ))}
             </span>
           ) : null}
           <span>{typedSuffix}</span>

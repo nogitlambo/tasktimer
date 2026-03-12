@@ -496,10 +496,13 @@ export async function deleteFriendship(
     const pairSnap = await getDoc(pairRef);
     if (!pairSnap.exists()) return { ok: false, message: "Friendship not found." };
 
+    // Query only sets that are guaranteed readable under rules:
+    // - current user's owned summaries
+    // - summaries where the current user is the friend/recipient
     const ownedSharedSnap = await getDocs(query(collection(db, "shared_task_summaries"), where("ownerUid", "==", ownerUid)));
-    const peerSharedSnap = await getDocs(query(collection(db, "shared_task_summaries"), where("ownerUid", "==", peerUid)));
+    const peerSharedSnap = await getDocs(query(collection(db, "shared_task_summaries"), where("friendUid", "==", ownerUid)));
     const ownedSharedDocs = ownedSharedSnap.docs.filter((row) => String(row.get("friendUid") || "").trim() === peerUid);
-    const peerSharedDocs = peerSharedSnap.docs.filter((row) => String(row.get("friendUid") || "").trim() === ownerUid);
+    const peerSharedDocs = peerSharedSnap.docs.filter((row) => String(row.get("ownerUid") || "").trim() === peerUid);
     await deleteDoc(pairRef);
 
     const cleanupResults = await Promise.allSettled([
@@ -518,6 +521,14 @@ export async function deleteFriendship(
   } catch (err: unknown) {
     const firebaseErr = err as FirebaseError | undefined;
     const code = String(firebaseErr?.code || "").trim();
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[friendsStore] deleteFriendship failed", {
+        ownerUid: ownUid,
+        peerUid: friendUid,
+        code: code || null,
+        message: String(firebaseErr?.message || "").trim() || null,
+      });
+    }
     if (code === "permission-denied") {
       return { ok: false, message: "Permission denied while deleting friend." };
     }
