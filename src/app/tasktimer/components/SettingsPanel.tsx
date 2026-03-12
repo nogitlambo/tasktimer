@@ -1,18 +1,20 @@
-"use client";
-
+"use client";
+
+import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { clearScopedStorageState, STORAGE_KEY } from "@/app/tasktimer/lib/storage";
-import {
-  deleteUser,
-  getRedirectResult,
-  GoogleAuthProvider,
-  onAuthStateChanged,
+import {
+  deleteUser,
+  getRedirectResult,
+  GoogleAuthProvider,
+  onAuthStateChanged,
   reauthenticateWithPopup,
   reauthenticateWithRedirect,
   signOut,
   type User,
+  updateProfile,
 } from "firebase/auth";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
@@ -21,9 +23,11 @@ import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   getRankLadderThumbnailSrc,
+  RANK_LADDER,
+  RANK_MODAL_THUMBNAIL_BY_ID,
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
-import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
+import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 
 type SettingsPaneKey =
   | "general"
@@ -50,6 +54,7 @@ const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
+const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 
 function avatarStorageKeyForUid(uid: string) {
@@ -178,25 +183,30 @@ function SettingsDetailPane({
 }
 
 export default function SettingsPanel() {
-  const [activePane, setActivePane] = useState<SettingsPaneKey | null>(null);
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
-  const [feedbackEmail, setFeedbackEmail] = useState("");
-  const [feedbackType, setFeedbackType] = useState("");
-  const [feedbackDetails, setFeedbackDetails] = useState("");
+  const [activePane, setActivePane] = useState<SettingsPaneKey | null>(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackAnonymous, setFeedbackAnonymous] = useState(false);
+  const [feedbackType, setFeedbackType] = useState("");
+  const [feedbackDetails, setFeedbackDetails] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
-  const [authUserAlias, setAuthUserAlias] = useState("");
-  const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
+  const [authUserAlias, setAuthUserAlias] = useState("");
+  const [authUserAliasDraft, setAuthUserAliasDraft] = useState("");
+  const [authUserAliasEditing, setAuthUserAliasEditing] = useState(false);
+  const [authUserAliasBusy, setAuthUserAliasBusy] = useState(false);
+  const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
   const [authHasGoogleProvider, setAuthHasGoogleProvider] = useState(false);
   const [authGooglePhotoUrl, setAuthGooglePhotoUrl] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
-  const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
+  const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
+  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
@@ -260,8 +270,8 @@ export default function SettingsPanel() {
     ],
     []
   );
-  const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
-  const canSubmitFeedback = isValidFeedbackEmail && !!feedbackType && feedbackDetails.trim().length > 0;
+  const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
+  const canSubmitFeedback = (feedbackAnonymous || isValidFeedbackEmail) && !!feedbackType && feedbackDetails.trim().length > 0;
   const avatarGroups = useMemo<AvatarGroup[]>(() => {
     const groups = new Map<string, AvatarOption[]>();
     for (const avatar of avatarOptions) {
@@ -302,9 +312,12 @@ export default function SettingsPanel() {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setAuthUserEmail(user?.email || null);
-      setAuthUserUid(user?.uid || null);
-      const nextAlias = (user?.displayName || "").trim();
-      setAuthUserAlias(nextAlias);
+      setAuthUserUid(user?.uid || null);
+      const nextAlias = (user?.displayName || "").trim();
+      setAuthUserAlias(nextAlias);
+      setAuthUserAliasDraft(nextAlias);
+      setAuthUserAliasEditing(false);
+      setAuthUserAliasBusy(false);
       setAuthMemberSince(user?.metadata?.creationTime || null);
       const providerIds = new Set((user?.providerData || []).map((provider) => String(provider?.providerId || "")));
       const hasGoogleProvider = providerIds.has("google.com");
@@ -329,9 +342,19 @@ export default function SettingsPanel() {
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
       }
-    });
-    return () => unsub();
-  }, [saveUserDocPatch]);
+    });
+    return () => unsub();
+  }, [saveUserDocPatch]);
+
+  useEffect(() => {
+    if (feedbackAnonymous) return;
+    setFeedbackEmail(authUserEmail || "");
+  }, [authUserEmail, feedbackAnonymous]);
+
+  useEffect(() => {
+    if (authUserAliasEditing) return;
+    setAuthUserAliasDraft(authUserAlias);
+  }, [authUserAlias, authUserAliasEditing]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -445,11 +468,52 @@ export default function SettingsPanel() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showAvatarPickerModal]);
 
+  useEffect(() => {
+    if (!showRankLadderModal) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowRankLadderModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showRankLadderModal]);
+
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
+  const currentRankIndex = useMemo(
+    () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)),
+    [rewardProgress.currentRankId]
+  );
+  const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
   const displayedRankThumbnailSrc = useMemo(
     () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
     [rewardProgress.currentRankId, rankThumbnailSrc]
+  );
+  const rankLadderSummary =
+    rewardsHeader.xpToNext != null
+      ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
+      : "You have reached the highest configured rank.";
+
+  const openRankLadderModal = () => {
+    setShowRankLadderModal(true);
+  };
+
+  const handleSelectRankThumbnail = useCallback(
+    async (rankId: string) => {
+      if (!authUserUid || authUserUid !== RANK_INSIGNIA_ADMIN_UID) return;
+      const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
+      if (!nextSrc) return;
+      setRankThumbnailSrc(nextSrc);
+      writeStoredRankThumbnailSrc(authUserUid, nextSrc);
+      try {
+        await saveUserDocPatch(authUserUid, { rankThumbnailSrc: nextSrc });
+        void syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: nextSrc }).catch(() => {
+          // Ignore friendship profile sync failures from the settings surface.
+        });
+      } catch {
+        // ignore rank thumbnail save failures from the settings surface
+      }
+    },
+    [authUserUid, saveUserDocPatch]
   );
 
   useEffect(() => {
@@ -640,7 +704,7 @@ export default function SettingsPanel() {
     }
   };
 
-  const handleCopyUid = async () => {
+  const handleCopyUid = async () => {
     if (!authUserUid) return;
     try {
       await navigator.clipboard.writeText(authUserUid);
@@ -650,7 +714,66 @@ export default function SettingsPanel() {
       setUidCopyStatus("Copy failed");
       window.setTimeout(() => setUidCopyStatus(""), 1500);
     }
-  };
+  };
+
+  const handleStartAliasEdit = () => {
+    setAuthUserAliasDraft(authUserAlias);
+    setAuthUserAliasEditing(true);
+    setAuthError("");
+    setAuthStatus("");
+  };
+
+  const handleCancelAliasEdit = () => {
+    setAuthUserAliasDraft(authUserAlias);
+    setAuthUserAliasEditing(false);
+    setAuthUserAliasBusy(false);
+  };
+
+  const handleSaveAlias = async () => {
+    const auth = getFirebaseAuthClient();
+    const user = auth?.currentUser || null;
+    const uid = String(user?.uid || authUserUid || "").trim();
+    const nextAlias = authUserAliasDraft.trim();
+    if (!user || !uid) {
+      setAuthError("Sign in is required to update your username.");
+      setAuthStatus("");
+      return;
+    }
+    if (!nextAlias) {
+      setAuthError("Username cannot be empty.");
+      setAuthStatus("");
+      return;
+    }
+    if (nextAlias === authUserAlias) {
+      setAuthUserAliasEditing(false);
+      setAuthError("");
+      setAuthStatus("");
+      return;
+    }
+    setAuthUserAliasBusy(true);
+    setAuthError("");
+    setAuthStatus("");
+    try {
+      await updateProfile(user, { displayName: nextAlias });
+      await saveUserDocPatch(uid, {
+        email: user.email || "",
+        displayName: nextAlias,
+      });
+      await syncOwnFriendshipProfile(uid, { alias: nextAlias });
+      setAuthUserAlias(nextAlias);
+      setAuthUserAliasDraft(nextAlias);
+      setAuthUserAliasEditing(false);
+      setAuthStatus("Username updated.");
+      setSyncState("synced");
+      setSyncMessage("Cloud data connected.");
+      setSyncAtMs(Date.now());
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Unable to update username right now."));
+      setAuthStatus("");
+    } finally {
+      setAuthUserAliasBusy(false);
+    }
+  };
 
   const handleSelectAvatar = async (avatarId: string) => {
     setSelectedAvatarId(avatarId);
@@ -823,14 +946,70 @@ export default function SettingsPanel() {
                         </button>
                         <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
                           <div className="settingsAccountFieldLabel">Username:</div>
-                          <div className="settingsAccountFieldValue settingsAccountFieldValueWrap">{authUserAlias || "-"}</div>
+                          <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
+                            {authUserAliasEditing ? (
+                              <>
+                                <input
+                                  className="settingsAccountAliasInput"
+                                  type="text"
+                                  value={authUserAliasDraft}
+                                  onChange={(event) => setAuthUserAliasDraft(event.target.value)}
+                                  disabled={authUserAliasBusy}
+                                  aria-label="Username"
+                                  maxLength={60}
+                                />
+                                <div className="settingsAccountAliasActions">
+                                  <button
+                                    className="iconBtn settingsAccountAliasAction settingsAccountAliasActionSave"
+                                    type="button"
+                                    onClick={handleSaveAlias}
+                                    disabled={authUserAliasBusy}
+                                    aria-label="Save username"
+                                    title="Save username"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    className="iconBtn settingsAccountAliasAction settingsAccountAliasActionCancel"
+                                    type="button"
+                                    onClick={handleCancelAliasEdit}
+                                    disabled={authUserAliasBusy}
+                                    aria-label="Cancel username edit"
+                                    title="Cancel username edit"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="settingsAccountFieldValue settingsAccountFieldValueWrap">
+                                  {authUserAlias || "-"}
+                                </div>
+                                <button
+                                  className="iconBtn settingsAccountAliasAction"
+                                  type="button"
+                                  onClick={handleStartAliasEdit}
+                                  aria-label="Edit username"
+                                  title="Edit username"
+                                >
+                                  ✎
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="settingsAccountFieldRow settingsAccountRankCol">
                         <div className="settingsAccountRankText">
                           <div className="settingsAccountFieldLabel">Rank:</div>
                         </div>
-                        <div className="settingsAccountRankBtn" aria-label={`${displayedRankLabel} rank thumbnail`}>
+                        <button
+                          className="settingsAccountRankBtn"
+                          type="button"
+                          aria-label={`Open rank ladder. Current rank: ${displayedRankLabel}`}
+                          onClick={openRankLadderModal}
+                        >
                           <div className="settingsAccountRankPlaceholder">
                             {displayedRankThumbnailSrc ? (
                               <img className="settingsAccountRankImage" src={displayedRankThumbnailSrc} alt="Rank thumbnail" />
@@ -838,7 +1017,85 @@ export default function SettingsPanel() {
                               <div className="settingsAccountRankPlaceholderInner" />
                             )}
                           </div>
-                        </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {showRankLadderModal ? (
+                  <div className="overlay" id="rankLadderOverlay" onClick={() => setShowRankLadderModal(false)}>
+                    <div
+                      className="modal rankLadderModal"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Rank ladder"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <h2>Rank Ladder</h2>
+                      <p className="modalSubtext">
+                        {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP. {rankLadderSummary}
+                      </p>
+                      {canSelectRankInsignia ? (
+                        <p className="modalSubtext">Click an insignia thumbnail to use it as your profile rank badge.</p>
+                      ) : null}
+                      <div className="rankLadderList" role="list" aria-label="Available ranks">
+                        {RANK_LADDER.map((rank, index) => {
+                          const isCurrent = rank.id === rewardProgress.currentRankId;
+                          const isUnlocked = index <= currentRankIndex;
+                          const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
+                          const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
+                          const isSelectable = canSelectRankInsignia && !!rankThumbnail;
+                          const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
+                          const content = (
+                            <>
+                              <div className="rankLadderItemBadge" aria-hidden="true">
+                                {rankThumbnail ? (
+                                  <Image className="rankLadderItemBadgeImage" src={rankThumbnail} alt="" width={34} height={34} unoptimized />
+                                ) : (
+                                  index === 0 ? "U" : index
+                                )}
+                              </div>
+                              <div className="rankLadderItemBody">
+                                <div className="rankLadderItemTitleRow">
+                                  <span className="rankLadderItemTitle">{rank.label}</span>
+                                  {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
+                                  {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
+                                  {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
+                                </div>
+                                <div className="rankLadderItemMeta">
+                                  Unlocks at {thresholdLabel}
+                                  {isSelectable ? " Click to select this insignia." : ""}
+                                </div>
+                              </div>
+                            </>
+                          );
+                          if (isSelectable) {
+                            return (
+                              <button
+                                key={rank.id}
+                                type="button"
+                                className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                                onClick={() => void handleSelectRankThumbnail(rank.id)}
+                              >
+                                {content}
+                              </button>
+                            );
+                          }
+                          return (
+                            <div
+                              key={rank.id}
+                              className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                              role="listitem"
+                            >
+                              {content}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="confirmBtns">
+                        <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
+                          Close
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1055,23 +1312,16 @@ export default function SettingsPanel() {
                 </div>
               </section>
 
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Dashboard.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Dashboard Settings</div>
-                </div>
-                <div className="settingsDetailNote">
-                  Dashboard settings controls can be added here. The section is now part of Preferences and no longer opens a separate modal.
-                </div>
-                <button className="menuItem settingsActionRow" id="dashboardSettingsBtn" type="button">
-                  <MenuIconLabel icon="/Dashboard.svg" label="Dashboard Settings" />
-                </button>
-              </section>
-            </div>
-            <div style={{ display: "none" }} aria-hidden="true">
-              <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
-                Save Task Settings
-              </button>
+            </div>
+            <div className="settingsInlineFooter">
+              <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
+                Load Defaults
+              </button>
+            </div>
+            <div style={{ display: "none" }} aria-hidden="true">
+              <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
+                Save Task Settings
+              </button>
               <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
                 Save Category
               </button>
@@ -1095,15 +1345,15 @@ export default function SettingsPanel() {
                 <div className="field" id="themeToggleRow">
                   <label htmlFor="themeSelect">Theme</label>
                   <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
-                    <option value="dark">Purple</option>
+                    <option value="dark">Purple (default)</option>
                     <option value="command">Cyan</option>
                   </select>
                 </div>
                 <div className="field" id="menuButtonStyleRow">
                   <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
-                  <select id="menuButtonStyleSelect" defaultValue="parallelogram" aria-label="Menu and button style">
-                    <option value="parallelogram">Parallelogram (default)</option>
-                    <option value="square">Square</option>
+                  <select id="menuButtonStyleSelect" defaultValue="square" aria-label="Menu and button style">
+                    <option value="parallelogram">Parallelogram</option>
+                    <option value="square">Square (default)</option>
                   </select>
                 </div>
                 <div className="toggleRow" id="taskDynamicColorsToggleRow">
@@ -1161,6 +1411,11 @@ export default function SettingsPanel() {
                   </div>
                 </div>
               </section>
+            </div>
+            <div className="settingsInlineFooter">
+              <button className="btn btn-ghost" id="appearanceLoadDefaultsBtn" type="button">
+                Load Defaults
+              </button>
             </div>
           </SettingsDetailPane>
 
@@ -1273,20 +1528,32 @@ export default function SettingsPanel() {
                   <div className="settingsInlineSectionTitle">Feedback Form</div>
                 </div>
 
-                <div className="field">
-                  <label htmlFor="feedbackEmailInput">Email Address</label>
-                  <input
-                    id="feedbackEmailInput"
-                    type="email"
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                    value={feedbackEmail}
-                    onChange={(e) => setFeedbackEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label htmlFor="feedbackTypeSelect">Feedback Type</label>
+                <div className={`field settingsFeedbackEmailField${feedbackAnonymous ? " isDisabled" : ""}`}>
+                  <label className={feedbackAnonymous ? "isDisabled" : undefined} htmlFor="feedbackEmailInput">
+                    {feedbackAnonymous ? "Email Address (anonymous)" : "Email Address"}
+                  </label>
+                  <input
+                    id="feedbackEmailInput"
+                    type="email"
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    value={feedbackEmail}
+                    disabled={feedbackAnonymous}
+                    onChange={(e) => setFeedbackEmail(e.target.value)}
+                  />
+                </div>
+
+                <label className="chkRow settingsFeedbackAnonymousRow">
+                  <input
+                    type="checkbox"
+                    checked={feedbackAnonymous}
+                    onChange={(e) => setFeedbackAnonymous(e.target.checked)}
+                  />
+                  <span>Log as anonymous</span>
+                </label>
+
+                <div className="field">
+                  <label htmlFor="feedbackTypeSelect">Feedback Type</label>
                   <select
                     id="feedbackTypeSelect"
                     value={feedbackType}
@@ -1301,22 +1568,28 @@ export default function SettingsPanel() {
                   </select>
                 </div>
 
-                <div className="field">
-                  <label htmlFor="feedbackDetailsInput">Details</label>
-                  <textarea
+                <div className="field">
+                  <label htmlFor="feedbackDetailsInput">Details</label>
+                  <textarea
                     id="feedbackDetailsInput"
                     rows={6}
                     placeholder="Share details, steps to reproduce (if reporting a bug), or what you would like improved."
                     value={feedbackDetails}
                     onChange={(e) => setFeedbackDetails(e.target.value)}
-                  />
-                </div>
-
-                <div className="settingsInlineFooter">
-                  <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={!canSubmitFeedback}>
-                    Submit Feedback
-                  </button>
-                </div>
+                  />
+                </div>
+
+                <div className="settingsInlineFooter">
+                  <button className="btn btn-ghost small settingsFeedbackUploadBtn" type="button" disabled>
+                    Upload Screenshot
+                  </button>
+                </div>
+
+                <div className="settingsInlineFooter">
+                  <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={!canSubmitFeedback}>
+                    Submit Feedback
+                  </button>
+                </div>
               </section>
             </div>
             <div className="settingsDetailNote">

@@ -380,6 +380,9 @@ export default function DesktopAppRail({
                   <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
                     Edit Profile
                   </a>
+                  <button className="dashboardTag dashboardRailProfileTagLink" id="rewardsInfoOpenBtn" type="button">
+                    Rewards
+                  </button>
                 </div>
               </div>
               <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
@@ -416,6 +419,16 @@ export default function DesktopAppRail({
           {NAV_ITEMS.map((item) => renderMobileNavItem(item, activePage, useClientNavButtons))}
         </div>
       ) : null}
+      <div className="overlay" id="rewardsInfoOverlay">
+        <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Rewards">
+          <div className="settingsDetailEmpty rewardsInfoText">You have no active rewards</div>
+          <div className="confirmBtns rewardsInfoActions">
+            <button className="btn btn-ghost closePopup" id="rewardsInfoCloseBtn" type="button">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

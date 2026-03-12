@@ -17,6 +17,8 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   approveFriendRequest,
   cancelOutgoingFriendRequest,
+  deleteFriendship,
+  deleteSharedTaskSummary,
   deleteSharedTaskSummariesForTask,
   declineFriendRequest,
   loadFriendProfile,
@@ -221,7 +223,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let confirmAction: null | (() => void) = null;
   let confirmActionAlt: null | (() => void) = null;
   let themeMode: "light" | "dark" | "command" = "dark";
-  let menuButtonStyle: "parallelogram" | "square" = "parallelogram";
+  let menuButtonStyle: "parallelogram" | "square" = "square";
   let addTaskCustomNames: string[] = [];
   let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
   let taskView: "list" | "tile" = "list";
@@ -354,10 +356,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let groupsSharedSummaries: SharedTaskSummary[] = [];
   let ownSharedSummaries: SharedTaskSummary[] = [];
   let shareTaskIndex: number | null = null;
+  let shareTaskMode: "share" | "unshare" = "share";
+  let shareTaskTaskId: string | null = null;
   let exportTaskIndex: number | null = null;
   let groupsLoading = false;
   let activeFriendProfileUid: string | null = null;
   let activeFriendProfileName = "";
+  let historyEntryNoteAnchorTaskId = "";
   let groupsStatusMessage = "Ready.";
   let friendProfileCacheByUid: Record<string, FriendProfile> = {};
   let cloudRefreshInFlight: Promise<void> | null = null;
@@ -383,6 +388,41 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }, {});
   const defaultFriendAvatarSrc = "/avatars/initials/initials-AN.svg";
 
+  function normalizeFriendAvatarSrc(src: string): string {
+    const value = String(src || "").trim();
+    if (!value) return "";
+    if (/^(?:data:|blob:|https?:\/\/|file:)/i.test(value)) return value;
+    const normalizedValue = value.replace(/^\/tasktimer(?=\/avatars\/)/i, "");
+    if (/^avatars\//i.test(normalizedValue)) return `/${normalizedValue}`;
+    if (/^\/avatars\//i.test(normalizedValue)) {
+      const capacitorApi = (window as any)?.Capacitor;
+      const isNativeCapacitorRuntime = !!(
+        capacitorApi &&
+        typeof capacitorApi.isNativePlatform === "function" &&
+        capacitorApi.isNativePlatform()
+      );
+      const usesExportedHtmlPaths =
+        window.location.protocol === "file:" || /\.html$/i.test(window.location.pathname || "") || isNativeCapacitorRuntime;
+      return usesExportedHtmlPaths ? `${taskTimerRootPath()}${normalizedValue}` : normalizedValue;
+    }
+    if (/^[^/].+\.(?:svg|png|jpe?g|webp|gif)$/i.test(normalizedValue)) return `/${normalizedValue}`;
+    return normalizedValue;
+  }
+
+  function getFriendAvatarSrcById(avatarIdRaw: string): string {
+    const avatarId = String(avatarIdRaw || "").trim();
+    if (!avatarId) return normalizeFriendAvatarSrc(defaultFriendAvatarSrc);
+    const knownSrc = avatarSrcById[avatarId];
+    if (knownSrc) return normalizeFriendAvatarSrc(knownSrc);
+    if (
+      /^(?:data:|blob:|https?:\/\/|file:)/i.test(avatarId) ||
+      /^\/(?:tasktimer\/)?avatars\//i.test(avatarId)
+    ) {
+      return normalizeFriendAvatarSrc(avatarId);
+    }
+    return normalizeFriendAvatarSrc(defaultFriendAvatarSrc);
+  }
+
   function getMergedFriendProfile(friendUid: string, baseProfile?: FriendProfile | null): FriendProfile {
     const cachedProfile = friendProfileCacheByUid[String(friendUid || "").trim()] || null;
     return {
@@ -396,9 +436,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function getFriendAvatarSrc(profile?: FriendProfile | null): string {
     const customSrc = String(profile?.avatarCustomSrc || "").trim();
-    if (customSrc) return customSrc;
-    const avatarId = String(profile?.avatarId || "").trim();
-    return avatarSrcById[avatarId] || defaultFriendAvatarSrc;
+    if (customSrc) return normalizeFriendAvatarSrc(customSrc);
+    return getFriendAvatarSrcById(String(profile?.avatarId || ""));
   }
 
   const els = {
@@ -524,6 +563,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     commandCenterDashboardBtn: document.getElementById("commandCenterDashboardBtn") as HTMLButtonElement | null,
     commandCenterGroupsBtn: document.getElementById("commandCenterGroupsBtn") as HTMLButtonElement | null,
     commandCenterSettingsBtn: document.getElementById("commandCenterSettingsBtn") as HTMLElement | null,
+    rewardsInfoOpenBtn: document.getElementById("rewardsInfoOpenBtn") as HTMLButtonElement | null,
+    rewardsInfoOverlay: document.getElementById("rewardsInfoOverlay") as HTMLElement | null,
     signedInHeaderBadge: document.getElementById("signedInHeaderBadge") as HTMLElement | null,
     dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
     dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
@@ -606,6 +647,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     taskCheckpointToastToggleRow: document.getElementById("taskCheckpointToastToggleRow"),
     taskCheckpointToastToggle: document.getElementById("taskCheckpointToastToggle"),
     taskSettingsSaveBtn: document.getElementById("taskSettingsSaveBtn"),
+    preferencesLoadDefaultsBtn: document.getElementById("preferencesLoadDefaultsBtn"),
+    appearanceLoadDefaultsBtn: document.getElementById("appearanceLoadDefaultsBtn"),
     categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
     categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
     categoryMode2Input: document.getElementById("categoryMode2Input") as HTMLInputElement | null,
@@ -908,6 +951,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function navigateToAppRoute(path: string) {
+    if (currentAppPage === "tasks") resetAllOpenHistoryChartSelections();
     pushCurrentScreenToNavStack();
     window.location.href = appRoute(path);
   }
@@ -1614,6 +1658,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return note || "";
   }
 
+  type HistoryNoteLine = {
+    timeText: string;
+    noteText: string;
+    copyText: string;
+  };
+
+  type HistoryNoteGroup = {
+    headerText: string;
+    notes: HistoryNoteLine[];
+  };
+
+  type HistoryEntryNoteOverlayPayload = {
+    notes: HistoryNoteLine[];
+    groups: HistoryNoteGroup[];
+  };
+
   function historyLocalDateKey(tsRaw: unknown) {
     const ts = normalizeHistoryTimestampMs(tsRaw);
     if (ts <= 0) return "";
@@ -1624,7 +1684,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return `${y}-${m}-${da}`;
   }
 
-  function getHistoryNoteLinesForDisplay(taskId: string, displayEntry: any, rangeMode: "entries" | "day") {
+  function getHistorySingleEntryNoteGroup(displayEntry: any): HistoryNoteGroup | null {
+    const note = getHistoryEntryNote(displayEntry);
+    if (!note) return null;
+    const ts = normalizeHistoryTimestampMs(displayEntry?.ts);
+    return {
+      headerText: "",
+      notes: [
+        {
+          timeText: ts > 0 ? formatDateTime(ts) : "Saved session note",
+          noteText: note,
+          copyText: note,
+        },
+      ],
+    };
+  }
+
+  function getHistoryNoteLinesForDisplay(taskId: string, displayEntry: any, rangeMode: "entries" | "day"): HistoryNoteLine[] {
     const singleNote = getHistoryEntryNote(displayEntry);
     if (rangeMode !== "day") {
       if (!singleNote) return [];
@@ -1658,6 +1734,41 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .map((entry) => ({ timeText: entry.timeText, noteText: entry.noteText, copyText: entry.copyText }));
   }
 
+  function getHistoryEntryNoteOverlayPayload(
+    taskId: string,
+    displayEntry: any,
+    rangeMode: "entries" | "day",
+    lockedAbsIndexes?: Set<number> | null
+  ): HistoryEntryNoteOverlayPayload {
+    if (rangeMode === "day") {
+      return { notes: getHistoryNoteLinesForDisplay(taskId, displayEntry, rangeMode), groups: [] };
+    }
+    const lockedIndexes = lockedAbsIndexes ? Array.from(lockedAbsIndexes.values()).sort((a, b) => a - b) : [];
+    if (lockedIndexes.length >= 2) {
+      const state = ensureHistoryViewState(taskId);
+      const displayEntries = getHistoryDisplayForTask(taskId, state);
+      const groups = lockedIndexes
+        .map((absIndex) => getHistorySingleEntryNoteGroup(displayEntries[absIndex]))
+        .filter((group): group is HistoryNoteGroup => !!group);
+      return { notes: [], groups };
+    }
+    const singleGroup = getHistorySingleEntryNoteGroup(displayEntry);
+    return { notes: singleGroup ? singleGroup.notes : [], groups: [] };
+  }
+
+  function renderHistoryEntryNoteItems(notes: HistoryNoteLine[]) {
+    return notes
+      .map(
+        (note, index) => `<div class="historyEntryNoteItem${index < notes.length - 1 ? " historyEntryNoteItem-spaced" : ""}">
+            <div class="historyEntryNoteLine"><span class="historyEntryNoteTime">${escapeHtmlUI(note.timeText)}</span><span class="historyEntryNoteSep"> - </span><span class="historyEntryNoteText">${escapeHtmlUI(note.noteText)}</span></div>
+            <div class="historyEntryNoteCopyCell">
+              <button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtmlUI(note.copyText)}">Copy</button>
+            </div>
+          </div>`
+      )
+      .join("");
+  }
+
   async function copyTextToClipboard(textRaw: string) {
     const text = String(textRaw || "");
     if (!text) return false;
@@ -1687,26 +1798,118 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
-  function openHistoryEntryNoteOverlay(taskId: string, displayEntry: any, rangeMode: "entries" | "day" = "entries") {
-    const notes = getHistoryNoteLinesForDisplay(taskId, displayEntry, rangeMode);
-    if (!notes.length) return;
+  function positionHistoryEntryNoteOverlay(taskId: string) {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    const modal = overlay?.querySelector(".modal") as HTMLElement | null;
+    const ui = getHistoryUi(taskId);
+    const chartWrap = ((ui?.canvasWrap as HTMLElement | null) || (els.historyCanvasWrap as HTMLElement | null));
+    if (!overlay || !modal || !chartWrap) {
+      if (overlay) {
+        overlay.style.removeProperty("--history-note-left");
+        overlay.style.removeProperty("--history-note-top");
+      }
+      return;
+    }
+
+    const gap = 10;
+    const viewportPad = 14;
+    const chartRect = chartWrap.getBoundingClientRect();
+    const modalRect = modal.getBoundingClientRect();
+    const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const viewportHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    const modalWidth = Math.max(Math.ceil(modalRect.width || modal.offsetWidth || 0), 280);
+    const modalHeight = Math.max(Math.ceil(modalRect.height || modal.offsetHeight || 0), 120);
+
+    let left = chartRect.left;
+    const maxLeft = Math.max(viewportPad, viewportWidth - modalWidth - viewportPad);
+    if (left > maxLeft) left = maxLeft;
+    if (left < viewportPad) left = viewportPad;
+
+    let top = chartRect.bottom + gap;
+    const maxTop = Math.max(viewportPad, viewportHeight - modalHeight - viewportPad);
+    if (top > maxTop) top = maxTop;
+    if (top < viewportPad) top = viewportPad;
+
+    overlay.style.setProperty("--history-note-left", `${Math.round(left)}px`);
+    overlay.style.setProperty("--history-note-top", `${Math.round(top)}px`);
+  }
+
+  function refreshHistoryEntryNoteOverlayPosition() {
+    if (!historyEntryNoteAnchorTaskId) return;
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay || overlay.style.display === "none") return;
+    positionHistoryEntryNoteOverlay(historyEntryNoteAnchorTaskId);
+  }
+
+  function clearHistoryEntryNoteOverlayPosition() {
+    historyEntryNoteAnchorTaskId = "";
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay) return;
+    overlay.style.removeProperty("--history-note-left");
+    overlay.style.removeProperty("--history-note-top");
+  }
+
+  function isHistoryEntryNoteOverlayOpen() {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    return !!overlay && overlay.style.display !== "none";
+  }
+
+  function closeHistoryEntryNoteOverlay(opts?: { preservePosition?: boolean }) {
+    if (!opts?.preservePosition) clearHistoryEntryNoteOverlayPosition();
+    closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+  }
+
+  function isHistoryChartInteractionTarget(target: EventTarget | null) {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    return !!el.closest?.(".historyCanvasWrap");
+  }
+
+  function openHistoryEntryNoteOverlay(
+    taskId: string,
+    displayEntry: any,
+    rangeMode: "entries" | "day" = "entries",
+    lockedAbsIndexes?: Set<number> | null
+  ) {
+    const payload = getHistoryEntryNoteOverlayPayload(taskId, displayEntry, rangeMode, lockedAbsIndexes);
+    const notes = payload.notes;
+    const groups = payload.groups;
+    const hasGroups = groups.length > 0;
+    const totalNoteCount = hasGroups ? groups.reduce((sum, group) => sum + group.notes.length, 0) : notes.length;
+    if (!totalNoteCount) {
+      closeHistoryEntryNoteOverlay();
+      return;
+    }
     if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Task Notes";
     if (els.historyEntryNoteMeta) {
-      els.historyEntryNoteMeta.textContent = notes.length > 1 ? `${notes.length} session notes` : "Session note";
+      if (hasGroups) {
+        const sessionCount = groups.length;
+        const noteLabel = totalNoteCount === 1 ? "note" : "notes";
+        const sessionLabel = sessionCount === 1 ? "session" : "sessions";
+        els.historyEntryNoteMeta.textContent = `${totalNoteCount} ${noteLabel} across ${sessionCount} selected ${sessionLabel}`;
+      } else {
+        els.historyEntryNoteMeta.textContent = notes.length > 1 ? `${notes.length} session notes` : "Session note";
+      }
     }
     if (els.historyEntryNoteBody) {
-      els.historyEntryNoteBody.innerHTML = notes
-        .map(
-          (note, index) => `<div class="historyEntryNoteItem${index < notes.length - 1 ? " historyEntryNoteItem-spaced" : ""}">
-            <div class="historyEntryNoteLine"><span class="historyEntryNoteTime">${escapeHtmlUI(note.timeText)}</span><span class="historyEntryNoteSep"> - </span><span class="historyEntryNoteText">${escapeHtmlUI(note.noteText)}</span></div>
-            <div class="historyEntryNoteCopyCell">
-              <button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtmlUI(note.copyText)}">Copy</button>
-            </div>
-          </div>`
-        )
-        .join("");
+      els.historyEntryNoteBody.innerHTML = hasGroups
+        ? groups
+            .map(
+              (group, index) => `<section class="historyEntryNoteGroup${
+                index < groups.length - 1 ? " historyEntryNoteGroup-spaced" : ""
+              }">
+                ${group.headerText ? `<div class="historyEntryNoteGroupHeader">${escapeHtmlUI(group.headerText)}</div>` : ""}
+                ${renderHistoryEntryNoteItems(group.notes)}
+              </section>`
+            )
+            .join("")
+        : renderHistoryEntryNoteItems(notes);
     }
+    historyEntryNoteAnchorTaskId = taskId;
     openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+    requestAnimationFrame(() => {
+      refreshHistoryEntryNoteOverlayPosition();
+    });
   }
 
   function loadHistoryIntoMemory() {
@@ -3253,6 +3456,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.confirmOkBtn) {
       els.confirmOkBtn.textContent = okLabel;
       (els.confirmOkBtn as HTMLElement).style.display = "inline-flex";
+      (els.confirmOkBtn as HTMLButtonElement).disabled = false;
       els.confirmOkBtn.classList.remove("btn-warn");
       els.confirmOkBtn.classList.add("btn-accent");
       if (String(okLabel).toLowerCase() === "delete") {
@@ -3265,6 +3469,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (altLabel) {
         els.confirmAltBtn.textContent = altLabel;
         (els.confirmAltBtn as HTMLElement).style.display = "inline-flex";
+        (els.confirmAltBtn as HTMLButtonElement).disabled = false;
       } else {
         (els.confirmAltBtn as HTMLElement).style.display = "none";
         els.confirmAltBtn.textContent = "";
@@ -3301,13 +3506,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function closeConfirm() {
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "none";
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     confirmAction = null;
     confirmActionAlt = null;
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
+    if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
     if (els.confirmOkBtn) {
+      (els.confirmOkBtn as HTMLButtonElement).disabled = false;
       els.confirmOkBtn.classList.remove("btn-warn");
       els.confirmOkBtn.classList.add("btn-accent");
     }
+    if (els.confirmCancelBtn) (els.confirmCancelBtn as HTMLButtonElement).disabled = false;
     if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = false;
     if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.remove("is-disabled");
     if (els.confirmChkNote) {
@@ -3958,6 +4167,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function closeHistory(taskId?: string) {
+    if (!taskId || historyEntryNoteAnchorTaskId === taskId) closeHistoryEntryNoteOverlay();
     if (taskId) {
       const state = historyViewByTaskId[taskId];
       if (state?.selectionClearTimer != null) {
@@ -4078,6 +4288,32 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     startHistorySelectionAnimation(taskId, null);
   }
 
+  function resetHistoryChartSelectionToDefault(taskId: string) {
+    if (!taskId) return;
+    const state = ensureHistoryViewState(taskId);
+    if (state.selectionClearTimer != null) {
+      window.clearTimeout(state.selectionClearTimer);
+      state.selectionClearTimer = null;
+    }
+    if (state.selectionAnimRaf != null) {
+      window.cancelAnimationFrame(state.selectionAnimRaf);
+      state.selectionAnimRaf = null;
+    }
+    state.selectedRelIndex = null;
+    state.selectedAbsIndex = null;
+    state.lockedAbsIndexes.clear();
+    state.visualSelectedAbsIndex = null;
+    state.selectionZoom = 1;
+    if (historyEntryNoteAnchorTaskId === taskId) closeHistoryEntryNoteOverlay();
+    if (currentAppPage === "tasks" && openHistoryTaskIds.has(taskId)) renderHistory(taskId);
+  }
+
+  function resetAllOpenHistoryChartSelections() {
+    Array.from(openHistoryTaskIds).forEach((taskId) => {
+      resetHistoryChartSelectionToDefault(taskId);
+    });
+  }
+
   function clearHistoryLockedSelections(taskId: string) {
     const state = ensureHistoryViewState(taskId);
     state.lockedAbsIndexes.clear();
@@ -4151,8 +4387,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const rect = wrap.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.max(300, Math.floor(rect.width));
-    const h = Math.max(200, Math.floor(rect.height));
+    // Match the drawing coordinate space to the actual rendered canvas size so
+    // click hit-testing lines up with the visible columns.
+    const w = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
+    const h = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
+    if (w <= 0 || h <= 0) return;
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
 
@@ -7410,18 +7649,70 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
+  function setShareTaskModalModeUi(opts: { mode: "share" | "unshare"; taskName: string; hasChoices?: boolean }) {
+    const mode = opts.mode === "unshare" ? "unshare" : "share";
+    const taskName = String(opts.taskName || "").trim() || "Untitled task";
+    const hasChoices = opts.hasChoices !== false;
+    const scopeField = (els.shareTaskScopeSelect?.parentElement as HTMLElement | null) || null;
+    const friendsField = els.shareTaskFriendsField as HTMLElement | null;
+    const friendsLabel = friendsField?.querySelector("label") as HTMLElement | null;
+    if (els.shareTaskTitle) {
+      els.shareTaskTitle.textContent = mode === "unshare" ? `Unshare "${taskName}"` : `Share "${taskName}"`;
+    }
+    const subtextEl = (els.shareTaskTitle?.nextElementSibling as HTMLElement | null) || null;
+    if (subtextEl && subtextEl.classList.contains("shareTaskModalSubtext")) {
+      subtextEl.textContent =
+        mode === "unshare"
+          ? "Choose which friends should no longer receive this task and its live progress."
+          : "Choose who should receive this task and its live progress.";
+    }
+    if (scopeField) scopeField.style.display = mode === "share" ? "grid" : "none";
+    if (friendsField) friendsField.style.display = mode === "share" ? (isShareTaskSpecificScopeSelected() ? "grid" : "none") : "grid";
+    if (friendsLabel) {
+      friendsLabel.textContent = mode === "unshare" ? "Select friend(s) to unshare" : "Select friend(s)";
+    }
+    if (els.shareTaskConfirmBtn) {
+      els.shareTaskConfirmBtn.textContent = mode === "unshare" ? "Unshare" : "Share";
+      els.shareTaskConfirmBtn.disabled = !hasChoices;
+    }
+  }
+
   function renderShareTaskFriendOptions() {
     const listEl = els.shareTaskFriendsList as HTMLElement | null;
     if (!listEl) return;
     const uid = currentUid();
-    if (!uid || !groupsFriendships.length) {
-      listEl.innerHTML = `<div class="settingsDetailNote isEmptyStatus">No friends available.</div>`;
+    const mode = shareTaskMode === "unshare" ? "unshare" : "share";
+    let rows: Array<{ friendUid: string; alias: string }> = [];
+    if (uid && groupsFriendships.length) {
+      rows = groupsFriendships
+        .map((row) => {
+          const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
+          if (!friendUid) return null;
+          const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
+          return { friendUid, alias };
+        })
+        .filter((row): row is { friendUid: string; alias: string } => !!row);
+    }
+    if (mode === "unshare") {
+      const activeTaskId = String(shareTaskTaskId || "").trim();
+      const targetUids = new Set(getSharedFriendUidsForTask(activeTaskId));
+      rows = rows.filter((row) => targetUids.has(row.friendUid));
+      if (!rows.length && activeTaskId) {
+        rows = ownSharedSummaries
+          .filter((row) => row.ownerUid === uid && row.taskId === activeTaskId)
+          .map((row) => ({ friendUid: row.friendUid, alias: String(row.friendUid || "").trim() || "Unknown friend" }));
+      }
+    }
+    if (!uid || !rows.length) {
+      listEl.innerHTML = `<div class="settingsDetailNote isEmptyStatus">${
+        mode === "unshare" ? "This task is not currently shared with any friends." : "No friends available."
+      }</div>`;
       return;
     }
-    listEl.innerHTML = groupsFriendships
+    listEl.innerHTML = rows
       .map((row) => {
-        const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
+        const friendUid = row.friendUid;
+        const alias = row.alias;
         const inputId = `shareFriend_${escapeHtmlUI(friendUid)}`;
         return `<label class="shareTaskFriendOption" for="${inputId}">
           <input id="${inputId}" type="checkbox" data-share-friend-uid="${escapeHtmlUI(friendUid)}" />
@@ -7436,6 +7727,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncShareTaskScopeUi() {
+    if (shareTaskMode === "unshare") {
+      if (els.shareTaskFriendsField) {
+        (els.shareTaskFriendsField as HTMLElement).style.display = "grid";
+      }
+      return;
+    }
     const specificMode = isShareTaskSpecificScopeSelected();
     if (els.shareTaskFriendsField) {
       (els.shareTaskFriendsField as HTMLElement).style.display = specificMode ? "grid" : "none";
@@ -7446,6 +7743,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!els.shareTaskModal) return;
     (els.shareTaskModal as HTMLElement).style.display = "none";
     shareTaskIndex = null;
+    shareTaskTaskId = null;
+    shareTaskMode = "share";
+    if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
+    if (els.shareTaskConfirmBtn) els.shareTaskConfirmBtn.disabled = false;
     setShareTaskStatus("");
   }
 
@@ -7453,7 +7754,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = tasks[taskIndex];
     if (!t) return;
     shareTaskIndex = taskIndex;
-    if (els.shareTaskTitle) els.shareTaskTitle.textContent = `Share "${t.name}"`;
+    shareTaskTaskId = String(t.id || "").trim();
+    shareTaskMode = "share";
+    setShareTaskModalModeUi({ mode: "share", taskName: String(t.name || "").trim() || "Untitled task", hasChoices: true });
     if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
     syncShareTaskScopeUi();
     renderShareTaskFriendOptions();
@@ -7468,6 +7771,35 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     setShareTaskStatus("");
     if (els.shareTaskModal) (els.shareTaskModal as HTMLElement).style.display = "flex";
+  }
+
+  function openUnshareTaskModal(taskId: string) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return;
+    const taskName =
+      String(tasks.find((row) => String(row.id || "").trim() === normalizedTaskId)?.name || "").trim() ||
+      String(ownSharedSummaries.find((row) => String(row.taskId || "").trim() === normalizedTaskId)?.taskName || "").trim() ||
+      "Untitled task";
+    shareTaskIndex = null;
+    shareTaskTaskId = normalizedTaskId;
+    shareTaskMode = "unshare";
+    const openModal = () => {
+      const targetCount = getSharedFriendUidsForTask(normalizedTaskId).length;
+      setShareTaskModalModeUi({ mode: "unshare", taskName, hasChoices: targetCount > 0 });
+      renderShareTaskFriendOptions();
+      setShareTaskStatus(targetCount > 0 ? "" : "This task is not currently shared with any friends.");
+      if (els.shareTaskModal) (els.shareTaskModal as HTMLElement).style.display = "flex";
+    };
+    if (currentUid() && !groupsFriendships.length) {
+      void loadFriendships(String(currentUid() || ""))
+        .then((rows) => {
+          groupsFriendships = rows || [];
+          openModal();
+        })
+        .catch(() => openModal());
+      return;
+    }
+    openModal();
   }
 
   async function refreshOwnSharedSummaries() {
@@ -7548,9 +7880,38 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   async function submitShareTaskModal() {
     const uid = currentUid();
-    if (!uid || shareTaskIndex == null) return;
-    const t = tasks[shareTaskIndex];
-    if (!t) return;
+    const activeMode = shareTaskMode === "unshare" ? "unshare" : "share";
+    if (!uid) return;
+    if (activeMode === "share" && shareTaskIndex == null) return;
+    const activeTaskId =
+      activeMode === "share" ? String(tasks[shareTaskIndex!]?.id || "").trim() : String(shareTaskTaskId || "").trim();
+    const shareTask = activeMode === "share" && shareTaskIndex != null ? tasks[shareTaskIndex] : null;
+    if (!activeTaskId || (activeMode === "share" && !shareTask)) return;
+    const selectedTargets = Array.from(
+      (els.shareTaskFriendsList as HTMLElement | null)?.querySelectorAll<HTMLInputElement>("[data-share-friend-uid]:checked") || []
+    )
+      .map((el) => String(el.getAttribute("data-share-friend-uid") || "").trim())
+      .filter(Boolean);
+    if (activeMode === "unshare") {
+      if (!selectedTargets.length) {
+        setShareTaskStatus("Select at least one friend.", "error");
+        return;
+      }
+      const results = await Promise.allSettled(selectedTargets.map((friendUid) => deleteSharedTaskSummary(uid, friendUid, activeTaskId)));
+      const failures = results.filter((row) => row.status === "rejected");
+      await refreshOwnSharedSummaries();
+      render();
+      if (!failures.length) {
+        setShareTaskStatus("Task unshared successfully.", "success");
+        window.setTimeout(() => closeShareTaskModal(), 500);
+        return;
+      }
+      setShareTaskStatus(
+        `Unshared with ${selectedTargets.length - failures.length} friend(s). ${failures.length} failed.`,
+        "error"
+      );
+      return;
+    }
     const specificMode = isShareTaskSpecificScopeSelected();
     if (!groupsFriendships.length) {
       try {
@@ -7561,11 +7922,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     let targets: string[] = [];
     if (specificMode) {
-      targets = Array.from(
-        (els.shareTaskFriendsList as HTMLElement | null)?.querySelectorAll<HTMLInputElement>("[data-share-friend-uid]:checked") || []
-      )
-        .map((el) => String(el.getAttribute("data-share-friend-uid") || "").trim())
-        .filter(Boolean);
+      targets = selectedTargets;
       if (!targets.length) {
         setShareTaskStatus("Select at least one friend.", "error");
         return;
@@ -7577,17 +7934,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
     }
-    const metrics = computeTaskSharingMetrics(String(t.id || ""));
-    const taskMode = taskModeOf(t);
+    if (!shareTask) return;
+    const metrics = computeTaskSharingMetrics(activeTaskId);
+    const taskMode = taskModeOf(shareTask);
     const writes = await Promise.all(
       targets.map((friendUid) =>
         upsertSharedTaskSummary({
           ownerUid: uid,
           friendUid,
-          taskId: String(t.id || ""),
-          taskName: String(t.name || ""),
+          taskId: activeTaskId,
+          taskName: String(shareTask.name || ""),
           taskMode,
-          timerState: t.running ? "running" : "stopped",
+          timerState: shareTask.running ? "running" : "stopped",
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
           taskCreatedAtMs: metrics.createdAtMs,
@@ -7653,7 +8011,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                   row.requestId
                 )}">Cancel request</button></div>`;
         const identityAvatarId = String((opts.incoming ? row.senderAvatarId : row.receiverAvatarId) || "").trim();
-        const identityAvatarSrc = avatarSrcById[identityAvatarId] || "/avatars/initials/initials-AN.svg";
+        const identityAvatarSrc = getFriendAvatarSrcById(identityAvatarId);
         const identityHtml = `<div class="friendRequestIdentityRow">
           <img src="${escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">
@@ -7711,8 +8069,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               String(entry.timerState || "stopped").toLowerCase() === "running"
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
-            const taskMode: "mode1" | "mode2" | "mode3" =
-              entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
             const trendBars = buildSharedTrendBarSvgMarkup(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
             return `<div class="friendSharedTaskCard friendSharedTaskCardState-${escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
@@ -7832,6 +8188,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           <div class="friendSharedTaskInfo">
             <div class="friendSharedTaskTitle">${escapeHtmlUI(entry.taskName)}</div>
             <div class="friendSharedTaskMeta">Shared with: ${escapeHtmlUI(friendLabel)}</div>
+          </div>
+          <div class="friendSharedTaskActions">
+            <button class="btn btn-ghost small" type="button" data-friend-action="open-unshare-task" data-task-id="${escapeHtmlUI(entry.taskId)}">Unshare</button>
           </div>
         </div>`;
       })
@@ -8005,6 +8364,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function applyAppPage(page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }) {
+    if (currentAppPage === "tasks" && page !== "tasks") resetAllOpenHistoryChartSelections();
     currentAppPage = page;
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
     document.body.setAttribute("data-app-page", page);
@@ -8493,6 +8853,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings");
     });
+    on(els.rewardsInfoOpenBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      openOverlay(els.rewardsInfoOverlay as HTMLElement | null);
+    });
     on(window, "resize", () => {
       if (taskView !== "tile" || !els.taskList) return;
       const nextCount = getTileColumnCount();
@@ -8528,11 +8892,55 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const friendName = String(activeFriendProfileName || fallbackName || "this user").trim();
       confirm("Delete Friend", `Are you sure you want to delete ${friendName} as a friend?`, {
         okLabel: "Delete",
+        cancelLabel: "Cancel",
         onOk: () => {
+          const ownUid = String(currentUid() || "").trim();
+          const friendUid = String(activeFriendProfileUid || "").trim();
+          if (!ownUid) {
+            closeConfirm();
+            setGroupsStatus("Sign in to manage friends.");
+            return;
+          }
+          if (!friendUid) {
+            closeConfirm();
+            setGroupsStatus("Friend account could not be resolved.");
+            return;
+          }
           closeConfirm();
-          if (activeFriendProfileUid) setGroupsStatus("Delete Friend is not available yet.");
+          closeFriendProfileModal();
+          setGroupsStatus(`Deleting ${friendName}...`);
+          void deleteFriendship(ownUid, friendUid)
+            .then(async (result) => {
+              if (!result.ok) {
+                await refreshGroupsData();
+                render();
+                setGroupsStatus(result.message || "Could not delete friend.");
+                return;
+              }
+              activeFriendProfileUid = null;
+              activeFriendProfileName = "";
+              groupsFriendships = groupsFriendships.filter((row) => !row.users.includes(friendUid));
+              groupsSharedSummaries = groupsSharedSummaries.filter(
+                (row) => String(row.ownerUid || "").trim() !== friendUid && String(row.friendUid || "").trim() !== friendUid
+              );
+              ownSharedSummaries = ownSharedSummaries.filter((row) => String(row.friendUid || "").trim() !== friendUid);
+              delete friendProfileCacheByUid[friendUid];
+              render();
+              setGroupsStatus(result.message || `${friendName} was removed from your friends.`);
+              try {
+                await refreshOwnSharedSummaries();
+                await refreshGroupsData();
+                render();
+              } catch {
+                // Keep optimistic in-memory removal when the follow-up refresh fails.
+              }
+            })
+            .catch(() => {
+              setGroupsStatus("Could not delete friend.");
+            });
         },
       });
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteFriendConfirm");
     });
     on(els.friendRequestSendBtn, "click", (e: any) => {
       e?.preventDefault?.();
@@ -8606,6 +9014,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openFriendProfileModal(friendUid);
     });
     on(els.groupsSharedByYouList, "click", (e: any) => {
+      const unshareBtn = e.target?.closest?.('[data-friend-action="open-unshare-task"]') as HTMLElement | null;
+      if (unshareBtn) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        const taskId = String(unshareBtn.getAttribute("data-task-id") || "").trim();
+        if (!taskId) return;
+        openUnshareTaskModal(taskId);
+        return;
+      }
       const card = e.target?.closest?.("[data-shared-owned-task-id]") as HTMLElement | null;
       if (!card) return;
       const taskId = String(card.getAttribute("data-shared-owned-task-id") || "").trim();
@@ -8614,6 +9031,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.groupsSharedByYouList, "keydown", (e: any) => {
       if (e?.key !== "Enter" && e?.key !== " ") return;
+      const actionBtn = e.target?.closest?.('[data-friend-action="open-unshare-task"]') as HTMLElement | null;
+      if (actionBtn) return;
       const card = e.target?.closest?.("[data-shared-owned-task-id]") as HTMLElement | null;
       if (!card) return;
       e?.preventDefault?.();
@@ -8921,6 +9340,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
       if (action === "close") {
+        resetHistoryChartSelectionToDefault(taskId);
         closeHistory(taskId);
         return;
       }
@@ -9054,7 +9474,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
           const display = getHistoryDisplayForTask(taskId, state);
           const entry = display[hit.abs];
-          if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode);
+          if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode, state.lockedAbsIndexes);
         } else {
           state.selectedRelIndex = hit.rel;
           state.selectedAbsIndex = hit.abs;
@@ -9112,7 +9532,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (hitAbs == null) return;
       const display = getHistoryDisplayForTask(taskId, state);
       const entry = display[hitAbs];
-      if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode);
+      if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode, state.lockedAbsIndexes);
     });
 
     let swipeStartX: number | null = null;
@@ -9439,6 +9859,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
       setMenuButtonStyle(next);
     });
+    on(els.preferencesLoadDefaultsBtn, "click", () => {
+      defaultTaskTimerFormat = "hour";
+      autoFocusOnTaskLaunchEnabled = false;
+      taskView = "list";
+      dynamicColorsEnabled = true;
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+    on(els.appearanceLoadDefaultsBtn, "click", () => {
+      setThemeMode("dark");
+      setMenuButtonStyle("square");
+    });
     on(els.taskDefaultFormatDay, "click", () => {
       defaultTaskTimerFormat = "day";
       syncTaskSettingsUi();
@@ -9574,9 +10006,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     document.querySelectorAll(".closePopup").forEach((btn) => {
       on(btn, "click", () => {
         const ov = (btn as HTMLElement).closest(".overlay") as HTMLElement | null;
+        if (ov?.id === "historyEntryNoteOverlay") clearHistoryEntryNoteOverlayPosition();
         if (ov) closeOverlay(ov);
       });
     });
+    on(window, "resize", () => {
+      refreshHistoryEntryNoteOverlayPosition();
+    });
+    on(window, "scroll", () => {
+      refreshHistoryEntryNoteOverlayPosition();
+    }, { passive: true, capture: true });
+    on(
+      document,
+      "click",
+      (e: any) => {
+        if (!isHistoryEntryNoteOverlayOpen()) return;
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest?.("#historyEntryNoteOverlay")) return;
+        if (isHistoryChartInteractionTarget(target)) return;
+        closeHistoryEntryNoteOverlay();
+      },
+      { capture: true }
+    );
     on(document, "click", (e: any) => {
       const copyBtn = e.target?.closest?.("[data-history-note-copy]") as HTMLButtonElement | null;
       if (!copyBtn) return;

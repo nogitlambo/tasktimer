@@ -85,8 +85,8 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                 <div className="dashboardShell">
                   <div className="dashboardTopRow">
                     <div className="dashboardTitleWrap">
-                      <p className="dashboardKicker">Launch Dashboard</p>
-                      <h2 className="dashboardTitle" />
+                      <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
+                      <h2 className="dashboardTitle">DASHBOARD</h2>
                     </div>
                     <div className="dashboardEditActions">
                       <details className="dashboardPanelMenu" id="dashboardPanelMenu">
@@ -151,31 +151,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                   </section>
 
                   <div className="dashboardGrid">
-                    <section className="dashboardCard dashboardProfileCard" data-dashboard-id="profile" aria-label="Profile summary">
-                      <div className="dashboardCardTitle">Profile Summary</div>
-                      <div className="dashboardProfileHead">
-                        <div className="dashboardAvatar">AT</div>
-                        <div>
-                          <div className="dashboardProfileName">Ari Taskrunner</div>
-                          <div className="dashboardProfileMeta">Focus Operator - Mode 2</div>
-                        </div>
-                      </div>
-                      <div className="dashboardTagRow">
-                        <span className="dashboardTag">Daily Target 6h</span>
-                        <span className="dashboardTag">Deep Work</span>
-                      </div>
-                      <div className="dashboardProfileGrid">
-                        <div className="dashboardProfileMetric">
-                          <span>Focus Score</span>
-                          <strong>92%</strong>
-                        </div>
-                        <div className="dashboardProfileMetric">
-                          <span>Best Window</span>
-                          <strong>09:00</strong>
-                        </div>
-                      </div>
-                    </section>
-
                     <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
                       <div className="dashboardCardTitle">Streak</div>
                       <div className="dashboardStreakValue">21 Days</div>

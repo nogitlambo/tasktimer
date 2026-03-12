@@ -480,6 +480,52 @@ export async function deleteSharedTaskSummariesForTask(ownerUid: string, taskId:
   await Promise.all(snap.docs.map((row) => deleteDoc(row.ref)));
 }
 
+export async function deleteFriendship(
+  ownUid: string,
+  friendUid: string
+): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const db = dbOrNull();
+    const ownerUid = String(ownUid || "").trim();
+    const peerUid = String(friendUid || "").trim();
+    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
+    if (!ownerUid || !peerUid) return { ok: false, message: "Friend account could not be resolved." };
+    if (ownerUid === peerUid) return { ok: false, message: "You cannot delete yourself as a friend." };
+
+    const pairRef = doc(db, "friendships", friendshipDocId(ownerUid, peerUid));
+    const pairSnap = await getDoc(pairRef);
+    if (!pairSnap.exists()) return { ok: false, message: "Friendship not found." };
+
+    const ownedSharedSnap = await getDocs(query(collection(db, "shared_task_summaries"), where("ownerUid", "==", ownerUid)));
+    const peerSharedSnap = await getDocs(query(collection(db, "shared_task_summaries"), where("ownerUid", "==", peerUid)));
+    const ownedSharedDocs = ownedSharedSnap.docs.filter((row) => String(row.get("friendUid") || "").trim() === peerUid);
+    const peerSharedDocs = peerSharedSnap.docs.filter((row) => String(row.get("friendUid") || "").trim() === ownerUid);
+    await deleteDoc(pairRef);
+
+    const cleanupResults = await Promise.allSettled([
+      ...ownedSharedDocs.map((row) => deleteDoc(row.ref)),
+      ...peerSharedDocs.map((row) => deleteDoc(row.ref)),
+    ]);
+    const cleanupFailures = cleanupResults.filter((result) => result.status === "rejected");
+    if (cleanupFailures.length) {
+      return {
+        ok: true,
+        message: "Friend removed. Some shared task links could not be cleaned up automatically.",
+      };
+    }
+
+    return { ok: true };
+  } catch (err: unknown) {
+    const firebaseErr = err as FirebaseError | undefined;
+    const code = String(firebaseErr?.code || "").trim();
+    if (code === "permission-denied") {
+      return { ok: false, message: "Permission denied while deleting friend." };
+    }
+    const message = String(firebaseErr?.message || "").trim();
+    return { ok: false, message: message || "Could not delete friend." };
+  }
+}
+
 export async function approveFriendRequest(requestId: string, receiverUid: string): Promise<{ ok: boolean; message?: string }> {
   try {
     const db = dbOrNull();

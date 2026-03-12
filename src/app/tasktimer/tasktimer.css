@@ -33,7 +33,7 @@
 *{box-sizing:border-box}
 html{
   scrollbar-width: thin;
-  scrollbar-color: rgba(53,232,255,.42) rgba(255,255,255,.06);
+  scrollbar-color: rgba(44,52,66,.72) rgba(255,255,255,.06);
   overflow-y: auto;
 }
 *::-webkit-scrollbar{
@@ -41,16 +41,16 @@ html{
   height: 12px;
 }
 *::-webkit-scrollbar-track{
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(8,12,18,.38));
 }
 *::-webkit-scrollbar-thumb{
-  background: linear-gradient(180deg, rgba(53,232,255,.46), rgba(0,207,200,.34));
+  background: linear-gradient(180deg, rgba(52,61,77,.88), rgba(23,29,40,.94));
   border: 2px solid #0d0f13;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
 }
 *::-webkit-scrollbar-thumb:hover{
-  background: linear-gradient(180deg, rgba(53,232,255,.62), rgba(0,207,200,.46));
+  background: linear-gradient(180deg, rgba(68,79,98,.92), rgba(31,38,51,.96));
 }
 *::-webkit-scrollbar-corner{
   background: #0d0f13;
@@ -249,6 +249,7 @@ body[data-app-page="test2"] .appPages{
 }
 .appPages{
   flex:1 1 auto;
+  --app-pages-bottom-padding: 12px;
   padding-bottom:12px;
   padding-left:120px;
   min-height:0;
@@ -4467,6 +4468,12 @@ body[data-theme="light"] .historyEntryNoteBody{
   border-color: rgba(0,0,0,.12);
   color: #111111;
 }
+body[data-theme="light"] .historyEntryNoteGroup-spaced{
+  border-bottom-color: rgba(70,52,120,.14);
+}
+body[data-theme="light"] .historyEntryNoteGroupHeader{
+  color: #225f8c;
+}
 body[data-theme="light"] .historyEntryNoteItem-spaced{
   border-bottom-color: rgba(70,52,120,.14);
 }
@@ -4547,6 +4554,7 @@ body[data-theme="light"] .dashboardHeatDayNum{
   }
   .appPages{
     padding-left:0;
+    --app-pages-bottom-padding: 78px;
     padding-bottom:78px;
   }
   body[data-app-page="dashboard"] .appPages{
@@ -6866,6 +6874,20 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+.friendSharedTaskCard.isJumpCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.friendSharedTaskActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.friendSharedTaskActions .btn {
+  margin: 0;
+}
 .friendSharedTaskCard.friendSharedTaskCardState-running {
   border-color: rgba(134, 170, 196, 0.58);
 }
@@ -6937,18 +6959,29 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 #historyEntryNoteOverlay{
   z-index: 96;
   background: transparent;
+  backdrop-filter: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0;
+  pointer-events: none;
 }
 #historyEntryNoteOverlay .modal{
   background: #0d0f13;
   border: 1px solid rgba(53,232,255,.26);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  position: fixed;
+  left: var(--history-note-left, 14px);
+  top: var(--history-note-top, 14px);
   width: fit-content;
   min-width: min(320px, calc(100vw - 28px));
   max-width: min(560px, calc(100vw - 28px));
   min-height: 120px;
-  max-height: min(62vh, 440px);
+  max-height: calc(100vh - 28px);
   padding: 12px 12px 10px;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: auto;
 }
 #historyEntryNoteOverlay .historyEntryNoteHeader{
   display: block;
@@ -6965,7 +6998,7 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   min-width: min(296px, calc(100vw - 52px));
   max-width: min(520px, calc(100vw - 52px));
   min-height: 68px;
-  max-height: min(46vh, 320px);
+  max-height: calc(100vh - 118px);
   overflow: auto;
   padding: 10px 12px;
   border: 1px solid rgba(255,255,255,.12);
@@ -6979,6 +7012,21 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   grid-template-columns: minmax(0, 9fr) minmax(36px, 1fr);
   align-items: stretch;
   column-gap: 8px;
+}
+.historyEntryNoteGroup{
+  display: block;
+}
+.historyEntryNoteGroup-spaced{
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.historyEntryNoteGroupHeader{
+  margin: 0 0 8px;
+  color: rgba(163,236,255,.92);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
 }
 .historyEntryNoteItem-spaced{
   margin-bottom: 12px;
@@ -7010,6 +7058,25 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 }
 #historyEntryNoteOverlay .confirmBtns{
   margin-top: 10px;
+  justify-content: center;
+}
+body[data-theme="light"] #historyEntryNoteOverlay{
+  background: transparent;
+  backdrop-filter: none;
+}
+body[data-theme="light"] #historyEntryNoteOverlay .modal{
+  background: #f4f9fc;
+  border-color: rgba(0,133,160,.24);
+  box-shadow: 0 18px 28px rgba(17,44,61,.12), inset 0 0 0 1px rgba(255,255,255,.52);
+}
+#rewardsInfoOverlay .rewardsInfoModal{
+  max-width: 360px;
+}
+#rewardsInfoOverlay .rewardsInfoText{
+  margin: 8px 0 0;
+  text-align: center;
+}
+#rewardsInfoOverlay .rewardsInfoActions{
   justify-content: center;
 }
 
@@ -7319,6 +7386,12 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest
   .friendIdentityRow {
     grid-template-columns: auto minmax(0, 1fr);
   }
+  .friendSharedTaskCard.isJumpCard {
+    grid-template-columns: 1fr;
+  }
+  .friendSharedTaskActions {
+    justify-content: flex-start;
+  }
   .friendSharedTasksCountText {
     grid-column: 1 / -1;
     justify-self: start;
@@ -7443,6 +7516,19 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   display: grid;
   place-items: center;
   overflow:visible;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankBtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankBtn:focus-visible{
+  outline:2px solid rgba(97,218,251,0.92);
+  outline-offset:2px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol .settingsAccountRankBtn{
   align-self: center;
@@ -8159,6 +8245,61 @@ body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .se
   align-items:flex-start;
   text-align:left;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasValueRow{
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasInput{
+  flex:1 1 180px;
+  min-width:0;
+  min-height:36px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasAction{
+  min-width:36px;
+  width:36px;
+  height:36px;
+  padding:0;
+  justify-content:center;
+  font-size:16px;
+  line-height:1;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionSave{
+  border-color: rgba(95,220,140,.5);
+  color: #84f0a7;
+  background: rgba(22,84,42,.28);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionSave:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionSave:focus-visible{
+  border-color: rgba(120,240,162,.66);
+  box-shadow: 0 0 0 1px rgba(95,220,140,.18) inset, 0 0 10px rgba(95,220,140,.16);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionCancel{
+  border-color: rgba(255,110,110,.5);
+  color: #ff9a9a;
+  background: rgba(108,24,24,.26);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionCancel:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionCancel:focus-visible{
+  border-color: rgba(255,138,138,.66);
+  box-shadow: 0 0 0 1px rgba(255,110,110,.16) inset, 0 0 10px rgba(255,110,110,.16);
+}
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionSave,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionSave{
+  border-color: rgba(46,150,86,.42);
+  color: #137c46;
+  background: rgba(46,150,86,.12);
+}
+body.light #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionCancel,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountAliasActionCancel{
+  border-color: rgba(196,62,62,.34);
+  color: #b23535;
+  background: rgba(196,62,62,.1);
+}
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol{
   padding:14px;
@@ -8177,9 +8318,9 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .s
 }
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
 body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol{
-  border-color:rgba(214,96,229,.42);
-  background:rgba(39,18,50,.28);
-  box-shadow:inset 0 0 0 1px rgba(233,134,245,.14), 0 0 14px rgba(198,73,216,.12);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 @media (max-width: 640px){
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
@@ -9405,9 +9546,11 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 @media (min-width: 981px){
   #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
+    --app-pages-bottom-padding: 102px;
     padding-bottom: 102px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    --app-pages-bottom-padding: 24px;
     padding-bottom: 24px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages,
@@ -9491,6 +9634,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   }
   #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 470px !important;
+    --app-pages-bottom-padding: 20px;
     padding-bottom: 20px !important;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsPageList{
@@ -9774,6 +9918,7 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     padding-left: 0 !important;
   }
   #app[aria-label="TaskLaunch App"] .appPages{
+    --app-pages-bottom-padding: 0px;
     padding-bottom: 0 !important;
   }
   #app[aria-label="TaskLaunch App"] .appFooterNav{
@@ -9908,16 +10053,32 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
 }
 
 #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
-  font-size:18px;
+  margin:4px 0 0;
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:.02em;
+  text-transform:none;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
+  font-size:24px;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroTitle{
-  font-size:clamp(30px, 3.75vw, 54px);
+  margin:0;
+  font-family:var(--font-tight);
+  font-size:11px;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:.18em;
+  text-transform:uppercase;
 }
 
 @media (max-width: 640px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
-    font-size:26px;
+    font-size:24px;
   }
 }
 
@@ -9961,7 +10122,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 #app[aria-label="TaskLaunch App"] #appPageDashboard.appPageOn,
 #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn,
 #app[aria-label="TaskLaunch App"] #appPageTest2.appPageOn{
-  min-height: 100%;
+  min-height: calc(100% - var(--app-pages-bottom-padding, 0px));
 }
 
 /* Desktop rail visual update: remove cyan panel shading and use purple icon treatment. */
@@ -10371,6 +10532,61 @@ body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friend
   border-color: rgba(15,23,42,.10) !important;
 }
 
+/* Final Friends shared-task tile layout:
+   render each shared task as a 2-column tile and pack multiple tiles per row when space allows. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
+  gap: 12px;
+  align-items: stretch;
+  justify-content: start;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+  min-width: 0;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(152px, 192px);
+  gap: 14px;
+  align-items: stretch;
+  min-height: 100%;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskInfo{
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrend{
+  min-width: 0;
+  justify-content: stretch;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+  text-align: right;
+}
+
+@media (max-width: 900px){
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+    text-align: left;
+  }
+}
+
 body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
 body[data-theme="light"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection .dashboardTopRow{
   background: transparent !important;
@@ -10400,6 +10616,52 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsInlineS
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackAnonymousRow{
+  margin-top: 2px;
+  align-items: center;
+  gap: 10px;
+  color: rgba(194,224,236,.88);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackAnonymousRow input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField.isDisabled label,
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField label.isDisabled{
+  color: rgba(154,164,180,.68) !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField.isDisabled input[type="email"]{
+  color: rgba(160,170,186,.8) !important;
+  cursor: not-allowed;
+  background: rgba(255,255,255,.02) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsFeedbackUploadBtn:disabled{
+  color: rgba(160,170,186,.8);
+  cursor: not-allowed;
+  background: rgba(255,255,255,.02);
+  border-color: rgba(255,255,255,.08);
+  opacity: 1;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsFeedbackAnonymousRow{
+  color: rgba(42,68,76,.82);
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField.isDisabled label,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField label.isDisabled{
+  color: rgba(112,126,136,.82) !important;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsFeedbackEmailField.isDisabled input[type="email"]{
+  color: rgba(118,128,136,.92) !important;
+  background: rgba(245,247,249,.92) !important;
+  border-color: rgba(0,0,0,.12) !important;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .settingsFeedbackUploadBtn:disabled{
+  color: rgba(102,114,122,.92);
+  background: rgba(240,244,246,.92);
+  border-color: rgba(0,0,0,.12);
 }
 
 /* Final desktop-rail profile override: updated profile card hierarchy and thumbnail treatment. */
@@ -10568,6 +10830,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   text-transform: uppercase;
   text-align: center;
 }
+
+/* Final desktop rail padding override: remove left padding only on desktop app rails. */
+#app[aria-label="TaskLaunch App"] .desktopAppRail,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+  padding-left: 0;
+}
+@media (min-width: 981px){
+  /* Final Settings-nav padding override: align the desktop Settings nav with the desktop app shell rail edge. */
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    padding-left: 0;
+  }
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewStats{
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -10611,4 +10885,131 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
     font-size: 10px;
     letter-spacing: .08em;
   }
+}
+
+/* Final Tasks-page override: align ellipsis menu surfaces with desktop rail buttons. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn{
+  border: 1px solid transparent !important;
+  background: #05080f !important;
+  color: rgba(233,246,252,.84) !important;
+  box-shadow: none !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:focus-visible{
+  border-color: rgba(212,71,210,.34) !important;
+  box-shadow: 0 0 16px rgba(212,71,210,.10), inset 0 0 0 1px rgba(240,110,224,.12) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu[open] > summary.taskMenuBtn{
+  border-color: rgba(240,110,224,.52) !important;
+  background: #05080f !important;
+  box-shadow: 0 0 20px rgba(212,71,210,.12), inset 0 0 0 1px rgba(240,110,224,.14) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuList{
+  border: 1px solid rgba(255,255,255,.08) !important;
+  background: #05080f !important;
+  box-shadow: 0 18px 30px rgba(0,0,0,.38), inset 0 0 0 1px rgba(240,110,224,.08) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem{
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: rgba(233,246,252,.84) !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:focus-visible{
+  border-color: rgba(212,71,210,.34) !important;
+  background: transparent !important;
+  box-shadow: 0 0 16px rgba(212,71,210,.10), inset 0 0 0 1px rgba(240,110,224,.12) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
+  color: rgba(255,210,220,.94) !important;
+  border-color: rgba(255,106,145,.22) !important;
+  background: rgba(255,106,145,.04) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
+  border-color: rgba(255,106,145,.34) !important;
+  box-shadow: 0 0 16px rgba(255,106,145,.10), inset 0 0 0 1px rgba(255,106,145,.12) !important;
+}
+
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn{
+  border-color: transparent !important;
+  background: #f4f9fc !important;
+  color: #17343c !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:hover,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:focus-visible{
+  border-color: rgba(181,89,173,.28) !important;
+  box-shadow: inset 0 0 0 1px rgba(181,89,173,.08), 0 0 12px rgba(181,89,173,.08) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu[open] > summary.taskMenuBtn{
+  border-color: rgba(181,89,173,.34) !important;
+  background: #f4f9fc !important;
+  box-shadow: inset 0 0 0 1px rgba(181,89,173,.10), 0 0 12px rgba(181,89,173,.08) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuList{
+  border-color: rgba(0,133,160,.16) !important;
+  background: #f4f9fc !important;
+  box-shadow: 0 18px 28px rgba(17,44,61,.12), inset 0 0 0 1px rgba(255,255,255,.52) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem{
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #17343c !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:hover,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:focus-visible{
+  border-color: rgba(181,89,173,.28) !important;
+  box-shadow: inset 0 0 0 1px rgba(181,89,173,.08), 0 0 12px rgba(181,89,173,.08) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
+  color: #8a2345 !important;
+  border-color: rgba(181,89,173,.18) !important;
+  background: rgba(181,89,173,.04) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
+  border-color: rgba(181,89,173,.28) !important;
+  box-shadow: inset 0 0 0 1px rgba(181,89,173,.08), 0 0 12px rgba(181,89,173,.08) !important;
+}
+
+/* Final Delete Friend confirm override: destructive styling belongs on the shared confirm modal, not Friend Info. */
+#confirmOverlay.isDeleteFriendConfirm .modal{
+  background: linear-gradient(180deg, rgba(28,10,14,.98) 0%, rgba(13,15,19,.98) 100%);
+  border: 1px solid rgba(255,92,112,.56);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,92,112,.14);
+}
+#confirmOverlay.isDeleteFriendConfirm .confirmText{
+  color: rgba(255,228,232,.92);
+}
+#confirmOverlay.isDeleteFriendConfirm .confirmBtns{
+  margin-top: 6px;
+  gap: 8px;
+}
+#confirmOverlay.isDeleteFriendConfirm #confirmCancelBtn,
+#confirmOverlay.isDeleteFriendConfirm #confirmOkBtn{
+  min-width: 92px;
+  justify-content: center;
+}
+body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
+  clip-path: none;
+}
+body[data-theme="light"] #confirmOverlay.isDeleteFriendConfirm .modal,
+body.light #confirmOverlay.isDeleteFriendConfirm .modal{
+  background: linear-gradient(180deg, rgba(255,246,248,.98) 0%, rgba(248,236,239,.98) 100%);
+  border: 1px solid rgba(184,48,72,.38);
+  box-shadow: 0 18px 40px rgba(13,19,24,.12), inset 0 0 0 1px rgba(255,255,255,.5);
+}
+body[data-theme="light"] #confirmOverlay.isDeleteFriendConfirm .confirmText,
+body.light #confirmOverlay.isDeleteFriendConfirm .confirmText{
+  color: #4d1f2b;
+}
+
+/* Final rank ladder overlay visibility override: when rendered, the shared overlay must be visible in app/settings contexts. */
+#app[aria-label="TaskLaunch App"] #rankLadderOverlay,
+#app[aria-label="TaskLaunch Settings"] #rankLadderOverlay{
+  display: flex;
 }

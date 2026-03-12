@@ -690,7 +690,7 @@ export function buildDefaultCloudPreferences() {
   return {
     schemaVersion: 1 as const,
     theme: "dark" as const,
-    menuButtonStyle: "parallelogram" as const,
+    menuButtonStyle: "square" as const,
     defaultTaskTimerFormat: "hour" as const,
     taskView: "list" as const,
     dynamicColorsEnabled: true,
