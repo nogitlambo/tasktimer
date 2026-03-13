@@ -92,6 +92,11 @@ async function runHistorySaveWithSignal<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
+async function runHistorySave<T>(work: () => Promise<T>, opts?: { showIndicator?: boolean }): Promise<T> {
+  if (opts?.showIndicator === false) return await work();
+  return await runHistorySaveWithSignal(work);
+}
+
 function currentUid(): string {
   const auth = getFirebaseAuthClient();
   return String(auth?.currentUser?.uid || "").trim();
@@ -815,7 +820,11 @@ export function loadHistory(): HistoryByTaskId {
   return cachedHistory && typeof cachedHistory === "object" ? cachedHistory : {};
 }
 
-export function saveHistory(historyByTaskId: HistoryByTaskId): void {
+type SaveHistoryOptions = {
+  showIndicator?: boolean;
+};
+
+export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): void {
   const prevHistory = cachedHistory || {};
   cachedHistory = historyByTaskId || {};
   saveShadowHistory(cachedHistory);
@@ -826,7 +835,7 @@ export function saveHistory(historyByTaskId: HistoryByTaskId): void {
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
-  void runHistorySaveWithSignal(() =>
+  void runHistorySave(() =>
     Promise.all(
       entries.map(([taskId, rows]) =>
         replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
@@ -834,7 +843,8 @@ export function saveHistory(historyByTaskId: HistoryByTaskId): void {
             // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
           })
       )
-    )
+    ),
+    opts
   );
 }
 
@@ -851,7 +861,7 @@ export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
   );
 }
 
-export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Promise<void> {
+export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): Promise<void> {
   const prevHistory = cachedHistory || {};
   cachedHistory = historyByTaskId || {};
   saveShadowHistory(cachedHistory);
@@ -862,7 +872,7 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Prom
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
-  await runHistorySaveWithSignal(() =>
+  await runHistorySave(() =>
     Promise.all(
       entries.map(([taskId, rows]) =>
         replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
@@ -870,7 +880,8 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId): Prom
             // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
           })
       )
-    )
+    ),
+    opts
   );
 }
 

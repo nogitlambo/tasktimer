@@ -6,10 +6,10 @@ import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
+import RankThumbnail from "./RankThumbnail";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankLadderThumbnailSrc,
   normalizeRewardProgress,
 } from "../lib/rewards";
 import { STORAGE_KEY, subscribeCachedPreferences } from "../lib/storage";
@@ -341,10 +341,6 @@ export default function DesktopAppRail({
   }, [syncProfileFromUser]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
-  const displayedRankThumbnailSrc = useMemo(
-    () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
-    [rewardProgress.currentRankId, rankThumbnailSrc]
-  );
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
 
   return (
@@ -386,9 +382,16 @@ export default function DesktopAppRail({
                 </div>
               </div>
               <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
-                {displayedRankThumbnailSrc ? (
-                  <img className="dashboardRailRankBadge" src={displayedRankThumbnailSrc} alt="" aria-hidden="true" />
-                ) : null}
+                <RankThumbnail
+                  rankId={rewardProgress.currentRankId}
+                  storedThumbnailSrc={rankThumbnailSrc}
+                  className="dashboardRailRankBadgeShell"
+                  imageClassName="dashboardRailRankBadge"
+                  placeholderClassName="dashboardRailRankBadgePlaceholder"
+                  alt=""
+                  size={44}
+                  aria-hidden
+                />
                 <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
               </div>
             </div>

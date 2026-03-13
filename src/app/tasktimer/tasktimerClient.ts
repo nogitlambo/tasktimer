@@ -59,7 +59,7 @@ import {
   saveCloudTaskUi,
   subscribeCloudTaskCollection,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
+import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, getRankThumbnailDescriptor, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
 
 type AppPage = "tasks" | "dashboard" | "test1" | "test2";
@@ -360,11 +360,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let shareTaskTaskId: string | null = null;
   let exportTaskIndex: number | null = null;
   let groupsLoading = false;
+  let groupsLoadingDepth = 0;
+  let groupsRefreshSeq = 0;
   let activeFriendProfileUid: string | null = null;
   let activeFriendProfileName = "";
   let historyEntryNoteAnchorTaskId = "";
   let groupsStatusMessage = "Ready.";
   const openFriendSharedTaskUids = new Set<string>();
+  const workingIndicatorStack: Array<{ key: number; message: string }> = [];
+  let workingIndicatorKeySeq = 0;
+  let workingIndicatorOverlayActive = false;
+  let workingIndicatorRestoreFocusEl: HTMLElement | null = null;
   let friendProfileCacheByUid: Record<string, FriendProfile> = {};
   let cloudRefreshInFlight: Promise<void> | null = null;
   let lastCloudRefreshAtMs = 0;
@@ -514,6 +520,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     appPageDashboard: document.getElementById("appPageDashboard"),
     appPageTest1: document.getElementById("appPageTest1"),
     appPageTest2: document.getElementById("appPageTest2"),
+    appRoot: document.getElementById("app"),
     groupsFriendsSection: document.getElementById("groupsFriendsSection"),
     openFriendRequestModalBtn: document.getElementById("openFriendRequestModalBtn") as HTMLButtonElement | null,
     friendRequestModal: document.getElementById("friendRequestModal"),
@@ -525,6 +532,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     friendProfileAvatar: document.getElementById("friendProfileAvatar") as HTMLImageElement | null,
     friendProfileName: document.getElementById("friendProfileName"),
     friendProfileRankImage: document.getElementById("friendProfileRankImage") as HTMLImageElement | null,
+    friendProfileRankPlaceholder: document.getElementById("friendProfileRankPlaceholder"),
     friendProfileRank: document.getElementById("friendProfileRank"),
     friendProfileMemberSince: document.getElementById("friendProfileMemberSince"),
     friendProfileDeleteBtn: document.getElementById("friendProfileDeleteBtn") as HTMLButtonElement | null,
@@ -554,6 +562,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     groupsSharedByYouList: document.getElementById("groupsSharedByYouList"),
     groupsSharedByYouTitle: document.getElementById("groupsSharedByYouTitle"),
     groupsFriendRequestStatus: document.getElementById("groupsFriendRequestStatus"),
+    historySaveWorkingIndicator: document.getElementById("historySaveWorkingIndicator"),
+    historySaveWorkingText: document.getElementById("historySaveWorkingText"),
     footerTasksBtn: document.getElementById("footerTasksBtn") as HTMLButtonElement | null,
     footerDashboardBtn: document.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
     footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
@@ -1918,7 +1928,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const cleanedHistory = cleanupHistory(loadedHistory);
     historyByTaskId = cleanedHistory;
     if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
-      saveHistory(historyByTaskId);
+      saveHistory(historyByTaskId, { showIndicator: false });
     }
   }
 
@@ -1933,7 +1943,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!currentUid()) return;
     if (!hasHistoryEntryNotes(historyByTaskId)) return;
     historyNoteCloudRepairAttempted = true;
-    saveHistory(historyByTaskId);
+    saveHistory(historyByTaskId, { showIndicator: false });
   }
 
   function loadHistoryRangePrefs() {
@@ -3428,7 +3438,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       });
     });
 
-    if (changed) saveHistory(historyByTaskId);
+    if (changed) saveHistory(historyByTaskId, { showIndicator: false });
   }
 
 
@@ -7324,6 +7334,199 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function setWorkingIndicatorVisible(isOn: boolean, message?: string) {
+    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
+    const textEl = els.historySaveWorkingText as HTMLElement | null;
+    if (textEl && typeof message === "string" && message.trim()) {
+      textEl.textContent = message.trim();
+    } else if (textEl && !isOn) {
+      textEl.textContent = "";
+    }
+    if (!indicatorEl) return;
+    indicatorEl.classList.toggle("isOn", !!isOn);
+    indicatorEl.setAttribute("aria-hidden", isOn ? "false" : "true");
+  }
+
+  function getWorkingIndicatorBusyTargets() {
+    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
+    const seen = new Set<HTMLElement>();
+    return [
+      els.appRoot as HTMLElement | null,
+      els.friendRequestModal as HTMLElement | null,
+      els.friendProfileModal as HTMLElement | null,
+      els.confirmOverlay as HTMLElement | null,
+    ].filter((node): node is HTMLElement => {
+      if (!node || node === indicatorEl || seen.has(node)) return false;
+      seen.add(node);
+      return true;
+    });
+  }
+
+  function activateWorkingIndicatorOverlay() {
+    if (workingIndicatorOverlayActive) return;
+    workingIndicatorOverlayActive = true;
+    workingIndicatorRestoreFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    getWorkingIndicatorBusyTargets().forEach((node) => {
+      node.setAttribute("data-groups-busy-prev-inert", node.hasAttribute("inert") ? "true" : "false");
+      node.setAttribute("data-groups-busy-prev-aria-hidden", node.getAttribute("aria-hidden") ?? "");
+      node.setAttribute("inert", "");
+      node.setAttribute("aria-hidden", "true");
+    });
+    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
+    try {
+      indicatorEl?.focus({ preventScroll: true });
+    } catch {
+      indicatorEl?.focus();
+    }
+  }
+
+  function deactivateWorkingIndicatorOverlay() {
+    if (!workingIndicatorOverlayActive) return;
+    workingIndicatorOverlayActive = false;
+    getWorkingIndicatorBusyTargets().forEach((node) => {
+      const prevInert = node.getAttribute("data-groups-busy-prev-inert");
+      const prevAriaHidden = node.getAttribute("data-groups-busy-prev-aria-hidden");
+      node.removeAttribute("data-groups-busy-prev-inert");
+      node.removeAttribute("data-groups-busy-prev-aria-hidden");
+      if (prevInert === "true") node.setAttribute("inert", "");
+      else node.removeAttribute("inert");
+      if (prevAriaHidden) node.setAttribute("aria-hidden", prevAriaHidden);
+      else node.removeAttribute("aria-hidden");
+    });
+    const restoreEl = workingIndicatorRestoreFocusEl;
+    workingIndicatorRestoreFocusEl = null;
+    if (restoreEl && restoreEl.isConnected) {
+      try {
+        restoreEl.focus({ preventScroll: true });
+      } catch {
+        restoreEl.focus();
+      }
+    }
+  }
+
+  function showWorkingIndicator(message: string) {
+    const normalizedMessage = String(message || "").trim() || "Working...";
+    const key = ++workingIndicatorKeySeq;
+    workingIndicatorStack.push({ key, message: normalizedMessage });
+    if (workingIndicatorStack.length === 1) activateWorkingIndicatorOverlay();
+    setWorkingIndicatorVisible(true, normalizedMessage);
+    return key;
+  }
+
+  function hideWorkingIndicator(key?: number) {
+    if (typeof key === "number") {
+      const index = workingIndicatorStack.findIndex((entry) => entry.key === key);
+      if (index >= 0) workingIndicatorStack.splice(index, 1);
+    } else {
+      workingIndicatorStack.pop();
+    }
+    const current = workingIndicatorStack[workingIndicatorStack.length - 1] || null;
+    if (!current) deactivateWorkingIndicatorOverlay();
+    setWorkingIndicatorVisible(!!current, current?.message);
+  }
+
+  function beginGroupsLoading() {
+    groupsLoadingDepth += 1;
+    groupsLoading = true;
+  }
+
+  function endGroupsLoading() {
+    groupsLoadingDepth = Math.max(0, groupsLoadingDepth - 1);
+    groupsLoading = groupsLoadingDepth > 0;
+  }
+
+  type GroupsBusyResult<T> =
+    | { ok: true; value: T; timedOut: false }
+    | { ok: false; message: string; timedOut: boolean; error?: unknown };
+
+  async function runGroupsBusy<T>(
+    message: string,
+    timeoutMessage: string,
+    work: () => Promise<T>
+  ): Promise<GroupsBusyResult<T>> {
+    beginGroupsLoading();
+    renderGroupsPage();
+    let workingIndicatorKey: number | null = null;
+    let indicatorDelayTimer = window.setTimeout(() => {
+      workingIndicatorKey = showWorkingIndicator(message);
+    }, 300);
+    let timeoutHandle = 0 as number;
+    try {
+      const result = await Promise.race<
+        | { kind: "value"; value: T }
+        | { kind: "error"; error: unknown }
+        | { kind: "timeout" }
+      >([
+        work()
+          .then((value) => ({ kind: "value" as const, value }))
+          .catch((error) => ({ kind: "error" as const, error })),
+        new Promise<{ kind: "timeout" }>((resolve) => {
+          timeoutHandle = window.setTimeout(() => resolve({ kind: "timeout" }), 60000);
+        }),
+      ]);
+      if (result.kind === "timeout") {
+        return { ok: false, message: timeoutMessage, timedOut: true };
+      }
+      if (result.kind === "error") {
+        return { ok: false, message: "", timedOut: false, error: result.error };
+      }
+      return { ok: true, value: result.value, timedOut: false };
+    } finally {
+      if (indicatorDelayTimer) {
+        window.clearTimeout(indicatorDelayTimer);
+        indicatorDelayTimer = 0 as number;
+      }
+      if (timeoutHandle) window.clearTimeout(timeoutHandle);
+      if (workingIndicatorKey != null) hideWorkingIndicator(workingIndicatorKey);
+      endGroupsLoading();
+      renderGroupsPage();
+    }
+  }
+
+  async function loadGroupsSnapshot(uid: string) {
+    const [incoming, outgoing, friendships] = await Promise.all([
+      loadIncomingRequests(uid),
+      loadOutgoingRequests(uid),
+      loadFriendships(uid),
+    ]);
+    const profileEntries = await Promise.allSettled(
+      friendships.map(async (row) => {
+        const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
+        if (!peerUid) return null;
+        const profile = await loadFriendProfile(peerUid);
+        return [peerUid, profile] as const;
+      })
+    );
+    const nextFriendProfileCache: Record<string, FriendProfile> = {};
+    profileEntries.forEach((result) => {
+      if (result.status !== "fulfilled" || !result.value) return;
+      const [peerUid, profile] = result.value;
+      if (!peerUid) return;
+      nextFriendProfileCache[peerUid] = profile;
+    });
+    const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
+      loadSharedTaskSummariesForViewer(uid),
+      loadSharedTaskSummariesForOwner(uid),
+    ]);
+    return {
+      incoming,
+      outgoing,
+      friendships,
+      friendProfileCache: nextFriendProfileCache,
+      sharedSummaries: sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [],
+      ownSharedSummaries: sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [],
+    };
+  }
+
+  function applyGroupsSnapshot(snapshot: Awaited<ReturnType<typeof loadGroupsSnapshot>>) {
+    groupsIncomingRequests = snapshot.incoming;
+    groupsOutgoingRequests = snapshot.outgoing;
+    groupsFriendships = snapshot.friendships;
+    friendProfileCacheByUid = snapshot.friendProfileCache;
+    groupsSharedSummaries = snapshot.sharedSummaries;
+    ownSharedSummaries = snapshot.ownSharedSummaries;
+  }
+
   function syncOpenFriendSharedTaskUidsFromDom() {
     const list = els.groupsFriendsList as HTMLElement | null;
     if (!list) return;
@@ -7493,12 +7696,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     if (els.friendProfileName) els.friendProfileName.textContent = row.alias;
     if (els.friendProfileRankImage) {
-      if (row.rankThumbnailSrc) {
-        els.friendProfileRankImage.src = row.rankThumbnailSrc;
+      const rankThumbnail = getRankThumbnailDescriptor(row.currentRankId);
+      if (rankThumbnail.kind === "image") {
+        els.friendProfileRankImage.src = rankThumbnail.src;
         els.friendProfileRankImage.style.display = "block";
+        if (els.friendProfileRankPlaceholder) (els.friendProfileRankPlaceholder as HTMLElement).style.display = "none";
       } else {
         els.friendProfileRankImage.removeAttribute("src");
         els.friendProfileRankImage.style.display = "none";
+        if (els.friendProfileRankPlaceholder) {
+          (els.friendProfileRankPlaceholder as HTMLElement).textContent = rankThumbnail.label;
+          (els.friendProfileRankPlaceholder as HTMLElement).style.display = "grid";
+        }
       }
     }
     if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: ${getRankLabelById(row.currentRankId)}`;
@@ -8028,18 +8237,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const requestedDate = Number.isFinite(requestedAtMs) ? new Date(requestedAtMs).toLocaleString() : "Unknown";
         const status = String(row.status || "pending");
         const statusLabel = status[0].toUpperCase() + status.slice(1);
+        const disabledAttr = groupsLoading ? ' disabled aria-disabled="true"' : "";
         const actionBtns =
           status !== "pending"
             ? ""
             : opts.incoming
               ? `<div class="footerBtns groupsIncomingRequestActions"><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
                   row.requestId
-                )}">Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
+                )}"${disabledAttr}>Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
                   row.requestId
-                )}">Approve</button></div>`
+                )}"${disabledAttr}>Approve</button></div>`
               : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${escapeHtmlUI(
                   row.requestId
-                )}">Cancel request</button></div>`;
+                )}"${disabledAttr}>Cancel request</button></div>`;
         const identityAvatarId = String((opts.incoming ? row.senderAvatarId : row.receiverAvatarId) || "").trim();
         const identityAvatarSrc = getFriendAvatarSrcById(identityAvatarId);
         const identityHtml = `<div class="friendRequestIdentityRow">
@@ -8246,7 +8456,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, groupsOutgoingRequests, { incoming: false });
     renderGroupsFriendsList();
     renderGroupsSharedByYouList();
+    if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = groupsLoading;
     if (els.friendRequestSendBtn) els.friendRequestSendBtn.disabled = groupsLoading;
+    if (els.friendProfileDeleteBtn) els.friendProfileDeleteBtn.disabled = groupsLoading;
   }
 
   function renderFriendsFooterAlertBadge() {
@@ -8266,7 +8478,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     badgeEl.setAttribute("aria-label", `${count} incoming friend request${count === 1 ? "" : "s"}`);
   }
 
-  async function refreshGroupsData() {
+  async function refreshGroupsData(opts?: { preserveStatus?: boolean }) {
     const uid = currentUid();
     if (!uid) {
       groupsIncomingRequests = [];
@@ -8279,46 +8491,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderGroupsPage();
       return;
     }
-    groupsLoading = true;
-    renderGroupsPage();
+    const refreshSeq = ++groupsRefreshSeq;
     try {
-      const [incoming, outgoing, friendships] = await Promise.all([
-        loadIncomingRequests(uid),
-        loadOutgoingRequests(uid),
-        loadFriendships(uid),
-      ]);
-      groupsIncomingRequests = incoming;
-      groupsOutgoingRequests = outgoing;
-      groupsFriendships = friendships;
-      const profileEntries = await Promise.allSettled(
-        friendships.map(async (row) => {
-          const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
-          if (!peerUid) return null;
-          const profile = await loadFriendProfile(peerUid);
-          return [peerUid, profile] as const;
-        })
-      );
-      const nextFriendProfileCache: Record<string, FriendProfile> = {};
-      profileEntries.forEach((result) => {
-        if (result.status !== "fulfilled" || !result.value) return;
-        const [peerUid, profile] = result.value;
-        if (!peerUid) return;
-        nextFriendProfileCache[peerUid] = profile;
-      });
-      friendProfileCacheByUid = nextFriendProfileCache;
-
-      const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
-        loadSharedTaskSummariesForViewer(uid),
-        loadSharedTaskSummariesForOwner(uid),
-      ]);
-      groupsSharedSummaries =
-        sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [];
-      ownSharedSummaries = sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [];
-      setGroupsStatus("Ready.");
+      const snapshot = await loadGroupsSnapshot(uid);
+      if (refreshSeq !== groupsRefreshSeq) return;
+      applyGroupsSnapshot(snapshot);
+      if (!opts?.preserveStatus) setGroupsStatus("Ready.");
     } catch {
-      setGroupsStatus("Could not load friend data.");
+      if (refreshSeq !== groupsRefreshSeq) return;
+      if (!opts?.preserveStatus) setGroupsStatus("Could not load friend data.");
     } finally {
-      groupsLoading = false;
       renderGroupsPage();
     }
   }
@@ -8329,64 +8511,71 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const email = auth?.currentUser?.email || null;
     const receiverEmail = String(els.friendRequestEmailInput?.value || "").trim();
     setFriendRequestModalStatus("");
-    groupsLoading = true;
-    renderGroupsPage();
     setGroupsStatus("Sending request...");
-    try {
-      const result = await sendFriendRequest(uid, email, receiverEmail);
-      if (!result.ok) {
-        setFriendRequestModalStatus(`Friend request failed: ${result.message || "Could not find a matching email."}`, "error");
-        setGroupsStatus(result.message);
-        return;
-      }
-      setFriendRequestModalStatus("Friend request success.", "success");
-      setGroupsStatus("Friend request sent.");
-      await refreshGroupsData();
-      window.setTimeout(() => {
-        closeFriendRequestModal();
-      }, 700);
-    } catch {
-      setFriendRequestModalStatus("Friend request failed: Could not send request.", "error");
-      setGroupsStatus("Could not send friend request.");
-    } finally {
-      groupsLoading = false;
+    const result = await runGroupsBusy("Sending friend request...", "Friend request timed out. Please try again.", () =>
+      sendFriendRequest(uid, email, receiverEmail)
+    );
+    if (!result.ok) {
+      const message = result.timedOut ? result.message : "Could not send friend request.";
+      setFriendRequestModalStatus(`Friend request failed: ${message}`, "error");
+      setGroupsStatus(message);
       renderGroupsPage();
+      return;
     }
+    if (!result.value.ok) {
+      const failureMessage = result.value.message || "Could not find a matching email.";
+      setFriendRequestModalStatus(`Friend request failed: ${failureMessage}`, "error");
+      setGroupsStatus(failureMessage);
+      renderGroupsPage();
+      return;
+    }
+    setFriendRequestModalStatus("Friend request success.", "success");
+    setGroupsStatus("Friend request sent.");
+    renderGroupsPage();
+    void refreshGroupsData({ preserveStatus: true });
+    window.setTimeout(() => {
+      closeFriendRequestModal();
+    }, 700);
   }
 
   async function handleFriendRequestAction(requestId: string, action: "approve" | "decline" | "cancel") {
     const uid = currentUid();
     if (!uid || !requestId) return;
-    groupsLoading = true;
     const pendingStatus =
       action === "approve" ? "Approving request..." : action === "decline" ? "Declining request..." : "Cancelling request...";
     setGroupsStatus(pendingStatus);
-    renderGroupsPage();
-    try {
-      const result =
-        action === "approve"
-          ? await approveFriendRequest(requestId, uid)
-          : action === "decline"
-            ? await declineFriendRequest(requestId, uid)
-            : await cancelOutgoingFriendRequest(requestId, uid);
-      if (!result.ok) {
-        setGroupsStatus(result.message || "Action failed.");
-        return;
-      }
-      const completeStatus =
-        action === "approve"
-          ? "Friend request approved."
-          : action === "decline"
-            ? "Friend request declined."
-            : "Friend request cancelled.";
-      setGroupsStatus(completeStatus);
-      await refreshGroupsData();
-    } catch {
-      setGroupsStatus("Could not update friend request.");
-    } finally {
-      groupsLoading = false;
+    const timeoutStatus =
+      action === "approve"
+        ? "Approving request timed out. Please try again."
+        : action === "decline"
+          ? "Declining request timed out. Please try again."
+          : "Cancelling request timed out. Please try again.";
+    const result = await runGroupsBusy(pendingStatus, timeoutStatus, async () =>
+      action === "approve"
+        ? await approveFriendRequest(requestId, uid)
+        : action === "decline"
+          ? await declineFriendRequest(requestId, uid)
+          : await cancelOutgoingFriendRequest(requestId, uid)
+    );
+    if (!result.ok) {
+      setGroupsStatus(result.timedOut ? result.message : "Could not update friend request.");
       renderGroupsPage();
+      return;
     }
+    if (!result.value.ok) {
+      setGroupsStatus(result.value.message || "Action failed.");
+      renderGroupsPage();
+      return;
+    }
+    const completeStatus =
+      action === "approve"
+        ? "Friend request approved."
+        : action === "decline"
+          ? "Friend request declined."
+          : "Friend request cancelled.";
+    setGroupsStatus(completeStatus);
+    renderGroupsPage();
+    void refreshGroupsData({ preserveStatus: true });
   }
 
   function applyMainMode(mode: MainMode) {
@@ -8910,6 +9099,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.openFriendRequestModalBtn, "click", (e: any) => {
       e?.preventDefault?.();
+      if (groupsLoading) return;
       openFriendRequestModal();
     });
     on(els.friendRequestCancelBtn, "click", (e: any) => {
@@ -8928,12 +9118,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.friendProfileDeleteBtn, "click", (e: any) => {
       e?.preventDefault?.();
+      if (groupsLoading) return;
       const fallbackName = String(els.friendProfileName?.textContent || "").trim();
       const friendName = String(activeFriendProfileName || fallbackName || "this user").trim();
       confirm("Delete Friend", `Are you sure you want to delete ${friendName} as a friend?`, {
         okLabel: "Delete",
         cancelLabel: "Cancel",
         onOk: () => {
+          if (groupsLoading) return;
           const ownUid = String(currentUid() || "").trim();
           const friendUid = String(activeFriendProfileUid || "").trim();
           if (!ownUid) {
@@ -8949,35 +9141,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           closeConfirm();
           closeFriendProfileModal();
           setGroupsStatus(`Deleting ${friendName}...`);
-          void deleteFriendship(ownUid, friendUid)
-            .then(async (result) => {
-              if (!result.ok) {
-                await refreshGroupsData();
-                render();
-                setGroupsStatus(result.message || "Could not delete friend.");
-                return;
-              }
-              activeFriendProfileUid = null;
-              activeFriendProfileName = "";
-              groupsFriendships = groupsFriendships.filter((row) => !row.users.includes(friendUid));
-              groupsSharedSummaries = groupsSharedSummaries.filter(
-                (row) => String(row.ownerUid || "").trim() !== friendUid && String(row.friendUid || "").trim() !== friendUid
-              );
-              ownSharedSummaries = ownSharedSummaries.filter((row) => String(row.friendUid || "").trim() !== friendUid);
-              delete friendProfileCacheByUid[friendUid];
-              render();
-              setGroupsStatus(result.message || `${friendName} was removed from your friends.`);
-              try {
-                await refreshOwnSharedSummaries();
-                await refreshGroupsData();
-                render();
-              } catch {
-                // Keep optimistic in-memory removal when the follow-up refresh fails.
-              }
-            })
-            .catch(() => {
-              setGroupsStatus("Could not delete friend.");
-            });
+          renderGroupsPage();
+          void (async () => {
+            const result = await runGroupsBusy(`Deleting ${friendName}...`, "Deleting friend timed out. Please try again.", () =>
+              deleteFriendship(ownUid, friendUid)
+            );
+            if (!result.ok) {
+              setGroupsStatus(result.timedOut ? result.message : "Could not delete friend.");
+              renderGroupsPage();
+              return;
+            }
+            if (!result.value.ok) {
+              setGroupsStatus(result.value.message || "Could not delete friend.");
+              renderGroupsPage();
+              return;
+            }
+            activeFriendProfileUid = null;
+            activeFriendProfileName = "";
+            groupsFriendships = groupsFriendships.filter((row) => !row.users.includes(friendUid));
+            groupsSharedSummaries = groupsSharedSummaries.filter(
+              (row) => String(row.ownerUid || "").trim() !== friendUid && String(row.friendUid || "").trim() !== friendUid
+            );
+            ownSharedSummaries = ownSharedSummaries.filter((row) => String(row.friendUid || "").trim() !== friendUid);
+            delete friendProfileCacheByUid[friendUid];
+            setGroupsStatus(result.value.message || `${friendName} was removed from your friends.`);
+            renderGroupsPage();
+            void refreshGroupsData({ preserveStatus: true });
+          })();
         },
       });
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteFriendConfirm");

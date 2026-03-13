@@ -21,6 +21,10 @@ export type RankDefinition = {
   minXp: number;
 };
 
+export type RankThumbnailDescriptor =
+  | { kind: "image"; src: string; rankId: string }
+  | { kind: "placeholder"; label: string; rankId: string };
+
 export type RewardAwardResult = {
   amount: number;
   previous: RewardProgressV1;
@@ -71,6 +75,15 @@ export const RANK_LADDER: RankDefinition[] = [
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
+  strategist: "/insignias/strategist.svg",
+  director: "/insignias/director.svg",
+  ascendent: "/insignias/ascendent.svg",
+  commander: "/insignias/commander.svg",
+  architect: "/insignias/architect.svg",
+};
+
+const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
+  strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",
   ascendent: "/insignias/ascendent.png",
   commander: "/insignias/commander.png",
@@ -164,7 +177,22 @@ export function getRankLabelById(rankId: string): string {
 }
 
 export function getRankThumbnailById(rankId: string): string {
-  return String(RANK_MODAL_THUMBNAIL_BY_ID[String(rankId || "").trim().toLowerCase()] || "").trim();
+  const normalizedRankId = String(rankId || "").trim().toLowerCase();
+  return String(RANK_MODAL_THUMBNAIL_BY_ID[normalizedRankId] || RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID[normalizedRankId] || "").trim();
+}
+
+export function getRankPlaceholderLabel(rankId: string): string {
+  const normalizedRankId = String(rankId || "").trim().toLowerCase();
+  const index = RANK_LADDER.findIndex((rank) => rank.id === normalizedRankId);
+  if (index <= 0) return "U";
+  return String(index);
+}
+
+export function getRankThumbnailDescriptor(rankId: string): RankThumbnailDescriptor {
+  const normalizedRankId = getRankById(rankId).id;
+  const src = getRankThumbnailById(normalizedRankId);
+  if (src) return { kind: "image", src, rankId: normalizedRankId };
+  return { kind: "placeholder", label: getRankPlaceholderLabel(normalizedRankId), rankId: normalizedRankId };
 }
 
 export function getRankLadderThumbnailSrc(currentRankId: string, storedThumbnailSrc: string): string {
@@ -172,6 +200,17 @@ export function getRankLadderThumbnailSrc(currentRankId: string, storedThumbnail
   if (currentRankThumbnail) return currentRankThumbnail;
   const storedRankId = getRankIdForThumbnailSrc(storedThumbnailSrc);
   return storedRankId ? getRankThumbnailById(storedRankId) : "";
+}
+
+export function getStoredRankThumbnailDescriptor(currentRankId: string, storedThumbnailSrc: string): RankThumbnailDescriptor {
+  const current = getRankThumbnailDescriptor(currentRankId);
+  if (current.kind === "image") return current;
+  const storedRankId = getRankIdForThumbnailSrc(storedThumbnailSrc);
+  if (storedRankId) {
+    const stored = getRankThumbnailDescriptor(storedRankId);
+    if (stored.kind === "image") return stored;
+  }
+  return current;
 }
 
 export function getRankIdForThumbnailSrc(src: string): string | null {

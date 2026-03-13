@@ -3758,26 +3758,53 @@ optgroup{
 }
 .historySaveWorkingIndicator{
   position: fixed;
-  right: 18px;
-  bottom: 92px;
-  z-index: 2200;
+  inset: 0;
+  z-index: 11020;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(104,220,255,.22);
-  border-radius: 999px;
-  background: rgba(11,18,31,.92);
-  color: rgba(230,245,255,.96);
-  box-shadow: 0 18px 40px rgba(0,0,0,.28);
+  justify-content: center;
+  padding: 18px 14px;
+  background: rgba(2,6,12,.68);
+  backdrop-filter: blur(8px);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(10px) scale(.98);
-  transition: opacity .18s ease, transform .18s ease;
+  transition: opacity .18s ease;
 }
 .historySaveWorkingIndicator.isOn{
   opacity: 1;
-  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.historySaveWorkingPanel{
+  width: min(420px, calc(100vw - 28px));
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid rgba(104,220,255,.28);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  background:
+    radial-gradient(140% 140% at 20% 0%, rgba(74,196,255,.14), rgba(0,0,0,0) 34%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
+    #0d0f13;
+  color: rgba(230,245,255,.96);
+  box-shadow:
+    0 26px 60px rgba(0,0,0,.5),
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+body[data-control-style="square"] .historySaveWorkingPanel{
+  clip-path: none;
+}
+#historySaveWorkingText{
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1.4;
+  text-align: center;
 }
 .historySaveWorkingDots{
   display: inline-flex;
@@ -4452,10 +4479,19 @@ body[data-theme="light"] .focusSessionNotesInput{
   border-color: rgba(0,0,0,.16);
 }
 body[data-theme="light"] .historySaveWorkingIndicator{
-  background: rgba(255,255,255,.94);
+  background: rgba(246,249,253,.74);
+}
+body[data-theme="light"] .historySaveWorkingPanel{
+  background:
+    radial-gradient(140% 140% at 22% 0%, rgba(78,188,255,.16), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(244,248,252,.98)),
+    #ffffff;
   color: rgba(15,25,35,.96);
-  border-color: rgba(0,0,0,.12);
-  box-shadow: 0 18px 36px rgba(27,39,54,.16);
+  border-color: rgba(0,0,0,.14);
+  box-shadow:
+    0 22px 48px rgba(27,39,54,.18),
+    inset 0 0 0 1px rgba(255,255,255,.72),
+    inset 0 1px 0 rgba(255,255,255,.9);
 }
 body[data-theme="light"] .historySaveWorkingDots i{
   box-shadow: 0 0 0 1px rgba(0,0,0,.08);
@@ -6955,6 +6991,23 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
 #friendProfileModal .modalSubtext{
   margin: 2px 0 0;
 }
+.friendProfileRankPlaceholder{
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:rgba(13,15,19,.9);
+  border:1px solid rgba(148,163,184,0.3);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;
+  color:#e5f6ff;
+  font-size:24px;
+  font-weight:800;
+  line-height:1;
+}
+body[data-theme="light"] .friendProfileRankPlaceholder{
+  background:#f8fafc;
+  border-color:rgba(148,163,184,0.34);
+  color:#0f172a;
+}
 
 #historyEntryNoteOverlay{
   z-index: 96;
@@ -8751,6 +8804,20 @@ body[data-theme="light"][data-task-view="tile"][data-app-page="tasks"] #app[aria
   object-fit:contain;
   border-radius:4px;
 }
+#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaPlaceholder,
+#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsigniaPlaceholder{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  border-radius:4px;
+  background:rgba(13,15,19,.9);
+  box-shadow:0 0 0 1px rgba(0,133,160,.18) inset;
+  color:#e8f9ff;
+  font-size:11px;
+  font-weight:800;
+  line-height:1;
+}
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeBody,
 #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeBody{
   display:grid;
@@ -8985,6 +9052,17 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderB
   display:block;
   object-fit:cover;
 }
+#app[aria-label="TaskLaunch App"] .rankLadderItemBadgePlaceholder,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgePlaceholder{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+}
 #app[aria-label="TaskLaunch App"] .rankLadderItemBody,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBody{
   min-width:0;
@@ -9051,6 +9129,13 @@ body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .rankLadderItem.
 body[data-theme="light"] #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
 body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
   border-color:rgba(148,163,184,0.34);
+  background:#f8fafc;
+  color:#0f172a;
+}
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaPlaceholder,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsigniaPlaceholder,
+body[data-theme="light"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailRankBadgePlaceholder,
+body[data-theme="light"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailRankBadgePlaceholder{
   background:#f8fafc;
   color:#0f172a;
 }
@@ -10037,6 +10122,20 @@ body[data-theme="light"][data-app-page="dashboard"] #app[aria-label="TaskLaunch 
   object-fit:contain;
   background:rgba(5, 12, 20, 0.9);
   box-shadow:0 0 0 1px rgba(245, 112, 255, 0.2);
+}
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailRankBadgePlaceholder,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailRankBadgePlaceholder{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:rgba(5, 12, 20, 0.9);
+  box-shadow:0 0 0 1px rgba(245, 112, 255, 0.2);
+  color:#f3fbff;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
 }
 
 /* Reduce primary heading sizes by 25% across the active app surfaces. */

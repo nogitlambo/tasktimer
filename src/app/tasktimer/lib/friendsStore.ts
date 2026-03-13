@@ -290,16 +290,13 @@ export async function sendFriendRequest(
           failure = "A pending request already exists for this user.";
           return;
         }
-        if (status === "approved") {
-          failure = "You are already friends with this user.";
-          return;
-        }
-        if (status !== "declined") {
+        if (status !== "declined" && status !== "approved") {
           failure = "Request state is invalid. Remove or fix the existing request first.";
           return;
         }
 
-        // Retry path: update only mutable fields so immutable-rule comparisons remain intact.
+        // Retry path: recycle declined or stale approved records back to pending
+        // when the friendship document no longer exists.
         tx.update(requestRef, {
           status: "pending",
           senderEmail: senderEmail || null,

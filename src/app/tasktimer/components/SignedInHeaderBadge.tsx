@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -8,10 +7,10 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { ensureUserProfileIndex } from "../lib/cloudStore";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
+import RankThumbnail from "./RankThumbnail";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankThumbnailById,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
@@ -114,7 +113,6 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
   const canSelectRankInsignia = signedInUserUid === RANK_INSIGNIA_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
-  const displayedRankThumbnailSrc = getRankThumbnailById(rewardProgress.currentRankId) || rankThumbnailSrc;
   const headerBadgeLabel =
     headerView === "xp"
       ? `${displayedRankLabel}. ${rewardsHeader.progressLabel}${rewardsHeader.xpToNext != null ? `. ${rewardsHeader.xpToNext} XP to next rank.` : "."}`
@@ -167,7 +165,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
         aria-label={headerBadgeLabel}
         title="Open Account settings"
       >
-        {headerView === "xp" && displayedRankThumbnailSrc ? (
+        {headerView === "xp" ? (
           <span
             className="signedInHeaderBadgeInsigniaWrap signedInHeaderBadgeInsigniaTrigger"
             role="button"
@@ -178,7 +176,16 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
               if (event.key === "Enter" || event.key === " ") openRankLadderModal(event);
             }}
           >
-            <Image className="signedInHeaderBadgeInsignia" src={displayedRankThumbnailSrc} alt="" width={20} height={20} unoptimized />
+            <RankThumbnail
+              rankId={rewardProgress.currentRankId}
+              storedThumbnailSrc={rankThumbnailSrc}
+              className="signedInHeaderBadgeInsigniaShell"
+              imageClassName="signedInHeaderBadgeInsignia"
+              placeholderClassName="signedInHeaderBadgeInsigniaPlaceholder"
+              alt=""
+              size={20}
+              aria-hidden
+            />
           </span>
         ) : null}
         <span className="signedInHeaderBadgeBody">
@@ -221,11 +228,16 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
                 const content = (
                   <>
                     <div className="rankLadderItemBadge" aria-hidden="true">
-                      {rankThumbnail ? (
-                        <Image className="rankLadderItemBadgeImage" src={rankThumbnail} alt="" width={34} height={34} unoptimized />
-                      ) : (
-                        index === 0 ? "U" : index
-                      )}
+                      <RankThumbnail
+                        rankId={rank.id}
+                        storedThumbnailSrc=""
+                        className="rankLadderItemBadgeShell"
+                        imageClassName="rankLadderItemBadgeImage"
+                        placeholderClassName="rankLadderItemBadgePlaceholder"
+                        alt=""
+                        size={34}
+                        aria-hidden
+                      />
                     </div>
                     <div className="rankLadderItemBody">
                       <div className="rankLadderItemTitleRow">

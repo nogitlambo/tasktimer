@@ -476,6 +476,12 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
               alt="Rank insignia"
               style={{ display: "none", width: 72, height: 72, objectFit: "contain", borderRadius: 10, marginBottom: 10 }}
             />
+            <div
+              id="friendProfileRankPlaceholder"
+              className="friendProfileRankPlaceholder"
+              style={{ display: "none", width: 72, height: 72, marginBottom: 10 }}
+              aria-hidden="true"
+            />
             <div id="friendProfileRank">Rank: --</div>
           </div>
           <div className="footerBtns friendProfileDeleteRow">
@@ -490,13 +496,22 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
           </div>
         </div>
       </div>
-      <div className="historySaveWorkingIndicator" id="historySaveWorkingIndicator" aria-live="polite" aria-atomic="true">
-        <span className="historySaveWorkingDots" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span id="historySaveWorkingText">Saving history...</span>
+      <div
+        className="historySaveWorkingIndicator"
+        id="historySaveWorkingIndicator"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <div className="historySaveWorkingPanel" role="status" aria-live="polite" aria-atomic="true">
+          <span className="historySaveWorkingDots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span id="historySaveWorkingText">Saving history...</span>
+        </div>
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </>

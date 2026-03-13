@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
@@ -22,12 +21,12 @@ import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankLadderThumbnailSrc,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
+import RankThumbnail from "./RankThumbnail";
 
 type SettingsPaneKey =
   | "general"
@@ -484,10 +483,6 @@ export default function SettingsPanel() {
   );
   const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
-  const displayedRankThumbnailSrc = useMemo(
-    () => getRankLadderThumbnailSrc(rewardProgress.currentRankId, rankThumbnailSrc),
-    [rewardProgress.currentRankId, rankThumbnailSrc]
-  );
   const rankLadderSummary =
     rewardsHeader.xpToNext != null
       ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
@@ -1011,11 +1006,15 @@ export default function SettingsPanel() {
                           onClick={openRankLadderModal}
                         >
                           <div className="settingsAccountRankPlaceholder">
-                            {displayedRankThumbnailSrc ? (
-                              <img className="settingsAccountRankImage" src={displayedRankThumbnailSrc} alt="Rank thumbnail" />
-                            ) : (
-                              <div className="settingsAccountRankPlaceholderInner" />
-                            )}
+                            <RankThumbnail
+                              rankId={rewardProgress.currentRankId}
+                              storedThumbnailSrc={rankThumbnailSrc}
+                              className="settingsAccountRankPlaceholderShell"
+                              imageClassName="settingsAccountRankImage"
+                              placeholderClassName="settingsAccountRankPlaceholderInner"
+                              alt="Rank thumbnail"
+                              size={44}
+                            />
                           </div>
                         </button>
                       </div>
@@ -1049,11 +1048,16 @@ export default function SettingsPanel() {
                           const content = (
                             <>
                               <div className="rankLadderItemBadge" aria-hidden="true">
-                                {rankThumbnail ? (
-                                  <Image className="rankLadderItemBadgeImage" src={rankThumbnail} alt="" width={34} height={34} unoptimized />
-                                ) : (
-                                  index === 0 ? "U" : index
-                                )}
+                                <RankThumbnail
+                                  rankId={rank.id}
+                                  storedThumbnailSrc=""
+                                  className="rankLadderItemBadgeShell"
+                                  imageClassName="rankLadderItemBadgeImage"
+                                  placeholderClassName="rankLadderItemBadgePlaceholder"
+                                  alt=""
+                                  size={34}
+                                  aria-hidden
+                                />
                               </div>
                               <div className="rankLadderItemBody">
                                 <div className="rankLadderItemTitleRow">
