@@ -20,6 +20,10 @@ import {
   parseRecentCustomTaskNames,
   rememberRecentCustomTaskName,
 } from "./lib/addTaskNames";
+import {
+  formatAddTaskDurationReadout,
+  getAddTaskDurationMaxForPeriod,
+} from "@/features/tasktimer-react/model/taskConfig";
 import { computeFocusInsights } from "./lib/focusInsights";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
@@ -3173,21 +3177,25 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function syncAddTaskDurationReadout() {
     if (els.addTaskDurationReadout) {
-      if (addTaskNoTimeGoal) {
-        els.addTaskDurationReadout.textContent = "No time goal set";
-        return;
-      }
-      const value = Math.max(0, Math.floor(Number(addTaskDurationValue) || 0));
-      const unit =
-        addTaskDurationUnit === "minute" ? (value === 1 ? "minute" : "minutes") : value === 1 ? "hour" : "hours";
-      const period = addTaskDurationPeriod === "day" ? "day" : "week";
-      els.addTaskDurationReadout.textContent = `${value} ${unit} per ${period}`;
+      els.addTaskDurationReadout.textContent = formatAddTaskDurationReadout({
+        name: "",
+        mode: currentMode,
+        durationValue: String(addTaskDurationValue),
+        durationUnit: addTaskDurationUnit,
+        durationPeriod: addTaskDurationPeriod,
+        noTimeGoal: addTaskNoTimeGoal,
+        milestonesEnabled: false,
+        milestoneTimeUnit: addTaskMilestoneTimeUnit,
+        milestones: [],
+        checkpointSoundEnabled: false,
+        checkpointSoundMode: "once",
+        checkpointToastEnabled: false,
+        checkpointToastMode: "auto5s",
+        presetIntervalsEnabled: false,
+        presetIntervalValue: "0",
+        finalCheckpointAction: "continue",
+      });
     }
-  }
-
-  function getAddTaskDurationMaxForPeriod(unit: "minute" | "hour", period: "day" | "week") {
-    if (unit === "hour") return period === "day" ? 24 : 168;
-    return period === "day" ? 1440 : 10080;
   }
 
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {

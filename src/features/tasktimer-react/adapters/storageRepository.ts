@@ -3,13 +3,16 @@ import {
   STORAGE_KEY,
   hydrateStorageFromCloud,
   loadCachedPreferences,
+  loadCachedTaskUi,
   loadDeletedMeta,
   loadHistory,
   loadTasks,
+  saveCloudTaskUi,
   saveDeletedMeta as persistDeletedMeta,
   saveHistory as persistHistory,
   saveTasks as persistTasks,
 } from "@/app/tasktimer/lib/storage";
+import { parseRecentCustomTaskNames } from "@/app/tasktimer/lib/addTaskNames";
 import type { DeletedTaskMeta, HistoryByTaskId } from "@/app/tasktimer/lib/types";
 import {
   createDefaultModeSettings,
@@ -29,10 +32,12 @@ export interface TaskRepository {
   saveHistory(historyByTaskId: HistoryByTaskId): Promise<void>;
   saveDeletedMeta(meta: DeletedTaskMeta): Promise<void>;
   savePinnedHistoryTaskIds(taskIds: string[]): Promise<void>;
+  saveRecentCustomTaskNames(taskNames: string[]): Promise<void>;
 }
 
 const storageKeys = createTaskTimerStorageKeys(STORAGE_KEY);
 const PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds`;
+const CUSTOM_TASK_NAMES_KEY = `${STORAGE_KEY}:customTaskNames`;
 
 function readStringLocalStorage(key: string): string {
   if (typeof window === "undefined") return "";
@@ -67,6 +72,25 @@ function readDynamicColorsEnabled(): boolean {
   return readBooleanLocalStorage(storageKeys.DYNAMIC_COLORS_KEY, true);
 }
 
+function readDefaultTaskTimerFormat(): "day" | "hour" | "minute" {
+  const cloud = loadCachedPreferences();
+  const raw = String(cloud?.defaultTaskTimerFormat || readStringLocalStorage(storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY) || "hour");
+  if (raw === "day" || raw === "minute") return raw;
+  return "hour";
+}
+
+function readCheckpointAlertSoundEnabled(): boolean {
+  const cloud = loadCachedPreferences();
+  if (typeof cloud?.checkpointAlertSoundEnabled === "boolean") return cloud.checkpointAlertSoundEnabled;
+  return readBooleanLocalStorage(storageKeys.CHECKPOINT_ALERT_SOUND_KEY, true);
+}
+
+function readCheckpointAlertToastEnabled(): boolean {
+  const cloud = loadCachedPreferences();
+  if (typeof cloud?.checkpointAlertToastEnabled === "boolean") return cloud.checkpointAlertToastEnabled;
+  return readBooleanLocalStorage(storageKeys.CHECKPOINT_ALERT_TOAST_KEY, true);
+}
+
 function readPinnedHistoryTaskIds(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -76,6 +100,13 @@ function readPinnedHistoryTaskIds(): string[] {
   } catch {
     return [];
   }
+}
+
+function readRecentCustomTaskNames(): string[] {
+  const cloudTaskUi = loadCachedTaskUi();
+  const fromCloud = Array.isArray(cloudTaskUi?.customTaskNames) ? cloudTaskUi.customTaskNames : null;
+  if (fromCloud) return parseRecentCustomTaskNames(JSON.stringify(fromCloud));
+  return parseRecentCustomTaskNames(readStringLocalStorage(CUSTOM_TASK_NAMES_KEY));
 }
 
 function sanitizeModeSettings(settingsRaw: unknown): ModeSettings {
@@ -116,6 +147,10 @@ function readSnapshotFromCache(): TaskTimerSnapshot {
     taskView: readTaskView(),
     dynamicColorsEnabled: readDynamicColorsEnabled(),
     pinnedHistoryTaskIds: readPinnedHistoryTaskIds(),
+    defaultTaskTimerFormat: readDefaultTaskTimerFormat(),
+    checkpointAlertSoundEnabled: readCheckpointAlertSoundEnabled(),
+    checkpointAlertToastEnabled: readCheckpointAlertToastEnabled(),
+    recentCustomTaskNames: readRecentCustomTaskNames(),
   };
 }
 
@@ -148,6 +183,31 @@ export function createStorageTaskRepository(): TaskRepository {
       } catch {
         // Ignore localStorage failures and keep in-memory state.
       }
+    },
+    async saveRecentCustomTaskNames(taskNames) {
+      if (typeof window === "undefined") return;
+      try {
+        window.localStorage.setItem(CUSTOM_TASK_NAMES_KEY, JSON.stringify(taskNames));
+      } catch {
+        // Ignore localStorage failures and keep in-memory state.
+      }
+      const cachedTaskUi = loadCachedTaskUi();
+      saveCloudTaskUi({
+        ...(cachedTaskUi && typeof cachedTaskUi === "object" ? cachedTaskUi : {}),
+        historyRangeDaysByTaskId:
+          cachedTaskUi && typeof cachedTaskUi === "object" && cachedTaskUi.historyRangeDaysByTaskId
+            ? cachedTaskUi.historyRangeDaysByTaskId
+            : {},
+        historyRangeModeByTaskId:
+          cachedTaskUi && typeof cachedTaskUi === "object" && cachedTaskUi.historyRangeModeByTaskId
+            ? cachedTaskUi.historyRangeModeByTaskId
+            : {},
+        pinnedHistoryTaskIds:
+          cachedTaskUi && typeof cachedTaskUi === "object" && Array.isArray(cachedTaskUi.pinnedHistoryTaskIds)
+            ? cachedTaskUi.pinnedHistoryTaskIds
+            : [],
+        customTaskNames: taskNames.slice(0, 5),
+      });
     },
   };
 }

@@ -1,4 +1,19 @@
+import { rememberRecentCustomTaskName } from "@/app/tasktimer/lib/addTaskNames";
 import type { HistoryByTaskId, HistoryEntry } from "@/app/tasktimer/lib/types";
+import {
+  appendMilestoneDraft,
+  applyEditDraftToTask,
+  buildTaskFromAddDraft,
+  createDefaultAddTaskDraft,
+  createEditTaskDraft,
+  normalizeAddTaskDraft,
+  normalizeEditTaskDraft,
+  removeMilestoneDraft,
+  updateMilestoneDraft,
+  validateAddTaskDraft,
+  validateAddTaskStep,
+  validateEditTaskDraft,
+} from "./taskConfig";
 import {
   createHistoryEntryKey,
   fillBackgroundForPct,
@@ -6,14 +21,12 @@ import {
   getHistoryEntriesForTask,
   getModeColor,
   isModeEnabled,
-  taskModeOf,
 } from "./selectors";
 import {
   createInitialTaskTimerState,
   normalizeHistoryByTaskId,
   normalizeTask,
   type ConfirmDialogIntent,
-  type MainMode,
   type TaskTimerAction,
   type TaskTimerState,
   type TaskTimerTask,
@@ -26,36 +39,6 @@ function createTaskId(): string {
 
 function cloneTask(task: TaskTimerTask): TaskTimerTask {
   return normalizeTask(JSON.parse(JSON.stringify(task)) as TaskTimerTask);
-}
-
-function nextTaskOrder(tasks: TaskTimerTask[]): number {
-  return tasks.reduce((maxOrder, task) => Math.max(maxOrder, Number(task.order || 0)), 0) + 1;
-}
-
-function createTask(name: string, mode: MainMode, tasks: TaskTimerTask[]): TaskTimerTask {
-  return normalizeTask({
-    id: createTaskId(),
-    name,
-    order: nextTaskOrder(tasks),
-    accumulatedMs: 0,
-    running: false,
-    startMs: null,
-    collapsed: false,
-    milestonesEnabled: false,
-    milestoneTimeUnit: "hour",
-    milestones: [],
-    hasStarted: false,
-    checkpointSoundEnabled: false,
-    checkpointSoundMode: "once",
-    checkpointToastEnabled: false,
-    checkpointToastMode: "auto5s",
-    finalCheckpointAction: "continue",
-    presetIntervalsEnabled: false,
-    presetIntervalValue: 0,
-    presetIntervalLastMilestoneId: null,
-    presetIntervalNextSeq: 1,
-    mode,
-  } as TaskTimerTask);
 }
 
 function nextDuplicateName(name: string, tasks: TaskTimerTask[]): string {
@@ -135,6 +118,55 @@ function buildDeleteHistoryConfirm(taskId: string, entryKeys: string[]): Confirm
   };
 }
 
+function buildEnableElapsedOverrideConfirm(): ConfirmDialogIntent {
+  return {
+    kind: "enableElapsedOverride",
+    title: "Manual Time Override",
+    text: "Manual time override will disqualify this task from earning XP until the next reset. Proceed?",
+    okLabel: "Proceed",
+  };
+}
+
+function resetAddTaskState(state: TaskTimerState): Pick<TaskTimerState, "addTaskDraft" | "addTaskWizardStep" | "addTaskValidation"> {
+  return {
+    addTaskDraft: createDefaultAddTaskDraft(state.currentMode, state.defaultTaskTimerFormat),
+    addTaskWizardStep: 1,
+    addTaskValidation: null,
+  };
+}
+
+function resetEditTaskState(state: TaskTimerState): Pick<TaskTimerState, "editTaskDraft" | "editValidation"> {
+  return {
+    editTaskDraft: createEditTaskDraft(
+      normalizeTask({
+        id: "",
+        name: "",
+        order: 0,
+        accumulatedMs: 0,
+        running: false,
+        startMs: null,
+        collapsed: false,
+        milestonesEnabled: false,
+        milestoneTimeUnit: state.defaultTaskTimerFormat,
+        milestones: [],
+        hasStarted: false,
+        checkpointSoundEnabled: false,
+        checkpointSoundMode: "once",
+        checkpointToastEnabled: false,
+        checkpointToastMode: "auto5s",
+        finalCheckpointAction: "continue",
+        presetIntervalsEnabled: false,
+        presetIntervalValue: 0,
+        presetIntervalLastMilestoneId: null,
+        presetIntervalNextSeq: 1,
+        mode: state.currentMode,
+      } as TaskTimerTask),
+      state.clockNowMs
+    ),
+    editValidation: null,
+  };
+}
+
 export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAction): TaskTimerState {
   switch (action.type) {
     case "hydrate": {
@@ -151,8 +183,16 @@ export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAct
         currentMode,
         clockNowMs: action.nowMs,
         status: "ready",
-        addTaskDraft: { name: "", mode: currentMode },
-        editTaskDraft: { taskId: null, name: "", mode: currentMode },
+        addTaskDraft: createDefaultAddTaskDraft(currentMode, action.snapshot.defaultTaskTimerFormat),
+        addTaskWizardStep: 1,
+        addTaskValidation: null,
+        editTaskDraft: resetEditTaskState({
+          ...state,
+          ...action.snapshot,
+          currentMode,
+          clockNowMs: action.nowMs,
+        }).editTaskDraft,
+        editValidation: null,
         openHistoryTaskIds: action.snapshot.pinnedHistoryTaskIds.slice(),
       };
     }
@@ -162,25 +202,85 @@ export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAct
       return {
         ...state,
         currentMode: isModeEnabled(state, action.mode) ? action.mode : "mode1",
-        addTaskDraft: { ...state.addTaskDraft, mode: action.mode },
+        addTaskDraft: normalizeAddTaskDraft({ ...state.addTaskDraft, mode: action.mode }),
       };
     case "openAddTask":
-      return { ...state, addTaskDialogOpen: true, addTaskDraft: { ...state.addTaskDraft, mode: state.currentMode } };
+      return {
+        ...state,
+        addTaskDialogOpen: true,
+        ...resetAddTaskState(state),
+      };
     case "closeAddTask":
-      return { ...state, addTaskDialogOpen: false, addTaskDraft: { name: "", mode: state.currentMode } };
-    case "setAddTaskName":
-      return { ...state, addTaskDraft: { ...state.addTaskDraft, name: action.name } };
-    case "setAddTaskMode":
-      return { ...state, addTaskDraft: { ...state.addTaskDraft, mode: action.mode } };
+      return {
+        ...state,
+        addTaskDialogOpen: false,
+        ...resetAddTaskState(state),
+      };
+    case "setAddTaskWizardStep":
+      return {
+        ...state,
+        addTaskWizardStep: action.step,
+        addTaskValidation: null,
+      };
+    case "advanceAddTaskWizard": {
+      const validation = validateAddTaskStep(state.addTaskDraft, state.addTaskWizardStep);
+      if (validation) return { ...state, addTaskValidation: validation };
+      if (state.addTaskWizardStep >= 3) return state;
+      return {
+        ...state,
+        addTaskWizardStep: (state.addTaskWizardStep + 1) as 1 | 2 | 3,
+        addTaskValidation: null,
+      };
+    }
+    case "retreatAddTaskWizard":
+      return {
+        ...state,
+        addTaskWizardStep: Math.max(1, state.addTaskWizardStep - 1) as 1 | 2 | 3,
+        addTaskValidation: null,
+      };
+    case "patchAddTaskDraft":
+      return {
+        ...state,
+        addTaskDraft: normalizeAddTaskDraft({ ...state.addTaskDraft, ...action.patch }),
+        addTaskValidation: null,
+      };
+    case "addAddTaskMilestone":
+      return {
+        ...state,
+        addTaskDraft: appendMilestoneDraft(state.addTaskDraft),
+        addTaskValidation: null,
+      };
+    case "updateAddTaskMilestone":
+      return {
+        ...state,
+        addTaskDraft: updateMilestoneDraft(state.addTaskDraft, action.milestoneId, action.patch),
+        addTaskValidation: null,
+      };
+    case "removeAddTaskMilestone":
+      return {
+        ...state,
+        addTaskDraft: removeMilestoneDraft(state.addTaskDraft, action.milestoneId),
+        addTaskValidation: null,
+      };
+    case "clearAddTaskValidation":
+      return { ...state, addTaskValidation: null };
     case "submitAddTask": {
-      const name = state.addTaskDraft.name.trim();
-      if (!name) return state;
-      const nextTask = createTask(name, state.addTaskDraft.mode, state.tasks);
+      const draft = normalizeAddTaskDraft(state.addTaskDraft);
+      const validation = validateAddTaskDraft(draft);
+      if (validation) {
+        return {
+          ...state,
+          addTaskWizardStep: validation.fields?.name ? 1 : validation.fields?.duration ? 2 : 3,
+          addTaskValidation: validation,
+        };
+      }
+      const nextTask = buildTaskFromAddDraft(draft, state.tasks, createTaskId);
       return {
         ...state,
         tasks: state.tasks.concat(nextTask),
+        recentCustomTaskNames: rememberRecentCustomTaskName(draft.name, state.recentCustomTaskNames),
         addTaskDialogOpen: false,
-        addTaskDraft: { name: "", mode: state.currentMode },
+        ...resetAddTaskState(state),
       };
     }
     case "openEditTask": {
@@ -189,32 +289,65 @@ export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAct
       return {
         ...state,
         editTaskDialogOpen: true,
-        editTaskDraft: { taskId: task.id, name: task.name, mode: taskModeOf(task) },
+        editTaskDraft: createEditTaskDraft(task, state.clockNowMs),
+        editValidation: null,
       };
     }
     case "closeEditTask":
       return {
         ...state,
         editTaskDialogOpen: false,
-        editTaskDraft: { taskId: null, name: "", mode: state.currentMode },
+        ...resetEditTaskState(state),
       };
-    case "setEditTaskName":
-      return { ...state, editTaskDraft: { ...state.editTaskDraft, name: action.name } };
-    case "setEditTaskMode":
-      return { ...state, editTaskDraft: { ...state.editTaskDraft, mode: action.mode } };
+    case "patchEditTaskDraft":
+      return {
+        ...state,
+        editTaskDraft: normalizeEditTaskDraft({ ...state.editTaskDraft, ...action.patch }),
+        editValidation: null,
+      };
+    case "addEditTaskMilestone":
+      return {
+        ...state,
+        editTaskDraft: appendMilestoneDraft(state.editTaskDraft),
+        editValidation: null,
+      };
+    case "updateEditTaskMilestone":
+      return {
+        ...state,
+        editTaskDraft: updateMilestoneDraft(state.editTaskDraft, action.milestoneId, action.patch),
+        editValidation: null,
+      };
+    case "removeEditTaskMilestone":
+      return {
+        ...state,
+        editTaskDraft: removeMilestoneDraft(state.editTaskDraft, action.milestoneId),
+        editValidation: null,
+      };
+    case "requestEnableEditElapsedOverride":
+      return {
+        ...state,
+        confirmDialog: buildEnableElapsedOverrideConfirm(),
+      };
+    case "clearEditValidation":
+      return { ...state, editValidation: null };
     case "saveEditTask": {
       const taskId = state.editTaskDraft.taskId;
       if (!taskId) return state;
-      const name = state.editTaskDraft.name.trim();
-      if (!name) return state;
       const task = state.tasks.find((row) => row.id === taskId);
       if (!task) return state;
-      const nextTask = normalizeTask({ ...task, name, mode: state.editTaskDraft.mode } as TaskTimerTask);
+      const validation = validateEditTaskDraft(state.editTaskDraft);
+      if (validation) {
+        return {
+          ...state,
+          editValidation: validation,
+        };
+      }
+      const nextTask = applyEditDraftToTask(task, state.editTaskDraft, action.nowMs);
       return {
         ...state,
         tasks: upsertTask(state.tasks, nextTask),
         editTaskDialogOpen: false,
-        editTaskDraft: { taskId: null, name: "", mode: state.currentMode },
+        ...resetEditTaskState(state),
       };
     }
     case "toggleCollapse":
@@ -255,7 +388,7 @@ export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAct
       duplicate.name = nextDuplicateName(task.name, state.tasks);
       duplicate.running = false;
       duplicate.startMs = null;
-      duplicate.order = nextTaskOrder(state.tasks);
+      duplicate.order = state.tasks.reduce((maxOrder, row) => Math.max(maxOrder, Number(row.order || 0)), 0) + 1;
       const historyCopy = (state.historyByTaskId[task.id] || []).map((entry) => ({ ...entry }));
       return {
         ...state,
@@ -398,6 +531,15 @@ export function reduceTaskTimerState(state: TaskTimerState, action: TaskTimerAct
           confirmDialog: null,
         };
       }
+
+      if (confirmDialog.kind === "enableElapsedOverride") {
+        return {
+          ...state,
+          editTaskDraft: normalizeEditTaskDraft({ ...state.editTaskDraft, overrideElapsedEnabled: true }),
+          confirmDialog: null,
+        };
+      }
+
       return state;
     }
     default:

@@ -62,6 +62,11 @@ export default function TaskTimerProvider({
   }, [repository, state.pinnedHistoryTaskIds, state.status]);
 
   useEffect(() => {
+    if (!hasHydratedRef.current || state.status !== "ready") return;
+    void repository.saveRecentCustomTaskNames(state.recentCustomTaskNames);
+  }, [repository, state.recentCustomTaskNames, state.status]);
+
+  useEffect(() => {
     document.body.setAttribute("data-app-page", "tasks");
     document.body.setAttribute("data-main-mode", state.currentMode);
     document.body.setAttribute("data-theme", state.themeMode);

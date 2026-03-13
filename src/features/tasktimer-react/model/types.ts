@@ -21,15 +21,65 @@ export type ModeSetting = {
 
 export type ModeSettings = Record<MainMode, ModeSetting>;
 
-export type AddTaskDraft = {
-  name: string;
-  mode: MainMode;
+export type TaskConfigMilestoneDraft = {
+  id: string;
+  createdSeq: number;
+  value: string;
+  description: string;
 };
 
-export type EditTaskDraft = {
+export type TaskConfigDraftBase = {
+  mode: MainMode;
+  milestonesEnabled: boolean;
+  milestoneTimeUnit: "day" | "hour" | "minute";
+  milestones: TaskConfigMilestoneDraft[];
+  checkpointSoundEnabled: boolean;
+  checkpointSoundMode: "once" | "repeat";
+  checkpointToastEnabled: boolean;
+  checkpointToastMode: "auto5s" | "manual";
+  presetIntervalsEnabled: boolean;
+  presetIntervalValue: string;
+  finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+};
+
+export type AddTaskDraft = TaskConfigDraftBase & {
+  name: string;
+  durationValue: string;
+  durationUnit: "minute" | "hour";
+  durationPeriod: "day" | "week";
+  noTimeGoal: boolean;
+};
+
+export type EditTaskDraft = TaskConfigDraftBase & {
   taskId: string | null;
   name: string;
-  mode: MainMode;
+  overrideElapsedEnabled: boolean;
+  elapsedDays: string;
+  elapsedHours: string;
+  elapsedMinutes: string;
+  elapsedSeconds: string;
+};
+
+export type TaskConfigValidation = {
+  message: string;
+  fields?: {
+    name?: boolean;
+    duration?: boolean;
+    checkpoints?: boolean;
+    checkpointRows?: boolean;
+    presetInterval?: boolean;
+  };
+} | null;
+
+export type TaskTimerInfoDialogKey = "checkpoint" | "presetIntervals" | null;
+
+export type RecentTaskNames = string[];
+
+export type TaskTimerDefaults = {
+  defaultTaskTimerFormat: "day" | "hour" | "minute";
+  checkpointAlertSoundEnabled: boolean;
+  checkpointAlertToastEnabled: boolean;
+  recentCustomTaskNames: RecentTaskNames;
 };
 
 export type ConfirmDialogIntent =
@@ -58,6 +108,12 @@ export type ConfirmDialogIntent =
       title: string;
       text: string;
       okLabel: string;
+    }
+  | {
+      kind: "enableElapsedOverride";
+      title: string;
+      text: string;
+      okLabel: string;
     };
 
 export type TaskTimerSnapshot = {
@@ -69,7 +125,7 @@ export type TaskTimerSnapshot = {
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   pinnedHistoryTaskIds: string[];
-};
+} & TaskTimerDefaults;
 
 export type TaskTimerState = TaskTimerSnapshot & {
   status: "booting" | "ready";
@@ -77,8 +133,11 @@ export type TaskTimerState = TaskTimerSnapshot & {
   clockNowMs: number;
   addTaskDraft: AddTaskDraft;
   addTaskDialogOpen: boolean;
+  addTaskWizardStep: 1 | 2 | 3;
+  addTaskValidation: TaskConfigValidation;
   editTaskDraft: EditTaskDraft;
   editTaskDialogOpen: boolean;
+  editValidation: TaskConfigValidation;
   openHistoryTaskIds: string[];
   historySelectionByTaskId: Record<string, string[]>;
   confirmDialog: ConfirmDialogIntent | null;
@@ -91,14 +150,24 @@ export type TaskTimerAction =
   | { type: "setMode"; mode: MainMode }
   | { type: "openAddTask" }
   | { type: "closeAddTask" }
-  | { type: "setAddTaskName"; name: string }
-  | { type: "setAddTaskMode"; mode: MainMode }
+  | { type: "setAddTaskWizardStep"; step: 1 | 2 | 3 }
+  | { type: "advanceAddTaskWizard" }
+  | { type: "retreatAddTaskWizard" }
+  | { type: "patchAddTaskDraft"; patch: Partial<AddTaskDraft> }
+  | { type: "addAddTaskMilestone" }
+  | { type: "updateAddTaskMilestone"; milestoneId: string; patch: Partial<Pick<TaskConfigMilestoneDraft, "value" | "description">> }
+  | { type: "removeAddTaskMilestone"; milestoneId: string }
+  | { type: "clearAddTaskValidation" }
   | { type: "submitAddTask" }
   | { type: "openEditTask"; taskId: string }
   | { type: "closeEditTask" }
-  | { type: "setEditTaskName"; name: string }
-  | { type: "setEditTaskMode"; mode: MainMode }
-  | { type: "saveEditTask" }
+  | { type: "patchEditTaskDraft"; patch: Partial<EditTaskDraft> }
+  | { type: "addEditTaskMilestone" }
+  | { type: "updateEditTaskMilestone"; milestoneId: string; patch: Partial<Pick<TaskConfigMilestoneDraft, "value" | "description">> }
+  | { type: "removeEditTaskMilestone"; milestoneId: string }
+  | { type: "requestEnableEditElapsedOverride" }
+  | { type: "clearEditValidation" }
+  | { type: "saveEditTask"; nowMs: number }
   | { type: "toggleCollapse"; taskId: string }
   | { type: "startTask"; taskId: string; nowMs: number }
   | { type: "stopTask"; taskId: string; nowMs: number }
@@ -145,6 +214,10 @@ export function createEmptySnapshot(): TaskTimerSnapshot {
     taskView: "list",
     dynamicColorsEnabled: true,
     pinnedHistoryTaskIds: [],
+    defaultTaskTimerFormat: "hour",
+    checkpointAlertSoundEnabled: true,
+    checkpointAlertToastEnabled: true,
+    recentCustomTaskNames: [],
   };
 }
 
@@ -155,10 +228,49 @@ export function createInitialTaskTimerState(nowMs: number): TaskTimerState {
     status: "booting",
     currentMode: "mode1",
     clockNowMs: nowMs,
-    addTaskDraft: { name: "", mode: "mode1" },
+    addTaskDraft: {
+      name: "",
+      mode: "mode1",
+      durationValue: "5",
+      durationUnit: "hour",
+      durationPeriod: "week",
+      noTimeGoal: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
+      checkpointToastEnabled: false,
+      checkpointToastMode: "auto5s",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: "0",
+      finalCheckpointAction: "continue",
+    },
     addTaskDialogOpen: false,
-    editTaskDraft: { taskId: null, name: "", mode: "mode1" },
+    addTaskWizardStep: 1,
+    addTaskValidation: null,
+    editTaskDraft: {
+      taskId: null,
+      name: "",
+      mode: "mode1",
+      overrideElapsedEnabled: false,
+      elapsedDays: "0",
+      elapsedHours: "0",
+      elapsedMinutes: "0",
+      elapsedSeconds: "0",
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
+      checkpointToastEnabled: false,
+      checkpointToastMode: "auto5s",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: "0",
+      finalCheckpointAction: "continue",
+    },
     editTaskDialogOpen: false,
+    editValidation: null,
     openHistoryTaskIds: [],
     historySelectionByTaskId: {},
     confirmDialog: null,

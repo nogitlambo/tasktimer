@@ -46,11 +46,47 @@ export function useTaskTimerActions() {
     closeAddTask() {
       dispatch({ type: "closeAddTask" });
     },
-    setAddTaskName(name: string) {
-      dispatch({ type: "setAddTaskName", name });
+    setAddTaskWizardStep(step: 1 | 2 | 3) {
+      dispatch({ type: "setAddTaskWizardStep", step });
     },
-    setAddTaskMode(mode: "mode1" | "mode2" | "mode3") {
-      dispatch({ type: "setAddTaskMode", mode });
+    advanceAddTaskWizard() {
+      dispatch({ type: "advanceAddTaskWizard" });
+    },
+    retreatAddTaskWizard() {
+      dispatch({ type: "retreatAddTaskWizard" });
+    },
+    clearAddTaskValidation() {
+      dispatch({ type: "clearAddTaskValidation" });
+    },
+    patchAddTaskDraft(
+      patch: Partial<{
+        name: string;
+        mode: "mode1" | "mode2" | "mode3";
+        durationValue: string;
+        durationUnit: "minute" | "hour";
+        durationPeriod: "day" | "week";
+        noTimeGoal: boolean;
+        milestonesEnabled: boolean;
+        milestoneTimeUnit: "day" | "hour" | "minute";
+        checkpointSoundEnabled: boolean;
+        checkpointSoundMode: "once" | "repeat";
+        checkpointToastEnabled: boolean;
+        checkpointToastMode: "auto5s" | "manual";
+        presetIntervalsEnabled: boolean;
+        presetIntervalValue: string;
+        finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+      }>
+    ) {
+      dispatch({ type: "patchAddTaskDraft", patch });
+    },
+    addAddTaskMilestone() {
+      dispatch({ type: "addAddTaskMilestone" });
+    },
+    updateAddTaskMilestone(milestoneId: string, patch: Partial<{ value: string; description: string }>) {
+      dispatch({ type: "updateAddTaskMilestone", milestoneId, patch });
+    },
+    removeAddTaskMilestone(milestoneId: string) {
+      dispatch({ type: "removeAddTaskMilestone", milestoneId });
     },
     submitAddTask() {
       dispatch({ type: "submitAddTask" });
@@ -61,14 +97,46 @@ export function useTaskTimerActions() {
     closeEditTask() {
       dispatch({ type: "closeEditTask" });
     },
-    setEditTaskName(name: string) {
-      dispatch({ type: "setEditTaskName", name });
+    patchEditTaskDraft(
+      patch: Partial<{
+        taskId: string | null;
+        name: string;
+        mode: "mode1" | "mode2" | "mode3";
+        overrideElapsedEnabled: boolean;
+        elapsedDays: string;
+        elapsedHours: string;
+        elapsedMinutes: string;
+        elapsedSeconds: string;
+        milestonesEnabled: boolean;
+        milestoneTimeUnit: "day" | "hour" | "minute";
+        checkpointSoundEnabled: boolean;
+        checkpointSoundMode: "once" | "repeat";
+        checkpointToastEnabled: boolean;
+        checkpointToastMode: "auto5s" | "manual";
+        presetIntervalsEnabled: boolean;
+        presetIntervalValue: string;
+        finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+      }>
+    ) {
+      dispatch({ type: "patchEditTaskDraft", patch });
     },
-    setEditTaskMode(mode: "mode1" | "mode2" | "mode3") {
-      dispatch({ type: "setEditTaskMode", mode });
+    addEditTaskMilestone() {
+      dispatch({ type: "addEditTaskMilestone" });
+    },
+    updateEditTaskMilestone(milestoneId: string, patch: Partial<{ value: string; description: string }>) {
+      dispatch({ type: "updateEditTaskMilestone", milestoneId, patch });
+    },
+    removeEditTaskMilestone(milestoneId: string) {
+      dispatch({ type: "removeEditTaskMilestone", milestoneId });
+    },
+    requestEnableEditElapsedOverride() {
+      dispatch({ type: "requestEnableEditElapsedOverride" });
+    },
+    clearEditValidation() {
+      dispatch({ type: "clearEditValidation" });
     },
     saveEditTask() {
-      dispatch({ type: "saveEditTask" });
+      dispatch({ type: "saveEditTask", nowMs: runtime.now() });
     },
     startTask(taskId: string) {
       dispatch({ type: "startTask", taskId, nowMs: runtime.now() });
