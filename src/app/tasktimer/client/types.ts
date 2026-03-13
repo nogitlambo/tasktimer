@@ -9,13 +9,33 @@ export type TaskTimerClientHandle = {
   destroy: () => void;
 };
 
+export type HistoryBarRect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  absIndex: number;
+  hitX?: number;
+  hitY?: number;
+  hitW?: number;
+  hitH?: number;
+};
+
+export type HistoryLabelHitRect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  absIndex: number;
+};
+
 export type HistoryViewState = {
   page: number;
   rangeDays: 7 | 14;
   rangeMode: "entries" | "day";
   editMode: boolean;
-  barRects: Array<unknown>;
-  labelHitRects: Array<unknown>;
+  barRects: HistoryBarRect[];
+  labelHitRects: HistoryLabelHitRect[];
   lockedAbsIndexes: Set<number>;
   selectedAbsIndex: number | null;
   selectedRelIndex: number | null;

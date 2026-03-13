@@ -41,8 +41,6 @@ import {
   upsertSharedTaskSummary,
   type FriendProfile,
   type FriendRequest,
-  type Friendship,
-  type SharedTaskSummary,
 } from "./lib/friendsStore";
 import {
   STORAGE_KEY,
@@ -70,9 +68,17 @@ import {
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, getRankThumbnailDescriptor, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
-import type { AppPage, MainMode, TaskTimerClientHandle } from "./client/types";
+import type {
+  AppPage,
+  DashboardAvgRange,
+  DashboardCardSize,
+  HistoryViewState,
+  MainMode,
+  TaskTimerClientHandle,
+} from "./client/types";
 import { collectTaskTimerElements } from "./client/elements";
 import {
+  createInitialTaskTimerState,
   createTaskTimerStorageKeys,
   DEFAULT_MODE_COLORS,
   DEFAULT_MODE_ENABLED,
@@ -204,183 +210,132 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   };
 
-  let deletedTaskMeta: DeletedTaskMeta = {};
-  let tasks: Task[] = [];
-  let currentMode: MainMode = "mode1";
-  let modeLabels: Record<MainMode, string> = { ...DEFAULT_MODE_LABELS };
-  let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
-  let modeColors: Record<MainMode, string> = { ...DEFAULT_MODE_COLORS };
-  let editIndex: number | null = null;
-  let editDraftSnapshot = "";
-  let focusCheckpointSig = "";
-  let focusModeTaskName = "";
-  let focusShowCheckpoints = true;
-  let suppressAddTaskNameFocusOpen = false;
+  const initialState = createInitialTaskTimerState(initialAppPage);
 
-  let confirmAction: null | (() => void) = null;
-  let confirmActionAlt: null | (() => void) = null;
-  let themeMode: "light" | "dark" | "command" = "dark";
-  let menuButtonStyle: "parallelogram" | "square" = "square";
-  let addTaskCustomNames: string[] = [];
-  let defaultTaskTimerFormat: "day" | "hour" | "minute" = "hour";
-  let taskView: "list" | "tile" = "list";
-  let dynamicColorsEnabled = true;
-  let autoFocusOnTaskLaunchEnabled = false;
-  let checkpointAlertSoundEnabled = true;
-  let checkpointAlertToastEnabled = true;
-  let rewardProgress = normalizeRewardProgress(DEFAULT_REWARD_PROGRESS);
+  let deletedTaskMeta = initialState.deletedTaskMeta;
+  let tasks = initialState.tasks;
+  let currentMode = initialState.currentMode;
+  let modeLabels = initialState.modeLabels;
+  let modeEnabled = initialState.modeEnabled;
+  let modeColors = initialState.modeColors;
+  let editIndex = initialState.editIndex;
+  let editDraftSnapshot = initialState.editDraftSnapshot;
+  let focusCheckpointSig = initialState.focusCheckpointSig;
+  let focusModeTaskName = initialState.focusModeTaskName;
+  let focusShowCheckpoints = initialState.focusShowCheckpoints;
+  let suppressAddTaskNameFocusOpen = initialState.suppressAddTaskNameFocusOpen;
 
-  let historyByTaskId: HistoryByTaskId = {};
-  let historyRangeDaysByTaskId: Record<string, 7 | 14> = {};
-  let historyRangeModeByTaskId: Record<string, "entries" | "day"> = {};
-  let focusModeTaskId: string | null = null;
-  const openHistoryTaskIds = new Set<string>();
-  let pinnedHistoryTaskIds = new Set<string>();
-  let hmExpandedTaskGroups = new Set<string>();
-  let hmExpandedDateGroups = new Set<string>();
-  let hmSortKey: "ts" | "ms" = "ts";
-  let hmSortDir: "asc" | "desc" = "desc";
-  let hmBulkEditMode = false;
-  let hmBulkSelectedRows = new Set<string>();
-  let hmRowsByTask: Record<string, string[]> = {};
-  let hmRowsByTaskDate: Record<string, string[]> = {};
-  type HistoryViewState = {
-    page: number;
-    rangeDays: 7 | 14;
-    rangeMode: "entries" | "day";
-    editMode: boolean;
-    barRects: Array<any>;
-    labelHitRects: Array<any>;
-    lockedAbsIndexes: Set<number>;
-    selectedAbsIndex: number | null;
-    selectedRelIndex: number | null;
-    selectionClearTimer: number | null;
-    visualSelectedAbsIndex: number | null;
-    selectionZoom: number;
-    selectionAnimRaf: number | null;
-    slideDir: "left" | "right" | null;
-  };
-  const historyViewByTaskId: Record<string, HistoryViewState> = {};
-  let addTaskMilestonesEnabled = false;
-  let addTaskMilestoneTimeUnit: "day" | "hour" | "minute" = "hour";
-  let addTaskMilestones: Task["milestones"] = [];
-  let addTaskCheckpointSoundEnabled = false;
-  let addTaskCheckpointSoundMode: "once" | "repeat" = "once";
-  let addTaskCheckpointToastEnabled = false;
-  let addTaskCheckpointToastMode: "auto5s" | "manual" = "auto5s";
-  let addTaskPresetIntervalsEnabled = false;
-  let addTaskPresetIntervalValue = 0;
-  let addTaskFinalCheckpointAction: "continue" | "resetLog" | "resetNoLog" = "continue";
-  let addTaskWizardStep: 1 | 2 | 3 = 1;
-  let addTaskDurationValue = 5;
-  let addTaskDurationUnit: "minute" | "hour" = "hour";
-  let addTaskDurationPeriod: "day" | "week" = "week";
-  let focusSessionNotesByTaskId: Record<string, string> = {};
+  let confirmAction = initialState.confirmAction;
+  let confirmActionAlt = initialState.confirmActionAlt;
+  let themeMode = initialState.themeMode;
+  let menuButtonStyle = initialState.menuButtonStyle;
+  let addTaskCustomNames = initialState.addTaskCustomNames;
+  let defaultTaskTimerFormat = initialState.defaultTaskTimerFormat;
+  let taskView = initialState.taskView;
+  let dynamicColorsEnabled = initialState.dynamicColorsEnabled;
+  let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
+  let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
+  let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
+  let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
+
+  let historyByTaskId = initialState.historyByTaskId;
+  let historyRangeDaysByTaskId = initialState.historyRangeDaysByTaskId;
+  let historyRangeModeByTaskId = initialState.historyRangeModeByTaskId;
+  let focusModeTaskId = initialState.focusModeTaskId;
+  const openHistoryTaskIds = initialState.openHistoryTaskIds;
+  let pinnedHistoryTaskIds = initialState.pinnedHistoryTaskIds;
+  let hmExpandedTaskGroups = initialState.hmExpandedTaskGroups;
+  let hmExpandedDateGroups = initialState.hmExpandedDateGroups;
+  let hmSortKey = initialState.hmSortKey;
+  let hmSortDir = initialState.hmSortDir;
+  let hmBulkEditMode = initialState.hmBulkEditMode;
+  let hmBulkSelectedRows = initialState.hmBulkSelectedRows;
+  let hmRowsByTask = initialState.hmRowsByTask;
+  let hmRowsByTaskDate = initialState.hmRowsByTaskDate;
+  const historyViewByTaskId = initialState.historyViewByTaskId;
+  let addTaskMilestonesEnabled = initialState.addTaskMilestonesEnabled;
+  let addTaskMilestoneTimeUnit = initialState.addTaskMilestoneTimeUnit;
+  let addTaskMilestones = initialState.addTaskMilestones;
+  let addTaskCheckpointSoundEnabled = initialState.addTaskCheckpointSoundEnabled;
+  let addTaskCheckpointSoundMode = initialState.addTaskCheckpointSoundMode;
+  let addTaskCheckpointToastEnabled = initialState.addTaskCheckpointToastEnabled;
+  let addTaskCheckpointToastMode = initialState.addTaskCheckpointToastMode;
+  let addTaskPresetIntervalsEnabled = initialState.addTaskPresetIntervalsEnabled;
+  let addTaskPresetIntervalValue = initialState.addTaskPresetIntervalValue;
+  let addTaskFinalCheckpointAction = initialState.addTaskFinalCheckpointAction;
+  let addTaskWizardStep = initialState.addTaskWizardStep;
+  let addTaskDurationValue = initialState.addTaskDurationValue;
+  let addTaskDurationUnit = initialState.addTaskDurationUnit;
+  let addTaskDurationPeriod = initialState.addTaskDurationPeriod;
+  let focusSessionNotesByTaskId = initialState.focusSessionNotesByTaskId;
   let focusSessionNoteSaveTimer: number | null = null;
-  let addTaskNoTimeGoal = false;
-  let elapsedPadTarget: HTMLInputElement | null = null;
-  let elapsedPadMilestoneRef: {
-    task: Task;
-    milestone: { hours: number; description: string };
-    ms: Task["milestones"];
-    onApplied?: () => void;
-  } | null = null;
-  let elapsedPadDraft = "";
-  let elapsedPadOriginal = "";
-  let editMoveTargetMode: MainMode = "mode1";
-  let dashboardEditMode = false;
-  let dashboardDragEl: HTMLElement | null = null;
-  let taskDragEl: HTMLElement | null = null;
-  let dashboardOrderDraftBeforeEdit: string[] | null = null;
-  type DashboardCardSize = "full" | "half" | "quarter";
-  let dashboardCardSizes: Record<string, DashboardCardSize> = {};
-  let dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null = null;
-  let dashboardCardVisibility: Record<string, boolean> = {};
-  type DashboardAvgRange = "past7" | "currentWeek" | "past30" | "currentMonth";
-  let dashboardAvgRange: DashboardAvgRange = "past7";
-  let currentAppPage: AppPage = initialAppPage;
-  let currentTileColumnCount = 1;
-  let suppressNavStackPush = false;
+  let addTaskNoTimeGoal = initialState.addTaskNoTimeGoal;
+  let elapsedPadTarget = initialState.elapsedPadTarget;
+  let elapsedPadMilestoneRef = initialState.elapsedPadMilestoneRef;
+  let elapsedPadDraft = initialState.elapsedPadDraft;
+  let elapsedPadOriginal = initialState.elapsedPadOriginal;
+  let editMoveTargetMode = initialState.editMoveTargetMode;
+  let dashboardEditMode = initialState.dashboardEditMode;
+  let dashboardDragEl = initialState.dashboardDragEl;
+  let taskDragEl = initialState.taskDragEl;
+  let dashboardOrderDraftBeforeEdit = initialState.dashboardOrderDraftBeforeEdit;
+  let dashboardCardSizes = initialState.dashboardCardSizes;
+  let dashboardCardSizesDraftBeforeEdit = initialState.dashboardCardSizesDraftBeforeEdit;
+  let dashboardCardVisibility = initialState.dashboardCardVisibility;
+  let dashboardAvgRange = initialState.dashboardAvgRange;
+  let currentAppPage = initialState.currentAppPage;
+  let currentTileColumnCount = initialState.currentTileColumnCount;
+  let suppressNavStackPush = initialState.suppressNavStackPush;
   let removeCapBackListener: null | (() => void) = null;
-  let lastNativeBackHandledAtMs = 0;
-  const checkpointToastQueue: Array<{
-    id: string;
-    title: string;
-    text: string;
-    checkpointTimeText?: string | null;
-    checkpointDescText?: string | null;
-    taskName?: string | null;
-    counterText?: string | null;
-    autoCloseMs: number | null;
-    autoCloseAtMs?: number | null;
-    taskId?: string | null;
-    muteRepeatOnManualDismiss?: boolean;
-  }> = [];
-  let activeCheckpointToast: {
-    id: string;
-    title: string;
-    text: string;
-    checkpointTimeText?: string | null;
-    checkpointDescText?: string | null;
-    taskName?: string | null;
-    counterText?: string | null;
-    autoCloseMs: number | null;
-    autoCloseAtMs?: number | null;
-    taskId?: string | null;
-    muteRepeatOnManualDismiss?: boolean;
-  } | null = null;
+  let lastNativeBackHandledAtMs = initialState.lastNativeBackHandledAtMs;
+  const checkpointToastQueue = initialState.checkpointToastQueue;
+  let activeCheckpointToast = initialState.activeCheckpointToast;
   let checkpointToastAutoCloseTimer: number | null = null;
   let checkpointToastCountdownRefreshTimer: number | null = null;
-  let checkpointBeepAudio: HTMLAudioElement | null = null;
-  let checkpointBeepQueueCount = 0;
+  let checkpointBeepAudio = initialState.checkpointBeepAudio;
+  let checkpointBeepQueueCount = initialState.checkpointBeepQueueCount;
   let checkpointBeepQueueTimer: number | null = null;
-  let checkpointRepeatStopAtMs = 0;
+  let checkpointRepeatStopAtMs = initialState.checkpointRepeatStopAtMs;
   let checkpointRepeatCycleTimer: number | null = null;
-  let checkpointRepeatActiveTaskId: string | null = null;
-  let checkpointAutoResetDirty = false;
-  let historyNoteCloudRepairAttempted = false;
-  const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
-  const checkpointBaselineSecByTaskId: Record<string, number> = {};
+  let checkpointRepeatActiveTaskId = initialState.checkpointRepeatActiveTaskId;
+  let checkpointAutoResetDirty = initialState.checkpointAutoResetDirty;
+  let historyNoteCloudRepairAttempted = initialState.historyNoteCloudRepairAttempted;
+  const checkpointFiredKeysByTaskId = initialState.checkpointFiredKeysByTaskId;
+  const checkpointBaselineSecByTaskId = initialState.checkpointBaselineSecByTaskId;
   let cloudPreferencesCache = loadCachedPreferences();
   let cloudDashboardCache = loadCachedDashboard();
   let cloudTaskUiCache = loadCachedTaskUi();
   rewardProgress = normalizeRewardProgress((cloudPreferencesCache || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
-  let navStackMemory: string[] = [];
-  let pendingTaskJumpMemory: string | null = null;
-  let groupsIncomingRequests: FriendRequest[] = [];
-  let groupsOutgoingRequests: FriendRequest[] = [];
-  let groupsFriendships: Friendship[] = [];
-  let groupsSharedSummaries: SharedTaskSummary[] = [];
-  let ownSharedSummaries: SharedTaskSummary[] = [];
-  let shareTaskIndex: number | null = null;
-  let shareTaskMode: "share" | "unshare" = "share";
-  let shareTaskTaskId: string | null = null;
-  let exportTaskIndex: number | null = null;
-  let groupsLoading = false;
-  let groupsLoadingDepth = 0;
-  let groupsRefreshSeq = 0;
-  let activeFriendProfileUid: string | null = null;
-  let activeFriendProfileName = "";
-  let historyEntryNoteAnchorTaskId = "";
-  let groupsStatusMessage = "Ready.";
-  const openFriendSharedTaskUids = new Set<string>();
-  const workingIndicatorStack: Array<{ key: number; message: string }> = [];
-  let workingIndicatorKeySeq = 0;
-  let workingIndicatorOverlayActive = false;
-  let workingIndicatorRestoreFocusEl: HTMLElement | null = null;
-  let friendProfileCacheByUid: Record<string, FriendProfile> = {};
-  let cloudRefreshInFlight: Promise<void> | null = null;
-  let lastCloudRefreshAtMs = 0;
+  let navStackMemory = initialState.navStackMemory;
+  let pendingTaskJumpMemory = initialState.pendingTaskJumpMemory;
+  let groupsIncomingRequests = initialState.groupsIncomingRequests;
+  let groupsOutgoingRequests = initialState.groupsOutgoingRequests;
+  let groupsFriendships = initialState.groupsFriendships;
+  let groupsSharedSummaries = initialState.groupsSharedSummaries;
+  let ownSharedSummaries = initialState.ownSharedSummaries;
+  let shareTaskIndex = initialState.shareTaskIndex;
+  let shareTaskMode = initialState.shareTaskMode;
+  let shareTaskTaskId = initialState.shareTaskTaskId;
+  let exportTaskIndex = initialState.exportTaskIndex;
+  let groupsLoading = initialState.groupsLoading;
+  let groupsLoadingDepth = initialState.groupsLoadingDepth;
+  let groupsRefreshSeq = initialState.groupsRefreshSeq;
+  let activeFriendProfileUid = initialState.activeFriendProfileUid;
+  let activeFriendProfileName = initialState.activeFriendProfileName;
+  let historyEntryNoteAnchorTaskId = initialState.historyEntryNoteAnchorTaskId;
+  let groupsStatusMessage = initialState.groupsStatusMessage;
+  const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
+  const workingIndicatorStack = initialState.workingIndicatorStack;
+  let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
+  let workingIndicatorOverlayActive = initialState.workingIndicatorOverlayActive;
+  let workingIndicatorRestoreFocusEl = initialState.workingIndicatorRestoreFocusEl;
+  let friendProfileCacheByUid = initialState.friendProfileCacheByUid;
+  let cloudRefreshInFlight = initialState.cloudRefreshInFlight;
+  let lastCloudRefreshAtMs = initialState.lastCloudRefreshAtMs;
   let deferredCloudRefreshTimer: number | null = null;
-  let pendingDeferredCloudRefresh = false;
-  let lastUiInteractionAtMs = 0;
-  const dashboardWidgetHasRenderedData = {
-    overview: false,
-    focusTrend: false,
-    heatCalendar: false,
-    modeDistribution: false,
-    avgSession: false,
-  };
+  let pendingDeferredCloudRefresh = initialState.pendingDeferredCloudRefresh;
+  let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
+  const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);

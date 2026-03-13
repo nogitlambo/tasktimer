@@ -560,3 +560,64 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   border-color: rgba(255,106,145,.34) !important;
   box-shadow: 0 0 16px rgba(255,106,145,.10), inset 0 0 0 1px rgba(255,106,145,.12) !important;
 }
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
+  appearance:none;
+  background:none;
+  border:0;
+  padding:0;
+  text-align:left;
+  cursor:pointer;
+}
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
+  text-align:center;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyState{
+  padding:22px 18px;
+  text-align:center;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineList{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:12px;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRow{
+  display:grid;
+  grid-template-columns:minmax(0, 1.3fr) auto minmax(0, 1fr);
+  gap:12px;
+  align-items:center;
+  width:100%;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  color:rgba(233,246,252,.84);
+  text-align:left;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRow.isSelected{
+  border-color:rgba(53,232,255,.45);
+  box-shadow:0 0 0 1px rgba(53,232,255,.12) inset, 0 0 12px rgba(0,220,255,.12);
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRowMeta{
+  font-size:12px;
+  color:rgba(233,246,252,.64);
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRowElapsed{
+  font-family:var(--font-tight);
+  font-size:12px;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRowNote{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineEmpty{
+  padding:10px 12px;
+  border:1px dashed rgba(255,255,255,.12);
+  color:rgba(233,246,252,.64);
+  text-align:center;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineFooterRow{
+  margin-top:12px;
+}

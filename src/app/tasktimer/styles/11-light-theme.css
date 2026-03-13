@@ -1174,3 +1174,16 @@ body[data-theme="light"] #confirmOverlay.isDeleteFriendConfirm .confirmText,
 body.light #confirmOverlay.isDeleteFriendConfirm .confirmText{
   color: #4d1f2b;
 }
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRow{
+  border-color: rgba(0,133,160,.16);
+  background: rgba(255,255,255,.72);
+  color: #17343c;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRow.isSelected{
+  border-color: rgba(0,133,160,.28);
+  box-shadow: inset 0 0 0 1px rgba(0,133,160,.08), 0 0 12px rgba(0,133,160,.08);
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineRowMeta,
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineEmpty{
+  color: rgba(23,52,60,.72);
+}
