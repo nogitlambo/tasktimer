@@ -77,6 +77,7 @@ import type {
   TaskTimerClientHandle,
 } from "./client/types";
 import { collectTaskTimerElements } from "./client/elements";
+import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import {
   createInitialTaskTimerState,
   createTaskTimerStorageKeys,
@@ -125,89 +126,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     NATIVE_BACK_DEBOUNCE_MS,
   } = createTaskTimerStorageKeys(STORAGE_KEY);
 
-  const listeners: Array<{
-    el: EventTarget;
-    type: string;
-    fn: EventListenerOrEventListenerObject;
-    opts?: boolean | AddEventListenerOptions;
-  }> = [];
-
-  const on = (
-    el: EventTarget | null | undefined,
-    type: string,
-    fn: EventListenerOrEventListenerObject,
-    opts?: boolean | AddEventListenerOptions
-  ) => {
-    if (!el) return;
-    el.addEventListener(type, fn, opts);
-    listeners.push({ el, type, fn, opts });
-  };
-
-  let destroyed = false;
-  let tickTimeout: number | null = null;
-  let tickRaf: number | null = null;
-  let newTaskHighlightTimer: number | null = null;
-  let eventsWired = false;
-  let tickStarted = false;
-  let removeCapAppStateListener: null | (() => void) = null;
-  let removeCloudTaskCollectionListener: null | (() => void) = null;
-  let removeAuthStateListener: null | (() => void) = null;
+  const runtime = createTaskTimerRuntime();
+  const { on } = runtime;
 
   const destroy = () => {
-    destroyed = true;
-
-    if (tickTimeout != null) window.clearTimeout(tickTimeout);
-    if (tickRaf != null) window.cancelAnimationFrame(tickRaf);
-    if (deferredCloudRefreshTimer != null) window.clearTimeout(deferredCloudRefreshTimer);
-    if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
-    if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
-    if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
-    if (checkpointRepeatCycleTimer != null) window.clearTimeout(checkpointRepeatCycleTimer);
-    if (removeCapBackListener) {
-      try {
-        removeCapBackListener();
-      } catch {
-        // ignore
-      }
-      removeCapBackListener = null;
-    }
-    if (removeCapAppStateListener) {
-      try {
-        removeCapAppStateListener();
-      } catch {
-        // ignore
-      }
-      removeCapAppStateListener = null;
-    }
-    if (removeCloudTaskCollectionListener) {
-      try {
-        removeCloudTaskCollectionListener();
-      } catch {
-        // ignore
-      }
-      removeCloudTaskCollectionListener = null;
-    }
-    if (removeAuthStateListener) {
-      try {
-        removeAuthStateListener();
-      } catch {
-        // ignore
-      }
-      removeAuthStateListener = null;
-    }
-
-    for (const l of listeners) {
-      try {
-        l.el.removeEventListener(l.type, l.fn, l.opts as any);
-      } catch {
-        // ignore
-      }
-    }
-    try {
-      unsubscribeCachedPreferences();
-    } catch {
-      // ignore
-    }
+    destroyTaskTimerRuntime({
+      runtime,
+      deferredCloudRefreshTimer,
+      checkpointToastAutoCloseTimer,
+      checkpointToastCountdownRefreshTimer,
+      checkpointBeepQueueTimer,
+      checkpointRepeatCycleTimer,
+      unsubscribeCachedPreferences,
+    });
   };
 
   const initialState = createInitialTaskTimerState(initialAppPage);
@@ -286,7 +217,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let currentAppPage = initialState.currentAppPage;
   let currentTileColumnCount = initialState.currentTileColumnCount;
   let suppressNavStackPush = initialState.suppressNavStackPush;
-  let removeCapBackListener: null | (() => void) = null;
   let lastNativeBackHandledAtMs = initialState.lastNativeBackHandledAtMs;
   const checkpointToastQueue = initialState.checkpointToastQueue;
   let activeCheckpointToast = initialState.activeCheckpointToast;
@@ -796,10 +726,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         });
         if (maybePromise && typeof maybePromise.then === "function") {
           maybePromise.then((h: any) => {
-            if (h?.remove) removeCapBackListener = () => h.remove();
+            if (h?.remove) runtime.removeCapBackListener = () => h.remove();
           }).catch(() => {});
         } else if (maybePromise?.remove) {
-          removeCapBackListener = () => maybePromise.remove();
+          runtime.removeCapBackListener = () => maybePromise.remove();
         }
       }
     } catch {
@@ -814,11 +744,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
-    if (destroyed) return Promise.resolve();
+    if (runtime.destroyed) return Promise.resolve();
     if (cloudRefreshInFlight) return cloudRefreshInFlight;
     cloudRefreshInFlight = hydrateStorageFromCloud(opts)
       .then(() => {
-        if (destroyed) return;
+        if (runtime.destroyed) return;
         hydrateUiStateFromCaches();
         render();
         lastCloudRefreshAtMs = nowMs();
@@ -848,10 +778,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function scheduleDeferredCloudRefresh(minIntervalMs = 0) {
     pendingDeferredCloudRefresh = true;
-    if (deferredCloudRefreshTimer != null || destroyed) return;
+    if (deferredCloudRefreshTimer != null || runtime.destroyed) return;
     deferredCloudRefreshTimer = window.setTimeout(() => {
       deferredCloudRefreshTimer = null;
-      if (destroyed || !pendingDeferredCloudRefresh) return;
+      if (runtime.destroyed || !pendingDeferredCloudRefresh) return;
       if (hasActiveFormInteraction() || hasRecentUiInteraction()) {
         scheduleDeferredCloudRefresh(minIntervalMs);
         return;
@@ -881,17 +811,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncCloudTaskCollectionListener() {
-    if (removeCloudTaskCollectionListener) {
+    if (runtime.removeCloudTaskCollectionListener) {
       try {
-        removeCloudTaskCollectionListener();
+        runtime.removeCloudTaskCollectionListener();
       } catch {
         // ignore
       }
-      removeCloudTaskCollectionListener = null;
+      runtime.removeCloudTaskCollectionListener = null;
     }
     const uid = currentUid();
     if (!uid) return;
-    removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
+    runtime.removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
       refreshCloudStateIfStale(0);
     });
   }
@@ -925,11 +855,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (maybePromise && typeof (maybePromise as any).then === "function") {
           (maybePromise as Promise<any>)
             .then((h: any) => {
-              if (h?.remove) removeCapAppStateListener = () => h.remove();
+              if (h?.remove) runtime.removeCapAppStateListener = () => h.remove();
             })
             .catch(() => {});
         } else if ((maybePromise as any)?.remove) {
-          removeCapAppStateListener = () => (maybePromise as any).remove();
+          runtime.removeCapAppStateListener = () => (maybePromise as any).remove();
         }
       }
     } catch {
@@ -938,7 +868,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const auth = getFirebaseAuthClient();
     if (auth) {
-      removeAuthStateListener = onAuthStateChanged(auth, () => {
+      runtime.removeAuthStateListener = onAuthStateChanged(auth, () => {
         syncCloudTaskCollectionListener();
         refreshCloudStateIfStale(0);
       });
@@ -5753,7 +5683,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els.hmList.innerHTML = `<div class="hmEmpty">Loading history...</div>`;
     }
     void refreshHistoryManagerFromCloud().then(() => {
-      if (destroyed) return;
+      if (runtime.destroyed) return;
       renderHistoryManager();
     });
   }
@@ -6358,7 +6288,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         // ignore playback stop failures
       }
     }
-    if (!destroyed) render();
+    if (!runtime.destroyed) render();
   }
 
   function flushCheckpointBeepQueue() {
@@ -6389,7 +6319,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function startCheckpointRepeatAlert(taskId: string) {
     checkpointRepeatActiveTaskId = taskId;
     checkpointRepeatStopAtMs = Date.now() + 60_000;
-    if (!destroyed) render();
+    if (!runtime.destroyed) render();
     if (checkpointRepeatCycleTimer != null) return;
     scheduleCheckpointRepeatCycle();
   }
@@ -6484,7 +6414,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     renderCheckpointToast();
     scheduleCheckpointToastCountdownRefresh();
-    if (!destroyed) render();
+    if (!runtime.destroyed) render();
     if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
     if ((activeCheckpointToast?.autoCloseMs || 0) > 0) {
       checkpointToastAutoCloseTimer = window.setTimeout(() => {
@@ -6516,7 +6446,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     activeCheckpointToast = null;
     renderCheckpointToast();
-    if (!destroyed) render();
+    if (!runtime.destroyed) render();
     if (checkpointToastQueue.length) {
       window.setTimeout(showNextCheckpointToast, 50);
     }
@@ -8200,10 +8130,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskEl.classList.remove("isNewTaskGlow");
       void taskEl.offsetWidth;
       taskEl.classList.add("isNewTaskGlow");
-      if (newTaskHighlightTimer != null) window.clearTimeout(newTaskHighlightTimer);
-      newTaskHighlightTimer = window.setTimeout(() => {
+      if (runtime.newTaskHighlightTimer != null) window.clearTimeout(runtime.newTaskHighlightTimer);
+      runtime.newTaskHighlightTimer = window.setTimeout(() => {
         taskEl?.classList.remove("isNewTaskGlow");
-        newTaskHighlightTimer = null;
+        runtime.newTaskHighlightTimer = null;
       }, 3000);
     }, 0);
   }
@@ -10277,11 +10207,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function tick() {
-    if (destroyed) return;
+    if (runtime.destroyed) return;
 
     if (!els.taskList) {
-      tickRaf = window.requestAnimationFrame(() => {
-        tickTimeout = window.setTimeout(tick, 200);
+      runtime.tickRaf = window.requestAnimationFrame(() => {
+        runtime.tickTimeout = window.setTimeout(tick, 200);
       });
       return;
     }
@@ -10364,8 +10294,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderDashboardHeatCalendar();
     }
 
-    tickRaf = window.requestAnimationFrame(() => {
-      tickTimeout = window.setTimeout(tick, 200);
+    runtime.tickRaf = window.requestAnimationFrame(() => {
+      runtime.tickTimeout = window.setTimeout(tick, 200);
     });
   }
 
@@ -10418,9 +10348,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .catch(() => {});
     initMobileBackHandling();
     initCloudRefreshSync();
-    if (!eventsWired) {
+    if (!runtime.eventsWired) {
       wireEvents();
-      eventsWired = true;
+      runtime.eventsWired = true;
     }
     render();
     maybeHandlePendingTaskJump();
@@ -10428,9 +10358,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!els.taskList && els.historyManagerScreen) {
       openHistoryManager();
     }
-    if (!tickStarted) {
+    if (!runtime.tickStarted) {
       tick();
-      tickStarted = true;
+      runtime.tickStarted = true;
     }
   };
 
