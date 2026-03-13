@@ -1,0 +1,41 @@
+/* Generated from tasktimer.css split. */
+/* Final desktop app rail: use the left navigation panel across main app screens and Settings.
+   Footer navigation is mobile-only. */
+.desktopAppRail{
+  display: none;
+}
+/* Final desktop shell correction: keep the left rail attached to app/settings content and
+   restore dashboard/task/friends rendering inside the shared desktop layout. */
+.desktopAppShell{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+/* Dashboard typography: match the landing page Orbitron display styling immediately,
+   without depending on body[data-app-page] being hydrated first. */
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroEyebrow,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStatLabel,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStat strong,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCardTitle,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardBigValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakValue,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileName,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric strong,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandName,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailBrandMeta,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailSectionLabel,
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailMenuLabel{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+/* Final app-page scroll contract:
+   Dashboard, Tasks, and Friends must remain vertically scrollable when content
+   exceeds the available viewport, regardless of later shell/layout overrides. */
+#app[aria-label="TaskLaunch App"] .desktopAppShell,
+#app[aria-label="TaskLaunch App"] .desktopAppMain{
+  min-height: 0;
+}

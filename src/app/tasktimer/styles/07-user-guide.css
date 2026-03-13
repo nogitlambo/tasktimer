@@ -1,0 +1,203 @@
+/* Generated from tasktimer.css split. */
+#app[aria-label="TaskLaunch User Guide"] .userGuidePage{
+  height:auto;
+  min-height:100%;
+  overflow:visible;
+}
+.userGuideMenu .menuHead{
+  position:relative;
+  justify-content:center;
+  min-height:42px;
+}
+.userGuideMenu .menuTitle{
+  text-align:center;
+  width:100%;
+}
+.userGuidePage{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:14px;
+  height:100%;
+  padding:18px;
+  background: #0d0f13;
+}
+.userGuideTopAction{
+  grid-column:1 / -1;
+  display:flex;
+  justify-content:flex-end;
+  align-items:flex-start;
+}
+.userGuideTopic{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.userGuideText{
+  line-height:1.55;
+}
+.userGuideWindow{
+  border:1px solid rgba(117,231,255,.16);
+  background: #0d0f13 !important;
+  padding:12px;
+}
+.userGuideSection{
+  margin-bottom:14px;
+  padding-bottom:0;
+  border-bottom:none;
+}
+.userGuideSection:last-child{
+  border-bottom:none;
+  margin-bottom:0;
+}
+.userGuideSection h3{
+  margin:0 0 6px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-tight);
+  font-size:15px;
+  color: rgba(142,242,255,.96);
+}
+.userGuideSection p{
+  margin:0;
+}
+.userGuideIcon{
+  width:18px;
+  height:18px;
+  object-fit:contain;
+  filter: drop-shadow(0 0 4px rgba(0,210,255,.35));
+}
+.userGuideShotPlaceholder{
+  margin-top:10px;
+  min-height:140px;
+  border:1px dashed rgba(117,231,255,.42);
+  background: rgba(6,18,34,.45);
+  color: rgba(173,232,246,.8);
+  font-family:var(--font-tight);
+  font-size:12px;
+  letter-spacing:.04em;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:10px;
+}
+.userGuideShotImage{
+  margin-top:10px;
+  width:100%;
+  max-height:340px;
+  min-height:170px;
+  object-fit:contain;
+  border:1px solid rgba(117,231,255,.28);
+  background: rgba(6,18,34,.45);
+  display:block;
+}
+/* User Guide route aligned to Settings split-panel layout */
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu{
+  margin:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  padding:0;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuHead{
+  min-height:auto;
+  margin-bottom:12px;
+  border-bottom:1px solid rgba(121,226,255,.18);
+  background:transparent;
+  border-radius:0;
+  padding:4px 4px 10px;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuTitle{
+  font-family:var(--font-tight);
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: rgba(142,242,255,.96);
+  text-shadow:none;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
+  display:grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap:12px;
+  align-items:start;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+#app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+  margin:0;
+  padding:12px;
+  max-height: calc(100dvh - 180px - var(--safe-top) - var(--safe-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel{
+  position:sticky;
+  top:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  padding-left:4px;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavGrid{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+  position:relative;
+  min-height:520px;
+  border:none;
+  box-shadow:none;
+  width:100%;
+  max-width:none;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicPane{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  width:100%;
+  max-width:none;
+  flex:1 1 auto;
+  align-self:stretch;
+  min-width:0;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicHead{
+  border-bottom:1px solid rgba(121,226,255,.16);
+  padding-bottom:10px;
+  width:100%;
+  max-width:none;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicTitleInline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicTitleInline .userGuideIcon{
+  width:22px;
+  height:22px;
+  max-width:22px;
+  max-height:22px;
+  margin:0;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:100%;
+  max-width:none;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideSection{
+  width:100%;
+  max-width:none;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideShotPlaceholder,
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicBody .userGuideShotImage{
+  width:100%;
+  max-width:100%;
+}

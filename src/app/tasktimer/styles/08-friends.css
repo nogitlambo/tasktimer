@@ -1,0 +1,588 @@
+/* Generated from tasktimer.css split. */
+/* Friend Request modal: match Edit Task modal style */
+#friendRequestModal .modal{
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+}
+#friendRequestModal .field{
+  margin-top: 8px;
+}
+#friendRequestModal label{
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+#friendRequestModal input[type="text"],
+#friendRequestModal input[type="number"],
+#friendRequestModal input[type="email"]{
+  border: 1px solid rgba(53,232,255,.26);
+  background: rgba(255,255,255,.03);
+  color: #e9fcff;
+  padding-left: 14px;
+  padding-right: 10px;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+#friendRequestModal input[type="text"]:focus,
+#friendRequestModal input[type="number"]:focus,
+#friendRequestModal input[type="email"]:focus{
+  border-color: rgba(53,232,255,.6);
+  outline: 1px solid rgba(53,232,255,.35);
+  outline-offset: 0;
+}
+#friendRequestModal .footerBtns{
+  margin-top: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+#friendRequestModal .footerBtns .btn{
+  margin: 0 !important;
+}
+#friendRequestModal .editHead{
+  margin-bottom: 8px;
+}
+#friendRequestModal .editHead h2{
+  margin: 0;
+}
+/* Groups page: stack each section on its own row using full panel width */
+#appPageTest2 .dashboardShell{
+  width: 100%;
+  max-width: none;
+}
+#appPageTest2 .dashboardGrid{
+  grid-template-columns: minmax(0, 1fr);
+}
+#appPageTest2 .dashboardCard{
+  width: 100%;
+}
+#appPageTest2 #groupsIncomingRequestsList.isEmptyStatus,
+#appPageTest2 #groupsOutgoingRequestsList.isEmptyStatus{
+  color: rgba(170, 178, 190, 0.82);
+  font-style: italic;
+}
+#appPageTest2 .sharedTasksEmpty{
+  color: rgba(170, 178, 190, 0.82);
+  font-style: italic;
+}
+.friendEntryWrap {
+  display: grid;
+  gap: 8px;
+}
+.friendSharedTasksDetails {
+  display: block;
+}
+.friendSharedTasksDetails > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.friendSharedTasksDetails > summary::-webkit-details-marker {
+  display: none;
+}
+.friendRequestIdentityRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.friendRequestAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid rgba(121, 226, 255, 0.3);
+}
+.friendRequestIdentityText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.friendRequestAlias {
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friendRequestUid {
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(188, 214, 230, 0.72);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friendSharedTasksCountText {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(188, 214, 230, 0.88);
+}
+.friendSharedTasksCountText::after {
+  content: "▾";
+  opacity: 0.92;
+  font-size: 12px;
+  line-height: 1;
+}
+.friendSharedTasksDetails[open] .friendSharedTasksCountText::after {
+  content: "▴";
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouTitle{
+  padding: 8px 12px;
+  line-height: 1.25;
+}
+.friendSharedTaskCard {
+  border: 1px solid rgba(134, 170, 196, 0.35);
+  background: rgba(9, 15, 24, 0.55);
+  padding: 10px 14px 10px 16px;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.friendSharedTaskCard.isJumpCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.friendSharedTaskActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.friendSharedTaskActions .btn {
+  margin: 0;
+}
+.friendSharedTaskCard.friendSharedTaskCardState-running {
+  border-color: rgba(134, 170, 196, 0.58);
+}
+.friendSharedTaskCard.friendSharedTaskCardState-stopped {
+  border-color: rgba(255, 77, 77, 0.62);
+}
+.friendSharedTaskCard.isJumpCard {
+  cursor: pointer;
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1 {
+  border-color: var(--mode1-accent);
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2 {
+  border-color: var(--mode2-accent);
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3 {
+  border-color: var(--mode3-accent);
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode1:focus-visible {
+  border-color: var(--mode1-accent);
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode2:focus-visible {
+  border-color: var(--mode2-accent);
+}
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:hover,
+.friendSharedTaskCard.isJumpCard.friendSharedTaskCardMode-mode3:focus-visible {
+  border-color: var(--mode3-accent);
+}
+.friendSharedTaskTitle {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.friendSharedTasksSection {
+  margin-top: 0;
+}
+.friendSharedTasksDetails[open] .friendSharedTasksSection {
+  margin-top: 8px;
+}
+#friendProfileModal .modal {
+  width: min(92vw, 840px);
+}
+/* Friend Profile modal: match Add Task/Edit-style modal treatment. */
+#friendProfileModal .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(53,232,255,.26);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+}
+#friendProfileModal .modalSubtext{
+  margin: 2px 0 0;
+}
+.friendProfileRankPlaceholder{
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:rgba(13,15,19,.9);
+  border:1px solid rgba(148,163,184,0.3);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;
+  color:#e5f6ff;
+  font-size:24px;
+  font-weight:800;
+  line-height:1;
+}
+#friendProfileModal .footerBtns{
+  margin-top: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+#friendProfileModal .footerBtns .btn{
+  margin: 0 !important;
+}
+#friendProfileModal .friendProfileDeleteRow{
+  justify-content: flex-start !important;
+}
+#friendProfileModal .friendProfileCloseRow{
+  justify-content: flex-end !important;
+}
+#friendProfileIdentityRow {
+  gap: 12px;
+}
+#friendProfileAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid rgba(117, 231, 255, 0.3);
+}
+#friendProfileName {
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+#friendProfileIdentityRow .friendProfileIdentityText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+#friendProfileMemberSince {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(188, 214, 230, 0.84);
+}
+/* Final Friends list width override:
+   use full card width and disable clipped slants on friend rows/summaries. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList{
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  box-sizing: border-box;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+  clip-path: none;
+}
+.friendSharedTasksHeading {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(188, 214, 230, 0.88);
+}
+.friendSharedTasksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+.friendSharedTaskCard {
+  min-width: 0;
+}
+.friendSharedTaskCardLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 10px;
+  align-items: center;
+}
+.friendSharedTaskInfo {
+  min-width: 0;
+}
+.friendSharedTaskTrend {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.friendSharedTaskTrendLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(188, 214, 230, 0.72);
+  text-align: right;
+}
+.friendSharedTaskTrend svg {
+  width: 100%;
+  height: 56px;
+  display: block;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(121, 226, 255, 0.2);
+}
+.friendSharedTaskTrend .friendSharedTrendBar {
+  fill: var(--accent, #35e8ff);
+  opacity: 0.9;
+}
+.friendSharedTaskTrend .friendSharedTrendCheckpointLine {
+  stroke: rgba(188, 214, 230, 0.72);
+  stroke-width: 1.2;
+  shape-rendering: crispEdges;
+}
+.friendSharedTaskTrendDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(188, 214, 230, 0.7);
+}
+.friendSharedTaskTrendDays span {
+  text-align: center;
+}
+.friendSharedTaskState {
+  display: inline;
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.friendSharedTaskState.isRunning {
+  color: var(--accent, #35e8ff);
+}
+.friendSharedTaskState.isStopped {
+  color: #ff4d4d;
+}
+.friendSharedTaskMeta {
+  font-size: 12px;
+  color: rgba(188, 214, 230, 0.88);
+  line-height: 1.45;
+}
+.shareTaskFriendOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
+  clip-path: none !important;
+}
+#appPageTest2 #groupsSharedByYouDetails[open] #groupsSharedByYouList{
+  padding: 10px 10px 0;
+}
+#shareTaskModal .field{
+  margin-top: 8px;
+}
+#shareTaskModal label{
+  margin-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+#shareTaskModal select,
+#shareTaskModal input[type="text"],
+#shareTaskModal input[type="number"],
+#shareTaskModal input[type="email"]{
+  border: 1px solid rgba(53,232,255,.26);
+  background: rgba(255,255,255,.03);
+  color: #e9fcff;
+  border-radius: 0;
+  width: 100%;
+  box-sizing: border-box;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#shareTaskModal select{
+  min-height: 36px;
+  padding: 8px 10px;
+}
+#shareTaskModal select:focus,
+#shareTaskModal input[type="text"]:focus,
+#shareTaskModal input[type="number"]:focus,
+#shareTaskModal input[type="email"]:focus{
+  border-color: rgba(53,232,255,.6);
+  outline: 1px solid rgba(53,232,255,.35);
+  outline-offset: 0;
+}
+#shareTaskModal .footerBtns{
+  margin-top: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+#shareTaskModal .footerBtns .btn{
+  margin: 0 !important;
+}
+#shareTaskModal .modalSubtext,
+#friendRequestModal .modalSubtext{
+  margin: 2px 0 0;
+}
+#shareTaskFriendsField label{
+  margin-bottom: 6px;
+}
+#shareTaskFriendsList{
+  margin-top: 2px;
+  display: grid;
+  gap: 6px;
+  max-height: min(32dvh, 220px);
+  overflow: auto;
+  padding-right: 2px;
+}
+#shareTaskModal .shareTaskFriendOption{
+  padding: 6px 8px;
+  border: 1px solid rgba(121,226,255,.2);
+  background: rgba(255,255,255,.02);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#shareTaskStatus,
+#friendRequestModalStatus{
+  margin-top: 8px;
+}
+/* Friends page incoming-request action row: keep Decline/Approve on one line and right-aligned. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 .groupsIncomingRequestActions{
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap !important;
+}
+body[data-theme="dark"] #elapsedPadOverlay .elapsedPadDisplay,
+body[data-theme="dark"] #shareTaskModal select,
+body[data-theme="dark"] #shareTaskModal input[type="text"],
+body[data-theme="dark"] #shareTaskModal input[type="number"],
+body[data-theme="dark"] #shareTaskModal input[type="email"],
+body[data-theme="dark"] #shareTaskModal .shareTaskFriendOption{
+  border-color: rgba(214,96,229,.42) !important;
+}
+body[data-theme="dark"] #shareTaskModal select:focus,
+body[data-theme="dark"] #shareTaskModal input[type="text"]:focus,
+body[data-theme="dark"] #shareTaskModal input[type="number"]:focus,
+body[data-theme="dark"] #shareTaskModal input[type="email"]:focus{
+  border-color: rgba(233,134,245,.68) !important;
+  outline: 1px solid rgba(255,164,250,.3) !important;
+}
+body[data-theme="dark"] .friendRequestAvatar{
+  border-color: rgba(214,96,229,.42) !important;
+}
+body[data-theme="dark"] .friendIdentityUid,
+body[data-theme="dark"] .friendRequestUid,
+body[data-theme="dark"] .friendSharedTasksCountText{
+  color: rgba(230,208,250,.84) !important;
+}
+body[data-theme="dark"] .friendSharedTaskCard{
+  border-color: rgba(214,96,229,.4) !important;
+  background: rgba(22,12,34,.7) !important;
+}
+body[data-theme="dark"] .friendSharedTaskCard.friendSharedTaskCardState-running{
+  border-color: rgba(233,134,245,.62) !important;
+}
+#app[aria-label="TaskLaunch App"] #appPageDashboard.appPageOn,
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn,
+#app[aria-label="TaskLaunch App"] #appPageTest2.appPageOn{
+  min-height: calc(100% - var(--app-pages-bottom-padding, 0px));
+}
+/* Final Friends-surface override: remove shaded panel treatment on the Friends screen. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+  background: #0d0f13 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
+#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection .dashboardTopRow{
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border-color: transparent !important;
+}
+/* Final Friends shared-task tile layout:
+   render each shared task as a 2-column tile and pack multiple tiles per row when space allows. */
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
+  gap: 12px;
+  align-items: stretch;
+  justify-content: start;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+  min-width: 0;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(152px, 192px);
+  gap: 14px;
+  align-items: stretch;
+  min-height: 100%;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskInfo{
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrend{
+  min-width: 0;
+  justify-content: stretch;
+}
+#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+  text-align: right;
+}
+/* Final dashboard overview override: history-backed full-width flat hero chart. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
+body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
+  background: transparent !important;
+}

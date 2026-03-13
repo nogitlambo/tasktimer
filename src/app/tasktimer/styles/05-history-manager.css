@@ -1,0 +1,240 @@
+/* Generated from tasktimer.css split. */
+.btn,
+.iconBtn,
+.menuIcon,
+.menuItem,
+.historyTrashBtn,
+.hmDelBtn,
+.msRow button,
+.switch,
+.switch::after{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+/* History Manager */
+
+#historyManagerScreen{
+  display:none;
+  height:100%;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling: touch;
+  padding:18px;
+}
+
+#historyManagerScreen[aria-hidden="false"]{
+  display:flex;
+  flex-direction:column;
+}
+
+.hmHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.hmHeadActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
+
+.hmList{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+.hmEmpty{
+  color: rgba(255,255,255,.65);
+  padding:16px 14px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(255,255,255,.04);
+}
+
+.hmGroup{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius: 0;
+  background: rgba(255,255,255,.04);
+  overflow:hidden;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.hmSummary{
+  list-style:none;
+  cursor:pointer;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.hmSummary::-webkit-details-marker{ display:none; }
+
+.hmTitleRow{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.hmExpandIcon{
+  width:14px;
+  height:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(220,240,255,.9);
+  font-family:var(--font-tight);
+  font-size:14px;
+  font-weight:800;
+  line-height:1;
+}
+
+.hmExpandIcon::before{
+  content:"+";
+}
+
+.hmGroup[open] .hmExpandIcon::before{
+  content:"-";
+}
+
+.hmTaskName{ font-family:var(--font-tight); font-size:14px; font-weight:700; letter-spacing:.1px; }
+
+.hmBadge{
+  font-size:11px;
+  padding:3px 8px;
+  border-radius: 999px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+}
+
+.hmBadge.deleted{
+  border-color: rgba(255,77,77,.30);
+  background: rgba(255,77,77,.12);
+  color:#ffd4d4;
+}
+
+.hmCount{
+  color: rgba(255,255,255,.65);
+  font-size:12px;
+  font-weight:800;
+}
+
+.hmTable{
+  width:100%;
+  border-collapse: collapse;
+  font-size:12px;
+}
+
+.hmTable th, .hmTable td{
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:10px 12px;
+  text-align:left;
+}
+
+.hmTable tbody tr{
+  background: rgba(255,255,255,.03);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.hmSelectHead,
+.hmSelectCell{
+  width:34px;
+  padding-left:10px;
+  padding-right:4px;
+  text-align:left;
+}
+
+.hmSelectHead{
+  border-top:1px solid rgba(255,255,255,.08);
+}
+
+.hmSortBtn{
+  border:none;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-weight:800;
+  letter-spacing:.02em;
+  cursor:pointer;
+  padding:0;
+}
+
+.hmSortBtn:hover{
+  text-decoration: underline;
+}
+
+.hmBulkCheckbox{
+  width:14px;
+  height:14px;
+  accent-color: var(--accent);
+  cursor:pointer;
+}
+
+.hmDateHeading .hmBulkCheckbox{
+  margin-right:8px;
+  vertical-align:middle;
+}
+
+.hmTitleRow .hmBulkCheckbox{
+  margin-right:6px;
+}
+
+.hmSelectCell .hmBulkCheckbox{
+  margin:0;
+}
+
+.hmDateGroup + .hmDateGroup{
+  border-top:1px solid rgba(255,255,255,.08);
+}
+
+.hmDateHeading{
+  list-style:none;
+  cursor:pointer;
+  padding:10px 12px 8px;
+  color: rgba(190,230,245,.92);
+  font-family:var(--font-tight);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.04em;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.hmDateHeading::-webkit-details-marker{
+  display:none;
+}
+
+.hmDateHeading::after{
+  content: "▸";
+  float:right;
+  color: rgba(190,230,245,.85);
+}
+
+.hmDateGroup[open] .hmDateHeading::after{
+  content: "▾";
+}
+
+.hmDelBtn{
+  width:34px;height:34px;
+  border-radius:10px;
+  border:1px solid rgba(255,77,77,.35);
+  background: rgba(255,77,77,.12);
+  color:#ffd4d4;
+  cursor:pointer;
+}
+
+.hmDelBtn:hover{ background: rgba(255,77,77,.16); }
