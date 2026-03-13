@@ -1,0 +1,179 @@
+import type { AppPage, MainMode, TaskTimerMutableState } from "./types";
+import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
+
+export type TaskTimerStorageKeys = {
+  AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+  THEME_KEY: string;
+  MENU_BUTTON_STYLE_KEY: string;
+  DEFAULT_TASK_TIMER_FORMAT_KEY: string;
+  TASK_VIEW_KEY: string;
+  DYNAMIC_COLORS_KEY: string;
+  CHECKPOINT_ALERT_SOUND_KEY: string;
+  CHECKPOINT_ALERT_TOAST_KEY: string;
+  MODE_SETTINGS_KEY: string;
+  NAV_STACK_KEY: string;
+  FOCUS_SESSION_NOTES_KEY: string;
+  NAV_STACK_MAX: number;
+  NATIVE_BACK_DEBOUNCE_MS: number;
+};
+
+export const DEFAULT_MODE_LABELS: Record<MainMode, string> = {
+  mode1: "Mode 1",
+  mode2: "Mode 2",
+  mode3: "Mode 3",
+};
+
+export const DEFAULT_MODE_ENABLED: Record<MainMode, boolean> = {
+  mode1: true,
+  mode2: true,
+  mode3: true,
+};
+
+export const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
+  mode1: "#00CFC8",
+  mode2: "#3A86FF",
+  mode3: "#FF6B6B",
+};
+
+export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorageKeys {
+  return {
+    AUTO_FOCUS_ON_TASK_LAUNCH_KEY: `${storageKey}:autoFocusOnTaskLaunchEnabled`,
+    THEME_KEY: `${storageKey}:theme`,
+    MENU_BUTTON_STYLE_KEY: `${storageKey}:menuButtonStyle`,
+    DEFAULT_TASK_TIMER_FORMAT_KEY: `${storageKey}:defaultTaskTimerFormat`,
+    TASK_VIEW_KEY: `${storageKey}:taskView`,
+    DYNAMIC_COLORS_KEY: `${storageKey}:dynamicColorsEnabled`,
+    CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
+    CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
+    MODE_SETTINGS_KEY: `${storageKey}:modeSettings`,
+    NAV_STACK_KEY: `${storageKey}:navStack`,
+    FOCUS_SESSION_NOTES_KEY: `${storageKey}:focusSessionNotes`,
+    NAV_STACK_MAX: 50,
+    NATIVE_BACK_DEBOUNCE_MS: 200,
+  };
+}
+
+export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerMutableState {
+  return {
+    deletedTaskMeta: {},
+    tasks: [],
+    currentMode: "mode1",
+    modeLabels: { ...DEFAULT_MODE_LABELS },
+    modeEnabled: { ...DEFAULT_MODE_ENABLED },
+    modeColors: { ...DEFAULT_MODE_COLORS },
+    editIndex: null,
+    editDraftSnapshot: "",
+    focusCheckpointSig: "",
+    focusModeTaskName: "",
+    focusShowCheckpoints: true,
+    suppressAddTaskNameFocusOpen: false,
+    confirmAction: null,
+    confirmActionAlt: null,
+    themeMode: "dark",
+    menuButtonStyle: "square",
+    addTaskCustomNames: [],
+    defaultTaskTimerFormat: "hour",
+    taskView: "list",
+    dynamicColorsEnabled: true,
+    autoFocusOnTaskLaunchEnabled: false,
+    checkpointAlertSoundEnabled: true,
+    checkpointAlertToastEnabled: true,
+    rewardProgress: DEFAULT_REWARD_PROGRESS,
+    historyByTaskId: {},
+    historyRangeDaysByTaskId: {},
+    historyRangeModeByTaskId: {},
+    focusModeTaskId: null,
+    openHistoryTaskIds: new Set(),
+    pinnedHistoryTaskIds: new Set(),
+    hmExpandedTaskGroups: new Set(),
+    hmExpandedDateGroups: new Set(),
+    hmSortKey: "ts",
+    hmSortDir: "desc",
+    hmBulkEditMode: false,
+    hmBulkSelectedRows: new Set(),
+    hmRowsByTask: {},
+    hmRowsByTaskDate: {},
+    historyViewByTaskId: {},
+    addTaskMilestonesEnabled: false,
+    addTaskMilestoneTimeUnit: "hour",
+    addTaskMilestones: [],
+    addTaskCheckpointSoundEnabled: false,
+    addTaskCheckpointSoundMode: "once",
+    addTaskCheckpointToastEnabled: false,
+    addTaskCheckpointToastMode: "auto5s",
+    addTaskPresetIntervalsEnabled: false,
+    addTaskPresetIntervalValue: 0,
+    addTaskFinalCheckpointAction: "continue",
+    addTaskWizardStep: 1,
+    addTaskDurationValue: 5,
+    addTaskDurationUnit: "hour",
+    addTaskDurationPeriod: "week",
+    focusSessionNotesByTaskId: {},
+    addTaskNoTimeGoal: false,
+    elapsedPadTarget: null,
+    elapsedPadMilestoneRef: null,
+    elapsedPadDraft: "",
+    elapsedPadOriginal: "",
+    editMoveTargetMode: "mode1",
+    dashboardEditMode: false,
+    dashboardDragEl: null,
+    taskDragEl: null,
+    dashboardOrderDraftBeforeEdit: null,
+    dashboardCardSizes: {},
+    dashboardCardSizesDraftBeforeEdit: null,
+    dashboardCardVisibility: {},
+    dashboardAvgRange: "past7",
+    currentAppPage: initialAppPage,
+    currentTileColumnCount: 1,
+    suppressNavStackPush: false,
+    lastNativeBackHandledAtMs: 0,
+    checkpointToastQueue: [],
+    activeCheckpointToast: null,
+    checkpointBeepAudio: null,
+    checkpointBeepQueueCount: 0,
+    checkpointRepeatStopAtMs: 0,
+    checkpointRepeatActiveTaskId: null,
+    checkpointAutoResetDirty: false,
+    historyNoteCloudRepairAttempted: false,
+    checkpointFiredKeysByTaskId: {},
+    checkpointBaselineSecByTaskId: {},
+    cloudPreferencesCache: null,
+    cloudDashboardCache: null,
+    cloudTaskUiCache: null,
+    navStackMemory: [],
+    pendingTaskJumpMemory: null,
+    groupsIncomingRequests: [],
+    groupsOutgoingRequests: [],
+    groupsFriendships: [],
+    groupsSharedSummaries: [],
+    ownSharedSummaries: [],
+    shareTaskIndex: null,
+    shareTaskMode: "share",
+    shareTaskTaskId: null,
+    exportTaskIndex: null,
+    groupsLoading: false,
+    groupsLoadingDepth: 0,
+    groupsRefreshSeq: 0,
+    activeFriendProfileUid: null,
+    activeFriendProfileName: "",
+    historyEntryNoteAnchorTaskId: "",
+    groupsStatusMessage: "Ready.",
+    openFriendSharedTaskUids: new Set(),
+    workingIndicatorStack: [],
+    workingIndicatorKeySeq: 0,
+    workingIndicatorOverlayActive: false,
+    workingIndicatorRestoreFocusEl: null,
+    friendProfileCacheByUid: {},
+    cloudRefreshInFlight: null,
+    lastCloudRefreshAtMs: 0,
+    pendingDeferredCloudRefresh: false,
+    lastUiInteractionAtMs: 0,
+    dashboardWidgetHasRenderedData: {
+      overview: false,
+      focusTrend: false,
+      heatCalendar: false,
+      modeDistribution: false,
+      avgSession: false,
+    },
+  };
+}

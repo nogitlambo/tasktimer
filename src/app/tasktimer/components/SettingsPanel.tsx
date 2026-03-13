@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
-import { clearScopedStorageState, STORAGE_KEY } from "@/app/tasktimer/lib/storage";
+import { clearScopedStorageState, STORAGE_KEY, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
 import {
   deleteUser,
   getRedirectResult,
@@ -592,10 +592,13 @@ export default function SettingsPanel() {
       setAuthStatus("");
       return;
     }
-    setAuthBusy(true);
+    setAuthBusy(true);
     setAuthError("");
     setAuthStatus("");
     try {
+      await waitForPendingTaskSync().catch(() => {
+        // Fall back to the existing sign-out flow when pending task sync cannot complete.
+      });
       await signOut(auth);
       clearScopedStorageState();
       setAuthStatus("Signed out.");

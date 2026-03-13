@@ -5,6 +5,15 @@ import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
+import { normalizeHistoryTimestampMs, localDayKey, getCalendarWeekStartMs } from "./lib/history";
+import { escapeHistoryManagerHtml as escapeHtmlHM } from "./lib/historyManager";
+import {
+  getDashboardAvgRangeWindow,
+  dashboardAvgRangeLabel,
+  formatDashboardDurationShort,
+  formatDashboardHeatMonthLabel,
+} from "./lib/historyChart";
+import { formatFocusElapsed, formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import {
   ADD_TASK_PRESET_NAMES,
   filterTaskNameOptions,
@@ -61,12 +70,14 @@ import {
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, getRankThumbnailDescriptor, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
-
-type AppPage = "tasks" | "dashboard" | "test1" | "test2";
-
-export type TaskTimerClientHandle = {
-  destroy: () => void;
-};
+import type { AppPage, MainMode, TaskTimerClientHandle } from "./client/types";
+import { collectTaskTimerElements } from "./client/elements";
+import {
+  createTaskTimerStorageKeys,
+  DEFAULT_MODE_COLORS,
+  DEFAULT_MODE_ENABLED,
+  DEFAULT_MODE_LABELS,
+} from "./client/state";
 
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
@@ -92,19 +103,21 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
   }
-  const AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled`;
-  const THEME_KEY = `${STORAGE_KEY}:theme`;
-  const MENU_BUTTON_STYLE_KEY = `${STORAGE_KEY}:menuButtonStyle`;
-  const DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat`;
-  const TASK_VIEW_KEY = `${STORAGE_KEY}:taskView`;
-  const DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled`;
-  const CHECKPOINT_ALERT_SOUND_KEY = `${STORAGE_KEY}:checkpointAlertSoundEnabled`;
-  const CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled`;
-  const MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings`;
-  const NAV_STACK_KEY = `${STORAGE_KEY}:navStack`;
-  const FOCUS_SESSION_NOTES_KEY = `${STORAGE_KEY}:focusSessionNotes`;
-  const NAV_STACK_MAX = 50;
-  const NATIVE_BACK_DEBOUNCE_MS = 200;
+  const {
+    AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+    THEME_KEY,
+    MENU_BUTTON_STYLE_KEY,
+    DEFAULT_TASK_TIMER_FORMAT_KEY,
+    TASK_VIEW_KEY,
+    DYNAMIC_COLORS_KEY,
+    CHECKPOINT_ALERT_SOUND_KEY,
+    CHECKPOINT_ALERT_TOAST_KEY,
+    MODE_SETTINGS_KEY,
+    NAV_STACK_KEY,
+    FOCUS_SESSION_NOTES_KEY,
+    NAV_STACK_MAX,
+    NATIVE_BACK_DEBOUNCE_MS,
+  } = createTaskTimerStorageKeys(STORAGE_KEY);
 
   const listeners: Array<{
     el: EventTarget;
@@ -193,22 +206,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   let deletedTaskMeta: DeletedTaskMeta = {};
   let tasks: Task[] = [];
-  type MainMode = "mode1" | "mode2" | "mode3";
-  const DEFAULT_MODE_LABELS: Record<MainMode, string> = {
-    mode1: "Mode 1",
-    mode2: "Mode 2",
-    mode3: "Mode 3",
-  };
-  const DEFAULT_MODE_ENABLED: Record<MainMode, boolean> = {
-    mode1: true,
-    mode2: true,
-    mode3: true,
-  };
-  const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
-    mode1: "#00CFC8",
-    mode2: "#3A86FF",
-    mode3: "#FF6B6B",
-  };
   let currentMode: MainMode = "mode1";
   let modeLabels: Record<MainMode, string> = { ...DEFAULT_MODE_LABELS };
   let modeEnabled: Record<MainMode, boolean> = { ...DEFAULT_MODE_ENABLED };
@@ -447,334 +444,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return getFriendAvatarSrcById(String(profile?.avatarId || ""));
   }
 
-  const els = {
-    taskList: document.getElementById("taskList"),
-    openAddTaskBtn: document.getElementById("openAddTaskBtn"),
-    addTaskOverlay: document.getElementById("addTaskOverlay"),
-    addTaskForm: document.getElementById("addTaskForm"),
-    addTaskName: document.getElementById("addTaskName") as HTMLInputElement | null,
-    addTaskNameCombo: document.getElementById("addTaskNameCombo"),
-    addTaskNameToggle: document.getElementById("addTaskNameToggle"),
-    addTaskNameMenu: document.getElementById("addTaskNameMenu"),
-    addTaskNameCustomTitle: document.getElementById("addTaskNameCustomTitle"),
-    addTaskNameCustomList: document.getElementById("addTaskNameCustomList"),
-    addTaskNameDivider: document.getElementById("addTaskNameDivider"),
-    addTaskNamePresetTitle: document.getElementById("addTaskNamePresetTitle"),
-    addTaskNamePresetList: document.getElementById("addTaskNamePresetList"),
-    addTaskWizardProgress: document.getElementById("addTaskWizardProgress"),
-    addTaskStep1: document.getElementById("addTaskStep1"),
-    addTaskStep2: document.getElementById("addTaskStep2"),
-    addTaskStep3: document.getElementById("addTaskStep3"),
-    addTaskCheckpointInfoBtn: document.getElementById("addTaskCheckpointInfoBtn"),
-    addTaskCheckpointInfoDialog: document.getElementById("addTaskCheckpointInfoDialog"),
-    addTaskDurationRow: document.getElementById("addTaskDurationRow"),
-    addTaskDurationValueInput: document.getElementById("addTaskDurationValueInput") as HTMLInputElement | null,
-    addTaskDurationUnitSelect: document.getElementById("addTaskDurationUnitSelect") as HTMLSelectElement | null,
-    addTaskDurationPeriodSelect: document.getElementById("addTaskDurationPeriodSelect") as HTMLSelectElement | null,
-    addTaskDurationReadout: document.getElementById("addTaskDurationReadout"),
-    addTaskNoGoalCheckbox: document.getElementById("addTaskNoGoalCheckbox") as HTMLInputElement | null,
-    addTaskStep1NextBtn: document.getElementById("addTaskStep1NextBtn"),
-    addTaskStep2BackBtn: document.getElementById("addTaskStep2BackBtn"),
-    addTaskStep2NextBtn: document.getElementById("addTaskStep2NextBtn"),
-    addTaskStep3BackBtn: document.getElementById("addTaskStep3BackBtn"),
-    addTaskConfirmBtn: document.getElementById("addTaskConfirmBtn"),
-    addTaskError: document.getElementById("addTaskError"),
-    addTaskMsToggle: document.getElementById("addTaskMsToggle"),
-    addTaskMsUnitRow: document.getElementById("addTaskMsUnitRow"),
-    addTaskMsUnitDay: document.getElementById("addTaskMsUnitDay"),
-    addTaskMsUnitHour: document.getElementById("addTaskMsUnitHour"),
-    addTaskMsUnitMinute: document.getElementById("addTaskMsUnitMinute"),
-    addTaskAddMsBtn: document.getElementById("addTaskAddMsBtn") as HTMLButtonElement | null,
-    addTaskMsArea: document.getElementById("addTaskMsArea"),
-    addTaskMsList: document.getElementById("addTaskMsList"),
-    addTaskCheckpointAlertsGroup: document.getElementById("addTaskCheckpointAlertsGroup"),
-    addTaskCheckpointSoundToggleRow: document.getElementById("addTaskCheckpointSoundToggleRow"),
-    addTaskCheckpointSoundToggle: document.getElementById("addTaskCheckpointSoundToggle"),
-    addTaskCheckpointSoundModeField: document.getElementById("addTaskCheckpointSoundModeField"),
-    addTaskCheckpointSoundModeSelect: document.getElementById("addTaskCheckpointSoundModeSelect") as HTMLSelectElement | null,
-    addTaskCheckpointToastToggleRow: document.getElementById("addTaskCheckpointToastToggleRow"),
-    addTaskCheckpointToastToggle: document.getElementById("addTaskCheckpointToastToggle"),
-    addTaskCheckpointToastModeField: document.getElementById("addTaskCheckpointToastModeField"),
-    addTaskCheckpointToastModeSelect: document.getElementById("addTaskCheckpointToastModeSelect") as HTMLSelectElement | null,
-    addTaskCheckpointAlertsNote: document.getElementById("addTaskCheckpointAlertsNote"),
-    addTaskTimerSettingsGroup: document.getElementById("addTaskTimerSettingsGroup"),
-    addTaskPresetIntervalsToggleRow: document.getElementById("addTaskPresetIntervalsToggleRow"),
-    addTaskPresetIntervalsToggle: document.getElementById("addTaskPresetIntervalsToggle"),
-    addTaskPresetIntervalsInfoBtn: document.getElementById("addTaskPresetIntervalsInfoBtn"),
-    addTaskPresetIntervalsInfoDialog: document.getElementById("addTaskPresetIntervalsInfoDialog"),
-    addTaskPresetIntervalField: document.getElementById("addTaskPresetIntervalField"),
-    addTaskPresetIntervalInput: document.getElementById("addTaskPresetIntervalInput") as HTMLInputElement | null,
-    addTaskPresetIntervalNote: document.getElementById("addTaskPresetIntervalNote"),
-    addTaskFinalCheckpointActionField: document.getElementById("addTaskFinalCheckpointActionField"),
-    addTaskFinalCheckpointActionSelect: document.getElementById("addTaskFinalCheckpointActionSelect") as HTMLSelectElement | null,
-    addTaskCancelBtn: document.getElementById("addTaskCancelBtn"),
-    resetAllBtn: document.getElementById("resetAllBtn"),
-    mode1Btn: document.getElementById("mode1Btn") as HTMLButtonElement | null,
-    mode2Btn: document.getElementById("mode2Btn") as HTMLButtonElement | null,
-    mode3Btn: document.getElementById("mode3Btn") as HTMLButtonElement | null,
-    modeSwitch: document.getElementById("modeSwitch"),
-    mode1View: document.getElementById("mode1View"),
-    mode2View: document.getElementById("mode2View"),
-    mode3View: document.getElementById("mode3View"),
-    appPageTasks: document.getElementById("appPageTasks"),
-    appPageDashboard: document.getElementById("appPageDashboard"),
-    appPageTest1: document.getElementById("appPageTest1"),
-    appPageTest2: document.getElementById("appPageTest2"),
-    appRoot: document.getElementById("app"),
-    groupsFriendsSection: document.getElementById("groupsFriendsSection"),
-    openFriendRequestModalBtn: document.getElementById("openFriendRequestModalBtn") as HTMLButtonElement | null,
-    friendRequestModal: document.getElementById("friendRequestModal"),
-    friendRequestEmailInput: document.getElementById("friendRequestEmailInput") as HTMLInputElement | null,
-    friendRequestCancelBtn: document.getElementById("friendRequestCancelBtn") as HTMLButtonElement | null,
-    friendRequestSendBtn: document.getElementById("friendRequestSendBtn") as HTMLButtonElement | null,
-    friendRequestModalStatus: document.getElementById("friendRequestModalStatus"),
-    friendProfileModal: document.getElementById("friendProfileModal"),
-    friendProfileAvatar: document.getElementById("friendProfileAvatar") as HTMLImageElement | null,
-    friendProfileName: document.getElementById("friendProfileName"),
-    friendProfileRankImage: document.getElementById("friendProfileRankImage") as HTMLImageElement | null,
-    friendProfileRankPlaceholder: document.getElementById("friendProfileRankPlaceholder"),
-    friendProfileRank: document.getElementById("friendProfileRank"),
-    friendProfileMemberSince: document.getElementById("friendProfileMemberSince"),
-    friendProfileDeleteBtn: document.getElementById("friendProfileDeleteBtn") as HTMLButtonElement | null,
-    friendProfileCloseBtn: document.getElementById("friendProfileCloseBtn") as HTMLButtonElement | null,
-    shareTaskModal: document.getElementById("shareTaskModal"),
-    shareTaskTitle: document.getElementById("shareTaskTitle"),
-    shareTaskScopeSelect: document.getElementById("shareTaskScopeSelect") as HTMLSelectElement | null,
-    shareTaskFriendsField: document.getElementById("shareTaskFriendsField"),
-    shareTaskFriendsList: document.getElementById("shareTaskFriendsList"),
-    shareTaskStatus: document.getElementById("shareTaskStatus"),
-    shareTaskCancelBtn: document.getElementById("shareTaskCancelBtn") as HTMLButtonElement | null,
-    shareTaskConfirmBtn: document.getElementById("shareTaskConfirmBtn") as HTMLButtonElement | null,
-    exportTaskOverlay: document.getElementById("exportTaskOverlay"),
-    exportTaskTitle: document.getElementById("exportTaskTitle"),
-    exportTaskIncludeHistoryRow: document.getElementById("exportTaskIncludeHistoryRow"),
-    exportTaskIncludeHistory: document.getElementById("exportTaskIncludeHistory") as HTMLInputElement | null,
-    exportTaskIncludeHistoryLabel: document.getElementById("exportTaskIncludeHistoryLabel"),
-    exportTaskCancelBtn: document.getElementById("exportTaskCancelBtn") as HTMLButtonElement | null,
-    exportTaskConfirmBtn: document.getElementById("exportTaskConfirmBtn") as HTMLButtonElement | null,
-    groupsIncomingRequestsList: document.getElementById("groupsIncomingRequestsList"),
-    groupsIncomingRequestsDetails: document.getElementById("groupsIncomingRequestsDetails") as HTMLDetailsElement | null,
-    groupsIncomingRequestsTitle: document.getElementById("groupsIncomingRequestsTitle"),
-    groupsOutgoingRequestsDetails: document.getElementById("groupsOutgoingRequestsDetails") as HTMLDetailsElement | null,
-    groupsOutgoingRequestsTitle: document.getElementById("groupsOutgoingRequestsTitle"),
-    groupsOutgoingRequestsList: document.getElementById("groupsOutgoingRequestsList"),
-    groupsFriendsList: document.getElementById("groupsFriendsList"),
-    groupsSharedByYouList: document.getElementById("groupsSharedByYouList"),
-    groupsSharedByYouTitle: document.getElementById("groupsSharedByYouTitle"),
-    groupsFriendRequestStatus: document.getElementById("groupsFriendRequestStatus"),
-    historySaveWorkingIndicator: document.getElementById("historySaveWorkingIndicator"),
-    historySaveWorkingText: document.getElementById("historySaveWorkingText"),
-    footerTasksBtn: document.getElementById("footerTasksBtn") as HTMLButtonElement | null,
-    footerDashboardBtn: document.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
-    footerTest1Btn: document.getElementById("footerTest1Btn") as HTMLButtonElement | null,
-    footerTest2Btn: document.getElementById("footerTest2Btn") as HTMLButtonElement | null,
-    footerTest2AlertBadge: document.getElementById("footerTest2AlertBadge") as HTMLElement | null,
-    footerSettingsBtn: document.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
-    commandCenterTasksBtn: document.getElementById("commandCenterTasksBtn") as HTMLButtonElement | null,
-    commandCenterDashboardBtn: document.getElementById("commandCenterDashboardBtn") as HTMLButtonElement | null,
-    commandCenterGroupsBtn: document.getElementById("commandCenterGroupsBtn") as HTMLButtonElement | null,
-    commandCenterSettingsBtn: document.getElementById("commandCenterSettingsBtn") as HTMLElement | null,
-    rewardsInfoOpenBtn: document.getElementById("rewardsInfoOpenBtn") as HTMLButtonElement | null,
-    rewardsInfoOverlay: document.getElementById("rewardsInfoOverlay") as HTMLElement | null,
-    signedInHeaderBadge: document.getElementById("signedInHeaderBadge") as HTMLElement | null,
-    dashboardEditBtn: document.getElementById("dashboardEditBtn") as HTMLButtonElement | null,
-    dashboardEditCancelBtn: document.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
-    dashboardEditDoneBtn: document.getElementById("dashboardEditDoneBtn") as HTMLButtonElement | null,
-    dashboardPanelMenu: document.getElementById("dashboardPanelMenu") as HTMLDetailsElement | null,
-    dashboardPanelMenuBtn: document.getElementById("dashboardPanelMenuBtn") as HTMLElement | null,
-    dashboardPanelMenuList: document.getElementById("dashboardPanelMenuList") as HTMLElement | null,
-    dashboardGrid: document.querySelector(".dashboardGrid") as HTMLElement | null,
-    dashboardOverviewValue: document.getElementById("dashboardOverviewValue"),
-    dashboardOverviewSubtext: document.getElementById("dashboardOverviewSubtext"),
-    dashboardOverviewSessionsValue: document.getElementById("dashboardOverviewSessionsValue"),
-    dashboardOverviewBestDayValue: document.getElementById("dashboardOverviewBestDayValue"),
-    dashboardOverviewDeltaValue: document.getElementById("dashboardOverviewDeltaValue"),
-    dashboardOverviewChart: document.getElementById("dashboardOverviewChart") as HTMLCanvasElement | null,
-    dashboardOverviewChartEmpty: document.getElementById("dashboardOverviewChartEmpty"),
-    dashboardOverviewAxis: document.getElementById("dashboardOverviewAxis"),
-    dashboardAvgSessionChart: document.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
-    dashboardAvgSessionEmpty: document.getElementById("dashboardAvgSessionEmpty"),
-    dashboardAvgSessionTitle: document.getElementById("dashboardAvgSessionTitle"),
-    dashboardFocusTrendCard: document.getElementById("dashboardFocusTrendCard"),
-    dashboardFocusTrendBars: document.getElementById("dashboardFocusTrendBars"),
-    dashboardFocusTrendAxis: document.getElementById("dashboardFocusTrendAxis"),
-    dashboardModeDonut: document.getElementById("dashboardModeDonut"),
-    dashboardModeDonutCenter: document.getElementById("dashboardModeDonutCenter"),
-    dashboardMode1Label: document.getElementById("dashboardMode1Label"),
-    dashboardMode2Label: document.getElementById("dashboardMode2Label"),
-    dashboardMode3Label: document.getElementById("dashboardMode3Label"),
-    dashboardMode1Value: document.getElementById("dashboardMode1Value"),
-    dashboardMode2Value: document.getElementById("dashboardMode2Value"),
-    dashboardMode3Value: document.getElementById("dashboardMode3Value"),
-    dashboardHeatMonthLabel: document.getElementById("dashboardHeatMonthLabel"),
-    dashboardHeatCalendarGrid: document.getElementById("dashboardHeatCalendarGrid"),
-
-    menuIcon: document.getElementById("menuIcon"),
-    menuOverlay: document.getElementById("menuOverlay"),
-    historyManagerScreen: document.getElementById("historyManagerScreen"),
-    historyManagerBtn: document.getElementById("historyManagerBtn"),
-    historyManagerExportBtn: document.getElementById("historyManagerExportBtn") as HTMLButtonElement | null,
-    historyManagerImportBtn: document.getElementById("historyManagerImportBtn") as HTMLButtonElement | null,
-    historyManagerGenerateBtn: document.getElementById("historyManagerGenerateBtn") as HTMLButtonElement | null,
-    historyManagerImportFile: document.getElementById("historyManagerImportFile") as HTMLInputElement | null,
-    historyManagerBulkBtn: document.getElementById("historyManagerBulkBtn") as HTMLButtonElement | null,
-    historyManagerBulkDeleteBtn: document.getElementById("historyManagerBulkDeleteBtn") as HTMLButtonElement | null,
-    historyManagerBackBtn: document.getElementById("historyManagerBackBtn"),
-    focusModeScreen: document.getElementById("focusModeScreen"),
-    focusModeBackBtn: document.getElementById("focusModeBackBtn"),
-    focusDial: document.getElementById("focusDial"),
-    focusCheckpointRing: document.getElementById("focusCheckpointRing"),
-    focusCheckpointToggle: document.getElementById("focusCheckpointToggle"),
-    focusCheckpointLog: document.getElementById("focusCheckpointLog"),
-    focusCheckpointLogEmpty: document.getElementById("focusCheckpointLogEmpty"),
-    focusCheckpointLogList: document.getElementById("focusCheckpointLogList"),
-    focusTaskName: document.getElementById("focusTaskName"),
-    focusTimerDays: document.getElementById("focusTimerDays"),
-    focusTimerClock: document.getElementById("focusTimerClock"),
-    focusDialHint: document.getElementById("focusDialHint"),
-    focusResetBtn: document.getElementById("focusResetBtn") as HTMLButtonElement | null,
-    focusInsightBest: document.getElementById("focusInsightBest"),
-    focusInsightWeekday: document.getElementById("focusInsightWeekday"),
-    focusInsightTodayDelta: document.getElementById("focusInsightTodayDelta"),
-    focusInsightWeekDelta: document.getElementById("focusInsightWeekDelta"),
-    focusSessionNotesInput: document.getElementById("focusSessionNotesInput") as HTMLTextAreaElement | null,
-    hmList: document.getElementById("hmList"),
-    closeMenuBtn: document.getElementById("closeMenuBtn"),
-
-    aboutOverlay: document.getElementById("aboutOverlay"),
-    howtoOverlay: document.getElementById("howtoOverlay"),
-    appearanceOverlay: document.getElementById("appearanceOverlay"),
-    taskSettingsOverlay: document.getElementById("taskSettingsOverlay"),
-    taskDefaultFormatDay: document.getElementById("taskDefaultFormatDay"),
-    taskDefaultFormatHour: document.getElementById("taskDefaultFormatHour"),
-    taskDefaultFormatMinute: document.getElementById("taskDefaultFormatMinute"),
-    taskAutoFocusOnLaunchToggleRow: document.getElementById("taskAutoFocusOnLaunchToggleRow"),
-    taskAutoFocusOnLaunchToggle: document.getElementById("taskAutoFocusOnLaunchToggle"),
-    taskDynamicColorsToggleRow: document.getElementById("taskDynamicColorsToggleRow"),
-    taskDynamicColorsToggle: document.getElementById("taskDynamicColorsToggle"),
-    taskViewSelect: document.getElementById("taskViewSelect") as HTMLSelectElement | null,
-    taskCheckpointSoundToggleRow: document.getElementById("taskCheckpointSoundToggleRow"),
-    taskCheckpointSoundToggle: document.getElementById("taskCheckpointSoundToggle"),
-    taskCheckpointToastToggleRow: document.getElementById("taskCheckpointToastToggleRow"),
-    taskCheckpointToastToggle: document.getElementById("taskCheckpointToastToggle"),
-    taskSettingsSaveBtn: document.getElementById("taskSettingsSaveBtn"),
-    preferencesLoadDefaultsBtn: document.getElementById("preferencesLoadDefaultsBtn"),
-    appearanceLoadDefaultsBtn: document.getElementById("appearanceLoadDefaultsBtn"),
-    categoryManagerOverlay: document.getElementById("categoryManagerOverlay"),
-    categoryMode1Input: document.getElementById("categoryMode1Input") as HTMLInputElement | null,
-    categoryMode2Input: document.getElementById("categoryMode2Input") as HTMLInputElement | null,
-    categoryMode3Input: document.getElementById("categoryMode3Input") as HTMLInputElement | null,
-    categoryMode1Color: document.getElementById("categoryMode1Color") as HTMLInputElement | null,
-    categoryMode2Color: document.getElementById("categoryMode2Color") as HTMLInputElement | null,
-    categoryMode3Color: document.getElementById("categoryMode3Color") as HTMLInputElement | null,
-    categoryMode1ColorHex: document.getElementById("categoryMode1ColorHex") as HTMLInputElement | null,
-    categoryMode2ColorHex: document.getElementById("categoryMode2ColorHex") as HTMLInputElement | null,
-    categoryMode3ColorHex: document.getElementById("categoryMode3ColorHex") as HTMLInputElement | null,
-    categoryMode2Toggle: document.getElementById("categoryMode2Toggle"),
-    categoryMode3Toggle: document.getElementById("categoryMode3Toggle"),
-    categoryMode2ToggleLabel: document.getElementById("categoryMode2ToggleLabel"),
-    categoryMode3ToggleLabel: document.getElementById("categoryMode3ToggleLabel"),
-    categoryMode2Row: document.getElementById("categoryMode2Row"),
-    categoryMode3Row: document.getElementById("categoryMode3Row"),
-    categoryMode2TrashBtn: document.getElementById("categoryMode2TrashBtn"),
-    categoryMode3TrashBtn: document.getElementById("categoryMode3TrashBtn"),
-    categorySaveBtn: document.getElementById("categorySaveBtn"),
-    categoryResetBtn: document.getElementById("categoryResetBtn"),
-    themeToggleRow: document.getElementById("themeToggleRow"),
-    themeSelect: document.getElementById("themeSelect") as HTMLSelectElement | null,
-    menuButtonStyleSelect: document.getElementById("menuButtonStyleSelect") as HTMLSelectElement | null,
-    contactOverlay: document.getElementById("contactOverlay"),
-
-    exportBtn: document.getElementById("exportBtn"),
-    importBtn: document.getElementById("importBtn"),
-    importFile: document.getElementById("importFile") as HTMLInputElement | null,
-
-    editOverlay: document.getElementById("editOverlay"),
-    editName: document.getElementById("editName") as HTMLInputElement | null,
-    editMoveMenu: document.getElementById("editMoveMenu") as HTMLDetailsElement | null,
-    editMoveCurrentLabel: document.getElementById("editMoveCurrentLabel"),
-    editMoveMode1: document.getElementById("editMoveMode1") as HTMLButtonElement | null,
-    editMoveMode2: document.getElementById("editMoveMode2") as HTMLButtonElement | null,
-    editMoveMode3: document.getElementById("editMoveMode3") as HTMLButtonElement | null,
-    editOverrideElapsedToggle: document.getElementById("editOverrideElapsedToggle"),
-    editOverrideElapsedFields: document.getElementById("editOverrideElapsedFields"),
-    editCheckpointSoundToggleRow: document.getElementById("editCheckpointSoundToggleRow"),
-    editCheckpointSoundToggle: document.getElementById("editCheckpointSoundToggle"),
-    editCheckpointSoundModeField: document.getElementById("editCheckpointSoundModeField"),
-    editCheckpointSoundModeSelect: document.getElementById("editCheckpointSoundModeSelect") as HTMLSelectElement | null,
-    editCheckpointAlertsGroup: document.getElementById("editCheckpointAlertsGroup"),
-    editCheckpointToastToggleRow: document.getElementById("editCheckpointToastToggleRow"),
-    editCheckpointToastToggle: document.getElementById("editCheckpointToastToggle"),
-    editCheckpointToastModeField: document.getElementById("editCheckpointToastModeField"),
-    editCheckpointToastModeSelect: document.getElementById("editCheckpointToastModeSelect") as HTMLSelectElement | null,
-    editCheckpointAlertsNote: document.getElementById("editCheckpointAlertsNote"),
-    editTimerSettingsGroup: document.getElementById("editTimerSettingsGroup"),
-    editPresetIntervalsToggleRow: document.getElementById("editPresetIntervalsToggleRow"),
-    editPresetIntervalsToggle: document.getElementById("editPresetIntervalsToggle"),
-    editPresetIntervalsInfoBtn: document.getElementById("editPresetIntervalsInfoBtn"),
-    editPresetIntervalsInfoDialog: document.getElementById("editPresetIntervalsInfoDialog"),
-    editPresetIntervalField: document.getElementById("editPresetIntervalField"),
-    editPresetIntervalInput: document.getElementById("editPresetIntervalInput") as HTMLInputElement | null,
-    editPresetIntervalNote: document.getElementById("editPresetIntervalNote"),
-    editFinalCheckpointActionField: document.getElementById("editFinalCheckpointActionField"),
-    editFinalCheckpointActionSelect: document.getElementById("editFinalCheckpointActionSelect") as HTMLSelectElement | null,
-    editD: document.getElementById("editD") as HTMLInputElement | null,
-    editH: document.getElementById("editH") as HTMLInputElement | null,
-    editM: document.getElementById("editM") as HTMLInputElement | null,
-    editS: document.getElementById("editS") as HTMLInputElement | null,
-    msToggle: document.getElementById("msToggle"),
-    msArea: document.getElementById("msArea"),
-    msUnitRow: document.getElementById("msUnitRow"),
-    msUnitDay: document.getElementById("msUnitDay"),
-    msUnitHour: document.getElementById("msUnitHour"),
-    msUnitMinute: document.getElementById("msUnitMinute"),
-    msList: document.getElementById("msList"),
-    addMsBtn: document.getElementById("addMsBtn"),
-    cancelEditBtn: document.getElementById("cancelEditBtn"),
-    saveEditBtn: document.getElementById("saveEditBtn") as HTMLButtonElement | null,
-    editValidationError: document.getElementById("editValidationError"),
-    elapsedPadOverlay: document.getElementById("elapsedPadOverlay"),
-    elapsedPadTitle: document.getElementById("elapsedPadTitle"),
-    elapsedPadDisplay: document.getElementById("elapsedPadDisplay"),
-    elapsedPadError: document.getElementById("elapsedPadError"),
-    elapsedPadCancelBtn: document.getElementById("elapsedPadCancelBtn"),
-    elapsedPadDoneBtn: document.getElementById("elapsedPadDoneBtn"),
-
-    confirmOverlay: document.getElementById("confirmOverlay"),
-    confirmTitle: document.getElementById("confirmTitle"),
-    confirmText: document.getElementById("confirmText"),
-    confirmChkRow: document.getElementById("confirmChkRow"),
-    confirmDeleteAll: document.getElementById("confirmDeleteAll") as HTMLInputElement | null,
-    confirmChkNote: document.getElementById("confirmChkNote"),
-    confirmCancelBtn: document.getElementById("confirmCancelBtn"),
-    confirmOkBtn: document.getElementById("confirmOkBtn"),
-    confirmAltBtn: document.getElementById("confirmAltBtn"),
-    confirmChkLabel: document.getElementById("confirmChkLabel"),
-
-    confirmChkRow2: document.getElementById("confirmChkRow2"),
-    confirmChkLabel2: document.getElementById("confirmChkLabel2"),
-    confirmLogChk: document.getElementById("confirmLogChk") as HTMLInputElement | null,
-    historyAnalysisOverlay: document.getElementById("historyAnalysisOverlay"),
-    historyAnalysisTitle: document.getElementById("historyAnalysisTitle"),
-    historyAnalysisSummary: document.getElementById("historyAnalysisSummary"),
-    historyEntryNoteOverlay: document.getElementById("historyEntryNoteOverlay"),
-    historyEntryNoteTitle: document.getElementById("historyEntryNoteTitle"),
-    historyEntryNoteMeta: document.getElementById("historyEntryNoteMeta"),
-    historyEntryNoteBody: document.getElementById("historyEntryNoteBody"),
-
-    historyScreen: document.getElementById("historyScreen"),
-    historyBackBtn: document.getElementById("historyBackBtn"),
-    historyTitle: document.getElementById("historyTitle"),
-    historyOlderBtn: document.getElementById("historyOlderBtn") as HTMLButtonElement | null,
-    historyNewerBtn: document.getElementById("historyNewerBtn") as HTMLButtonElement | null,
-    historyRangeText: document.getElementById("historyRangeText"),
-    historyCanvas: document.getElementById("historyChart") as HTMLCanvasElement | null,
-    historyCanvasWrap: document.getElementById("historyCanvasWrap"),
-    historyEditBtn: document.getElementById("historyEditBtn"),
-    historyDeleteBtn: document.getElementById("historyDeleteBtn") as HTMLButtonElement | null,
-    historyTrashRow: document.getElementById("historyTrashRow"),
-    checkpointToastHost: document.getElementById("checkpointToastHost"),
-  };
+  const els = collectTaskTimerElements(document);
 
   function taskTimerRootPath() {
     const pathname = window.location.pathname || "";
@@ -3142,6 +2812,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     out.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
     out.finalCheckpointAction =
       t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
+    out.xpDisqualifiedUntilReset = !!t.xpDisqualifiedUntilReset;
     out.presetIntervalsEnabled = !!t.presetIntervalsEnabled;
     out.presetIntervalValue = getPresetIntervalValueNum(t as any);
     out.presetIntervalLastMilestoneId = t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null;
@@ -4636,61 +4307,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
-  function startOfCurrentWeekMondayMs(nowValue: number) {
-    const d = new Date(nowValue);
-    const dow = d.getDay();
-    const delta = dow === 0 ? 6 : dow - 1;
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - delta);
-    return d.getTime();
-  }
-
-  function startOfCurrentMonthMs(nowValue: number) {
-    const d = new Date(nowValue);
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-  }
-
-  function getDashboardAvgRangeWindow(range: DashboardAvgRange, nowValue: number) {
-    const endMs = nowValue;
-    if (range === "currentWeek") return { startMs: startOfCurrentWeekMondayMs(nowValue), endMs };
-    if (range === "past30") return { startMs: nowValue - 30 * 24 * 60 * 60 * 1000, endMs };
-    if (range === "currentMonth") return { startMs: startOfCurrentMonthMs(nowValue), endMs };
-    return { startMs: nowValue - 7 * 24 * 60 * 60 * 1000, endMs };
-  }
-
-  function dashboardAvgRangeLabel(range: DashboardAvgRange) {
-    if (range === "currentWeek") return "Current Week";
-    if (range === "past30") return "Past 30 Days";
-    if (range === "currentMonth") return "Current Month";
-    return "Past 7 Days";
-  }
-
-  function formatDashboardDurationShort(ms: number) {
-    const safeMs = Math.max(0, Math.floor(ms || 0));
-    const totalMinutes = Math.floor(safeMs / 60000);
-    const days = Math.floor(totalMinutes / (24 * 60));
-    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-    const minutes = totalMinutes % 60;
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  }
-
-  function localDayKey(ts: number) {
-    const d = new Date(ts);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${da}`;
-  }
-
-  function formatDashboardHeatMonthLabel(year: number, monthIndex: number) {
-    const d = new Date(year, monthIndex, 1);
-    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  }
-
   function renderDashboardOverviewChart() {
     const valueEl = els.dashboardOverviewValue as HTMLElement | null;
     const subtextEl = els.dashboardOverviewSubtext as HTMLElement | null;
@@ -5519,6 +5135,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             t.running = false;
             t.startMs = null;
             t.hasStarted = false;
+            t.xpDisqualifiedUntilReset = false;
             resetCheckpointAlertTracking(t.id);
           });
         }
@@ -5956,13 +5573,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return { name: "Deleted Task", color: null, deleted: true };
   }
 
-  function escapeHtmlHM(str: any) {
-    return String(str || "").replace(/[&<>"']/g, (s) => {
-      const map: any = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-      return map[s];
-    });
-  }
-
   function syncHistoryManagerBulkUi() {
     if (els.historyManagerBulkBtn) {
       els.historyManagerBulkBtn.textContent = "Bulk Edit";
@@ -6354,41 +5964,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       })
       .join("");
     emptyEl.style.display = "none";
-  }
-
-  function formatFocusElapsed(ms: number): { daysText: string; clockText: string; showDays: boolean } {
-    const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
-    const days = Math.floor(totalSec / 86400);
-    const hours = Math.floor((totalSec % 86400) / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return {
-      daysText: `${formatTwo(days)}d`,
-      clockText: `${formatTwo(hours)}:${formatTwo(minutes)}:${formatTwo(seconds)}`,
-      showDays: days >= 1,
-    };
-  }
-
-  function formatMainTaskElapsed(ms: number): string {
-    const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
-    const days = Math.floor(totalSec / 86400);
-    const hours = Math.floor((totalSec % 86400) / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return `${formatTwo(days)} ${formatTwo(hours)} ${formatTwo(minutes)} ${formatTwo(seconds)}`;
-  }
-
-  function formatMainTaskElapsedHtml(ms: number, isRunning = false): string {
-    const parts = formatMainTaskElapsed(ms).split(" ");
-    const panelStateClass = !isRunning ? " isStopped" : "";
-    return `
-      <span class="timePanel${panelStateClass}">
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[1]}</span><span class="timeBoxUnit">H</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[2]}</span><span class="timeBoxUnit">M</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[3]}</span><span class="timeBoxUnit">S</span></span></span>
-      </span>
-    `;
   }
 
   function updateFocusDial(t: Task) {
@@ -7726,20 +7301,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!entries.length) return null;
     const minTs = entries.reduce((min, e) => Math.min(min, normalizeHistoryTimestampMs(e?.ts)), Number.MAX_SAFE_INTEGER);
     return minTs > 0 && Number.isFinite(minTs) ? Math.floor(minTs) : null;
-  }
-
-  function normalizeHistoryTimestampMs(tsRaw: unknown): number {
-    const tsNum = Number(tsRaw || 0);
-    if (!Number.isFinite(tsNum) || tsNum <= 0) return 0;
-    // Legacy/imported rows may be stored in epoch-seconds.
-    return tsNum < 1e12 ? Math.floor(tsNum * 1000) : Math.floor(tsNum);
-  }
-
-  function getCalendarWeekStartMs(now: Date): number {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
   }
 
   function computeTaskSharingMetrics(taskId: string): {

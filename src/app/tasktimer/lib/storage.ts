@@ -144,6 +144,15 @@ let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
 let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
 const preferenceListeners = new Set<(prefs: Awaited<ReturnType<typeof loadPreferences>>) => void>();
+const inFlightTaskSyncs = new Set<Promise<void>>();
+
+function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
+  const tracked = promise.finally(() => {
+    inFlightTaskSyncs.delete(tracked as unknown as Promise<void>);
+  });
+  inFlightTaskSyncs.add(tracked as unknown as Promise<void>);
+  return tracked;
+}
 
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
@@ -791,29 +800,36 @@ export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
   if (!uid) return;
   if (!changedTaskIds.length && !removedTaskIds.length) return;
   const changedTaskIdSet = new Set(changedTaskIds);
-  void Promise.all(
-    next
-      .filter((t) => {
-        const taskId = String(t.id || "");
-        return !!taskId && changedTaskIdSet.has(taskId);
-      })
-      .map((t) =>
-        saveTask(uid, t).then(() => {
-          clearPendingTaskSync(String(t.id || ""));
+  void trackInFlightTaskSync(
+    Promise.all(
+      next
+        .filter((t) => {
+          const taskId = String(t.id || "");
+          return !!taskId && changedTaskIdSet.has(taskId);
         })
-      )
+        .map((t) =>
+          saveTask(uid, t).then(() => {
+            clearPendingTaskSync(String(t.id || ""));
+          })
+        )
+    )
   ).catch(() => {
     // Keep local shadow tasks when cloud write is denied/unavailable.
   });
   for (const taskId of removedTaskIds) {
-    void deleteTask(uid, taskId)
-      .then(() => {
+    void trackInFlightTaskSync(
+      deleteTask(uid, taskId).then(() => {
         clearPendingTaskDelete(taskId);
       })
-      .catch(() => {
-        // Keep pending marker so hydration does not resurrect stale cloud tasks.
-      });
+    ).catch(() => {
+      // Keep pending marker so hydration does not resurrect stale cloud tasks.
+    });
   }
+}
+
+export async function waitForPendingTaskSync(): Promise<void> {
+  if (!inFlightTaskSyncs.size) return;
+  await Promise.all(Array.from(inFlightTaskSyncs));
 }
 
 export function loadHistory(): HistoryByTaskId {
