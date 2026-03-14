@@ -27,10 +27,11 @@ It does not use the default Firestore database.
 ### Top-level collections
 
 1. `users`
-2. `friend_requests`
-3. `friendships`
-4. `userEmailLookup`
-5. `shared_task_summaries`
+2. `usernames`
+3. `friend_requests`
+4. `friendships`
+5. `userEmailLookup`
+6. `shared_task_summaries`
 
 ---
 
@@ -44,6 +45,8 @@ Allowed fields (`isUserDoc`):
 
 - `email: string`
 - `displayName: string | null`
+- `username: string | null`
+- `usernameKey: string | null`
 - `avatarId: string`
 - `avatarCustomSrc: string | null`
 - `googlePhotoUrl: string | null`
@@ -66,6 +69,43 @@ Subcollections:
 4. `accountState/{docId}`
 5. `tasks/{taskId}`
 6. `deletedTasks/{taskId}`
+
+Notes:
+
+- `displayName` remains the presentation/profile name.
+- `username` is the claimed handle stored separately from `displayName`.
+- `usernameKey` is the normalized lowercase lookup key for the claimed username.
+
+---
+
+### `usernames/{usernameKey}`
+
+Doc ID:
+
+- `usernameKey = lowercase(trim(username))`
+
+Allowed fields:
+
+- `uid: string`
+- `username: string`
+- `usernameKey: string`
+
+Access:
+
+- Read by authenticated users
+- Create/update/delete by the owning authenticated user when client-written
+- Server/admin claim flow may also manage this collection transactionally
+
+Write flow:
+
+- Claim creates or updates `usernames/{usernameKey}` for the owner uid
+- Rename deletes the old username reservation doc and creates/updates the new one in the same transaction
+- `username` and `usernameKey` are currently stored as the same normalized lowercase value
+
+Runtime usage:
+
+- Used as the reservation/uniqueness index for claimed usernames
+- Queried by username availability and username claim endpoints
 
 ---
 

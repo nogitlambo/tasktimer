@@ -12,6 +12,8 @@ import {
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { validateUsername } from "@/lib/username";
+import { claimUsernameClient } from "./usernameClaim";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
@@ -146,6 +148,75 @@ function normalizeEmail(raw: unknown): string {
 
 function emailLookupDocKey(email: string): string {
   return encodeURIComponent(normalizeEmail(email));
+}
+
+function sanitizeUsernameCandidate(raw: unknown): string {
+  const value = String(raw || "").trim().toLowerCase();
+  if (!value) return "";
+  const cleaned = value
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]+/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return cleaned.slice(0, 20);
+}
+
+function buildUsernameClaimCandidates(uid: string, displayName: string, email: string): string[] {
+  const uidSuffix = String(uid || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "").slice(-6) || "user";
+  const emailLocalPart = String(email || "").trim().split("@")[0] || "";
+  const baseCandidates = [
+    sanitizeUsernameCandidate(displayName),
+    sanitizeUsernameCandidate(emailLocalPart),
+  ].filter(Boolean);
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+
+  const pushCandidate = (candidate: string) => {
+    const next = String(candidate || "").trim().toLowerCase();
+    if (!next || seen.has(next)) return;
+    seen.add(next);
+    candidates.push(next);
+  };
+
+  for (const base of baseCandidates) {
+    pushCandidate(base);
+    if (base.length >= 3) {
+      pushCandidate(`${base.slice(0, Math.max(0, 20 - uidSuffix.length - 1))}_${uidSuffix}`);
+    }
+  }
+
+  pushCandidate(`user_${uidSuffix}`);
+  return candidates.filter((candidate) => !validateUsername(candidate));
+}
+
+async function claimMissingUsername(uid: string): Promise<void> {
+  if (typeof window === "undefined" || !uid) return;
+  const auth = getFirebaseAuthClient();
+  const currentUser = auth?.currentUser || null;
+  if (!currentUser || String(currentUser.uid || "").trim() !== uid) return;
+
+  const displayName = String(currentUser.displayName || "").trim();
+  const email = String(currentUser.email || "").trim().toLowerCase();
+  const candidates = buildUsernameClaimCandidates(uid, displayName, email);
+  if (!candidates.length) return;
+
+  for (const username of candidates) {
+    try {
+      await claimUsernameClient(username);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || "");
+      if (
+        message === "That username is already taken."
+        || message === "Username is required."
+        || message === "Username must be 3 to 20 characters and use only letters, numbers, or underscores."
+        || message === "That username is reserved. Please choose another."
+      ) {
+        continue;
+      }
+      return;
+    }
+  }
 }
 
 async function upsertUserEmailLookup(uid: string): Promise<void> {
@@ -360,6 +431,16 @@ export async function ensureUserProfileIndex(uid: string): Promise<void> {
     await upsertUserRoot(uid);
   } catch {
     // Keep email lookup available even if root profile shape is currently rejected by rules.
+  }
+  try {
+    const root = usersDoc(uid);
+    if (!root) return;
+    const snap = await getDoc(root);
+    const usernameKey = snap.exists() ? String(snap.get("usernameKey") || "").trim() : "";
+    if (usernameKey) return;
+    await claimMissingUsername(uid);
+  } catch {
+    // Username bootstrap is best-effort and should not block sign-in/profile indexing.
   }
 }
 

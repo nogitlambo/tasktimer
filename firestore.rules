@@ -13,6 +13,8 @@ service cloud.firestore {
       return onlyKeys([
         "email",
         "displayName",
+        "username",
+        "usernameKey",
         "avatarId",
         "avatarCustomSrc",
         "googlePhotoUrl",
@@ -25,6 +27,8 @@ service cloud.firestore {
       ])
       && (!("email" in request.resource.data) || request.resource.data.email is string)
       && (!("displayName" in request.resource.data) || request.resource.data.displayName == null || request.resource.data.displayName is string)
+      && (!("username" in request.resource.data) || request.resource.data.username == null || request.resource.data.username is string)
+      && (!("usernameKey" in request.resource.data) || request.resource.data.usernameKey == null || request.resource.data.usernameKey is string)
       && (!("avatarId" in request.resource.data) || request.resource.data.avatarId is string)
       && (!("avatarCustomSrc" in request.resource.data) || request.resource.data.avatarCustomSrc == null || request.resource.data.avatarCustomSrc is string)
       && (!("googlePhotoUrl" in request.resource.data) || request.resource.data.googlePhotoUrl == null || request.resource.data.googlePhotoUrl is string)
@@ -480,6 +484,19 @@ service cloud.firestore {
         || request.resource.data.updatedAt != null);
     }
 
+    function isUsernameReservationDoc(usernameKey) {
+      return onlyKeys([
+        "uid",
+        "username",
+        "usernameKey"
+      ])
+      && request.resource.data.uid is string
+      && request.resource.data.username is string
+      && request.resource.data.usernameKey is string
+      && request.resource.data.usernameKey == usernameKey
+      && request.resource.data.username == usernameKey;
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
@@ -589,6 +606,16 @@ service cloud.firestore {
         && isUserEmailLookupDoc()
         && request.resource.data.uid == request.auth.uid
         ;
+      allow delete: if request.auth != null
+        && resource.data.uid is string
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /usernames/{usernameKey} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && isUsernameReservationDoc(usernameKey)
+        && request.resource.data.uid == request.auth.uid;
       allow delete: if request.auth != null
         && resource.data.uid is string
         && resource.data.uid == request.auth.uid;

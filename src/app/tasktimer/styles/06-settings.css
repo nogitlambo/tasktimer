@@ -1578,6 +1578,12 @@ body[data-theme="purple"] .focusInsightsTitle{
   color: rgba(245,218,255,.96) !important;
   text-shadow: 0 0 8px rgba(212,71,210,.42);
 }
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsInlineSectionIcon{
+  filter:
+    brightness(0) saturate(100%)
+    invert(67%) sepia(31%) saturate(1660%) hue-rotate(274deg) brightness(101%) contrast(96%)
+    drop-shadow(0 0 7px rgba(212,71,210,.38));
+}
 body[data-theme="purple"] label,
 body[data-theme="purple"] .dashboardKicker,
 body[data-theme="purple"] .modeSwitchesLabel,
@@ -1718,6 +1724,16 @@ body[data-theme="purple"] .historyMeta{
   height:100%;
   background:linear-gradient(90deg, rgba(53,232,255,.9), rgba(0,207,200,.88));
   box-shadow:0 0 10px rgba(53,232,255,.26);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
+  border-color: rgba(214,96,229,.34);
+  background: rgba(26,12,38,.72);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeFill,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill{
+  background: linear-gradient(90deg, #d447d2, #f06ee0);
+  box-shadow: 0 0 10px rgba(212,71,210,.28);
 }
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle,
 #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle{

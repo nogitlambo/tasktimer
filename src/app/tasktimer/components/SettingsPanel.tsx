@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
-import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { normalizeUsername, validateUsername } from "@/lib/username";
 import { clearScopedStorageState, STORAGE_KEY, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
 import {
   deleteUser,
@@ -13,7 +14,6 @@ import {
   reauthenticateWithRedirect,
   signOut,
   type User,
-  updateProfile,
 } from "firebase/auth";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
@@ -26,6 +26,7 @@ import {
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
+import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import RankThumbnail from "./RankThumbnail";
 
 type SettingsPaneKey =
@@ -307,10 +308,10 @@ export default function SettingsPanel() {
   }, []);
 
   useEffect(() => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) return;
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setAuthUserEmail(user?.email || null);
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
       const nextAlias = (user?.displayName || "").trim();
       setAuthUserAlias(nextAlias);
@@ -341,10 +342,37 @@ export default function SettingsPanel() {
         setSyncState("idle");
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
-      }
+      }
     });
     return () => unsub();
   }, [saveUserDocPatch]);
+
+  useEffect(() => {
+    if (!authUserUid) {
+      setAuthUserAlias("");
+      setAuthUserAliasDraft("");
+      return;
+    }
+    let cancelled = false;
+    const loadClaimedUsername = async () => {
+      const ref = userDocRef(authUserUid);
+      if (!ref) return;
+      try {
+        const snap = await getDoc(ref);
+        if (!snap.exists() || cancelled) return;
+        const claimedUsername = String(snap.get("username") || "").trim();
+        if (!claimedUsername) return;
+        setAuthUserAlias(claimedUsername);
+        setAuthUserAliasDraft((prev) => (authUserAliasEditing ? prev : claimedUsername));
+      } catch {
+        // Keep the auth/display-name fallback when the claimed username cannot be loaded.
+      }
+    };
+    void loadClaimedUsername();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid, authUserAliasEditing, userDocRef]);
 
   useEffect(() => {
     if (feedbackAnonymous) return;
@@ -609,7 +637,7 @@ export default function SettingsPanel() {
         } catch {
           // ignore
         }
-        window.location.assign("/?signedOut=1");
+        window.location.assign("/signed-out?signedOut=1");
       }
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not sign out."));
@@ -743,7 +771,14 @@ export default function SettingsPanel() {
       setAuthStatus("");
       return;
     }
-    if (nextAlias === authUserAlias) {
+    const validationError = validateUsername(nextAlias);
+    if (validationError) {
+      setAuthError(validationError);
+      setAuthStatus("");
+      return;
+    }
+    const normalizedNextAlias = normalizeUsername(nextAlias);
+    if (normalizedNextAlias === authUserAlias) {
       setAuthUserAliasEditing(false);
       setAuthError("");
       setAuthStatus("");
@@ -753,14 +788,11 @@ export default function SettingsPanel() {
     setAuthError("");
     setAuthStatus("");
     try {
-      await updateProfile(user, { displayName: nextAlias });
-      await saveUserDocPatch(uid, {
-        email: user.email || "",
-        displayName: nextAlias,
-      });
-      await syncOwnFriendshipProfile(uid, { alias: nextAlias });
-      setAuthUserAlias(nextAlias);
-      setAuthUserAliasDraft(nextAlias);
+      const result = await claimUsernameClient(nextAlias);
+      const claimedUsername = String(result.usernameKey || normalizedNextAlias).trim();
+      await syncOwnFriendshipProfile(uid, { alias: claimedUsername });
+      setAuthUserAlias(claimedUsername);
+      setAuthUserAliasDraft(claimedUsername);
       setAuthUserAliasEditing(false);
       setAuthStatus("Username updated.");
       setSyncState("synced");
