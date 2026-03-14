@@ -71,6 +71,9 @@ Shared Firebase behavior lives in:
 - [`src/lib/firebaseClient.ts`](/s:/Apps/repo/tasktimer-app/src/lib/firebaseClient.ts)
 - [`src/lib/firebaseFirestoreClient.ts`](/s:/Apps/repo/tasktimer-app/src/lib/firebaseFirestoreClient.ts)
 
+Firestore database selection is fixed to the named database `timebase`.
+The app does not target the default Firestore database.
+
 `firebaseClient.ts` is responsible for:
 
 - building Firebase config from environment variables

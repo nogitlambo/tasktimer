@@ -1,9 +1,10 @@
 import { getFirestore, type Firestore } from "firebase/firestore";
 
+import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
 import { getFirebaseAppClient, hasFirebaseAuthClientConfig } from "./firebaseClient";
 
 let firestoreClient: Firestore | null | undefined;
-const firestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
+const configuredFirestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
 
 function describeError(error: unknown): Record<string, unknown> {
   if (!error) return { value: error };
@@ -37,25 +38,28 @@ export function getFirebaseFirestoreClient(): Firestore | null {
     firestoreClient = null;
     return firestoreClient;
   }
-  if (!firestoreDatabaseId) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[firebase-firestore] Missing NEXT_PUBLIC_FIREBASE_DATABASE_ID");
-    }
-    firestoreClient = null;
-    return firestoreClient;
+  if (
+    configuredFirestoreDatabaseId &&
+    configuredFirestoreDatabaseId !== FIREBASE_DATABASE_ID &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    console.warn("[firebase-firestore] Ignoring mismatched NEXT_PUBLIC_FIREBASE_DATABASE_ID", {
+      configuredDatabaseId: configuredFirestoreDatabaseId,
+      expectedDatabaseId: FIREBASE_DATABASE_ID,
+    });
   }
   try {
     const app = getFirebaseAppClient();
-    firestoreClient = app ? getFirestore(app, firestoreDatabaseId) : null;
+    firestoreClient = app ? getFirestore(app, FIREBASE_DATABASE_ID) : null;
     if (process.env.NODE_ENV !== "production") {
       console.info("[firebase-firestore] Firestore client initialized", {
-        databaseId: firestoreDatabaseId,
+        databaseId: FIREBASE_DATABASE_ID,
       });
     }
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[firebase-firestore] Failed to initialize Firestore client", {
-        databaseId: firestoreDatabaseId,
+        databaseId: FIREBASE_DATABASE_ID,
         error: describeError(error),
       });
     }

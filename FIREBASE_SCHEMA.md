@@ -21,6 +21,9 @@ Primary sources:
 
 Configured database ID (`firebase.json`): `timebase`
 
+This repository always uses the named Firestore database `timebase`.
+It does not use the default Firestore database.
+
 ### Top-level collections
 
 1. `users`
