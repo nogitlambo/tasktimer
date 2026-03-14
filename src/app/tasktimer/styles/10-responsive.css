@@ -99,7 +99,7 @@
     --mobile-footer-offset: 10px;
     --mobile-footer-height: 72px;
     --mobile-footer-reserved-space: calc(
-      var(--mobile-footer-height) + var(--mobile-footer-offset) + env(safe-area-inset-bottom)
+      var(--mobile-footer-height) + env(safe-area-inset-bottom)
     );
   }
   .appPages{
@@ -1528,7 +1528,7 @@
     left: var(--mobile-footer-offset) !important;
     right: var(--mobile-footer-offset) !important;
     top: auto !important;
-    bottom: calc(var(--mobile-footer-offset) + env(safe-area-inset-bottom)) !important;
+    bottom: 0 !important;
     width: auto !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 8px !important;

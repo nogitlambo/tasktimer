@@ -14,7 +14,8 @@
     "android:sync": "npm run build:android && npx cap sync android",
     "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && copy /Y app\\build\\outputs\\apk\\debug\\app-debug.apk \"G:\\My Drive\\Apps\\app-debug.apk\"",
     "agents:update": "node scripts/update_agents_context.mjs",
-    "agents:check": "node scripts/update_agents_context.mjs --check"
+    "agents:check": "node scripts/update_agents_context.mjs --check",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.1.0",
@@ -36,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }
