@@ -1398,26 +1398,26 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
 }
-body[data-theme="dark"] .settingsSectionLabel,
-body[data-theme="dark"] .historyMeta,
-body[data-theme="dark"] .settingsDetailNote{
+body[data-theme="purple"] .settingsSectionLabel,
+body[data-theme="purple"] .historyMeta,
+body[data-theme="purple"] .settingsDetailNote{
   color:rgba(226,210,252,.82);
 }
-/* Dark-theme parity pass: replace remaining blue/cyan accents with purple language. */
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
+/* Purple-theme parity pass: replace remaining blue/cyan accents with purple language. */
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAuthOptionBtn,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-color: rgba(214,96,229,.52) !important;
   box-shadow: 0 0 0 1px rgba(233,134,245,.22) inset, 0 0 12px rgba(198,73,216,.2) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(233,134,245,.66) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.26) !important;
 }
@@ -1434,9 +1434,9 @@ body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .se
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol{
   align-self: stretch;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountMeta{
   border-color: rgba(214,96,229,.42);
   background: rgba(39,18,50,.28);
   box-shadow: inset 0 0 0 1px rgba(233,134,245,.14), 0 0 14px rgba(198,73,216,.12);
@@ -1519,70 +1519,70 @@ body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .se
   box-shadow:inset 0 0 0 1px rgba(53,232,255,.12), 0 0 14px rgba(0,220,255,.08);
   clip-path:polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol{
   border-color: transparent;
   background: transparent;
   box-shadow: none;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountUidLabel{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountUidLabel{
   color: rgba(241, 198, 247, .74);
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
   border-color: transparent !important;
   box-shadow: none !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   border-color: transparent !important;
   background: linear-gradient(180deg, rgba(217,85,231,.16), rgba(255,255,255,.06)) !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.05) !important;
 }
 /* Final Purple-theme enforcement pass: keep all major controls on purple accents. */
-body[data-theme="dark"] .menu,
-body[data-theme="dark"] .modal,
-body[data-theme="dark"] .taskMenuList,
-body[data-theme="dark"] .taskMenuItem,
-body[data-theme="dark"] .menuItem,
-body[data-theme="dark"] .settingsNavTile,
-body[data-theme="dark"] .dashboardPanelMenuList,
-body[data-theme="dark"] .dashboardPanelMenuItem,
-body[data-theme="dark"] .dashboardSizeMenu,
-body[data-theme="dark"] .dashboardSizeOption,
-body[data-theme="dark"] .dashboardAvgRangeMenuList,
-body[data-theme="dark"] .dashboardAvgRangeMenuItem{
+body[data-theme="purple"] .menu,
+body[data-theme="purple"] .modal,
+body[data-theme="purple"] .taskMenuList,
+body[data-theme="purple"] .taskMenuItem,
+body[data-theme="purple"] .menuItem,
+body[data-theme="purple"] .settingsNavTile,
+body[data-theme="purple"] .dashboardPanelMenuList,
+body[data-theme="purple"] .dashboardPanelMenuItem,
+body[data-theme="purple"] .dashboardSizeMenu,
+body[data-theme="purple"] .dashboardSizeOption,
+body[data-theme="purple"] .dashboardAvgRangeMenuList,
+body[data-theme="purple"] .dashboardAvgRangeMenuItem{
   border-color: rgba(214,96,229,.42) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
-body[data-theme="dark"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
   border-color: transparent !important;
 }
-body[data-theme="dark"] .menuItem:hover,
-body[data-theme="dark"] .taskMenuItem:hover,
-body[data-theme="dark"] .settingsNavTile:hover,
-body[data-theme="dark"] .dashboardPanelMenuItem:hover,
-body[data-theme="dark"] .dashboardSizeOption:hover,
-body[data-theme="dark"] .dashboardAvgRangeMenuItem:hover{
+body[data-theme="purple"] .menuItem:hover,
+body[data-theme="purple"] .taskMenuItem:hover,
+body[data-theme="purple"] .settingsNavTile:hover,
+body[data-theme="purple"] .dashboardPanelMenuItem:hover,
+body[data-theme="purple"] .dashboardSizeOption:hover,
+body[data-theme="purple"] .dashboardAvgRangeMenuItem:hover{
   border-color: rgba(233,134,245,.62) !important;
   background: rgba(217,85,231,.16) !important;
 }
-body[data-theme="dark"] .dashboardTitle,
-body[data-theme="dark"] .historyTitle,
-body[data-theme="dark"] .hmTitle,
-body[data-theme="dark"] .menuTitle,
-body[data-theme="dark"] .dashboardCardTitle,
-body[data-theme="dark"] .settingsDetailTitle,
-body[data-theme="dark"] .settingsInlineSectionTitle,
-body[data-theme="dark"] .settingsSectionLabel,
-body[data-theme="dark"] .checkpointAlertsTitle,
-body[data-theme="dark"] .focusInsightsTitle{
+body[data-theme="purple"] .dashboardTitle,
+body[data-theme="purple"] .historyTitle,
+body[data-theme="purple"] .hmTitle,
+body[data-theme="purple"] .menuTitle,
+body[data-theme="purple"] .dashboardCardTitle,
+body[data-theme="purple"] .settingsDetailTitle,
+body[data-theme="purple"] .settingsInlineSectionTitle,
+body[data-theme="purple"] .settingsSectionLabel,
+body[data-theme="purple"] .checkpointAlertsTitle,
+body[data-theme="purple"] .focusInsightsTitle{
   color: rgba(245,218,255,.96) !important;
   text-shadow: 0 0 8px rgba(212,71,210,.42);
 }
-body[data-theme="dark"] label,
-body[data-theme="dark"] .dashboardKicker,
-body[data-theme="dark"] .modeSwitchesLabel,
-body[data-theme="dark"] .settingsDetailNote,
-body[data-theme="dark"] .historyMeta{
+body[data-theme="purple"] label,
+body[data-theme="purple"] .dashboardKicker,
+body[data-theme="purple"] .modeSwitchesLabel,
+body[data-theme="purple"] .settingsDetailNote,
+body[data-theme="purple"] .historyMeta{
   color: rgba(229,196,245,.86) !important;
 }
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,

@@ -631,24 +631,24 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgR
   background: linear-gradient(180deg, rgba(53,232,255,.2), rgba(255,255,255,.06)) !important;
   box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
 }
-body[data-theme="dark"] .name,
-body[data-theme="dark"] .time,
-body[data-theme="dark"] .dashboardTitle,
-body[data-theme="dark"] .menuTitle{
+body[data-theme="purple"] .name,
+body[data-theme="purple"] .time,
+body[data-theme="purple"] .dashboardTitle,
+body[data-theme="purple"] .menuTitle{
   color:#f7f1ff;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
   border-color: rgba(214,96,229,.42) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
   border-color: rgba(214,96,229,.3) !important;
   color: rgba(245,235,255,.92) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
   border-color: rgba(233,134,245,.54) !important;
   background: rgba(217,85,231,.16) !important;
 }
-body[data-theme="dark"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
   border-color: rgba(233,134,245,.74) !important;
   background: linear-gradient(180deg, rgba(217,85,231,.28), rgba(255,255,255,.07)) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;

@@ -61,9 +61,10 @@ function readTaskView(): "list" | "tile" {
 }
 
 function readThemeMode(): TaskTimerThemeMode {
-  const cloudTheme = String(loadCachedPreferences()?.theme || readStringLocalStorage(storageKeys.THEME_KEY) || "dark");
-  if (cloudTheme === "light" || cloudTheme === "command") return cloudTheme;
-  return "dark";
+  const cloudTheme = String(loadCachedPreferences()?.theme || readStringLocalStorage(storageKeys.THEME_KEY) || "purple")
+    .trim()
+    .toLowerCase();
+  return cloudTheme === "cyan" || cloudTheme === "command" ? "cyan" : "purple";
 }
 
 function readDynamicColorsEnabled(): boolean {

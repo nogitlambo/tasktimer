@@ -40,7 +40,7 @@
 - `${STORAGE_KEY}`: primary task storage key (via `lib/storage.ts`).
 - `${STORAGE_KEY}:modeSettings`: mode labels/enabled states/colors.
 - `${STORAGE_KEY}:modeLabels`: legacy mode label fallback.
-- `${STORAGE_KEY}:theme`: `light`/`dark`.
+- `${STORAGE_KEY}:theme`: `purple`/`cyan` (legacy values may still be normalized on read).
 - `${STORAGE_KEY}:customTaskNames`: recent custom Add Task names.
 - `${STORAGE_KEY}:pinnedHistoryTaskIds`: pinned inline task history charts.
 
@@ -60,7 +60,7 @@
 ## Styling guardrails
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`; avoid unintended edits to `src/app/tasktimer/styles/tasktimer.css`.
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
-- Ensure light-mode overrides are included when introducing new dark-theme visual elements.
+- Ensure purple/cyan theme parity when introducing new visual elements.
 - User Guide must not inherit shared `.menu` width caps; keep route-scoped full-width overrides under `#app[aria-label="TaskTimer User Guide"]`.
 - User Guide right detail/topic content should use full available panel width.
 - User Guide topic list buttons should match Settings module list style (flat treatment; no extra shading unless explicitly requested).
@@ -70,12 +70,12 @@
   - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
   - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
   - Use existing button design system classes (`btn`, `btn-accent`, `btn-ghost`, `iconBtn`) and existing interaction patterns.
-  - Keep visual parity between dark and light theme overrides for any new UI surface.
+  - Keep visual parity between purple and cyan theme overrides for any new UI surface.
   - Any newly created modal must use the same visual style and interaction pattern as the Edit Task modal by default.
 
 ## Modal Contract (Required)
 - Canonical pattern: new modals must match the structure and class usage used by `src/app/tasktimer/components/ConfirmOverlay.tsx` and existing edit-style overlays.
-- Visual reference: match the Add Task modal style (dark glass panel, subtle border, compact heading/subheading, outlined secondary action, cyan primary action).
+- Visual reference: match the Add Task modal style (glass panel, subtle border, compact heading/subheading, outlined secondary action, cyan primary action).
 - Required structure:
   - Overlay container: `<div className="overlay" id="...Overlay">`
   - Modal container: `<div className="modal" role="dialog" aria-modal="true" aria-label="...">`
@@ -88,14 +88,14 @@
 - Required styling behavior:
   - Do not introduce new font stacks in modal code.
   - Do not introduce standalone modal color palettes; use existing tokens/colors from `tasktimer.css`.
-  - Light theme parity is mandatory for any new modal-specific class added to `tasktimer.css`.
+  - Purple/cyan theme parity is mandatory for any new modal-specific class added to `tasktimer.css`.
   - Avoid inline styles except transient visibility/state toggles (for example `display: none`).
 - Required interaction behavior:
   - Preserve existing close/cancel behavior patterns used by current overlays.
   - Preserve ID/data-attribute hooks consumed by `tasktimerClient.ts` delegated handlers.
 - Compliance checklist for any PR that adds/modifies a modal:
   - Modal uses required overlay/modal/button classes above.
-  - Modal is visually consistent in both dark and light themes.
+  - Modal is visually consistent in both purple and cyan themes.
   - No custom font stack or one-off modal palette introduced.
   - No delegated event hook regressions (`id`, `data-action`, `data-menu`, `data-history-action`, `data-move-mode` as applicable).
 
@@ -121,7 +121,7 @@
   - Page/route navigation regressions between `/tasktimer`, `/tasktimer/settings`, `/tasktimer/history-manager`, `/tasktimer/user-guide`.
   - History Manager behavior regressions: bulk selection propagation (task -> date -> rows), sortable columns, and delete summary accuracy.
   - Pinned history behavior: pinned chart reopens on Tasks page and persists via `${STORAGE_KEY}:pinnedHistoryTaskIds`.
-  - Theme parity regressions: new/changed controls readable and consistent in both dark and light modes.
+  - Theme parity regressions: new/changed controls readable and consistent in both purple and cyan themes.
   - Encoding issues (unexpected replacement characters or mojibake).
   - Lint status via `npm run lint` (warnings are currently present but non-blocking).
 

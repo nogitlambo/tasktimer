@@ -69,7 +69,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     suppressAddTaskNameFocusOpen: false,
     confirmAction: null,
     confirmActionAlt: null,
-    themeMode: "dark",
+    themeMode: "purple",
     menuButtonStyle: "square",
     addTaskCustomNames: [],
     defaultTaskTimerFormat: "hour",

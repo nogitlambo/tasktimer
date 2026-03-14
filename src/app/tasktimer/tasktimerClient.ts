@@ -3573,7 +3573,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                 : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
             }
             ${
-              themeMode === "command"
+              themeMode === "cyan"
                 ? `<button class="iconBtn" data-action="reset" title="${
                     t.running ? "Stop task to reset" : "Reset"
                   }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
@@ -6064,7 +6064,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (map[which]) openOverlay(map[which]);
   }
 
-  function applyTheme(mode: "light" | "dark" | "command") {
+  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" {
+    const value = String(raw || "").trim().toLowerCase();
+    return value === "cyan" || value === "command" ? "cyan" : "purple";
+  }
+
+  function applyTheme(mode: "purple" | "cyan") {
     themeMode = mode;
     const body = document.body;
     body.setAttribute("data-theme", mode);
@@ -6099,8 +6104,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
     const raw = cloudRaw || localRaw;
-    const mode: "light" | "dark" | "command" =
-      raw === "light" ? "light" : raw === "command" ? "command" : "dark";
+    const mode = normalizeThemeMode(raw);
     applyTheme(mode);
     try {
       localStorage.setItem(THEME_KEY, mode);
@@ -6797,7 +6801,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.addTaskNamePresetTitle) (els.addTaskNamePresetTitle as HTMLElement).style.display = presets.length ? "block" : "none";
   }
 
-  function setThemeMode(next: "light" | "dark" | "command") {
+  function setThemeMode(next: "purple" | "cyan") {
     applyTheme(next);
     persistPreferencesToCloud();
   }
@@ -9559,7 +9563,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.themeSelect, "change", () => {
       const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
-      const next: "light" | "dark" | "command" = raw === "command" ? "command" : "dark";
+      const next = normalizeThemeMode(raw);
       setThemeMode(next);
     });
     on(els.menuButtonStyleSelect, "change", () => {
@@ -9576,7 +9580,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       persistInlineTaskSettingsImmediate();
     });
     on(els.appearanceLoadDefaultsBtn, "click", () => {
-      setThemeMode("dark");
+      setThemeMode("purple");
       setMenuButtonStyle("square");
     });
     on(els.taskDefaultFormatDay, "click", () => {

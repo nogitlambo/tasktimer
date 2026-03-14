@@ -231,7 +231,7 @@ TaskTimer styling is imported through [`src/app/tasktimer/tasktimer.css`](/s:/Ap
 
 Important characteristics of the styling system:
 
-- CSS is layered across multiple imported files such as base, shell, tasks, dashboard, overlays, settings, responsive, and light-theme files.
+- CSS is layered across multiple imported files such as base, shell, tasks, dashboard, overlays, settings, responsive, and legacy light-theme files; active theme selectors now target `purple` and `cyan`.
 - Many route/media-specific overrides are repeated later in the cascade.
 - Final authoritative behavior often depends on the last applicable route-scoped block, especially in `10-responsive.css`.
 

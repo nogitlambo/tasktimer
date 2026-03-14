@@ -1356,10 +1356,10 @@ export default function SettingsPanel() {
                 </div>
                 <div className="field" id="themeToggleRow">
                   <label htmlFor="themeSelect">Theme</label>
-                  <select id="themeSelect" defaultValue="dark" aria-label="Theme mode">
-                    <option value="dark">Purple (default)</option>
-                    <option value="command">Cyan</option>
-                  </select>
+                  <select id="themeSelect" defaultValue="purple" aria-label="Theme mode">
+                    <option value="purple">Purple (default)</option>
+                    <option value="cyan">Cyan</option>
+                  </select>
                 </div>
                 <div className="field" id="menuButtonStyleRow">
                   <label htmlFor="menuButtonStyleSelect">Menu and button style</label>

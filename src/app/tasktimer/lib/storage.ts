@@ -703,7 +703,7 @@ export function subscribeCachedPreferences(
 export function buildDefaultCloudPreferences() {
   return {
     schemaVersion: 1 as const,
-    theme: "dark" as const,
+    theme: "purple" as const,
     menuButtonStyle: "square" as const,
     defaultTaskTimerFormat: "hour" as const,
     taskView: "list" as const,

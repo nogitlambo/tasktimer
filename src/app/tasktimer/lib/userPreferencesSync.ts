@@ -6,7 +6,7 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
 type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "light" | "dark" | "command";
+  theme: "purple" | "cyan";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   taskView: "list" | "tile";
@@ -64,9 +64,10 @@ function parseBooleanLike(raw: string | null | undefined, fallback: boolean) {
   return fallback;
 }
 
-function parseTheme(raw: string | null | undefined): "light" | "dark" | "command" {
-  if (raw === "light" || raw === "command") return raw;
-  return "dark";
+function parseTheme(raw: string | null | undefined): "purple" | "cyan" {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "cyan" || value === "command") return "cyan";
+  return "purple";
 }
 
 function parseTimerFormat(raw: string | null | undefined): "day" | "hour" | "minute" {

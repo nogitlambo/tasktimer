@@ -14,6 +14,8 @@ service cloud.firestore {
         "email",
         "displayName",
         "avatarId",
+        "avatarCustomSrc",
+        "googlePhotoUrl",
         "rankThumbnailSrc",
         "rewardCurrentRankId",
         "rewardTotalXp",
@@ -24,6 +26,8 @@ service cloud.firestore {
       && (!("email" in request.resource.data) || request.resource.data.email is string)
       && (!("displayName" in request.resource.data) || request.resource.data.displayName == null || request.resource.data.displayName is string)
       && (!("avatarId" in request.resource.data) || request.resource.data.avatarId is string)
+      && (!("avatarCustomSrc" in request.resource.data) || request.resource.data.avatarCustomSrc == null || request.resource.data.avatarCustomSrc is string)
+      && (!("googlePhotoUrl" in request.resource.data) || request.resource.data.googlePhotoUrl == null || request.resource.data.googlePhotoUrl is string)
       && (!("rankThumbnailSrc" in request.resource.data) || request.resource.data.rankThumbnailSrc == null || request.resource.data.rankThumbnailSrc is string)
       && (!("rewardCurrentRankId" in request.resource.data) || request.resource.data.rewardCurrentRankId == null || request.resource.data.rewardCurrentRankId is string)
       && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
@@ -34,10 +38,11 @@ service cloud.firestore {
 
     function isFriendshipProfileValue(value) {
       return value is map
-      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "rankThumbnailSrc", "currentRankId"])
+      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "googlePhotoUrl", "rankThumbnailSrc", "currentRankId"])
       && (!("alias" in value) || value.alias == null || value.alias is string)
       && (!("avatarId" in value) || value.avatarId == null || value.avatarId is string)
       && (!("avatarCustomSrc" in value) || value.avatarCustomSrc == null || value.avatarCustomSrc is string)
+      && (!("googlePhotoUrl" in value) || value.googlePhotoUrl == null || value.googlePhotoUrl is string)
       && (!("rankThumbnailSrc" in value) || value.rankThumbnailSrc == null || value.rankThumbnailSrc is string)
       && (!("currentRankId" in value) || value.currentRankId == null || value.currentRankId is string);
     }
@@ -59,7 +64,7 @@ service cloud.firestore {
         "updatedAt"
       ])
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
-      && (!("theme" in request.resource.data) || request.resource.data.theme in ["light", "dark", "command"])
+      && (!("theme" in request.resource.data) || request.resource.data.theme in ["purple", "cyan"])
       && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["parallelogram", "square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
@@ -301,6 +306,27 @@ service cloud.firestore {
       && request.resource.data.respondedAt == null;
     }
 
+    function isFriendRequestSenderCancelUpdate() {
+      return isFriendRequestDocShape()
+      && request.auth != null
+      && request.auth.uid == resource.data.senderUid
+      && resource.data.status == "pending"
+      && request.resource.data.status == "declined"
+      && request.resource.data.requestId == resource.data.requestId
+      && request.resource.data.senderUid == resource.data.senderUid
+      && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.respondedBy == request.auth.uid
+      && request.resource.data.respondedAt is timestamp;
+    }
+
+    function canDeletePendingFriendRequest() {
+      return request.auth != null
+      && resource != null
+      && request.auth.uid == resource.data.senderUid
+      && resource.data.status == "pending";
+    }
+
     function isFriendshipDocCreate() {
       return onlyKeys([
         "pairId",
@@ -435,6 +461,25 @@ service cloud.firestore {
       && friendshipExists(request.resource.data.ownerUid, request.resource.data.friendUid);
     }
 
+    function isUserEmailLookupDoc() {
+      return onlyKeys([
+        "uid",
+        "email",
+        "displayName",
+        "createdAt",
+        "updatedAt"
+      ])
+      && request.resource.data.uid is string
+      && request.resource.data.email is string
+      && (!("displayName" in request.resource.data)
+        || request.resource.data.displayName == null
+        || request.resource.data.displayName is string)
+      && (!("createdAt" in request.resource.data)
+        || request.resource.data.createdAt != null)
+      && (!("updatedAt" in request.resource.data)
+        || request.resource.data.updatedAt != null);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
@@ -498,8 +543,8 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.senderUid
         && requestId == request.resource.data.requestId
         && isFriendRequestCreateDoc();
-      allow update: if isFriendRequestDecisionUpdate() || isFriendRequestRetryUpdate();
-      allow delete: if false;
+      allow update: if isFriendRequestDecisionUpdate() || isFriendRequestRetryUpdate() || isFriendRequestSenderCancelUpdate();
+      allow delete: if canDeletePendingFriendRequest();
     }
 
     match /friendships/{pairId} {
@@ -541,16 +586,9 @@ service cloud.firestore {
     match /userEmailLookup/{emailKey} {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
-        && request.resource.data.uid is string
+        && isUserEmailLookupDoc()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email is string
-        && (!("displayName" in request.resource.data)
-          || request.resource.data.displayName == null
-          || request.resource.data.displayName is string)
-        && (!("createdAt" in request.resource.data)
-          || request.resource.data.createdAt != null)
-        && (!("updatedAt" in request.resource.data)
-          || request.resource.data.updatedAt != null);
+        ;
       allow delete: if request.auth != null
         && resource.data.uid is string
         && resource.data.uid == request.auth.uid;

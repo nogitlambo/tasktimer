@@ -489,34 +489,34 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest
   gap: 8px;
   flex-wrap: nowrap !important;
 }
-body[data-theme="dark"] #elapsedPadOverlay .elapsedPadDisplay,
-body[data-theme="dark"] #shareTaskModal select,
-body[data-theme="dark"] #shareTaskModal input[type="text"],
-body[data-theme="dark"] #shareTaskModal input[type="number"],
-body[data-theme="dark"] #shareTaskModal input[type="email"],
-body[data-theme="dark"] #shareTaskModal .shareTaskFriendOption{
+body[data-theme="purple"] #elapsedPadOverlay .elapsedPadDisplay,
+body[data-theme="purple"] #shareTaskModal select,
+body[data-theme="purple"] #shareTaskModal input[type="text"],
+body[data-theme="purple"] #shareTaskModal input[type="number"],
+body[data-theme="purple"] #shareTaskModal input[type="email"],
+body[data-theme="purple"] #shareTaskModal .shareTaskFriendOption{
   border-color: rgba(214,96,229,.42) !important;
 }
-body[data-theme="dark"] #shareTaskModal select:focus,
-body[data-theme="dark"] #shareTaskModal input[type="text"]:focus,
-body[data-theme="dark"] #shareTaskModal input[type="number"]:focus,
-body[data-theme="dark"] #shareTaskModal input[type="email"]:focus{
+body[data-theme="purple"] #shareTaskModal select:focus,
+body[data-theme="purple"] #shareTaskModal input[type="text"]:focus,
+body[data-theme="purple"] #shareTaskModal input[type="number"]:focus,
+body[data-theme="purple"] #shareTaskModal input[type="email"]:focus{
   border-color: rgba(233,134,245,.68) !important;
   outline: 1px solid rgba(255,164,250,.3) !important;
 }
-body[data-theme="dark"] .friendRequestAvatar{
+body[data-theme="purple"] .friendRequestAvatar{
   border-color: rgba(214,96,229,.42) !important;
 }
-body[data-theme="dark"] .friendIdentityUid,
-body[data-theme="dark"] .friendRequestUid,
-body[data-theme="dark"] .friendSharedTasksCountText{
+body[data-theme="purple"] .friendIdentityUid,
+body[data-theme="purple"] .friendRequestUid,
+body[data-theme="purple"] .friendSharedTasksCountText{
   color: rgba(230,208,250,.84) !important;
 }
-body[data-theme="dark"] .friendSharedTaskCard{
+body[data-theme="purple"] .friendSharedTaskCard{
   border-color: rgba(214,96,229,.4) !important;
   background: rgba(22,12,34,.7) !important;
 }
-body[data-theme="dark"] .friendSharedTaskCard.friendSharedTaskCardState-running{
+body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   border-color: rgba(233,134,245,.62) !important;
 }
 #app[aria-label="TaskLaunch App"] #appPageDashboard.appPageOn,

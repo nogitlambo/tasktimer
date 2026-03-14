@@ -18,7 +18,7 @@ import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "light" | "dark" | "command";
+  theme: "purple" | "cyan";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   taskView: "list" | "tile";
@@ -194,6 +194,12 @@ function asBool(v: unknown, fallback: boolean) {
 
 function asString(v: unknown, fallback = "") {
   return typeof v === "string" ? v : fallback;
+}
+
+function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "cyan" || value === "command") return "cyan";
+  return "purple";
 }
 
 function asTaskUi(input: unknown): TaskUiConfig | null {
@@ -409,12 +415,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const preferences: UserPreferencesV1 | null = prefSnap.exists()
     ? {
         schemaVersion: 1,
-        theme:
-          prefSnap.get("theme") === "light"
-            ? "light"
-            : prefSnap.get("theme") === "command"
-              ? "command"
-              : "dark",
+        theme: normalizeThemeMode(prefSnap.get("theme")),
         menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
         defaultTaskTimerFormat:
           prefSnap.get("defaultTaskTimerFormat") === "day" || prefSnap.get("defaultTaskTimerFormat") === "minute"
@@ -654,7 +655,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   const data = snap.data();
   return {
     schemaVersion: 1,
-    theme: data.theme === "light" ? "light" : data.theme === "command" ? "command" : "dark",
+    theme: normalizeThemeMode(data.theme),
     menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
     defaultTaskTimerFormat:
       data.defaultTaskTimerFormat === "day" || data.defaultTaskTimerFormat === "minute"

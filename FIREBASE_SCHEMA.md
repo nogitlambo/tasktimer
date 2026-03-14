@@ -1,6 +1,6 @@
 # TaskTimer Firebase Schema
 
-Last verified: 2026-03-03
+Last verified: 2026-03-14
 
 ## Scope
 
@@ -42,6 +42,11 @@ Allowed fields (`isUserDoc`):
 - `email: string`
 - `displayName: string | null`
 - `avatarId: string`
+- `avatarCustomSrc: string | null`
+- `googlePhotoUrl: string | null`
+- `rankThumbnailSrc: string | null`
+- `rewardCurrentRankId: string | null`
+- `rewardTotalXp: int`
 - `createdAt: timestamp`
 - `updatedAt: timestamp`
 - `schemaVersion: int`
@@ -70,19 +75,21 @@ Doc ID:
 Allowed fields (`isPreferencesV1`):
 
 - `schemaVersion: int`
-- `theme: "light" | "dark" | "command"`
+- `theme: "purple" | "cyan"`
+- `menuButtonStyle: "parallelogram" | "square"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
+- `taskView: "list" | "tile"`
 - `autoFocusOnTaskLaunchEnabled: bool`
 - `dynamicColorsEnabled: bool`
 - `checkpointAlertSoundEnabled: bool`
 - `checkpointAlertToastEnabled: bool`
 - `modeSettings: map | null`
+- `rewards: map`
 - `updatedAtMs: int`
 - `updatedAt: timestamp`
 
 Notes:
 
-- `userPreferencesSync.ts` also reads/writes `avatarId` in this doc, but `firestore.rules` currently do not allow `avatarId` in `preferences/v1`.
 - Client runtime also keeps a local fallback key for this setting: ``${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled``.
 
 ---
@@ -162,14 +169,19 @@ Allowed fields (`isTaskDoc`):
 - `checkpointsEnabled: bool`
 - `checkpointTimeUnit: "day" | "hour" | "minute"`
 - `checkpoints: list`
+- `milestonesEnabled: bool`
+- `milestoneTimeUnit: "day" | "hour" | "minute"`
+- `milestones: list`
 - `checkpointSoundEnabled: bool`
 - `checkpointSoundMode: "once" | "repeat"`
 - `checkpointToastEnabled: bool`
-- `checkpointToastMode: "auto5s" | "manual"`
+- `checkpointToastMode: "auto5s" | "auto3s" | "manual"`
 - `finalCheckpointAction: "continue" | "resetLog" | "resetNoLog"`
+- `xpDisqualifiedUntilReset: bool`
 - `presetIntervalsEnabled: bool`
 - `presetIntervalValue: int | float`
 - `presetIntervalLastCheckpointId: string | null`
+- `presetIntervalLastMilestoneId: string | null`
 - `presetIntervalNextSeq: int`
 - `mode: "mode1" | "mode2" | "mode3"`
 - `createdAt: timestamp`
@@ -178,8 +190,7 @@ Allowed fields (`isTaskDoc`):
 
 Runtime mapping notes (`cloudStore.ts`):
 
-- App `Task` uses `milestones*` fields internally.
-- Firestore persists normalized `checkpoints*` fields.
+- App `Task` and Firestore now both persist `checkpoints*` and `milestones*` fields.
 
 Subcollection:
 
@@ -200,6 +211,7 @@ Allowed fields (`isHistoryDoc`):
 - `name: string`
 - `ms: int`
 - `color: string | null`
+- `note: string | null`
 - `createdAt: timestamp`
 
 ---
@@ -251,7 +263,8 @@ Write flow:
 - Create by sender only (`status = "pending"`)
 - Receiver can update pending request to `approved`/`declined`
 - Sender can retry declined/approved request back to `pending`
-- Delete disallowed by rules
+- Sender can also cancel a pending request
+- Delete allowed only for sender while request is still pending
 
 Query patterns in app:
 
@@ -270,7 +283,7 @@ Allowed fields (`isFriendshipDocCreate`):
 
 - `pairId: string`
 - `users: [uidA, uidB]` (2-element list, distinct strings)
-- `profileByUid: map` (contains both users as keys, each value map with `alias`, `avatarId`, `avatarCustomSrc`, `rankThumbnailSrc`, `currentRankId`)
+- `profileByUid: map` (contains both users as keys, each value map with `alias`, `avatarId`, `avatarCustomSrc`, `googlePhotoUrl`, `rankThumbnailSrc`, `currentRankId`)
 - `createdAt: timestamp`
 - `createdBy: string`
 
@@ -278,7 +291,7 @@ Write flow:
 
 - Create by either member
 - Self-profile updates allowed for a member's own `profileByUid.{uid}` branch
-- Delete disallowed by rules
+- Delete allowed for either friendship member
 
 Query pattern in app:
 
@@ -297,6 +310,7 @@ Allowed fields (rules at `match /userEmailLookup/{emailKey}`):
 - `uid: string` (must equal `request.auth.uid` on create/update)
 - `email: string`
 - `displayName?: string | null`
+- No additional fields are allowed by rules
 - `createdAt?: timestamp-like`
 - `updatedAt?: timestamp-like`
 
@@ -324,6 +338,10 @@ Allowed fields:
 - `friendUid: string`
 - `taskId: string`
 - `taskName: string`
+- `taskMode: "mode1" | "mode2" | "mode3"`
+- `timerState: "running" | "stopped"`
+- `focusTrend7dMs: [int, int, int, int, int, int, int]`
+- `checkpointScaleMs: int | null`
 - `taskCreatedAtMs: int | null`
 - `avgTimeLoggedThisWeekMs: int`
 - `totalTimeLoggedMs: int`
@@ -334,7 +352,8 @@ Allowed fields:
 Access:
 
 - Read by `ownerUid` or `friendUid`
-- Create/update/delete by `ownerUid` only
+- Create/update by `ownerUid` only
+- Delete by `ownerUid` or `friendUid`
 
 Runtime usage:
 
@@ -345,7 +364,7 @@ Runtime usage:
 ### Firestore security summary
 
 - All `users/{userId}` tree data is owner-scoped.
-- Social collections (`friend_requests`, `friendships`, `userEmailLookup`) are auth-gated with path/data constraints.
+- Social collections (`friend_requests`, `friendships`, `userEmailLookup`, `shared_task_summaries`) are auth-gated with path/data constraints.
 - Several operations intentionally allow read on non-existent docs for transaction pre-reads (`friend_requests`, `friendships`).
 
 ## Firebase Storage

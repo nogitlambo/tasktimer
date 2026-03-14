@@ -337,52 +337,58 @@ body[data-app-page="test2"] #openAddTaskBtn{
   min-width:0 !important;
   display:block !important;
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
   border: 1px solid rgba(120,178,198,.3);
   background:
     linear-gradient(180deg, rgba(114,174,196,.08), rgba(255,255,255,0)),
     #0b141b;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
   color: rgba(207,236,247,.95);
   letter-spacing: .04em;
   text-transform: uppercase;
   font-family: var(--font-tight);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time{
   color: #9be2ff;
   font-family: var(--font-tight);
   letter-spacing: .05em;
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
   border-color: rgba(109,181,208,.35);
   background: rgba(8,20,30,.7);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
   background: rgba(9,23,34,.86);
   border-color: rgba(109,181,208,.32);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn{
   border-color: rgba(120,178,198,.35);
   background: rgba(14,28,39,.9);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
   border-color: rgba(116,198,226,.55);
   background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32));
   color: #eaf7ff;
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
+  border-color: rgba(233,134,245,.72);
+  background: linear-gradient(180deg, rgba(236,151,243,.34), rgba(180,78,203,.24));
+  color: #fff7ff;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.16) inset, 0 0 14px rgba(211,86,230,.18);
+}
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
   border-color: rgba(190,130,130,.5);
   background: linear-gradient(180deg, rgba(138,86,86,.4), rgba(90,54,54,.28));
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
   background: rgba(20,42,56,.58);
   border-color: rgba(110,173,197,.3);
 }
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyInline,
-body[data-theme="command"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyCanvasWrap{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyInline,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyCanvasWrap{
   border-color: rgba(120,178,198,.24);
   background: rgba(8,18,26,.82);
 }

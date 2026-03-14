@@ -633,22 +633,27 @@ export async function cancelOutgoingFriendRequest(
   requestId: string,
   senderUid: string
 ): Promise<{ ok: boolean; message?: string }> {
-  const db = dbOrNull();
-  if (!db) return { ok: false, message: "Cloud Firestore is not available." };
-  const ref = doc(db, "friend_requests", requestId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return { ok: false, message: "Request not found." };
-  const row = asFriendRequest(requestId, snap.data() as Record<string, unknown>);
-  if (row.senderUid !== senderUid) return { ok: false, message: "You cannot cancel this request." };
-  if (row.status !== "pending") return { ok: false, message: "Request is no longer pending." };
+  try {
+    const db = dbOrNull();
+    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
+    const ref = doc(db, "friend_requests", requestId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok: false, message: "Request not found." };
+    const row = asFriendRequest(requestId, snap.data() as Record<string, unknown>);
+    if (row.senderUid !== senderUid) return { ok: false, message: "You cannot cancel this request." };
+    if (row.status !== "pending") return { ok: false, message: "Request is no longer pending." };
 
-  await updateDoc(ref, {
-    status: "declined",
-    updatedAt: serverTimestamp(),
-    respondedAt: serverTimestamp(),
-    respondedBy: senderUid,
-  });
-  return { ok: true };
+    await deleteDoc(ref);
+    return { ok: true };
+  } catch (err: unknown) {
+    const firebaseErr = err as FirebaseError | undefined;
+    const code = String(firebaseErr?.code || "").trim();
+    if (code === "permission-denied") {
+      return { ok: false, message: "Permission denied while cancelling request." };
+    }
+    const message = String(firebaseErr?.message || "").trim();
+    return { ok: false, message: message || "Could not cancel friend request." };
+  }
 }
 
 export async function syncOwnFriendshipProfile(

@@ -1912,8 +1912,8 @@ body[data-control-style="square"]{
 .howtoBody{
   line-height: 1.5;
 }
-/* Global Dark Theme Skin (VR neon purple) */
-body[data-theme="dark"]{
+/* Global Purple Theme Skin (VR neon purple) */
+body[data-theme="purple"]{
   --bg:#05010b;
   --panel:#130b1d;
   --card:#161026;
@@ -1925,7 +1925,7 @@ body[data-theme="dark"]{
   --accent3:#f06ee0;
   --warn:#ff5a8d;
 }
-body[data-theme="dark"]{
+body[data-theme="purple"]{
   background:
     radial-gradient(58% 40% at 50% -8%, rgba(163,37,219,.52), rgba(20,4,30,0) 62%),
     radial-gradient(42% 32% at 4% 52%, rgba(110,22,167,.28), rgba(10,2,18,0) 70%),
@@ -1933,106 +1933,106 @@ body[data-theme="dark"]{
     #05010b !important;
   color:var(--text);
 }
-body[data-theme="dark"] .btn,
-body[data-theme="dark"] .iconBtn,
-body[data-theme="dark"] .menuItem{
+body[data-theme="purple"] .btn,
+body[data-theme="purple"] .iconBtn,
+body[data-theme="purple"] .menuItem{
   border-color: rgba(223,112,241,.36);
   background: rgba(32,18,46,.88);
   color:#f6f0ff;
 }
-body[data-theme="dark"] .btn-accent,
-body[data-theme="dark"] .unitBtn.isOn,
-body[data-theme="dark"] .modeBtn.isOn{
+body[data-theme="purple"] .btn-accent,
+body[data-theme="purple"] .unitBtn.isOn,
+body[data-theme="purple"] .modeBtn.isOn{
   background: linear-gradient(180deg, #df55df, #ad35c1) !important;
   border-color: rgba(240,138,245,.72) !important;
   color:#fff !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset, 0 0 14px rgba(211,86,230,.28);
 }
-body[data-theme="dark"] .btn-ghost,
-body[data-theme="dark"] .iconBtn{
+body[data-theme="purple"] .btn-ghost,
+body[data-theme="purple"] .iconBtn{
   background: rgba(24,13,35,.9);
   color:#ecdfff;
 }
-body[data-theme="dark"] .appFooterNav{
+body[data-theme="purple"] .appFooterNav{
   border-top:1px solid rgba(214,96,229,.24);
   background:
     linear-gradient(180deg, rgba(221,95,238,.1), rgba(0,0,0,0)),
     rgba(11,6,20,.96);
 }
-body[data-theme="dark"] .appFooterBtn.isOn{
+body[data-theme="purple"] .appFooterBtn.isOn{
   border-color: rgba(233,134,245,.58);
   background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(176,56,202,.22));
   box-shadow: 0 0 14px rgba(198,73,216,.22);
 }
-body[data-theme="dark"] .progressFill{
+body[data-theme="purple"] .progressFill{
   background: linear-gradient(90deg, #d447d2, #f06ee0) !important;
 }
-body[data-theme="dark"] .friendIdentityProfileBtn:focus-visible{
+body[data-theme="purple"] .friendIdentityProfileBtn:focus-visible{
   outline-color: rgba(233,134,245,.78) !important;
 }
-body[data-theme="dark"] .btn,
-body[data-theme="dark"] .iconBtn,
-body[data-theme="dark"] .appFooterBtn{
+body[data-theme="purple"] .btn,
+body[data-theme="purple"] .iconBtn,
+body[data-theme="purple"] .appFooterBtn{
   border-color: rgba(214,96,229,.44) !important;
 }
-body[data-theme="dark"] .btn-accent,
-body[data-theme="dark"] .unitBtn.isOn,
-body[data-theme="dark"] .timerTypePill.isOn{
+body[data-theme="purple"] .btn-accent,
+body[data-theme="purple"] .unitBtn.isOn,
+body[data-theme="purple"] .timerTypePill.isOn{
   background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
   border-color: rgba(233,134,245,.72) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
 }
-body[data-theme="dark"] .switch{
+body[data-theme="purple"] .switch{
   border-color: rgba(214,96,229,.38) !important;
   background: rgba(36,22,52,.84) !important;
 }
-body[data-theme="dark"] .switch.on{
+body[data-theme="purple"] .switch.on{
   border-color: rgba(233,134,245,.6) !important;
   background: rgba(217,85,231,.24) !important;
 }
-body[data-theme="dark"] .switch.on::after{
+body[data-theme="purple"] .switch.on::after{
   background: var(--accent3) !important;
 }
-body[data-theme="dark"] .appFooterNav{
+body[data-theme="purple"] .appFooterNav{
   border-top-color: rgba(214,96,229,.28) !important;
 }
-body[data-theme="dark"] .appFooterBtn.isOn{
+body[data-theme="purple"] .appFooterBtn.isOn{
   border-color: rgba(233,134,245,.72) !important;
   background: rgba(217,85,231,.18) !important;
 }
-body[data-theme="dark"] select,
-body[data-theme="dark"] input[type="text"],
-body[data-theme="dark"] input[type="number"],
-body[data-theme="dark"] input[type="email"]{
+body[data-theme="purple"] select,
+body[data-theme="purple"] input[type="text"],
+body[data-theme="purple"] input[type="number"],
+body[data-theme="purple"] input[type="email"]{
   border-color: rgba(214,96,229,.44) !important;
 }
-body[data-theme="dark"] select:focus,
-body[data-theme="dark"] input[type="text"]:focus,
-body[data-theme="dark"] input[type="number"]:focus,
-body[data-theme="dark"] input[type="email"]:focus{
+body[data-theme="purple"] select:focus,
+body[data-theme="purple"] input[type="text"]:focus,
+body[data-theme="purple"] input[type="number"]:focus,
+body[data-theme="purple"] input[type="email"]:focus{
   border-color: rgba(233,134,245,.72) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
 }
-body[data-theme="dark"] option,
-body[data-theme="dark"] optgroup{
+body[data-theme="purple"] option,
+body[data-theme="purple"] optgroup{
   background: #140b20;
   color: #f3e8ff;
 }
 /* Final Purple text/icon pass: footer and title/label language. */
-body[data-theme="dark"] .appFooterLabel{
+body[data-theme="purple"] .appFooterLabel{
   color: rgba(245,218,255,.96) !important;
   text-shadow: 0 0 8px rgba(212,71,210,.55) !important;
 }
-body[data-theme="dark"] .appFooterIconImage{
+body[data-theme="purple"] .appFooterIconImage{
   filter:
     brightness(0) saturate(100%)
     invert(57%) sepia(41%) saturate(1412%) hue-rotate(264deg) brightness(94%) contrast(97%)
     drop-shadow(0 0 7px rgba(212,71,210,.5)) !important;
 }
-body[data-theme="dark"] .appFooterBtn.isOn .appFooterLabel{
+body[data-theme="purple"] .appFooterBtn.isOn .appFooterLabel{
   color: rgba(252,234,255,.98) !important;
 }
-body[data-theme="dark"] .appFooterBtn.isOn .appFooterIconImage{
+body[data-theme="purple"] .appFooterBtn.isOn .appFooterIconImage{
   filter:
     brightness(0) saturate(100%)
     invert(72%) sepia(37%) saturate(1166%) hue-rotate(268deg) brightness(102%) contrast(101%)

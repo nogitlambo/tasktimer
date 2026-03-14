@@ -7,7 +7,7 @@ import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "@/app
 
 export type MainMode = "mode1" | "mode2" | "mode3";
 
-export type TaskTimerThemeMode = "dark" | "light" | "command";
+export type TaskTimerThemeMode = "purple" | "cyan";
 
 export type TaskTimerTask = Task & {
   mode: MainMode;
@@ -210,7 +210,7 @@ export function createEmptySnapshot(): TaskTimerSnapshot {
     historyByTaskId: {},
     deletedTaskMeta: {},
     modeSettings: createDefaultModeSettings(),
-    themeMode: "dark",
+    themeMode: "purple",
     taskView: "list",
     dynamicColorsEnabled: true,
     pinnedHistoryTaskIds: [],
