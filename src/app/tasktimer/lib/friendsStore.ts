@@ -41,6 +41,7 @@ export type FriendProfile = {
   alias: string | null;
   avatarId: string | null;
   avatarCustomSrc: string | null;
+  googlePhotoUrl: string | null;
   rankThumbnailSrc: string | null;
   currentRankId: string | null;
 };
@@ -132,6 +133,11 @@ function normalizeAvatarCustomSrc(value: unknown): string | null {
   return out ? out.slice(0, 900_000) : null;
 }
 
+function normalizeGooglePhotoUrl(value: unknown): string | null {
+  const out = String(value || "").trim();
+  return out ? out.slice(0, 2_000) : null;
+}
+
 function normalizeRankThumbnailSrc(value: unknown): string | null {
   const out = String(value || "").trim();
   return out ? out.slice(0, 900_000) : null;
@@ -139,19 +145,24 @@ function normalizeRankThumbnailSrc(value: unknown): string | null {
 
 async function loadOwnProfile(uid: string): Promise<FriendProfile> {
   const db = dbOrNull();
-  if (!db || !uid) return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
+  if (!db || !uid) {
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null };
+  }
   try {
     const snap = await getDoc(doc(db, "users", uid));
-    if (!snap.exists()) return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
+    if (!snap.exists()) {
+      return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null };
+    }
     return {
       alias: normalizeAlias(snap.get("displayName")),
       avatarId: normalizeAvatarId(snap.get("avatarId")),
       avatarCustomSrc: normalizeAvatarCustomSrc(snap.get("avatarCustomSrc")),
+      googlePhotoUrl: normalizeGooglePhotoUrl(snap.get("googlePhotoUrl")),
       rankThumbnailSrc: normalizeRankThumbnailSrc(snap.get("rankThumbnailSrc")),
       currentRankId: normalizeAvatarId(snap.get("rewardCurrentRankId")),
     };
   } catch {
-    return { alias: null, avatarId: null, avatarCustomSrc: null, rankThumbnailSrc: null, currentRankId: null };
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null };
   }
 }
 
@@ -192,13 +203,14 @@ function asFriendship(id: string, row: Record<string, unknown>): Friendship {
   pair.forEach((uid) => {
     const value = profileByUidRaw[uid];
     const valueObj = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-    profileByUid[uid] = {
-      alias: normalizeAlias(valueObj.alias),
-      avatarId: normalizeAvatarId(valueObj.avatarId),
-      avatarCustomSrc: normalizeAvatarCustomSrc(valueObj.avatarCustomSrc),
-      rankThumbnailSrc: normalizeRankThumbnailSrc(valueObj.rankThumbnailSrc),
-      currentRankId: normalizeAvatarId(valueObj.currentRankId),
-    };
+      profileByUid[uid] = {
+        alias: normalizeAlias(valueObj.alias),
+        avatarId: normalizeAvatarId(valueObj.avatarId),
+        avatarCustomSrc: normalizeAvatarCustomSrc(valueObj.avatarCustomSrc),
+        googlePhotoUrl: normalizeGooglePhotoUrl(valueObj.googlePhotoUrl),
+        rankThumbnailSrc: normalizeRankThumbnailSrc(valueObj.rankThumbnailSrc),
+        currentRankId: normalizeAvatarId(valueObj.currentRankId),
+      };
   });
   return {
     pairId: id,
@@ -563,6 +575,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
         alias: normalizeAlias(senderProfile.alias || row.senderAlias || row.senderEmail),
         avatarId: normalizeAvatarId(senderProfile.avatarId || row.senderAvatarId),
         avatarCustomSrc: normalizeAvatarCustomSrc(senderProfile.avatarCustomSrc),
+        googlePhotoUrl: normalizeGooglePhotoUrl(senderProfile.googlePhotoUrl),
         rankThumbnailSrc: normalizeRankThumbnailSrc(senderProfile.rankThumbnailSrc || row.senderRankThumbnailSrc),
         currentRankId: normalizeAvatarId(senderProfile.currentRankId || (snap.data() as Record<string, unknown>)?.senderCurrentRankId),
       },
@@ -570,6 +583,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
         alias: normalizeAlias(receiverProfile.alias || row.receiverAlias || row.receiverEmail),
         avatarId: normalizeAvatarId(receiverProfile.avatarId || row.receiverAvatarId),
         avatarCustomSrc: normalizeAvatarCustomSrc(receiverProfile.avatarCustomSrc),
+        googlePhotoUrl: normalizeGooglePhotoUrl(receiverProfile.googlePhotoUrl),
         rankThumbnailSrc: normalizeRankThumbnailSrc(receiverProfile.rankThumbnailSrc || row.receiverRankThumbnailSrc),
         currentRankId: normalizeAvatarId(receiverProfile.currentRankId || (snap.data() as Record<string, unknown>)?.receiverCurrentRankId),
       },
@@ -639,7 +653,9 @@ export async function cancelOutgoingFriendRequest(
 
 export async function syncOwnFriendshipProfile(
   uid: string,
-  patch: Partial<Pick<FriendProfile, "alias" | "avatarId" | "avatarCustomSrc" | "rankThumbnailSrc" | "currentRankId">>
+  patch: Partial<
+    Pick<FriendProfile, "alias" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "currentRankId">
+  >
 ): Promise<void> {
   const db = dbOrNull();
   const ownUid = String(uid || "").trim();
@@ -653,6 +669,9 @@ export async function syncOwnFriendshipProfile(
   }
   if (Object.prototype.hasOwnProperty.call(patch, "avatarCustomSrc")) {
     profilePatch[`profileByUid.${ownUid}.avatarCustomSrc`] = normalizeAvatarCustomSrc(patch.avatarCustomSrc);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "googlePhotoUrl")) {
+    profilePatch[`profileByUid.${ownUid}.googlePhotoUrl`] = normalizeGooglePhotoUrl(patch.googlePhotoUrl);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "rankThumbnailSrc")) {
     profilePatch[`profileByUid.${ownUid}.rankThumbnailSrc`] = normalizeRankThumbnailSrc(patch.rankThumbnailSrc);

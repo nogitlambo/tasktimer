@@ -322,15 +322,39 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       alias: cachedProfile?.alias ?? baseProfile?.alias ?? null,
       avatarId: cachedProfile?.avatarId ?? baseProfile?.avatarId ?? null,
       avatarCustomSrc: cachedProfile?.avatarCustomSrc ?? baseProfile?.avatarCustomSrc ?? null,
+      googlePhotoUrl: cachedProfile?.googlePhotoUrl ?? baseProfile?.googlePhotoUrl ?? null,
       rankThumbnailSrc: cachedProfile?.rankThumbnailSrc ?? baseProfile?.rankThumbnailSrc ?? null,
       currentRankId: cachedProfile?.currentRankId ?? baseProfile?.currentRankId ?? null,
     };
   }
 
-  function getFriendAvatarSrc(profile?: FriendProfile | null): string {
+  function isGoogleProfileAvatarId(avatarIdRaw: string): boolean {
+    return /^google\/profile-photo:/i.test(String(avatarIdRaw || "").trim());
+  }
+
+  function buildFriendInitialAvatarDataUrl(labelRaw: string): string {
+    const label = String(labelRaw || "").trim();
+    const initial = (label.charAt(0) || "?").toUpperCase();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#0f1720"/><rect x="1.5" y="1.5" width="61" height="61" fill="none" stroke="#79e2ff" stroke-opacity=".4" stroke-width="1.5"/><text x="32" y="39" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#eaf7ff">${initial}</text></svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }
+
+  function getFriendAvatarImageSrc(profile?: FriendProfile | null): string {
     const customSrc = String(profile?.avatarCustomSrc || "").trim();
     if (customSrc) return normalizeFriendAvatarSrc(customSrc);
-    return getFriendAvatarSrcById(String(profile?.avatarId || ""));
+    const avatarId = String(profile?.avatarId || "").trim();
+    if (!avatarId) return "";
+    if (isGoogleProfileAvatarId(avatarId)) {
+      const googlePhotoUrl = String(profile?.googlePhotoUrl || "").trim();
+      return googlePhotoUrl ? normalizeFriendAvatarSrc(googlePhotoUrl) : "";
+    }
+    const resolved = getFriendAvatarSrcById(avatarId);
+    return resolved === normalizeFriendAvatarSrc(defaultFriendAvatarSrc) ? "" : resolved;
+  }
+
+  function getFriendAvatarSrc(profile?: FriendProfile | null): string {
+    const resolved = getFriendAvatarImageSrc(profile);
+    return resolved || buildFriendInitialAvatarDataUrl(String(profile?.alias || ""));
   }
 
   const els = collectTaskTimerElements(document);
@@ -7695,8 +7719,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${escapeHtmlUI(
                   row.requestId
                 )}"${disabledAttr}>Cancel request</button></div>`;
-        const identityAvatarId = String((opts.incoming ? row.senderAvatarId : row.receiverAvatarId) || "").trim();
-        const identityAvatarSrc = getFriendAvatarSrcById(identityAvatarId);
+        const identityAvatarSrc = opts.incoming
+          ? getFriendAvatarSrcById(String(row.senderAvatarId || "").trim())
+          : buildFriendInitialAvatarDataUrl(peerAlias);
         const identityHtml = `<div class="friendRequestIdentityRow">
           <img src="${escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">

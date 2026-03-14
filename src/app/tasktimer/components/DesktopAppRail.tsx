@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
@@ -304,13 +304,26 @@ export default function DesktopAppRail({
 
     try {
       const snap = await getDoc(doc(db, "users", uid));
-      if (!snap.exists()) return;
-      const alias = String(snap.get("alias") || snap.get("displayName") || "").trim();
-      const avatarId = String(snap.get("avatarId") || storedAvatarId).trim();
+      const alias = snap.exists() ? String(snap.get("alias") || snap.get("displayName") || "").trim() : "";
+      const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteRankThumbnailSrc = String(snap.get("rankThumbnailSrc") || storedRankThumbnailSrc).trim();
+      const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
+      if (googlePhotoUrl && remoteGooglePhotoUrl !== googlePhotoUrl) {
+        void setDoc(
+          doc(db, "users", uid),
+          {
+            schemaVersion: 1,
+            updatedAt: serverTimestamp(),
+            googlePhotoUrl,
+          },
+          { merge: true }
+        ).catch(() => {
+          // Keep rendering from local auth state when cloud sync is unavailable.
+        });
+      }
       setProfileLabel(alias || fallbackLabel);
-      setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, googlePhotoUrl));
+      setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       setRankThumbnailSrc(remoteRankThumbnailSrc);
     } catch {
       // Keep local/auth profile state if user-doc enrichment fails.

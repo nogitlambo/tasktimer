@@ -327,12 +327,13 @@ export default function SettingsPanel() {
       setAuthHasGoogleProvider(hasGoogleProvider);
       setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
       if (user?.uid) {
-        void saveUserDocPatch(user.uid, {
-          email: user.email || "",
-          displayName: user.displayName || null,
-        }).catch(() => {
-          // ignore root profile sync failures here; avatar write path handles user-facing errors.
-        });
+        void saveUserDocPatch(user.uid, {
+          email: user.email || "",
+          displayName: user.displayName || null,
+          googlePhotoUrl: hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null,
+        }).catch(() => {
+          // ignore root profile sync failures here; avatar write path handles user-facing errors.
+        });
         setSyncState("synced");
         setSyncMessage("Cloud data connected.");
         setSyncAtMs(Date.now());
@@ -773,30 +774,34 @@ export default function SettingsPanel() {
     }
   };
 
-  const handleSelectAvatar = async (avatarId: string) => {
-    setSelectedAvatarId(avatarId);
+  const handleSelectAvatar = async (avatarId: string) => {
+    setSelectedAvatarId(avatarId);
     if (!authUserUid) {
       setAuthError("Sign in is required to save avatar selection.");
       setAuthStatus("");
       return;
-    }
-    const customId = customAvatarIdForUid(authUserUid);
-    const isCustomAvatar = avatarId === customId;
-    const customAvatarSrc = readStoredCustomAvatarSrc(authUserUid);
-    const patch: Record<string, unknown> = {
-      avatarId,
-      avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
-    };
+    }
+    const customId = customAvatarIdForUid(authUserUid);
+    const googleId = googleAvatarIdForUid(authUserUid);
+    const isCustomAvatar = avatarId === customId;
+    const isGoogleAvatar = avatarId === googleId;
+    const customAvatarSrc = readStoredCustomAvatarSrc(authUserUid);
+    const patch: Record<string, unknown> = {
+      avatarId,
+      avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
+      googlePhotoUrl: authHasGoogleProvider ? authGooglePhotoUrl || null : null,
+    };
     if (!isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, "");
     writeStoredAvatarId(authUserUid, avatarId);
     notifyAccountAvatarUpdated();
     setAuthError("");
     try {
       await saveUserDocPatch(authUserUid, patch);
-      await syncOwnFriendshipProfile(authUserUid, {
-        avatarId,
-        avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
-      });
+      await syncOwnFriendshipProfile(authUserUid, {
+        avatarId,
+        avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
+        googlePhotoUrl: isGoogleAvatar ? authGooglePhotoUrl || null : null,
+      });
       showAvatarSyncNotice("Avatar saved.");
     } catch (err: unknown) {
       setAuthError(getErrorMessage(err, "Could not save avatar selection to cloud."));
