@@ -1451,16 +1451,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Task Notes";
-    if (els.historyEntryNoteMeta) {
-      if (hasGroups) {
-        const sessionCount = groups.length;
-        const noteLabel = totalNoteCount === 1 ? "note" : "notes";
-        const sessionLabel = sessionCount === 1 ? "session" : "sessions";
-        els.historyEntryNoteMeta.textContent = `${totalNoteCount} ${noteLabel} across ${sessionCount} selected ${sessionLabel}`;
-      } else {
-        els.historyEntryNoteMeta.textContent = notes.length > 1 ? `${notes.length} session notes` : "Session note";
-      }
-    }
+    if (els.historyEntryNoteMeta) els.historyEntryNoteMeta.textContent = "";
     if (els.historyEntryNoteBody) {
       els.historyEntryNoteBody.innerHTML = hasGroups
         ? groups
@@ -8093,6 +8084,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeFriendRequestModal();
     if (page === "tasks") {
       render();
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (runtime.destroyed || currentAppPage !== "tasks") return;
+          for (const taskId of openHistoryTaskIds) {
+            renderHistory(taskId);
+          }
+        });
+      });
       return;
     }
     if (page === "dashboard") {
@@ -10322,12 +10321,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadDynamicColorsSetting();
     loadCheckpointAlertSettings();
     loadDashboardWidgetState();
+    loadThemePreference();
+    loadMenuButtonStylePreference();
     // Keep Preferences controls in sync with hydrated cloud values on both
     // /tasktimer and /tasktimer/settings routes.
     syncTaskSettingsUi();
     loadPinnedHistoryTaskIds();
-    loadThemePreference();
-    loadMenuButtonStylePreference();
     loadModeLabels();
     backfillHistoryColorsFromSessionLogic();
     syncModeLabelsUi();
@@ -10352,7 +10351,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     hydrateUiStateFromCaches();
     void refreshOwnSharedSummaries()
       .then(() => reconcileOwnedSharedSummaryStates())
-      .then(() => render())
+      .then(() => {
+        render();
+        if (currentAppPage === "tasks") {
+          window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+              if (runtime.destroyed || currentAppPage !== "tasks") return;
+              for (const taskId of openHistoryTaskIds) {
+                renderHistory(taskId);
+              }
+            });
+          });
+        }
+      })
       .catch(() => {});
     initMobileBackHandling();
     initCloudRefreshSync();

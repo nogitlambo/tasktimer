@@ -6,9 +6,7 @@ export default function HistoryEntryNoteOverlay() {
       <div className="modal" role="dialog" aria-modal="true" aria-label="Session Note">
         <div className="historyEntryNoteHeader">
           <h2 id="historyEntryNoteTitle">Task Notes</h2>
-          <p className="modalSubtext" id="historyEntryNoteMeta">
-            Session note
-          </p>
+          <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
         </div>
         <div className="confirmText historyEntryNoteBody" id="historyEntryNoteBody">
           No note available.

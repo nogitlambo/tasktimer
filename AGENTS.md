@@ -10,6 +10,7 @@
 - Repo-level architectural overview lives in `architecture.md`; use it for high-level system boundaries, runtime ownership, and onboarding context.
 - Treat `architecture.md` as a secondary reference only: current source files remain the final authority when behavior and documentation differ.
 - Runtime behavior is primarily wired through `initTaskTimerClient()` in `src/app/tasktimer/tasktimerClient.ts`.
+- The active `/tasktimer` route now uses the same `initTaskTimerClient()` runtime path as in-app Tasks/Dashboard/Friends navigation; do not assume a separate React-only Tasks mount on direct load.
 - Components are modular, but many interactions are ID/class/data-attribute based (`getElementById`, delegated click handlers).
 - Preserve IDs and selector hooks in JSX when editing UI.
 - Main stylesheet in active use is `src/app/tasktimer/tasktimer.css`.

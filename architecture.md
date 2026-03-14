@@ -11,9 +11,9 @@ At a high level:
 - `src/app` contains the Next.js route tree and page composition.
 - `src/lib` contains shared Firebase client setup used across route surfaces.
 - `src/app/tasktimer` contains the TaskTimer route tree plus a large legacy imperative runtime and its route-local components/styles/libs.
-- `src/features/tasktimer-react` contains the newer React-based TaskTimer feature module used by the Tasks experience.
+- `src/features/tasktimer-react` contains an in-repo React-based TaskTimer feature module that is currently secondary to the active `/tasktimer` runtime.
 
-The TaskTimer codebase is currently in a hybrid state. The Tasks page uses the newer React feature path, while other TaskTimer flows still depend on the legacy DOM-wired client runtime.
+The TaskTimer codebase is currently in a hybrid state, but the active `/tasktimer` experience now boots through the legacy DOM-wired client runtime for consistency across direct loads and in-app page switching. The React feature module still exists in the repo, but it is not the active route path for the Tasks screen.
 
 ## Top-Level Directory Map
 
@@ -108,27 +108,23 @@ It pulls together:
 
 - shared TaskTimer shell UI such as the top bar and navigation
 - route-local overlays and screens from `src/app/tasktimer/components`
-- the legacy imperative runtime when needed
-- the newer React Tasks feature when the active page is `tasks`
+- the legacy imperative runtime via `initTaskTimerClient(initialAppPage)`
 
-This file is the clearest place to understand how the old and new TaskTimer implementations currently coexist.
+This file is the clearest place to understand how route composition hands control to the active TaskTimer runtime.
 
-### Hybrid Split: React Tasks vs Legacy Runtime
+### Active Runtime vs Secondary React Module
 
-The current split is:
+The current active route behavior is:
 
-- Tasks page: React feature module
-- Dashboard, Friends, and other legacy-driven flows: imperative DOM client runtime
+- Tasks page: imperative DOM client runtime
+- Dashboard, Friends, and other TaskTimer app pages: imperative DOM client runtime
 
 In `TaskTimerPageClient.tsx`:
 
-- when `initialAppPage === "tasks"`, the page renders:
-  - `TaskTimerProvider`
-  - `TaskTimerTasksScreen`
-  - `TaskTimerOverlays`
-- otherwise it calls `initTaskTimerClient(initialAppPage)` and renders the legacy route-local structure expected by the imperative runtime
+- it calls `initTaskTimerClient(initialAppPage)` and renders the route-local structure expected by the imperative runtime for `/tasktimer`, dashboard, and friends surfaces
+- this keeps direct `/tasktimer` loads and in-app navigation on the same implementation path
 
-This means `/tasktimer` is not yet a full React rewrite. It is a migration state where one major surface has been moved into the feature module, while the rest of the app still uses legacy DOM-based behavior.
+The React feature module remains in the codebase as a secondary architecture track, but it is not currently the route-mounted Tasks implementation.
 
 ### Legacy TaskTimer Path
 
@@ -157,7 +153,7 @@ These modules support the imperative client bootstrap by separating:
 - initial state creation
 - client-facing types
 
-### React TaskTimer Path
+### Secondary React TaskTimer Module
 
 The React feature entrypoints are re-exported from [`src/features/tasktimer-react/index.ts`](/s:/Apps/repo/tasktimer-app/src/features/tasktimer-react/index.ts):
 
@@ -177,7 +173,7 @@ Internally the feature module is split by responsibility:
 - `adapters/`
   - integration with browser/runtime concerns such as navigation and persistence
 
-This feature module is the current direction for more maintainable TaskTimer behavior, but it still coexists with the legacy runtime.
+This feature module still exists as an architectural direction for more maintainable TaskTimer behavior, but it currently coexists as a secondary path rather than the live `/tasktimer` route implementation.
 
 ### Route-Local Components And Overlays
 
@@ -227,7 +223,7 @@ The React Tasks experience generally follows this shape:
 4. `adapters/` connect the feature model to browser/runtime behavior such as navigation or persistence.
 5. `components/` render the task list, task cards, overlays, and inline interactions from provider state.
 
-This path is more explicit and testable than the legacy imperative flow, but it currently covers only part of the TaskTimer app.
+This path is more explicit and testable than the legacy imperative flow, but it is not currently the mounted route path for `/tasktimer`.
 
 ## Styling System And Responsive Layering
 
@@ -261,13 +257,13 @@ The current architecture has several important constraints:
 Practical implications:
 
 - Preserve IDs and selector hooks when modifying TaskTimer UI.
-- Treat `TaskTimerPageClient.tsx` as the boundary between route composition and TaskTimer runtime choice.
+- Treat `TaskTimerPageClient.tsx` as the boundary between route composition and the active imperative TaskTimer runtime.
 - When debugging style issues, inspect later route-scoped blocks in `10-responsive.css` before assuming a base rule is authoritative.
-- When extending the React feature module, document whether the change replaces legacy behavior or coexists with it.
+- When extending the React feature module, document whether the change is exploratory/secondary or intended to replace the active route runtime.
 
 ## Summary
 
-This repository is a Next.js app with shared Firebase infrastructure and a TaskTimer sub-app that is midway through a migration from an imperative DOM-driven runtime to a React feature architecture.
+This repository is a Next.js app with shared Firebase infrastructure and a TaskTimer sub-app that is still hybrid, but whose active `/tasktimer` route currently runs through the imperative DOM-driven runtime.
 
 The most important files to understand first are:
 

@@ -14,19 +14,15 @@ import InfoOverlays from "./components/InfoOverlays";
 import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import DesktopAppRail from "./components/DesktopAppRail";
 import { initTaskTimerClient } from "./tasktimerClient";
-import { TaskTimerOverlays, TaskTimerProvider, TaskTimerTasksScreen } from "@/features/tasktimer-react";
 import "./tasktimer.css";
 
 type AppPage = "tasks" | "dashboard" | "test1" | "test2";
 
 export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { initialAppPage?: AppPage }) {
-  const useReactTasks = initialAppPage === "tasks";
-
   useEffect(() => {
-    if (useReactTasks) return;
     const { destroy } = initTaskTimerClient(initialAppPage);
     return () => destroy();
-  }, [initialAppPage, useReactTasks]);
+  }, [initialAppPage]);
 
   return (
     <>
@@ -41,42 +37,33 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
         <div className="desktopAppShell">
           <DesktopAppRail
             activePage={initialAppPage === "dashboard" ? "dashboard" : initialAppPage === "test2" ? "test2" : "tasks"}
-            useClientNavButtons={!useReactTasks}
+            useClientNavButtons={true}
             showMobileFooter={false}
           />
           <div className="desktopAppMain">
             <div className="appPages">
-              {useReactTasks ? (
-                <TaskTimerProvider>
-                  <>
-                    <TaskTimerTasksScreen />
-                    <TaskTimerOverlays />
-                  </>
-                </TaskTimerProvider>
-              ) : (
-                <section className="appPage" id="appPageTasks" aria-label="Tasks page">
-                  <div className="dashboardTopRow">
-                    <div className="dashboardTitleWrap">
-                      <p className="dashboardKicker">Workspace</p>
-                      <h2 className="dashboardTitle">Tasks</h2>
-                    </div>
+              <section className="appPage" id="appPageTasks" aria-label="Tasks page">
+                <div className="dashboardTopRow">
+                  <div className="dashboardTitleWrap">
+                    <p className="dashboardKicker">Workspace</p>
+                    <h2 className="dashboardTitle">Tasks</h2>
                   </div>
-                  <section className="modeView modeViewOn" id="mode1View" aria-label="Mode 1 view">
-                    <div className="list" id="taskList" />
-                    <HistoryScreen />
-                    <FocusModeScreen />
-                  </section>
-
-                  <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
-
-                  <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
-                  <div className="controls">
-                    <button className="btn btn-ghost" id="openAddTaskBtn" type="button" style={{ width: "100%" }}>
-                      + Add Task
-                    </button>
-                  </div>
+                </div>
+                <section className="modeView modeViewOn" id="mode1View" aria-label="Mode 1 view">
+                  <div className="list" id="taskList" />
+                  <HistoryScreen />
+                  <FocusModeScreen />
                 </section>
-              )}
+
+                <section className="modeView" id="mode2View" aria-label="Mode 2 view" />
+
+                <section className="modeView" id="mode3View" aria-label="Mode 3 view" />
+                <div className="controls">
+                  <button className="btn btn-ghost" id="openAddTaskBtn" type="button" style={{ width: "100%" }}>
+                    + Add Task
+                  </button>
+                </div>
+              </section>
 
           <section className={`appPage${initialAppPage === "dashboard" ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
             <div className="dashboardNeonLayout">
@@ -402,23 +389,21 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
         </div>
         <DesktopAppRail
           activePage={initialAppPage === "dashboard" ? "dashboard" : initialAppPage === "test2" ? "test2" : "tasks"}
-          useClientNavButtons={!useReactTasks}
+          useClientNavButtons={true}
           showDesktopRail={false}
         />
       </div>
 
-      {useReactTasks ? null : (
-        <>
-          <AddTaskOverlay />
-          <InfoOverlays />
-          <EditTaskOverlay />
-          <ElapsedPadOverlay />
-          <ExportTaskOverlay />
-          <ConfirmOverlay />
-          <HistoryAnalysisOverlay />
-          <HistoryEntryNoteOverlay />
-        </>
-      )}
+      <>
+        <AddTaskOverlay />
+        <InfoOverlays />
+        <EditTaskOverlay />
+        <ElapsedPadOverlay />
+        <ExportTaskOverlay />
+        <ConfirmOverlay />
+        <HistoryAnalysisOverlay />
+        <HistoryEntryNoteOverlay />
+      </>
       <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
           <h2>Send Friend Request</h2>

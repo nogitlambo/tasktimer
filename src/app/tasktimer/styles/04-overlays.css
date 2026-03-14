@@ -917,6 +917,10 @@
   margin: 3px 0 0;
 }
 
+#historyEntryNoteOverlay .historyEntryNoteTime{
+  font-weight: 800;
+}
+
 #historyEntryNoteOverlay .confirmBtns{
   margin-top: 10px;
   justify-content: center;
