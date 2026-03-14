@@ -65,6 +65,20 @@ export default function FocusModeScreen() {
           </div>
           <div className="focusCheckpointLogList" id="focusCheckpointLogList" />
         </div>
+        <details className="focusSessionNotes" id="focusSessionNotesSection">
+          <summary className="focusSessionNotesSummary">
+            <span className="focusInsightsTitle">Notes for this session</span>
+            <span className="focusSessionNotesCollapseLabel">Add session note</span>
+          </summary>
+          <div className="focusSessionNotesBody">
+            <textarea
+              className="text focusSessionNotesInput"
+              id="focusSessionNotesInput"
+              rows={3}
+              aria-label="Notes for this session"
+            />
+          </div>
+        </details>
       </div>
       <div className="focusInsights" id="focusInsights">
         <div className="focusInsightsTitle">Quick Stats</div>
@@ -92,15 +106,6 @@ export default function FocusModeScreen() {
             --
           </span>
         </div>
-      </div>
-      <div className="focusSessionNotes">
-        <div className="focusInsightsTitle">Notes for this session</div>
-        <textarea
-          className="text focusSessionNotesInput"
-          id="focusSessionNotesInput"
-          rows={3}
-          aria-label="Notes for this session"
-        />
       </div>
     </section>
   );

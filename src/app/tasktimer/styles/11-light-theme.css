@@ -254,6 +254,12 @@ body[data-theme="light"] .focusCheckpointLogItem.isLatest{
 body[data-theme="light"] .focusCheckpointLogItemTime{
   color:#111111;
 }
+body[data-theme="light"] .focusSessionNotesCollapseLabel{
+  color:#111111;
+}
+body[data-theme="light"] .focusSessionNotesCollapseLabel::after{
+  color: rgba(0,95,127,.88);
+}
 body[data-theme="light"] .focusDialProgress{
   background: conic-gradient(
     from 0deg,

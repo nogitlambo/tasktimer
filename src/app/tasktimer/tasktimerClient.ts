@@ -1193,6 +1193,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.focusSessionNotesInput.value = taskId ? getFocusSessionDraft(taskId) : "";
   }
 
+  function syncFocusSessionNotesAccordion(taskId: string | null) {
+    if (!els.focusSessionNotesSection) return;
+    const noteValue = taskId ? getFocusSessionDraft(taskId) : "";
+    els.focusSessionNotesSection.open = !!noteValue.trim();
+  }
+
   function scheduleFocusSessionNoteSave(taskId: string, noteRaw: string) {
     if (focusSessionNoteSaveTimer != null) {
       window.clearTimeout(focusSessionNoteSaveTimer);
@@ -2978,7 +2984,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       ...(note ? { note } : {}),
     });
     clearFocusSessionDraft(taskId);
-    if (String(focusModeTaskId || "") === taskId) syncFocusSessionNotesInput(taskId);
+    if (String(focusModeTaskId || "") === taskId) {
+      syncFocusSessionNotesInput(taskId);
+      syncFocusSessionNotesAccordion(taskId);
+    }
   }
 
   function awardLaunchXpForTask(t: Task | null | undefined) {
@@ -3665,7 +3674,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string }) {
     if (!t) return;
-    flushPendingFocusSessionNoteSave(String(t.id || ""));
+    const taskId = String(t.id || "");
+    flushPendingFocusSessionNoteSave(taskId);
     if (!!opts?.logHistory && canLogSession(t)) {
       const ms = getTaskElapsedMs(t);
       const completedAtMs = nowMs();
@@ -3678,6 +3688,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     t.xpDisqualifiedUntilReset = false;
     resetCheckpointAlertTracking(t.id);
     checkpointAutoResetDirty = true;
+    clearFocusSessionDraft(taskId);
+    if (String(focusModeTaskId || "") === taskId) {
+      syncFocusSessionNotesInput(taskId);
+      syncFocusSessionNotesAccordion(taskId);
+    }
   }
 
   function syncFocusRunButtons(t?: Task | null) {
@@ -5748,6 +5763,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncFocusRunButtons(t);
     updateFocusInsights(t);
     syncFocusSessionNotesInput(String(t.id || ""));
+    syncFocusSessionNotesAccordion(String(t.id || ""));
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
@@ -5785,6 +5801,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.focusTaskName) els.focusTaskName.textContent = "Task";
     if (els.focusTimerDays) els.focusTimerDays.textContent = "00d";
     syncFocusSessionNotesInput(null);
+    syncFocusSessionNotesAccordion(null);
     if (els.focusTimerClock) els.focusTimerClock.textContent = "00:00:00";
     if (els.focusDialHint) els.focusDialHint.textContent = "Tap to Launch";
     if (els.focusDial) {

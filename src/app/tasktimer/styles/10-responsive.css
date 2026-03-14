@@ -631,6 +631,15 @@
     margin:20px auto 0;
     padding:10px 10px;
   }
+  .focusSessionNotes{
+    margin-top: 2px;
+  }
+  .focusSessionNotesSummary{
+    align-items:flex-start;
+  }
+  .focusSessionNotesCollapseLabel{
+    font-size: 9px;
+  }
   .focusInsightRow{
     gap:8px;
   }

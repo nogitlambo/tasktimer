@@ -180,6 +180,7 @@ const els = {
   focusCheckpointLog: documentRef.getElementById("focusCheckpointLog"),
   focusCheckpointLogEmpty: documentRef.getElementById("focusCheckpointLogEmpty"),
   focusCheckpointLogList: documentRef.getElementById("focusCheckpointLogList"),
+  focusSessionNotesSection: documentRef.getElementById("focusSessionNotesSection") as HTMLDetailsElement | null,
   focusTaskName: documentRef.getElementById("focusTaskName"),
   focusTimerDays: documentRef.getElementById("focusTimerDays"),
   focusTimerClock: documentRef.getElementById("focusTimerClock"),

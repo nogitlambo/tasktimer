@@ -1440,12 +1440,55 @@ optgroup{
   font-weight:600;
 }
 .focusSessionNotes{
-  margin-top: 14px;
+  margin-top: 2px;
+}
+.focusSessionNotesSummary{
+  list-style: none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+}
+.focusSessionNotesSummary::-webkit-details-marker{
+  display:none;
+}
+.focusSessionNotesSummary::after{
+  content:none;
+}
+.focusSessionNotesSummary .focusInsightsTitle{
+  margin-bottom:0;
+}
+.focusSessionNotesCollapseLabel{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color: rgba(190,240,255,.92);
+  font-family: var(--font-tight);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.focusSessionNotesCollapseLabel::after{
+  content: "▸";
+  font-size: 11px;
+  line-height: 1;
+  color: rgba(117,231,255,.95);
+}
+.focusSessionNotes[open] .focusSessionNotesCollapseLabel::after{
+  content: "▾";
+}
+.focusSessionNotes:not([open]) .focusSessionNotesCollapseLabel{
+  opacity:.82;
+}
+.focusSessionNotesBody{
+  margin-top:10px;
 }
 .focusSessionNotesInput{
   width: 100%;
   min-height: 74px;
-  margin-top: 6px;
   resize: vertical;
   background: transparent !important;
   background-color: transparent !important;
@@ -1992,6 +2035,12 @@ body[data-theme="purple"] .switch.on{
 }
 body[data-theme="purple"] .switch.on::after{
   background: var(--accent3) !important;
+}
+body[data-theme="purple"] .focusSessionNotesCollapseLabel{
+  color: rgba(240,214,255,.92) !important;
+}
+body[data-theme="purple"] .focusSessionNotesCollapseLabel::after{
+  color: rgba(233,134,245,.9) !important;
 }
 body[data-theme="purple"] .appFooterNav{
   border-top-color: rgba(214,96,229,.28) !important;
