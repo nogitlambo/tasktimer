@@ -1,1 +1,0 @@
-const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimer.css','utf8');const i=s.indexOf('.focusCheckpointFlag');console.log(s.slice(i,i+700)); 

@@ -1972,6 +1972,45 @@
 }
 
 @media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    overflow-x: visible !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
+    clip-path: none;
+    overflow: visible;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitleWrap{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
+    position: relative;
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    overflow: visible;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelMenuBtn{
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelMenuList{
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: calc(var(--safe-top) + 104px);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: min(50dvh, 280px);
+    z-index: 40;
+  }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChart{
     height: 196px;
   }

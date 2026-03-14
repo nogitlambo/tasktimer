@@ -7,6 +7,8 @@
 - Key files: `src/app/tasktimer/page.tsx`, `src/app/tasktimer/tasktimerClient.ts`, `src/app/tasktimer/lib/*`, `src/app/tasktimer/components/*`
 
 ## Current architecture context
+- Repo-level architectural overview lives in `architecture.md`; use it for high-level system boundaries, runtime ownership, and onboarding context.
+- Treat `architecture.md` as a secondary reference only: current source files remain the final authority when behavior and documentation differ.
 - Runtime behavior is primarily wired through `initTaskTimerClient()` in `src/app/tasktimer/tasktimerClient.ts`.
 - Components are modular, but many interactions are ID/class/data-attribute based (`getElementById`, delegated click handlers).
 - Preserve IDs and selector hooks in JSX when editing UI.
@@ -105,6 +107,7 @@
 ## Code changes
 - For searches, prefer `rg`/`rg --files`.
 - Avoid broad refactors unless requested.
+- For cross-cutting changes, migrations, or architecture questions, review `architecture.md` before editing.
 - If editing UI labels in JSX, avoid raw `<` or `>` characters in text nodes.
 - Keep TypeScript/React code compatible with Next.js 16 App Router conventions.
 - For route generation in Next.js dev/web, do not force `/index.html` URLs; only use exported `index.html` pathing for true file/native export runtime.
@@ -124,8 +127,9 @@
 ## Git hygiene
 - Do not revert unrelated local changes.
 - Keep diffs focused and easy to review.
-- Do not create ad-hoc temp scripts/files in repo root (e.g. `tmp_*`, `__inspect_*`, stray one-off files); use a dedicated temp folder such as `workspace/`.
-- Remove accidental scratch artifacts before handoff.
+- Do not create ad-hoc temp scripts/files in repo root (e.g. `tmp_*`, any `__*` scratch/inspection file, stray zero-byte one-off files like `Delete`/`Friends`/`Tasks`, or malformed accidental shell-output artifacts); use a dedicated temp folder such as `workspace/`.
+- Root scratch artifacts are hygiene regressions even when they are not referenced by the codebase; repo root should contain only intentional source, config, documentation, or generated project files.
+- Before handoff, scan repo root for accidental scratch artifacts and remove them without touching legitimate project files such as `package.json`, `README.md`, `AGENTS.md`, `architecture.md`, `next.config.ts`, `tsconfig.json`, `firebase.json`, or `capacitor.config.ts`.
 
 <!-- AUTO-CONTEXT:START -->
 ## Auto-Generated Context

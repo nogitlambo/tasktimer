@@ -14,20 +14,28 @@
 }
 .dashboardTopRow{
   display:flex;
-  align-items:flex-end;
+  align-items:flex-start;
   justify-content:space-between;
   gap:12px;
   margin-bottom:12px;
+}
+.dashboardTitleWrap{
+  flex:1 1 auto;
+  min-width:0;
 }
 .dashboardEditActions{
   display:flex;
   align-items:center;
   gap:8px;
-  flex-wrap:wrap;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
   justify-content:flex-end;
+  margin-left:auto;
+  position:relative;
 }
 .dashboardPanelMenu{
   position:relative;
+  flex:0 0 auto;
 }
 .dashboardPanelMenu > summary{
   list-style:none;
@@ -36,19 +44,25 @@
   display:none;
 }
 .dashboardPanelMenuBtn{
+  width:36px;
   min-height:36px;
+  min-width:36px;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  justify-content:center;
+  gap:0;
+  padding:0;
 }
-.dashboardPanelMenuBtn::after{
-  content:"▾";
-  font-size:11px;
+.dashboardPanelMenuIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-tight);
+  font-size:18px;
+  font-weight:800;
   line-height:1;
-  opacity:.9;
-}
-.dashboardPanelMenu[open] .dashboardPanelMenuBtn::after{
-  content:"▴";
+  letter-spacing:.08em;
+  transform: translateY(-1px);
 }
 .dashboardPanelMenuList{
   position:absolute;
@@ -104,6 +118,8 @@
 #dashboardEditBtn{
   width:36px;
   height:36px;
+  min-width:36px;
+  flex:0 0 auto;
   padding:0;
   display:inline-flex;
   place-items:center;

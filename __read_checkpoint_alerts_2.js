@@ -1,1 +1,0 @@
-const fs=require('fs');const s=fs.readFileSync('src/app/tasktimer/tasktimerClient.ts','utf8'); const i=s.indexOf('function processCheckpointAlertsForTask'); console.log(s.slice(i+2400,i+5200));  
