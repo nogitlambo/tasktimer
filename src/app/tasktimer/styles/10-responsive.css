@@ -2072,3 +2072,55 @@
     letter-spacing: .08em;
   }
 }
+
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+    border-radius: 24px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
+    padding: 20px;
+    gap: 18px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+    padding: 18px 18px 16px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell{
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+    border-radius: 20px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
+    padding: 16px;
+    gap: 14px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+    padding: 16px 16px 14px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
+    font-size: 30px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStat strong{
+    font-size: 24px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap{
+    min-height: 236px;
+    padding: 14px 12px 12px;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+    padding: 12px;
+  }
+}

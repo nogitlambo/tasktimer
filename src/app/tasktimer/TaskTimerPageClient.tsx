@@ -95,7 +95,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     </div>
                   </div>
 
-                  <section className="dashboardHeroPanel" aria-label="Overview highlights">
+                  <section className="dashboardHeroPanel" data-dashboard-panel-id="overview" aria-label="Overview highlights">
                     <div className="dashboardHeroCopy dashboardHeroCopyFull">
                       <h3 className="dashboardHeroTitle">Overview</h3>
                       <div className="dashboardHeroValue" id="dashboardOverviewValue">

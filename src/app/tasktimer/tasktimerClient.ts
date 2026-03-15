@@ -1567,27 +1567,46 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return "past7";
   }
 
-  function collectDashboardCardMeta() {
-    const grid = els.dashboardGrid;
-    if (!grid) return [] as Array<{ card: HTMLElement; cardId: string; label: string }>;
-    return Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]"))
-      .map((el) => {
-        const card = el as HTMLElement;
-        const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-        if (!cardId) return null;
-        const titleEl = card.querySelector(".dashboardCardTitle") as HTMLElement | null;
+  function collectDashboardPanelMeta() {
+    const out = [] as Array<{ panel: HTMLElement; panelId: string; label: string }>;
+    const heroPanel = document.querySelector(
+      '#appPageDashboard .dashboardHeroPanel[data-dashboard-panel-id]'
+    ) as HTMLElement | null;
+    if (heroPanel) {
+      const panelId = String(heroPanel.getAttribute("data-dashboard-panel-id") || "").trim();
+      if (panelId) {
+        const titleEl = heroPanel.querySelector(".dashboardHeroTitle") as HTMLElement | null;
         const title = String(titleEl?.textContent || "").trim();
-        const ariaLabel = String(card.getAttribute("aria-label") || "").trim();
-        const label = title || ariaLabel || cardId;
-        return { card, cardId, label };
-      })
-      .filter((row): row is { card: HTMLElement; cardId: string; label: string } => !!row);
+        const ariaLabel = String(heroPanel.getAttribute("aria-label") || "").trim();
+        out.push({
+          panel: heroPanel,
+          panelId,
+          label: title || ariaLabel || panelId,
+        });
+      }
+    }
+    const grid = els.dashboardGrid;
+    if (!grid) return out;
+    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
+      const panel = el as HTMLElement;
+      const panelId = String(panel.getAttribute("data-dashboard-id") || "").trim();
+      if (!panelId) return;
+      const titleEl = panel.querySelector(".dashboardCardTitle") as HTMLElement | null;
+      const title = String(titleEl?.textContent || "").trim();
+      const ariaLabel = String(panel.getAttribute("aria-label") || "").trim();
+      out.push({
+        panel,
+        panelId,
+        label: title || ariaLabel || panelId,
+      });
+    });
+    return out;
   }
 
   function getDashboardCardVisibilityMapForStorage() {
     const out: Record<string, boolean> = {};
-    collectDashboardCardMeta().forEach(({ cardId }) => {
-      out[cardId] = dashboardCardVisibility[cardId] !== false;
+    collectDashboardPanelMeta().forEach(({ panelId }) => {
+      out[panelId] = dashboardCardVisibility[panelId] !== false;
     });
     return out;
   }
@@ -1599,12 +1618,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function syncDashboardPanelMenuState() {
     const menuList = els.dashboardPanelMenuList;
     if (!menuList) return;
-    const meta = collectDashboardCardMeta();
-    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.cardId) ? count + 1 : count), 0);
+    const meta = collectDashboardPanelMeta();
+    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
     Array.from(menuList.querySelectorAll("input[data-dashboard-panel-id]")).forEach((node) => {
       const checkbox = node as HTMLInputElement;
-      const cardId = String(checkbox.getAttribute("data-dashboard-panel-id") || "");
-      const isVisible = isDashboardCardVisible(cardId);
+      const panelId = String(checkbox.getAttribute("data-dashboard-panel-id") || "");
+      const isVisible = isDashboardCardVisible(panelId);
       checkbox.checked = isVisible;
       checkbox.disabled = isVisible && visibleCount <= 1;
     });
@@ -1613,15 +1632,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function renderDashboardPanelMenu() {
     const menuList = els.dashboardPanelMenuList;
     if (!menuList) return;
-    const meta = collectDashboardCardMeta();
+    const meta = collectDashboardPanelMeta();
     menuList.innerHTML = "";
     if (!meta.length) return;
-    meta.forEach(({ cardId, label }) => {
+    meta.forEach(({ panelId, label }) => {
       const row = document.createElement("label");
       row.className = "dashboardPanelMenuItem";
       const input = document.createElement("input");
       input.type = "checkbox";
-      input.setAttribute("data-dashboard-panel-id", cardId);
+      input.setAttribute("data-dashboard-panel-id", panelId);
       const text = document.createElement("span");
       text.textContent = label;
       row.appendChild(input);
@@ -1650,19 +1669,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function applyDashboardCardVisibility() {
-    const meta = collectDashboardCardMeta();
+    const meta = collectDashboardPanelMeta();
     if (!meta.length) return;
     let visibleCount = 0;
-    meta.forEach(({ cardId }) => {
-      if (isDashboardCardVisible(cardId)) visibleCount += 1;
+    meta.forEach(({ panelId }) => {
+      if (isDashboardCardVisible(panelId)) visibleCount += 1;
     });
     if (visibleCount <= 0) {
-      const fallbackCardId = meta[0].cardId;
-      dashboardCardVisibility[fallbackCardId] = true;
+      const fallbackPanelId = meta[0].panelId;
+      dashboardCardVisibility[fallbackPanelId] = true;
       visibleCount = 1;
     }
-    meta.forEach(({ card, cardId }) => {
-      (card as HTMLElement).style.display = isDashboardCardVisible(cardId) ? "" : "none";
+    meta.forEach(({ panel, panelId }) => {
+      panel.style.display = isDashboardCardVisible(panelId) ? "" : "none";
     });
     syncDashboardPanelMenuState();
   }
@@ -4494,7 +4513,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!taskId) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
-        const ts = Number(entry?.ts);
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
         const ms = Number(entry?.ms);
         if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
         if (ts < monthStart.getTime() || ts >= monthEnd.getTime()) return;
@@ -4529,10 +4548,25 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const key = localDayKey(dayDate.getTime());
       const dayMs = Math.max(0, byDayMs.get(key) || 0);
       const ratio = maxDayMs > 0 ? Math.max(0, Math.min(1, dayMs / maxDayMs)) : 0;
-      const hue = Math.round(120 - ratio * 120);
-      const sat = 76;
-      const light = 42;
-      const colorCss = dayMs > 0 ? `hsl(${hue} ${sat}% ${light}%)` : "";
+      const colorCss =
+        dayMs > 0
+          ? (() => {
+              // Use a theme-independent activity spectrum:
+              // green for lighter activity, orange for moderate, red for highest.
+              if (ratio <= 0.5) {
+                const t = ratio / 0.5;
+                const hue = 120 - 84 * t;
+                const sat = 78 + 6 * t;
+                const light = 42 + 6 * t;
+                return `hsl(${Math.round(hue)} ${Math.round(sat)}% ${Math.round(light)}%)`;
+              }
+              const t = (ratio - 0.5) / 0.5;
+              const hue = 36 - 32 * t;
+              const sat = 84 + 6 * t;
+              const light = 48 - 6 * t;
+              return `hsl(${Math.round(hue)} ${Math.round(sat)}% ${Math.round(light)}%)`;
+            })()
+          : "";
       const activityLevel = dayMs <= 0 ? "none" : ratio < 0.34 ? "low" : ratio < 0.67 ? "medium" : "high";
       const dateText = dayDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
       const durationText = formatDashboardDurationShort(dayMs);
@@ -9432,8 +9466,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!input) return;
       const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();
       if (!cardId) return;
-      const meta = collectDashboardCardMeta();
-      const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.cardId) ? count + 1 : count), 0);
+      const meta = collectDashboardPanelMeta();
+      const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
       const nextChecked = !!input.checked;
       if (!nextChecked && isDashboardCardVisible(cardId) && visibleCount <= 1) {
         input.checked = true;

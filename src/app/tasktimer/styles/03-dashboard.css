@@ -1061,3 +1061,311 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
     0 0 0 1px rgba(217,101,235,.05),
     0 26px 60px rgba(0,0,0,.48) !important;
 }
+
+/* Final dashboard panel redesign:
+   keep the existing widgets and grid, but push the dashboard-only surfaces toward
+   the premium finance-board reference with darker cards, clearer inset modules,
+   and theme-aware glow. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
+  position: relative;
+  isolation: isolate;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(10px);
+  opacity: .9;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before{
+  top: 34px;
+  left: -86px;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(36,244,208,.24) 0%, rgba(36,244,208,0) 70%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  right: -74px;
+  bottom: 36px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(32,215,255,.18) 0%, rgba(32,215,255,0) 72%);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border-width: 1px;
+  border-style: solid;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(100% 100% at 100% 0%, rgba(255,255,255,.07), rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
+  opacity: .78;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel::after,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard::after{
+  content: "";
+  position: absolute;
+  inset: auto 18px 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.1), rgba(255,255,255,0));
+  pointer-events: none;
+  opacity: .5;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
+  padding: 26px;
+  gap: 22px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  padding: 20px 20px 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroEyebrow,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStatLabel{
+  color: rgba(196,207,220,.54);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
+  color: #f9fbff;
+  letter-spacing: -.01em;
+  text-shadow: 0 0 26px rgba(255,255,255,.04);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroTitle{
+  font-size: 12px;
+  letter-spacing: .22em;
+  color: rgba(200,214,230,.58);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroStat strong,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardBigValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric strong{
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(255,255,255,.05);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroSubtext,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMeta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimeline li > p,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardLegend{
+  color: rgba(214,224,234,.72);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell{
+  border-radius: 22px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric{
+  padding: 14px 15px;
+  border-color: rgba(255,255,255,.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
+    rgba(10,12,18,.94);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileMetric span{
+  color: rgba(177,192,206,.58);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(120% 140% at 0% 100%, rgba(52,240,198,.12), rgba(52,240,198,0) 42%),
+    radial-gradient(120% 120% at 100% 0%, rgba(45,203,255,.12), rgba(45,203,255,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+    rgba(5,8,14,.98) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(255,255,255,.015),
+    0 14px 30px rgba(0,0,0,.24) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap{
+  padding: 16px 14px 14px;
+  min-height: 268px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap{
+  padding: 16px 18px 14px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+  min-height: 230px;
+  padding: 14px 14px 16px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars > span{
+  border-radius: 999px 999px 6px 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
+  padding: 8px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimeline li{
+  border-top-color: rgba(255,255,255,.08);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell{
+  border-color: rgba(255,255,255,.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
+    rgba(9,11,18,.96);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isFiller{
+  background: rgba(255,255,255,.018);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDonutWrap{
+  filter: drop-shadow(0 0 18px rgba(0,0,0,.32));
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.1);
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before{
+  background: radial-gradient(circle, rgba(39,242,208,.26) 0%, rgba(39,242,208,0) 70%);
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  background: radial-gradient(circle, rgba(33,210,255,.22) 0%, rgba(33,210,255,0) 72%);
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  border-color: rgba(86,232,255,.3) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(86,232,255,.06),
+    0 0 0 1px rgba(86,232,255,.04),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54),
+    0 0 30px rgba(24,225,255,.07) !important;
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+  border-color: rgba(73,225,255,.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(72,223,255,.035),
+    0 14px 30px rgba(0,0,0,.24),
+    0 0 24px rgba(38,240,208,.05) !important;
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroDelta,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta.positive{
+  color: #47ffb5;
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
+  color: rgba(206,252,245,.92);
+  border-color: rgba(72,223,255,.16);
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before{
+  background: radial-gradient(circle, rgba(212,94,255,.18) 0%, rgba(212,94,255,0) 70%);
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  background: radial-gradient(circle, rgba(64,156,255,.18) 0%, rgba(64,156,255,0) 72%);
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  border-color: rgba(221,108,241,.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(221,108,241,.06),
+    0 0 0 1px rgba(97,131,255,.04),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54),
+    0 0 30px rgba(145,86,255,.08) !important;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+  border-color: rgba(227,110,242,.14);
+  background:
+    radial-gradient(120% 140% at 0% 100%, rgba(116,102,255,.12), rgba(116,102,255,0) 42%),
+    radial-gradient(120% 120% at 100% 0%, rgba(233,92,226,.12), rgba(233,92,226,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+    rgba(5,8,14,.98) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(227,110,242,.03),
+    0 14px 30px rgba(0,0,0,.24),
+    0 0 24px rgba(157,88,255,.05) !important;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroDelta,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta.positive{
+  color: #ff8ce9;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
+  color: rgba(248,225,255,.92);
+  border-color: rgba(227,110,242,.16);
+}
+
+/* Final heatmap override:
+   keep the dashboard card theme-aware, but make heatmap cells use a fixed
+   activity spectrum independent from cyan/purple theme selection. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell{
+  border-color: rgba(255,255,255,.08) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
+    rgba(9,11,18,.96) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell.isFiller{
+  border-color: rgba(255,255,255,.06) !important;
+  background: rgba(255,255,255,.018) !important;
+  box-shadow: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell.isActive{
+  border-color: color-mix(in srgb, var(--heat-color) 72%, rgba(255,255,255,.34)) !important;
+  background:
+    radial-gradient(140% 140% at 50% 20%, rgba(255,255,255,.18), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--heat-color) 100%, #ffffff 0%), color-mix(in srgb, var(--heat-color) 76%, #000000 24%)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 0 1px color-mix(in srgb, var(--heat-color) 38%, rgba(255,255,255,.10)),
+    0 0 16px color-mix(in srgb, var(--heat-color) 36%, transparent) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="low"].isActive{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 0 0 1px rgba(76,214,103,.28),
+    0 0 14px rgba(76,214,103,.18) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="medium"].isActive{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 0 1px rgba(255,155,64,.3),
+    0 0 16px rgba(255,155,64,.2) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="high"].isActive{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    0 0 0 1px rgba(255,88,70,.32),
+    0 0 18px rgba(255,88,70,.22) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayNum{
+  color: rgba(240,246,250,.94);
+  text-shadow: 0 1px 6px rgba(0,0,0,.35);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell.isFiller .dashboardHeatDayNum{
+  color: rgba(226,242,250,.32);
+  text-shadow: none;
+}
