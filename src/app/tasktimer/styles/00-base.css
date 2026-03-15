@@ -1820,12 +1820,22 @@ body[data-control-style="square"]{
   cursor: pointer;
 }
 .friendIdentityAvatarBtn {
+  width: 63px;
+  min-width: 63px;
+  height: 63px;
   border-radius: 0;
   overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex: 0 0 63px;
 }
 .friendIdentityAvatar {
   width: 63px;
   height: 63px;
+  display: block;
+  max-width: none;
   border-radius: 0;
   object-fit: cover;
   flex: 0 0 auto;

@@ -296,7 +296,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       );
       const usesExportedHtmlPaths =
         window.location.protocol === "file:" || /\.html$/i.test(window.location.pathname || "") || isNativeCapacitorRuntime;
-      return usesExportedHtmlPaths ? `${taskTimerRootPath()}${normalizedValue}` : normalizedValue;
+      return usesExportedHtmlPaths ? `${taskTimerExportBasePath()}${normalizedValue}` : normalizedValue;
     }
     if (/^[^/].+\.(?:svg|png|jpe?g|webp|gif)$/i.test(normalizedValue)) return `/${normalizedValue}`;
     return normalizedValue;
@@ -366,6 +366,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
     const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|dashboard|friends)$/, "");
     return pageStyleRoot || normalized || "/tasktimer";
+  }
+
+  function taskTimerExportBasePath() {
+    const pathname = window.location.pathname || "";
+    const normalized = pathname.replace(/\/+$/, "");
+    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
+    if (taskTimerMatch) return taskTimerMatch[1] || "";
+    return "";
   }
 
   function appRoute(path: string) {
