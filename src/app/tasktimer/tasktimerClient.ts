@@ -1695,7 +1695,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const rawSizes = (widgets as any).cardSizes;
     if (rawSizes && typeof rawSizes === "object") {
       Object.entries(rawSizes as Record<string, unknown>).forEach(([cardId, size]) => {
-        const nextSize = sanitizeDashboardCardSize(size);
+        const nextSize = sanitizeDashboardCardSize(size, cardId);
         if (!cardId || !nextSize) return;
         nextSizes[cardId] = nextSize;
       });
@@ -1720,8 +1720,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
-  function sanitizeDashboardCardSize(value: unknown): DashboardCardSize | null {
+  function canUseCompactDashboardCardSize(cardId: string) {
+    return cardId === "streak" || cardId === "week-hours" || cardId === "tasks-completed";
+  }
+
+  function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
     if (value === "full" || value === "half" || value === "quarter") return value;
+    if (value === "eighth" && canUseCompactDashboardCardSize(String(cardId || "").trim())) return value;
     return null;
   }
 
@@ -1729,7 +1734,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const out: Record<string, DashboardCardSize> = {};
     Object.entries(dashboardCardSizes || {}).forEach(([cardId, size]) => {
       if (!cardId) return;
-      if (size === "full" || size === "half" || size === "quarter") out[cardId] = size;
+      const nextSize = sanitizeDashboardCardSize(size, cardId);
+      if (nextSize) out[cardId] = nextSize;
     });
     return out;
   }
@@ -1741,7 +1747,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const card = el as HTMLElement;
       const cardId = String(card.getAttribute("data-dashboard-id") || "");
       if (!cardId) return;
-      const size = sanitizeDashboardCardSize(dashboardCardSizes[cardId]);
+      const size = sanitizeDashboardCardSize(dashboardCardSizes[cardId], cardId);
       if (size) card.setAttribute("data-dashboard-size", size);
       else card.removeAttribute("data-dashboard-size");
     });
@@ -1753,6 +1759,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
       const card = el as HTMLElement;
       if (card.querySelector(".dashboardSizeControl")) return;
+      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
+      const compactSizeOption = canUseCompactDashboardCardSize(cardId)
+        ? `
+          <button class="dashboardSizeOption" type="button" data-dashboard-size="eighth" role="menuitemradio" aria-checked="false">Compact</button>`
+        : "";
       const control = document.createElement("div");
       control.className = "dashboardSizeControl";
       control.innerHTML = `
@@ -1763,6 +1774,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           <button class="dashboardSizeOption" type="button" data-dashboard-size="full" role="menuitemradio" aria-checked="false">Full width</button>
           <button class="dashboardSizeOption" type="button" data-dashboard-size="half" role="menuitemradio" aria-checked="false">Half width</button>
           <button class="dashboardSizeOption" type="button" data-dashboard-size="quarter" role="menuitemradio" aria-checked="false">Quarter width</button>
+          ${compactSizeOption}
         </div>
       `;
       card.prepend(control);
@@ -1776,13 +1788,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const card = el as HTMLElement;
       const cardId = String(card.getAttribute("data-dashboard-id") || "");
       if (!cardId) return;
-      const selectedSize = sanitizeDashboardCardSize(dashboardCardSizes[cardId]);
+      const selectedSize = sanitizeDashboardCardSize(dashboardCardSizes[cardId], cardId);
       const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
       const menuOpen = card.classList.contains("isSizeMenuOpen");
       if (toggle) toggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
       Array.from(card.querySelectorAll(".dashboardSizeOption[data-dashboard-size]")).forEach((btn) => {
         const option = btn as HTMLButtonElement;
-        const optionSize = sanitizeDashboardCardSize(option.getAttribute("data-dashboard-size"));
+        const optionSize = sanitizeDashboardCardSize(option.getAttribute("data-dashboard-size"), cardId);
         const isSelected = !!optionSize && !!selectedSize && optionSize === selectedSize;
         option.classList.toggle("isOn", isSelected);
         option.setAttribute("aria-checked", isSelected ? "true" : "false");
@@ -9505,7 +9517,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (!dashboardEditMode) return;
         const card = sizeOption.closest(".dashboardCard") as HTMLElement | null;
         const cardId = String(card?.getAttribute("data-dashboard-id") || "");
-        const nextSize = sanitizeDashboardCardSize(sizeOption.getAttribute("data-dashboard-size"));
+        const nextSize = sanitizeDashboardCardSize(sizeOption.getAttribute("data-dashboard-size"), cardId);
         if (!card || !cardId || !nextSize) return;
         dashboardCardSizes[cardId] = nextSize;
         applyDashboardCardSizes();
