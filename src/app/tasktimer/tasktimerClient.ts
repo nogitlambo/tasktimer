@@ -7841,18 +7841,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow">
-              <button class="friendIdentityProfileBtn friendIdentityAvatarBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
+              <span class="friendIdentityProfileBtn friendIdentityAvatarBtn" role="button" tabindex="0" data-friend-profile-open="${escapeHtmlUI(
                 row.friendUid
               )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
                 <img src="${escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" class="friendIdentityAvatar" />
-              </button>
-              <button class="friendIdentityProfileBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${escapeHtmlUI(
+              </span>
+              <span class="friendIdentityProfileBtn friendIdentityNameBtn" role="button" tabindex="0" data-friend-profile-open="${escapeHtmlUI(
                 row.friendUid
               )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
                 <span class="friendIdentityNameBlock">
                   <span class="friendIdentityName">${escapeHtmlUI(row.alias)}</span>
                 </span>
-              </button>
+              </span>
               <span class="friendSharedTasksCountText">${escapeHtmlUI(sharedCountLabel)}</span>
             </summary>
             <div class="friendSharedTasksSection">
@@ -8734,6 +8734,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       void handleFriendRequestAction(requestId, action);
     });
     on(els.groupsFriendsList, "click", (e: any) => {
+      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
+      if (!btn) return;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
+      if (!friendUid) return;
+      openFriendProfileModal(friendUid);
+    });
+    on(els.groupsFriendsList, "keydown", (e: any) => {
+      if (e?.key !== "Enter" && e?.key !== " ") return;
       const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
       if (!btn) return;
       e?.preventDefault?.();
