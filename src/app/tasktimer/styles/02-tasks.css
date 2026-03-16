@@ -654,6 +654,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFace{
   grid-area:1 / 1;
   min-width:0;
+  min-height:100%;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
 }
@@ -680,10 +681,10 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   display:flex;
   flex-direction:column;
   gap:14px;
-  padding:12px 2px 2px;
-  border:1px solid rgba(255,255,255,.08);
-  background: rgba(5,8,15,.82);
-  box-shadow: inset 0 0 0 1px rgba(240,110,224,.08);
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackHead{
   display:flex;
@@ -721,9 +722,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   width:100%;
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBack{
-  border-color: rgba(120,178,198,.24);
-  background: rgba(8,18,26,.9);
-  box-shadow: inset 0 0 0 1px rgba(120,178,198,.1);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackTitle{
   color:#eafcff;
@@ -734,9 +735,9 @@ body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
   color:#eaf7ff !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBack{
-  border-color: rgba(240,110,224,.16);
-  background: rgba(19,10,29,.88);
-  box-shadow: inset 0 0 0 1px rgba(240,110,224,.1);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
