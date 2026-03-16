@@ -1191,6 +1191,21 @@
 }
 
 /* Desktop footer navigation: lay out menu buttons horizontally instead of as a left rail. */
+@media (max-width: 1100px){
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBack{
+    padding:10px 0 0;
+  }
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBackHead{
+    gap:8px;
+  }
+}
+
+@media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBackTitle{
+    font-size:12px;
+    letter-spacing:.1em;
+  }
+}
 
 @media (min-width: 981px){
   #app[aria-label="TaskLaunch App"] .appPages{

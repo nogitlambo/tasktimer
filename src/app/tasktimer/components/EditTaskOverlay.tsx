@@ -34,30 +34,6 @@ export default function EditTaskOverlay() {
           <input type="text" id="editName" />
         </div>
 
-        <div className="field" id="editTimerTypeField">
-          <div className="timerTypeRow">
-            <span>Timer Type</span>
-            <div className="timerTypePills" role="group" aria-label="Timer Type">
-              <button
-                className="timerTypePill isOn"
-                id="editTimerTypeTimerBtn"
-                type="button"
-                aria-pressed="true"
-              >
-                Timer
-              </button>
-              <button
-                className="timerTypePill"
-                id="editTimerTypeCountdownBtn"
-                type="button"
-                aria-pressed="false"
-              >
-                Countdown
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div className="field">
           <div className="toggleRow">
             <span>Override Elapsed Time</span>

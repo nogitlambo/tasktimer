@@ -266,6 +266,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let friendProfileCacheByUid = initialState.friendProfileCacheByUid;
   let cloudRefreshInFlight = initialState.cloudRefreshInFlight;
   let lastCloudRefreshAtMs = initialState.lastCloudRefreshAtMs;
+  const flippedTaskIds = new Set<string>();
+  let lastRenderedTaskFlipMode: MainMode | null = null;
+  let lastRenderedTaskFlipView: "list" | "tile" | null = null;
   let deferredCloudRefreshTimer: number | null = null;
   let pendingDeferredCloudRefresh = initialState.pendingDeferredCloudRefresh;
   let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
@@ -1513,6 +1516,27 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
+  function syncHistoryEntryNoteOverlayForSelection(taskId: string, state?: HistoryViewState | null) {
+    if (historyEntryNoteAnchorTaskId !== taskId) return;
+    const nextState = state || ensureHistoryViewState(taskId);
+    const lockedIndexes = Array.from(nextState.lockedAbsIndexes.values()).sort((a, b) => a - b);
+    if (!lockedIndexes.length) {
+      closeHistoryEntryNoteOverlay();
+      return;
+    }
+    const display = getHistoryDisplayForTask(taskId, nextState);
+    if (!display.length) {
+      closeHistoryEntryNoteOverlay();
+      return;
+    }
+    const displayEntry = display[lockedIndexes[0]];
+    if (!displayEntry) {
+      closeHistoryEntryNoteOverlay();
+      return;
+    }
+    openHistoryEntryNoteOverlay(taskId, displayEntry, nextState.rangeMode, nextState.lockedAbsIndexes);
+  }
+
   function loadHistoryIntoMemory() {
     const loadedHistory = loadHistory();
     const cleanedHistory = cleanupHistory(loadedHistory);
@@ -1935,8 +1959,64 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const el = target as HTMLElement | null;
     if (!el) return false;
     return !!el.closest(
-      ".actions, .taskMenu, .taskMenuList, .historyInline, .historyCanvasWrap, .progressRow, button, summary, details, canvas, input, select, textarea"
+      ".actions, .taskFlipBtn, .taskBack, .taskBackActions, .historyInline, .historyCanvasWrap, .progressRow, button, summary, details, canvas, input, select, textarea"
     );
+  }
+
+  function clearTaskFlipStates() {
+    flippedTaskIds.clear();
+    lastRenderedTaskFlipMode = currentMode;
+    lastRenderedTaskFlipView = taskView;
+  }
+
+  function syncTaskFlipStatesForVisibleTasks(visibleTaskIds: Iterable<string>) {
+    if (currentAppPage !== "tasks") {
+      clearTaskFlipStates();
+      return;
+    }
+    if (lastRenderedTaskFlipMode && lastRenderedTaskFlipMode !== currentMode) flippedTaskIds.clear();
+    if (lastRenderedTaskFlipView && lastRenderedTaskFlipView !== taskView) flippedTaskIds.clear();
+    const visibleIdSet = new Set(Array.from(visibleTaskIds).map((taskId) => String(taskId || "").trim()).filter(Boolean));
+    Array.from(flippedTaskIds).forEach((taskId) => {
+      if (!visibleIdSet.has(taskId)) flippedTaskIds.delete(taskId);
+    });
+    lastRenderedTaskFlipMode = currentMode;
+    lastRenderedTaskFlipView = taskView;
+  }
+
+  function applyTaskFlipDomState(taskId: string, taskEl?: HTMLElement | null) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return;
+    const card =
+      taskEl ||
+      ((els.taskList as HTMLElement | null)?.querySelector(`.task[data-task-id="${normalizedTaskId.replace(/["\\]/g, "\\$&")}"]`) as HTMLElement | null);
+    if (!card) return;
+    const isFlipped = flippedTaskIds.has(normalizedTaskId);
+    card.classList.toggle("isFlipped", isFlipped);
+    const front = card.querySelector(".taskFaceFront") as HTMLElement | null;
+    const back = card.querySelector(".taskFaceBack") as HTMLElement | null;
+    const openBtn = card.querySelector('[data-task-flip="open"]') as HTMLElement | null;
+    const closeBtn = card.querySelector('[data-task-flip="close"]') as HTMLElement | null;
+    if (front) {
+      front.setAttribute("aria-hidden", isFlipped ? "true" : "false");
+      if (isFlipped) front.setAttribute("inert", "");
+      else front.removeAttribute("inert");
+    }
+    if (back) {
+      back.setAttribute("aria-hidden", isFlipped ? "false" : "true");
+      if (!isFlipped) back.setAttribute("inert", "");
+      else back.removeAttribute("inert");
+    }
+    if (openBtn) openBtn.setAttribute("aria-expanded", isFlipped ? "true" : "false");
+    if (closeBtn) closeBtn.setAttribute("aria-expanded", isFlipped ? "true" : "false");
+  }
+
+  function setTaskFlipped(taskId: string, flipped: boolean, taskEl?: HTMLElement | null) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return;
+    if (flipped) flippedTaskIds.add(normalizedTaskId);
+    else flippedTaskIds.delete(normalizedTaskId);
+    applyTaskFlipDomState(normalizedTaskId, taskEl);
   }
 
   function persistTaskOrderFromTaskListDom() {
@@ -3481,6 +3561,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     const modeTasks = tasks.filter((t) => taskModeOf(t) === currentMode);
     const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
+    syncTaskFlipStatesForVisibleTasks(activeTaskIds);
     for (const taskId of Array.from(pinnedHistoryTaskIds)) {
       if (activeTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
     }
@@ -3504,8 +3585,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
-      const hasActiveToastForTask =
-        !!activeCheckpointToast?.taskId && String(activeCheckpointToast.taskId) === String(t.id || "");
+      const taskId = String(t.id || "");
+      const hasActiveToastForTask = !!activeCheckpointToast?.taskId && String(activeCheckpointToast.taskId) === taskId;
       taskEl.className =
         "task" +
         (t.collapsed ? " collapsed" : "") +
@@ -3567,7 +3648,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           </div>`;
       }
 
-      const taskId = String(t.id || "");
       const showHistory = openHistoryTaskIds.has(taskId);
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const historyHTML = showHistory
@@ -3608,52 +3688,63 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         : "";
 
       taskEl.innerHTML = `
-        ${
-          checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === taskId
-            ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
-            : ""
-        }
-        <div class="row">
-          <div class="name" data-action="editName" title="Tap to edit">${escapeHtmlUI(t.name)}</div>
-          <div class="time">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
-          <div class="actions">
+        <div class="taskFlipScene">
+          <div class="taskFace taskFaceFront">
             ${
-              t.running
-                ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
+              checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === taskId
+                ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
+                : ""
             }
-            ${
-              themeMode === "cyan"
-                ? `<button class="iconBtn" data-action="reset" title="${
-                    t.running ? "Stop task to reset" : "Reset"
-                  }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
-                : `<button class="iconBtn" data-action="reset" title="${
-                    t.running ? "Stop task to reset" : "Reset"
-                  }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
-            }
-            <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-            <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
-              isHistoryPinned ? "isPinned" : ""
-            }" data-action="history" title="${
-              isHistoryPinned ? "History pinned" : "History"
-            }" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${
-              isHistoryPinned ? "disabled" : ""
-            }>&#128202;</button>
-            <details class="taskMenu">
-              <summary class="iconBtn taskMenuBtn" title="More actions" aria-label="More actions">&#8942;</summary>
-              <div class="taskMenuList">
+            <div class="row">
+              <div class="name" data-action="editName" title="Open focus mode">${escapeHtmlUI(t.name)}</div>
+              <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
+              <div class="actions">
+                ${
+                  t.running
+                    ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
+                    : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
+                }
+                ${
+                  themeMode === "cyan"
+                    ? `<button class="iconBtn" data-action="reset" title="${
+                        t.running ? "Stop task to reset" : "Reset"
+                      }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
+                    : `<button class="iconBtn" data-action="reset" title="${
+                        t.running ? "Stop task to reset" : "Reset"
+                      }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
+                }
+                <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
+                <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
+                  isHistoryPinned ? "isPinned" : ""
+                }" data-action="history" title="${
+                  isHistoryPinned ? "History pinned" : "History"
+                }" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${
+                  isHistoryPinned ? "disabled" : ""
+                }>&#128202;</button>
+                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#8942;</button>
+              </div>
+            </div>
+            ${progressHTML}
+            ${historyHTML}
+          </div>
+          <div class="taskFace taskFaceBack" aria-hidden="true" inert>
+            <div class="taskBack">
+              <div class="taskBackHead">
+                <div class="taskBackTitle">${escapeHtmlUI(t.name)}</div>
+                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
+              </div>
+              <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
                 <button class="taskMenuItem" data-action="collapse" title="${escapeHtmlUI(collapseLabel)}" type="button">${escapeHtmlUI(collapseLabel)}</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem" data-action="${isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}" type="button">${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
-            </details>
+            </div>
           </div>
         </div>
-        ${progressHTML}
-        ${historyHTML}
       `;
+      applyTaskFlipDomState(taskId, taskEl);
 
       if (useTileColumns) {
         tileColumns[visibleTaskIndex % tileColumnCount]?.appendChild(taskEl);
@@ -3931,6 +4022,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     state.selectedRelIndex = null;
     state.selectedAbsIndex = null;
     state.lockedAbsIndexes.clear();
+    syncHistoryEntryNoteOverlayForSelection(taskId, state);
     startHistorySelectionAnimation(taskId, null);
   }
 
@@ -3963,6 +4055,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function clearHistoryLockedSelections(taskId: string) {
     const state = ensureHistoryViewState(taskId);
     state.lockedAbsIndexes.clear();
+    syncHistoryEntryNoteOverlayForSelection(taskId, state);
   }
 
   type HistoryUI = {
@@ -6662,7 +6755,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.editCheckpointAlertsNote) {
       if (notes.length) {
         (els.editCheckpointAlertsNote as HTMLElement).style.display = "block";
-        els.editCheckpointAlertsNote.textContent = `Checkpoint ${notes.join(" and ")}.`;
+        els.editCheckpointAlertsNote.textContent = "Sound and toast notifications can be enabled via Settings > Notifications";
       } else {
         (els.editCheckpointAlertsNote as HTMLElement).style.display = "none";
         els.editCheckpointAlertsNote.textContent = "";
@@ -8141,6 +8234,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function applyAppPage(page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }) {
     if (currentAppPage === "tasks" && page !== "tasks") resetAllOpenHistoryChartSelections();
+    if (page !== "tasks") clearTaskFlipStates();
     currentAppPage = page;
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
     document.body.setAttribute("data-app-page", page);
@@ -9005,6 +9099,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!taskEl) return;
       const i = parseInt(taskEl.dataset.index, 10);
       if (!Number.isFinite(i)) return;
+      const taskId = String(taskEl.dataset.taskId || "").trim();
+      const flipBtn = e.target?.closest?.("[data-task-flip]") as HTMLElement | null;
+      if (flipBtn && taskId) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        setTaskFlipped(taskId, flipBtn.getAttribute("data-task-flip") === "open", taskEl as HTMLElement);
+        return;
+      }
 
       const btn = e.target?.closest?.("[data-action]");
       if (!btn) {
@@ -9024,7 +9126,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       else if (action === "edit") openEdit(i);
       else if (action === "history") openHistory(i);
       else if (action === "duplicate") duplicateTask(i);
-      else if (action === "editName") openFocusMode(i);
+      else if (action === "editName" || action === "focus") openFocusMode(i);
       else if (action === "collapse") toggleCollapse(i);
       else if (action === "exportTask") openTaskExportModal(i);
       else if (action === "shareTask") openShareTaskModal(i);
@@ -9055,8 +9157,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
 
-      const menu = btn.closest?.(".taskMenu") as HTMLDetailsElement | null;
-      if (menu && menu.open) menu.open = false;
+      if (taskId) setTaskFlipped(taskId, false, taskEl as HTMLElement);
     });
 
     on(els.resetAllBtn, "click", resetAll);
@@ -9202,6 +9303,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               });
               state.lockedAbsIndexes = nextLocked;
             }
+            syncHistoryEntryNoteOverlayForSelection(taskId, state);
 
             const maxPage = Math.max(0, Math.ceil(all2.length / historyPageSize(taskId)) - 1);
             state.page = Math.min(state.page, maxPage);
@@ -9253,6 +9355,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const isSameLocked = state.lockedAbsIndexes.has(hit.abs);
         if (isSameLocked) {
           state.lockedAbsIndexes.delete(hit.abs);
+          syncHistoryEntryNoteOverlayForSelection(taskId, state);
           const ui = getHistoryUi(taskId);
           const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
           if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
@@ -9684,6 +9787,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.taskViewSelect, "change", () => {
       const raw = String(els.taskViewSelect?.value || "").trim().toLowerCase();
       applyTaskViewPreference(raw === "tile" ? "tile" : "list");
+      clearTaskFlipStates();
+      render();
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });

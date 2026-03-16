@@ -448,6 +448,15 @@ body[data-theme="light"] optgroup{
   background:#0d0f13;
   color:#fff;
 }
+body[data-theme="light"] select{
+  accent-color: #b559ad;
+}
+body[data-theme="light"] option:checked,
+body[data-theme="light"] option:hover,
+body[data-theme="light"] option:focus{
+  background: linear-gradient(180deg, rgba(181,89,173,.26), rgba(84,35,101,.96));
+  color: #ffffff;
+}
 body[data-theme="light"] #confirmOverlay.isResetTaskConfirm .modal{
   background: #f7fbff;
   border: 1px solid rgba(27,138,160,.22);
@@ -1189,6 +1198,19 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
   border-color: rgba(181,89,173,.28) !important;
   box-shadow: inset 0 0 0 1px rgba(181,89,173,.08), 0 0 12px rgba(181,89,173,.08) !important;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBack{
+  border-color: rgba(0,133,160,.16);
+  background: rgba(244,249,252,.96);
+  box-shadow: 0 12px 24px rgba(17,44,61,.08), inset 0 0 0 1px rgba(255,255,255,.52);
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackTitle{
+  color:#17343c;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn{
+  border-color: transparent !important;
+  background: #f4f9fc !important;
+  color: #17343c !important;
 }
 body[data-theme="light"] #confirmOverlay.isDeleteFriendConfirm .modal,
 body.light #confirmOverlay.isDeleteFriendConfirm .modal{

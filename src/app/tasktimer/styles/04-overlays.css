@@ -51,18 +51,40 @@
   margin-top:8px;
 }
 
+#editOverlay .editHead h2{
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 #editOverlay label{
-  margin-bottom:4px;
-  font-size:10px;
-  letter-spacing:.06em;
+  margin-bottom:6px;
+  font-family: var(--font-tight);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform: uppercase;
+  color: rgba(216,231,239,.84);
 }
 
 #editOverlay input[type="text"],
 #editOverlay input[type="number"]{
   padding:9px 10px;
   min-height:36px;
+  font-size:14px;
+  line-height:1.35;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+#editOverlay select,
+#editOverlay .editMoveMenu > summary,
+#editOverlay .toggleRow > span,
+#editOverlay .unitRow > span{
+  font-size:14px;
+  line-height:1.35;
 }
 
 #editOverlay .toggleRow,
@@ -119,6 +141,10 @@
   margin-top:0;
 }
 
+#editOverlay .editMoveWrap > label{
+  margin-bottom: 0;
+}
+
 #editOverlay .footerBtns{
   margin-top:10px;
   gap:8px;
@@ -161,9 +187,10 @@
   border:1px solid rgba(255,77,77,.5);
   background: rgba(255,77,77,.12);
   color:#ffd3d3;
-  font-size:12px;
+  font-size:11px;
   font-weight:700;
-  line-height:1.25;
+  line-height:1.35;
+  letter-spacing: .03em;
 }
 
 #editOverlay .editValidationError.isOn{
@@ -233,9 +260,9 @@
 
 #editOverlay .milestonesSummaryPrimary{
   font-family: var(--font-tight);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
@@ -252,7 +279,7 @@
   align-items:center;
   gap:6px;
   font-family: var(--font-tight);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -389,6 +416,7 @@
 #editOverlay .msRow input[type="text"]{
   padding:7px 9px;
   min-height:30px;
+  font-size: 13px;
 }
 
 #editOverlay .msRow{
@@ -497,11 +525,29 @@
 }
 
 #editOverlay .checkpointAlertsGroup{
-  margin:6px 0 2px;
+  margin:8px 0 2px;
 }
 
 #editOverlay .checkpointAlertSoundModeField{
   margin-top:4px;
+}
+
+#editOverlay .checkpointAlertsTitle{
+  margin: 0 0 8px;
+  font-family: var(--font-tight);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(226,246,255,.92);
+}
+
+#editOverlay .checkpointAlertsNote,
+#editOverlay .editPresetIntervalsInfoDialog,
+#editOverlay .milestonesBody,
+#editOverlay .presetIntervalsInfoSlot{
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 #editOverlay .modal{
@@ -784,7 +830,7 @@
   border-radius: 10px;
   background: rgba(20,28,38,.92);
   color: rgba(206,228,238,.9);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -838,7 +884,7 @@
 #elapsedPadOverlay .modal.elapsedPadModal{
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path: none;
   padding: 14px 14px 12px;
 }
 
@@ -949,6 +995,7 @@ body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select{
   border-color: rgba(214,96,229,.44) !important;
   background: rgba(22,12,34,.86) !important;
   color: rgba(245,235,255,.94) !important;
+  color-scheme: dark;
 }
 
 body[data-theme="purple"] #editOverlay input[type="text"]:focus,
@@ -965,12 +1012,42 @@ body[data-theme="purple"] #editOverlay optgroup{
   background: #140b20;
   color: #f3e8ff;
 }
+body[data-theme="purple"] #editOverlay option:checked,
+body[data-theme="purple"] #editOverlay option:hover,
+body[data-theme="purple"] #editOverlay option:focus{
+  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
+  color: #fff6ff;
+}
 
-body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
-  border-color: rgba(233,134,245,.66) !important;
-  background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(255,255,255,.05)) !important;
-  color: #fff6ff !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.22) inset !important;
+body[data-theme="cyan"] #editOverlay input[type="text"],
+body[data-theme="cyan"] #editOverlay input[type="number"],
+body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select{
+  border-color: rgba(53,232,255,.38) !important;
+  background: rgba(8,18,26,.9) !important;
+  color: rgba(234,252,255,.96) !important;
+  color-scheme: dark;
+}
+
+body[data-theme="cyan"] #editOverlay input[type="text"]:focus,
+body[data-theme="cyan"] #editOverlay input[type="number"]:focus,
+body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select:focus{
+  border-color: rgba(93,239,255,.68) !important;
+  outline: 1px solid rgba(126,243,255,.24) !important;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(126,243,255,.16) inset !important;
+}
+
+body[data-theme="cyan"] #editOverlay option,
+body[data-theme="cyan"] #editOverlay optgroup{
+  background: #0c131a;
+  color: #eafcff;
+}
+
+body[data-theme="cyan"] #editOverlay option:checked,
+body[data-theme="cyan"] #editOverlay option:hover,
+body[data-theme="cyan"] #editOverlay option:focus{
+  background: linear-gradient(180deg, rgba(53,232,255,.34), rgba(8,83,110,.96));
+  color: #f3feff;
 }
 
 body[data-theme="purple"] #editOverlay .switch.on{

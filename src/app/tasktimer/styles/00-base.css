@@ -514,6 +514,29 @@ optgroup{
   background:#0d0f13;
   color:#fff;
 }
+body[data-theme="purple"] select{
+  accent-color: #d447d2;
+}
+body[data-theme="cyan"] select{
+  accent-color: #35e8ff;
+}
+body[data-theme="purple"] option:checked,
+body[data-theme="purple"] option:hover,
+body[data-theme="purple"] option:focus{
+  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
+  color: #fff6ff;
+}
+body[data-theme="cyan"] option,
+body[data-theme="cyan"] optgroup{
+  background: #0c131a;
+  color: #eafcff;
+}
+body[data-theme="cyan"] option:checked,
+body[data-theme="cyan"] option:hover,
+body[data-theme="cyan"] option:focus{
+  background: linear-gradient(180deg, rgba(53,232,255,.34), rgba(8,83,110,.96));
+  color: #f3feff;
+}
 .addTaskNameCombo{
   position:relative;
   display:flex;
@@ -2076,6 +2099,12 @@ body[data-theme="purple"] option,
 body[data-theme="purple"] optgroup{
   background: #140b20;
   color: #f3e8ff;
+}
+body[data-theme="purple"] option:checked,
+body[data-theme="purple"] option:hover,
+body[data-theme="purple"] option:focus{
+  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
+  color: #fff6ff;
 }
 /* Final Purple text/icon pass: footer and title/label language. */
 body[data-theme="purple"] .appFooterLabel{
