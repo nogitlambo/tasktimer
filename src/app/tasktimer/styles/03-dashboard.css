@@ -221,6 +221,11 @@
 .dashboardCard.isSizeMenuOpen .dashboardSizeMenu{
   display:flex;
 }
+.dashboardCard.isSizeMenuOpen{
+  overflow: visible !important;
+  clip-path: none !important;
+  z-index: 80;
+}
 .dashboardSizeOption{
   width:100%;
   min-height:28px;
@@ -1390,19 +1395,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   grid-row: span 17;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard{
-  grid-row: span 24;
+  grid-row: span 25;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
-  grid-row: span 28;
+  grid-row: span 25;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDonutCard{
   grid-row: span 18;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineCard{
-  grid-row: span 24;
+  grid-row: span 25;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{
-  grid-row: span 34;
+  grid-row: span 25;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard[data-dashboard-size="eighth"]{
   grid-column: span 3;
@@ -1444,4 +1449,108 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
   border-radius: 0 !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
+  min-height: 0;
+  overflow: visible;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
+  flex: 1 1 auto;
+  min-height: 96px;
+  height: auto;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyChartInline{
+  width: 100%;
+  height: 100%;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionRangeRow{
+  flex: 0 0 auto;
+  margin-top: 8px;
+  position: relative;
+  z-index: 6;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard .dashboardGraphBars,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard .dashboardGraphBars > span{
+  border-radius: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{
+  grid-row: span 25;
+  min-height: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard .dashboardGraphBars,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard .dashboardGraphBars{
+  margin-top: 8px;
+  padding: clamp(10px, 1vw, 14px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMainGraphCard .dashboardGraphAxis{
+  margin-top: 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
+  margin-top: 8px;
+  padding: clamp(6px, .7vw, 10px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionRangeRow{
+  margin-top: 8px;
+  padding-top: 8px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .dashboardAvgRangeMenu{
+  position: relative;
+  z-index: 7;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatHeaderRow{
+  margin-top: 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatWeekdays{
+  margin-top: 6px;
+  width: 100%;
+  min-width: 0;
+  gap: clamp(2px, .45vw, 6px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatWeekdays > span{
+  min-width: 0;
+  font-size: clamp(7px, .55vw, 10px);
+  letter-spacing: clamp(.02em, .08vw, .08em);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCalendarGrid{
+  margin-top: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  gap: clamp(2px, .45vw, 6px);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  align-content: stretch;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell{
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayNum{
+  font-size: clamp(8px, .65vw, 11px);
 }

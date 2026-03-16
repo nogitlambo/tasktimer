@@ -1135,6 +1135,26 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
   background: #f4f9fc !important;
   color: #17343c !important;
 }
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse)::before{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,0) 22%),
+    linear-gradient(90deg, rgba(0,133,160,.10), rgba(255,255,255,0) 24%);
+  opacity: 1;
+}
+body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse)::after{
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,133,160,.18) 0 18%,
+      transparent 18% 24%,
+      rgba(0,133,160,.18) 24% 42%,
+      transparent 42% 48%,
+      rgba(0,133,160,.18) 48% 66%,
+      transparent 66% 72%,
+      rgba(0,133,160,.18) 72% 100%
+    );
+  opacity: .72;
+}
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:hover,
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:focus-visible{
   border-color: rgba(181,89,173,.28) !important;

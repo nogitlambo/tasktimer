@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import SettingsPanel from "./SettingsPanel";
+import SettingsPanel, { type SettingsPaneKey } from "./SettingsPanel";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ initialPane = null }: { initialPane?: SettingsPaneKey | null } = {}) {
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Settings">
       <div className="topbar" aria-label="TaskLaunch header">
@@ -18,7 +18,7 @@ export default function SettingsScreen() {
           <div className="settingsSceneGlow settingsSceneGlowA" />
           <div className="settingsSceneGlow settingsSceneGlowB" />
         </div>
-        <SettingsPanel />
+        <SettingsPanel initialPane={initialPane} />
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>

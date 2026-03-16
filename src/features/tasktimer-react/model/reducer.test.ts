@@ -166,13 +166,13 @@ describe("task timer reducer", () => {
   it("deletes a task while preserving history when the confirm checkbox is cleared", () => {
     const task = createTask({ id: "task-delete" });
     const entry = { ts: 100, name: "Base Task", ms: 45_000 };
-    let state = hydrateState({
+    const hydrated = hydrateState({
       tasks: [task],
       historyByTaskId: { "task-delete": [entry] },
       pinnedHistoryTaskIds: ["task-delete"],
     });
-    state = {
-      ...state,
+    const state = {
+      ...hydrated,
       openHistoryTaskIds: ["task-delete"],
       historySelectionByTaskId: { "task-delete": [createHistoryEntryKey(entry)] },
     };
@@ -196,7 +196,7 @@ describe("task timer reducer", () => {
       hasStarted: true,
       xpDisqualifiedUntilReset: true,
     });
-    let state = hydrateState({ tasks: [task] }, 2_000_000);
+    const state = hydrateState({ tasks: [task] }, 2_000_000);
 
     const requested = reduceTaskTimerState(state, { type: "requestResetTask", taskId: "task-reset" });
     expect(requested.confirmDialog).toMatchObject({ kind: "resetTask", taskId: "task-reset" });
@@ -220,12 +220,12 @@ describe("task timer reducer", () => {
   it("deletes the selected history entries after confirmation and clears the selection", () => {
     const first = { ts: 100, name: "Base Task", ms: 10_000 };
     const second = { ts: 200, name: "Base Task", ms: 20_000 };
-    let state = hydrateState({
+    const hydrated = hydrateState({
       tasks: [createTask({ id: "task-history" })],
       historyByTaskId: { "task-history": [first, second] },
     });
 
-    state = reduceTaskTimerState(state, {
+    const state = reduceTaskTimerState(hydrated, {
       type: "toggleHistorySelection",
       taskId: "task-history",
       entryKey: createHistoryEntryKey(first),

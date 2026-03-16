@@ -364,7 +364,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const normalized = pathname.replace(/\/+$/, "");
     const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
     if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
-    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|dashboard|friends)$/, "");
+    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends)$/, "");
     return pageStyleRoot || normalized || "/tasktimer";
   }
 
@@ -472,6 +472,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (/\/tasktimer\/settings\.html$/i.test(normalized)) return "/tasktimer/settings";
     if (/\/tasktimer\/history-manager\.html$/i.test(normalized)) return "/tasktimer/history-manager";
     if (/\/tasktimer\/user-guide\.html$/i.test(normalized)) return "/tasktimer/user-guide";
+    if (/\/tasktimer\/feedback\.html$/i.test(normalized)) return "/tasktimer/feedback";
     if (/\/tasktimer(?:\/index)?$/i.test(normalized)) return "/tasktimer";
     return normalized;
   }
@@ -482,7 +483,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       path === "/tasktimer" ||
       path === "/tasktimer/settings" ||
       path === "/tasktimer/history-manager" ||
-      path === "/tasktimer/user-guide"
+      path === "/tasktimer/user-guide" ||
+      path === "/tasktimer/feedback"
     );
   }
 

@@ -29,17 +29,34 @@ import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import RankThumbnail from "./RankThumbnail";
 
-type SettingsPaneKey =
-  | "general"
-  | "preferences"
-  | "appearance"
-  | "notifications"
-  | "privacy"
+export type SettingsPaneKey =
+  | "general"
+  | "preferences"
+  | "appearance"
+  | "notifications"
+  | "privacy"
   | "userGuide"
   | "about"
   | "feedback"
-  | "data"
-  | "reset";
+  | "data"
+  | "reset";
+
+const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
+  "general",
+  "preferences",
+  "appearance",
+  "notifications",
+  "privacy",
+  "userGuide",
+  "about",
+  "feedback",
+  "data",
+  "reset",
+];
+
+function isSettingsPaneKey(value: string): value is SettingsPaneKey {
+  return SETTINGS_PANE_KEYS.includes(value as SettingsPaneKey);
+}
 
 function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
   return (
@@ -137,28 +154,31 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
-function SettingsNavTile({
-  label,
-  active,
-  danger,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  danger?: boolean;
-  onClick: () => void;
-}) {
+function SettingsNavTile({
+  icon,
+  label,
+  active,
+  danger,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  danger?: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
-      className={`menuItem settingsNavTile${active ? " isActive" : ""}${danger ? " isDanger" : ""}`}
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      <span className="settingsNavRowText">{label}</span>
-    </button>
-  );
-}
+      className={`menuItem settingsNavTile${active ? " isActive" : ""}${danger ? " isDanger" : ""}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      <img className="settingsMenuItemIcon settingsNavItemIcon" src={icon} alt="" aria-hidden="true" />
+      <span className="settingsNavRowText">{label}</span>
+    </button>
+  );
+}
 
 function SettingsDetailPane({
   active,
@@ -182,7 +202,7 @@ function SettingsDetailPane({
   );
 }
 
-export default function SettingsPanel() {
+export default function SettingsPanel({ initialPane = null }: { initialPane?: SettingsPaneKey | null } = {}) {
   const [activePane, setActivePane] = useState<SettingsPaneKey | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
@@ -256,17 +276,17 @@ export default function SettingsPanel() {
       avatarSyncNoticeTimerRef.current = null;
     }, 2200);
   }, []);
-  const navItems = useMemo(
-    () => [
-      { key: "general" as const, label: "Account" },
-      { key: "preferences" as const, label: "Preferences" },
-      { key: "appearance" as const, label: "Appearance" },
-      { key: "notifications" as const, label: "Notifications" },
-      { key: "privacy" as const, label: "Privacy Policy" },
-      { key: "userGuide" as const, label: "Support" },
-      { key: "about" as const, label: "About" },
-      { key: "feedback" as const, label: "Feedback" },
-      { key: "data" as const, label: "Data" },
+  const navItems = useMemo(
+    () => [
+      { key: "general" as const, label: "Account", icon: "/Settings.svg" },
+      { key: "preferences" as const, label: "Preferences", icon: "/Task_Settings.svg" },
+      { key: "appearance" as const, label: "Appearance", icon: "/Appearance.svg" },
+      { key: "notifications" as const, label: "Notifications", icon: "/Settings.svg" },
+      { key: "privacy" as const, label: "Privacy Policy", icon: "/About.svg" },
+      { key: "userGuide" as const, label: "Support", icon: "/User_Guide.svg" },
+      { key: "about" as const, label: "About", icon: "/About.svg" },
+      { key: "feedback" as const, label: "Feedback", icon: "/Feedback.svg" },
+      { key: "data" as const, label: "Data", icon: "/History_Manager.svg" },
     ],
     []
   );
@@ -293,14 +313,15 @@ export default function SettingsPanel() {
       }));
   }, [avatarOptions]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const initialPane = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
-    if (initialPane === "general") {
-      setActivePane((prev) => prev ?? "general");
-      setMobileDetailOpen(true);
-      return;
-    }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const queryPaneRaw = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
+    const requestedPane = isSettingsPaneKey(queryPaneRaw) ? queryPaneRaw : initialPane;
+    if (requestedPane) {
+      setActivePane((prev) => prev ?? requestedPane);
+      setMobileDetailOpen(true);
+      return;
+    }
     const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
     if (!isMobileViewport) {
       setActivePane((prev) => prev ?? "general");
@@ -920,6 +941,7 @@ export default function SettingsPanel() {
             {navItems.map((item) => (
               <SettingsNavTile
                 key={item.key}
+                icon={item.icon}
                 label={item.label}
                 active={activePane === item.key}
                 onClick={() => {

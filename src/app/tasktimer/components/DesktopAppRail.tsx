@@ -14,7 +14,7 @@ import {
 } from "../lib/rewards";
 import { STORAGE_KEY, subscribeCachedPreferences } from "../lib/storage";
 
-type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings";
+type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -88,9 +88,16 @@ const DESKTOP_SECONDARY_LINKS: DesktopLinkItem[] = [
   {
     label: "Help Center",
     ariaLabel: "Help Center",
-    iconSrc: "/User_Guide.svg",
+    iconSrc: "/About.svg",
     id: "commandCenterHelpCenterBtn",
     href: "/tasktimer/user-guide",
+  },
+  {
+    label: "Feedback",
+    ariaLabel: "Feedback",
+    iconSrc: "/Feedback.svg",
+    id: "commandCenterFeedbackBtn",
+    href: "/tasktimer/feedback",
   },
 ];
 
@@ -360,11 +367,16 @@ export default function DesktopAppRail({
     <>
       {showDesktopRail ? (
         <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
-          <div className="dashboardRailSectionLabel">Navigation</div>
+          <div className="dashboardRailSectionLabel">Modules</div>
           <nav className="dashboardRailNav">
             {NAV_ITEMS.filter(isPrimaryDesktopNavItem).map((item) =>
               renderDesktopNavItem(item, activePage, useClientNavButtons)
             )}
+          </nav>
+
+          <div className="dashboardRailSectionLabel">Support</div>
+          <nav className="dashboardRailNav">
+            {DESKTOP_SECONDARY_LINKS.map((item) => renderDesktopLinkItem(item))}
           </nav>
 
           <div className="dashboardRailSectionLabel">Settings</div>
@@ -372,7 +384,6 @@ export default function DesktopAppRail({
             {NAV_ITEMS.filter(isSecondaryDesktopNavItem).map((item) =>
               renderDesktopNavItem(item, activePage, useClientNavButtons)
             )}
-            {DESKTOP_SECONDARY_LINKS.map((item) => renderDesktopLinkItem(item))}
           </nav>
 
           <div className="dashboardRailSectionLabel">Profile</div>

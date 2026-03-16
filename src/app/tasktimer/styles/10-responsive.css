@@ -268,7 +268,7 @@
 
 @media (min-width: 641px) and (max-width: 980px){
   #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 244px minmax(0, 1fr);
     gap:10px;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
@@ -2016,6 +2016,9 @@
 
 @media (min-width: 981px){
   /* Final Settings-nav padding override: align the desktop Settings nav with the desktop app shell rail edge. */
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
   #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
     padding-left: 0;
   }
