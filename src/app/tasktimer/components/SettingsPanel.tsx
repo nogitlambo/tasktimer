@@ -180,22 +180,27 @@ function SettingsNavTile({
   );
 }
 
-function SettingsDetailPane({
-  active,
-  title,
-  subtitle,
-  children,
-}: {
-  active: boolean;
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={`settingsDetailPane${active ? " isActive" : ""}`} aria-hidden={active ? "false" : "true"}>
-      <div className="settingsDetailHead">
-        <h2 className="settingsDetailTitle">{title}</h2>
-        <p className="settingsDetailText">{subtitle}</p>
+function SettingsDetailPane({
+  active,
+  paneClassName = "",
+  title,
+  subtitle,
+  children,
+}: {
+  active: boolean;
+  paneClassName?: string;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`settingsDetailPane${active ? " isActive" : ""}${paneClassName ? ` ${paneClassName}` : ""}`}
+      aria-hidden={active ? "false" : "true"}
+    >
+      <div className="settingsDetailHead">
+        <h2 className="settingsDetailTitle">{title}</h2>
+        <p className="settingsDetailText">{subtitle}</p>
       </div>
       <div className="settingsDetailBody">{children}</div>
     </section>
@@ -1342,6 +1347,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
 
           <SettingsDetailPane
             active={activePane === "preferences"}
+            paneClassName="settingsDisplayTypographyPane"
             title="Preferences"
             subtitle="Configure task behavior and dashboard options."
           >
@@ -1399,6 +1405,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
 
           <SettingsDetailPane
             active={activePane === "appearance"}
+            paneClassName="settingsDisplayTypographyPane"
             title="Appearance"
             subtitle="Choose your theme, mode styling, and visual display options."
           >
@@ -1437,8 +1444,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   <label htmlFor="categoryMode1Input">Default Mode</label>
                   <div className="categoryFieldControl">
                     <input id="categoryMode1Input" type="text" maxLength={10} />
-                    <input className="categoryColorInput" id="categoryMode1Color" type="color" aria-label="Mode 1 color" />
-                    <input className="categoryColorHex" id="categoryMode1ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 1 hex color" />
                   </div>
                 </div>
                 <div className="modeSwitchesLabel">Modes</div>
@@ -1450,8 +1455,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   <label htmlFor="categoryMode2Input">Mode 2</label>
                   <div className="categoryFieldControl">
                     <input id="categoryMode2Input" type="text" maxLength={10} />
-                    <input className="categoryColorInput" id="categoryMode2Color" type="color" aria-label="Mode 2 color" />
-                    <input className="categoryColorHex" id="categoryMode2ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 2 hex color" />
                     <button className="categoryTrashBtn" id="categoryMode2TrashBtn" type="button" aria-label="Delete Mode 2 category">
                       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
@@ -1467,8 +1470,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   <label htmlFor="categoryMode3Input">Mode 3</label>
                   <div className="categoryFieldControl">
                     <input id="categoryMode3Input" type="text" maxLength={10} />
-                    <input className="categoryColorInput" id="categoryMode3Color" type="color" aria-label="Mode 3 color" />
-                    <input className="categoryColorHex" id="categoryMode3ColorHex" type="text" maxLength={7} placeholder="#00CFC8" aria-label="Mode 3 hex color" />
                     <button className="categoryTrashBtn" id="categoryMode3TrashBtn" type="button" aria-label="Delete Mode 3 category">
                       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />

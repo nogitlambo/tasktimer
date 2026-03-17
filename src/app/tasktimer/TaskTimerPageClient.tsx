@@ -48,6 +48,25 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     <p className="dashboardKicker">Workspace</p>
                     <h2 className="dashboardTitle">Tasks</h2>
                   </div>
+                  <div className="tasksModeControlGroup">
+                    <span className="tasksModeControlLabel">Category</span>
+                    <details className="tasksModeMenu" id="modeSwitch">
+                      <summary className="btn btn-ghost small tasksModeMenuBtn" id="modeSwitchBtn" role="button" aria-label="Select task category">
+                        <span id="modeSwitchCurrentLabel">Mode 1</span>
+                      </summary>
+                      <div className="tasksModeMenuList" role="menu" aria-label="Task categories">
+                        <button className="tasksModeMenuItem modeBtn isOn" id="mode1Btn" type="button" role="menuitemradio" aria-checked="true">
+                          Mode 1
+                        </button>
+                        <button className="tasksModeMenuItem modeBtn" id="mode2Btn" type="button" role="menuitemradio" aria-checked="false">
+                          Mode 2
+                        </button>
+                        <button className="tasksModeMenuItem modeBtn" id="mode3Btn" type="button" role="menuitemradio" aria-checked="false">
+                          Mode 3
+                        </button>
+                      </div>
+                    </details>
+                  </div>
                 </div>
                 <section className="modeView modeViewOn" id="mode1View" aria-label="Mode 1 view">
                   <div className="list" id="taskList" />

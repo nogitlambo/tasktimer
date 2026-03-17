@@ -387,7 +387,10 @@ export default function DesktopAppRail({
           </nav>
 
           <div className="dashboardRailSectionLabel">Profile</div>
-          <section className="dashboardCard dashboardProfileCard dashboardRailProfileSummary" aria-label="Profile summary">
+          <section
+            className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
+            aria-label="Profile summary"
+          >
             <div className="dashboardProfileHead dashboardRailProfileHead">
               {profileAvatarSrc ? (
                 <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />

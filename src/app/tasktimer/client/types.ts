@@ -56,7 +56,6 @@ export type TaskTimerMutableState = {
   currentMode: MainMode;
   modeLabels: Record<MainMode, string>;
   modeEnabled: Record<MainMode, boolean>;
-  modeColors: Record<MainMode, string>;
   editIndex: number | null;
   editDraftSnapshot: string;
   focusCheckpointSig: string;

@@ -60,7 +60,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     currentMode: "mode1",
     modeLabels: { ...DEFAULT_MODE_LABELS },
     modeEnabled: { ...DEFAULT_MODE_ENABLED },
-    modeColors: { ...DEFAULT_MODE_COLORS },
     editIndex: null,
     editDraftSnapshot: "",
     focusCheckpointSig: "",

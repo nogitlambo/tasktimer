@@ -152,7 +152,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let currentMode = initialState.currentMode;
   let modeLabels = initialState.modeLabels;
   let modeEnabled = initialState.modeEnabled;
-  let modeColors = initialState.modeColors;
   let editIndex = initialState.editIndex;
   let editDraftSnapshot = initialState.editDraftSnapshot;
   let focusCheckpointSig = initialState.focusCheckpointSig;
@@ -2090,24 +2089,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!raw) return fallback;
     return raw.slice(0, 10);
   }
-  function sanitizeModeColor(value: unknown, fallback: string) {
-    let raw = String(value ?? "").trim().toUpperCase();
-    if (!raw) return fallback;
-    if (raw.startsWith("#")) raw = raw.slice(1);
-    if (/^[0-9A-F]{3}$/.test(raw)) {
-      raw = raw
-        .split("")
-        .map((ch) => ch + ch)
-        .join("");
-    }
-    return /^[0-9A-F]{6}$/.test(raw) ? `#${raw}` : fallback;
-  }
-
   function getModeLabel(mode: MainMode) {
     return modeLabels[mode] || DEFAULT_MODE_LABELS[mode];
   }
   function getModeColor(mode: MainMode) {
-    return modeColors[mode] || DEFAULT_MODE_COLORS[mode];
+    return DEFAULT_MODE_COLORS[mode];
   }
   function applyModeAccent(mode: MainMode) {
     document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
@@ -2125,20 +2111,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.mode1Btn) els.mode1Btn.textContent = getModeLabel("mode1");
     if (els.mode2Btn) els.mode2Btn.textContent = getModeLabel("mode2");
     if (els.mode3Btn) els.mode3Btn.textContent = getModeLabel("mode3");
+    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(currentMode);
     if (els.mode2Btn) els.mode2Btn.disabled = !isModeEnabled("mode2");
     if (els.mode3Btn) els.mode3Btn.disabled = !isModeEnabled("mode3");
+    if (els.mode1Btn) els.mode1Btn.setAttribute("aria-checked", String(currentMode === "mode1"));
+    if (els.mode2Btn) els.mode2Btn.setAttribute("aria-checked", String(currentMode === "mode2"));
+    if (els.mode3Btn) els.mode3Btn.setAttribute("aria-checked", String(currentMode === "mode3"));
     if (els.editMoveMode1) els.editMoveMode1.textContent = getModeLabel("mode1");
     if (els.editMoveMode2) els.editMoveMode2.textContent = getModeLabel("mode2");
     if (els.editMoveMode3) els.editMoveMode3.textContent = getModeLabel("mode3");
     if (els.categoryMode1Input) els.categoryMode1Input.value = getModeLabel("mode1");
     if (els.categoryMode2Input) els.categoryMode2Input.value = getModeLabel("mode2");
     if (els.categoryMode3Input) els.categoryMode3Input.value = getModeLabel("mode3");
-    if (els.categoryMode1Color) els.categoryMode1Color.value = getModeColor("mode1");
-    if (els.categoryMode2Color) els.categoryMode2Color.value = getModeColor("mode2");
-    if (els.categoryMode3Color) els.categoryMode3Color.value = getModeColor("mode3");
-    if (els.categoryMode1ColorHex) els.categoryMode1ColorHex.value = getModeColor("mode1");
-    if (els.categoryMode2ColorHex) els.categoryMode2ColorHex.value = getModeColor("mode2");
-    if (els.categoryMode3ColorHex) els.categoryMode3ColorHex.value = getModeColor("mode3");
     els.categoryMode2Toggle?.classList.toggle("on", isModeEnabled("mode2"));
     els.categoryMode2Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode2")));
     els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
@@ -2162,7 +2146,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function loadModeLabels() {
     modeLabels = { ...DEFAULT_MODE_LABELS };
     modeEnabled = { ...DEFAULT_MODE_ENABLED };
-    modeColors = { ...DEFAULT_MODE_COLORS };
     try {
       const parsed = (cloudPreferencesCache || loadCachedPreferences())?.modeSettings;
       if (parsed && typeof parsed === "object") {
@@ -2171,25 +2154,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
         modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
         modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
-        modeColors.mode1 = sanitizeModeColor((parsed as any).mode1?.color ?? (parsed as any).mode1Color, DEFAULT_MODE_COLORS.mode1);
-        modeColors.mode2 = sanitizeModeColor((parsed as any).mode2?.color, DEFAULT_MODE_COLORS.mode2);
-        modeColors.mode3 = sanitizeModeColor((parsed as any).mode3?.color, DEFAULT_MODE_COLORS.mode3);
-        // Legacy migration: older defaults stored all modes as the same cyan color.
-        // Promote mode2/mode3 to distinct defaults so mode-based visuals are meaningful.
-        if (
-          modeColors.mode1.toLowerCase() === "#00cfc8" &&
-          modeColors.mode2.toLowerCase() === "#00cfc8" &&
-          modeColors.mode3.toLowerCase() === "#00cfc8"
-        ) {
-          modeColors.mode2 = DEFAULT_MODE_COLORS.mode2;
-          modeColors.mode3 = DEFAULT_MODE_COLORS.mode3;
-          saveModeSettings();
-        }
         return;
       }
       modeLabels = { ...DEFAULT_MODE_LABELS };
       modeEnabled = { ...DEFAULT_MODE_ENABLED };
-      modeColors = { ...DEFAULT_MODE_COLORS };
     } catch {
       // ignore
     }
@@ -3045,9 +3013,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled,
       modeSettings: {
-        mode1: { label: modeLabels.mode1, enabled: true, color: modeColors.mode1 },
-        mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2, color: modeColors.mode2 },
-        mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3, color: modeColors.mode3 },
+        mode1: { label: modeLabels.mode1, enabled: true },
+        mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2 },
+        mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3 },
       },
       rewards: normalizeRewardProgress(rewardProgress),
       updatedAtMs: Date.now(),
@@ -3690,6 +3658,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskEl.innerHTML = `
         <div class="taskFlipScene">
           <div class="taskFace taskFaceFront">
+            <div class="taskFaceShell taskFaceShellFront">
             ${
               checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === taskId
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
@@ -3726,12 +3695,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             </div>
             ${progressHTML}
             ${historyHTML}
+            </div>
           </div>
           <div class="taskFace taskFaceBack" aria-hidden="true" inert>
+            <div class="taskFaceShell taskFaceShellBack">
             <div class="taskBack">
               <div class="taskBackHead">
-                <div class="taskBackTitle">${escapeHtmlUI(t.name)}</div>
                 <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
+                <div class="taskBackTitle">${escapeHtmlUI(t.name)}</div>
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
@@ -3740,6 +3711,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                 <button class="taskMenuItem" data-action="${isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}" type="button">${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -8223,9 +8195,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     currentMode = mode;
     applyModeAccent(mode);
     document.body.setAttribute("data-main-mode", mode);
+    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(mode);
     els.mode1Btn?.classList.toggle("isOn", mode === "mode1");
     els.mode2Btn?.classList.toggle("isOn", mode === "mode2");
     els.mode3Btn?.classList.toggle("isOn", mode === "mode3");
+    els.mode1Btn?.setAttribute("aria-checked", String(mode === "mode1"));
+    els.mode2Btn?.setAttribute("aria-checked", String(mode === "mode2"));
+    els.mode3Btn?.setAttribute("aria-checked", String(mode === "mode3"));
+    if (els.modeSwitch && "open" in (els.modeSwitch as HTMLDetailsElement)) {
+      (els.modeSwitch as HTMLDetailsElement).open = false;
+    }
     els.mode1View?.classList.toggle("modeViewOn", true);
     els.mode2View?.classList.toggle("modeViewOn", mode === "mode2");
     els.mode3View?.classList.toggle("modeViewOn", mode === "mode3");
@@ -8359,18 +8338,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
       modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
       modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
-      modeColors.mode1 = sanitizeModeColor(
-        (els.categoryMode1ColorHex?.value || "").trim() || els.categoryMode1Color?.value,
-        DEFAULT_MODE_COLORS.mode1
-      );
-      modeColors.mode2 = sanitizeModeColor(
-        (els.categoryMode2ColorHex?.value || "").trim() || els.categoryMode2Color?.value,
-        DEFAULT_MODE_COLORS.mode2
-      );
-      modeColors.mode3 = sanitizeModeColor(
-        (els.categoryMode3ColorHex?.value || "").trim() || els.categoryMode3Color?.value,
-        DEFAULT_MODE_COLORS.mode3
-      );
       modeEnabled.mode1 = true;
       saveModeSettings();
       syncModeLabelsUi();
@@ -8381,29 +8348,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (opts?.closeOverlay) closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
       else render();
     };
-    const wireModeColorPair = (picker: HTMLInputElement | null, hex: HTMLInputElement | null, mode: MainMode) => {
-      on(picker, "input", () => {
-        if (!picker || !hex) return;
-        hex.value = sanitizeModeColor(picker.value, DEFAULT_MODE_COLORS[mode]);
-        applyAndPersistModeSettingsImmediate();
-      });
-      on(hex, "input", () => {
-        if (!picker || !hex) return;
-        const normalized = sanitizeModeColor(hex.value, "");
-        if (normalized) picker.value = normalized;
-      });
-      on(hex, "blur", () => {
-        if (!picker || !hex) return;
-        const normalized = sanitizeModeColor(hex.value, DEFAULT_MODE_COLORS[mode]);
-        hex.value = normalized;
-        picker.value = normalized;
-        applyAndPersistModeSettingsImmediate();
-      });
-    };
-    wireModeColorPair(els.categoryMode1Color, els.categoryMode1ColorHex, "mode1");
-    wireModeColorPair(els.categoryMode2Color, els.categoryMode2ColorHex, "mode2");
-    wireModeColorPair(els.categoryMode3Color, els.categoryMode3ColorHex, "mode3");
-
     const syncAddTaskMilestonesUi = () => {
       els.addTaskMsToggle?.classList.toggle("on", addTaskMilestonesEnabled);
       els.addTaskMsToggle?.setAttribute("aria-checked", String(addTaskMilestonesEnabled));
@@ -8710,6 +8654,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.mode1Btn, "click", () => applyMainMode("mode1"));
     on(els.mode2Btn, "click", () => applyMainMode("mode2"));
     on(els.mode3Btn, "click", () => applyMainMode("mode3"));
+    on(document as any, "click", (e: any) => {
+      const target = e?.target as HTMLElement | null;
+      const modeSwitch = els.modeSwitch as HTMLDetailsElement | null;
+      if (!target || !modeSwitch) return;
+      if (!target.closest?.("#modeSwitch")) modeSwitch.open = false;
+    });
     on(els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" }));
     on(els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
@@ -9873,7 +9823,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.categoryResetBtn, "click", () => {
       modeLabels = { ...DEFAULT_MODE_LABELS };
       modeEnabled = { ...DEFAULT_MODE_ENABLED };
-      modeColors = { ...DEFAULT_MODE_COLORS };
       saveModeSettings();
       syncModeLabelsUi();
       applyModeAccent(currentMode);

@@ -689,6 +689,47 @@
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field label{
   margin-bottom:6px;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailText,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn{
+  font-family:var(--font-tight);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn{
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailText{
+  letter-spacing:.04em;
+  line-height:1.45;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel{
+  font-size:11px;
+  font-weight:800;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select{
+  font-size:11px;
+  font-weight:700;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl{
   gap:8px;
 }
