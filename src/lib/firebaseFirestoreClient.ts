@@ -28,16 +28,16 @@ function getFirestoreTransportConfig() {
     };
   }
   const hostname = String(window.location.hostname || "").trim().toLowerCase();
+  if (isLocalDevelopmentHost(hostname)) {
+    return {
+      forceLongPolling: true,
+      reason: isAndroidUserAgent() ? "android-localhost" : "localhost-dev",
+    };
+  }
   if (isNativeOrFileRuntime()) {
     return {
       forceLongPolling: true,
       reason: window.location.protocol === "file:" ? "file-runtime" : "native-runtime",
-    };
-  }
-  if (isAndroidUserAgent() && isLocalDevelopmentHost(hostname)) {
-    return {
-      forceLongPolling: true,
-      reason: "android-localhost",
     };
   }
   return {
