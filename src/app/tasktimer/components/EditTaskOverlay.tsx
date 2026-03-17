@@ -7,7 +7,7 @@ export default function EditTaskOverlay() {
         <div className="editHead">
           <h2>Edit Task</h2>
           <div className="editMoveWrap">
-            <label htmlFor="editMoveMenuBtn">Category:</label>
+            <span className="editMoveLabel">Category:</span>
             <details className="editMoveMenu" id="editMoveMenu">
               <summary className="taskMenuItem" id="editMoveMenuBtn" role="button">
                 <span id="editMoveCurrentLabel">Mode 1</span>
@@ -30,7 +30,7 @@ export default function EditTaskOverlay() {
         <div className="editValidationError" id="editValidationError" aria-live="polite" />
 
         <div className="field">
-          <label>Task Name</label>
+          <label htmlFor="editName">Task Name</label>
           <input type="text" id="editName" />
         </div>
 
@@ -41,19 +41,27 @@ export default function EditTaskOverlay() {
           </div>
           <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
             <div className="field" style={{ margin: 0 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>Days</label>
+              <label htmlFor="editD" style={{ textTransform: "none", letterSpacing: 0 }}>
+                Days
+              </label>
               <input type="number" id="editD" min={0} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>Hours</label>
+              <label htmlFor="editH" style={{ textTransform: "none", letterSpacing: 0 }}>
+                Hours
+              </label>
               <input type="number" id="editH" min={0} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>Minutes</label>
+              <label htmlFor="editM" style={{ textTransform: "none", letterSpacing: 0 }}>
+                Minutes
+              </label>
               <input type="number" id="editM" min={0} max={59} step={1} />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label style={{ textTransform: "none", letterSpacing: 0 }}>Seconds</label>
+              <label htmlFor="editS" style={{ textTransform: "none", letterSpacing: 0 }}>
+                Seconds
+              </label>
               <input type="number" id="editS" min={0} max={59} step={1} />
             </div>
           </div>

@@ -1,10 +1,50 @@
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 
 import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
-import { getFirebaseAppClient, hasFirebaseAuthClientConfig } from "./firebaseClient";
+import { getFirebaseAppClient, hasFirebaseAuthClientConfig, isNativeOrFileRuntime } from "./firebaseClient";
 
 let firestoreClient: Firestore | null | undefined;
 const configuredFirestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
+
+function isLocalDevelopmentHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "10.0.2.2";
+}
+
+function isAndroidUserAgent(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const userAgent = String(navigator.userAgent || "");
+  const userAgentPlatform =
+    typeof (navigator as Navigator & { userAgentData?: { platform?: unknown } }).userAgentData?.platform === "string"
+      ? String((navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform || "")
+      : "";
+  return /\bAndroid\b/i.test(`${userAgent} ${userAgentPlatform}`.trim());
+}
+
+function getFirestoreTransportConfig() {
+  if (typeof window === "undefined") {
+    return {
+      forceLongPolling: false,
+      reason: "server",
+    };
+  }
+  const hostname = String(window.location.hostname || "").trim().toLowerCase();
+  if (isNativeOrFileRuntime()) {
+    return {
+      forceLongPolling: true,
+      reason: window.location.protocol === "file:" ? "file-runtime" : "native-runtime",
+    };
+  }
+  if (isAndroidUserAgent() && isLocalDevelopmentHost(hostname)) {
+    return {
+      forceLongPolling: true,
+      reason: "android-localhost",
+    };
+  }
+  return {
+    forceLongPolling: false,
+    reason: "default",
+  };
+}
 
 function describeError(error: unknown): Record<string, unknown> {
   if (!error) return { value: error };
@@ -50,10 +90,17 @@ export function getFirebaseFirestoreClient(): Firestore | null {
   }
   try {
     const app = getFirebaseAppClient();
-    firestoreClient = app ? getFirestore(app, FIREBASE_DATABASE_ID) : null;
+    const transportConfig = getFirestoreTransportConfig();
+    firestoreClient = app
+      ? transportConfig.forceLongPolling
+        ? initializeFirestore(app, { experimentalForceLongPolling: true }, FIREBASE_DATABASE_ID)
+        : getFirestore(app, FIREBASE_DATABASE_ID)
+      : null;
     if (process.env.NODE_ENV !== "production") {
       console.info("[firebase-firestore] Firestore client initialized", {
         databaseId: FIREBASE_DATABASE_ID,
+        transport: transportConfig.forceLongPolling ? "long-polling" : "default",
+        transportReason: transportConfig.reason,
       });
     }
   } catch (error) {

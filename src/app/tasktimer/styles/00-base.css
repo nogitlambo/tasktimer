@@ -453,7 +453,8 @@ body[data-app-page="test2"] #modeSwitch{
   gap:8px;
   margin-top:2px;
 }
-.editMoveWrap > label{
+.editMoveWrap > label,
+.editMoveWrap > .editMoveLabel{
   margin:0;
   font-size:11px;
   letter-spacing:.5px;

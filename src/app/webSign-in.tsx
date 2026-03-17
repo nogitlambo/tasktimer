@@ -119,15 +119,20 @@ export default function WebSignIn(props: WebSignInProps) {
                 </button>
 
                 {showEmailLoginForm ? (
-                  <input
-                    id="landingEmailInput"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  value={authEmail}
-                  onChange={(e) => onAuthEmailChange(e.target.value)}
-                    className="h-11 w-full rounded-none border border-[#d447d2]/36 bg-[rgba(27,14,39,0.92)] px-4 text-sm text-white outline-none placeholder:text-[#d5b3ea]/48 focus:border-[#f06ee0]/58"
-                  />
+                  <>
+                    <label htmlFor="landingEmailInput" className="sr-only">
+                      Email address
+                    </label>
+                    <input
+                      id="landingEmailInput"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@example.com"
+                      value={authEmail}
+                      onChange={(e) => onAuthEmailChange(e.target.value)}
+                      className="h-11 w-full rounded-none border border-[#d447d2]/36 bg-[rgba(27,14,39,0.92)] px-4 text-sm text-white outline-none placeholder:text-[#d5b3ea]/48 focus:border-[#f06ee0]/58"
+                    />
+                  </>
                 ) : null}
 
                 <div className="flex flex-wrap justify-end gap-2">

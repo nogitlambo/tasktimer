@@ -179,16 +179,21 @@ export default function LandingClassic({
                 <span>Login with Google</span>
               </button>
               {showEmailLoginForm ? (
-                <input
-                  id="landingEmailInput"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  value={authEmail}
-                  onChange={(e) => onAuthEmailChange(e.target.value)}
-                  className="h-11 w-full border border-white/15 bg-black/20 px-4 text-sm text-white outline-none"
-                  style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
-                />
+                <>
+                  <label htmlFor="landingEmailInput" className="sr-only">
+                    Email address
+                  </label>
+                  <input
+                    id="landingEmailInput"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@example.com"
+                    value={authEmail}
+                    onChange={(e) => onAuthEmailChange(e.target.value)}
+                    className="h-11 w-full border border-white/15 bg-black/20 px-4 text-sm text-white outline-none"
+                    style={{ clipPath: "polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%)" }}
+                  />
+                </>
               ) : null}
               {authStatus ? <div className="text-left text-xs text-[#d3faff]">{authStatus}</div> : null}
               {authError ? <div className="text-left text-xs text-[#ff9b9b]">{authError}</div> : null}

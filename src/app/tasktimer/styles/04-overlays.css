@@ -141,7 +141,8 @@
   margin-top:0;
 }
 
-#editOverlay .editMoveWrap > label{
+#editOverlay .editMoveWrap > label,
+#editOverlay .editMoveWrap > .editMoveLabel{
   margin-bottom: 0;
 }
 
