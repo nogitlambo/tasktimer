@@ -267,6 +267,18 @@ function asString(v: unknown, fallback = "") {
   return typeof v === "string" ? v : fallback;
 }
 
+function normalizeTimeGoalUnit(raw: unknown): "minute" | "hour" {
+  return raw === "minute" ? "minute" : "hour";
+}
+
+function normalizeTimeGoalPeriod(raw: unknown): "day" | "week" {
+  return raw === "day" ? "day" : "week";
+}
+
+function normalizeTimeGoalValue(raw: unknown): number {
+  return Number.isFinite(Number(raw)) ? Math.max(0, Number(raw)) : 0;
+}
+
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "cyan" || value === "command") return "cyan";
@@ -316,6 +328,11 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   }
 
   row.xpDisqualifiedUntilReset = !!row.xpDisqualifiedUntilReset;
+  row.timeGoalEnabled = !!row.timeGoalEnabled;
+  row.timeGoalValue = normalizeTimeGoalValue(row.timeGoalValue);
+  row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
+  row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
+  row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
 
   return row as Task;
 }
@@ -357,6 +374,11 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       Number.isFinite(Number(task.presetIntervalNextSeq)) && Number(task.presetIntervalNextSeq) > 0
         ? Math.floor(Number(task.presetIntervalNextSeq))
         : 1,
+    timeGoalEnabled: !!task.timeGoalEnabled,
+    timeGoalValue: Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0,
+    timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
+    timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
+    timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
     mode,
   };
   return row;
@@ -545,15 +567,15 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
   await upsertUserRoot(uid);
   const taskRow = mapTaskToFirestore(task);
   try {
+    const existing = await getDoc(ref);
     await setDoc(
       ref,
       {
         ...taskRow,
-        createdAt: taskRow.createdAt || serverTimestamp(),
+        createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
         updatedAt: serverTimestamp(),
         schemaVersion: 1,
       },
-      { merge: true }
     );
     if (process.env.NODE_ENV !== "production") {
       console.info("[tasktimer-cloud] Task saved", {

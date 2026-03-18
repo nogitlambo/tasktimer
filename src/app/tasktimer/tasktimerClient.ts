@@ -204,6 +204,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let focusSessionNotesByTaskId = initialState.focusSessionNotesByTaskId;
   let focusSessionNoteSaveTimer: number | null = null;
   let addTaskNoTimeGoal = initialState.addTaskNoTimeGoal;
+  let editTaskDurationUnit: "minute" | "hour" = "hour";
+  let editTaskDurationPeriod: "day" | "week" = "week";
   let elapsedPadTarget = initialState.elapsedPadTarget;
   let elapsedPadMilestoneRef = initialState.elapsedPadMilestoneRef;
   let elapsedPadDraft = initialState.elapsedPadDraft;
@@ -965,6 +967,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       presetIntervalValue: 0,
       presetIntervalLastMilestoneId: null,
       presetIntervalNextSeq: 1,
+      timeGoalEnabled: false,
+      timeGoalValue: 0,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 0,
     };
     (t as any).mode = currentMode;
     return t;
@@ -996,6 +1003,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
           ? t.finalCheckpointAction
           : "continue";
+      t.timeGoalEnabled = !!t.timeGoalEnabled;
+      t.timeGoalValue = Number.isFinite(Number(t.timeGoalValue)) ? Math.max(0, Number(t.timeGoalValue)) : 0;
+      t.timeGoalUnit = t.timeGoalUnit === "minute" ? "minute" : "hour";
+      t.timeGoalPeriod = t.timeGoalPeriod === "day" ? "day" : "week";
+      t.timeGoalMinutes = Number.isFinite(Number(t.timeGoalMinutes)) ? Math.max(0, Number(t.timeGoalMinutes)) : 0;
     });
   }
 
@@ -3311,6 +3323,98 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function syncEditTaskDurationReadout(task?: Task | null) {
+    if (!els.editTaskDurationReadout) return;
+    const currentTask = task || (editIndex != null ? tasks[editIndex] : null);
+    const noTimeGoal = !!els.editNoGoalCheckbox?.checked;
+    const durationValue = String(els.editTaskDurationValueInput?.value || currentTask?.timeGoalValue || 0);
+    const durationUnit = editTaskDurationUnit === "minute" ? "minute" : currentTask?.timeGoalUnit === "minute" ? "minute" : "hour";
+    const durationPeriod =
+      editTaskDurationPeriod === "day" ? "day" : currentTask?.timeGoalPeriod === "day" ? "day" : "week";
+    els.editTaskDurationReadout.textContent = formatAddTaskDurationReadout({
+      name: String(els.editName?.value || currentTask?.name || "").trim(),
+      mode: currentTask ? taskModeOf(currentTask) : currentMode,
+      durationValue,
+      durationUnit,
+      durationPeriod,
+      noTimeGoal,
+      milestonesEnabled: !!currentTask?.milestonesEnabled,
+      milestoneTimeUnit:
+        currentTask?.milestoneTimeUnit === "day"
+          ? "day"
+          : currentTask?.milestoneTimeUnit === "minute"
+            ? "minute"
+            : "hour",
+      milestones: Array.isArray(currentTask?.milestones) ? currentTask!.milestones : [],
+      checkpointSoundEnabled: !!currentTask?.checkpointSoundEnabled,
+      checkpointSoundMode: currentTask?.checkpointSoundMode === "repeat" ? "repeat" : "once",
+      checkpointToastEnabled: !!currentTask?.checkpointToastEnabled,
+      checkpointToastMode: currentTask?.checkpointToastMode === "manual" ? "manual" : "auto5s",
+      presetIntervalsEnabled: !!currentTask?.presetIntervalsEnabled,
+      presetIntervalValue: String(Number(currentTask?.presetIntervalValue || 0) || 0),
+      finalCheckpointAction:
+        currentTask?.finalCheckpointAction === "resetLog" || currentTask?.finalCheckpointAction === "resetNoLog"
+          ? currentTask.finalCheckpointAction
+          : "continue",
+    });
+  }
+
+  function syncEditTaskTimeGoalUi(task?: Task | null) {
+    const currentTask = task || (editIndex != null ? tasks[editIndex] : null);
+    const noTimeGoal = !!els.editNoGoalCheckbox?.checked;
+    els.editTaskDurationRow?.classList.toggle("isDisabled", noTimeGoal);
+    els.editTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
+    if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.disabled = noTimeGoal;
+    if (!noTimeGoal && els.editTaskDurationValueInput) {
+      const parsedValue = Math.max(0, Math.floor(parseFloat(els.editTaskDurationValueInput.value || "0") || 0));
+      const maxDay = getAddTaskDurationMaxForPeriod(editTaskDurationUnit, "day");
+      const canUseDay = Number(parsedValue) <= maxDay;
+      if (String(parsedValue || "") !== String(els.editTaskDurationValueInput.value || "")) {
+        els.editTaskDurationValueInput.value = String(parsedValue || 0);
+      }
+      editTaskDurationPeriod = canUseDay && editTaskDurationPeriod === "day" ? "day" : "week";
+    }
+    const canUseDay = Number(els.editTaskDurationValueInput?.value || 0) <= getAddTaskDurationMaxForPeriod(editTaskDurationUnit, "day");
+    const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
+      if (!btn) return;
+      btn.classList.toggle("isOn", isOn);
+      btn.classList.toggle("isHidden", hidden);
+      btn.disabled = noTimeGoal || hidden;
+      btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+      btn.setAttribute("aria-hidden", hidden ? "true" : "false");
+    };
+    syncPill(els.editTaskDurationUnitMinute, editTaskDurationUnit === "minute");
+    syncPill(els.editTaskDurationUnitHour, editTaskDurationUnit === "hour");
+    syncPill(els.editTaskDurationPeriodDay, editTaskDurationPeriod === "day", !canUseDay);
+    syncPill(els.editTaskDurationPeriodWeek, editTaskDurationPeriod === "week");
+    els.editTaskDurationValueInput?.classList.remove("isInvalid");
+    syncEditTaskDurationReadout(currentTask);
+  }
+
+  function validateEditTimeGoal() {
+    if (!!els.editNoGoalCheckbox?.checked) return true;
+    const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
+    if (!(value > 0)) {
+      els.editTaskDurationValueInput?.classList.add("isInvalid");
+      return false;
+    }
+    const max = getAddTaskDurationMaxForPeriod(editTaskDurationUnit, editTaskDurationPeriod);
+    if (value > max) {
+      els.editTaskDurationValueInput?.classList.add("isInvalid");
+      return false;
+    }
+    return true;
+  }
+
+  function getEditTaskTimeGoalMinutes() {
+    const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
+    if (!(value > 0) || !!els.editNoGoalCheckbox?.checked) return 0;
+    if (editTaskDurationUnit === "minute") {
+      return editTaskDurationPeriod === "day" ? value : value * 7;
+    }
+    return editTaskDurationPeriod === "day" ? value * 60 : value * 60 * 7;
+  }
+
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
     if (!task) return;
     const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
@@ -3835,6 +3939,25 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return `${sign}${formatTime(Math.abs(ms))}`;
   }
 
+  function setFocusInsightDeltaValue(el: HTMLElement | null, ms: number) {
+    if (!el) return;
+    el.textContent = formatSignedDelta(ms);
+    el.classList.remove("is-positive", "is-negative", "is-neutral", "is-empty");
+    if (!Number.isFinite(ms)) {
+      el.classList.add("is-empty");
+      return;
+    }
+    if (ms > 0) {
+      el.classList.add("is-positive");
+      return;
+    }
+    if (ms < 0) {
+      el.classList.add("is-negative");
+      return;
+    }
+    el.classList.add("is-neutral");
+  }
+
   function updateFocusInsights(t: Task) {
     const taskId = String(t.id || "");
     const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
@@ -3850,8 +3973,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         els.focusInsightWeekday.classList.remove("is-empty");
       }
     }
-    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = formatSignedDelta(insights.todayDeltaMs);
-    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = formatSignedDelta(insights.weekDeltaMs);
+    setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, insights.todayDeltaMs);
+    setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, insights.weekDeltaMs);
   }
 
   function toggleCollapse(i: number) {
@@ -5200,6 +5323,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     editIndex = i;
 
     if (els.editName) els.editName.value = t.name || "";
+    if (els.editNoGoalCheckbox) els.editNoGoalCheckbox.checked = !t.timeGoalEnabled;
+    if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
+    editTaskDurationUnit = t.timeGoalUnit === "minute" ? "minute" : "hour";
+    editTaskDurationPeriod = t.timeGoalPeriod === "day" ? "day" : "week";
+    syncEditTaskTimeGoalUi(t);
 
     const elapsedMs = getElapsedMs(t);
     const totalSec = Math.floor(elapsedMs / 1000);
@@ -5258,6 +5386,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = editIndex != null ? tasks[editIndex] : null;
 
     if (saveChanges && t) {
+      els.editTaskDurationValueInput?.classList.remove("isInvalid");
+      if (!validateEditTimeGoal()) {
+        showEditValidationError(t, "Enter a valid time goal or select Don't set a time goal.");
+        return;
+      }
       if (t.milestonesEnabled && (!Array.isArray(t.milestones) || t.milestones.length === 0)) {
         syncEditSaveAvailability(t);
         showEditValidationError(t, "Add at least 1 timer checkpoint before saving.");
@@ -5303,6 +5436,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
             ? "resetNoLog"
             : "continue";
+      t.timeGoalEnabled = !els.editNoGoalCheckbox?.checked;
+      t.timeGoalValue = t.timeGoalEnabled ? Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0) : 0;
+      t.timeGoalUnit = t.timeGoalEnabled ? editTaskDurationUnit : "hour";
+      t.timeGoalPeriod = t.timeGoalEnabled ? editTaskDurationPeriod : "week";
+      t.timeGoalMinutes = getEditTaskTimeGoalMinutes();
 
       ensureMilestoneIdentity(t);
       t.milestones = sortMilestones(t.milestones);
@@ -5939,8 +6077,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els.focusInsightWeekday.textContent = "Need at least 14 logged days";
       els.focusInsightWeekday.classList.add("is-empty");
     }
-    if (els.focusInsightTodayDelta) els.focusInsightTodayDelta.textContent = "--";
-    if (els.focusInsightWeekDelta) els.focusInsightWeekDelta.textContent = "--";
+    setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, Number.NaN);
+    setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, Number.NaN);
   }
 
   function hasFocusCheckpoints(t: Task): boolean {
@@ -6755,6 +6893,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
       mode: editMoveTargetMode || taskModeOf(task),
+      timeGoalEnabled: !els.editNoGoalCheckbox?.checked,
+      timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
+      timeGoalUnit: editTaskDurationUnit,
+      timeGoalPeriod: editTaskDurationPeriod,
+      timeGoalMinutes: getEditTaskTimeGoalMinutes(),
       milestoneTimeUnit: task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestonesEnabled: !!task.milestonesEnabled,
       milestones,
@@ -8361,32 +8504,42 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els.addTaskDurationRow?.classList.toggle("isDisabled", addTaskNoTimeGoal);
       els.addTaskDurationReadout?.classList.toggle("isDisabled", addTaskNoTimeGoal);
       if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = addTaskNoTimeGoal;
-      if (els.addTaskDurationUnitSelect) els.addTaskDurationUnitSelect.disabled = addTaskNoTimeGoal;
-      if (els.addTaskDurationPeriodSelect) els.addTaskDurationPeriodSelect.disabled = addTaskNoTimeGoal;
       if (addTaskNoTimeGoal) {
+        const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
+          if (!btn) return;
+          btn.classList.toggle("isOn", isOn);
+          btn.classList.toggle("isHidden", hidden);
+          btn.disabled = true;
+          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+          btn.setAttribute("aria-hidden", hidden ? "true" : "false");
+        };
+        syncPill(els.addTaskDurationUnitMinute, addTaskDurationUnit === "minute");
+        syncPill(els.addTaskDurationUnitHour, addTaskDurationUnit === "hour");
+        syncPill(els.addTaskDurationPeriodDay, addTaskDurationPeriod === "day", Number(addTaskDurationValue) > getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "day"));
+        syncPill(els.addTaskDurationPeriodWeek, addTaskDurationPeriod === "week");
         syncAddTaskDurationReadout();
         return;
       }
       const parsedValue = Math.max(0, Math.floor(parseFloat(els.addTaskDurationValueInput?.value || "0") || 0));
       addTaskDurationValue = parsedValue;
-      addTaskDurationUnit = els.addTaskDurationUnitSelect?.value === "minute" ? "minute" : "hour";
       const maxDay = getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "day");
       const canUseDay = Number(addTaskDurationValue) <= maxDay;
-      const selectedPeriod = els.addTaskDurationPeriodSelect?.value === "day" ? "day" : "week";
-      if (els.addTaskDurationPeriodSelect) {
-        const dayOption = Array.from(els.addTaskDurationPeriodSelect.options).find((opt) => opt.value === "day");
-        if (dayOption) dayOption.disabled = !canUseDay;
-      }
-      addTaskDurationPeriod = canUseDay && selectedPeriod === "day" ? "day" : "week";
+      addTaskDurationPeriod = canUseDay && addTaskDurationPeriod === "day" ? "day" : "week";
       if (els.addTaskDurationValueInput && String(parsedValue || "") !== String(els.addTaskDurationValueInput.value || "")) {
         els.addTaskDurationValueInput.value = String(parsedValue || 0);
       }
-      if (els.addTaskDurationUnitSelect) {
-        els.addTaskDurationUnitSelect.value = addTaskDurationUnit;
-      }
-      if (els.addTaskDurationPeriodSelect) {
-        els.addTaskDurationPeriodSelect.value = addTaskDurationPeriod;
-      }
+      const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
+        if (!btn) return;
+        btn.classList.toggle("isOn", isOn);
+        btn.classList.toggle("isHidden", hidden);
+        btn.disabled = hidden;
+        btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+        btn.setAttribute("aria-hidden", hidden ? "true" : "false");
+      };
+      syncPill(els.addTaskDurationUnitMinute, addTaskDurationUnit === "minute");
+      syncPill(els.addTaskDurationUnitHour, addTaskDurationUnit === "hour");
+      syncPill(els.addTaskDurationPeriodDay, addTaskDurationPeriod === "day", !canUseDay);
+      syncPill(els.addTaskDurationPeriodWeek, addTaskDurationPeriod === "week");
       syncAddTaskDurationReadout();
     };
 
@@ -8459,6 +8612,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return true;
     };
 
+    const getAddTaskTimeGoalMinutes = () => {
+      const value = Math.max(0, Number(addTaskDurationValue) || 0);
+      if (!(value > 0) || addTaskNoTimeGoal) return 0;
+      if (addTaskDurationUnit === "minute") {
+        return addTaskDurationPeriod === "day" ? value : value * 7;
+      }
+      return addTaskDurationPeriod === "day" ? value * 60 : value * 60 * 7;
+    };
+
     const validateAddTaskStep3 = () => {
       if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
         showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
@@ -8482,8 +8644,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       addTaskDurationPeriod = "week";
       addTaskNoTimeGoal = false;
       if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = String(addTaskDurationValue);
-      if (els.addTaskDurationUnitSelect) els.addTaskDurationUnitSelect.value = addTaskDurationUnit;
-      if (els.addTaskDurationPeriodSelect) els.addTaskDurationPeriodSelect.value = addTaskDurationPeriod;
       if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
       setAddTaskCheckpointInfoOpen(false);
       setAddTaskPresetIntervalsInfoOpen(false);
@@ -8575,12 +8735,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
     });
-    on(els.addTaskDurationUnitSelect, "change", () => {
+    on(els.addTaskDurationUnitMinute, "click", () => {
       clearAddTaskValidationState();
+      addTaskDurationUnit = "minute";
       syncAddTaskDurationUi();
     });
-    on(els.addTaskDurationPeriodSelect, "change", () => {
+    on(els.addTaskDurationUnitHour, "click", () => {
       clearAddTaskValidationState();
+      addTaskDurationUnit = "hour";
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskDurationPeriodDay, "click", () => {
+      clearAddTaskValidationState();
+      addTaskDurationPeriod = "day";
+      syncAddTaskDurationUi();
+    });
+    on(els.addTaskDurationPeriodWeek, "click", () => {
+      clearAddTaskValidationState();
+      addTaskDurationPeriod = "week";
       syncAddTaskDurationUi();
     });
     on(els.addTaskNoGoalCheckbox, "change", () => {
@@ -9037,6 +9209,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         addTaskFinalCheckpointAction === "resetLog" || addTaskFinalCheckpointAction === "resetNoLog"
           ? addTaskFinalCheckpointAction
           : "continue";
+      newTask.timeGoalEnabled = !addTaskNoTimeGoal;
+      newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
+      newTask.timeGoalUnit = addTaskNoTimeGoal ? "hour" : addTaskDurationUnit;
+      newTask.timeGoalPeriod = addTaskNoTimeGoal ? "week" : addTaskDurationPeriod;
+      newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
       tasks.push(newTask);
       closeAddTaskModal();
       save();
@@ -9895,6 +10072,48 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.saveEditBtn, "click", () => closeEdit(true));
     on(els.editName, "input", () => {
       if (editIndex == null || !tasks[editIndex]) return;
+      syncEditTaskDurationReadout(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editNoGoalCheckbox, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      clearEditValidationState();
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationValueInput, "input", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      els.editTaskDurationValueInput?.classList.remove("isInvalid");
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationValueInput, "change", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationUnitMinute, "click", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      editTaskDurationUnit = "minute";
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationUnitHour, "click", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      editTaskDurationUnit = "hour";
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationPeriodDay, "click", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      editTaskDurationPeriod = "day";
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
+      syncEditSaveAvailability(tasks[editIndex]);
+    });
+    on(els.editTaskDurationPeriodWeek, "click", () => {
+      if (editIndex == null || !tasks[editIndex]) return;
+      editTaskDurationPeriod = "week";
+      syncEditTaskTimeGoalUi(tasks[editIndex]);
       syncEditSaveAvailability(tasks[editIndex]);
     });
     on(els.editOverrideElapsedToggle, "click", () => {

@@ -135,11 +135,11 @@ body[data-app-page="test2"] #openAddTaskBtn{
 .taskMenuItemDelete{
   margin-top:auto;
   color:#ff4d4d;
-  border-color: rgba(255,77,77,.35);
-  background: rgba(255,77,77,.12);
+  border-color: transparent;
+  background: transparent;
 }
 .taskMenuItemDelete:hover{
-  background: rgba(255,77,77,.2);
+  background: rgba(255,255,255,.1);
 }
 #app[aria-label="TaskLaunch App"] .appPageTasks .task{
   padding:14px 10px 12px;
@@ -806,18 +806,16 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   z-index:1;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse) .taskFaceShellFront{
-  border:1px solid color-mix(in srgb, var(--mode-accent) 32%, rgba(140,182,207,.46));
+  border:1px solid rgba(255,255,255,.08);
   box-shadow:
     0 14px 34px rgba(0,0,0,.28),
-    inset 0 0 0 1px color-mix(in srgb, var(--mode-accent) 13%, transparent),
-    0 0 16px color-mix(in srgb, var(--mode-accent) 16%, transparent);
+    inset 0 0 0 1px rgba(255,255,255,.02);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse) .taskFaceShellBack{
-  border:1px solid color-mix(in srgb, var(--mode-accent) 40%, rgba(175,209,235,.42));
+  border:1px solid rgba(255,255,255,.08);
   box-shadow:
     0 16px 38px rgba(0,0,0,.34),
-    inset 0 0 0 1px color-mix(in srgb, var(--mode-accent) 18%, rgba(255,255,255,.03)),
-    0 0 18px color-mix(in srgb, var(--mode-accent) 20%, transparent);
+    inset 0 0 0 1px rgba(255,255,255,.03);
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
   border:1px solid transparent;
@@ -830,15 +828,14 @@ body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
     inset 0 0 0 1px rgba(255,255,255,.02);
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
-  border-color:rgba(118,212,238,.34);
+  border-color:rgba(255,255,255,.08);
   background:
     linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 28%),
     linear-gradient(225deg, rgba(88,170,196,.18), rgba(255,255,255,0) 42%),
     linear-gradient(90deg, rgba(8,18,28,.96), rgba(5,12,20,.96));
   box-shadow:
     0 18px 36px rgba(0,0,0,.34),
-    inset 0 0 0 1px rgba(159,233,255,.08),
-    0 0 18px rgba(57,197,232,.16);
+    inset 0 0 0 1px rgba(255,255,255,.03);
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
   background:
@@ -847,15 +844,14 @@ body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App
     #130c18;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
-  border-color:rgba(208,124,244,.28);
+  border-color:rgba(255,255,255,.08);
   background:
     linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,0) 28%),
     linear-gradient(225deg, rgba(176,102,222,.18), rgba(255,255,255,0) 42%),
     linear-gradient(90deg, rgba(20,10,29,.97), rgba(12,6,20,.97));
   box-shadow:
     0 18px 36px rgba(0,0,0,.36),
-    inset 0 0 0 1px rgba(245,176,255,.06),
-    0 0 20px rgba(176,102,222,.14);
+    inset 0 0 0 1px rgba(255,255,255,.03);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBack{
   min-height:100%;
@@ -914,8 +910,7 @@ body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
-  border-color: rgba(255,106,145,.34) !important;
-  box-shadow: 0 0 16px rgba(255,106,145,.10), inset 0 0 0 1px rgba(255,106,145,.12) !important;
+  background: rgba(255,255,255,.05);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
   appearance:none;
@@ -1113,6 +1108,50 @@ body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
   color:rgba(190,240,255,.62);
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu > summary.taskMenuBtn:focus-visible{
+  border-color:rgba(117,231,255,.34);
+  box-shadow:0 0 16px rgba(60,223,255,.12), inset 0 0 0 1px rgba(117,231,255,.14) !important;
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenu[open] > summary.taskMenuBtn{
+  border-color:rgba(117,231,255,.42);
+  box-shadow:0 0 18px rgba(60,223,255,.14), inset 0 0 0 1px rgba(117,231,255,.16) !important;
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuList{
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(117,231,255,.08);
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:focus-visible{
+  border-color:rgba(117,231,255,.34) !important;
+  box-shadow:0 0 16px rgba(60,223,255,.12), inset 0 0 0 1px rgba(117,231,255,.14) !important;
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
+  border-color:rgba(117,231,255,.34) !important;
+  box-shadow:0 0 16px rgba(60,223,255,.12), inset 0 0 0 1px rgba(117,231,255,.14) !important;
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:hover,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:focus-visible{
+  border-color:rgba(214,120,255,.34) !important;
+  box-shadow:0 0 16px rgba(214,120,255,.10), inset 0 0 0 1px rgba(214,120,255,.12) !important;
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
+  border-color:rgba(214,120,255,.34) !important;
+  box-shadow:0 0 16px rgba(214,120,255,.10), inset 0 0 0 1px rgba(214,120,255,.12) !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
   border-color:rgba(214,120,255,.3) !important;

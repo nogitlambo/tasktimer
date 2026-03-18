@@ -34,6 +34,37 @@ export default function EditTaskOverlay() {
           <input type="text" id="editName" />
         </div>
 
+        <div className="field editTaskTimeGoalField">
+          <label htmlFor="editTaskDurationValueInput">Time Goal</label>
+          <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
+            <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
+            <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
+              <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
+                Minutes
+              </button>
+              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
+                Hours
+              </button>
+            </div>
+            <span className="addTaskDurationPerLabel">per</span>
+            <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
+              <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
+                Day
+              </button>
+              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                Week
+              </button>
+            </div>
+          </div>
+          <div className="addTaskDurationReadout editTaskDurationReadout" id="editTaskDurationReadout">
+            5 hours per week
+          </div>
+          <label className="addTaskNoGoalRow editTaskNoGoalRow" htmlFor="editNoGoalCheckbox">
+            <input id="editNoGoalCheckbox" type="checkbox" />
+            <span>Don&apos;t set a time goal</span>
+          </label>
+        </div>
+
         <div className="field">
           <div className="toggleRow">
             <span>Override Elapsed Time</span>

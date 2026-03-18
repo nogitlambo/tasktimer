@@ -138,6 +138,8 @@ export default function TaskTimerOverlays() {
 
   const addTaskCanUseDay = Number(state.addTaskDraft.durationValue || "0") <= getAddTaskDurationMaxForPeriod(state.addTaskDraft.durationUnit, "day");
   const addTaskDurationReadout = formatAddTaskDurationReadout(state.addTaskDraft);
+  const addTaskCanUseDay =
+    Number(state.addTaskDraft.durationValue || 0) <= getAddTaskDurationMaxForPeriod(state.addTaskDraft.durationUnit, "day");
   const addTaskPresetEnabled = state.addTaskDraft.milestonesEnabled && state.addTaskDraft.presetIntervalsEnabled;
   const addTaskPresetValid = Number(state.addTaskDraft.presetIntervalValue || "0") > 0;
   const addTaskNameMenuVisible = state.addTaskDialogOpen && addTaskNameMenuOpen;
@@ -262,27 +264,53 @@ export default function TaskTimerOverlays() {
                   disabled={state.addTaskDraft.noTimeGoal}
                   onChange={(event) => actions.patchAddTaskDraft({ durationValue: event.target.value })}
                 />
-                <select
-                  id="addTaskDurationUnitSelect"
-                  value={state.addTaskDraft.durationUnit}
-                  disabled={state.addTaskDraft.noTimeGoal}
-                  onChange={(event) => actions.patchAddTaskDraft({ durationUnit: event.target.value as "minute" | "hour" })}
-                >
-                  <option value="minute">Minutes</option>
-                  <option value="hour">Hours</option>
-                </select>
+                <div className="unitButtons addTaskDurationPills" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
+                  <button
+                    className={`btn btn-ghost small unitBtn${state.addTaskDraft.durationUnit === "minute" ? " isOn" : ""}`}
+                    id="addTaskDurationUnitMinute"
+                    type="button"
+                    aria-pressed={state.addTaskDraft.durationUnit === "minute"}
+                    disabled={state.addTaskDraft.noTimeGoal}
+                    onClick={() => actions.patchAddTaskDraft({ durationUnit: "minute" })}
+                  >
+                    Minutes
+                  </button>
+                  <button
+                    className={`btn btn-ghost small unitBtn${state.addTaskDraft.durationUnit === "hour" ? " isOn" : ""}`}
+                    id="addTaskDurationUnitHour"
+                    type="button"
+                    aria-pressed={state.addTaskDraft.durationUnit === "hour"}
+                    disabled={state.addTaskDraft.noTimeGoal}
+                    onClick={() => actions.patchAddTaskDraft({ durationUnit: "hour" })}
+                  >
+                    Hours
+                  </button>
+                </div>
                 <span className="addTaskDurationPerLabel">per</span>
-                <select
-                  id="addTaskDurationPeriodSelect"
-                  value={state.addTaskDraft.durationPeriod}
-                  disabled={state.addTaskDraft.noTimeGoal}
-                  onChange={(event) => actions.patchAddTaskDraft({ durationPeriod: event.target.value as "day" | "week" })}
-                >
-                  <option value="day" disabled={!addTaskCanUseDay}>
-                    Day
-                  </option>
-                  <option value="week">Week</option>
-                </select>
+                <div className="unitButtons addTaskDurationPills" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
+                  {addTaskCanUseDay ? (
+                    <button
+                      className={`btn btn-ghost small unitBtn${state.addTaskDraft.durationPeriod === "day" ? " isOn" : ""}`}
+                      id="addTaskDurationPeriodDay"
+                      type="button"
+                      aria-pressed={state.addTaskDraft.durationPeriod === "day"}
+                      disabled={state.addTaskDraft.noTimeGoal}
+                      onClick={() => actions.patchAddTaskDraft({ durationPeriod: "day" })}
+                    >
+                      Day
+                    </button>
+                  ) : null}
+                  <button
+                    className={`btn btn-ghost small unitBtn${state.addTaskDraft.durationPeriod === "week" ? " isOn" : ""}`}
+                    id="addTaskDurationPeriodWeek"
+                    type="button"
+                    aria-pressed={state.addTaskDraft.durationPeriod === "week"}
+                    disabled={state.addTaskDraft.noTimeGoal}
+                    onClick={() => actions.patchAddTaskDraft({ durationPeriod: "week" })}
+                  >
+                    Week
+                  </button>
+                </div>
               </div>
               <div className={`addTaskDurationReadout${state.addTaskDraft.noTimeGoal ? " isDisabled" : ""}`} id="addTaskDurationReadout">
                 {addTaskDurationReadout}

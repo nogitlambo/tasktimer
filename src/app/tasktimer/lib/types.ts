@@ -28,6 +28,11 @@ export type Task = {
   presetIntervalValue?: number;
   presetIntervalLastMilestoneId?: string | null;
   presetIntervalNextSeq?: number;
+  timeGoalEnabled?: boolean;
+  timeGoalValue?: number;
+  timeGoalUnit?: "minute" | "hour";
+  timeGoalPeriod?: "day" | "week";
+  timeGoalMinutes?: number;
 };
 
 export type HistoryEntry = {

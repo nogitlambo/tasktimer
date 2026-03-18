@@ -1191,12 +1191,13 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 }
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
   color: #8a2345 !important;
-  border-color: rgba(181,89,173,.18) !important;
-  background: rgba(181,89,173,.04) !important;
+  border-color: transparent !important;
+  background: transparent !important;
 }
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
   border-color: rgba(181,89,173,.28) !important;
+  background: rgba(0,0,0,.03) !important;
   box-shadow: inset 0 0 0 1px rgba(181,89,173,.08), 0 0 12px rgba(181,89,173,.08) !important;
 }
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{

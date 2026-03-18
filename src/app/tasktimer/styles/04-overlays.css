@@ -48,7 +48,11 @@
 }
 
 #editOverlay .field{
-  margin-top:8px;
+  margin-top:14px;
+}
+
+#editOverlay .editValidationError + .field{
+  margin-top:10px;
 }
 
 #editOverlay .editHead h2{
@@ -67,6 +71,35 @@
   letter-spacing:.08em;
   text-transform: uppercase;
   color: rgba(216,231,239,.84);
+}
+
+#editOverlay .editTaskTimeGoalField{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  column-gap: 16px;
+  row-gap: 8px;
+  align-items: start;
+}
+
+#editOverlay .editTaskTimeGoalField > label{
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: 0;
+}
+
+#editOverlay .editTaskTimeGoalField > #editTaskDurationRow{
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+#editOverlay .editTaskTimeGoalField > #editTaskDurationReadout{
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#editOverlay .editTaskTimeGoalField > .editTaskNoGoalRow{
+  grid-column: 1 / -1;
+  grid-row: 3;
 }
 
 #editOverlay input[type="text"],
@@ -132,6 +165,10 @@
   gap:8px;
 }
 
+#editOverlay #editOverrideElapsedFields{
+  margin-top:8px;
+}
+
 #editOverlay .editHead{
   gap:10px;
 }
@@ -149,6 +186,11 @@
 #editOverlay .footerBtns{
   margin-top:10px;
   gap:8px;
+}
+
+#editOverlay > .modal > .milestones,
+#editOverlay > .modal > .checkpointAlertsGroup{
+  margin-top:18px;
 }
 
 #editOverlay .footerBtns .btn{
@@ -530,7 +572,15 @@
 }
 
 #editOverlay .checkpointAlertSoundModeField{
-  margin-top:4px;
+  margin-top:8px;
+}
+
+#editOverlay #editOverrideElapsedFields .field,
+#editOverlay #editPresetIntervalField,
+#editOverlay #editFinalCheckpointActionField,
+#editOverlay #editCheckpointSoundModeField,
+#editOverlay #editCheckpointToastModeField{
+  margin-top:8px;
 }
 
 #editOverlay .checkpointAlertsTitle{
@@ -741,29 +791,54 @@
   max-height: min(40dvh, 280px);
 }
 
-#addTaskOverlay .addTaskDurationRow{
+#addTaskOverlay .addTaskDurationRow,
+#editOverlay .editTaskDurationRow{
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  position: relative;
+  isolation: isolate;
 }
 
-#addTaskOverlay #addTaskDurationValueInput{
+#addTaskOverlay #addTaskDurationValueInput,
+#editOverlay #editTaskDurationValueInput{
   width: 86px;
   min-width: 86px;
   text-align: center;
+  flex: 0 0 auto;
 }
 
-#addTaskOverlay #addTaskDurationUnitSelect,
-#addTaskOverlay #addTaskDurationPeriodSelect{
-  min-width: 110px;
+#addTaskOverlay .addTaskDurationPills,
+#editOverlay .addTaskDurationPills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  position: relative;
+  z-index: 1;
 }
 
-#addTaskOverlay .addTaskDurationPerLabel{
+#addTaskOverlay .addTaskDurationPills .unitBtn.small,
+#editOverlay .addTaskDurationPills .unitBtn.small{
+  min-width: 86px;
+  padding: 6px 10px;
+  text-align:center;
+  position: relative;
+  z-index: 1;
+}
+
+#addTaskOverlay .addTaskDurationPills .unitBtn.isHidden,
+#editOverlay .addTaskDurationPills .unitBtn.isHidden{
+  display:none;
+}
+
+#addTaskOverlay .addTaskDurationPerLabel,
+#editOverlay .addTaskDurationPerLabel{
   font-size: 12px;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: rgba(188,214,230,.76);
+  flex: 0 0 auto;
 }
 
 #addTaskOverlay .addTaskStepPromptWithInfo{
@@ -848,6 +923,34 @@
   color: rgba(194,224,236,.82);
 }
 
+#editOverlay .editTaskDurationReadout{
+  margin-left: 0;
+  text-align: right;
+  font-size: 12px;
+  color: rgba(194,224,236,.82);
+  min-width: 0;
+}
+
+@media (max-width: 640px){
+  #editOverlay .editTaskTimeGoalField{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #editOverlay .editTaskTimeGoalField > #editTaskDurationReadout{
+    grid-column: 1;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  #editOverlay .editTaskTimeGoalField > #editTaskDurationRow{
+    grid-row: 3;
+  }
+
+  #editOverlay .editTaskTimeGoalField > .editTaskNoGoalRow{
+    grid-row: 4;
+  }
+}
+
 #addTaskOverlay .addTaskNoGoalRow{
   display: inline-flex;
   align-items: center;
@@ -862,12 +965,36 @@
   height: 16px;
 }
 
+#editOverlay .editTaskNoGoalRow{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(194,224,236,.88);
+  cursor: pointer;
+}
+
+#editOverlay .editTaskNoGoalRow input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+}
+
 #addTaskOverlay .addTaskDurationRow.isDisabled,
 #addTaskOverlay .addTaskDurationReadout.isDisabled{
   opacity: .45;
 }
 
+#editOverlay .editTaskDurationRow.isDisabled,
+#editOverlay .editTaskDurationReadout.isDisabled{
+  opacity: .45;
+}
+
 #addTaskOverlay #addTaskDurationValueInput.isInvalid{
+  border-color: rgba(255,77,77,.55);
+  box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
+}
+
+#editOverlay #editTaskDurationValueInput.isInvalid{
   border-color: rgba(255,77,77,.55);
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
 }

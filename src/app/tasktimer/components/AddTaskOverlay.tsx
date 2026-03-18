@@ -35,15 +35,23 @@ export default function AddTaskOverlay() {
             <div className="addTaskStepPrompt">How much time do you want to spend on this task?</div>
             <div className="addTaskDurationRow" id="addTaskDurationRow">
               <input id="addTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
-              <select id="addTaskDurationUnitSelect" defaultValue="hour">
-                <option value="minute">Minutes</option>
-                <option value="hour">Hours</option>
-              </select>
+              <div className="unitButtons addTaskDurationPills" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
+                <button className="btn btn-ghost small unitBtn" id="addTaskDurationUnitMinute" type="button" aria-pressed="false">
+                  Minutes
+                </button>
+                <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationUnitHour" type="button" aria-pressed="true">
+                  Hours
+                </button>
+              </div>
               <span className="addTaskDurationPerLabel">per</span>
-              <select id="addTaskDurationPeriodSelect" defaultValue="week">
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-              </select>
+              <div className="unitButtons addTaskDurationPills" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
+                <button className="btn btn-ghost small unitBtn" id="addTaskDurationPeriodDay" type="button" aria-pressed="false">
+                  Day
+                </button>
+                <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                  Week
+                </button>
+              </div>
             </div>
             <div className="addTaskDurationReadout" id="addTaskDurationReadout">
               5 hours per week

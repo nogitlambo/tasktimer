@@ -155,6 +155,11 @@ service cloud.firestore {
         "presetIntervalLastCheckpointId",
         "presetIntervalLastMilestoneId",
         "presetIntervalNextSeq",
+        "timeGoalEnabled",
+        "timeGoalValue",
+        "timeGoalUnit",
+        "timeGoalPeriod",
+        "timeGoalMinutes",
         "mode",
         "createdAt",
         "updatedAt",
@@ -186,6 +191,11 @@ service cloud.firestore {
       && (!("presetIntervalLastCheckpointId" in request.resource.data) || request.resource.data.presetIntervalLastCheckpointId == null || request.resource.data.presetIntervalLastCheckpointId is string)
       && (!("presetIntervalLastMilestoneId" in request.resource.data) || request.resource.data.presetIntervalLastMilestoneId == null || request.resource.data.presetIntervalLastMilestoneId is string)
       && (!("presetIntervalNextSeq" in request.resource.data) || request.resource.data.presetIntervalNextSeq is int)
+      && (!("timeGoalEnabled" in request.resource.data) || request.resource.data.timeGoalEnabled is bool)
+      && (!("timeGoalValue" in request.resource.data) || request.resource.data.timeGoalValue is int || request.resource.data.timeGoalValue is float)
+      && (!("timeGoalUnit" in request.resource.data) || request.resource.data.timeGoalUnit in ["minute", "hour"])
+      && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod in ["day", "week"])
+      && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
       && (!("mode" in request.resource.data) || request.resource.data.mode in ["mode1", "mode2", "mode3"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)

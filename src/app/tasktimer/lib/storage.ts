@@ -159,6 +159,11 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
   return {
     ...task,
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
+    timeGoalEnabled: !!task.timeGoalEnabled,
+    timeGoalValue: Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0,
+    timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
+    timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
+    timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
   };
 }
 
@@ -453,6 +458,11 @@ function taskSignature(task: Task | null | undefined): string {
     presetIntervalValue: Number(task.presetIntervalValue || 0),
     presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
     presetIntervalNextSeq: Number(task.presetIntervalNextSeq || 0),
+    timeGoalEnabled: !!task.timeGoalEnabled,
+    timeGoalValue: Number(task.timeGoalValue || 0),
+    timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
+    timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
+    timeGoalMinutes: Number(task.timeGoalMinutes || 0),
     mode: String(sourceMode || "mode1"),
   });
 }

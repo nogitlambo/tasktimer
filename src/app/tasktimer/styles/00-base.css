@@ -370,52 +370,32 @@ body[data-app-page="test2"] #modeSwitch{
 }
 .mkFlag{
   position:absolute;
-  top:3px;
-  width:13px;
-  height:11px;
-  transform: translateX(-2px);
+  top:50%;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  transform: translate(-50%, -50%);
+  border:1px solid rgba(205,220,236,.72);
+  background: rgba(132,146,166,.82);
+  box-shadow: 0 0 4px rgba(0,220,255,.18);
 }
 .mkFlag::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:0;
-  width:2px;
-  height:10px;
-  background: rgba(225,245,255,.95);
+  content:none;
 }
 .mkFlag::after{
-  content:"";
-  position:absolute;
-  left:2px;
-  top:0;
-  width:10px;
-  height:8px;
-  border:1px solid rgba(255,255,255,.55);
-  background:
-    linear-gradient(45deg, rgba(255,255,255,.95) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.95) 75%),
-    linear-gradient(45deg, transparent 25%, rgba(11,18,30,.95) 25%, rgba(11,18,30,.95) 75%, transparent 75%);
-  background-size: 4px 4px;
-  background-position: 0 0, 2px 2px;
-  box-shadow: 0 0 4px rgba(0,220,255,.25);
+  content:none;
 }
 .mkFlag.mkPend::before{
-  background: rgba(235,247,255,.98);
+  content:none;
 }
 .mkFlag.mkPend::after{
-  border-color: rgba(255,255,255,.82);
-  box-shadow: 0 0 6px rgba(0,220,255,.32);
-  opacity: .96;
+  content:none;
 }
 .mkFlag.mkAch::before{
-  background: rgba(0,207,200,.95);
+  content:none;
 }
 .mkFlag.mkAch::after{
-  border-color: rgba(0,207,200,.75);
-  background:
-    linear-gradient(45deg, rgba(0,207,200,.95) 25%, transparent 25%, transparent 75%, rgba(0,207,200,.95) 75%),
-    linear-gradient(45deg, transparent 25%, rgba(6,17,26,.95) 25%, rgba(6,17,26,.95) 75%, transparent 75%);
-  box-shadow: 0 0 6px rgba(0,207,200,.35);
+  content:none;
 }
 .mkTime{
   position:absolute;
@@ -1280,58 +1260,34 @@ body[data-theme="cyan"] option:focus{
   position:absolute;
   top:50%;
   left:50%;
-  width:var(--mlpx, 12px);
-  height:2px;
-  margin:-1px 0 0 0;
-  border-radius:2px;
-  background: rgba(132,146,166,.72);
-  box-shadow: 0 0 2px rgba(90,105,128,.32);
-  transform: translate(var(--mxpx, 0px), var(--mypx, 0px)) rotate(var(--madeg, 0deg));
-  transform-origin: 0 50%;
+  width:8px;
+  height:8px;
+  margin:0;
+  border-radius:50%;
+  border:1px solid rgba(205,220,236,.72);
+  background: rgba(132,146,166,.82);
+  box-shadow: 0 0 4px rgba(90,105,128,.32);
+  transform: translate(calc(var(--mxpx, 0px) - 4px), calc(var(--mypx, 0px) - 4px));
 }
 .focusCheckpointMark.reached{
-  background: rgba(236,244,255,.96);
-  box-shadow: 0 0 5px rgba(205,228,255,.6);
+  border-color: rgba(236,244,255,.92);
+  background: rgba(0,238,255,.94);
+  box-shadow: 0 0 7px rgba(0,220,255,.5);
 }
 .focusCheckpointFlag{
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:18px;
-  height:14px;
-  transform: translate(var(--fxpx, 0px), var(--fypx, 0px)) translate(-35%, -65%);
-  pointer-events:none;
+  display:none;
 }
 .focusCheckpointFlag::before{
-  content:"";
-  position:absolute;
-  left:1px;
-  top:-5px;
-  width:2px;
-  height:18px;
-  background: rgba(127,139,160,.9);
+  content:none;
 }
 .focusCheckpointFlag::after{
-  content:"";
-  position:absolute;
-  left:3px;
-  top:-3px;
-  width:12px;
-  height:9px;
-  border-radius:1px;
-  background:
-    linear-gradient(90deg, rgba(130,142,162,.92) 50%, rgba(205,213,226,.9) 50%) 0 0 / 6px 4.5px,
-    linear-gradient(90deg, rgba(205,213,226,.9) 50%, rgba(130,142,162,.92) 50%) 0 4.5px / 6px 4.5px;
-  box-shadow: 0 0 2px rgba(0,0,0,.45);
+  content:none;
 }
 .focusCheckpointFlag.reached::before{
-  background: rgba(220,232,246,.96);
+  content:none;
 }
 .focusCheckpointFlag.reached::after{
-  background:
-    linear-gradient(90deg, rgba(0,238,255,.96) 50%, rgba(236,244,255,.95) 50%) 0 0 / 6px 4.5px,
-    linear-gradient(90deg, rgba(236,244,255,.95) 50%, rgba(0,238,255,.96) 50%) 0 4.5px / 6px 4.5px;
-  box-shadow: 0 0 5px rgba(0,220,255,.5);
+  content:none;
 }
 .focusCheckpointConnector{
   position:absolute;
@@ -1462,6 +1418,17 @@ body[data-theme="cyan"] option:focus{
   color: rgba(150,165,185,.88);
   font-style: italic;
   font-weight:600;
+}
+.focusInsightValue.is-positive{
+  color: #63e6a6;
+  text-shadow: 0 0 8px rgba(99,230,166,.22);
+}
+.focusInsightValue.is-negative{
+  color: #ff7b7b;
+  text-shadow: 0 0 8px rgba(255,123,123,.18);
+}
+.focusInsightValue.is-neutral{
+  color: rgba(230,245,255,.96);
 }
 .focusSessionNotes{
   margin-top: 2px;
@@ -2040,9 +2007,6 @@ body[data-theme="purple"] .appFooterBtn.isOn{
   border-color: rgba(233,134,245,.58);
   background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(176,56,202,.22));
   box-shadow: 0 0 14px rgba(198,73,216,.22);
-}
-body[data-theme="purple"] .progressFill{
-  background: linear-gradient(90deg, #d447d2, #f06ee0) !important;
 }
 body[data-theme="purple"] .friendIdentityProfileBtn:focus-visible{
   outline-color: rgba(233,134,245,.78) !important;
