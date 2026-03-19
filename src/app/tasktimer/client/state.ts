@@ -102,7 +102,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskCheckpointToastMode: "auto5s",
     addTaskPresetIntervalsEnabled: false,
     addTaskPresetIntervalValue: 0,
-    addTaskFinalCheckpointAction: "continue",
+    addTaskTimeGoalAction: "continue",
     addTaskWizardStep: 1,
     addTaskDurationValue: 5,
     addTaskDurationUnit: "hour",

@@ -84,6 +84,9 @@ body[data-app-page="test2"] #openAddTaskBtn{
   opacity:.72;
   cursor:not-allowed;
 }
+.task .actions .historyActionBtn img{
+  filter: brightness(0) saturate(100%) invert(100%);
+}
 .taskMenu{
   position:relative;
 }

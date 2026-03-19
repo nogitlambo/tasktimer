@@ -74,7 +74,7 @@ export function useTaskTimerActions() {
         checkpointToastMode: "auto5s" | "manual";
         presetIntervalsEnabled: boolean;
         presetIntervalValue: string;
-        finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+        timeGoalAction: "continue" | "resetLog" | "resetNoLog";
       }>
     ) {
       dispatch({ type: "patchAddTaskDraft", patch });
@@ -115,7 +115,7 @@ export function useTaskTimerActions() {
         checkpointToastMode: "auto5s" | "manual";
         presetIntervalsEnabled: boolean;
         presetIntervalValue: string;
-        finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+        timeGoalAction: "continue" | "resetLog" | "resetNoLog";
       }>
     ) {
       dispatch({ type: "patchEditTaskDraft", patch });

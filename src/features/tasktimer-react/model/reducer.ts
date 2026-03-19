@@ -154,7 +154,7 @@ function resetEditTaskState(state: TaskTimerState): Pick<TaskTimerState, "editTa
         checkpointSoundMode: "once",
         checkpointToastEnabled: false,
         checkpointToastMode: "auto5s",
-        finalCheckpointAction: "continue",
+        timeGoalAction: "continue",
         presetIntervalsEnabled: false,
         presetIntervalValue: 0,
         presetIntervalLastMilestoneId: null,

@@ -79,7 +79,7 @@ export default function TaskTimerTaskCard({ task }: TaskTimerTaskCardProps) {
             aria-pressed={showHistory || isPinned}
             onClick={() => actions.toggleHistory(task.id)}
           >
-            &#128202;
+            <img src="/Dashboard.svg" alt="" aria-hidden="true" width="18" height="18" />
           </button>
           <details className="taskMenu">
             <summary className="iconBtn taskMenuBtn" title="More actions" aria-label="More actions">

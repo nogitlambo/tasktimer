@@ -156,8 +156,15 @@ function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
 
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
+  const timeGoalAction =
+    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+      ? task.timeGoalAction
+      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        ? task.finalCheckpointAction
+        : "continue";
   return {
     ...task,
+    timeGoalAction,
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     timeGoalEnabled: !!task.timeGoalEnabled,
     timeGoalValue: Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0,
@@ -449,10 +456,12 @@ function taskSignature(task: Task | null | undefined): string {
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-    finalCheckpointAction:
-      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
-        ? task.finalCheckpointAction
-        : "continue",
+    timeGoalAction:
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+        ? task.timeGoalAction
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+          ? task.finalCheckpointAction
+          : "continue",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number(task.presetIntervalValue || 0),

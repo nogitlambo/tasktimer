@@ -29,7 +29,7 @@ function createTask(overrides: Partial<TaskTimerTask> = {}): TaskTimerTask {
     checkpointSoundMode: "once",
     checkpointToastEnabled: false,
     checkpointToastMode: "auto5s",
-    finalCheckpointAction: "continue",
+    timeGoalAction: "continue",
     presetIntervalsEnabled: false,
     presetIntervalValue: 0,
     presetIntervalLastMilestoneId: null,
@@ -66,7 +66,7 @@ describe("taskConfig helpers", () => {
       checkpointToastMode: "manual",
       presetIntervalsEnabled: true,
       presetIntervalValue: 15,
-      finalCheckpointAction: "resetLog",
+      timeGoalAction: "resetLog",
     });
 
     const draft = createEditTaskDraft(task, 200_000);
@@ -75,7 +75,7 @@ describe("taskConfig helpers", () => {
     expect(draft.milestones.map((row) => row.value)).toEqual(["15", "45"]);
     expect(draft.checkpointSoundMode).toBe("repeat");
     expect(draft.checkpointToastMode).toBe("manual");
-    expect(draft.finalCheckpointAction).toBe("resetLog");
+    expect(draft.timeGoalAction).toBe("resetLog");
   });
 
   it("rejects preset intervals that are not greater than zero", () => {
@@ -119,7 +119,7 @@ describe("taskConfig helpers", () => {
       checkpointSoundEnabled: true,
       presetIntervalsEnabled: true,
       presetIntervalValue: "2",
-      finalCheckpointAction: "resetNoLog" as const,
+      timeGoalAction: "resetNoLog" as const,
     };
 
     const built = buildTaskFromAddDraft(addDraft, [createTask()], () => "task-new");
@@ -127,7 +127,7 @@ describe("taskConfig helpers", () => {
     expect(built.order).toBe(2);
     expect(built.mode).toBe("mode2");
     expect(built.milestones).toEqual([{ id: "m1", createdSeq: 1, hours: 2, description: "Wrap" }]);
-    expect(built.finalCheckpointAction).toBe("resetNoLog");
+    expect(built.timeGoalAction).toBe("resetNoLog");
 
     const baseTask = createTask({
       id: "keep-me",

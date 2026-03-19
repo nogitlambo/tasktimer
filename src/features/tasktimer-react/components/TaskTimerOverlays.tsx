@@ -136,10 +136,9 @@ export default function TaskTimerOverlays() {
     [state.addTaskDraft.name, state.recentCustomTaskNames]
   );
 
-  const addTaskCanUseDay = Number(state.addTaskDraft.durationValue || "0") <= getAddTaskDurationMaxForPeriod(state.addTaskDraft.durationUnit, "day");
-  const addTaskDurationReadout = formatAddTaskDurationReadout(state.addTaskDraft);
   const addTaskCanUseDay =
-    Number(state.addTaskDraft.durationValue || 0) <= getAddTaskDurationMaxForPeriod(state.addTaskDraft.durationUnit, "day");
+    Number(state.addTaskDraft.durationValue || "0") <= getAddTaskDurationMaxForPeriod(state.addTaskDraft.durationUnit, "day");
+  const addTaskDurationReadout = formatAddTaskDurationReadout(state.addTaskDraft);
   const addTaskPresetEnabled = state.addTaskDraft.milestonesEnabled && state.addTaskDraft.presetIntervalsEnabled;
   const addTaskPresetValid = Number(state.addTaskDraft.presetIntervalValue || "0") > 0;
   const addTaskNameMenuVisible = state.addTaskDialogOpen && addTaskNameMenuOpen;
@@ -409,7 +408,7 @@ export default function TaskTimerOverlays() {
                 </p>
                 <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
                   <label htmlFor="addTaskFinalCheckpointActionSelect">When final checkpoint is reached</label>
-                  <select id="addTaskFinalCheckpointActionSelect" value={state.addTaskDraft.finalCheckpointAction} onChange={(event) => actions.patchAddTaskDraft({ finalCheckpointAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
+                  <select id="addTaskFinalCheckpointActionSelect" value={state.addTaskDraft.timeGoalAction} onChange={(event) => actions.patchAddTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
                     <option value="continue">Continue to run timer until stopped by user (default)</option>
                     <option value="resetLog">Stop/reset timer and save session to history</option>
                     <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
@@ -579,7 +578,7 @@ export default function TaskTimerOverlays() {
             </p>
             <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
               <label htmlFor="editFinalCheckpointActionSelect">When final checkpoint is reached</label>
-              <select id="editFinalCheckpointActionSelect" value={state.editTaskDraft.finalCheckpointAction} onChange={(event) => actions.patchEditTaskDraft({ finalCheckpointAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
+              <select id="editFinalCheckpointActionSelect" value={state.editTaskDraft.timeGoalAction} onChange={(event) => actions.patchEditTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
                 <option value="continue">Continue to run timer until stopped by user (default)</option>
                 <option value="resetLog">Stop/reset timer and save session to history</option>
                 <option value="resetNoLog">Stop/reset timer and do not save session to history</option>

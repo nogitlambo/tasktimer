@@ -327,6 +327,15 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.presetIntervalLastMilestoneId = presetLastCheckpointId;
   }
 
+  if (
+    row.timeGoalAction !== "continue" &&
+    row.timeGoalAction !== "resetLog" &&
+    row.timeGoalAction !== "resetNoLog" &&
+    (row.finalCheckpointAction === "continue" || row.finalCheckpointAction === "resetLog" || row.finalCheckpointAction === "resetNoLog")
+  ) {
+    row.timeGoalAction = row.finalCheckpointAction;
+  }
+
   row.xpDisqualifiedUntilReset = !!row.xpDisqualifiedUntilReset;
   row.timeGoalEnabled = !!row.timeGoalEnabled;
   row.timeGoalValue = normalizeTimeGoalValue(row.timeGoalValue);
@@ -362,10 +371,12 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-    finalCheckpointAction:
-      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
-        ? task.finalCheckpointAction
-        : "continue",
+    timeGoalAction:
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+        ? task.timeGoalAction
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+          ? task.finalCheckpointAction
+          : "continue",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
@@ -382,6 +393,22 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     mode,
   };
   return row;
+}
+
+function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
+  const row = mapTaskToFirestore(task);
+  const legacyTimeGoalAction =
+    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+      ? task.timeGoalAction
+      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        ? task.finalCheckpointAction
+        : "continue";
+  const { timeGoalAction, ...legacyRow } = row;
+  void timeGoalAction;
+  return {
+    ...legacyRow,
+    finalCheckpointAction: legacyTimeGoalAction,
+  };
 }
 
 async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
@@ -566,17 +593,17 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
   }
   await upsertUserRoot(uid);
   const taskRow = mapTaskToFirestore(task);
-  try {
+  const buildSavePayload = async (row: Record<string, unknown>) => {
     const existing = await getDoc(ref);
-    await setDoc(
-      ref,
-      {
-        ...taskRow,
-        createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        schemaVersion: 1,
-      },
-    );
+    return {
+      ...row,
+      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      schemaVersion: 1,
+    };
+  };
+  try {
+    await setDoc(ref, await buildSavePayload(taskRow));
     if (process.env.NODE_ENV !== "production") {
       console.info("[tasktimer-cloud] Task saved", {
         uid,
@@ -585,8 +612,39 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
       });
     }
   } catch (error) {
+    const describedError = describeError(error);
+    const shouldRetryLegacy =
+      describedError.code === "permission-denied" ||
+      String(describedError.message || "").toLowerCase().includes("missing or insufficient permissions");
+    if (shouldRetryLegacy) {
+      const legacyTaskRow = mapTaskToLegacyFirestore(task);
+      try {
+        await setDoc(ref, await buildSavePayload(legacyTaskRow));
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[tasktimer-cloud] Saved task with legacy finalCheckpointAction fallback", {
+            uid,
+            taskId: String(task.id || ""),
+            databaseRowKeys: Object.keys(legacyTaskRow),
+          });
+        }
+        return;
+      } catch (legacyError) {
+        if (process.env.NODE_ENV !== "production") {
+          const describedLegacyError = describeError(legacyError);
+          console.error("[tasktimer-cloud] Legacy fallback save failed", {
+            uid,
+            taskId: String(task.id || ""),
+            databaseRowKeys: Object.keys(legacyTaskRow),
+            taskRow: legacyTaskRow,
+            error: describedLegacyError,
+            errorMessage: describedLegacyError.message ?? null,
+            errorCode: describedLegacyError.code ?? null,
+          });
+        }
+        throw legacyError;
+      }
+    }
     if (process.env.NODE_ENV !== "production") {
-      const describedError = describeError(error);
       console.error("[tasktimer-cloud] Failed to save task", {
         uid,
         taskId: String(task.id || ""),

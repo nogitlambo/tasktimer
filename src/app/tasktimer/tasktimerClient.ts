@@ -23,6 +23,7 @@ import {
 import {
   formatAddTaskDurationReadout,
   getAddTaskDurationMaxForPeriod,
+  normalizeTaskConfigMilestones,
 } from "@/features/tasktimer-react/model/taskConfig";
 import { computeFocusInsights } from "./lib/focusInsights";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
@@ -196,7 +197,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let addTaskCheckpointToastMode = initialState.addTaskCheckpointToastMode;
   let addTaskPresetIntervalsEnabled = initialState.addTaskPresetIntervalsEnabled;
   let addTaskPresetIntervalValue = initialState.addTaskPresetIntervalValue;
-  let addTaskFinalCheckpointAction = initialState.addTaskFinalCheckpointAction;
+  let addTaskTimeGoalAction = initialState.addTaskTimeGoalAction;
   let addTaskWizardStep = initialState.addTaskWizardStep;
   let addTaskDurationValue = initialState.addTaskDurationValue;
   let addTaskDurationUnit = initialState.addTaskDurationUnit;
@@ -962,7 +963,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkpointSoundMode: "once",
       checkpointToastEnabled: false,
       checkpointToastMode: "auto5s",
-      finalCheckpointAction: "continue",
+      timeGoalAction: "continue",
       presetIntervalsEnabled: false,
       presetIntervalValue: 0,
       presetIntervalLastMilestoneId: null,
@@ -999,10 +1000,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       t.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
       t.checkpointToastEnabled = !!t.checkpointToastEnabled;
       t.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-      t.finalCheckpointAction =
-        t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
-          ? t.finalCheckpointAction
-          : "continue";
+      t.timeGoalAction =
+        t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog"
+          ? t.timeGoalAction
+          : t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+            ? t.finalCheckpointAction
+            : "continue";
       t.timeGoalEnabled = !!t.timeGoalEnabled;
       t.timeGoalValue = Number.isFinite(Number(t.timeGoalValue)) ? Math.max(0, Number(t.timeGoalValue)) : 0;
       t.timeGoalUnit = t.timeGoalUnit === "minute" ? "minute" : "hour";
@@ -1066,19 +1069,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return match;
   }
 
-  function addMilestoneWithCurrentPreset(task: Task) {
+  function addMilestoneWithCurrentPreset(task: Task, timeGoalMinutesOverride?: number | null): boolean {
     const taskAny = task as any;
     task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
     ensureMilestoneIdentity(task);
     const interval = Math.max(0, +taskAny.presetIntervalValue || 0);
     const last = getPresetIntervalLastMilestone(task);
     const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
+    const timeGoalMinutes = timeGoalMinutesOverride == null ? Number(task.timeGoalMinutes || 0) : timeGoalMinutesOverride;
+    if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(task), timeGoalMinutes)) return false;
     const nextSeq = Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq || 1));
     const milestone = { id: cryptoRandomId(), createdSeq: nextSeq, hours: nextHours, description: "" };
     task.milestones.push(milestone);
     taskAny.presetIntervalLastMilestoneId = milestone.id;
     taskAny.presetIntervalNextSeq = nextSeq + 1;
     task.milestones = sortMilestones(task.milestones);
+    return true;
   }
 
   function regeneratePresetIntervalMilestones(task: Task) {
@@ -2714,10 +2720,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
         checkpointToastEnabled: !!t.checkpointToastEnabled,
         checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto5s",
-        finalCheckpointAction:
-          t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
-            ? t.finalCheckpointAction
-            : "continue",
+        timeGoalAction:
+          t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog"
+            ? t.timeGoalAction
+            : t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+              ? t.finalCheckpointAction
+              : "continue",
         presetIntervalsEnabled: !!t.presetIntervalsEnabled,
         presetIntervalValue: getPresetIntervalValueNum(t),
         presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
@@ -2749,10 +2757,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
           checkpointToastEnabled: !!t.checkpointToastEnabled,
           checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto5s",
-          finalCheckpointAction:
-            t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
-              ? t.finalCheckpointAction
-              : "continue",
+          timeGoalAction:
+            t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog"
+              ? t.timeGoalAction
+              : t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+                ? t.finalCheckpointAction
+                : "continue",
           presetIntervalsEnabled: !!t.presetIntervalsEnabled,
           presetIntervalValue: getPresetIntervalValueNum(t),
           presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
@@ -2821,8 +2831,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     out.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
     out.checkpointToastEnabled = !!t.checkpointToastEnabled;
     out.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-    out.finalCheckpointAction =
-      t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
+    out.timeGoalAction =
+      t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog"
+        ? t.timeGoalAction
+        : t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+          ? t.finalCheckpointAction
+          : "continue";
     out.xpDisqualifiedUntilReset = !!t.xpDisqualifiedUntilReset;
     out.presetIntervalsEnabled = !!t.presetIntervalsEnabled;
     out.presetIntervalValue = getPresetIntervalValueNum(t as any);
@@ -3250,6 +3264,69 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return milestones.some((m) => !(Number(+m.hours) > 0));
   }
 
+  function checkpointTimeGoalLimitSec(timeGoalMinutes: number | null | undefined): number {
+    const minutes = Number.isFinite(Number(timeGoalMinutes)) ? Math.max(0, Number(timeGoalMinutes)) : 0;
+    return minutes > 0 ? minutes * 60 : 0;
+  }
+
+  function formatCheckpointTimeGoalText(task: Task | null | undefined, opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }) {
+    const effectiveMinutesRaw =
+      opts && Object.prototype.hasOwnProperty.call(opts, "timeGoalMinutes")
+        ? Number(opts.timeGoalMinutes)
+        : Number(task?.timeGoalMinutes || 0);
+    const effectiveMinutes = Number.isFinite(effectiveMinutesRaw) ? Math.max(0, effectiveMinutesRaw) : 0;
+    if (!(effectiveMinutes > 0)) return "the current time goal";
+
+    const useEditDraft = !!opts?.forEditDraft;
+    const goalUnit =
+      useEditDraft ? editTaskDurationUnit : task?.timeGoalUnit === "minute" ? "minute" : task?.timeGoalUnit === "hour" ? "hour" : null;
+    const goalPeriod = useEditDraft ? editTaskDurationPeriod : task?.timeGoalPeriod === "day" ? "day" : task?.timeGoalPeriod === "week" ? "week" : null;
+    const goalValueRaw = useEditDraft ? Number(els.editTaskDurationValueInput?.value || 0) : Number(task?.timeGoalValue || 0);
+    const goalValue = Number.isFinite(goalValueRaw) ? Math.max(0, goalValueRaw) : 0;
+
+    if (goalUnit && goalPeriod && goalValue > 0) {
+      const unitLabel = goalValue === 1 ? goalUnit : `${goalUnit}s`;
+      const periodLabel = goalPeriod === "day" ? "per day" : "per week";
+      return `${goalValue} ${unitLabel} ${periodLabel}`;
+    }
+
+    if (effectiveMinutes % 60 === 0) {
+      const hours = effectiveMinutes / 60;
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+    }
+    return `${effectiveMinutes} ${effectiveMinutes === 1 ? "minute" : "minutes"}`;
+  }
+
+  function isCheckpointAtOrAboveTimeGoal(
+    checkpointHours: number | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ): boolean {
+    const checkpointValue = Number(checkpointHours);
+    if (!(checkpointValue > 0)) return false;
+    const timeGoalSec = checkpointTimeGoalLimitSec(timeGoalMinutes);
+    if (!(timeGoalSec > 0)) return false;
+    return checkpointValue * milestoneUnitSeconds >= timeGoalSec;
+  }
+
+  function hasCheckpointAtOrAboveTimeGoal(
+    milestones: Task["milestones"] | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ): boolean {
+    if (!Array.isArray(milestones) || milestones.length === 0) return false;
+    return milestones.some((m) => isCheckpointAtOrAboveTimeGoal(m?.hours, milestoneUnitSeconds, timeGoalMinutes));
+  }
+
+  function getAddTaskTimeGoalMinutesState() {
+    const value = Math.max(0, Number(addTaskDurationValue) || 0);
+    if (!(value > 0) || addTaskNoTimeGoal) return 0;
+    if (addTaskDurationUnit === "minute") {
+      return addTaskDurationPeriod === "day" ? value : value * 7;
+    }
+    return addTaskDurationPeriod === "day" ? value * 60 : value * 60 * 7;
+  }
+
   function clearEditValidationState() {
     els.editValidationError?.classList.remove("isOn");
     if (els.editValidationError) els.editValidationError.textContent = "";
@@ -3281,9 +3358,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.addTaskMsArea?.classList.toggle("isInvalid", !!options.checkpoints || !!options.checkpointRows);
     els.addTaskPresetIntervalField?.classList.toggle("isInvalid", !!options.presetInterval);
     const rows = Array.from(els.addTaskMsList?.querySelectorAll?.(".msRow") || []);
+    const addTaskTimeGoalMinutes = getAddTaskTimeGoalMinutesState();
+    const addTaskUnitSeconds =
+      addTaskMilestoneTimeUnit === "day" ? 86400 : addTaskMilestoneTimeUnit === "minute" ? 60 : 3600;
     rows.forEach((row, idx) => {
       const m = addTaskMilestones[idx];
-      const invalid = !!options.checkpointRows && !!m && !(Number(+m.hours) > 0);
+      const invalidForValue = !!m && !(Number(+m.hours) > 0);
+      const invalidForTimeGoal = !!m && isCheckpointAtOrAboveTimeGoal(m.hours, addTaskUnitSeconds, addTaskTimeGoalMinutes);
+      const invalid = !!options.checkpointRows && (invalidForValue || invalidForTimeGoal);
       row.classList.toggle("isInvalid", invalid);
     });
   }
@@ -3318,7 +3400,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         checkpointToastMode: "auto5s",
         presetIntervalsEnabled: false,
         presetIntervalValue: "0",
-        finalCheckpointAction: "continue",
+        timeGoalAction: "continue",
       });
     }
   }
@@ -3345,17 +3427,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           : currentTask?.milestoneTimeUnit === "minute"
             ? "minute"
             : "hour",
-      milestones: Array.isArray(currentTask?.milestones) ? currentTask!.milestones : [],
+      milestones: normalizeTaskConfigMilestones(
+        (Array.isArray(currentTask?.milestones) ? currentTask.milestones : []).map((milestone, index) => ({
+          id: String(milestone?.id || ""),
+          createdSeq:
+            Number.isFinite(Number(milestone?.createdSeq)) && Number(milestone.createdSeq) > 0
+              ? Math.floor(Number(milestone.createdSeq))
+              : index + 1,
+          value: String(Number(milestone?.hours || 0)),
+          description: String(milestone?.description || ""),
+        }))
+      ),
       checkpointSoundEnabled: !!currentTask?.checkpointSoundEnabled,
       checkpointSoundMode: currentTask?.checkpointSoundMode === "repeat" ? "repeat" : "once",
       checkpointToastEnabled: !!currentTask?.checkpointToastEnabled,
       checkpointToastMode: currentTask?.checkpointToastMode === "manual" ? "manual" : "auto5s",
       presetIntervalsEnabled: !!currentTask?.presetIntervalsEnabled,
       presetIntervalValue: String(Number(currentTask?.presetIntervalValue || 0) || 0),
-      finalCheckpointAction:
-        currentTask?.finalCheckpointAction === "resetLog" || currentTask?.finalCheckpointAction === "resetNoLog"
-          ? currentTask.finalCheckpointAction
-          : "continue",
+      timeGoalAction:
+        currentTask?.timeGoalAction === "resetLog" || currentTask?.timeGoalAction === "resetNoLog"
+          ? currentTask.timeGoalAction
+          : currentTask?.finalCheckpointAction === "resetLog" || currentTask?.finalCheckpointAction === "resetNoLog"
+            ? currentTask.finalCheckpointAction
+            : "continue",
     });
   }
 
@@ -3418,7 +3512,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
     if (!task) return;
     const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
-    const invalidCheckpointTimes = !!task.milestonesEnabled && hasNonPositiveCheckpoint(task.milestones);
+    const effectiveTimeGoalMinutes =
+      editIndex != null && tasks[editIndex] === task ? getEditTaskTimeGoalMinutes() : Number(task.timeGoalMinutes || 0);
+    const invalidCheckpointTimes =
+      !!task.milestonesEnabled &&
+      (hasNonPositiveCheckpoint(task.milestones) ||
+        hasCheckpointAtOrAboveTimeGoal(task.milestones, milestoneUnitSec(task), effectiveTimeGoalMinutes));
     const invalidPresetInterval = !!task.milestonesEnabled && !!task.presetIntervalsEnabled && !hasValidPresetInterval(task);
 
     els.msArea?.classList.toggle("isInvalid", noCheckpoints || invalidCheckpointTimes);
@@ -3428,7 +3527,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const msSorted = Array.isArray(task.milestones) ? task.milestones.slice() : [];
     msRows.forEach((row, idx) => {
       const m = msSorted[idx];
-      const invalid = !!task.milestonesEnabled && !!m && !(Number(+m.hours) > 0);
+      const invalid =
+        !!task.milestonesEnabled &&
+        !!m &&
+        (!(Number(+m.hours) > 0) || isCheckpointAtOrAboveTimeGoal(m.hours, milestoneUnitSec(task), effectiveTimeGoalMinutes));
       row.classList.toggle("isInvalid", invalid);
     });
   }
@@ -3576,8 +3678,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     if (els.addTaskFinalCheckpointActionSelect) {
       els.addTaskFinalCheckpointActionSelect.value =
-        addTaskFinalCheckpointAction === "resetLog" || addTaskFinalCheckpointAction === "resetNoLog"
-          ? addTaskFinalCheckpointAction
+        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
+          ? addTaskTimeGoalAction
           : "continue";
     }
 
@@ -3651,10 +3753,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const elapsedSec = elapsedMs / 1000;
 
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
+      const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
       const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
       const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-      const maxSec = Math.max(maxValue * milestoneUnitSec(t), 1);
-      const pct = hasMilestones ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
+      const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
+      const maxSec = Math.max(maxValue * milestoneUnitSec(t), timeGoalSec, 1);
+      const pct = hasMilestones || hasTimeGoal ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
       const taskId = String(t.id || "");
@@ -3672,7 +3776,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
 
       let progressHTML = "";
-      if (hasMilestones) {
+      if (hasMilestones || hasTimeGoal) {
         let markers = "";
         const unitSuffix = milestoneUnitSuffix(t);
         markers += `
@@ -3706,6 +3810,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                 : ``
             }`;
         });
+        if (hasTimeGoal) {
+          const goalLeft = Math.max(0, Math.min((timeGoalSec / maxSec) * 100, 100));
+          const goalEdgeCls = goalLeft <= 1 ? "mkEdgeL" : goalLeft >= 99 ? "mkEdgeR" : "";
+          const goalLeftPos = goalEdgeCls === "mkEdgeL" ? 0 : goalEdgeCls === "mkEdgeR" ? 100 : goalLeft;
+          markers += `
+            <div class="mkFlag mkGoal ${elapsedSec >= timeGoalSec ? "mkAch" : "mkPend"} ${goalEdgeCls}" style="left:${goalLeftPos}%"></div>`;
+        }
 
         progressHTML = `
           <div class="progressRow">
@@ -3793,7 +3904,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                   isHistoryPinned ? "History pinned" : "History"
                 }" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${
                   isHistoryPinned ? "disabled" : ""
-                }>&#128202;</button>
+                }><img src="/Dashboard.svg" alt="" aria-hidden="true" width="18" height="18"></button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#8942;</button>
               </div>
             </div>
@@ -5401,6 +5512,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         showEditValidationError(t, "Checkpoint times must be greater than 0.");
         return;
       }
+      if (t.milestonesEnabled && hasCheckpointAtOrAboveTimeGoal(t.milestones, milestoneUnitSec(t), getEditTaskTimeGoalMinutes())) {
+        syncEditSaveAvailability(t);
+        showEditValidationError(t, "Checkpoint times must be less than the time goal.");
+        return;
+      }
       if (t.milestonesEnabled && t.presetIntervalsEnabled && !hasValidPresetInterval(t)) {
         syncEditSaveAvailability(t);
         showEditValidationError(t, "Enter a preset interval greater than 0.");
@@ -5430,7 +5546,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
       t.presetIntervalsEnabled = isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      t.finalCheckpointAction =
+      t.timeGoalAction =
         els.editFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
           : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
@@ -5600,7 +5716,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (elapsedPadTarget) {
         elapsedPadTarget.value = valid;
       } else if (elapsedPadMilestoneRef) {
-        elapsedPadMilestoneRef.milestone.hours = Number(valid);
+        const nextHours = Number(valid);
+        const timeGoalMinutes =
+          editIndex != null && tasks[editIndex] === elapsedPadMilestoneRef.task
+            ? getEditTaskTimeGoalMinutes()
+            : getAddTaskTimeGoalMinutesState();
+        if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(elapsedPadMilestoneRef.task), timeGoalMinutes)) {
+          const timeGoalText = formatCheckpointTimeGoalText(elapsedPadMilestoneRef.task, {
+            timeGoalMinutes,
+            forEditDraft: editIndex != null && tasks[editIndex] === elapsedPadMilestoneRef.task,
+          });
+          setElapsedPadError(`Checkpoint must be less than the time goal of ${timeGoalText}`);
+          return;
+        }
+        elapsedPadMilestoneRef.milestone.hours = nextHours;
         elapsedPadMilestoneRef.task.milestones = elapsedPadMilestoneRef.ms;
         if (elapsedPadMilestoneRef.onApplied) elapsedPadMilestoneRef.onApplied();
         else renderMilestoneEditor(elapsedPadMilestoneRef.task);
@@ -6857,7 +6986,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.editTimerSettingsGroup?.classList.toggle("isHidden", !t.milestonesEnabled);
     if (els.editFinalCheckpointActionSelect) {
       els.editFinalCheckpointActionSelect.value =
-        t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog" ? t.finalCheckpointAction : "continue";
+        t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog"
+          ? t.timeGoalAction
+          : t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog"
+            ? t.finalCheckpointAction
+            : "continue";
     }
     const notes: string[] = [];
     if (!checkpointAlertSoundEnabled) notes.push("sound alerts are disabled globally");
@@ -6907,7 +7040,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
       checkpointToastEnabled: !!isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null),
       checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
-      finalCheckpointAction:
+      timeGoalAction:
         els.editFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
           : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
@@ -6929,8 +7062,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els.saveEditBtn.title = "";
       return;
     }
-    els.saveEditBtn.disabled = false;
-    els.saveEditBtn.title = "Save Changes";
+    const invalidTimeGoal = !validateEditTimeGoal();
+    const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
+    const invalidCheckpointTimes =
+      !!task.milestonesEnabled &&
+      (hasNonPositiveCheckpoint(task.milestones) ||
+        hasCheckpointAtOrAboveTimeGoal(task.milestones, milestoneUnitSec(task), getEditTaskTimeGoalMinutes()));
+    const invalidPresetInterval = !!task.milestonesEnabled && !!task.presetIntervalsEnabled && !hasValidPresetInterval(task);
+    const blocked = invalidTimeGoal || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
+    els.saveEditBtn.disabled = blocked;
+    els.saveEditBtn.title = blocked ? "Resolve validation issues before saving" : "Save Changes";
+    if (!blocked) return;
+    applyEditCheckpointValidationHighlights(task);
   }
 
   function maybeToggleEditPresetIntervals(nextEnabled: boolean) {
@@ -6978,7 +7121,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t))) > 0);
     const totalCheckpoints = validMilestones.length;
     let beepCount = 0;
-    let shouldResetAtFinal: null | "resetLog" | "resetNoLog" = null;
+    let shouldResetAtTimeGoal: null | "resetLog" | "resetNoLog" = null;
     msSorted.forEach((m) => {
       const targetSec = Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t)));
       if (targetSec <= 0) return;
@@ -7008,22 +7151,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled) {
         beepCount += 1;
       }
-      if (
-        checkpointIndex >= totalCheckpoints &&
-        totalCheckpoints > 0 &&
-        (t.finalCheckpointAction === "resetLog" || t.finalCheckpointAction === "resetNoLog")
-      ) {
-        shouldResetAtFinal = t.finalCheckpointAction;
-      }
     });
+    const timeGoalSec = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0 ? Math.round(Number(t.timeGoalMinutes || 0) * 60) : 0;
+    if (
+      timeGoalSec > 0 &&
+      prevBaseline < timeGoalSec &&
+      elapsedWholeSec >= timeGoalSec &&
+      (t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog")
+    ) {
+      shouldResetAtTimeGoal = t.timeGoalAction;
+    }
     checkpointBaselineSecByTaskId[taskId] = elapsedWholeSec;
     if (beepCount > 0) {
       if ((t.checkpointSoundMode || "once") === "repeat") startCheckpointRepeatAlert(taskId);
       else enqueueCheckpointBeeps(beepCount);
     }
-    if (shouldResetAtFinal) {
+    if (shouldResetAtTimeGoal) {
       resetTaskStateImmediate(t, {
-        logHistory: shouldResetAtFinal === "resetLog",
+        logHistory: shouldResetAtTimeGoal === "resetLog",
         sessionNote: captureResetActionSessionNote(String(t.id || "")),
       });
     }
@@ -8612,14 +8757,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return true;
     };
 
-    const getAddTaskTimeGoalMinutes = () => {
+    function getAddTaskTimeGoalMinutes() {
       const value = Math.max(0, Number(addTaskDurationValue) || 0);
       if (!(value > 0) || addTaskNoTimeGoal) return 0;
       if (addTaskDurationUnit === "minute") {
         return addTaskDurationPeriod === "day" ? value : value * 7;
       }
       return addTaskDurationPeriod === "day" ? value * 60 : value * 60 * 7;
-    };
+    }
 
     const validateAddTaskStep3 = () => {
       if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
@@ -8628,6 +8773,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
       if (addTaskMilestonesEnabled && hasNonPositiveCheckpoint(addTaskMilestones)) {
         showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
+        return false;
+      }
+      if (
+        addTaskMilestonesEnabled &&
+        hasCheckpointAtOrAboveTimeGoal(
+          addTaskMilestones,
+          addTaskMilestoneTimeUnit === "day" ? 86400 : addTaskMilestoneTimeUnit === "minute" ? 60 : 3600,
+          getAddTaskTimeGoalMinutes()
+        )
+      ) {
+        showAddTaskValidationError("Checkpoint times must be less than the time goal", {
+          checkpoints: true,
+          checkpointRows: true,
+        });
         return false;
       }
       if (addTaskMilestonesEnabled && addTaskPresetIntervalsEnabled && !(Number(addTaskPresetIntervalValue) > 0)) {
@@ -8660,7 +8819,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       addTaskCheckpointToastMode = "auto5s";
       addTaskPresetIntervalsEnabled = false;
       addTaskPresetIntervalValue = 0;
-      addTaskFinalCheckpointAction = "continue";
+      addTaskTimeGoalAction = "continue";
       if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
       if (els.addTaskMsArea && "open" in (els.addTaskMsArea as any)) {
         (els.addTaskMsArea as HTMLDetailsElement).open = false;
@@ -9128,7 +9287,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncAddTaskCheckpointAlertUi();
     });
     on(els.addTaskFinalCheckpointActionSelect, "change", () => {
-      addTaskFinalCheckpointAction =
+      addTaskTimeGoalAction =
         els.addTaskFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
           : els.addTaskFinalCheckpointActionSelect?.value === "resetNoLog"
@@ -9176,7 +9335,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           return;
         }
         const base = addTaskMilestones.length ? Number(addTaskMilestones[addTaskMilestones.length - 1]?.hours || 0) : 0;
-        addTaskMilestones.push({ hours: base + interval, description: "" });
+        const nextHours = base + interval;
+        if (
+          isCheckpointAtOrAboveTimeGoal(
+            nextHours,
+            addTaskMilestoneTimeUnit === "day" ? 86400 : addTaskMilestoneTimeUnit === "minute" ? 60 : 3600,
+            getAddTaskTimeGoalMinutes()
+          )
+        ) {
+          showAddTaskValidationError("Checkpoint times must be less than the time goal", {
+            checkpoints: true,
+            checkpointRows: true,
+          });
+          syncAddTaskCheckpointAlertUi();
+          return;
+        }
+        addTaskMilestones.push({ hours: nextHours, description: "" });
       } else {
         addTaskMilestones.push({ hours: 0, description: "" });
       }
@@ -9205,9 +9379,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       newTask.checkpointToastMode = addTaskCheckpointToastMode === "manual" ? "manual" : "auto5s";
       newTask.presetIntervalsEnabled = !!addTaskMilestonesEnabled && !!addTaskPresetIntervalsEnabled;
       newTask.presetIntervalValue = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
-      newTask.finalCheckpointAction =
-        addTaskFinalCheckpointAction === "resetLog" || addTaskFinalCheckpointAction === "resetNoLog"
-          ? addTaskFinalCheckpointAction
+      newTask.timeGoalAction =
+        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
+          ? addTaskTimeGoalAction
           : "continue";
       newTask.timeGoalEnabled = !addTaskNoTimeGoal;
       newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
@@ -10223,7 +10397,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.editFinalCheckpointActionSelect, "change", () => {
       if (editIndex == null || !tasks[editIndex]) return;
-      tasks[editIndex].finalCheckpointAction =
+      tasks[editIndex].timeGoalAction =
         els.editFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
           : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
@@ -10348,7 +10522,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           syncEditCheckpointAlertUi(t);
           return;
         }
-        addMilestoneWithCurrentPreset(t);
+        if (!addMilestoneWithCurrentPreset(t, getEditTaskTimeGoalMinutes())) {
+          showEditValidationError(t, "Checkpoint times must be less than the time goal.");
+          syncEditCheckpointAlertUi(t);
+          syncEditSaveAvailability(t);
+          return;
+        }
       } else {
         t.milestones = t.milestones || [];
         ensureMilestoneIdentity(t);
@@ -10621,10 +10800,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       processCheckpointAlertsForTask(t, elapsedMs / 1000);
       processedCheckpointTaskIds.add(String(t.id || ""));
 
-      if (t.milestonesEnabled && t.milestones && t.milestones.length > 0) {
-        const msSorted = sortMilestones(t.milestones);
-        const maxValue = Math.max(...msSorted.map((m) => +m.hours || 0), 0) || 1;
-        const maxSec = maxValue * milestoneUnitSec(t);
+      const hasMilestones = t.milestonesEnabled && t.milestones && t.milestones.length > 0;
+      const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
+      if (hasMilestones || hasTimeGoal) {
+        const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
+        const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
+        const maxSec = Math.max(maxValue * milestoneUnitSec(t), hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0, 1);
         const pct = Math.min((elapsedMs / 1000 / maxSec) * 100, 100);
 
         const fill = node.querySelector(".progressFill") as HTMLElement | null;
@@ -10633,16 +10814,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           fill.style.background = dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t));
         }
 
-        const elapsedSec = elapsedMs / 1000;
-        const mkTimes = node.querySelectorAll(".mkTime");
+        if (hasMilestones) {
+          const elapsedSec = elapsedMs / 1000;
+          const mkTimes = node.querySelectorAll(".mkTime");
 
-        mkTimes.forEach((mt) => {
-          const txt = (mt.textContent || "").trim();
-          const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
-          const reached = elapsedSec >= v * milestoneUnitSec(t);
-          mt.classList.toggle("mkAch", reached);
-          mt.classList.toggle("mkPend", !reached);
-        });
+          mkTimes.forEach((mt) => {
+            const txt = (mt.textContent || "").trim();
+            const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
+            const reached = elapsedSec >= v * milestoneUnitSec(t);
+            mt.classList.toggle("mkAch", reached);
+            mt.classList.toggle("mkPend", !reached);
+          });
+        }
       }
     });
 

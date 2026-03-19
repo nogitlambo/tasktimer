@@ -22,7 +22,7 @@ function createTask(overrides: Partial<TaskTimerTask> = {}): TaskTimerTask {
     checkpointSoundMode: "once",
     checkpointToastEnabled: false,
     checkpointToastMode: "auto5s",
-    finalCheckpointAction: "continue",
+    timeGoalAction: "continue",
     presetIntervalsEnabled: false,
     presetIntervalValue: 0,
     presetIntervalLastMilestoneId: null,
@@ -86,7 +86,7 @@ describe("task timer reducer", () => {
         checkpointSoundEnabled: true,
         presetIntervalsEnabled: true,
         presetIntervalValue: "30",
-        finalCheckpointAction: "resetLog",
+        timeGoalAction: "resetLog",
       },
     });
 
@@ -99,7 +99,7 @@ describe("task timer reducer", () => {
     expect(created.milestonesEnabled).toBe(true);
     expect(created.milestoneTimeUnit).toBe("minute");
     expect(created.milestones).toEqual([{ id: "m1", createdSeq: 1, hours: 30, description: "Halfway" }]);
-    expect(created.finalCheckpointAction).toBe("resetLog");
+    expect(created.timeGoalAction).toBe("resetLog");
     expect(submitted.recentCustomTaskNames).toContain("Ship Feature");
   });
 
@@ -225,7 +225,7 @@ describe("task timer reducer", () => {
       historyByTaskId: { "task-history": [first, second] },
     });
 
-    const state = reduceTaskTimerState(hydrated, {
+    let state = reduceTaskTimerState(hydrated, {
       type: "toggleHistorySelection",
       taskId: "task-history",
       entryKey: createHistoryEntryKey(first),

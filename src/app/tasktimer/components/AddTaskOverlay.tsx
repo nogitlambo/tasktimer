@@ -102,16 +102,6 @@ export default function AddTaskOverlay() {
                   </button>
                 </div>
               </div>
-              <div className="milestonesBody">
-                <div id="addTaskMsList" />
-                <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-                  + Add Timer Checkpoint
-                </button>
-              </div>
-            </details>
-
-            <div className="checkpointAlertsGroup" id="addTaskTimerSettingsGroup">
-              <div className="checkpointAlertsTitle">Timer Settings</div>
               <div className="toggleRow" id="addTaskPresetIntervalsToggleRow">
                 <span>Use Preset Intervals</span>
                 <div className="switch" id="addTaskPresetIntervalsToggle" role="switch" aria-checked="false" />
@@ -126,18 +116,28 @@ export default function AddTaskOverlay() {
                   >
                     ?
                   </button>
+                  <div className="addTaskCheckpointInfoDialog addTaskPresetIntervalsInfoDialog" id="addTaskPresetIntervalsInfoDialog" role="note">
+                    Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
+                  </div>
                 </span>
-              </div>
-              <div className="addTaskCheckpointInfoDialog addTaskPresetIntervalsInfoDialog" id="addTaskPresetIntervalsInfoDialog" role="note">
-                Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
               </div>
               <div className="field checkpointAlertSoundModeField isHidden" id="addTaskPresetIntervalField">
                 <label htmlFor="addTaskPresetIntervalInput">Preset interval</label>
                 <input id="addTaskPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
               </div>
               <p className="checkpointAlertsNote" id="addTaskPresetIntervalNote" style={{ display: "none" }} />
+              <div className="milestonesBody">
+                <div id="addTaskMsList" />
+                <button className="btn btn-ghost" id="addTaskAddMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+                  + Add Timer Checkpoint
+                </button>
+              </div>
+            </details>
+
+            <div className="checkpointAlertsGroup" id="addTaskTimerSettingsGroup">
+              <div className="checkpointAlertsTitle">Timer Settings</div>
               <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
-                <label htmlFor="addTaskFinalCheckpointActionSelect">When final checkpoint is reached</label>
+                <label htmlFor="addTaskFinalCheckpointActionSelect">When time goal is reached</label>
                 <select id="addTaskFinalCheckpointActionSelect" defaultValue="continue">
                   <option value="continue">Continue to run timer until stopped by user (default)</option>
                   <option value="resetLog">Stop/reset timer and save session to history</option>

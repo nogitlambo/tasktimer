@@ -862,6 +862,7 @@
   justify-content: center;
   flex: 0 0 auto;
   margin-left: 4px;
+  position: relative;
 }
 
 #addTaskOverlay .addTaskCheckpointInfoBtn{
@@ -882,6 +883,16 @@
   font-weight: 700;
   line-height: 1;
   font-size: 11px;
+}
+
+#addTaskOverlay .addTaskPresetIntervalsInfoDialog,
+#editOverlay .editPresetIntervalsInfoDialog{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 3;
+  width: min(280px, calc(100vw - 48px));
+  margin: 0;
 }
 
 #addTaskOverlay .addTaskCheckpointInfoDialog{

@@ -98,7 +98,7 @@ export type TaskTimerMutableState = {
   addTaskCheckpointToastMode: "auto5s" | "manual";
   addTaskPresetIntervalsEnabled: boolean;
   addTaskPresetIntervalValue: number;
-  addTaskFinalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+  addTaskTimeGoalAction: "continue" | "resetLog" | "resetNoLog";
   addTaskWizardStep: 1 | 2 | 3;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";

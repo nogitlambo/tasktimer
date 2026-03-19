@@ -39,7 +39,7 @@ export type TaskConfigDraftBase = {
   checkpointToastMode: "auto5s" | "manual";
   presetIntervalsEnabled: boolean;
   presetIntervalValue: string;
-  finalCheckpointAction: "continue" | "resetLog" | "resetNoLog";
+  timeGoalAction: "continue" | "resetLog" | "resetNoLog";
 };
 
 export type AddTaskDraft = TaskConfigDraftBase & {
@@ -244,7 +244,7 @@ export function createInitialTaskTimerState(nowMs: number): TaskTimerState {
       checkpointToastMode: "auto5s",
       presetIntervalsEnabled: false,
       presetIntervalValue: "0",
-      finalCheckpointAction: "continue",
+      timeGoalAction: "continue",
     },
     addTaskDialogOpen: false,
     addTaskWizardStep: 1,
@@ -267,7 +267,7 @@ export function createInitialTaskTimerState(nowMs: number): TaskTimerState {
       checkpointToastMode: "auto5s",
       presetIntervalsEnabled: false,
       presetIntervalValue: "0",
-      finalCheckpointAction: "continue",
+      timeGoalAction: "continue",
     },
     editTaskDialogOpen: false,
     editValidation: null,
@@ -295,9 +295,11 @@ export function normalizeTask(task: Task): TaskTimerTask {
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-    finalCheckpointAction:
-      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
-        ? task.finalCheckpointAction
+    timeGoalAction:
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+        ? task.timeGoalAction
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+          ? task.finalCheckpointAction
         : "continue",
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Number(task.presetIntervalValue) : 0,

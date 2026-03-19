@@ -148,7 +148,7 @@ service cloud.firestore {
         "checkpointSoundMode",
         "checkpointToastEnabled",
         "checkpointToastMode",
-        "finalCheckpointAction",
+        "timeGoalAction",
         "xpDisqualifiedUntilReset",
         "presetIntervalsEnabled",
         "presetIntervalValue",
@@ -184,7 +184,7 @@ service cloud.firestore {
       && (!("checkpointSoundMode" in request.resource.data) || request.resource.data.checkpointSoundMode in ["once", "repeat"])
       && (!("checkpointToastEnabled" in request.resource.data) || request.resource.data.checkpointToastEnabled is bool)
       && (!("checkpointToastMode" in request.resource.data) || request.resource.data.checkpointToastMode in ["auto5s", "auto3s", "manual"])
-      && (!("finalCheckpointAction" in request.resource.data) || request.resource.data.finalCheckpointAction in ["continue", "resetLog", "resetNoLog"])
+      && (!("timeGoalAction" in request.resource.data) || request.resource.data.timeGoalAction in ["continue", "resetLog", "resetNoLog"])
       && (!("xpDisqualifiedUntilReset" in request.resource.data) || request.resource.data.xpDisqualifiedUntilReset is bool)
       && (!("presetIntervalsEnabled" in request.resource.data) || request.resource.data.presetIntervalsEnabled is bool)
       && (!("presetIntervalValue" in request.resource.data) || request.resource.data.presetIntervalValue is int || request.resource.data.presetIntervalValue is float)

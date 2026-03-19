@@ -379,11 +379,49 @@ body[data-app-page="test2"] #modeSwitch{
   background: rgba(132,146,166,.82);
   box-shadow: 0 0 4px rgba(0,220,255,.18);
 }
+.mkFlag.mkGoal{
+  top:-11px;
+  width:14px;
+  height:28px;
+  border:none;
+  border-radius:0;
+  transform: translateX(-50%);
+  background: transparent;
+  box-shadow:none;
+  pointer-events:none;
+  z-index:2;
+}
 .mkFlag::before{
   content:none;
 }
 .mkFlag::after{
   content:none;
+}
+.mkFlag.mkGoal::before{
+  content:"";
+  position:absolute;
+  left:3px;
+  top:1px;
+  width:2px;
+  height:26px;
+  background: linear-gradient(180deg, rgba(230,244,255,.92), rgba(122,145,170,.72));
+  box-shadow: 0 0 4px rgba(92,126,160,.28);
+}
+.mkFlag.mkGoal::after{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:1px;
+  width:9px;
+  height:10px;
+  clip-path: polygon(0 0, 100% 10%, 100% 90%, 0 100%);
+  background:
+    linear-gradient(45deg, rgba(236,244,250,.95) 25%, transparent 25%, transparent 75%, rgba(236,244,250,.95) 75%, rgba(236,244,250,.95)),
+    linear-gradient(45deg, rgba(28,34,42,.95) 25%, transparent 25%, transparent 75%, rgba(28,34,42,.95) 75%, rgba(28,34,42,.95));
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
+  border:1px solid rgba(213,228,242,.78);
+  box-shadow: 0 0 6px rgba(0,0,0,.24);
 }
 .mkFlag.mkPend::before{
   content:none;
@@ -391,11 +429,21 @@ body[data-app-page="test2"] #modeSwitch{
 .mkFlag.mkPend::after{
   content:none;
 }
+.mkFlag.mkGoal.mkPend::before,
+.mkFlag.mkGoal.mkPend::after,
+.mkFlag.mkGoal.mkAch::before,
+.mkFlag.mkGoal.mkAch::after{
+  content:"";
+}
 .mkFlag.mkAch::before{
   content:none;
 }
 .mkFlag.mkAch::after{
   content:none;
+}
+.mkFlag.mkGoal.mkAch::after{
+  border-color: rgba(240,248,255,.95);
+  box-shadow: 0 0 8px rgba(0,220,255,.28);
 }
 .mkTime{
   position:absolute;

@@ -191,6 +191,14 @@ body[data-theme="light"] .progressTrack{
   background: rgba(0,0,0,.08);
   border-color: rgba(0,0,0,.12);
 }
+body[data-theme="light"] .mkFlag.mkGoal::before{
+  background: linear-gradient(180deg, rgba(60,72,92,.9), rgba(122,136,154,.7));
+  box-shadow:none;
+}
+body[data-theme="light"] .mkFlag.mkGoal::after{
+  border-color: rgba(40,48,61,.35);
+  box-shadow:none;
+}
 body[data-theme="light"] .historyPinBtn{
   border:none;
   background: rgba(255,255,255,.9);

@@ -120,16 +120,6 @@ export default function EditTaskOverlay() {
               </button>
             </div>
           </div>
-          <div className="milestonesBody">
-            <div id="msList" />
-            <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-              + Add Timer Checkpoint
-            </button>
-          </div>
-        </details>
-
-        <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
-          <div className="checkpointAlertsTitle">Timer Settings</div>
           <div className="toggleRow" id="editPresetIntervalsToggleRow">
             <span>Use Preset Intervals</span>
             <div className="switch" id="editPresetIntervalsToggle" role="switch" aria-checked="false" />
@@ -144,18 +134,27 @@ export default function EditTaskOverlay() {
               >
                 ?
               </button>
+              <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
+                Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
+              </div>
             </span>
-          </div>
-          <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
-            Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
           </div>
           <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
             <label htmlFor="editPresetIntervalInput">Preset interval</label>
             <input id="editPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
           </div>
           <p className="checkpointAlertsNote" id="editPresetIntervalNote" style={{ display: "none" }} />
+          <div className="milestonesBody">
+            <div id="msList" />
+            <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+              + Add Timer Checkpoint
+            </button>
+          </div>
+        </details>
+
+        <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
           <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
-            <label htmlFor="editFinalCheckpointActionSelect">When final checkpoint is reached</label>
+            <label htmlFor="editFinalCheckpointActionSelect">When time goal is reached</label>
             <select id="editFinalCheckpointActionSelect" defaultValue="continue">
               <option value="continue">Continue to run timer until stopped by user (default)</option>
               <option value="resetLog">Stop/reset timer and save session to history</option>

@@ -121,7 +121,7 @@ export function createDefaultAddTaskDraft(currentMode: MainMode, defaultTaskTime
     checkpointToastMode: "auto5s",
     presetIntervalsEnabled: false,
     presetIntervalValue: "0",
-    finalCheckpointAction: "continue",
+    timeGoalAction: "continue",
   };
 }
 
@@ -148,9 +148,9 @@ export function normalizeAddTaskDraft(draft: AddTaskDraft): AddTaskDraft {
     checkpointToastMode: draft.checkpointToastMode === "manual" ? "manual" : "auto5s",
     presetIntervalsEnabled: !!draft.presetIntervalsEnabled,
     presetIntervalValue: sanitizePresetIntervalInput(draft.presetIntervalValue),
-    finalCheckpointAction:
-      draft.finalCheckpointAction === "resetLog" || draft.finalCheckpointAction === "resetNoLog"
-        ? draft.finalCheckpointAction
+    timeGoalAction:
+      draft.timeGoalAction === "resetLog" || draft.timeGoalAction === "resetNoLog"
+        ? draft.timeGoalAction
         : "continue",
   };
 }
@@ -192,9 +192,11 @@ export function createEditTaskDraft(task: TaskTimerTask, nowMs: number): EditTas
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: String(Math.max(0, Number(task.presetIntervalValue || 0) || 0)),
-    finalCheckpointAction:
-      task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
-        ? task.finalCheckpointAction
+    timeGoalAction:
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+        ? task.timeGoalAction
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+          ? task.finalCheckpointAction
         : "continue",
   };
 }
@@ -221,9 +223,9 @@ export function normalizeEditTaskDraft(draft: EditTaskDraft): EditTaskDraft {
     checkpointToastMode: draft.checkpointToastMode === "manual" ? "manual" : "auto5s",
     presetIntervalsEnabled: !!draft.presetIntervalsEnabled,
     presetIntervalValue: sanitizePresetIntervalInput(draft.presetIntervalValue),
-    finalCheckpointAction:
-      draft.finalCheckpointAction === "resetLog" || draft.finalCheckpointAction === "resetNoLog"
-        ? draft.finalCheckpointAction
+    timeGoalAction:
+      draft.timeGoalAction === "resetLog" || draft.timeGoalAction === "resetNoLog"
+        ? draft.timeGoalAction
         : "continue",
   };
 }
@@ -364,7 +366,7 @@ export function buildTaskFromAddDraft(
     checkpointSoundMode: draft.checkpointSoundMode,
     checkpointToastEnabled: draft.milestonesEnabled && draft.checkpointToastEnabled,
     checkpointToastMode: draft.checkpointToastMode,
-    finalCheckpointAction: draft.finalCheckpointAction,
+    timeGoalAction: draft.timeGoalAction,
     presetIntervalsEnabled: draft.milestonesEnabled && draft.presetIntervalsEnabled,
     presetIntervalValue: Math.max(0, Number(draft.presetIntervalValue || 0) || 0),
     presetIntervalLastMilestoneId: null,
@@ -386,7 +388,7 @@ export function applyEditDraftToTask(task: TaskTimerTask, draftRaw: EditTaskDraf
     checkpointSoundMode: draft.checkpointSoundMode,
     checkpointToastEnabled: draft.milestonesEnabled && draft.checkpointToastEnabled,
     checkpointToastMode: draft.checkpointToastMode,
-    finalCheckpointAction: draft.finalCheckpointAction,
+    timeGoalAction: draft.timeGoalAction,
     presetIntervalsEnabled: draft.milestonesEnabled && draft.presetIntervalsEnabled,
     presetIntervalValue: Math.max(0, Number(draft.presetIntervalValue || 0) || 0),
     presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ?? null,
