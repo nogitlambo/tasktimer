@@ -863,6 +863,15 @@
   flex: 0 0 auto;
   margin-left: 4px;
   position: relative;
+  z-index: 6;
+}
+
+#addTaskOverlay #addTaskPresetIntervalsToggleRow,
+#editOverlay #editPresetIntervalsToggleRow{
+  clip-path: none;
+  overflow: visible;
+  position: relative;
+  z-index: 5;
 }
 
 #addTaskOverlay .addTaskCheckpointInfoBtn{
@@ -890,9 +899,10 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 3;
+  z-index: 40;
   width: min(280px, calc(100vw - 48px));
   margin: 0;
+  box-shadow: 0 14px 32px rgba(0,0,0,.32);
 }
 
 #addTaskOverlay .addTaskCheckpointInfoDialog{
@@ -927,6 +937,11 @@
 
 #editOverlay .editPresetIntervalsInfoDialog.isOpen{
   display: block;
+}
+
+#addTaskOverlay .presetIntervalsInfoSlot:has(.addTaskPresetIntervalsInfoDialog.isOpen),
+#editOverlay .presetIntervalsInfoSlot:has(.editPresetIntervalsInfoDialog.isOpen){
+  z-index: 41;
 }
 
 #addTaskOverlay .addTaskDurationReadout{

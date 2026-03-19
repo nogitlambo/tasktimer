@@ -207,6 +207,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let addTaskNoTimeGoal = initialState.addTaskNoTimeGoal;
   let editTaskDurationUnit: "minute" | "hour" = "hour";
   let editTaskDurationPeriod: "day" | "week" = "week";
+  let editTaskDraft: Task | null = null;
   let elapsedPadTarget = initialState.elapsedPadTarget;
   let elapsedPadMilestoneRef = initialState.elapsedPadMilestoneRef;
   let elapsedPadDraft = initialState.elapsedPadDraft;
@@ -3407,7 +3408,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function syncEditTaskDurationReadout(task?: Task | null) {
     if (!els.editTaskDurationReadout) return;
-    const currentTask = task || (editIndex != null ? tasks[editIndex] : null);
+    const currentTask = task || getCurrentEditTask();
     const noTimeGoal = !!els.editNoGoalCheckbox?.checked;
     const durationValue = String(els.editTaskDurationValueInput?.value || currentTask?.timeGoalValue || 0);
     const durationUnit = editTaskDurationUnit === "minute" ? "minute" : currentTask?.timeGoalUnit === "minute" ? "minute" : "hour";
@@ -3454,7 +3455,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncEditTaskTimeGoalUi(task?: Task | null) {
-    const currentTask = task || (editIndex != null ? tasks[editIndex] : null);
+    const currentTask = task || getCurrentEditTask();
     const noTimeGoal = !!els.editNoGoalCheckbox?.checked;
     els.editTaskDurationRow?.classList.toggle("isDisabled", noTimeGoal);
     els.editTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
@@ -3512,8 +3513,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
     if (!task) return;
     const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
-    const effectiveTimeGoalMinutes =
-      editIndex != null && tasks[editIndex] === task ? getEditTaskTimeGoalMinutes() : Number(task.timeGoalMinutes || 0);
+    const effectiveTimeGoalMinutes = task === getCurrentEditTask() ? getEditTaskTimeGoalMinutes() : Number(task.timeGoalMinutes || 0);
     const invalidCheckpointTimes =
       !!task.milestonesEnabled &&
       (hasNonPositiveCheckpoint(task.milestones) ||
@@ -3557,9 +3557,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function isEditMilestoneUnitDay(): boolean {
-    if (editIndex == null) return false;
-    const t = tasks[editIndex];
-    return !!t && t.milestoneTimeUnit === "day";
+    return !!editTaskDraft && editTaskDraft.milestoneTimeUnit === "day";
+  }
+
+  function cloneTaskForEdit(task: Task): Task {
+    return {
+      ...task,
+      milestones: Array.isArray(task.milestones)
+        ? task.milestones.map((milestone) => ({
+            ...milestone,
+            id: String((milestone as any)?.id || ""),
+            createdSeq: Number.isFinite(Number((milestone as any)?.createdSeq))
+              ? Math.floor(Number((milestone as any).createdSeq))
+              : 0,
+            description: String(milestone?.description || ""),
+          }))
+        : [],
+      presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
+    };
+  }
+
+  function getCurrentEditTask() {
+    return editTaskDraft;
   }
 
   function renderMilestoneEditor(t: Task) {
@@ -3788,8 +3807,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
         msSorted.forEach((m, msIdx) => {
           const val = +m.hours || 0;
-          const left = Math.min((val / (maxValue || 1)) * 100, 100);
-          const reached = elapsedSec >= val * milestoneUnitSec(t);
+          const secTarget = val * milestoneUnitSec(t);
+          const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
+          const reached = elapsedSec >= secTarget;
           const cls = reached ? "mkAch" : "mkPend";
           const label = `${val}${unitSuffix}`;
           const desc = (m.description || "").trim();
@@ -5429,9 +5449,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function openEdit(i: number) {
-    const t = tasks[i];
-    if (!t) return;
+    const sourceTask = tasks[i];
+    if (!sourceTask) return;
+    const t = cloneTaskForEdit(sourceTask);
     editIndex = i;
+    editTaskDraft = t;
 
     if (els.editName) els.editName.value = t.name || "";
     if (els.editNoGoalCheckbox) els.editNoGoalCheckbox.checked = !t.timeGoalEnabled;
@@ -5473,12 +5495,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (els.editMoveMenu) els.editMoveMenu.open = false;
     }
 
-    els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
-    els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
-    els.msArea?.classList.toggle("on", !!t.milestonesEnabled);
     if (els.msArea && "open" in (els.msArea as any)) {
       (els.msArea as HTMLDetailsElement).open = false;
     }
+    syncEditMilestoneSectionUi(t);
     setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
 
     renderMilestoneEditor(t);
@@ -5494,9 +5514,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function closeEdit(saveChanges: boolean) {
-    const t = editIndex != null ? tasks[editIndex] : null;
+    const sourceTask = editIndex != null ? tasks[editIndex] : null;
+    const t = editTaskDraft;
 
-    if (saveChanges && t) {
+    if (saveChanges && t && sourceTask) {
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
       if (!validateEditTimeGoal()) {
         showEditValidationError(t, "Enter a valid time goal or select Don't set a time goal.");
@@ -5522,7 +5543,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         showEditValidationError(t, "Enter a preset interval greater than 0.");
         return;
       }
-      const prevElapsedMs = getElapsedMs(t);
+      const prevElapsedMs = getElapsedMs(sourceTask);
       t.name = (els.editName?.value || "").trim() || t.name;
 
       if (isEditElapsedOverrideEnabled()) {
@@ -5565,8 +5586,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         (t as any).mode = moveMode;
       }
 
+      Object.assign(sourceTask, cloneTaskForEdit(t));
       save();
-      void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
+      void syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
       render();
     }
 
@@ -5575,6 +5597,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeElapsedPad(false);
     if (els.editMoveMenu) els.editMoveMenu.open = false;
     editIndex = null;
+    editTaskDraft = null;
     editDraftSnapshot = "";
   }
 
@@ -5597,7 +5620,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         cancelLabel: "Cancel",
         onOk: () => {
           setEditElapsedOverrideEnabled(true);
-          if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
+          if (getCurrentEditTask()) syncEditSaveAvailability(getCurrentEditTask());
           closeConfirm();
         },
         onCancel: () => closeConfirm(),
@@ -5717,14 +5740,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         elapsedPadTarget.value = valid;
       } else if (elapsedPadMilestoneRef) {
         const nextHours = Number(valid);
-        const timeGoalMinutes =
-          editIndex != null && tasks[editIndex] === elapsedPadMilestoneRef.task
-            ? getEditTaskTimeGoalMinutes()
-            : getAddTaskTimeGoalMinutesState();
+        const isEditDraftMilestone = elapsedPadMilestoneRef.task === getCurrentEditTask();
+        const timeGoalMinutes = isEditDraftMilestone ? getEditTaskTimeGoalMinutes() : getAddTaskTimeGoalMinutesState();
         if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(elapsedPadMilestoneRef.task), timeGoalMinutes)) {
           const timeGoalText = formatCheckpointTimeGoalText(elapsedPadMilestoneRef.task, {
             timeGoalMinutes,
-            forEditDraft: editIndex != null && tasks[editIndex] === elapsedPadMilestoneRef.task,
+            forEditDraft: isEditDraftMilestone,
           });
           setElapsedPadError(`Checkpoint must be less than the time goal of ${timeGoalText}`);
           return;
@@ -6631,7 +6652,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, dynamicColorsEnabled);
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, checkpointAlertSoundEnabled);
     toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, checkpointAlertToastEnabled);
-    if (editIndex != null && tasks[editIndex]) syncEditCheckpointAlertUi(tasks[editIndex]);
+    const currentEditTask = getCurrentEditTask();
+    if (currentEditTask) syncEditCheckpointAlertUi(currentEditTask);
   }
 
   function loadDynamicColorsSetting() {
@@ -7006,6 +7028,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function syncEditMilestoneSectionUi(t: Task) {
+    const enabled = !!t.milestonesEnabled;
+    els.msToggle?.classList.toggle("on", enabled);
+    els.msToggle?.setAttribute("aria-checked", String(enabled));
+    els.msArea?.classList.toggle("on", enabled);
+    els.msArea?.classList.toggle("isDisabled", !enabled);
+    if (els.msArea && "open" in (els.msArea as any)) {
+      const hasCheckpoints = Array.isArray(t.milestones) && t.milestones.length > 0;
+      (els.msArea as HTMLDetailsElement).open = enabled && hasCheckpoints ? (els.msArea as HTMLDetailsElement).open : false;
+    }
+    const summary = els.msArea?.querySelector?.("summary") as HTMLElement | null;
+    if (summary) {
+      summary.classList.toggle("isDisabled", !enabled);
+      summary.setAttribute("aria-disabled", !enabled ? "true" : "false");
+      summary.tabIndex = enabled ? 0 : -1;
+    }
+    els.editPresetIntervalsToggleRow?.classList.toggle("isHidden", !enabled);
+    els.editPresetIntervalField?.classList.toggle("isHidden", !enabled || !t.presetIntervalsEnabled);
+    els.editPresetIntervalNote?.classList.toggle("isHidden", !enabled);
+    els.msList?.parentElement?.classList.toggle("isHidden", !enabled);
+  }
+
   function buildEditDraftSnapshot(task: Task | null | undefined) {
     if (!task) return "";
     const milestones = sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((m) => ({
@@ -7054,7 +7098,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncEditSaveAvailability(t?: Task | null) {
-    const task = t || (editIndex != null ? tasks[editIndex] : null);
+    const task = t || getCurrentEditTask();
     if (!els.saveEditBtn) return;
     clearEditValidationState();
     if (!task) {
@@ -7077,8 +7121,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function maybeToggleEditPresetIntervals(nextEnabled: boolean) {
-    if (editIndex == null) return;
-    const t = tasks[editIndex];
+    const t = getCurrentEditTask();
     if (!t) return;
     if (!t.milestonesEnabled) {
       t.presetIntervalsEnabled = false;
@@ -10245,55 +10288,63 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.cancelEditBtn, "click", () => closeEdit(false));
     on(els.saveEditBtn, "click", () => closeEdit(true));
     on(els.editName, "input", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      syncEditTaskDurationReadout(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (!t) return;
+      syncEditTaskDurationReadout(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editNoGoalCheckbox, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       clearEditValidationState();
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationValueInput, "input", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationValueInput, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (!t) return;
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationUnitMinute, "click", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       editTaskDurationUnit = "minute";
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationUnitHour, "click", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       editTaskDurationUnit = "hour";
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationPeriodDay, "click", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       editTaskDurationPeriod = "day";
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editTaskDurationPeriodWeek, "click", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       editTaskDurationPeriod = "week";
-      syncEditTaskTimeGoalUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditTaskTimeGoalUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editOverrideElapsedToggle, "click", () => {
       if (isEditElapsedOverrideEnabled()) {
         setEditElapsedOverrideEnabled(false);
-        if (editIndex != null && tasks[editIndex]) syncEditSaveAvailability(tasks[editIndex]);
+        if (getCurrentEditTask()) syncEditSaveAvailability(getCurrentEditTask());
         return;
       }
       confirmEnableElapsedOverride();
@@ -10311,23 +10362,27 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         els.editCheckpointSoundToggle as HTMLElement | null,
         !isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null)
       );
-      if (editIndex != null && tasks[editIndex]) {
-        tasks[editIndex].checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(tasks[editIndex]);
-        syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (t) {
+        t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(t);
+        syncEditSaveAvailability(t);
       }
     });
     on(els.editCheckpointSoundToggle, "click", () => {
-      if (editIndex != null && tasks[editIndex]) {
-        tasks[editIndex].checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (t) {
+        t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(t);
+        syncEditSaveAvailability(t);
       }
     });
     on(els.editCheckpointSoundModeSelect, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      tasks[editIndex].checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      syncEditCheckpointAlertUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (!t) return;
+      t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editCheckpointToastToggle, "click", () => {
       if (!checkpointAlertToastEnabled) return;
@@ -10342,32 +10397,37 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         els.editCheckpointToastToggle as HTMLElement | null,
         !isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null)
       );
-      if (editIndex != null && tasks[editIndex]) {
-        tasks[editIndex].checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(tasks[editIndex]);
-        syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (t) {
+        t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(t);
+        syncEditSaveAvailability(t);
       }
     });
     on(els.editCheckpointToastToggle, "click", () => {
-      if (editIndex != null && tasks[editIndex]) {
-        tasks[editIndex].checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (t) {
+        t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+        syncEditCheckpointAlertUi(t);
+        syncEditSaveAvailability(t);
       }
     });
     on(els.editCheckpointToastModeSelect, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      tasks[editIndex].checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
-      syncEditCheckpointAlertUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      const t = getCurrentEditTask();
+      if (!t) return;
+      t.checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
     });
     on(els.editPresetIntervalsToggle, "click", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
+      if (!t) return;
       maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
       syncEditSaveAvailability(t);
     });
     on(els.editPresetIntervalsToggleRow, "click", (e: any) => {
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       if (
         e.target?.closest?.("#editPresetIntervalsToggle") ||
         e.target?.closest?.("#editPresetIntervalsInfoBtn") ||
@@ -10375,43 +10435,44 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         e.target?.closest?.("#editPresetIntervalsInfoDialog")
       )
         return;
-      const t = tasks[editIndex];
       maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
       syncEditSaveAvailability(t);
     });
     on(els.editPresetIntervalInput, "input", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
+      if (!t) return;
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
       clearEditValidationState();
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
     });
     on(els.editPresetIntervalInput, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
+      if (!t) return;
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
       clearEditValidationState();
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
     });
     on(els.editFinalCheckpointActionSelect, "change", () => {
-      if (editIndex == null || !tasks[editIndex]) return;
-      tasks[editIndex].timeGoalAction =
+      const t = getCurrentEditTask();
+      if (!t) return;
+      t.timeGoalAction =
         els.editFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
           : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
             ? "resetNoLog"
             : "continue";
-      syncEditCheckpointAlertUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditCheckpointAlertUi(t);
+      syncEditSaveAvailability(t);
     });
     const onEditElapsedInputChanged = (input: HTMLInputElement | null, normalize: boolean) => {
       if (!isEditElapsedOverrideEnabled()) return;
       if (normalize) normalizeEditElapsedValue(input);
-      if (editIndex == null || !tasks[editIndex]) return;
+      const t = getCurrentEditTask();
+      if (!t) return;
       clearEditValidationState();
-      syncEditSaveAvailability(tasks[editIndex]);
+      syncEditSaveAvailability(t);
     };
     on(els.editD, "input", () => onEditElapsedInputChanged(els.editD, false));
     on(els.editH, "input", () => onEditElapsedInputChanged(els.editH, false));
@@ -10459,34 +10520,40 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       });
     });
 
+    on(els.msArea?.querySelector?.("summary") as HTMLElement | null, "click", (e: any) => {
+      const t = getCurrentEditTask();
+      if (!t || t.milestonesEnabled) return;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      if (els.msArea && "open" in (els.msArea as any)) {
+        (els.msArea as HTMLDetailsElement).open = false;
+      }
+    });
+
     on(els.msToggle, "click", (e: any) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      if (editIndex == null) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
       if (!t) return;
 
       t.milestonesEnabled = !t.milestonesEnabled;
-      els.msToggle?.classList.toggle("on", !!t.milestonesEnabled);
-      els.msToggle?.setAttribute("aria-checked", String(!!t.milestonesEnabled));
-      els.msArea?.classList.toggle("on", !!t.milestonesEnabled);
-      if (els.msArea && "open" in (els.msArea as any)) {
+      if (els.msArea && "open" in (els.msArea as any) && t.milestonesEnabled) {
         const hasCheckpoints = Array.isArray(t.milestones) && t.milestones.length > 0;
-        (els.msArea as HTMLDetailsElement).open = !!t.milestonesEnabled && !hasCheckpoints;
+        (els.msArea as HTMLDetailsElement).open = !hasCheckpoints;
       }
+      syncEditMilestoneSectionUi(t);
       syncEditCheckpointAlertUi(t);
       syncEditSaveAvailability(t);
 
       if (!t.milestonesEnabled) {
         t.presetIntervalsEnabled = false;
-        save();
-        render();
+        toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, false);
+        syncEditMilestoneSectionUi(t);
       }
     });
 
     on(els.msUnitDay, "click", () => {
-      if (editIndex == null) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
       if (!t) return;
       t.milestoneTimeUnit = "day";
       setMilestoneUnitUi("day");
@@ -10494,8 +10561,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncEditSaveAvailability(t);
     });
     on(els.msUnitHour, "click", () => {
-      if (editIndex == null) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
       if (!t) return;
       t.milestoneTimeUnit = "hour";
       setMilestoneUnitUi("hour");
@@ -10503,8 +10569,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncEditSaveAvailability(t);
     });
     on(els.msUnitMinute, "click", () => {
-      if (editIndex == null) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
       if (!t) return;
       t.milestoneTimeUnit = "minute";
       setMilestoneUnitUi("minute");
@@ -10513,8 +10578,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
 
     on(els.addMsBtn, "click", () => {
-      if (editIndex == null) return;
-      const t = tasks[editIndex];
+      const t = getCurrentEditTask();
       if (!t) return;
 
       if (t.presetIntervalsEnabled) {

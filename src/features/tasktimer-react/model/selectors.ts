@@ -79,17 +79,22 @@ export function getProgressViewModel(task: TaskTimerTask, nowMs: number) {
 
   const elapsedSeconds = getElapsedMs(task, nowMs) / 1000;
   const secondsPerUnit = milestoneUnitSeconds(task);
-  const percent = Math.max(0, Math.min(100, (elapsedSeconds / (maxValue * secondsPerUnit)) * 100));
+  const milestoneMaxSeconds = maxValue * secondsPerUnit;
+  const timeGoalSeconds =
+    task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Number(task.timeGoalMinutes || 0) * 60 : 0;
+  const maxSeconds = Math.max(milestoneMaxSeconds, timeGoalSeconds, 1);
+  const percent = Math.max(0, Math.min(100, (elapsedSeconds / maxSeconds) * 100));
   const suffix = milestoneUnitSuffix(task);
   const markers = sorted.map((row, index) => {
     const hours = Number(row.hours || 0);
+    const markerSeconds = hours * secondsPerUnit;
     const markerId = String(row.id || `${task.id}-${index}`);
     return {
       id: markerId,
-      leftPct: Math.max(0, Math.min(100, (hours / maxValue) * 100)),
+      leftPct: Math.max(0, Math.min(100, (markerSeconds / maxSeconds) * 100)),
       label: `${hours}${suffix}`,
       description: String(row.description || "").trim(),
-      reached: elapsedSeconds >= hours * secondsPerUnit,
+      reached: elapsedSeconds >= markerSeconds,
     };
   });
   return { percent, markers };
