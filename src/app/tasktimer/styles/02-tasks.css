@@ -517,6 +517,12 @@ body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuList{
   z-index: 1200;
 }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns]{
+  display: grid;
+  gap: 14px;
+  align-items: start;
+  grid-auto-flow: row dense;
+}
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTileColumn{
   display: flex;
   flex-direction: column;
@@ -992,10 +998,11 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   flex:0 1 auto;
   min-width:148px;
   max-width:100%;
-  display:grid;
-  justify-items:end;
-  align-content:start;
-  gap:6px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
   color:rgba(190,240,255,.62);
@@ -1005,6 +1012,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   letter-spacing:.12em;
   line-height:1;
   text-transform:uppercase;
+  white-space:nowrap;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenu{
   position:relative;
@@ -1033,8 +1041,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   white-space:nowrap;
   width:100%;
   text-align:right;
-  border-color:rgba(124,209,230,.28) !important;
-  background:rgba(5,8,15,.94) !important;
+  border-color:rgba(231,244,255,.14) !important;
+  background:transparent !important;
   color:#f2fbff !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn::after{
@@ -1098,8 +1106,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   box-shadow:none;
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
-  border-color:rgba(117,231,255,.32) !important;
-  background:linear-gradient(180deg, rgba(11,34,46,.96), rgba(6,16,25,.98)) !important;
+  border-color:rgba(231,244,255,.14) !important;
+  background:transparent !important;
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList{
   border-color:rgba(118,225,255,.2);
@@ -1157,8 +1165,8 @@ body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App
   box-shadow:0 0 16px rgba(214,120,255,.10), inset 0 0 0 1px rgba(214,120,255,.12) !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
-  border-color:rgba(214,120,255,.3) !important;
-  background:linear-gradient(180deg, rgba(31,14,40,.96), rgba(13,7,20,.98)) !important;
+  border-color:rgba(231,244,255,.14) !important;
+  background:transparent !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList{
   border-color:rgba(214,120,255,.2);

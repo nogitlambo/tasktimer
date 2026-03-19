@@ -3739,16 +3739,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const useTileColumns = taskView === "tile";
     const tileColumnCount = useTileColumns ? getTileColumnCount() : 1;
     currentTileColumnCount = tileColumnCount;
-    const tileColumns: HTMLElement[] = [];
     if (useTileColumns) {
       els.taskList.setAttribute("data-tile-columns", String(tileColumnCount));
-      for (let i = 0; i < tileColumnCount; i += 1) {
-        const col = document.createElement("div");
-        col.className = "taskTileColumn";
-        col.setAttribute("data-tile-column", String(i));
-        tileColumns.push(col);
-        els.taskList.appendChild(col);
-      }
     } else {
       els.taskList.removeAttribute("data-tile-columns");
     }
@@ -3953,11 +3945,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       `;
       applyTaskFlipDomState(taskId, taskEl);
 
-      if (useTileColumns) {
-        tileColumns[visibleTaskIndex % tileColumnCount]?.appendChild(taskEl);
-      } else {
-        els.taskList!.appendChild(taskEl);
-      }
+      els.taskList!.appendChild(taskEl);
       visibleTaskIndex += 1;
     });
 
@@ -10034,7 +10022,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const grid = els.dashboardGrid;
       const dragging = dashboardDragEl;
       if (!grid || !dragging) return;
-      const over = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
+      const over = Array.from(grid.children).find((child) => child.contains(e.target as Node)) as HTMLElement | undefined;
       if (!over || over === dragging || !grid.contains(over)) return;
       e.preventDefault();
       const rect = over.getBoundingClientRect();
@@ -10069,7 +10057,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const list = els.taskList;
       const dragging = taskDragEl;
       if (!list || !dragging) return;
-      const over = e.target?.closest?.(".task") as HTMLElement | null;
+      const over = Array.from(list.children).find((child) => child.contains(e.target as Node)) as HTMLElement | undefined;
       if (!over || over === dragging || !list.contains(over)) return;
       e.preventDefault();
       const rect = over.getBoundingClientRect();

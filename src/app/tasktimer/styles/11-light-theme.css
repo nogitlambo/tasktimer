@@ -1210,10 +1210,8 @@ body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"
 }
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
   color:#163043 !important;
-  border-color:rgba(141,170,193,.5) !important;
-  background:
-    linear-gradient(180deg, rgba(249,252,255,.98), rgba(234,240,246,.96)),
-    rgba(245,248,252,.96) !important;
+  border-color:rgba(22,48,67,.16) !important;
+  background:transparent !important;
 }
 body[data-theme="light"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList{
   border-color:rgba(150,171,192,.42);

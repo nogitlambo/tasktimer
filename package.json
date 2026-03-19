@@ -12,6 +12,7 @@
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "fonts:check": "node scripts/check-font-contract.mjs",
     "android:sync": "npm run build:android && npx cap sync android",
+    "android:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",
     "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && copy /Y app\\build\\outputs\\apk\\debug\\app-debug.apk \"G:\\My Drive\\Apps\\app-debug.apk\"",
     "agents:update": "node scripts/update_agents_context.mjs",
     "agents:check": "node scripts/update_agents_context.mjs --check",

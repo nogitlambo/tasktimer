@@ -190,6 +190,7 @@
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
     margin-left:auto;
+    gap:8px;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
     min-width:132px;
@@ -359,7 +360,8 @@
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
     flex-basis:100%;
     margin-left:0;
-    justify-items:flex-end;
+    justify-content:flex-end;
+    gap:6px;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
     font-size:9px;
