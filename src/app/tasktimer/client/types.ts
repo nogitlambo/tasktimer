@@ -99,6 +99,9 @@ export type TaskTimerMutableState = {
   addTaskPresetIntervalsEnabled: boolean;
   addTaskPresetIntervalValue: number;
   addTaskTimeGoalAction: "continue" | "resetLog" | "resetNoLog";
+  timeGoalModalTaskId: string | null;
+  timeGoalModalFrozenElapsedMs: number;
+  timeGoalReminderAtMsByTaskId: Record<string, number>;
   addTaskWizardStep: 1 | 2 | 3;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";

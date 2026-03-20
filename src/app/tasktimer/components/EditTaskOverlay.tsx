@@ -35,7 +35,13 @@ export default function EditTaskOverlay() {
         </div>
 
         <div className="field editTaskTimeGoalField">
-          <label htmlFor="editTaskDurationValueInput">Time Goal</label>
+          <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
+            <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
+            <div className="editTaskTimeGoalToggleWrap">
+              <input id="editNoGoalCheckbox" type="checkbox" hidden />
+              <div className="switch" id="editTimeGoalToggle" role="switch" aria-checked="true" aria-label="Enable time goal" />
+            </div>
+          </div>
           <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
             <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
             <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
@@ -59,41 +65,19 @@ export default function EditTaskOverlay() {
           <div className="addTaskDurationReadout editTaskDurationReadout" id="editTaskDurationReadout">
             5 hours per week
           </div>
-          <label className="addTaskNoGoalRow editTaskNoGoalRow" htmlFor="editNoGoalCheckbox">
-            <input id="editNoGoalCheckbox" type="checkbox" />
-            <span>Don&apos;t set a time goal</span>
-          </label>
-        </div>
-
-        <div className="field">
-          <div className="toggleRow">
-            <span>Override Elapsed Time</span>
-            <div className="switch" id="editOverrideElapsedToggle" role="switch" aria-checked="false" />
-          </div>
-          <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="editD" style={{ textTransform: "none", letterSpacing: 0 }}>
-                Days
-              </label>
-              <input type="number" id="editD" min={0} step={1} />
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="editH" style={{ textTransform: "none", letterSpacing: 0 }}>
-                Hours
-              </label>
-              <input type="number" id="editH" min={0} step={1} />
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="editM" style={{ textTransform: "none", letterSpacing: 0 }}>
-                Minutes
-              </label>
-              <input type="number" id="editM" min={0} max={59} step={1} />
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="editS" style={{ textTransform: "none", letterSpacing: 0 }}>
-                Seconds
-              </label>
-              <input type="number" id="editS" min={0} max={59} step={1} />
+          <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
+            <div
+              className="field checkpointAlertSoundModeField"
+              id="editFinalCheckpointActionField"
+              style={{ width: "100%", maxWidth: "none", minWidth: 0 }}
+            >
+              <label htmlFor="editFinalCheckpointActionSelect">When time goal is reached</label>
+              <select id="editFinalCheckpointActionSelect" defaultValue="continue" style={{ display: "block", width: "100%", maxWidth: "none" }}>
+                <option value="continue">Continue to run timer until stopped by user (default)</option>
+                <option value="resetLog">Stop/reset timer and save session to history</option>
+                <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
+                <option value="confirmModal">Display task complete modal and await user confirmation</option>
+              </select>
             </div>
           </div>
         </div>
@@ -152,17 +136,6 @@ export default function EditTaskOverlay() {
           </div>
         </details>
 
-        <div className="checkpointAlertsGroup" id="editTimerSettingsGroup">
-          <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
-            <label htmlFor="editFinalCheckpointActionSelect">When time goal is reached</label>
-            <select id="editFinalCheckpointActionSelect" defaultValue="continue">
-              <option value="continue">Continue to run timer until stopped by user (default)</option>
-              <option value="resetLog">Stop/reset timer and save session to history</option>
-              <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
-            </select>
-          </div>
-        </div>
-
         <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
           <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
           <div className="toggleRow" id="editCheckpointSoundToggleRow">
@@ -189,6 +162,49 @@ export default function EditTaskOverlay() {
           </div>
           <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
         </div>
+
+        <details className="editAdvancedSection" id="editAdvancedSection">
+          <summary className="milestonesSummary editAdvancedSummary" role="button">
+            <span className="milestonesSummaryPrimary">Advanced</span>
+            <span className="milestonesSummaryControls">
+              <span className="milestonesSummaryCollapseLabel">Show/Hide Advanced</span>
+            </span>
+          </summary>
+          <div className="editAdvancedBody">
+            <div className="field">
+              <div className="toggleRow">
+                <span>Override Elapsed Time</span>
+                <div className="switch" id="editOverrideElapsedToggle" role="switch" aria-checked="false" />
+              </div>
+              <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
+                <div className="field" style={{ margin: 0 }}>
+                  <label htmlFor="editD" style={{ textTransform: "none", letterSpacing: 0 }}>
+                    Days
+                  </label>
+                  <input type="number" id="editD" min={0} step={1} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label htmlFor="editH" style={{ textTransform: "none", letterSpacing: 0 }}>
+                    Hours
+                  </label>
+                  <input type="number" id="editH" min={0} step={1} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label htmlFor="editM" style={{ textTransform: "none", letterSpacing: 0 }}>
+                    Minutes
+                  </label>
+                  <input type="number" id="editM" min={0} max={59} step={1} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label htmlFor="editS" style={{ textTransform: "none", letterSpacing: 0 }}>
+                    Seconds
+                  </label>
+                  <input type="number" id="editS" min={0} max={59} step={1} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
 
         <div className="footerBtns">
           <button className="btn btn-ghost" id="cancelEditBtn" type="button">

@@ -149,7 +149,9 @@ export function normalizeAddTaskDraft(draft: AddTaskDraft): AddTaskDraft {
     presetIntervalsEnabled: !!draft.presetIntervalsEnabled,
     presetIntervalValue: sanitizePresetIntervalInput(draft.presetIntervalValue),
     timeGoalAction:
-      draft.timeGoalAction === "resetLog" || draft.timeGoalAction === "resetNoLog"
+      draft.timeGoalAction === "resetLog" ||
+      draft.timeGoalAction === "resetNoLog" ||
+      draft.timeGoalAction === "confirmModal"
         ? draft.timeGoalAction
         : "continue",
   };
@@ -193,11 +195,15 @@ export function createEditTaskDraft(task: TaskTimerTask, nowMs: number): EditTas
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: String(Math.max(0, Number(task.presetIntervalValue || 0) || 0)),
     timeGoalAction:
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+      task.timeGoalAction === "resetLog" ||
+      task.timeGoalAction === "resetNoLog" ||
+      task.timeGoalAction === "confirmModal"
         ? task.timeGoalAction
-        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        : task.finalCheckpointAction === "resetLog" ||
+            task.finalCheckpointAction === "resetNoLog" ||
+            task.finalCheckpointAction === "confirmModal"
           ? task.finalCheckpointAction
-        : "continue",
+          : "continue",
   };
 }
 
@@ -224,7 +230,9 @@ export function normalizeEditTaskDraft(draft: EditTaskDraft): EditTaskDraft {
     presetIntervalsEnabled: !!draft.presetIntervalsEnabled,
     presetIntervalValue: sanitizePresetIntervalInput(draft.presetIntervalValue),
     timeGoalAction:
-      draft.timeGoalAction === "resetLog" || draft.timeGoalAction === "resetNoLog"
+      draft.timeGoalAction === "resetLog" ||
+      draft.timeGoalAction === "resetNoLog" ||
+      draft.timeGoalAction === "confirmModal"
         ? draft.timeGoalAction
         : "continue",
   };

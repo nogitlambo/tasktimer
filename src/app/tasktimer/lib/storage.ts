@@ -157,9 +157,9 @@ function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
   const timeGoalAction =
-    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
       ? task.timeGoalAction
-      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
         ? task.finalCheckpointAction
         : "continue";
   return {
@@ -457,9 +457,9 @@ function taskSignature(task: Task | null | undefined): string {
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     timeGoalAction:
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
         ? task.timeGoalAction
-        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
           ? task.finalCheckpointAction
           : "continue",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,

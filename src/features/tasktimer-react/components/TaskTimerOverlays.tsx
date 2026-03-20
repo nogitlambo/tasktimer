@@ -408,7 +408,7 @@ export default function TaskTimerOverlays() {
                 </p>
                 <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
                   <label htmlFor="addTaskFinalCheckpointActionSelect">When final checkpoint is reached</label>
-                  <select id="addTaskFinalCheckpointActionSelect" value={state.addTaskDraft.timeGoalAction} onChange={(event) => actions.patchAddTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
+                  <select id="addTaskFinalCheckpointActionSelect" value={state.addTaskDraft.timeGoalAction} onChange={(event) => actions.patchAddTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" | "confirmModal" })}>
                     <option value="continue">Continue to run timer until stopped by user (default)</option>
                     <option value="resetLog">Stop/reset timer and save session to history</option>
                     <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
@@ -578,10 +578,11 @@ export default function TaskTimerOverlays() {
             </p>
             <div className="field checkpointAlertSoundModeField" id="editFinalCheckpointActionField">
               <label htmlFor="editFinalCheckpointActionSelect">When final checkpoint is reached</label>
-              <select id="editFinalCheckpointActionSelect" value={state.editTaskDraft.timeGoalAction} onChange={(event) => actions.patchEditTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" })}>
+              <select id="editFinalCheckpointActionSelect" value={state.editTaskDraft.timeGoalAction} onChange={(event) => actions.patchEditTaskDraft({ timeGoalAction: event.target.value as "continue" | "resetLog" | "resetNoLog" | "confirmModal" })}>
                 <option value="continue">Continue to run timer until stopped by user (default)</option>
                 <option value="resetLog">Stop/reset timer and save session to history</option>
                 <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
+                <option value="confirmModal">Display task complete modal and await user confirmation</option>
               </select>
             </div>
           </div>

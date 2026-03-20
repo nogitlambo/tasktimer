@@ -13,6 +13,9 @@ import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import DesktopAppRail from "./components/DesktopAppRail";
+import TimeGoalCompleteNoteOverlay from "./components/TimeGoalCompleteNoteOverlay";
+import TimeGoalCompleteOverlay from "./components/TimeGoalCompleteOverlay";
+import TimeGoalCompleteSaveNoteOverlay from "./components/TimeGoalCompleteSaveNoteOverlay";
 import { initTaskTimerClient } from "./tasktimerClient";
 import "./tasktimer.css";
 
@@ -420,6 +423,9 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
         <ElapsedPadOverlay />
         <ExportTaskOverlay />
         <ConfirmOverlay />
+        <TimeGoalCompleteOverlay />
+        <TimeGoalCompleteSaveNoteOverlay />
+        <TimeGoalCompleteNoteOverlay />
         <HistoryAnalysisOverlay />
         <HistoryEntryNoteOverlay />
       </>

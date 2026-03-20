@@ -22,8 +22,8 @@ export type Task = {
   checkpointSoundMode?: "once" | "repeat";
   checkpointToastEnabled?: boolean;
   checkpointToastMode?: "auto5s" | "auto3s" | "manual";
-  timeGoalAction?: "continue" | "resetLog" | "resetNoLog";
-  finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog";
+  timeGoalAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
+  finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
   xpDisqualifiedUntilReset?: boolean;
   presetIntervalsEnabled?: boolean;
   presetIntervalValue?: number;

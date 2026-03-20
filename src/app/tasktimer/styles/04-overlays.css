@@ -74,32 +74,34 @@
 }
 
 #editOverlay .editTaskTimeGoalField{
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
-  column-gap: 16px;
-  row-gap: 8px;
-  align-items: start;
+  display: block;
+  width:100%;
+  max-width:none;
+  min-width:0;
 }
 
-#editOverlay .editTaskTimeGoalField > label{
-  grid-column: 1;
-  grid-row: 1;
+#editOverlay .editTaskTimeGoalHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+#editOverlay .editTaskTimeGoalHeaderLabel{
   margin-bottom: 0;
 }
 
-#editOverlay .editTaskTimeGoalField > #editTaskDurationRow{
-  grid-column: 1 / -1;
-  grid-row: 2;
+#editOverlay .editTaskTimeGoalToggleWrap{
+  display:inline-flex;
+  align-items:center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-#editOverlay .editTaskTimeGoalField > #editTaskDurationReadout{
-  grid-column: 2;
-  grid-row: 1;
-}
-
-#editOverlay .editTaskTimeGoalField > .editTaskNoGoalRow{
-  grid-column: 1 / -1;
-  grid-row: 3;
+#editOverlay .editTaskTimeGoalToggleText{
+  font-size: 13px;
+  color: rgba(194,224,236,.88);
 }
 
 #editOverlay input[type="text"],
@@ -357,6 +359,30 @@
 
 #editOverlay .milestonesBody{
   padding-top:4px;
+}
+
+#editOverlay .editAdvancedSection{
+  margin-top: 18px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+#editOverlay .editAdvancedSection > summary{
+  list-style: none;
+}
+
+#editOverlay .editAdvancedSection > summary::-webkit-details-marker{
+  display: none;
+}
+
+#editOverlay .editAdvancedBody{
+  padding-top: 4px;
+}
+
+#editOverlay .editAdvancedSection:not([open]) .editAdvancedBody{
+  display: none;
 }
 
 #addTaskOverlay .milestones{
@@ -957,23 +983,23 @@
   min-width: 0;
 }
 
+#editOverlay #editTaskDurationRow.isHidden,
+#editOverlay #editTaskDurationReadout.isHidden,
+#editOverlay #editTimerSettingsGroup.isHidden,
+#editOverlay #editCheckpointAlertsGroup.isHidden,
+#editOverlay #msArea.isHidden{
+  display:none !important;
+}
+
 @media (max-width: 640px){
-  #editOverlay .editTaskTimeGoalField{
-    grid-template-columns: minmax(0, 1fr);
+  #editOverlay .editTaskTimeGoalHeader{
+    align-items:flex-start;
+    flex-direction:column;
   }
 
-  #editOverlay .editTaskTimeGoalField > #editTaskDurationReadout{
-    grid-column: 1;
-    grid-row: 2;
-    text-align: left;
-  }
-
-  #editOverlay .editTaskTimeGoalField > #editTaskDurationRow{
-    grid-row: 3;
-  }
-
-  #editOverlay .editTaskTimeGoalField > .editTaskNoGoalRow{
-    grid-row: 4;
+  #editOverlay .editTaskTimeGoalToggleWrap{
+    width:100%;
+    justify-content:space-between;
   }
 }
 
@@ -987,20 +1013,6 @@
 }
 
 #addTaskOverlay .addTaskNoGoalRow input[type="checkbox"]{
-  width: 16px;
-  height: 16px;
-}
-
-#editOverlay .editTaskNoGoalRow{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: rgba(194,224,236,.88);
-  cursor: pointer;
-}
-
-#editOverlay .editTaskNoGoalRow input[type="checkbox"]{
   width: 16px;
   height: 16px;
 }
@@ -1255,4 +1267,225 @@ body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
 
 body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   clip-path: none;
+}
+#timeGoalCompleteOverlay .modal{
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(53,232,255,.24);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+#timeGoalCompleteOverlay h2{
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#timeGoalCompleteOverlay .modalSubtext{
+  margin: 0 0 12px;
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMeta[hidden]{
+  display: none !important;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
+  flex-direction: column;
+  margin-top: 0;
+  gap: 8px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn{
+  width: 100%;
+  justify-content: center;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
+  background: rgba(255,255,255,.01);
+  color: var(--text);
+  border: 1px solid rgba(160,232,255,.28);
+  box-shadow: none;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent));
+  color: #04131c;
+  border-color: rgba(53,232,255,.55);
+  box-shadow: 0 0 14px rgba(0,220,255,.3);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteGoalEditor{
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(120, 220, 255, 0.18);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteGoalEditor .footerBtns{
+  margin-top: 10px;
+  gap: 8px;
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .modal{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .modalSubtext{
+  color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteGoalEditor{
+  border-top-color: rgba(214,96,229,.24);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
+  background: rgba(24,13,35,.9);
+  color: #ecdfff;
+  border-color: rgba(214,96,229,.44);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  color: #fff !important;
+  border-color: rgba(233,134,245,.72) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28);
+}
+
+body[data-theme="cyan"] #timeGoalCompleteOverlay .modal{
+  border-color: rgba(53,232,255,.24);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
+  clip-path: none;
+}
+
+#timeGoalCompleteSaveNoteOverlay .modal,
+#timeGoalCompleteNoteOverlay .modal{
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(53,232,255,.24);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+#timeGoalCompleteSaveNoteOverlay h2,
+#timeGoalCompleteNoteOverlay h2{
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#timeGoalCompleteSaveNoteOverlay .modalSubtext,
+#timeGoalCompleteNoteOverlay .modalSubtext{
+  margin: 0 0 12px;
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns{
+  gap: 8px;
+}
+
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn{
+  min-width: 96px;
+  justify-content: center;
+}
+
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn,
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent{
+  background: rgba(255,255,255,.01);
+  color: var(--text);
+  border: 1px solid rgba(160,232,255,.28);
+  box-shadow: none;
+}
+
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn:hover,
+#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent));
+  color: #04131c;
+  border-color: rgba(53,232,255,.55);
+  box-shadow: 0 0 14px rgba(0,220,255,.3);
+}
+
+#timeGoalCompleteNoteOverlay .timeGoalCompleteNoteBody{
+  margin: 0 0 12px;
+}
+
+#timeGoalCompleteNoteOverlay .focusSessionNotesInput{
+  width: 100%;
+  min-height: 108px;
+  resize: vertical;
+}
+
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .modal,
+body[data-theme="purple"] #timeGoalCompleteNoteOverlay .modal{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .modalSubtext,
+body[data-theme="purple"] #timeGoalCompleteNoteOverlay .modalSubtext{
+  color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn,
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent{
+  background: rgba(24,13,35,.9);
+  color: #ecdfff;
+  border-color: rgba(214,96,229,.44);
+}
+
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn:hover,
+body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  color: #fff !important;
+  border-color: rgba(233,134,245,.72) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28);
+}
+
+body[data-control-style="square"] #timeGoalCompleteSaveNoteOverlay .modal,
+body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
+  clip-path: none;
+}
+#editOverlay #editTimerSettingsGroup,
+#editOverlay #editFinalCheckpointActionField{
+  width:100%;
+  max-width:none;
+}
+#editOverlay #editFinalCheckpointActionSelect{
+  display:block;
+  width:100%;
+  max-width:none;
+}
+#editOverlay .editTaskTimeGoalField #editTimerSettingsGroup{
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+#editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField{
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+#editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select{
+  display:block;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0;
 }

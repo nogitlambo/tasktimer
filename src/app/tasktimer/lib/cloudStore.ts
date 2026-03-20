@@ -331,7 +331,11 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.timeGoalAction !== "continue" &&
     row.timeGoalAction !== "resetLog" &&
     row.timeGoalAction !== "resetNoLog" &&
-    (row.finalCheckpointAction === "continue" || row.finalCheckpointAction === "resetLog" || row.finalCheckpointAction === "resetNoLog")
+    row.timeGoalAction !== "confirmModal" &&
+    (row.finalCheckpointAction === "continue" ||
+      row.finalCheckpointAction === "resetLog" ||
+      row.finalCheckpointAction === "resetNoLog" ||
+      row.finalCheckpointAction === "confirmModal")
   ) {
     row.timeGoalAction = row.finalCheckpointAction;
   }
@@ -372,9 +376,9 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     timeGoalAction:
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
         ? task.timeGoalAction
-        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
           ? task.finalCheckpointAction
           : "continue",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
@@ -398,9 +402,9 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
 function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
   const row = mapTaskToFirestore(task);
   const legacyTimeGoalAction =
-    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog"
+    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
       ? task.timeGoalAction
-      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog"
+      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
         ? task.finalCheckpointAction
         : "continue";
   const { timeGoalAction, ...legacyRow } = row;
