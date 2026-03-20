@@ -4001,7 +4001,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function syncAddTaskCheckpointAlertUi() {
-    const hasActiveTimeGoal = getAddTaskTimeGoalMinutes() > 0;
+    const hasActiveTimeGoal = getAddTaskTimeGoalMinutesState() > 0;
     const checkpointsEnabled = !!addTaskMilestonesEnabled && hasActiveTimeGoal;
     const presetEnabled = checkpointsEnabled && !!addTaskPresetIntervalsEnabled;
     const validPreset = (Number(addTaskPresetIntervalValue) || 0) > 0;

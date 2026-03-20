@@ -290,7 +290,7 @@ const els = {
   msUnitHour: documentRef.getElementById("msUnitHour"),
   msUnitMinute: documentRef.getElementById("msUnitMinute"),
   msList: documentRef.getElementById("msList"),
-  addMsBtn: documentRef.getElementById("addMsBtn"),
+  addMsBtn: documentRef.getElementById("addMsBtn") as HTMLButtonElement | null,
   cancelEditBtn: documentRef.getElementById("cancelEditBtn"),
   saveEditBtn: documentRef.getElementById("saveEditBtn") as HTMLButtonElement | null,
   editValidationError: documentRef.getElementById("editValidationError"),
