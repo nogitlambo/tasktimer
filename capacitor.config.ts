@@ -3,7 +3,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tasktimer.app',
+  appId: 'com.tasklaunch.app',
   appName: 'TaskLaunch',
   webDir: 'out',
   plugins: {

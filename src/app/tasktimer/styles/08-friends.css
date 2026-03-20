@@ -230,6 +230,36 @@
 #friendProfileModal .modalSubtext{
   margin: 2px 0 0;
 }
+.friendProfileHeaderRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+#friendProfileModal .friendProfileHeaderRow h2{
+  margin:0;
+}
+.friendProfileDeleteLink{
+  appearance:none;
+  border:0;
+  background:transparent;
+  padding:0;
+  color:var(--warn);
+  font:inherit;
+  font-size:13px;
+  font-weight:400;
+  text-decoration:underline;
+  text-underline-offset:2px;
+  cursor:pointer;
+}
+.friendProfileDeleteLink:hover,
+.friendProfileDeleteLink:focus-visible{
+  color:#ff8f8f;
+}
+.friendProfileDeleteLink:focus-visible{
+  outline:1px solid currentColor;
+  outline-offset:3px;
+}
 .friendProfileRankPlaceholder{
   display:grid;
   place-items:center;
@@ -253,9 +283,6 @@
 }
 #friendProfileModal .footerBtns .btn{
   margin: 0 !important;
-}
-#friendProfileModal .friendProfileDeleteRow{
-  justify-content: flex-start !important;
 }
 #friendProfileModal .friendProfileCloseRow{
   justify-content: flex-end !important;

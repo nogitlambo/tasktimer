@@ -476,7 +476,12 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
       </div>
       <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Friend Profile">
-          <h2>Friend Info</h2>
+          <div className="friendProfileHeaderRow">
+            <h2>Friend Info</h2>
+            <button className="friendProfileDeleteLink" id="friendProfileDeleteBtn" type="button">
+              Delete Friend
+            </button>
+          </div>
           <div className="chkRow" id="friendProfileIdentityRow">
             <img id="friendProfileAvatar" src="/avatars/initials/initials-AN.svg" alt="" aria-hidden="true" />
             <div className="friendProfileIdentityText">
@@ -498,11 +503,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
               aria-hidden="true"
             />
             <div id="friendProfileRank">Rank: --</div>
-          </div>
-          <div className="footerBtns friendProfileDeleteRow">
-            <button className="btn btn-warn" id="friendProfileDeleteBtn" type="button">
-              Delete Friend
-            </button>
           </div>
           <div className="footerBtns friendProfileCloseRow">
             <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
