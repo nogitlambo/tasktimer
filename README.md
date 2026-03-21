@@ -20,6 +20,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Docs Automation
+
+This repo keeps `AGENTS.md` and `architecture.md` in sync with code using generated docs scripts.
+
+```bash
+npm run docs:update
+npm run docs:check
+npm run hooks:install
+```
+
+- `docs:update` regenerates the managed docs files.
+- `docs:check` fails when generated docs are stale.
+- `hooks:install` configures Git to use the repo-managed `.githooks/pre-commit` hook so docs update automatically before commits.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -14,8 +14,11 @@
     "android:sync": "npm run build:android && npx cap sync android",
     "android:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",
     "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && copy /Y app\\build\\outputs\\apk\\debug\\app-debug.apk \"G:\\My Drive\\Apps\\app-debug.apk\"",
-    "agents:update": "node scripts/update_agents_context.mjs",
-    "agents:check": "node scripts/update_agents_context.mjs --check",
+    "docs:update": "node scripts/docs_sync.mjs --write",
+    "docs:check": "node scripts/docs_sync.mjs --check",
+    "agents:update": "node scripts/docs_sync.mjs --write --target=agents",
+    "agents:check": "node scripts/docs_sync.mjs --check --target=agents",
+    "hooks:install": "node scripts/install_git_hooks.mjs",
     "test:unit": "vitest run"
   },
   "dependencies": {

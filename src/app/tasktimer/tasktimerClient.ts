@@ -7755,7 +7755,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           counterText: formatMainTaskElapsed(getElapsedMs(t)),
           checkpointTimeText,
           checkpointDescText,
-          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
+          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && !!t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
         });
       }
       if (suppressForFocusMode && ((checkpointAlertToastEnabled && t.checkpointToastEnabled) || (checkpointAlertSoundEnabled && t.checkpointSoundEnabled))) {
@@ -7771,7 +7771,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           counterText: formatMainTaskElapsed(getElapsedMs(t)),
           checkpointTimeText,
           checkpointDescText,
-          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
+          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && !!t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
         });
       }
       if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled && !suppressForFocusMode) {

@@ -136,26 +136,27 @@
 ## Auto-Generated Context
 ### Routes (derived from `src/app/tasktimer/**/page.tsx`)
 - `/tasktimer`
+- `/tasktimer/dashboard`
+- `/tasktimer/feedback`
+- `/tasktimer/friends`
 - `/tasktimer/history-manager`
 - `/tasktimer/settings`
 - `/tasktimer/user-guide`
 
 ### Persistent keys (derived from storage/client modules)
-- `ADD_TASK_CUSTOM_KEY = `${STORAGE_KEY}:customTaskNames``
-- `CHECKPOINT_ALERT_SOUND_KEY = `${STORAGE_KEY}:checkpointAlertSoundEnabled``
-- `CHECKPOINT_ALERT_TOAST_KEY = `${STORAGE_KEY}:checkpointAlertToastEnabled``
-- `DASHBOARD_ORDER_KEY = `${STORAGE_KEY}:dashboardOrder``
-- `DEFAULT_TASK_TIMER_FORMAT_KEY = `${STORAGE_KEY}:defaultTaskTimerFormat``
-- `DYNAMIC_COLORS_KEY = `${STORAGE_KEY}:dynamicColorsEnabled``
-- `HISTORY_RANGE_KEY = `${STORAGE_KEY}:historyRangeDaysByTaskId``
-- `HISTORY_RANGE_MODE_KEY = `${STORAGE_KEY}:historyRangeModeByTaskId``
-- `MODE_LABELS_KEY = `${STORAGE_KEY}:modeLabels``
-- `MODE_SETTINGS_KEY = `${STORAGE_KEY}:modeSettings``
-- `NAV_STACK_KEY = `${STORAGE_KEY}:navStack``
-- `PENDING_TASK_JUMP_KEY = `${STORAGE_KEY}:pendingTaskJump``
-- `PINNED_HISTORY_KEY = `${STORAGE_KEY}:pinnedHistoryTaskIds``
+- `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``
+- `CHECKPOINT_ALERT_SOUND_KEY = `${storageKey}:checkpointAlertSoundEnabled``
+- `CHECKPOINT_ALERT_TOAST_KEY = `${storageKey}:checkpointAlertToastEnabled``
+- `DEFAULT_TASK_TIMER_FORMAT_KEY = `${storageKey}:defaultTaskTimerFormat``
+- `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
+- `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
+- `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
+- `MODE_SETTINGS_KEY = `${storageKey}:modeSettings``
+- `NAV_STACK_KEY = `${storageKey}:navStack``
 - `STORAGE_KEY = "taskticker_tasks_v1"`
-- `THEME_KEY = `${STORAGE_KEY}:theme``
+- `TASK_VIEW_KEY = `${storageKey}:taskView``
+- `THEME_KEY = `${storageKey}:theme``
+- `TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow``
 
 ### Data hooks (derived from client/components)
 - `data-action="closeCheckpointToast"`
@@ -165,11 +166,13 @@
 - `data-action="edit"`
 - `data-action="editName"`
 - `data-action="exportTask"`
+- `data-action="focus"`
 - `data-action="history"`
 - `data-action="jumpToCheckpointTask"`
 - `data-action="muteCheckpointAlert"`
 - `data-action="reset"`
 - `data-action="rmMs"`
+- `data-action="showSuppressedCheckpointAlert"`
 - `data-action="start"`
 - `data-action="stop"`
 - `data-history-action="analyse"`

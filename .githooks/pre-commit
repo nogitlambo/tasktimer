@@ -1,0 +1,10 @@
+#!/bin/sh
+
+npm run docs:update
+status=$?
+if [ "$status" -ne 0 ]; then
+  exit "$status"
+fi
+
+git add AGENTS.md architecture.md
+exit 0

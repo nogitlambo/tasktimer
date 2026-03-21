@@ -1,4 +1,4 @@
-name: AGENTS Consistency Check
+name: Docs Consistency Check
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: ["main"]
 
 jobs:
-  agents-check:
+  docs-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,5 +21,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check AGENTS.md freshness
-        run: npm run agents:check
+      - name: Check generated docs freshness
+        run: npm run docs:check
