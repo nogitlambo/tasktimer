@@ -2,20 +2,17 @@
 
 import { useEffect } from "react";
 import AddTaskOverlay from "./components/AddTaskOverlay";
-import ConfirmOverlay from "./components/ConfirmOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
 import ExportTaskOverlay from "./components/ExportTaskOverlay";
 import FocusModeScreen from "./components/FocusModeScreen";
+import GlobalTaskAlerts from "./components/GlobalTaskAlerts";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import DesktopAppRail from "./components/DesktopAppRail";
-import TimeGoalCompleteNoteOverlay from "./components/TimeGoalCompleteNoteOverlay";
-import TimeGoalCompleteOverlay from "./components/TimeGoalCompleteOverlay";
-import TimeGoalCompleteSaveNoteOverlay from "./components/TimeGoalCompleteSaveNoteOverlay";
 import { initTaskTimerClient } from "./tasktimerClient";
 import "./tasktimer.css";
 
@@ -423,10 +420,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
         <EditTaskOverlay />
         <ElapsedPadOverlay />
         <ExportTaskOverlay />
-        <ConfirmOverlay />
-        <TimeGoalCompleteOverlay />
-        <TimeGoalCompleteSaveNoteOverlay />
-        <TimeGoalCompleteNoteOverlay />
+        <GlobalTaskAlerts />
         <HistoryAnalysisOverlay />
         <HistoryEntryNoteOverlay />
       </>

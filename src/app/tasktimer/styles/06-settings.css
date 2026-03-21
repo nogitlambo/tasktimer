@@ -2357,10 +2357,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
 }
 /* Final Appearance spacing/typography override: keep rows evenly spaced and clearly subordinate to the heading. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSection{
-  gap:16px;
+  gap:8px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSectionHead{
-  margin-bottom:2px;
+  margin-bottom:0;
+  padding-bottom:2px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSectionTitle{
   font-size:12px;
@@ -2369,7 +2370,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) #taskDynamicColorsToggleRow{
-  padding:10px 0;
+  padding:6px 0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow label,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow label,
@@ -2396,4 +2397,119 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
 #app[aria-label="TaskLaunch Settings"] .settingsAuthNotice,
 #app[aria-label="TaskLaunch Settings"] .settingsAuthError{
   font-family: var(--font-readable) !important;
+}
+/* Final Data pane list styling: flat rows with theme-accent hover/focus treatment */
+#app[aria-label="TaskLaunch Settings"] .settingsDataListStack{
+  display:flex;
+  flex-direction:column;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsInlineSection{
+  gap:8px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem{
+  min-height:46px;
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  text-align:left;
+  border:1px solid transparent !important;
+  background: transparent !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  clip-path:none !important;
+  padding:10px 0 !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem .settingsMenuItemIcon{
+  display:none !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem .settingsMenuItemText{
+  font-family:var(--font-readable);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:none;
+  color: rgba(228,248,255,.94);
+  min-width:0;
+  width:100%;
+  text-align:left;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem:focus-visible{
+  border-color: rgba(53,232,255,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger{
+  color:#ff8a8a;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger .settingsMenuItemIcon{
+  filter: brightness(0) saturate(100%) invert(56%) sepia(28%) saturate(3348%) hue-rotate(319deg) brightness(102%) contrast(102%) drop-shadow(0 0 8px rgba(255,77,77,.22)) !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger .settingsMenuItemText{
+  color:#ff8a8a;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:active,
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger[aria-pressed="true"]{
+  border-color: rgba(255,77,77,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:focus-visible{
+  border-color: rgba(255,77,77,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:focus-visible{
+  border-color: rgba(209,118,247,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:active,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger[aria-pressed="true"]{
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+/* Final Settings nav hover override: use border accent only, no glass fill. */
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+  border-color: rgba(53,232,255,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
+  border-color: rgba(255,77,77,.48) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+  border-color: rgba(233,134,245,.62) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
+  border-color: rgba(255,120,134,.72) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }

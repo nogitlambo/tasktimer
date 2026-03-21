@@ -1348,13 +1348,21 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteGoalEditor{
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
-  background: rgba(24,13,35,.9);
+  background: transparent !important;
+  background-image: none !important;
   color: #ecdfff;
   border-color: rgba(214,96,229,.44);
+  box-shadow: none !important;
 }
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:focus-visible,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:active,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[aria-pressed="true"],
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:focus-visible,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:active,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent[aria-pressed="true"]{
   background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
   color: #fff !important;
   border-color: rgba(233,134,245,.72) !important;
@@ -1506,6 +1514,10 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid rgba(170, 213, 232, 0.18);
+}
+
+#editOverlay #msArea + #editCheckpointAlertsGroup{
+  margin-top: 28px;
 }
 
 body[data-theme="purple"] #editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)

@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import ConfirmOverlay from "../components/ConfirmOverlay";
+import { useRouter } from "next/navigation";
+import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import UserGuideScreen from "../components/UserGuideScreen";
 import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function UserGuidePage() {
+  const router = useRouter();
+
   const taskTimerRootPath = () => {
     const pathname = window.location.pathname || "";
     const normalized = pathname.replace(/\/+$/, "");
@@ -29,6 +32,14 @@ export default function UserGuidePage() {
     return `${taskTimerRootPath()}${suffix}${trailing}`;
   };
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    router.push(appRoute("/tasktimer/settings"));
+  };
+
   useEffect(() => {
     const { destroy } = initTaskTimerClient();
     return () => destroy();
@@ -36,8 +47,8 @@ export default function UserGuidePage() {
 
   return (
     <>
-      <UserGuideScreen onBack={() => (window.location.href = appRoute("/tasktimer/settings"))} />
-      <ConfirmOverlay />
+      <UserGuideScreen onBack={handleBack} />
+      <GlobalTaskAlerts />
     </>
   );
 }

@@ -214,7 +214,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let addTaskTimeGoalAction = initialState.addTaskTimeGoalAction;
   let timeGoalModalTaskId = initialState.timeGoalModalTaskId;
   let timeGoalModalFrozenElapsedMs = initialState.timeGoalModalFrozenElapsedMs;
-  let timeGoalReminderAtMsByTaskId = initialState.timeGoalReminderAtMsByTaskId;
+  const timeGoalReminderAtMsByTaskId = initialState.timeGoalReminderAtMsByTaskId;
   let timeGoalCompleteDurationUnit: "minute" | "hour" = "hour";
   let timeGoalCompleteDurationPeriod: "day" | "week" = "day";
   let addTaskWizardStep = initialState.addTaskWizardStep;
@@ -993,7 +993,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkpointSoundMode: "once",
       checkpointToastEnabled: false,
       checkpointToastMode: "auto5s",
-      timeGoalAction: "continue",
+      timeGoalAction: "confirmModal",
       presetIntervalsEnabled: false,
       presetIntervalValue: 0,
       presetIntervalLastMilestoneId: null,
@@ -3662,7 +3662,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         checkpointToastMode: "auto5s",
         presetIntervalsEnabled: false,
         presetIntervalValue: "0",
-        timeGoalAction: "continue",
+        timeGoalAction: "confirmModal",
       });
     }
   }
@@ -4047,9 +4047,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     if (els.addTaskFinalCheckpointActionSelect) {
       els.addTaskFinalCheckpointActionSelect.value =
-        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
+        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog" || addTaskTimeGoalAction === "confirmModal"
           ? addTaskTimeGoalAction
-          : "continue";
+          : "confirmModal";
     }
 
     const soundAvailable = checkpointAlertSoundEnabled;
@@ -9488,9 +9488,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       newTask.presetIntervalsEnabled = addTaskCheckpointingEnabled && !!addTaskPresetIntervalsEnabled;
       newTask.presetIntervalValue = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
       newTask.timeGoalAction =
-        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
+        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog" || addTaskTimeGoalAction === "confirmModal"
           ? addTaskTimeGoalAction
-          : "continue";
+          : "confirmModal";
       newTask.timeGoalEnabled = !addTaskNoTimeGoal;
       newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
       newTask.timeGoalUnit = addTaskNoTimeGoal ? "hour" : addTaskDurationUnit;
@@ -9526,7 +9526,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       addTaskCheckpointToastMode = "auto5s";
       addTaskPresetIntervalsEnabled = false;
       addTaskPresetIntervalValue = 0;
-      addTaskTimeGoalAction = "continue";
+      addTaskTimeGoalAction = "confirmModal";
       if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
       if (els.addTaskMsArea && "open" in (els.addTaskMsArea as any)) {
         (els.addTaskMsArea as HTMLDetailsElement).open = false;
@@ -10018,7 +10018,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           ? "resetLog"
           : els.addTaskFinalCheckpointActionSelect?.value === "resetNoLog"
             ? "resetNoLog"
-            : "continue";
+            : els.addTaskFinalCheckpointActionSelect?.value === "confirmModal"
+              ? "confirmModal"
+              : "continue";
       syncAddTaskCheckpointAlertUi();
     });
     on(els.addTaskCheckpointSoundToggle, "click", (e: any) => {
@@ -10767,8 +10769,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskDragEl = null;
     });
     on(els.closeMenuBtn, "click", () => {
-      if (els.menuOverlay) closeOverlay(els.menuOverlay as HTMLElement | null);
-      else navigateToAppRoute("/tasktimer/dashboard");
+      if (els.menuOverlay) {
+        closeOverlay(els.menuOverlay as HTMLElement | null);
+        return;
+      }
+      const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
+      if (currentRoutePath === "/tasktimer/settings") {
+        window.location.href = appPathForPage("dashboard");
+        return;
+      }
+      handleAppBackNavigation();
     });
     on(els.themeSelect, "change", () => {
       const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
@@ -11648,54 +11658,50 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function tick() {
     if (runtime.destroyed) return;
 
-    if (!els.taskList) {
-      runtime.tickRaf = window.requestAnimationFrame(() => {
-        runtime.tickTimeout = window.setTimeout(tick, 200);
-      });
-      return;
-    }
-
     const processedCheckpointTaskIds = new Set<string>();
-    const nodes = els.taskList.querySelectorAll(".task");
-    nodes.forEach((node) => {
-      const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
-      const t = tasks[i];
-      if (!t) return;
+    const taskList = els.taskList as HTMLElement | null;
+    if (taskList) {
+      const nodes = taskList.querySelectorAll(".task");
+      nodes.forEach((node) => {
+        const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
+        const t = tasks[i];
+        if (!t) return;
 
-      const timeEl = node.querySelector(".time");
-      const elapsedMs = getElapsedMs(t);
-      if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(elapsedMs, !!t.running);
-      processCheckpointAlertsForTask(t, elapsedMs / 1000);
-      processedCheckpointTaskIds.add(String(t.id || ""));
+        const timeEl = node.querySelector(".time");
+        const elapsedMs = getElapsedMs(t);
+        if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(elapsedMs, !!t.running);
+        processCheckpointAlertsForTask(t, elapsedMs / 1000);
+        processedCheckpointTaskIds.add(String(t.id || ""));
 
-      const hasMilestones = t.milestonesEnabled && t.milestones && t.milestones.length > 0;
-      const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
-      if (hasMilestones || hasTimeGoal) {
-        const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-        const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-        const maxSec = Math.max(maxValue * milestoneUnitSec(t), hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0, 1);
-        const pct = Math.min((elapsedMs / 1000 / maxSec) * 100, 100);
+        const hasMilestones = t.milestonesEnabled && t.milestones && t.milestones.length > 0;
+        const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
+        if (hasMilestones || hasTimeGoal) {
+          const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
+          const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
+          const maxSec = Math.max(maxValue * milestoneUnitSec(t), hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0, 1);
+          const pct = Math.min((elapsedMs / 1000 / maxSec) * 100, 100);
 
-        const fill = node.querySelector(".progressFill") as HTMLElement | null;
-        if (fill) {
-          fill.style.width = pct + "%";
-          fill.style.background = dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t));
+          const fill = node.querySelector(".progressFill") as HTMLElement | null;
+          if (fill) {
+            fill.style.width = pct + "%";
+            fill.style.background = dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t));
+          }
+
+          if (hasMilestones) {
+            const elapsedSec = elapsedMs / 1000;
+            const mkTimes = node.querySelectorAll(".mkTime");
+
+            mkTimes.forEach((mt) => {
+              const txt = (mt.textContent || "").trim();
+              const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
+              const reached = elapsedSec >= v * milestoneUnitSec(t);
+              mt.classList.toggle("mkAch", reached);
+              mt.classList.toggle("mkPend", !reached);
+            });
+          }
         }
-
-        if (hasMilestones) {
-          const elapsedSec = elapsedMs / 1000;
-          const mkTimes = node.querySelectorAll(".mkTime");
-
-          mkTimes.forEach((mt) => {
-            const txt = (mt.textContent || "").trim();
-            const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
-            const reached = elapsedSec >= v * milestoneUnitSec(t);
-            mt.classList.toggle("mkAch", reached);
-            mt.classList.toggle("mkPend", !reached);
-          });
-        }
-      }
-    });
+      });
+    }
 
     tasks.forEach((t) => {
       const taskId = String(t.id || "");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import ConfirmOverlay from "../components/ConfirmOverlay";
+import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import InfoOverlays from "../components/InfoOverlays";
 import SettingsScreen from "../components/SettingsScreen";
 import { initTaskTimerClient } from "../tasktimerClient";
@@ -17,7 +17,7 @@ export default function SettingsPage() {
     <>
       <SettingsScreen />
       <InfoOverlays />
-      <ConfirmOverlay />
+      <GlobalTaskAlerts />
     </>
   );
 }

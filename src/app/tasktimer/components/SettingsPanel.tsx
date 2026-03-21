@@ -287,8 +287,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       { key: "preferences" as const, label: "Preferences", icon: "/Task_Settings.svg" },
       { key: "appearance" as const, label: "Appearance", icon: "/Appearance.svg" },
       { key: "notifications" as const, label: "Notifications", icon: "/Settings.svg" },
-      { key: "about" as const, label: "About", icon: "/About.svg" },
       { key: "data" as const, label: "Data", icon: "/History_Manager.svg" },
+      { key: "about" as const, label: "About", icon: "/About.svg" },
     ],
     []
   );
@@ -1669,19 +1669,37 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             title="Data"
             subtitle="Manage history, export or import backups, and reset local data."
           >
-            <div className="settingsActionGrid settingsDataTileGrid">
-              <button className="menuItem settingsDataTile" data-menu="historyManager" id="historyManagerBtn" type="button">
-                <MenuIconLabel icon="/History_Manager.svg" label="History Manager" />
-              </button>
-              <button className="menuItem settingsDataTile" id="exportBtn" type="button">
-                <MenuIconLabel icon="/Export.svg" label="Export Backup" />
-              </button>
-              <button className="menuItem settingsDataTile" id="importBtn" type="button">
-                <MenuIconLabel icon="/Import.svg" label="Import Backup" />
-              </button>
-              <button className="menuItem settingsDataTile" id="resetAllBtn" type="button">
-                <MenuIconLabel icon="/Reset.svg" label="Reset All Data" />
-              </button>
+            <div className="settingsInlineStack settingsDataListStack">
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/History_Manager.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">History</div>
+                </div>
+                <button className="menuItem settingsNavTile settingsDataListItem" data-menu="historyManager" id="historyManagerBtn" type="button">
+                  <MenuIconLabel icon="/History_Manager.svg" label="History Manager" />
+                </button>
+              </section>
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Export.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Import/Export</div>
+                </div>
+                <button className="menuItem settingsNavTile settingsDataListItem" id="exportBtn" type="button">
+                  <MenuIconLabel icon="/Export.svg" label="Export Backup" />
+                </button>
+                <button className="menuItem settingsNavTile settingsDataListItem" id="importBtn" type="button">
+                  <MenuIconLabel icon="/Import.svg" label="Import Backup" />
+                </button>
+              </section>
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Reset.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Reset</div>
+                </div>
+                <button className="menuItem settingsNavTile settingsDataListItem settingsDataListItemDanger" id="resetAllBtn" type="button">
+                  <MenuIconLabel icon="/Reset.svg" label="Reset All Data" />
+                </button>
+              </section>
             </div>
             <div className="settingsDetailNote">
               This action is destructive. Export a backup first if you want to preserve tasks, history, and settings.

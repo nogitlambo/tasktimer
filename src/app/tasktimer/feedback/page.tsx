@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import ConfirmOverlay from "../components/ConfirmOverlay";
+import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import FeedbackScreen from "../components/FeedbackScreen";
 import { initTaskTimerClient } from "../tasktimerClient";
 import "../tasktimer.css";
@@ -15,7 +15,7 @@ export default function FeedbackPage() {
   return (
     <>
       <FeedbackScreen />
-      <ConfirmOverlay />
+      <GlobalTaskAlerts />
     </>
   );
 }

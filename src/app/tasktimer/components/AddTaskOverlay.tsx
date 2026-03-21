@@ -138,10 +138,11 @@ export default function AddTaskOverlay() {
               <div className="checkpointAlertsTitle">Timer Settings</div>
               <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
                 <label htmlFor="addTaskFinalCheckpointActionSelect">When time goal is reached</label>
-                <select id="addTaskFinalCheckpointActionSelect" defaultValue="continue">
-                  <option value="continue">Continue to run timer until stopped by user (default)</option>
+                <select id="addTaskFinalCheckpointActionSelect" defaultValue="confirmModal">
+                  <option value="continue">Continue to run timer until stopped by user</option>
                   <option value="resetLog">Stop/reset timer and save session to history</option>
                   <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
+                  <option value="confirmModal">Display task complete modal and await user confirmation (default)</option>
                 </select>
               </div>
             </div>
