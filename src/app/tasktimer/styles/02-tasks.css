@@ -384,10 +384,10 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .a
   color: #eaf7ff;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
-  border-color: rgba(190,108,218,.46);
-  background: linear-gradient(180deg, rgba(126,72,146,.42), rgba(76,38,92,.34));
-  color: #fff7ff;
-  box-shadow: inset 0 0 0 1px rgba(255,164,250,.08);
+  border-color: rgba(206,136,230,.42) !important;
+  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
+  color: #fff8ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
   border-color: rgba(190,130,130,.5);

@@ -227,6 +227,8 @@ const els = {
   categoryMode1Input: documentRef.getElementById("categoryMode1Input") as HTMLInputElement | null,
   categoryMode2Input: documentRef.getElementById("categoryMode2Input") as HTMLInputElement | null,
   categoryMode3Input: documentRef.getElementById("categoryMode3Input") as HTMLInputElement | null,
+  categoryMode2ToggleRow: documentRef.getElementById("categoryMode2ToggleRow"),
+  categoryMode3ToggleRow: documentRef.getElementById("categoryMode3ToggleRow"),
   categoryMode2Toggle: documentRef.getElementById("categoryMode2Toggle"),
   categoryMode3Toggle: documentRef.getElementById("categoryMode3Toggle"),
   categoryMode2ToggleLabel: documentRef.getElementById("categoryMode2ToggleLabel"),

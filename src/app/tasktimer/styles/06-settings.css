@@ -2309,3 +2309,91 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetail
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn.isOn{
   color: rgba(251,236,255,.98) !important;
 }
+/* Final Account override: restore framed warning treatment for Delete Account only. */
+#app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosure{
+  border: 1px solid rgba(255,77,77,.28) !important;
+  background: rgba(255,77,77,.05) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  padding: 0 !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosure{
+  border-color: rgba(240,110,224,.28) !important;
+  background: rgba(240,110,224,.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 0 0 1px rgba(212,71,210,.08) !important;
+}
+/* Final Appearance layout override: keep setting labels left and values right on one line. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  align-items:center;
+  gap:14px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow label{
+  margin-bottom:0;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow select,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow select{
+  width:auto;
+  min-width:220px;
+  text-align:right;
+  text-align-last:right;
+  padding:8px 24px 8px 12px;
+}
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow{
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow select,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow select{
+    width:100%;
+    min-width:0;
+    text-align:left;
+    text-align-last:left;
+  }
+}
+/* Final Appearance spacing/typography override: keep rows evenly spaced and clearly subordinate to the heading. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSection{
+  gap:16px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSectionHead{
+  margin-bottom:2px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .settingsInlineSectionTitle{
+  font-size:12px;
+  font-weight:800;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) #taskDynamicColorsToggleRow{
+  padding:10px 0;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) #taskDynamicColorsToggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow select,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow select{
+  font-size:12px;
+  line-height:1.35;
+}
+/* Final Settings typography override: use one font family consistently across settings content. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailText,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSectionTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection select,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection input,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea,
+#app[aria-label="TaskLaunch Settings"] .modeSwitchesLabel,
+#app[aria-label="TaskLaunch Settings"] .settingsInlineFooter .btn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailNote,
+#app[aria-label="TaskLaunch Settings"] .settingsAuthNotice,
+#app[aria-label="TaskLaunch Settings"] .settingsAuthError{
+  font-family: var(--font-readable) !important;
+}

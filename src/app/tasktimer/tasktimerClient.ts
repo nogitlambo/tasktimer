@@ -2168,10 +2168,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
     els.categoryMode3Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode3")));
     if (els.categoryMode2ToggleLabel) {
-      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Mode 2" : "Enable Mode 2";
+      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Category 2" : "Enable Category 2";
     }
     if (els.categoryMode3ToggleLabel) {
-      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Mode 3" : "Enable Mode 3";
+      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Category 3" : "Enable Category 3";
     }
     if (els.categoryMode2Row) (els.categoryMode2Row as HTMLElement).style.display = isModeEnabled("mode2") ? "block" : "none";
     if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
@@ -10808,15 +10808,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       render();
       closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
-    on(els.categoryMode2Toggle, "click", () => {
-      modeEnabled.mode2 = !modeEnabled.mode2;
+    const toggleCategoryEnabled = (mode: "mode2" | "mode3") => {
+      modeEnabled[mode] = !modeEnabled[mode];
       syncModeLabelsUi();
       applyAndPersistModeSettingsImmediate();
+    };
+    on(els.categoryMode2Toggle, "click", () => toggleCategoryEnabled("mode2"));
+    on(els.categoryMode3Toggle, "click", () => toggleCategoryEnabled("mode3"));
+    on(els.categoryMode2ToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#categoryMode2Toggle")) return;
+      toggleCategoryEnabled("mode2");
     });
-    on(els.categoryMode3Toggle, "click", () => {
-      modeEnabled.mode3 = !modeEnabled.mode3;
-      syncModeLabelsUi();
-      applyAndPersistModeSettingsImmediate();
+    on(els.categoryMode3ToggleRow, "click", (e: any) => {
+      if (e.target?.closest?.("#categoryMode3Toggle")) return;
+      toggleCategoryEnabled("mode3");
     });
     on(els.categoryMode1Input, "change", () => applyAndPersistModeSettingsImmediate());
     on(els.categoryMode2Input, "change", () => applyAndPersistModeSettingsImmediate());

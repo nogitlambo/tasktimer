@@ -1346,7 +1346,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             active={activePane === "preferences"}
             paneClassName="settingsDisplayTypographyPane"
             title="Preferences"
-            subtitle="Configure task behavior and dashboard options."
+            subtitle="Configure task behavior, dashboard options, and categories."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1385,6 +1385,40 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                 </div>
               </section>
 
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Configure Categories</div>
+                </div>
+                <div className="field categoryFieldRow">
+                  <label htmlFor="categoryMode1Input">Default Category</label>
+                  <div className="categoryFieldControl">
+                    <input id="categoryMode1Input" type="text" maxLength={10} />
+                  </div>
+                </div>
+                <div className="modeSwitchesLabel">Categories</div>
+                <div className="toggleRow" id="categoryMode2ToggleRow">
+                  <span id="categoryMode2ToggleLabel">Disable Category 2</span>
+                  <button className="switch on" id="categoryMode2Toggle" type="button" role="switch" aria-checked="true" />
+                </div>
+                <div className="field categoryFieldRow" id="categoryMode2Row">
+                  <label htmlFor="categoryMode2Input">Category 2</label>
+                  <div className="categoryFieldControl">
+                    <input id="categoryMode2Input" type="text" maxLength={10} />
+                  </div>
+                </div>
+                <div className="toggleRow" id="categoryMode3ToggleRow">
+                  <span id="categoryMode3ToggleLabel">Disable Category 3</span>
+                  <button className="switch on" id="categoryMode3Toggle" type="button" role="switch" aria-checked="true" />
+                </div>
+                <div className="field categoryFieldRow" id="categoryMode3Row">
+                  <label htmlFor="categoryMode3Input">Category 3</label>
+                  <div className="categoryFieldControl">
+                    <input id="categoryMode3Input" type="text" maxLength={10} />
+                  </div>
+                </div>
+              </section>
+
             </div>
             <div className="settingsInlineFooter">
               <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
@@ -1408,7 +1442,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             active={activePane === "appearance"}
             paneClassName="settingsDisplayTypographyPane"
             title="Appearance"
-            subtitle="Choose your theme, mode styling, and visual display options."
+            subtitle="Choose your theme and visual display options."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1435,50 +1469,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
                 </div>
               </section>
-
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Configure Modes</div>
-                </div>
-                <div className="field categoryFieldRow">
-                  <label htmlFor="categoryMode1Input">Default Mode</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode1Input" type="text" maxLength={10} />
-                  </div>
-                </div>
-                <div className="modeSwitchesLabel">Modes</div>
-                <div className="toggleRow">
-                  <span id="categoryMode2ToggleLabel">Disable Mode 2</span>
-                  <button className="switch on" id="categoryMode2Toggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="field categoryFieldRow" id="categoryMode2Row">
-                  <label htmlFor="categoryMode2Input">Mode 2</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode2Input" type="text" maxLength={10} />
-                    <button className="categoryTrashBtn" id="categoryMode2TrashBtn" type="button" aria-label="Delete Mode 2 category">
-                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="toggleRow">
-                  <span id="categoryMode3ToggleLabel">Disable Mode 3</span>
-                  <button className="switch on" id="categoryMode3Toggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="field categoryFieldRow" id="categoryMode3Row">
-                  <label htmlFor="categoryMode3Input">Mode 3</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode3Input" type="text" maxLength={10} />
-                    <button className="categoryTrashBtn" id="categoryMode3TrashBtn" type="button" aria-label="Delete Mode 3 category">
-                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </section>
             </div>
             <div className="settingsInlineFooter">
               <button className="btn btn-ghost" id="appearanceLoadDefaultsBtn" type="button">
@@ -1487,11 +1477,12 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             </div>
           </SettingsDetailPane>
 
-          <SettingsDetailPane
-            active={activePane === "notifications"}
-            title="Notifications"
-            subtitle="Manage checkpoint sound and toast alerts."
-          >
+          <SettingsDetailPane
+            active={activePane === "notifications"}
+            paneClassName="settingsDisplayTypographyPane"
+            title="Notifications"
+            subtitle="Manage checkpoint sound and toast alerts."
+          >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
