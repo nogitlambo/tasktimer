@@ -193,8 +193,8 @@
     gap:8px;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
-    min-width:132px;
-    padding:8px 12px;
+    min-width:0;
+    padding:0;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem{
     min-width:132px;
@@ -352,16 +352,17 @@
     padding:8px 10px;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
-    min-width:118px;
-    min-height:34px;
-    padding:6px 10px;
+    min-width:0;
+    min-height:auto;
+    padding:0;
     font-size:10px;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
-    flex-basis:100%;
-    margin-left:0;
+    flex-basis:auto;
+    margin-left:auto;
     justify-content:flex-end;
     gap:6px;
+    flex-wrap:nowrap;
   }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
     font-size:9px;

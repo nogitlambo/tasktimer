@@ -52,7 +52,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     <h2 className="dashboardTitle">Tasks</h2>
                   </div>
                   <div className="tasksModeControlGroup" aria-label="Task category selector">
-                    <span className="tasksModeControlLabel">Category</span>
+                    <span className="tasksModeControlLabel">Category:</span>
                     <details className="tasksModeMenu" id="modeSwitch">
                       <summary className="btn btn-ghost small tasksModeMenuBtn" id="modeSwitchBtn" role="button" aria-label="Select task category">
                         <span id="modeSwitchCurrentLabel">Mode 1</span>
@@ -162,12 +162,34 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
 
                   <div className="dashboardGrid">
                     <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
-                      <div className="dashboardCardTitle">Streak</div>
-                      <div className="dashboardStreakValue">21 Days</div>
-                      <div className="dashboardStreakBar">
-                        <span style={{ width: "78%" }} />
+                      <div className="dashboardStreakHeader">
+                        <div className="dashboardCardTitle">Streak</div>
+                        <div className="dashboardStreakInfoSlot">
+                          <button
+                            className="iconBtn dashboardStreakInfoBtn"
+                            id="dashboardStreakInfoBtn"
+                            type="button"
+                            aria-label="How streaks work"
+                            aria-expanded="false"
+                            aria-controls="dashboardStreakInfoDialog"
+                          >
+                            ?
+                          </button>
+                          <div
+                            className="dashboardStreakInfoDialog"
+                            id="dashboardStreakInfoDialog"
+                            role="note"
+                            aria-label="Streak help"
+                          >
+                            Start a streak by completing a daily time goal for any task(s) for 2 days in a row
+                          </div>
+                        </div>
                       </div>
-                      <div className="dashboardStreakMeta">4/5 sessions completed today</div>
+                      <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
+                      <div className="dashboardStreakBar" id="dashboardStreakBar">
+                        <span id="dashboardStreakBarFill" style={{ width: "0%" }} />
+                      </div>
+                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">Tap ? to learn how streaks work</div>
                     </section>
 
                     <section className="dashboardCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" aria-label="Weekly hours">
@@ -180,27 +202,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <div className="dashboardCardTitle">Tasks Completed</div>
                       <div className="dashboardBigValue">18</div>
                       <div className="dashboardDelta">2 carried over</div>
-                    </section>
-
-                    <section
-                      className="dashboardCard dashboardMainGraphCard"
-                      data-dashboard-id="focus-trend"
-                      id="dashboardFocusTrendCard"
-                      aria-label="Focus trend graph"
-                    >
-                      <div className="dashboardCardTitle">Focus Trend (7 Days)</div>
-                      <div className="dashboardGraphBars" id="dashboardFocusTrendBars">
-                        <span style={{ height: "36%" }} />
-                        <span style={{ height: "52%" }} />
-                        <span style={{ height: "40%" }} />
-                        <span style={{ height: "69%" }} />
-                        <span style={{ height: "61%" }} />
-                        <span style={{ height: "82%" }} />
-                        <span style={{ height: "76%" }} />
-                      </div>
-                      <div className="dashboardGraphAxis" id="dashboardFocusTrendAxis">
-                        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-                      </div>
                     </section>
 
                     <section

@@ -172,6 +172,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
+  let suppressedFocusModeAlertTaskIds = new Set<string>();
+  let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
 
   let historyByTaskId = initialState.historyByTaskId;
@@ -1966,6 +1968,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardCardSizesDraftBeforeEdit = null;
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
@@ -3200,6 +3203,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     save();
     void syncSharedTaskSummariesForTask(taskId).catch(() => {});
     render();
+    openDeferredFocusModeTimeGoalModal();
   }
 
   function resumeTaskAfterTimeGoalModal(task: Task) {
@@ -3700,7 +3704,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               currentTask?.finalCheckpointAction === "resetNoLog" ||
               currentTask?.finalCheckpointAction === "confirmModal"
             ? currentTask.finalCheckpointAction
-            : "continue",
+            : "confirmModal",
     });
   }
 
@@ -4290,6 +4294,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderHistory(taskId);
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
@@ -4424,11 +4429,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.focusInsightBest) els.focusInsightBest.textContent = insights.bestMs > 0 ? formatTime(insights.bestMs) : "--";
 
     if (els.focusInsightWeekday) {
-      if (!insights.hasWeekdayEnoughDays || !insights.weekdayName) {
-        els.focusInsightWeekday.textContent = "Need at least 14 logged days";
+      if (!insights.weekdayName || insights.weekdaySessionCount <= 0) {
+        els.focusInsightWeekday.textContent = "No logged sessions yet";
         els.focusInsightWeekday.classList.add("is-empty");
       } else {
-        els.focusInsightWeekday.textContent = `${insights.weekdayName} (${formatTime(insights.weekdayTotalMs)})`;
+        const sessionLabel = insights.weekdaySessionCount === 1 ? "session" : "sessions";
+        els.focusInsightWeekday.textContent = `${insights.weekdayName} (${insights.weekdaySessionCount} ${sessionLabel})`;
         els.focusInsightWeekday.classList.remove("is-empty");
       }
     }
@@ -5071,6 +5077,117 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     );
   }
 
+  function renderDashboardStreakCard() {
+    const valueEl = els.dashboardStreakValue as HTMLElement | null;
+    const fillEl = els.dashboardStreakBarFill as HTMLElement | null;
+    const metaEl = els.dashboardStreakMeta as HTMLElement | null;
+    const barEl = els.dashboardStreakBar as HTMLElement | null;
+
+    const eligibleTasks = (tasks || []).filter((task) => {
+      if (!task || taskModeOf(task) !== currentMode) return false;
+      if (!task.timeGoalEnabled) return false;
+      if (task.timeGoalPeriod !== "day") return false;
+      return Math.max(0, Number(task.timeGoalMinutes || 0)) > 0;
+    });
+
+    const taskGoalMinutesById = new Map<string, number>();
+    eligibleTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return;
+      taskGoalMinutesById.set(taskId, Math.max(0, Number(task.timeGoalMinutes || 0)));
+    });
+
+    const qualifyingDayTaskMs = new Map<string, Map<string, number>>();
+    taskGoalMinutesById.forEach((_goalMinutes, taskId) => {
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
+        const dayKey = localDayKey(ts);
+        let byTaskForDay = qualifyingDayTaskMs.get(dayKey);
+        if (!byTaskForDay) {
+          byTaskForDay = new Map<string, number>();
+          qualifyingDayTaskMs.set(dayKey, byTaskForDay);
+        }
+        byTaskForDay.set(taskId, (byTaskForDay.get(taskId) || 0) + ms);
+      });
+    });
+
+    const qualifyingDayKeys = Array.from(qualifyingDayTaskMs.entries())
+      .filter(([, byTask]) => {
+        for (const [taskId, totalMs] of byTask.entries()) {
+          const goalMinutes = taskGoalMinutesById.get(taskId) || 0;
+          if (goalMinutes > 0 && totalMs >= goalMinutes * 60000) return true;
+        }
+        return false;
+      })
+      .map(([dayKey]) => dayKey)
+      .sort();
+
+    const hasData = qualifyingDayKeys.length > 0;
+    if (shouldHoldDashboardWidget("streak", hasData)) return;
+
+    let currentStreakDays = 0;
+    let longestStreakDays = 0;
+    let previousDayTime = 0;
+    let runningStreak = 0;
+
+    qualifyingDayKeys.forEach((dayKey) => {
+      const dayTime = new Date(`${dayKey}T00:00:00`).getTime();
+      if (previousDayTime > 0 && dayTime - previousDayTime === 86400000) runningStreak += 1;
+      else runningStreak = 1;
+      if (runningStreak > longestStreakDays) longestStreakDays = runningStreak;
+      previousDayTime = dayTime;
+    });
+
+    const todayKey = localDayKey(nowMs());
+    const yesterdayKey = localDayKey(nowMs() - 86400000);
+    const qualifyingDaySet = new Set(qualifyingDayKeys);
+    const todayComplete = qualifyingDaySet.has(todayKey);
+    const yesterdayComplete = qualifyingDaySet.has(yesterdayKey);
+
+    if (hasData) {
+      let probeTime = todayComplete ? new Date(`${todayKey}T00:00:00`).getTime() : yesterdayComplete ? new Date(`${yesterdayKey}T00:00:00`).getTime() : 0;
+      while (probeTime > 0) {
+        const probeKey = localDayKey(probeTime);
+        if (!qualifyingDaySet.has(probeKey)) break;
+        currentStreakDays += 1;
+        probeTime -= 86400000;
+      }
+    }
+
+    const isPendingToday = !todayComplete && yesterdayComplete && currentStreakDays > 0;
+    const isBroken = !todayComplete && !isPendingToday && hasData;
+    const dayLabel = (count: number) => `${count} Day${count === 1 ? "" : "s"}`;
+
+    if (!hasData) {
+      if (valueEl) valueEl.textContent = "No streak yet";
+      if (metaEl) metaEl.textContent = "Tap ? to learn how streaks work";
+      if (fillEl) fillEl.style.width = "0%";
+      if (barEl) barEl.setAttribute("aria-label", "No streak progress yet");
+      return;
+    }
+
+    if (valueEl) valueEl.textContent = isBroken ? "0 Days" : dayLabel(currentStreakDays);
+    if (metaEl) {
+      metaEl.textContent = isBroken
+        ? `Longest: ${longestStreakDays} day${longestStreakDays === 1 ? "" : "s"} • Streak broken`
+        : `Longest: ${longestStreakDays} day${longestStreakDays === 1 ? "" : "s"} • ${todayComplete ? "Today complete" : "Today pending"}`;
+    }
+
+    const fillPct = longestStreakDays > 0 ? Math.max(0, Math.min(100, Math.round((currentStreakDays / longestStreakDays) * 100))) : 0;
+    if (fillEl) fillEl.style.width = `${fillPct}%`;
+    if (barEl) {
+      barEl.setAttribute(
+        "aria-label",
+        isBroken
+          ? `Streak progress. Current streak broken. Longest streak ${longestStreakDays} days.`
+          : `Streak progress. Current streak ${currentStreakDays} days out of longest streak ${longestStreakDays} days.`
+      );
+    }
+  }
+
   function renderDashboardFocusTrend() {
     const cardEl = els.dashboardFocusTrendCard as HTMLElement | null;
     const barsEl = els.dashboardFocusTrendBars as HTMLElement | null;
@@ -5134,7 +5251,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .map((day) => {
         const ratio = maxMs > 0 ? day.totalMs / maxMs : 0;
         const aria = `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)}`;
-        return `<span style="height:${Math.round(ratio * 100)}%;" role="img" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(aria)}"></span>`;
+        return `<span class="dashboardGraphDay" role="img" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(aria)}"><span class="dashboardGraphValue">${escapeHtmlUI(formatDashboardDurationShort(day.totalMs))}</span><span class="dashboardGraphBarWrap"><span class="dashboardGraphBar" style="height:${Math.round(ratio * 100)}%;"></span></span></span>`;
       })
       .join("");
 
@@ -6500,6 +6617,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = tasks[i];
     if (!t) return;
     focusModeTaskId = t.id;
+    suppressedFocusModeAlertTaskIds = new Set<string>();
+    deferredFocusModeTimeGoalModals = [];
+    dismissNonFocusTaskAlertsForFocusTask(String(t.id || ""));
     focusModeTaskName = (t.name || "").trim();
     if (els.focusTaskName) els.focusTaskName.textContent = focusModeTaskName || "Task";
     focusCheckpointSig = "";
@@ -6560,11 +6680,64 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncFocusRunButtons(null);
     if (els.focusInsightBest) els.focusInsightBest.textContent = "--";
     if (els.focusInsightWeekday) {
-      els.focusInsightWeekday.textContent = "Need at least 14 logged days";
+      els.focusInsightWeekday.textContent = "No logged sessions yet";
       els.focusInsightWeekday.classList.add("is-empty");
     }
     setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, Number.NaN);
     setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, Number.NaN);
+    openDeferredFocusModeTimeGoalModal();
+  }
+
+  function isFocusModeFilteringAlerts() {
+    return String(focusModeTaskId || "").trim().length > 0;
+  }
+
+  function shouldSuppressTaskAlertsInFocusMode(taskIdRaw: string | null | undefined) {
+    const activeFocusTaskId = String(focusModeTaskId || "").trim();
+    const taskId = String(taskIdRaw || "").trim();
+    return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
+  }
+
+  function noteSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    suppressedFocusModeAlertTaskIds.add(taskId);
+  }
+
+  function queueDeferredFocusModeTimeGoalModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
+    const taskId = String(task.id || "").trim();
+    if (!taskId) return;
+    if (deferredFocusModeTimeGoalModals.some((entry) => entry.taskId === taskId)) return;
+    deferredFocusModeTimeGoalModals.push({
+      taskId,
+      frozenElapsedMs: Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)),
+      reminder: !!opts?.reminder,
+    });
+  }
+
+  function openDeferredFocusModeTimeGoalModal() {
+    if (!deferredFocusModeTimeGoalModals.length) return;
+    const nextPending = deferredFocusModeTimeGoalModals.shift() || null;
+    suppressedFocusModeAlertTaskIds = new Set<string>();
+    if (!nextPending) return;
+    const task = tasks.find((row) => String(row.id || "").trim() === nextPending.taskId);
+    if (!task || !task.timeGoalEnabled || !(Number(task.timeGoalMinutes || 0) > 0)) {
+      openDeferredFocusModeTimeGoalModal();
+      return;
+    }
+    openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
+  }
+
+  function dismissNonFocusTaskAlertsForFocusTask(focusTaskIdRaw: string | null | undefined) {
+    const focusTaskId = String(focusTaskIdRaw || "").trim();
+    if (!focusTaskId) return;
+    checkpointToastQueue.length = 0;
+    if (checkpointRepeatActiveTaskId && String(checkpointRepeatActiveTaskId || "").trim() !== focusTaskId) {
+      stopCheckpointRepeatAlert();
+    }
+    if (activeCheckpointToast && String(activeCheckpointToast.taskId || "").trim() !== focusTaskId) {
+      dismissCheckpointToast({ manual: false });
+    }
   }
 
   function hasFocusCheckpoints(t: Task): boolean {
@@ -6843,9 +7016,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function applyTaskViewPreference(next: "list" | "tile") {
     taskView = next === "tile" ? "tile" : "list";
     document.body.setAttribute("data-task-view", taskView);
-    if (els.taskViewSelect && els.taskViewSelect.value !== taskView) {
-      els.taskViewSelect.value = taskView;
-    }
+    els.taskViewList?.classList.toggle("isOn", taskView === "list");
+    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
+    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
+    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
   }
 
   function applyMenuButtonStyle(next: "parallelogram" | "square") {
@@ -6921,7 +7095,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       applyTaskViewPreference(cloudRaw);
       return;
     }
-    applyTaskViewPreference("list");
+    applyTaskViewPreference("tile");
   }
 
   function saveDefaultTaskTimerFormat() {
@@ -6981,9 +7155,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
     els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
-    if (els.taskViewSelect && els.taskViewSelect.value !== taskView) {
-      els.taskViewSelect.value = taskView;
-    }
+    els.taskViewList?.classList.toggle("isOn", taskView === "list");
+    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
+    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
+    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
     toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, autoFocusOnTaskLaunchEnabled);
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, dynamicColorsEnabled);
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, checkpointAlertSoundEnabled);
@@ -7531,7 +7706,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       );
       const checkpointTimeText = formatTime(targetSec * 1000);
       const checkpointDescText = String(m.description || "").trim();
-      if (checkpointAlertToastEnabled && t.checkpointToastEnabled) {
+      const suppressForFocusMode = shouldSuppressTaskAlertsInFocusMode(taskId);
+      if (checkpointAlertToastEnabled && t.checkpointToastEnabled && !suppressForFocusMode) {
         const toastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
         enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
           autoCloseMs: toastMode === "manual" ? null : 5000,
@@ -7543,7 +7719,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
         });
       }
-      if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled) {
+      if (suppressForFocusMode && ((checkpointAlertToastEnabled && t.checkpointToastEnabled) || (checkpointAlertSoundEnabled && t.checkpointSoundEnabled))) {
+        noteSuppressedFocusModeAlert(taskId);
+      }
+      if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled && !suppressForFocusMode) {
         beepCount += 1;
       }
     });
@@ -7584,6 +7763,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       else enqueueCheckpointBeeps(beepCount);
     }
     if (shouldOpenTimeGoalModal) {
+      if (shouldSuppressTaskAlertsInFocusMode(taskId)) {
+        queueDeferredFocusModeTimeGoalModal(t, getTaskElapsedMs(t), { reminder: openTimeGoalModalAsReminder });
+        return;
+      }
       openTimeGoalCompleteModal(t, getTaskElapsedMs(t), { reminder: openTimeGoalModalAsReminder });
       checkpointBaselineSecByTaskId[taskId] = Math.floor(getElapsedMs(t) / 1000);
       return;
@@ -8141,7 +8324,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
     const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
     const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
-    const maxVal = Math.max(...vals, scaleRef || 0, 1);
+    const maxVal = Math.max(...vals, 1);
     const width = 170;
     const height = 56;
     const padX = 6;
@@ -8983,6 +9166,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     if (page === "dashboard") {
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
@@ -9071,6 +9255,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const syncAddTaskDurationUi = () => {
       addTaskNoTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
+      if (els.addTaskStep2NextBtn) {
+        els.addTaskStep2NextBtn.textContent = addTaskNoTimeGoal ? "Done" : "Next";
+      }
       els.addTaskDurationRow?.classList.toggle("isDisabled", addTaskNoTimeGoal);
       els.addTaskDurationReadout?.classList.toggle("isDisabled", addTaskNoTimeGoal);
       if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = addTaskNoTimeGoal;
@@ -9132,6 +9319,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       dialog?.classList.toggle("isOpen", open);
       if (els.editPresetIntervalsInfoBtn) {
         els.editPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
+      }
+    };
+    const setDashboardStreakInfoOpen = (open: boolean) => {
+      const dialog = els.dashboardStreakInfoDialog as HTMLElement | null;
+      dialog?.classList.toggle("isOpen", open);
+      if (els.dashboardStreakInfoBtn) {
+        els.dashboardStreakInfoBtn.setAttribute("aria-expanded", String(open));
       }
     };
 
@@ -9225,6 +9419,38 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return true;
     };
 
+    const submitAddTaskWizard = () => {
+      const name = (els.addTaskName?.value || "").trim();
+      rememberCustomTaskName(name);
+      setAddTaskError("");
+      const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
+      const newTask = makeTask(name, nextOrder);
+      const addTaskCheckpointingEnabled = !!addTaskMilestonesEnabled && getAddTaskTimeGoalMinutes() > 0;
+      newTask.milestonesEnabled = addTaskCheckpointingEnabled;
+      newTask.milestoneTimeUnit = addTaskMilestoneTimeUnit;
+      newTask.milestones = sortMilestones(addTaskMilestones.slice());
+      newTask.checkpointSoundEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointSoundEnabled;
+      newTask.checkpointSoundMode = addTaskCheckpointSoundMode === "repeat" ? "repeat" : "once";
+      newTask.checkpointToastEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointToastEnabled;
+      newTask.checkpointToastMode = addTaskCheckpointToastMode === "manual" ? "manual" : "auto5s";
+      newTask.presetIntervalsEnabled = addTaskCheckpointingEnabled && !!addTaskPresetIntervalsEnabled;
+      newTask.presetIntervalValue = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
+      newTask.timeGoalAction =
+        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
+          ? addTaskTimeGoalAction
+          : "continue";
+      newTask.timeGoalEnabled = !addTaskNoTimeGoal;
+      newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
+      newTask.timeGoalUnit = addTaskNoTimeGoal ? "hour" : addTaskDurationUnit;
+      newTask.timeGoalPeriod = addTaskNoTimeGoal ? "week" : addTaskDurationPeriod;
+      newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
+      tasks.push(newTask);
+      closeAddTaskModal();
+      save();
+      render();
+      jumpToTaskAndHighlight(String(newTask.id || ""));
+    };
+
     const resetAddTaskWizardState = () => {
       addTaskWizardStep = 1;
       addTaskDurationValue = 5;
@@ -9305,6 +9531,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(els.addTaskStep2NextBtn, "click", () => {
       if (!validateAddTaskStep2()) return;
+      if (addTaskNoTimeGoal) {
+        if (!validateAddTaskStep1()) return;
+        submitAddTaskWizard();
+        return;
+      }
       setAddTaskWizardStep(3);
     });
     on(els.addTaskStep3BackBtn, "click", () => {
@@ -9365,6 +9596,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const isOpen = (els.editPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
       setEditPresetIntervalsInfoOpen(!isOpen);
     });
+    on(els.dashboardStreakInfoBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const isOpen = (els.dashboardStreakInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
+      setDashboardStreakInfoOpen(!isOpen);
+    });
     on(document as any, "click", (e: any) => {
       const target = e?.target as HTMLElement | null;
       if (target?.closest?.("#addTaskCheckpointInfoBtn")) return;
@@ -9373,9 +9610,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (target?.closest?.("#addTaskPresetIntervalsInfoDialog")) return;
       if (target?.closest?.("#editPresetIntervalsInfoBtn")) return;
       if (target?.closest?.("#editPresetIntervalsInfoDialog")) return;
+      if (target?.closest?.("#dashboardStreakInfoBtn")) return;
+      if (target?.closest?.("#dashboardStreakInfoDialog")) return;
       setAddTaskCheckpointInfoOpen(false);
       setAddTaskPresetIntervalsInfoOpen(false);
       setEditPresetIntervalsInfoOpen(false);
+      setDashboardStreakInfoOpen(false);
     });
 
     on(els.addTaskMsToggle, "click", (e: any) => {
@@ -9802,35 +10042,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (addTaskWizardStep !== 3) return;
       if (!validateAddTaskStep1()) return;
       if (!validateAddTaskStep3()) return;
-      const name = (els.addTaskName?.value || "").trim();
-      rememberCustomTaskName(name);
-      setAddTaskError("");
-      const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
-      const newTask = makeTask(name, nextOrder);
-      const addTaskCheckpointingEnabled = !!addTaskMilestonesEnabled && getAddTaskTimeGoalMinutes() > 0;
-      newTask.milestonesEnabled = addTaskCheckpointingEnabled;
-      newTask.milestoneTimeUnit = addTaskMilestoneTimeUnit;
-      newTask.milestones = sortMilestones(addTaskMilestones.slice());
-      newTask.checkpointSoundEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointSoundEnabled;
-      newTask.checkpointSoundMode = addTaskCheckpointSoundMode === "repeat" ? "repeat" : "once";
-      newTask.checkpointToastEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointToastEnabled;
-      newTask.checkpointToastMode = addTaskCheckpointToastMode === "manual" ? "manual" : "auto5s";
-      newTask.presetIntervalsEnabled = addTaskCheckpointingEnabled && !!addTaskPresetIntervalsEnabled;
-      newTask.presetIntervalValue = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
-      newTask.timeGoalAction =
-        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog"
-          ? addTaskTimeGoalAction
-          : "continue";
-      newTask.timeGoalEnabled = !addTaskNoTimeGoal;
-      newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
-      newTask.timeGoalUnit = addTaskNoTimeGoal ? "hour" : addTaskDurationUnit;
-      newTask.timeGoalPeriod = addTaskNoTimeGoal ? "week" : addTaskDurationPeriod;
-      newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
-      tasks.push(newTask);
-      closeAddTaskModal();
-      save();
-      render();
-      jumpToTaskAndHighlight(String(newTask.id || ""));
+      submitAddTaskWizard();
     });
 
     on(els.taskList, "click", (e: any) => {
@@ -10337,6 +10549,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         avgSessionByTaskRange: dashboardAvgRange,
       });
       if (currentAppPage === "dashboard") {
+        renderDashboardStreakCard();
         renderDashboardOverviewChart();
         renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
@@ -10367,6 +10580,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         applyDashboardCardSizes();
         closeDashboardCardSizeMenus();
         if (currentAppPage === "dashboard") {
+          renderDashboardStreakCard();
           renderDashboardOverviewChart();
           renderDashboardFocusTrend();
           renderDashboardAvgSessionChart();
@@ -10381,6 +10595,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const rangeMenu = btn.closest("details") as HTMLDetailsElement | null;
       if (rangeMenu) rangeMenu.open = false;
       if (nextRange === dashboardAvgRange) {
+        renderDashboardStreakCard();
         renderDashboardOverviewChart();
         renderDashboardFocusTrend();
         renderDashboardAvgSessionChart();
@@ -10388,6 +10603,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
       saveDashboardAvgRange(nextRange);
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardAvgSessionChart();
@@ -10499,7 +10715,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.preferencesLoadDefaultsBtn, "click", () => {
       defaultTaskTimerFormat = "hour";
       autoFocusOnTaskLaunchEnabled = false;
-      taskView = "list";
+      taskView = "tile";
       dynamicColorsEnabled = true;
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
@@ -10523,9 +10739,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
-    on(els.taskViewSelect, "change", () => {
-      const raw = String(els.taskViewSelect?.value || "").trim().toLowerCase();
-      applyTaskViewPreference(raw === "tile" ? "tile" : "list");
+    on(els.taskViewList, "click", () => {
+      applyTaskViewPreference("list");
+      clearTaskFlipStates();
+      render();
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+
+    on(els.taskViewTile, "click", () => {
+      applyTaskViewPreference("tile");
       clearTaskFlipStates();
       render();
       syncTaskSettingsUi();
@@ -11116,6 +11339,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       save();
       void syncSharedTaskSummariesForTask(String(task.id || "")).catch(() => {});
       render();
+      openDeferredFocusModeTimeGoalModal();
     });
     on(els.checkpointToastHost, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-action]");
@@ -11430,6 +11654,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderCheckpointToast();
     }
     if (currentAppPage === "dashboard") {
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();
@@ -11473,6 +11698,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     applyDashboardCardVisibility();
     applyDashboardEditMode();
     if (currentAppPage === "dashboard") {
+      renderDashboardStreakCard();
       renderDashboardOverviewChart();
       renderDashboardFocusTrend();
       renderDashboardModeDistribution();

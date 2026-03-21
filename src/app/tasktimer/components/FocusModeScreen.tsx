@@ -91,7 +91,7 @@ export default function FocusModeScreen() {
         <div className="focusInsightRow">
           <span className="focusInsightLabel">Top productivity weekday</span>
           <span className="focusInsightValue" id="focusInsightWeekday">
-            Need at least 14 logged days
+            No logged sessions yet
           </span>
         </div>
         <div className="focusInsightRow">

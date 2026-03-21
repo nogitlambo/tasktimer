@@ -609,6 +609,11 @@
   box-shadow:none;
   border-radius:0;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsInlineStack > .settingsInlineSection + .settingsInlineSection{
+  margin-top:2px;
+  padding-top:16px;
+  border-top:1px solid rgba(121,226,255,.18);
+}
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSectionHead{
   display:flex;
   align-items:center;
@@ -656,11 +661,11 @@
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
-  border:1px solid rgba(121,226,255,.16);
-  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  padding:8px 10px;
+  border:none;
+  background: transparent;
+  box-shadow:none;
+  clip-path:none;
+  padding:8px 0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .switch{
   width:39px;
@@ -737,16 +742,16 @@
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > input[type="color"],
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > button{
   border-radius:0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl > input[type="text"]{
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
+  border:none;
+  background: transparent;
   color: var(--text);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryColorInput{
-  border:1px solid rgba(121,226,255,.18);
-  background: rgba(255,255,255,.03);
+  border:none;
+  background: transparent;
   padding:2px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryTrashBtn{
@@ -756,20 +761,20 @@
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection select,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   width:100%;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
+  border:none;
+  background: transparent;
   color: var(--text);
   border-radius:0;
   font: inherit;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection select{
   min-height:38px;
-  padding:8px 10px;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding:8px 0;
+  clip-path:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   min-height:120px;
-  padding:10px;
+  padding:10px 0;
   resize:vertical;
   line-height:1.4;
 }
@@ -2077,9 +2082,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
+  border: none !important;
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
+  clip-path: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsFeedbackAnonymousRow{
   margin-top: 2px;
@@ -2263,4 +2270,42 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormFi
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   border-color: rgba(86,232,255,.3);
+}
+/* Final Notifications override: keep checkpoint toggle rows flat with no extra framed group. */
+#app[aria-label="TaskLaunch Settings"] .checkpointAlertsGroup{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  filter:none;
+}
+#app[aria-label="TaskLaunch Settings"] .checkpointAlertsTitle{
+  display:none;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsInlineStack > .settingsInlineSection + .settingsInlineSection{
+  border-top-color: rgba(221,108,241,.18);
+}
+/* Final Preferences typography override: keep setting labels and values on a consistent color. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select{
+  color: rgba(226,247,255,.92) !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn.isOn{
+  color: rgba(244,252,255,.98) !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select{
+  color: rgba(245,218,255,.94) !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn.isOn{
+  color: rgba(251,236,255,.98) !important;
 }

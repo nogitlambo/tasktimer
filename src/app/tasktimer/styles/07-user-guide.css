@@ -201,3 +201,138 @@
   width:100%;
   max-width:100%;
 }
+/* Final User Guide theme pass: follow active theme styling and mirror Settings nav states. */
+#app[aria-label="TaskLaunch User Guide"] .userGuidePage{
+  background: transparent;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideWindow,
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+#app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+  border:1px solid rgba(117,231,255,.16);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    rgba(13,15,19,.92) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 0 18px rgba(0,220,255,.08);
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu{
+  background: transparent;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuHead{
+  border-bottom-color: rgba(121,226,255,.18);
+  background: transparent;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuTitle,
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailTitle,
+#app[aria-label="TaskLaunch User Guide"] .userGuideSection h3{
+  color: rgba(226,247,255,.96);
+}
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailText,
+#app[aria-label="TaskLaunch User Guide"] .userGuideText,
+#app[aria-label="TaskLaunch User Guide"] .settingsDetailEmpty{
+  color: rgba(188,214,230,.82);
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideTopicHead{
+  border-bottom-color: rgba(121,226,255,.16);
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideIcon,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsNavItemIcon{
+  filter: brightness(0) saturate(100%) invert(72%) sepia(78%) saturate(2106%) hue-rotate(139deg) brightness(102%) contrast(101%) drop-shadow(0 0 8px rgba(53,232,255,.35));
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideShotPlaceholder{
+  border-color: rgba(117,231,255,.32);
+  background: rgba(6,18,34,.45);
+  color: rgba(173,232,246,.8);
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideShotImage{
+  border-color: rgba(117,231,255,.24);
+  background: rgba(6,18,34,.45);
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel{
+  padding-left:12px;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile{
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  padding: 10px 14px !important;
+  text-align: left !important;
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
+  border-color: transparent !important;
+  background: #0d0f13 !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:hover,
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:focus-visible{
+  background: #0d0f13 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+#app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile.isActive{
+  border-color: rgba(53,232,255,.58) !important;
+  background:
+    linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
+    rgba(255,255,255,.04) !important;
+  box-shadow: 0 0 20px rgba(0,220,255,.12), inset 0 0 0 1px rgba(53,232,255,.14) !important;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideWindow,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+  border-color: rgba(221,108,241,.24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    rgba(20,10,28,.92) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 0 18px rgba(212,71,210,.1);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuHead,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideTopicHead{
+  border-bottom-color: rgba(221,108,241,.18);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuTitle,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailTitle,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideSection h3{
+  color: rgba(248,230,255,.96);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailText,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideText,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailEmpty{
+  color: rgba(226,210,252,.82);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideIcon,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsNavItemIcon{
+  filter: brightness(0) saturate(100%) invert(67%) sepia(39%) saturate(1104%) hue-rotate(260deg) brightness(101%) contrast(96%) drop-shadow(0 0 8px rgba(212,71,210,.34));
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideShotPlaceholder{
+  border-color: rgba(221,108,241,.34);
+  background: rgba(28,12,38,.48);
+  color: rgba(232,216,255,.82);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideShotImage{
+  border-color: rgba(221,108,241,.24);
+  background: rgba(28,12,38,.48);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile{
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:focus-visible{
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile.isActive{
+  border-color: rgba(240,110,224,.52) !important;
+  background: transparent !important;
+  box-shadow: 0 0 20px rgba(212,71,210,.12), inset 0 0 0 1px rgba(240,110,224,.14) !important;
+}

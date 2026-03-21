@@ -72,7 +72,7 @@ export default function EditTaskOverlay() {
               style={{ width: "100%", maxWidth: "none", minWidth: 0 }}
             >
               <label htmlFor="editFinalCheckpointActionSelect">When time goal is reached</label>
-              <select id="editFinalCheckpointActionSelect" defaultValue="continue" style={{ display: "block", width: "100%", maxWidth: "none" }}>
+              <select id="editFinalCheckpointActionSelect" defaultValue="confirmModal" style={{ display: "block", width: "100%", maxWidth: "none" }}>
                 <option value="continue">Continue to run timer until stopped by user (default)</option>
                 <option value="resetLog">Stop/reset timer and save session to history</option>
                 <option value="resetNoLog">Stop/reset timer and do not save session to history</option>

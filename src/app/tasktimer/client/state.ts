@@ -72,7 +72,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     menuButtonStyle: "square",
     addTaskCustomNames: [],
     defaultTaskTimerFormat: "hour",
-    taskView: "list",
+    taskView: "tile",
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
     checkpointAlertSoundEnabled: true,
@@ -171,6 +171,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     pendingDeferredCloudRefresh: false,
     lastUiInteractionAtMs: 0,
     dashboardWidgetHasRenderedData: {
+      streak: false,
       overview: false,
       focusTrend: false,
       heatCalendar: false,

@@ -287,10 +287,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       { key: "preferences" as const, label: "Preferences", icon: "/Task_Settings.svg" },
       { key: "appearance" as const, label: "Appearance", icon: "/Appearance.svg" },
       { key: "notifications" as const, label: "Notifications", icon: "/Settings.svg" },
-      { key: "privacy" as const, label: "Privacy Policy", icon: "/About.svg" },
-      { key: "userGuide" as const, label: "Support", icon: "/User_Guide.svg" },
       { key: "about" as const, label: "About", icon: "/About.svg" },
-      { key: "feedback" as const, label: "Feedback", icon: "/Feedback.svg" },
       { key: "data" as const, label: "Data", icon: "/History_Manager.svg" },
     ],
     []
@@ -1375,12 +1372,16 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   <span>Auto switch to Focus Mode on launch</span>
                   <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
                 </div>
-                <div className="field" id="taskViewRow">
-                  <label htmlFor="taskViewSelect">Task View</label>
-                  <select id="taskViewSelect" defaultValue="list" aria-label="Task view">
-                    <option value="list">List</option>
-                    <option value="tile">Tile</option>
-                  </select>
+                <div className="unitRow" id="taskViewRow">
+                  <span>Task View</span>
+                  <div className="unitButtons" role="group" aria-label="Task view">
+                    <button className="btn btn-ghost small unitBtn" id="taskViewList" type="button" aria-pressed="false">
+                      List
+                    </button>
+                    <button className="btn btn-ghost small unitBtn isOn" id="taskViewTile" type="button" aria-pressed="true">
+                      Tile
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -1493,16 +1494,15 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Checkpoint Alerts</div>
-                </div>
-                <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
-                  <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
-                  <div className="toggleRow" id="taskCheckpointSoundToggleRow">
-                    <span>Enable sound alerts</span>
-                    <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
-                  </div>
+                <div className="settingsInlineSectionHead">
+                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Checkpoint Alerts</div>
+                </div>
+                <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
+                  <div className="toggleRow" id="taskCheckpointSoundToggleRow">
+                    <span>Enable sound alerts</span>
+                    <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
+                  </div>
                   <div className="toggleRow" id="taskCheckpointToastToggleRow">
                     <span>Enable toast alerts</span>
                     <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
@@ -1540,48 +1540,57 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             </div>
           </SettingsDetailPane>
 
-          <SettingsDetailPane
-            active={activePane === "about"}
-            title="About"
-            subtitle="App summary, version information, and feature overview."
-          >
-            <div className="aboutText">
-              <p style={{ marginTop: 0 }}>
-                Timebase is a focused time-tracking app built to help you create better habits, manage repeatable
-                routines, and review progress over time.
-              </p>
-              <p>
-                It is designed for fast task control during active sessions, clear checkpoint visibility, and a workflow
-                that works well on both mobile and desktop.
-              </p>
-
-              <p style={{ marginBottom: 6, fontWeight: 700 }}>What Timebase is for</p>
-              <ul style={{ margin: "0 0 12px 18px", padding: 0 }}>
-                <li>Tracking focused work sessions and personal routines</li>
-                <li>Monitoring progress against time checkpoints</li>
-                <li>Reviewing completed sessions through history and charts</li>
-                <li>Keeping task timing data portable with backup export/import</li>
-              </ul>
-
-              <p style={{ marginBottom: 6, fontWeight: 700 }}>Core features</p>
-              <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
-                <li>Task timers with start/stop/reset, duplication, editing, and per-task settings</li>
-                <li>Checkpoint milestones with labels, progress markers, and task-level alert behavior</li>
-                <li>Sound and toast checkpoint notifications, including repeat-until-dismiss options</li>
-                <li>Inline history charts with export, analysis, manage actions, and selectable data points</li>
-                <li>Focus Mode with dial view, checkpoint markers, and completed checkpoint log</li>
-                <li>Dashboard, Settings modules, and User Guide/Support flows optimized for desktop and mobile</li>
-                <li>Backup export/import for tasks, history, modes, and task-specific configuration</li>
-              </ul>
-
-              <p style={{ margin: "12px 0 6px", fontWeight: 700 }}>Design approach</p>
-              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
-                <li>Fast access to common actions with minimal navigation</li>
-                <li>High-contrast visuals for active timing and checkpoint feedback</li>
-                <li>Responsive layouts that preserve usability on smaller screens</li>
-              </ul>
-            </div>
-          </SettingsDetailPane>
+          <SettingsDetailPane
+            active={activePane === "about"}
+            title="About"
+            subtitle="App summary, version information, and feature overview."
+          >
+            <div className="aboutText" style={{ fontFamily: "var(--font-geist-sans)" }}>
+              <p style={{ marginTop: 0 }}>
+                TaskLaunch is a focused productivity app built for people who want fast, intentional control over
+                timed work, routines, and momentum-building sessions.
+              </p>
+              <p>
+                It is designed to make it easy to launch into work quickly, track progress clearly, and review how your
+                time is actually being spent across both mobile and desktop layouts.
+              </p>
+
+              <p style={{ marginBottom: 6, fontWeight: 700 }}>What TaskLaunch is for</p>
+              <ul style={{ margin: "0 0 12px 18px", padding: 0 }}>
+                <li>Launching focused work sessions with less friction</li>
+                <li>Tracking habits, routines, and repeatable personal workflows</li>
+                <li>Monitoring progress against checkpoints, milestones, and time goals</li>
+                <li>Reviewing trends, session history, and task performance over time</li>
+                <li>Keeping task and history data portable through backup export and import</li>
+              </ul>
+
+              <p style={{ marginBottom: 6, fontWeight: 700 }}>Core features</p>
+              <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+                <li>Task timers with start, stop, reset, duplication, editing, and per-task configuration</li>
+                <li>Time goals, checkpoints, and milestone systems for structuring longer sessions</li>
+                <li>Focus Mode with a dedicated dial view, checkpoint markers, and session notes</li>
+                <li>Sound and toast checkpoint alerts, including repeat-until-dismiss behaviors</li>
+                <li>Dashboard insights, heatmaps, averages, and history views for reviewing progress</li>
+                <li>History management tools with export, cleanup, and analysis workflows</li>
+                <li>Mode customization so different categories of work can be organized visually</li>
+                <li>Optional sign-in, friend features, and shared task summaries for connected use cases</li>
+              </ul>
+
+              <p style={{ margin: "12px 0 6px", fontWeight: 700 }}>Design approach</p>
+              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
+                <li>Fast access to common actions with minimal interruption</li>
+                <li>High-contrast feedback for active timing, progress, and alerts</li>
+                <li>Responsive layouts that stay usable on smaller screens without losing depth</li>
+                <li>A productivity workflow that balances quick session control with longer-term review</li>
+              </ul>
+
+              <div className="settingsInlineFooter" style={{ marginTop: 16 }}>
+                <a className="btn btn-ghost" href="/privacy">
+                  Privacy Policy
+                </a>
+              </div>
+            </div>
+          </SettingsDetailPane>
 
           <SettingsDetailPane
             active={activePane === "feedback"}
