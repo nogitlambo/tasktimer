@@ -239,6 +239,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardCardSizes = initialState.dashboardCardSizes;
   let dashboardCardSizesDraftBeforeEdit = initialState.dashboardCardSizesDraftBeforeEdit;
   let dashboardCardVisibility = initialState.dashboardCardVisibility;
+  let dashboardIncludedModes = initialState.dashboardIncludedModes;
   let dashboardAvgRange = initialState.dashboardAvgRange;
   let currentAppPage = initialState.currentAppPage;
   let currentTileColumnCount = initialState.currentTileColumnCount;
@@ -874,6 +875,60 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return false;
     }
     return !!cloudRefreshInFlight && dashboardWidgetHasRenderedData[widget];
+  }
+
+  function getVisibleDashboardModes(): MainMode[] {
+    return (["mode1", "mode2", "mode3"] as MainMode[]).filter((mode) => isModeEnabled(mode));
+  }
+
+  function isDashboardModeIncluded(mode: MainMode) {
+    return dashboardIncludedModes[mode] !== false;
+  }
+
+  function ensureDashboardIncludedModesValid() {
+    const visibleModes = getVisibleDashboardModes();
+    if (!visibleModes.length) {
+      dashboardIncludedModes.mode1 = true;
+      return;
+    }
+    const hasVisibleMode = visibleModes.some((mode) => isDashboardModeIncluded(mode));
+    if (hasVisibleMode) return;
+    dashboardIncludedModes[visibleModes[0] || "mode1"] = true;
+  }
+
+  function getDashboardIncludedModesMapForStorage() {
+    return {
+      mode1: dashboardIncludedModes.mode1 !== false,
+      mode2: dashboardIncludedModes.mode2 !== false,
+      mode3: dashboardIncludedModes.mode3 !== false,
+    } satisfies Record<MainMode, boolean>;
+  }
+
+  function getDashboardIncludedTaskIds() {
+    const taskIds = new Set<string>();
+    (tasks || []).forEach((task) => {
+      if (!task) return;
+      const mode = taskModeOf(task);
+      if (!isModeEnabled(mode) || !isDashboardModeIncluded(mode)) return;
+      const taskId = String(task.id || "").trim();
+      if (taskId) taskIds.add(taskId);
+    });
+    return taskIds;
+  }
+
+  function isDashboardTaskIncluded(taskId: string, includedTaskIds?: Set<string>) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return false;
+    const source = includedTaskIds || getDashboardIncludedTaskIds();
+    return source.has(normalizedTaskId);
+  }
+
+  function getDashboardFilteredTasks() {
+    return (tasks || []).filter((task) => {
+      if (!task) return false;
+      const mode = taskModeOf(task);
+      return isModeEnabled(mode) && isDashboardModeIncluded(mode);
+    });
   }
 
   function syncCloudTaskCollectionListener() {
@@ -1686,6 +1741,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return out;
   }
 
+  function getDashboardCategoryMeta() {
+    return getVisibleDashboardModes().map((mode) => ({
+      mode,
+      label: getModeLabel(mode),
+    }));
+  }
+
   function isDashboardCardVisible(cardId: string) {
     return dashboardCardVisibility[cardId] !== false;
   }
@@ -1702,26 +1764,67 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       checkbox.checked = isVisible;
       checkbox.disabled = isVisible && visibleCount <= 1;
     });
+    const categoryMeta = getDashboardCategoryMeta();
+    const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
+    Array.from(menuList.querySelectorAll("input[data-dashboard-category-id]")).forEach((node) => {
+      const checkbox = node as HTMLInputElement;
+      const modeAttr = String(checkbox.getAttribute("data-dashboard-category-id") || "").trim();
+      const mode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
+      const isIncluded = isDashboardModeIncluded(mode);
+      checkbox.checked = isIncluded;
+      checkbox.disabled = isIncluded && includedCount <= 1;
+    });
   }
 
   function renderDashboardPanelMenu() {
     const menuList = els.dashboardPanelMenuList;
     if (!menuList) return;
     const meta = collectDashboardPanelMeta();
+    const categories = getDashboardCategoryMeta();
     menuList.innerHTML = "";
-    if (!meta.length) return;
-    meta.forEach(({ panelId, label }) => {
-      const row = document.createElement("label");
-      row.className = "dashboardPanelMenuItem";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.setAttribute("data-dashboard-panel-id", panelId);
-      const text = document.createElement("span");
-      text.textContent = label;
-      row.appendChild(input);
-      row.appendChild(text);
-      menuList.appendChild(row);
-    });
+    if (!categories.length && !meta.length) return;
+    const appendSectionTitle = (title: string) => {
+      const heading = document.createElement("div");
+      heading.className = "dashboardPanelMenuSectionTitle";
+      heading.textContent = title;
+      menuList.appendChild(heading);
+    };
+    if (categories.length) {
+      appendSectionTitle("Categories");
+      categories.forEach(({ mode, label }) => {
+        const row = document.createElement("label");
+        row.className = "dashboardPanelMenuItem";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.setAttribute("data-dashboard-category-id", mode);
+        const text = document.createElement("span");
+        text.textContent = label;
+        row.appendChild(input);
+        row.appendChild(text);
+        menuList.appendChild(row);
+      });
+    }
+    if (meta.length) {
+      if (categories.length) {
+        const divider = document.createElement("div");
+        divider.className = "dashboardPanelMenuDivider";
+        divider.setAttribute("aria-hidden", "true");
+        menuList.appendChild(divider);
+      }
+      appendSectionTitle("Panels");
+      meta.forEach(({ panelId, label }) => {
+        const row = document.createElement("label");
+        row.className = "dashboardPanelMenuItem";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.setAttribute("data-dashboard-panel-id", panelId);
+        const text = document.createElement("span");
+        text.textContent = label;
+        row.appendChild(input);
+        row.appendChild(text);
+        menuList.appendChild(row);
+      });
+    }
     syncDashboardPanelMenuState();
   }
 
@@ -1738,6 +1841,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       ...existingWidgets,
       ...partialWidgets,
       cardVisibility: getDashboardCardVisibilityMapForStorage(),
+      includedModes: getDashboardIncludedModesMapForStorage(),
     };
     cloudDashboardCache = { order: existingOrder, widgets };
     saveCloudDashboard(cloudDashboardCache);
@@ -1786,6 +1890,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       });
     }
     dashboardCardVisibility = nextVisibility;
+    const nextIncludedModes: Record<MainMode, boolean> = { mode1: true, mode2: true, mode3: true };
+    const rawIncludedModes = (widgets as any).includedModes;
+    if (rawIncludedModes && typeof rawIncludedModes === "object") {
+      (["mode1", "mode2", "mode3"] as MainMode[]).forEach((mode) => {
+        if (typeof (rawIncludedModes as Record<string, unknown>)[mode] === "boolean") {
+          nextIncludedModes[mode] = (rawIncludedModes as Record<string, boolean>)[mode];
+        }
+      });
+    }
+    dashboardIncludedModes = nextIncludedModes;
+    ensureDashboardIncludedModesValid();
   }
 
   function saveDashboardAvgRange(range: DashboardAvgRange) {
@@ -2188,6 +2303,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
     if (els.editMoveMode2) els.editMoveMode2.classList.toggle("is-disabled", !isModeEnabled("mode2"));
     if (els.editMoveMode3) els.editMoveMode3.classList.toggle("is-disabled", !isModeEnabled("mode3"));
+    ensureDashboardIncludedModesValid();
+    renderDashboardPanelMenu();
+    if (currentAppPage === "dashboard") renderDashboardWidgets();
   }
 
   function saveModeSettings() {
@@ -4943,6 +5061,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function renderDashboardWidgets() {
+    renderDashboardStreakCard();
+    renderDashboardOverviewChart();
+    renderDashboardFocusTrend();
+    renderDashboardModeDistribution();
+    renderDashboardAvgSessionChart();
+    renderDashboardHeatCalendar();
+  }
+
   function renderDashboardOverviewChart() {
     const valueEl = els.dashboardOverviewValue as HTMLElement | null;
     const subtextEl = els.dashboardOverviewSubtext as HTMLElement | null;
@@ -4955,6 +5082,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!canvas) return;
 
     const nowValue = nowMs();
+    const includedTaskIds = getDashboardIncludedTaskIds();
     const today = new Date(nowValue);
     today.setHours(0, 0, 0, 0);
     const days = Array.from({ length: 7 }, (_, idx) => {
@@ -4982,6 +5110,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId) return;
+      if (!isDashboardTaskIncluded(taskId, includedTaskIds)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
         const ts = normalizeHistoryTimestampMs(entry?.ts);
@@ -5102,8 +5231,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const metaEl = els.dashboardStreakMeta as HTMLElement | null;
     const barEl = els.dashboardStreakBar as HTMLElement | null;
 
-    const eligibleTasks = (tasks || []).filter((task) => {
-      if (!task || taskModeOf(task) !== currentMode) return false;
+    const eligibleTasks = getDashboardFilteredTasks().filter((task) => {
+      if (!task) return false;
       if (!task.timeGoalEnabled) return false;
       if (task.timeGoalPeriod !== "day") return false;
       return Math.max(0, Number(task.timeGoalMinutes || 0)) > 0;
@@ -5214,6 +5343,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!barsEl || !axisEl) return;
 
     const nowValue = nowMs();
+    const includedTaskIds = getDashboardIncludedTaskIds();
     const today = new Date(nowValue);
     today.setHours(0, 0, 0, 0);
 
@@ -5233,6 +5363,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId) return;
+      if (!isDashboardTaskIncluded(taskId, includedTaskIds)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
         const ts = Number(entry?.ts);
@@ -5257,6 +5388,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId) return;
+      if (!isDashboardTaskIncluded(taskId, includedTaskIds)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
         const ts = Number(entry?.ts);
@@ -5305,9 +5437,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
 
     const byDayMs = new Map<string, number>();
+    const includedTaskIds = getDashboardIncludedTaskIds();
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId) return;
+      if (!isDashboardTaskIncluded(taskId, includedTaskIds)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
         const ts = normalizeHistoryTimestampMs(entry?.ts);
@@ -5319,7 +5453,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       });
     });
 
-    tasks.forEach((task) => {
+    getDashboardFilteredTasks().forEach((task) => {
       if (!task?.running || typeof task.startMs !== "number") return;
       const runStartMs = Math.max(monthStart.getTime(), Math.floor(task.startMs));
       const runEndMs = Math.min(monthEnd.getTime(), nowValue);
@@ -5389,9 +5523,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function getDashboardAvgSessionRows(range: DashboardAvgRange, nowValue: number) {
     const { startMs, endMs } = getDashboardAvgRangeWindow(range, nowValue);
     const taskNameById = new Map<string, string>();
-    tasks.forEach((task) => {
+    const filteredTasks = getDashboardFilteredTasks();
+    const includedTaskIds = new Set<string>();
+    filteredTasks.forEach((task) => {
       const id = String(task.id || "").trim();
       if (!id) return;
+      includedTaskIds.add(id);
       taskNameById.set(id, String(task.name || "").trim() || "Task");
     });
 
@@ -5399,6 +5536,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId) return;
+      if (!includedTaskIds.has(taskId)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       if (!entries.length) return;
       let sumMs = 0;
@@ -5452,7 +5590,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (mode3LabelEl) mode3LabelEl.textContent = getModeLabel("mode3");
 
     const totalsMs: Record<MainMode, number> = { mode1: 0, mode2: 0, mode3: 0 };
-    tasks.forEach((task) => {
+    getDashboardFilteredTasks().forEach((task) => {
       const mode = taskModeOf(task);
       totalsMs[mode] += Math.max(0, getElapsedMs(task));
     });
@@ -9290,6 +9428,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       modeEnabled.mode1 = true;
       saveModeSettings();
       syncModeLabelsUi();
+      saveDashboardWidgetState({
+        cardSizes: getDashboardCardSizeMapForStorage(),
+        avgSessionByTaskRange: dashboardAvgRange,
+      });
       if (!isModeEnabled(currentMode)) applyMainMode("mode1");
       else applyModeAccent(currentMode);
       if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
@@ -10600,6 +10742,30 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
     on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
     on(els.dashboardPanelMenuList, "change", (e: any) => {
+      const categoryInput = e.target?.closest?.("input[data-dashboard-category-id]") as HTMLInputElement | null;
+      if (categoryInput) {
+        const modeAttr = String(categoryInput.getAttribute("data-dashboard-category-id") || "").trim();
+        const mode: MainMode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
+        const categoryMeta = getDashboardCategoryMeta();
+        const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
+        const nextChecked = !!categoryInput.checked;
+        if (!nextChecked && isDashboardModeIncluded(mode) && includedCount <= 1) {
+          categoryInput.checked = true;
+          syncDashboardPanelMenuState();
+          return;
+        }
+        dashboardIncludedModes[mode] = nextChecked;
+        ensureDashboardIncludedModesValid();
+        syncDashboardPanelMenuState();
+        saveDashboardWidgetState({
+          cardSizes: getDashboardCardSizeMapForStorage(),
+          avgSessionByTaskRange: dashboardAvgRange,
+        });
+        if (currentAppPage === "dashboard") {
+          renderDashboardWidgets();
+        }
+        return;
+      }
       const input = e.target?.closest?.("input[data-dashboard-panel-id]") as HTMLInputElement | null;
       if (!input) return;
       const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();
@@ -10619,11 +10785,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         avgSessionByTaskRange: dashboardAvgRange,
       });
       if (currentAppPage === "dashboard") {
-        renderDashboardStreakCard();
-        renderDashboardOverviewChart();
-        renderDashboardFocusTrend();
-        renderDashboardAvgSessionChart();
-        renderDashboardHeatCalendar();
+        renderDashboardWidgets();
       }
     });
     on(els.dashboardGrid, "click", (e: any) => {

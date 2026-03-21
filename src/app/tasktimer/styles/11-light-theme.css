@@ -33,6 +33,12 @@ body[data-theme="light"] .dashboardPanelMenuItem{
   background: rgba(0,133,160,.05);
   color:#17343c;
 }
+body[data-theme="light"] .dashboardPanelMenuSectionTitle{
+  color:rgba(18,88,108,.72);
+}
+body[data-theme="light"] .dashboardPanelMenuDivider{
+  background:rgba(0,133,160,.18);
+}
 body[data-theme="light"] .dashboardPanelMenuItem:hover{
   border-color: rgba(0,133,160,.35);
   background: rgba(0,133,160,.12);

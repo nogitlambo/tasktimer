@@ -124,6 +124,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardCardSizes: {},
     dashboardCardSizesDraftBeforeEdit: null,
     dashboardCardVisibility: {},
+    dashboardIncludedModes: { mode1: true, mode2: true, mode3: true },
     dashboardAvgRange: "past7",
     currentAppPage: initialAppPage,
     currentTileColumnCount: 1,

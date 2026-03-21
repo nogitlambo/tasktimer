@@ -95,12 +95,12 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     </div>
                     <div className="dashboardEditActions">
                       <details className="dashboardPanelMenu" id="dashboardPanelMenu">
-                        <summary className="btn btn-ghost small dashboardPanelMenuBtn" id="dashboardPanelMenuBtn" role="button" aria-label="Show or hide dashboard panels">
+                        <summary className="btn btn-ghost small dashboardPanelMenuBtn" id="dashboardPanelMenuBtn" role="button" aria-label="Customize dashboard categories and panels">
                           <span className="dashboardPanelMenuIcon" aria-hidden="true">
                             ...
                           </span>
                         </summary>
-                        <div className="dashboardPanelMenuList" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels" />
+                        <div className="dashboardPanelMenuList" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard categories and panels" />
                       </details>
                       <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
                         &#9998;

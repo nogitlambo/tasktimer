@@ -125,6 +125,7 @@ export type TaskTimerMutableState = {
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
+  dashboardIncludedModes: Record<MainMode, boolean>;
   dashboardAvgRange: DashboardAvgRange;
   currentAppPage: AppPage;
   currentTileColumnCount: number;
