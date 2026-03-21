@@ -133,6 +133,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
 
   const runtime = createTaskTimerRuntime();
+  type SuppressedCheckpointToast = {
+    title: string;
+    text: string;
+    autoCloseMs: number | null;
+    taskId: string;
+    taskName: string | null;
+    counterText: string | null;
+    checkpointTimeText: string | null;
+    checkpointDescText: string | null;
+    muteRepeatOnManualDismiss: boolean;
+  };
   const { on } = runtime;
 
   const destroy = () => {
@@ -172,7 +183,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
-  let suppressedFocusModeAlertTaskIds = new Set<string>();
+  let suppressedFocusModeCheckpointAlertsByTaskId: Record<string, SuppressedCheckpointToast> = {};
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
 
@@ -4114,6 +4125,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const taskEl = document.createElement("div");
       const taskId = String(t.id || "");
       const hasActiveToastForTask = !!activeCheckpointToast?.taskId && String(activeCheckpointToast.taskId) === taskId;
+      const suppressedCheckpointAlert = !isFocusModeFilteringAlerts() ? getSuppressedFocusModeAlert(taskId) : null;
       taskEl.className =
         "task" +
         (t.collapsed ? " collapsed" : "") +
@@ -4231,8 +4243,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
                 : ""
             }
+            ${
+              suppressedCheckpointAlert
+                ? '<button class="iconBtn checkpointMissedAlertBtn" data-action="showSuppressedCheckpointAlert" title="Show missed checkpoint alert" aria-label="Show missed checkpoint alert">&#9888;</button>'
+                : ""
+            }
             <div class="row">
-              <div class="name" data-action="editName" title="Open focus mode">${escapeHtmlUI(t.name)}</div>
+              <div class="taskHeadMain">
+                <div class="name" data-action="editName" title="Open focus mode">${escapeHtmlUI(t.name)}</div>
+              </div>
               <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
               <div class="actions">
                 ${
@@ -5767,6 +5786,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = tasks[i];
     if (!t) return;
     if (t.running) return;
+    const shouldExitFocusModeAfterReset = String(focusModeTaskId || "").trim() === String(t.id || "").trim();
 
     const applyResetTaskConfirmState = () => {
       const shouldLog = !!els.confirmDeleteAll?.checked;
@@ -5800,8 +5820,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           }
           save();
           void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-          render();
           closeConfirm();
+          if (shouldExitFocusModeAfterReset) closeFocusMode();
+          else render();
         } finally {
           clearResetTaskConfirmState();
         }
@@ -6617,7 +6638,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = tasks[i];
     if (!t) return;
     focusModeTaskId = t.id;
-    suppressedFocusModeAlertTaskIds = new Set<string>();
+    suppressedFocusModeCheckpointAlertsByTaskId = {};
     deferredFocusModeTimeGoalModals = [];
     dismissNonFocusTaskAlertsForFocusTask(String(t.id || ""));
     focusModeTaskName = (t.name || "").trim();
@@ -6685,6 +6706,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, Number.NaN);
     setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, Number.NaN);
+    render();
     openDeferredFocusModeTimeGoalModal();
   }
 
@@ -6698,10 +6720,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
   }
 
-  function noteSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
+  function noteSuppressedFocusModeAlert(toast: SuppressedCheckpointToast) {
+    const taskId = String(toast.taskId || "").trim();
     if (!taskId) return;
-    suppressedFocusModeAlertTaskIds.add(taskId);
+    suppressedFocusModeCheckpointAlertsByTaskId[taskId] = {
+      ...toast,
+      taskId,
+      taskName: toast.taskName ? String(toast.taskName) : null,
+      counterText: toast.counterText ? String(toast.counterText) : null,
+      checkpointTimeText: toast.checkpointTimeText ? String(toast.checkpointTimeText) : null,
+      checkpointDescText: toast.checkpointDescText ? String(toast.checkpointDescText) : null,
+    };
+  }
+
+  function getSuppressedFocusModeAlert(taskIdRaw: string | null | undefined): SuppressedCheckpointToast | null {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return null;
+    return suppressedFocusModeCheckpointAlertsByTaskId[taskId] || null;
+  }
+
+  function clearSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || !suppressedFocusModeCheckpointAlertsByTaskId[taskId]) return;
+    delete suppressedFocusModeCheckpointAlertsByTaskId[taskId];
   }
 
   function queueDeferredFocusModeTimeGoalModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
@@ -6718,7 +6759,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function openDeferredFocusModeTimeGoalModal() {
     if (!deferredFocusModeTimeGoalModals.length) return;
     const nextPending = deferredFocusModeTimeGoalModals.shift() || null;
-    suppressedFocusModeAlertTaskIds = new Set<string>();
     if (!nextPending) return;
     const task = tasks.find((row) => String(row.id || "").trim() === nextPending.taskId);
     if (!task || !task.timeGoalEnabled || !(Number(task.timeGoalMinutes || 0) > 0)) {
@@ -7557,8 +7597,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.msArea?.classList.toggle("isHidden", !timeGoalEnabled);
     els.msArea?.classList.toggle("isDisabled", !enabled);
     if (els.msArea && "open" in (els.msArea as any)) {
-      const hasCheckpoints = Array.isArray(t.milestones) && t.milestones.length > 0;
-      (els.msArea as HTMLDetailsElement).open = enabled && hasCheckpoints ? (els.msArea as HTMLDetailsElement).open : false;
+      (els.msArea as HTMLDetailsElement).open = enabled;
     }
     const summary = els.msArea?.querySelector?.("summary") as HTMLElement | null;
     if (summary) {
@@ -7720,7 +7759,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         });
       }
       if (suppressForFocusMode && ((checkpointAlertToastEnabled && t.checkpointToastEnabled) || (checkpointAlertSoundEnabled && t.checkpointSoundEnabled))) {
-        noteSuppressedFocusModeAlert(taskId);
+        const toastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
+        noteSuppressedFocusModeAlert({
+          title: `Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`,
+          text,
+          autoCloseMs: checkpointAlertToastEnabled && t.checkpointToastEnabled
+            ? (toastMode === "manual" ? null : 5000)
+            : 5000,
+          taskId,
+          taskName: t.name || "",
+          counterText: formatMainTaskElapsed(getElapsedMs(t)),
+          checkpointTimeText,
+          checkpointDescText,
+          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
+        });
       }
       if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled && !suppressForFocusMode) {
         beepCount += 1;
@@ -10107,6 +10159,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         stopCheckpointRepeatAlert();
         return;
       }
+      else if (action === "showSuppressedCheckpointAlert") {
+        const suppressedAlert = getSuppressedFocusModeAlert(taskId);
+        if (!suppressedAlert) return;
+        enqueueCheckpointToast(suppressedAlert.title, suppressedAlert.text, {
+          autoCloseMs: suppressedAlert.autoCloseMs,
+          taskId: suppressedAlert.taskId,
+          taskName: suppressedAlert.taskName,
+          counterText: suppressedAlert.counterText,
+          checkpointTimeText: suppressedAlert.checkpointTimeText,
+          checkpointDescText: suppressedAlert.checkpointDescText,
+          muteRepeatOnManualDismiss: suppressedAlert.muteRepeatOnManualDismiss,
+        });
+        clearSuppressedFocusModeAlert(taskId);
+        render();
+        return;
+      }
 
       if (taskId) setTaskFlipped(taskId, false, taskEl as HTMLElement);
     });
@@ -11163,11 +11231,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     on(els.msArea?.querySelector?.("summary") as HTMLElement | null, "click", (e: any) => {
       const t = getCurrentEditTask();
-      if (!t || editTaskHasActiveTimeGoal() || t.milestonesEnabled) return;
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
       if (els.msArea && "open" in (els.msArea as any)) {
-        (els.msArea as HTMLDetailsElement).open = false;
+        if (!t || !editTaskHasActiveTimeGoal() || !t.milestonesEnabled) {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+          (els.msArea as HTMLDetailsElement).open = false;
+          return;
+        }
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        (els.msArea as HTMLDetailsElement).open = true;
       }
     });
 
@@ -11178,9 +11251,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!t || !editTaskHasActiveTimeGoal()) return;
 
       t.milestonesEnabled = !t.milestonesEnabled;
-      if (els.msArea && "open" in (els.msArea as any) && t.milestonesEnabled) {
-        const hasCheckpoints = Array.isArray(t.milestones) && t.milestones.length > 0;
-        (els.msArea as HTMLDetailsElement).open = !hasCheckpoints;
+      if (els.msArea && "open" in (els.msArea as any)) {
+        (els.msArea as HTMLDetailsElement).open = !!t.milestonesEnabled;
       }
       syncEditMilestoneSectionUi(t);
       syncEditCheckpointAlertUi(t);

@@ -87,20 +87,20 @@ export default function EditTaskOverlay() {
             <span className="milestonesSummaryPrimary">Time Checkpoints</span>
             <span className="milestonesSummaryControls">
               <div className="switch" id="msToggle" role="switch" aria-checked="false" />
-              <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
+              <span className="milestonesSummaryCollapseLabel">Show/Hide</span>
             </span>
           </summary>
           <div className="unitRow" id="msUnitRow">
-            <span>Task Timer Format</span>
+            <span>Checkpoint Format</span>
             <div className="unitButtons">
               <button className="btn btn-ghost small unitBtn" id="msUnitDay" type="button">
-                Day
+                D
               </button>
               <button className="btn btn-ghost small unitBtn" id="msUnitHour" type="button">
-                Hour
+                H
               </button>
               <button className="btn btn-ghost small unitBtn" id="msUnitMinute" type="button">
-                Minute
+                M
               </button>
             </div>
           </div>

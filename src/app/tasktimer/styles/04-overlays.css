@@ -1489,3 +1489,50 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   max-width:none !important;
   min-width:0;
 }
+
+/* Final Edit Task section flattening + typography normalization */
+#editOverlay #editTimerSettingsGroup,
+#editOverlay #editCheckpointAlertsGroup{
+  margin: 8px 0 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+#editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
+  + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(170, 213, 232, 0.18);
+}
+
+body[data-theme="purple"] #editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
+  + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
+  border-top-color: rgba(231, 154, 241, 0.2);
+}
+
+#editOverlay .editHead h2,
+#editOverlay label,
+#editOverlay .checkpointAlertsTitle,
+#editOverlay .checkpointAlertsNote,
+#editOverlay .editPresetIntervalsInfoDialog,
+#editOverlay .milestonesBody,
+#editOverlay .presetIntervalsInfoSlot,
+#editOverlay .editTaskTimeGoalToggleText,
+#editOverlay .toggleRow > span,
+#editOverlay .unitRow > span,
+#editOverlay .editMoveWrap > label,
+#editOverlay .editMoveWrap > .editMoveLabel,
+#editOverlay .editMoveMenu > summary,
+#editOverlay .milestonesSummaryPrimary,
+#editOverlay .milestonesSummaryCollapseLabel,
+#editOverlay .editValidationError,
+#editOverlay input[type="text"],
+#editOverlay input[type="number"],
+#editOverlay select,
+#editOverlay textarea,
+#editOverlay .btn{
+  font-family: var(--font-readable) !important;
+}

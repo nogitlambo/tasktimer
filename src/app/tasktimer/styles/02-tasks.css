@@ -87,6 +87,44 @@ body[data-app-page="test2"] #openAddTaskBtn{
 .task .actions .historyActionBtn img{
   filter: brightness(0) saturate(100%) invert(100%);
 }
+.checkpointMuteBtn{
+  position:absolute;
+  right:12px;
+  z-index:3;
+}
+.checkpointMuteBtn{
+  top:12px;
+}
+.taskHeadMain{
+  position:relative;
+}
+.checkpointMissedAlertBtn{
+  position:absolute;
+  top:12px;
+  right:12px;
+  transform:none;
+  z-index:4;
+  left:auto !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  min-width:auto !important;
+  width:auto !important;
+  height:auto !important;
+  font-size:150% !important;
+  line-height:1 !important;
+  color:#fff2b8 !important;
+}
+body[data-theme="purple"] .checkpointMissedAlertBtn{
+  color:#ffe6a6 !important;
+}
+.checkpointMissedAlertBtn:hover{
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#fff6c9 !important;
+}
 .taskMenu{
   position:relative;
 }
@@ -389,6 +427,24 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageTasks .task 
   color: #fff8ff !important;
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
 }
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:focus-visible,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:active,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[aria-pressed="true"]{
+  border-color: #74c6e2;
+  background: #5caac9;
+  color: #08131a;
+  box-shadow: 0 0 16px rgba(92,170,201,.22), inset 0 0 0 1px rgba(255,255,255,.14);
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:hover,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:focus-visible,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:active,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[aria-pressed="true"]{
+  border-color: #ce88e6 !important;
+  background: #ba6ed6 !important;
+  color: #120617 !important;
+  box-shadow: 0 0 16px rgba(186,110,214,.2), inset 0 0 0 1px rgba(255,255,255,.12) !important;
+}
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
   border-color: rgba(190,130,130,.5);
   background: linear-gradient(180deg, rgba(138,86,86,.4), rgba(90,54,54,.28));
@@ -546,6 +602,10 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
     "actions";
   gap: 14px;
   align-items: center;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHeadMain{
+  grid-area:name;
+  width:100%;
 }
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
   grid-area: name;
@@ -814,6 +874,14 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   position:relative;
   z-index:1;
 }
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShell > .checkpointMuteBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShell > .checkpointMissedAlertBtn{
+  position:absolute !important;
+  top:12px !important;
+  right:12px !important;
+  left:auto !important;
+  z-index:4 !important;
+}
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse) .taskFaceShellFront{
   border:1px solid rgba(255,255,255,.08);
   box-shadow:
@@ -928,6 +996,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   padding:0;
   text-align:left;
   cursor:pointer;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHeadMain .name{
+  width:100%;
 }
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
   text-align:center;
