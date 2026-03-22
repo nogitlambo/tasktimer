@@ -161,54 +161,44 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
                       <div className="dashboardStreakHeader">
                         <div className="dashboardCardTitle">Streak</div>
-                        <div className="dashboardStreakInfoSlot">
-                          <button
-                            className="iconBtn dashboardStreakInfoBtn"
-                            id="dashboardStreakInfoBtn"
-                            type="button"
-                            aria-label="How streaks work"
-                            aria-expanded="false"
-                            aria-controls="dashboardStreakInfoDialog"
-                          >
-                            ?
-                          </button>
-                          <div
-                            className="dashboardStreakInfoDialog"
-                            id="dashboardStreakInfoDialog"
-                            role="note"
-                            aria-label="Streak help"
-                          >
-                            Start a streak by completing a daily time goal for any task(s) for 2 days in a row
-                          </div>
-                        </div>
                       </div>
                       <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
-                      <div className="dashboardStreakBar" id="dashboardStreakBar">
+                      <div className="dashboardStreakBar dashboardSegmentedBar" id="dashboardStreakBar">
                         <span id="dashboardStreakBarFill" style={{ width: "0%" }} />
+                        <span className="dashboardSegmentedBarTrack" aria-hidden="true">
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                        </span>
                       </div>
-                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">Tap ? to learn how streaks work</div>
+                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">Complete daily goals to start a streak</div>
                     </section>
 
-                    <section className="dashboardCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" aria-label="Weekly hours">
-                      <div className="dashboardCardTitle">This Week</div>
-                      <div className="dashboardBigValue">32h 40m</div>
-                      <div className="dashboardDelta positive">+14% vs last week</div>
+                    <section
+                      className="dashboardCard dashboardStatCard dashboardWeekHoursCard"
+                      data-dashboard-id="week-hours"
+                      data-dashboard-label="Today"
+                      aria-label="Today's logged time"
+                    >
+                      <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
+                      <div className="dashboardBigValue" id="dashboardTodayHoursValue">0m</div>
+                      <div className="dashboardDelta" id="dashboardTodayHoursDelta">No time logged today</div>
                     </section>
 
                     <section
                       className="dashboardCard dashboardStatCard dashboardWeeklyGoalsCard"
                       data-dashboard-id="weekly-time-goals"
-                      aria-label="Weekly time goals"
+                      data-dashboard-label="This Week"
+                      aria-label="Weekly logged time and time goal progress"
                     >
-                      <div className="dashboardCardTitle">Weekly Time Goals</div>
+                      <div className="dashboardCardTitle">This Week</div>
                       <div className="dashboardBigValue" id="dashboardWeeklyGoalsValue">
                         0m
                       </div>
-                      <div className="dashboardDelta" id="dashboardWeeklyGoalsMeta">
-                        No weekly time goals enabled
-                      </div>
                       <div
-                        className="dashboardGoalProgressBar"
+                        className="dashboardGoalProgressBar dashboardSegmentedBar"
                         id="dashboardWeeklyGoalsProgressBar"
                         role="progressbar"
                         aria-label="Weekly time goal progress"
@@ -217,6 +207,16 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         aria-valuenow={0}
                       >
                         <span id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
+                        <span className="dashboardSegmentedBarTrack" aria-hidden="true">
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                          <span className="dashboardSegmentedBarSegment" />
+                        </span>
+                      </div>
+                      <div className="dashboardDelta" id="dashboardWeeklyGoalsMeta" style={{ display: "none" }}>
+                        No weekly time goals enabled
                       </div>
                       <div className="dashboardDelta" id="dashboardWeeklyGoalsProgressText">
                         0% logged this week
@@ -233,6 +233,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       className="dashboardCard dashboardAvgSessionCard"
                       data-dashboard-id="avg-session-by-task"
                       aria-label="Average completed session duration by task"
+                      data-dashboard-label="Avg session by task"
                     >
                       <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">
                         Avg Session by Task (Past 7 Days)
@@ -293,37 +294,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                             </button>
                           </div>
                         </details>
-                      </div>
-                    </section>
-
-                    <section className="dashboardCard dashboardDonutCard" data-dashboard-id="mode-distribution" aria-label="Category distribution">
-                      <div className="dashboardCardTitle">Mode Distribution</div>
-                      <div className="dashboardDonutWrap">
-                        <div className="dashboardDonut" id="dashboardModeDonut" />
-                        <div className="dashboardDonutCenter" id="dashboardModeDonutCenter">0%</div>
-                      </div>
-                      <div className="dashboardLegend">
-                        <span className="dashboardLegendRow">
-                          <span className="dashboardLegendName">
-                            <i className="dot mode1" />
-                            <span id="dashboardMode1Label">Mode 1</span>
-                          </span>
-                          <strong id="dashboardMode1Value">0%</strong>
-                        </span>
-                        <span className="dashboardLegendRow">
-                          <span className="dashboardLegendName">
-                            <i className="dot mode2" />
-                            <span id="dashboardMode2Label">Mode 2</span>
-                          </span>
-                          <strong id="dashboardMode2Value">0%</strong>
-                        </span>
-                        <span className="dashboardLegendRow">
-                          <span className="dashboardLegendName">
-                            <i className="dot mode3" />
-                            <span id="dashboardMode3Label">Mode 3</span>
-                          </span>
-                          <strong id="dashboardMode3Value">0%</strong>
-                        </span>
                       </div>
                     </section>
 

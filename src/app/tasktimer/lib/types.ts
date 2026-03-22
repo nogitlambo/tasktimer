@@ -42,6 +42,7 @@ export type HistoryEntry = {
   ms: number;
   color?: string;
   note?: string;
+  xpDisqualifiedUntilReset?: boolean;
 };
 
 export type HistoryByTaskId = Record<string, HistoryEntry[]>;

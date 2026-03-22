@@ -39,8 +39,12 @@ export default function RootLayout({
         var style = String(localStorage.getItem(keyBase + ":menuButtonStyle") || "").trim().toLowerCase();
         var body = document.body;
         if (!body) return;
-        if (theme === "dark" || theme === "command" || theme === "light") {
+        if (theme === "purple" || theme === "cyan") {
           body.setAttribute("data-theme", theme);
+        } else if (theme === "dark") {
+          body.setAttribute("data-theme", "purple");
+        } else if (theme === "command") {
+          body.setAttribute("data-theme", "cyan");
         }
         if (style === "square" || style === "parallelogram") {
           body.setAttribute("data-control-style", style);

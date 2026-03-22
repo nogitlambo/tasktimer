@@ -113,6 +113,9 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
+    next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
+  }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   return next;
@@ -698,8 +701,9 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   const name = String(entry?.name || "");
   const color = entry?.color == null ? null : String(entry.color);
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
+  const xpDisqualifiedUntilReset = !!entry?.xpDisqualifiedUntilReset;
   const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
-  const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
+  const payload: Record<string, unknown> = { ts, ms, name, xpDisqualifiedUntilReset, createdAt: serverTimestamp() };
   if (color) payload.color = color;
   if (note) payload.note = note;
   await setDoc(doc(col, entryId), payload);
@@ -710,7 +714,9 @@ function historyEntryFingerprint(entry: HistoryEntry): string {
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
   const name = String(entry?.name || "");
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
-  return `${ts}|${ms}|${name}|${note}`;
+  const xpDisqualifiedUntilReset =
+    "xpDisqualifiedUntilReset" in (entry || {}) ? (entry?.xpDisqualifiedUntilReset ? "1" : "0") : "";
+  return `${ts}|${ms}|${name}|${note}|${xpDisqualifiedUntilReset}`;
 }
 
 function fnv1a32(input: string): string {
@@ -742,6 +748,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
       ts,
       ms,
       name: String(entry?.name || ""),
+      xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
     };
@@ -758,6 +765,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
         ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
         ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
         name: String(entry?.name || ""),
+        xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
         ...(entry?.color != null ? { color: String(entry.color) } : {}),
         ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
         createdAt: serverTimestamp(),

@@ -2046,6 +2046,7 @@
     display: grid !important;
     gap: 2px;
     padding-top: 0 !important;
+    transform: translateY(-9px);
     place-items: start end !important;
     align-self: flex-start !important;
     text-align: center;

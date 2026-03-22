@@ -9,4 +9,64 @@
 @import "./styles/08-friends.css";
 @import "./styles/09-desktop-rail.css";
 @import "./styles/10-responsive.css";
-@import "./styles/11-light-theme.css";
+#confirmChkLabel .confirmChkLabelText {
+  display: inline-flex;
+  align-items: center;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmChkRow {
+  align-items: center;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #16181d;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAll {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmChkLabel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmChkLabel .confirmChkLabelText {
+  flex: 1 1 auto;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch {
+  flex: 0 0 auto;
+  width: 39px;
+  height: 21px;
+  min-width: 39px;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch::after {
+  width: 18px;
+  height: 18px;
+  top: 1px;
+  left: 1px;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch.on::after {
+  left: 19px;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch {
+  outline: 2px solid rgba(0, 217, 245, 0.95);
+  outline-offset: 2px;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmChkRow.is-disabled {
+  opacity: 0.68;
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
+  opacity: 0.86;
+}

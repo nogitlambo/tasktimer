@@ -10,7 +10,8 @@ export default function ConfirmOverlay() {
         <div className="chkRow" id="confirmChkRow" style={{ display: "none" }}>
           <input type="checkbox" id="confirmDeleteAll" />
           <label htmlFor="confirmDeleteAll" id="confirmChkLabel">
-            Also delete all tasks
+            <span className="confirmChkLabelText">Also delete all tasks</span>
+            <div className="switch on" id="confirmDeleteAllSwitch" role="switch" aria-checked="true" aria-hidden="true" />
           </label>
         </div>
         <div className="confirmChkNote" id="confirmChkNote" style={{ display: "none" }} />

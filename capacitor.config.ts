@@ -1,4 +1,5 @@
 /// <reference types="@capacitor-firebase/authentication" />
+/// <reference types="@capacitor/push-notifications" />
 
 import type { CapacitorConfig } from '@capacitor/cli';
 
@@ -9,6 +10,9 @@ const config: CapacitorConfig = {
   plugins: {
     FirebaseAuthentication: {
       providers: ["google.com"],
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
     },
   },
 };

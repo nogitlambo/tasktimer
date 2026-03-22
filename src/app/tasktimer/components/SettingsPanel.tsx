@@ -27,6 +27,8 @@ import {
 } from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
+import { getTaskTimerPushDiagnostics, type PushDiagnostics } from "@/app/tasktimer/lib/pushNotifications";
+import { sendPushTestNotification } from "@/app/tasktimer/lib/pushFunctions";
 import RankThumbnail from "./RankThumbnail";
 
 export type SettingsPaneKey =
@@ -226,9 +228,12 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const [authMemberSince, setAuthMemberSince] = useState<string | null>(null);
   const [authHasGoogleProvider, setAuthHasGoogleProvider] = useState(false);
   const [authGooglePhotoUrl, setAuthGooglePhotoUrl] = useState<string | null>(null);
-  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
-  const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
+  const [pushTestBusy, setPushTestBusy] = useState(false);
+  const [pushTestStatus, setPushTestStatus] = useState("");
+  const [pushDiagnostics, setPushDiagnostics] = useState<PushDiagnostics | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
@@ -294,7 +299,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   );
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const canSubmitFeedback = (feedbackAnonymous || isValidFeedbackEmail) && !!feedbackType && feedbackDetails.trim().length > 0;
-  const avatarGroups = useMemo<AvatarGroup[]>(() => {
+  const canTriggerPushTest = !!authUserUid;
+  const avatarGroups = useMemo<AvatarGroup[]>(() => {
     const groups = new Map<string, AvatarOption[]>();
     for (const avatar of avatarOptions) {
       const normalizedId = String(avatar.id || "").replace(/\\/g, "/");
@@ -406,6 +412,22 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     if (authUserAliasEditing) return;
     setAuthUserAliasDraft(authUserAlias);
   }, [authUserAlias, authUserAliasEditing]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!authUserUid) {
+      setPushDiagnostics(null);
+      return;
+    }
+    const loadDiagnostics = async () => {
+      const nextDiagnostics = await getTaskTimerPushDiagnostics(authUserUid);
+      if (!cancelled) setPushDiagnostics(nextDiagnostics);
+    };
+    void loadDiagnostics();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid, pushTestStatus]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -669,7 +691,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async () => {
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser || null;
     if (!auth || !user) {
@@ -764,6 +786,37 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       setUidCopyStatus("Copy failed");
       window.setTimeout(() => setUidCopyStatus(""), 1500);
     }
+  };
+
+  const handlePushTest = async () => {
+    if (!authUserUid) {
+      setPushTestStatus("Sign in first to send a test push.");
+      return;
+    }
+    setPushTestBusy(true);
+    setPushTestStatus("");
+    try {
+      const result = await sendPushTestNotification({
+        title: "TaskLaunch Test",
+        body: `Push check sent at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        data: {
+          screen: "tasktimer",
+          source: "settings-hidden-test",
+        },
+      });
+      const successCount = Number(result.successCount || 0);
+      const failureCount = Number(result.failureCount || 0);
+      const tokenCount = Number(result.tokenCount || 0);
+      setPushTestStatus(
+        failureCount > 0
+          ? `Push sent to ${successCount}/${tokenCount} device${tokenCount === 1 ? "" : "s"} (${failureCount} failed).`
+          : `Push sent to ${successCount}/${tokenCount} device${tokenCount === 1 ? "" : "s"}.`
+      );
+    } catch (err: unknown) {
+      setPushTestStatus(getErrorMessage(err, "Unable to send test push right now."));
+    } finally {
+      setPushTestBusy(false);
+    }
   };
 
   const handleStartAliasEdit = () => {
@@ -1224,25 +1277,68 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                     <div className={`settingsSyncStatus is-${syncState}`}>
                       <span className="settingsSyncStatusDot" aria-hidden="true" />
                       <span className="settingsSyncStatusText">{syncMessage}</span>
-                      {syncAtMs && syncState === "synced" ? (
+                      {syncAtMs && syncState === "synced" ? (
                         <span className="settingsSyncStatusTime">
                           ({new Date(syncAtMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
-                      <button
-                        className="btn btn-accent small settingsSignOutBtn"
-                        id="signInGoogleBtn"
-                        type="button"
-                        disabled={authBusy}
+                        </span>
+                      ) : null}
+                    </div>
+                    {pushDiagnostics ? (
+                      <div className="settingsPushDiagnostics" aria-label="Push notification diagnostics">
+                        <div className="settingsPushDiagnosticsRow">
+                          <span className="settingsPushDiagnosticsLabel">Push Runtime</span>
+                          <span className="settingsPushDiagnosticsValue">
+                            {pushDiagnostics.runtime === "native" ? `${pushDiagnostics.platform} native` : "web"}
+                          </span>
+                        </div>
+                        <div className="settingsPushDiagnosticsRow">
+                          <span className="settingsPushDiagnosticsLabel">Permission</span>
+                          <span className="settingsPushDiagnosticsValue">{pushDiagnostics.permission}</span>
+                        </div>
+                        <div className="settingsPushDiagnosticsRow">
+                          <span className="settingsPushDiagnosticsLabel">Device ID</span>
+                          <span className="settingsPushDiagnosticsValue settingsPushDiagnosticsMono">
+                            {pushDiagnostics.deviceId || "--"}
+                          </span>
+                        </div>
+                        <div className="settingsPushDiagnosticsRow">
+                          <span className="settingsPushDiagnosticsLabel">Push Token</span>
+                          <span className="settingsPushDiagnosticsValue">
+                            {pushDiagnostics.cloudTokenPresent
+                              ? "saved to cloud"
+                              : pushDiagnostics.localTokenPresent
+                                ? "local only"
+                                : "not registered"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
+                      {canTriggerPushTest ? (
+                        <button
+                          className="btn btn-ghost small settingsPushTestBtn"
+                          type="button"
+                          disabled={authBusy || pushTestBusy}
+                          onClick={handlePushTest}
+                          title="Send a hidden push test to your registered devices"
+                          aria-label="Send push test"
+                        >
+                          {pushTestBusy ? "Sending..." : "Push Test"}
+                        </button>
+                      ) : null}
+                      <button
+                        className="btn btn-accent small settingsSignOutBtn"
+                        id="signInGoogleBtn"
+                        type="button"
+                        disabled={authBusy}
                         onClick={handleSignOut}
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                    {pushTestStatus ? <div className="settingsPushTestStatus">{pushTestStatus}</div> : null}
+                  </div>
+                ) : null}
                 {authStatus ? <div className="settingsAuthNotice">{authStatus}</div> : null}
                 {authError ? <div className="settingsAuthError">{authError}</div> : null}
                 {avatarSyncNotice ? (

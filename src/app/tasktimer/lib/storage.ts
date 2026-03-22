@@ -525,7 +525,12 @@ function clearPendingHistorySync(taskId: string): void {
 function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
   const arr = Array.isArray(rows) ? rows : [];
   return arr
-    .map((row) => `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}`)
+    .map(
+      (row) =>
+        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${
+          "xpDisqualifiedUntilReset" in (row || {}) ? (row?.xpDisqualifiedUntilReset ? "1" : "0") : ""
+        }`
+    )
     .join(",");
 }
 
@@ -538,6 +543,9 @@ function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
+    next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
+  }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   return next;

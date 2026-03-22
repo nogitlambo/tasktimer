@@ -61,6 +61,8 @@
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`; avoid unintended edits to `src/app/tasktimer/styles/tasktimer.css`.
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure purple/cyan theme parity when introducing new visual elements.
+- New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
+- New toggle switches should match the shared app dimensions by default: `39x21` switch track, `18x18` thumb, and `left:19px` for the on-state thumb position.
 - User Guide must not inherit shared `.menu` width caps; keep route-scoped full-width overrides under `#app[aria-label="TaskTimer User Guide"]`.
 - User Guide right detail/topic content should use full available panel width.
 - User Guide topic list buttons should match Settings module list style (flat treatment; no extra shading unless explicitly requested).
