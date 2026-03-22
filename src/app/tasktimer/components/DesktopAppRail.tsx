@@ -401,7 +401,7 @@ export default function DesktopAppRail({
                 <div className="dashboardProfileName">{profileLabel}</div>
                 <div className="dashboardTagRow dashboardRailProfileTags">
                   <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
-                    Edit Profile
+                    View Profile
                   </a>
                   <button className="dashboardTag dashboardRailProfileTagLink" id="rewardsInfoOpenBtn" type="button">
                     Rewards

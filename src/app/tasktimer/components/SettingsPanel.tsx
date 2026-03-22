@@ -153,7 +153,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
-
+
 function SettingsNavTile({
   icon,
   label,
@@ -981,15 +981,25 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
-                {authUserEmail ? (
+                {authUserEmail ? (
                   <div className="settingsAvatarPicker" aria-label="Avatar selection">
-                    <div className="settingsAccountProfileRow">
-                      <div className="settingsAvatarCol">
+                    <div className="settingsAccountIdCard" aria-label="Account profile card">
+                      <div className="settingsAccountIdCardHeader">
+                        <div className="settingsAccountIdCardBrandBlock">
+                          <div className="settingsAccountIdCardBrandEyebrow">TaskTimer</div>
+                          <div className="settingsAccountIdCardBrandTitle">Profile Pass</div>
+                        </div>
+                        <div className="settingsAccountIdCardBrandStamp" aria-hidden="true">
+                          Live Sync
+                        </div>
+                      </div>
+                      <div className="settingsAccountProfileRow settingsAccountIdCardBody">
+                      <div className="settingsAvatarCol settingsAccountIdCardAvatarDock">
                         <button
                           type="button"
                           className="accountAvatarFrameBtn"
-                          onClick={() => setShowAvatarPickerModal(true)}
-                          aria-label="Choose avatar"
+                          onClick={() => setShowAvatarPickerModal(true)}
+                          aria-label="Choose avatar"
                         >
                           <div className="accountAvatarPlaceholder">
                             {selectedAvatar ? (
@@ -1003,8 +1013,11 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                             )}
                           </div>
                         </button>
+                        <div className="settingsAccountIdCardAvatarCaption">Tap avatar to update profile badge</div>
+                      </div>
+                      <div className="settingsAccountIdCardIdentity">
                         <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
-                          <div className="settingsAccountFieldLabel">Username:</div>
+                          <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Profile Name</div>
                           <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
                             {authUserAliasEditing ? (
                               <>
@@ -1042,7 +1055,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                               </>
                             ) : (
                               <>
-                                <div className="settingsAccountFieldValue settingsAccountFieldValueWrap">
+                                <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
                                   {authUserAlias || "-"}
                                 </div>
                                 <button
@@ -1058,10 +1071,13 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                             )}
                           </div>
                         </div>
+                      <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardRankCol">
+                        <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Current Rank</div>
+                        <div className="settingsAccountIdCardRankValue">{displayedRankLabel}</div>
                       </div>
-                      <div className="settingsAccountFieldRow settingsAccountRankCol">
+                      <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardRankBadgeCol">
                         <div className="settingsAccountRankText">
-                          <div className="settingsAccountFieldLabel">Rank:</div>
+                          <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Rank Badge</div>
                         </div>
                         <button
                           className="settingsAccountRankBtn"
@@ -1082,6 +1098,47 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                           </div>
                         </button>
                       </div>
+                      </div>
+                      <div className="settingsAccountIdCardMetaGrid">
+                        <div className="settingsAccountIdCardMetaItem">
+                          <span className="settingsAccountUidLabel">Email Address</span>
+                          <span className="settingsAccountUidValue">{authUserEmail}</span>
+                        </div>
+                        {authUserUid ? (
+                          <div className="settingsAccountIdCardMetaItem settingsAccountUidRow">
+                            <span className="settingsAccountUidLabel">UID</span>
+                            <span className="settingsAccountUidValue">{authUserUid}</span>
+                            <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={handleCopyUid}>
+                              {uidCopyStatus || "Copy"}
+                            </button>
+                          </div>
+                        ) : null}
+                        <div className="settingsAccountIdCardMetaItem settingsAccountMemberSinceRow">
+                          <span className="settingsAccountUidLabel">Member Since</span>
+                          <span className="settingsAccountUidValue">{formatMemberSinceDate(authMemberSince)}</span>
+                        </div>
+                      </div>
+                      <div className="settingsAccountIdCardDecor" aria-hidden="true">
+                        <div className="settingsAccountIdCardDecorSignature">
+                          <span className="settingsAccountFieldLabel settingsAccountIdCardLabel">Verified Identity</span>
+                          <span className="settingsAccountIdCardDecorSignatureText">TaskTimer Member</span>
+                        </div>
+                        <div className="settingsAccountIdCardBarcode">
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      </div>
+                    </div>
                     </div>
                   </div>
                 ) : null}
@@ -1169,26 +1226,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                   </div>
                 ) : null}
                 {authUserEmail ? (
-                  <div className="settingsDetailNote">
-                    <div className="settingsAccountMetaSummary">
-                      <div className="settingsAccountMemberSinceRow">
-                        <span className="settingsAccountUidLabel">Email Address:</span>
-                        <span className="settingsAccountUidValue">{authUserEmail}</span>
-                      </div>
-                      {authUserUid ? (
-                        <div className="settingsAccountUidRow">
-                          <span className="settingsAccountUidLabel">UID:</span>
-                          <span className="settingsAccountUidValue">{authUserUid}</span>
-                          <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={handleCopyUid}>
-                            {uidCopyStatus || "Copy"}
-                          </button>
-                        </div>
-                      ) : null}
-                      <div className="settingsAccountMemberSinceRow">
-                        <span className="settingsAccountUidLabel">Member since:</span>
-                        <span className="settingsAccountUidValue">{formatMemberSinceDate(authMemberSince)}</span>
-                      </div>
-                    </div>
+                  <div className="settingsDetailNote settingsAccountIdCardFooter">
                     <div className={`settingsSyncStatus is-${syncState}`}>
                       <span className="settingsSyncStatusDot" aria-hidden="true" />
                       <span className="settingsSyncStatusText">{syncMessage}</span>
