@@ -12,6 +12,7 @@ import {
   dashboardAvgRangeLabel,
   formatDashboardDurationShort,
   formatDashboardHeatMonthLabel,
+  startOfCurrentWeekMondayMs,
 } from "./lib/historyChart";
 import { formatFocusElapsed, formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import {
@@ -1911,7 +1912,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function canUseCompactDashboardCardSize(cardId: string) {
-    return cardId === "streak" || cardId === "week-hours" || cardId === "tasks-completed";
+    return (
+      cardId === "streak" ||
+      cardId === "week-hours" ||
+      cardId === "weekly-time-goals" ||
+      cardId === "tasks-completed"
+    );
   }
 
   function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
@@ -5064,6 +5070,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function renderDashboardWidgets() {
     renderDashboardStreakCard();
     renderDashboardOverviewChart();
+    renderDashboardWeeklyGoalsCard();
     renderDashboardFocusTrend();
     renderDashboardModeDistribution();
     renderDashboardAvgSessionChart();
@@ -5333,6 +5340,70 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           ? `Streak progress. Current streak broken. Longest streak ${longestStreakDays} days.`
           : `Streak progress. Current streak ${currentStreakDays} days out of longest streak ${longestStreakDays} days.`
       );
+    }
+  }
+
+  function renderDashboardWeeklyGoalsCard() {
+    const valueEl = els.dashboardWeeklyGoalsValue as HTMLElement | null;
+    const metaEl = els.dashboardWeeklyGoalsMeta as HTMLElement | null;
+    const progressBarEl = els.dashboardWeeklyGoalsProgressBar as HTMLElement | null;
+    const progressFillEl = els.dashboardWeeklyGoalsProgressFill as HTMLElement | null;
+    const progressTextEl = els.dashboardWeeklyGoalsProgressText as HTMLElement | null;
+
+    const nowValue = nowMs();
+    const weekStartMs = startOfCurrentWeekMondayMs(nowValue);
+    const goalTasks = getDashboardFilteredTasks().filter((task) => {
+      if (!task) return false;
+      if (!task.timeGoalEnabled) return false;
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      if (goalMinutes <= 0) return false;
+      return task.timeGoalPeriod === "day" || task.timeGoalPeriod === "week";
+    });
+
+    const totalGoalMs = goalTasks.reduce((sum, task) => {
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      const multiplier = task.timeGoalPeriod === "day" ? 7 : 1;
+      return sum + goalMinutes * 60000 * multiplier;
+    }, 0);
+
+    const loggedMs = goalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return sum;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      const taskWeekMs = entries.reduce((entrySum, entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue) return entrySum;
+        if (!Number.isFinite(ms) || ms <= 0) return entrySum;
+        return entrySum + ms;
+      }, 0);
+      return sum + taskWeekMs;
+    }, 0);
+
+    const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
+    const weekLabel = "Mon-Sun target";
+    if (valueEl) valueEl.textContent = formatDashboardDurationShort(totalGoalMs);
+    if (metaEl) {
+      metaEl.textContent =
+        totalGoalMs > 0
+          ? `${formatDashboardDurationShort(loggedMs)} logged this week across ${goalTasks.length} goal${goalTasks.length === 1 ? "" : "s"}`
+          : "No weekly time goals enabled";
+    }
+    if (progressFillEl) progressFillEl.style.width = `${progressPct}%`;
+    if (progressBarEl) {
+      progressBarEl.setAttribute("aria-valuenow", String(progressPct));
+      progressBarEl.setAttribute(
+        "aria-label",
+        totalGoalMs > 0
+          ? `Weekly time goal progress: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(totalGoalMs)} logged`
+          : "Weekly time goal progress: no weekly time goals enabled"
+      );
+    }
+    if (progressTextEl) {
+      progressTextEl.textContent =
+        totalGoalMs > 0
+          ? `${progressPct}% logged this week · ${weekLabel}`
+          : weekLabel;
     }
   }
 
