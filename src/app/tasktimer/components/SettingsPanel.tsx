@@ -989,8 +989,29 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                           <div className="settingsAccountIdCardBrandEyebrow">TaskTimer</div>
                           <div className="settingsAccountIdCardBrandTitle">Profile Pass</div>
                         </div>
-                        <div className="settingsAccountIdCardBrandStamp" aria-hidden="true">
-                          Live Sync
+                        <div className="settingsAccountIdCardHeaderRankCluster">
+                          <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardHeaderRankMeta">
+                            <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Current Rank</div>
+                            <div className="settingsAccountIdCardRankValue">{displayedRankLabel}</div>
+                          </div>
+                          <button
+                            className="settingsAccountRankBtn settingsAccountIdCardHeaderRankBtn"
+                            type="button"
+                            aria-label={`Open rank ladder. Current rank: ${displayedRankLabel}`}
+                            onClick={openRankLadderModal}
+                          >
+                            <div className="settingsAccountRankPlaceholder settingsAccountIdCardHeaderRankBadge">
+                              <RankThumbnail
+                                rankId={rewardProgress.currentRankId}
+                                storedThumbnailSrc={rankThumbnailSrc}
+                                className="settingsAccountRankPlaceholderShell settingsAccountIdCardHeaderRankBadgeShell"
+                                imageClassName="settingsAccountRankImage"
+                                placeholderClassName="settingsAccountRankPlaceholderInner"
+                                alt="Rank thumbnail"
+                                size={44}
+                              />
+                            </div>
+                          </button>
                         </div>
                       </div>
                       <div className="settingsAccountProfileRow settingsAccountIdCardBody">
@@ -1071,33 +1092,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                             )}
                           </div>
                         </div>
-                      <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardRankCol">
-                        <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Current Rank</div>
-                        <div className="settingsAccountIdCardRankValue">{displayedRankLabel}</div>
-                      </div>
-                      <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardRankBadgeCol">
-                        <div className="settingsAccountRankText">
-                          <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Rank Badge</div>
-                        </div>
-                        <button
-                          className="settingsAccountRankBtn"
-                          type="button"
-                          aria-label={`Open rank ladder. Current rank: ${displayedRankLabel}`}
-                          onClick={openRankLadderModal}
-                        >
-                          <div className="settingsAccountRankPlaceholder">
-                            <RankThumbnail
-                              rankId={rewardProgress.currentRankId}
-                              storedThumbnailSrc={rankThumbnailSrc}
-                              className="settingsAccountRankPlaceholderShell"
-                              imageClassName="settingsAccountRankImage"
-                              placeholderClassName="settingsAccountRankPlaceholderInner"
-                              alt="Rank thumbnail"
-                              size={44}
-                            />
-                          </div>
-                        </button>
-                      </div>
                       </div>
                       <div className="settingsAccountIdCardMetaGrid">
                         <div className="settingsAccountIdCardMetaItem">
