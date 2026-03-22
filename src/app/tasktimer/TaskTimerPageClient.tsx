@@ -195,6 +195,34 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <div className="dashboardDelta positive">+14% vs last week</div>
                     </section>
 
+                    <section
+                      className="dashboardCard dashboardStatCard dashboardWeeklyGoalsCard"
+                      data-dashboard-id="weekly-time-goals"
+                      aria-label="Weekly time goals"
+                    >
+                      <div className="dashboardCardTitle">Weekly Time Goals</div>
+                      <div className="dashboardBigValue" id="dashboardWeeklyGoalsValue">
+                        0m
+                      </div>
+                      <div className="dashboardDelta" id="dashboardWeeklyGoalsMeta">
+                        No weekly time goals enabled
+                      </div>
+                      <div
+                        className="dashboardGoalProgressBar"
+                        id="dashboardWeeklyGoalsProgressBar"
+                        role="progressbar"
+                        aria-label="Weekly time goal progress"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={0}
+                      >
+                        <span id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
+                      </div>
+                      <div className="dashboardDelta" id="dashboardWeeklyGoalsProgressText">
+                        0% logged this week
+                      </div>
+                    </section>
+
                     <section className="dashboardCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                       <div className="dashboardCardTitle">Tasks Completed</div>
                       <div className="dashboardBigValue">18</div>
