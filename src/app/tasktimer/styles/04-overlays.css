@@ -200,6 +200,24 @@
   min-height:36px;
 }
 
+#editOverlay .unitBtn.isOn,
+#editOverlay .timerTypePill.isOn{
+  border-color: rgba(116,198,226,.55) !important;
+  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32)) !important;
+  color: #eaf7ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 10px rgba(92,170,201,.12) !important;
+}
+
+#editOverlay .switch.on{
+  border-color: rgba(116,198,226,.55) !important;
+  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 10px rgba(92,170,201,.12) !important;
+}
+
+#editOverlay .switch.on::after{
+  background: rgba(234,247,255,.96) !important;
+}
+
 #editOverlay .footerBtns{
   position: sticky;
   bottom: 0;
@@ -1045,6 +1063,14 @@
   justify-content: center;
 }
 
+#editOverlay #saveEditBtn:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent)) !important;
+  color: #04131c !important;
+  border-color: rgba(53,232,255,.55) !important;
+  box-shadow: 0 0 14px rgba(0,220,255,.3) !important;
+  font-weight: 800;
+}
+
 /* Final elapsed keypad overrides: match standard modal/button language */
 
 #elapsedPadOverlay .modal.elapsedPadModal{
@@ -1217,8 +1243,21 @@ body[data-theme="cyan"] #editOverlay option:focus{
 }
 
 body[data-theme="purple"] #editOverlay .switch.on{
-  background: rgba(217,85,231,.22) !important;
-  border-color: rgba(233,134,245,.56) !important;
+  border-color: rgba(206,136,230,.42) !important;
+  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
+}
+
+body[data-theme="purple"] #editOverlay .switch.on::after{
+  background: rgba(255,248,255,.96) !important;
+}
+
+body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  color: #fff !important;
+  border-color: rgba(233,134,245,.72) !important;
+  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28) !important;
+  font-weight: 800;
 }
 
 body[data-theme="purple"] #editOverlay .milestonesSummaryCollapseLabel{
@@ -1523,6 +1562,14 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
 body[data-theme="purple"] #editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
   + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
   border-top-color: rgba(231, 154, 241, 0.2);
+}
+
+body[data-theme="purple"] #editOverlay .unitBtn.isOn,
+body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
+  border-color: rgba(206,136,230,.42) !important;
+  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
+  color: #fff8ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
 }
 
 #editOverlay .editHead h2,

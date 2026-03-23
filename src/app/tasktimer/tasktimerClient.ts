@@ -820,8 +820,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .then(() => {
         if (runtime.destroyed) return;
         hydrateUiStateFromCaches();
+        syncTimeGoalModalWithTaskState();
         render();
         maybeHandlePendingTaskJump();
+        maybeRestorePendingTimeGoalFlow();
         lastCloudRefreshAtMs = nowMs();
       })
       .catch(() => {
@@ -847,13 +849,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return nowMs() - lastUiInteractionAtMs < windowMs;
   }
 
+  function isOverlayVisible(overlay: HTMLElement | null) {
+    if (!overlay) return false;
+    return overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
+  }
+
+  function hasActiveTimeGoalCompletionFlow() {
+    const taskId = String(timeGoalModalTaskId || "").trim();
+    if (!taskId) return false;
+    return (
+      isOverlayVisible(els.timeGoalCompleteOverlay as HTMLElement | null) ||
+      isOverlayVisible(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null) ||
+      isOverlayVisible(els.timeGoalCompleteNoteOverlay as HTMLElement | null)
+    );
+  }
+
   function scheduleDeferredCloudRefresh(minIntervalMs = 0) {
     pendingDeferredCloudRefresh = true;
     if (deferredCloudRefreshTimer != null || runtime.destroyed) return;
     deferredCloudRefreshTimer = window.setTimeout(() => {
       deferredCloudRefreshTimer = null;
       if (runtime.destroyed || !pendingDeferredCloudRefresh) return;
-      if (hasActiveFormInteraction() || hasRecentUiInteraction()) {
+      if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
         scheduleDeferredCloudRefresh(minIntervalMs);
         return;
       }
@@ -863,7 +880,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function refreshCloudStateIfStale(minIntervalMs = 3000) {
-    if (hasActiveFormInteraction() || hasRecentUiInteraction()) {
+    if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
       scheduleDeferredCloudRefresh(minIntervalMs);
       return;
     }
@@ -1247,6 +1264,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!tasks.some((row) => String(row.id || "") === taskId)) return;
     savePendingTaskJump(null);
     jumpToTaskById(taskId);
+    maybeRestorePendingTimeGoalFlow();
+    window.setTimeout(() => {
+      if (runtime.destroyed || loadPendingTaskJump()) return;
+      maybeRestorePendingTimeGoalFlow();
+    }, 120);
   }
 
   function save(opts?: { deletedTaskIds?: string[] }) {
@@ -3217,6 +3239,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
+    if (!task) return false;
+    if (!task.running) return false;
+    const timeGoalMinutes = Number(task.timeGoalMinutes || 0);
+    if (!(task.timeGoalEnabled && timeGoalMinutes > 0)) return false;
+    if (getTaskTimeGoalAction(task) !== "confirmModal") return false;
+    const elapsedMs =
+      elapsedMsOverride != null && Number.isFinite(Number(elapsedMsOverride))
+        ? Math.max(0, Math.floor(Number(elapsedMsOverride) || 0))
+        : getTaskElapsedMs(task);
+    return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
+  }
+
   function getTaskTimeGoalAction(task: Task | null | undefined) {
     if (!task) return "continue";
     return task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
@@ -3321,20 +3356,39 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function maybeRestorePendingTimeGoalFlow() {
     const pending = loadPendingTimeGoalFlow();
-    if (!pending) return;
-    const task = tasks.find((row) => String(row.id || "") === pending.taskId);
-    if (!task || !task.timeGoalEnabled || !(Number(task.timeGoalMinutes || 0) > 0)) {
-      clearPendingTimeGoalFlow();
+    if (pending) {
+      const task = tasks.find((row) => String(row.id || "") === pending.taskId) || null;
+      if (!shouldKeepTimeGoalCompletionFlow(task, pending.frozenElapsedMs)) {
+        clearPendingTimeGoalFlow();
+        if (pending.taskId) clearTaskTimeGoalFlow(pending.taskId);
+        return;
+      }
+      if (!task) return;
+      if (String(timeGoalModalTaskId || "") !== pending.taskId || !(Number(timeGoalModalFrozenElapsedMs || 0) > 0)) {
+        openTimeGoalCompleteModal(task, pending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: pending.reminder });
+      }
+      if (pending.step === "saveNote") {
+        openTimeGoalSaveNoteChoice(task);
+      } else if (pending.step === "note") {
+        openTimeGoalNoteModal(task);
+      }
       return;
     }
-    if (String(timeGoalModalTaskId || "") !== pending.taskId || !(Number(timeGoalModalFrozenElapsedMs || 0) > 0)) {
-      openTimeGoalCompleteModal(task, pending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: pending.reminder });
-    }
-    if (pending.step === "saveNote") {
-      openTimeGoalSaveNoteChoice(task);
-    } else if (pending.step === "note") {
-      openTimeGoalNoteModal(task);
-    }
+    if (String(timeGoalModalTaskId || "").trim()) return;
+    const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
+    if (!overdueTask) return;
+    openTimeGoalCompleteModal(overdueTask, getTaskElapsedMs(overdueTask), { reminder: true });
+  }
+
+  function syncTimeGoalModalWithTaskState() {
+    const activeTaskId = String(timeGoalModalTaskId || "").trim();
+    if (!activeTaskId) return;
+    const task = tasks.find((row) => String(row.id || "") === activeTaskId) || null;
+    if (shouldKeepTimeGoalCompletionFlow(task, timeGoalModalFrozenElapsedMs)) return;
+    clearTaskTimeGoalFlow(activeTaskId);
+    closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+    closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
+    closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
   }
 
   async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
@@ -4482,6 +4536,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderDashboardAvgSessionChart();
       renderDashboardHeatCalendar();
     }
+    syncTimeGoalModalWithTaskState();
     maybeRestorePendingTimeGoalFlow();
   }
 
@@ -12127,6 +12182,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     on(window, PENDING_PUSH_TASK_EVENT as any, () => {
       maybeHandlePendingTaskJump();
+      void rehydrateFromCloudAndRender({ force: true }).then(() => {
+        if (runtime.destroyed) return;
+        maybeRestorePendingTimeGoalFlow();
+      });
     });
     render();
     maybeHandlePendingTaskJump();

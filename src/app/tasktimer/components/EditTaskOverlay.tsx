@@ -62,9 +62,6 @@ export default function EditTaskOverlay() {
               </button>
             </div>
           </div>
-          <div className="addTaskDurationReadout editTaskDurationReadout" id="editTaskDurationReadout">
-            5 hours per week
-          </div>
           <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
             <div
               className="field checkpointAlertSoundModeField"
