@@ -135,6 +135,8 @@ service cloud.firestore {
         "channelId",
         "native",
         "appId",
+        "appActive",
+        "appStateUpdatedAtMs",
         "createdAt",
         "updatedAt"
       ])
@@ -144,6 +146,8 @@ service cloud.firestore {
       && (!("channelId" in request.resource.data) || request.resource.data.channelId == null || request.resource.data.channelId is string)
       && (!("native" in request.resource.data) || request.resource.data.native is bool)
       && (!("appId" in request.resource.data) || request.resource.data.appId == null || request.resource.data.appId is string)
+      && (!("appActive" in request.resource.data) || request.resource.data.appActive is bool)
+      && (!("appStateUpdatedAtMs" in request.resource.data) || request.resource.data.appStateUpdatedAtMs is int)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
@@ -182,6 +186,10 @@ service cloud.firestore {
         "timeGoalUnit",
         "timeGoalPeriod",
         "timeGoalMinutes",
+        "bgTimeGoalPushEligible",
+        "bgTimeGoalPushDueAtMs",
+        "bgTimeGoalPushSentAtMs",
+        "bgTimeGoalPushSentDueAtMs",
         "mode",
         "createdAt",
         "updatedAt",
@@ -219,6 +227,10 @@ service cloud.firestore {
       && (!("timeGoalUnit" in request.resource.data) || request.resource.data.timeGoalUnit in ["minute", "hour"])
       && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod in ["day", "week"])
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
+      && (!("bgTimeGoalPushEligible" in request.resource.data) || request.resource.data.bgTimeGoalPushEligible is bool)
+      && (!("bgTimeGoalPushDueAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushDueAtMs == null || request.resource.data.bgTimeGoalPushDueAtMs is int)
+      && (!("bgTimeGoalPushSentAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushSentAtMs == null || request.resource.data.bgTimeGoalPushSentAtMs is int)
+      && (!("bgTimeGoalPushSentDueAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushSentDueAtMs == null || request.resource.data.bgTimeGoalPushSentDueAtMs is int)
       && (!("mode" in request.resource.data) || request.resource.data.mode in ["mode1", "mode2", "mode3"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)

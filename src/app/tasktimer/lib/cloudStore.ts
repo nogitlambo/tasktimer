@@ -282,6 +282,19 @@ function normalizeTimeGoalValue(raw: unknown): number {
   return Number.isFinite(Number(raw)) ? Math.max(0, Number(raw)) : 0;
 }
 
+function normalizeNullableInt(raw: unknown): number | null {
+  return Number.isFinite(Number(raw)) ? Math.floor(Number(raw)) : null;
+}
+
+function computeBackgroundTimeGoalPushDueAtMs(task: Task): number | null {
+  const timeGoalMinutes = normalizeTimeGoalValue(task.timeGoalMinutes);
+  const accumulatedMs = Number.isFinite(Number(task.accumulatedMs)) ? Math.max(0, Math.floor(Number(task.accumulatedMs))) : 0;
+  const startMs = task.startMs == null ? null : normalizeNullableInt(task.startMs);
+  if (!task.running || !task.timeGoalEnabled || timeGoalMinutes <= 0 || startMs == null) return null;
+  const remainingMs = Math.max(0, Math.round(timeGoalMinutes * 60_000) - accumulatedMs);
+  return Math.max(0, startMs + remainingMs);
+}
+
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "cyan" || value === "command") return "cyan";
@@ -357,6 +370,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
   const source = task as unknown as Record<string, unknown>;
   const modeRaw = String(source.mode || "").trim();
   const mode = modeRaw === "mode2" || modeRaw === "mode3" ? modeRaw : "mode1";
+  const bgTimeGoalPushDueAtMs = computeBackgroundTimeGoalPushDueAtMs(task);
 
   // Firestore rules for users/{uid}/tasks/{taskId} are strict (`hasOnly(...)`), so
   // only persist explicitly allowed keys to prevent permission-denied on legacy/extra fields.
@@ -397,6 +411,8 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    bgTimeGoalPushEligible: bgTimeGoalPushDueAtMs != null,
+    bgTimeGoalPushDueAtMs,
     mode,
   };
   return row;
@@ -410,8 +426,10 @@ function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
       : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
         ? task.finalCheckpointAction
         : "continue";
-  const { timeGoalAction, ...legacyRow } = row;
+  const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, ...legacyRow } = row;
   void timeGoalAction;
+  void bgTimeGoalPushEligible;
+  void bgTimeGoalPushDueAtMs;
   return {
     ...legacyRow,
     finalCheckpointAction: legacyTimeGoalAction,
@@ -602,8 +620,20 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
   const taskRow = mapTaskToFirestore(task);
   const buildSavePayload = async (row: Record<string, unknown>) => {
     const existing = await getDoc(ref);
+    const nextDueAtMs = normalizeNullableInt(row.bgTimeGoalPushDueAtMs);
+    const nextEligible = !!row.bgTimeGoalPushEligible && nextDueAtMs != null;
+    const existingDueAtMs = existing.exists() ? normalizeNullableInt(existing.get("bgTimeGoalPushDueAtMs")) : null;
+    const preserveSendBookkeeping = nextEligible && nextDueAtMs === existingDueAtMs;
     return {
       ...row,
+      bgTimeGoalPushSentAtMs:
+        preserveSendBookkeeping && existing.exists()
+          ? normalizeNullableInt(existing.get("bgTimeGoalPushSentAtMs"))
+          : null,
+      bgTimeGoalPushSentDueAtMs:
+        preserveSendBookkeeping && existing.exists()
+          ? normalizeNullableInt(existing.get("bgTimeGoalPushSentDueAtMs"))
+          : null,
       createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
       updatedAt: serverTimestamp(),
       schemaVersion: 1,

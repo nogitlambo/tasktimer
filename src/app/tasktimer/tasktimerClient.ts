@@ -132,6 +132,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     NATIVE_BACK_DEBOUNCE_MS,
   } = createTaskTimerStorageKeys(STORAGE_KEY);
   const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
+  const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
+  const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 
   const runtime = createTaskTimerRuntime();
   type SuppressedCheckpointToast = {
@@ -819,6 +821,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (runtime.destroyed) return;
         hydrateUiStateFromCaches();
         render();
+        maybeHandlePendingTaskJump();
         lastCloudRefreshAtMs = nowMs();
       })
       .catch(() => {
@@ -1192,11 +1195,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function savePendingTaskJump(taskId: string | null) {
     pendingTaskJumpMemory = taskId ? String(taskId) : null;
+    try {
+      if (pendingTaskJumpMemory) window.localStorage.setItem(PENDING_PUSH_TASK_ID_KEY, pendingTaskJumpMemory);
+      else window.localStorage.removeItem(PENDING_PUSH_TASK_ID_KEY);
+    } catch {
+      // ignore localStorage failures
+    }
   }
 
   function loadPendingTaskJump() {
     const raw = String(pendingTaskJumpMemory || "").trim();
-    return raw || null;
+    if (raw) return raw || null;
+    try {
+      const stored = String(window.localStorage.getItem(PENDING_PUSH_TASK_ID_KEY) || "").trim();
+      return stored || null;
+    } catch {
+      return null;
+    }
   }
 
   function jumpToTaskById(taskId: string) {
@@ -1229,6 +1244,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function maybeHandlePendingTaskJump() {
     const taskId = loadPendingTaskJump();
     if (!taskId) return;
+    if (!tasks.some((row) => String(row.id || "") === taskId)) return;
     savePendingTaskJump(null);
     jumpToTaskById(taskId);
   }
@@ -12112,6 +12128,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       wireEvents();
       runtime.eventsWired = true;
     }
+    on(window, PENDING_PUSH_TASK_EVENT as any, () => {
+      maybeHandlePendingTaskJump();
+    });
     render();
     maybeHandlePendingTaskJump();
     maybeOpenImportFromQuery();
