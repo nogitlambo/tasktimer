@@ -177,17 +177,15 @@ function hasFreshForegroundDevice(deviceRows, nowMs) {
 
 async function processDueTimeGoalTask(docSnap, nowMs) {
   const data = docSnap.data() || {};
-  const uid = asString(docSnap.ref.parent?.parent?.id);
-  const taskId = asString(data.id || docSnap.id);
-  const taskName = asString(data.name, "Task");
-  const dueAtMs = asInt(data.bgTimeGoalPushDueAtMs, null);
-  const sentDueAtMs = asInt(data.bgTimeGoalPushSentDueAtMs, null);
-  const eligible = asBool(data.bgTimeGoalPushEligible);
-  const running = asBool(data.running);
-  const timeGoalEnabled = asBool(data.timeGoalEnabled);
+  const uid = asString(data.ownerUid);
+  const taskId = asString(data.taskId || docSnap.id);
+  const taskName = asString(data.taskName, "Task");
+  const dueAtMs = asInt(data.dueAtMs, null);
+  const sentDueAtMs = asInt(data.sentDueAtMs, null);
   const timeGoalMinutes = Number(data.timeGoalMinutes || 0);
+  const route = asString(data.route, "/tasktimer") || "/tasktimer";
 
-  if (!uid || !taskId || !eligible || !running || !timeGoalEnabled || !(timeGoalMinutes > 0) || dueAtMs == null || dueAtMs > nowMs) {
+  if (!uid || !taskId || !(timeGoalMinutes > 0) || dueAtMs == null || dueAtMs > nowMs) {
     return {status: "skipped"};
   }
   if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
@@ -217,7 +215,7 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
     },
     data: {
       eventType: "timeGoalReached",
-      route: "/tasktimer",
+      route,
       taskId,
       taskName,
     },
@@ -226,8 +224,8 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
   const invalidRows = await cleanupInvalidDeviceTokens(uid, deviceRows, response);
   if (response.successCount > 0) {
     await docSnap.ref.set({
-      bgTimeGoalPushSentAtMs: nowMs,
-      bgTimeGoalPushSentDueAtMs: dueAtMs,
+      sentAtMs: nowMs,
+      sentDueAtMs: dueAtMs,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }
@@ -248,9 +246,22 @@ export const sendDueTimeGoalPushes = onSchedule(
   },
   async () => {
     const nowMs = Date.now();
-    const dueSnap = await db.collectionGroup("tasks")
-      .where("bgTimeGoalPushDueAtMs", "<=", nowMs)
-      .get();
+    let dueSnap;
+    try {
+      dueSnap = await db.collection("scheduled_time_goal_pushes")
+        .where("dueAtMs", "<=", nowMs)
+        .get();
+    } catch (error) {
+      logger.error("sendDueTimeGoalPushes schedule query failed", {
+        databaseId,
+        nowMs,
+        code: error && typeof error === "object" && "code" in error ? error.code : null,
+        message: error instanceof Error ? error.message : "Unknown query failure",
+        details: error && typeof error === "object" && "details" in error ? error.details : null,
+        error,
+      });
+      throw error;
+    }
 
     let sentCount = 0;
     let duplicateCount = 0;

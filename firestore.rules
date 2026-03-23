@@ -544,6 +544,35 @@ service cloud.firestore {
       && request.resource.data.username == usernameKey;
     }
 
+    function isScheduledTimeGoalPushDoc(scheduleDocId) {
+      return onlyKeys([
+        "ownerUid",
+        "taskId",
+        "taskName",
+        "dueAtMs",
+        "timeGoalMinutes",
+        "route",
+        "sentAtMs",
+        "sentDueAtMs",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion"
+      ])
+      && request.resource.data.ownerUid is string
+      && request.resource.data.taskId is string
+      && request.resource.data.taskName is string
+      && request.resource.data.dueAtMs is int
+      && (request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
+      && request.resource.data.route is string
+      && (!("sentAtMs" in request.resource.data) || request.resource.data.sentAtMs == null || request.resource.data.sentAtMs is int)
+      && (!("sentDueAtMs" in request.resource.data) || request.resource.data.sentDueAtMs == null || request.resource.data.sentDueAtMs is int)
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && request.resource.data.ownerUid == request.auth.uid
+      && scheduleDocId == (request.resource.data.ownerUid + "__" + request.resource.data.taskId);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
@@ -672,6 +701,19 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.uid is string
         && resource.data.uid == request.auth.uid;
+    }
+
+    match /scheduled_time_goal_pushes/{scheduleDocId} {
+      allow read: if request.auth != null
+        && (
+          (resource != null && resource.data.ownerUid == request.auth.uid)
+          || (resource == null && scheduleDocId.matches("^" + request.auth.uid + "__.+$"))
+        );
+      allow create, update: if request.auth != null
+        && isScheduledTimeGoalPushDoc(scheduleDocId);
+      allow delete: if request.auth != null
+        && resource != null
+        && resource.data.ownerUid == request.auth.uid;
     }
   }
 }

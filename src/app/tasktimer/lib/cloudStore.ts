@@ -92,6 +92,12 @@ function taskDoc(uid: string, taskId: string) {
   return doc(db, "users", uid, "tasks", taskId);
 }
 
+function scheduledTimeGoalPushDoc(uid: string, taskId: string) {
+  const db = dbOrNull();
+  if (!db) return null;
+  return doc(db, "scheduled_time_goal_pushes", `${uid}__${taskId}`);
+}
+
 function tasksCollection(uid: string) {
   const db = dbOrNull();
   if (!db) return null;
@@ -293,6 +299,63 @@ function computeBackgroundTimeGoalPushDueAtMs(task: Task): number | null {
   if (!task.running || !task.timeGoalEnabled || timeGoalMinutes <= 0 || startMs == null) return null;
   const remainingMs = Math.max(0, Math.round(timeGoalMinutes * 60_000) - accumulatedMs);
   return Math.max(0, startMs + remainingMs);
+}
+
+async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void> {
+  const taskId = String(task.id || "").trim();
+  const ref = scheduledTimeGoalPushDoc(uid, taskId);
+  if (!ref || !taskId) return;
+
+  const dueAtMs = computeBackgroundTimeGoalPushDueAtMs(task);
+  if (dueAtMs == null) {
+    try {
+      await deleteDoc(ref);
+    } catch {
+      // Best-effort cleanup; task save remains authoritative.
+    }
+    return;
+  }
+
+  let existing: Awaited<ReturnType<typeof getDoc>> | null = null;
+  try {
+    existing = await getDoc(ref);
+  } catch (error) {
+    const describedError = describeError(error);
+    const isMissingPreReadDenied =
+      describedError.code === "permission-denied" ||
+      String(describedError.message || "").toLowerCase().includes("missing or insufficient permissions");
+    if (!isMissingPreReadDenied) {
+      throw error;
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Scheduled push pre-read denied; treating as first write", {
+        uid,
+        taskId,
+        error: describedError,
+        errorMessage: describedError.message ?? null,
+        errorCode: describedError.code ?? null,
+      });
+    }
+  }
+  const existingDueAtMs = existing?.exists() ? normalizeNullableInt(existing.get("dueAtMs")) : null;
+  const preserveSendBookkeeping = !!existing?.exists() && existingDueAtMs === dueAtMs;
+  await setDoc(
+    ref,
+    {
+      ownerUid: uid,
+      taskId,
+      taskName: String(task.name || "").trim() || "Task",
+      dueAtMs,
+      timeGoalMinutes: normalizeTimeGoalValue(task.timeGoalMinutes),
+      route: "/tasktimer",
+      sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
+      sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
+      updatedAt: serverTimestamp(),
+      createdAt: existing?.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+      schemaVersion: 1,
+    },
+    {merge: true}
+  );
 }
 
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
@@ -639,15 +702,9 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
       schemaVersion: 1,
     };
   };
+  let savedRowKeys = Object.keys(taskRow);
   try {
     await setDoc(ref, await buildSavePayload(taskRow));
-    if (process.env.NODE_ENV !== "production") {
-      console.info("[tasktimer-cloud] Task saved", {
-        uid,
-        taskId: String(task.id || ""),
-        databaseRowKeys: Object.keys(taskRow),
-      });
-    }
   } catch (error) {
     const describedError = describeError(error);
     const shouldRetryLegacy =
@@ -657,14 +714,14 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
       const legacyTaskRow = mapTaskToLegacyFirestore(task);
       try {
         await setDoc(ref, await buildSavePayload(legacyTaskRow));
+        savedRowKeys = Object.keys(legacyTaskRow);
         if (process.env.NODE_ENV !== "production") {
           console.warn("[tasktimer-cloud] Saved task with legacy finalCheckpointAction fallback", {
             uid,
             taskId: String(task.id || ""),
-            databaseRowKeys: Object.keys(legacyTaskRow),
+            databaseRowKeys: savedRowKeys,
           });
         }
-        return;
       } catch (legacyError) {
         if (process.env.NODE_ENV !== "production") {
           const describedLegacyError = describeError(legacyError);
@@ -694,6 +751,29 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
     }
     throw error;
   }
+  try {
+    await syncScheduledTimeGoalPush(uid, task);
+  } catch (scheduleError) {
+    if (process.env.NODE_ENV !== "production") {
+      const describedScheduleError = describeError(scheduleError);
+      console.error("[tasktimer-cloud] Failed to sync scheduled time-goal push", {
+        uid,
+        taskId: String(task.id || ""),
+        databaseRowKeys: savedRowKeys,
+        error: describedScheduleError,
+        errorMessage: describedScheduleError.message ?? null,
+        errorCode: describedScheduleError.code ?? null,
+      });
+    }
+    throw scheduleError;
+  }
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[tasktimer-cloud] Task saved", {
+      uid,
+      taskId: String(task.id || ""),
+      databaseRowKeys: savedRowKeys,
+    });
+  }
 }
 
 export function subscribeToTaskCollection(uid: string, listener: () => void): () => void {
@@ -721,6 +801,13 @@ export async function deleteTask(uid: string, taskId: string): Promise<void> {
   const ref = taskDoc(uid, taskId);
   if (!ref) return;
   await deleteDoc(ref);
+  const scheduledRef = scheduledTimeGoalPushDoc(uid, taskId);
+  if (!scheduledRef) return;
+  try {
+    await deleteDoc(scheduledRef);
+  } catch {
+    // Best-effort cleanup; task delete should still succeed.
+  }
 }
 
 export async function appendHistoryEntry(uid: string, taskId: string, entry: HistoryEntry): Promise<void> {

@@ -8012,10 +8012,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (taskId) clearCheckpointBaseline(taskId);
       return;
     }
-    if (!t.milestonesEnabled || !Array.isArray(t.milestones) || t.milestones.length === 0) {
-      checkpointBaselineSecByTaskId[taskId] = Math.floor(elapsedSecNow);
-      return;
-    }
+    const hasMilestones = !!t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
 
     const elapsedWholeSec = Math.floor(Math.max(0, elapsedSecNow));
     const prevBaseline = checkpointBaselineSecByTaskId[taskId];
@@ -8029,7 +8026,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
 
     const fired = getCheckpointFiredSet(taskId);
-    const msSorted = sortMilestones((t.milestones || []).slice());
+    const msSorted = hasMilestones ? sortMilestones((t.milestones || []).slice()) : [];
     const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t))) > 0);
     const totalCheckpoints = validMilestones.length;
     let beepCount = 0;
