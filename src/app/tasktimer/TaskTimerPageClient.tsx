@@ -197,23 +197,31 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <div className="dashboardBigValue" id="dashboardWeeklyGoalsValue">
                         0m
                       </div>
-                      <div
-                        className="dashboardGoalProgressBar dashboardSegmentedBar"
-                        id="dashboardWeeklyGoalsProgressBar"
-                        role="progressbar"
-                        aria-label="Weekly time goal progress"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={0}
-                      >
-                        <span id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
-                        <span className="dashboardSegmentedBarTrack" aria-hidden="true">
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                        </span>
+                      <div className="dashboardGoalProgressWrap">
+                        <span
+                          className="dashboardGoalProjectionMarker"
+                          id="dashboardWeeklyGoalsProjectionMarker"
+                          aria-hidden="true"
+                          style={{ display: "none" }}
+                        />
+                        <div
+                          className="dashboardGoalProgressBar dashboardSegmentedBar"
+                          id="dashboardWeeklyGoalsProgressBar"
+                          role="progressbar"
+                          aria-label="Weekly time goal progress"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={0}
+                        >
+                          <span id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
+                          <span className="dashboardSegmentedBarTrack" aria-hidden="true">
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                          </span>
+                        </div>
                       </div>
                       <div className="dashboardDelta" id="dashboardWeeklyGoalsMeta" style={{ display: "none" }}>
                         No weekly time goals enabled
@@ -298,13 +306,37 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     </section>
 
                     <section className="dashboardCard dashboardTimelineCard" data-dashboard-id="timeline" aria-label="Today timeline">
-                      <div className="dashboardCardTitle">Timeline</div>
-                      <ul className="dashboardTimeline">
-                        <li><span>07:30</span><p>Plan sprint and daily goals</p></li>
-                        <li><span>09:00</span><p>Deep work block - Product build</p></li>
-                        <li><span>12:00</span><p>Review history and optimize checkpoints</p></li>
-                        <li><span>15:30</span><p>Bug sweep and task reset pass</p></li>
-                      </ul>
+                      <div className="dashboardTimelineHeader">
+                        <div className="dashboardCardTitle">Timeline</div>
+                        <div className="dashboardTimelineDensity" role="group" aria-label="Timeline suggestion density">
+                          <button
+                            className="dashboardTimelineDensityBtn"
+                            type="button"
+                            data-dashboard-timeline-density="low"
+                            aria-pressed="false"
+                          >
+                            Low
+                          </button>
+                          <button
+                            className="dashboardTimelineDensityBtn"
+                            type="button"
+                            data-dashboard-timeline-density="medium"
+                            aria-pressed="true"
+                          >
+                            Medium
+                          </button>
+                          <button
+                            className="dashboardTimelineDensityBtn"
+                            type="button"
+                            data-dashboard-timeline-density="high"
+                            aria-pressed="false"
+                          >
+                            High
+                          </button>
+                        </div>
+                      </div>
+                      <div className="dashboardTimelineNote" id="dashboardTimelineNote" aria-live="polite" />
+                      <ul className="dashboardTimeline" id="dashboardTimelineList" aria-live="polite" />
                     </section>
 
                     <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" aria-label="Activity heatmap">

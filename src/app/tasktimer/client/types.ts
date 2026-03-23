@@ -49,6 +49,7 @@ export type HistoryViewState = {
 export type DashboardCardSize = "full" | "half" | "quarter" | "eighth";
 
 export type DashboardAvgRange = "past7" | "currentWeek" | "past30" | "currentMonth";
+export type DashboardTimelineDensity = "low" | "medium" | "high";
 
 export type TaskTimerMutableState = {
   deletedTaskMeta: DeletedTaskMeta;
@@ -127,6 +128,7 @@ export type TaskTimerMutableState = {
   dashboardCardVisibility: Record<string, boolean>;
   dashboardIncludedModes: Record<MainMode, boolean>;
   dashboardAvgRange: DashboardAvgRange;
+  dashboardTimelineDensity: DashboardTimelineDensity;
   currentAppPage: AppPage;
   currentTileColumnCount: number;
   suppressNavStackPush: boolean;
@@ -203,5 +205,6 @@ export type TaskTimerMutableState = {
     heatCalendar: boolean;
     modeDistribution: boolean;
     avgSession: boolean;
+    timeline: boolean;
   };
 };

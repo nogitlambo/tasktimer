@@ -126,6 +126,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardCardVisibility: {},
     dashboardIncludedModes: { mode1: true, mode2: true, mode3: true },
     dashboardAvgRange: "past7",
+    dashboardTimelineDensity: "medium",
     currentAppPage: initialAppPage,
     currentTileColumnCount: 1,
     suppressNavStackPush: false,
@@ -178,6 +179,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
       heatCalendar: false,
       modeDistribution: false,
       avgSession: false,
+      timeline: false,
     },
   };
 }

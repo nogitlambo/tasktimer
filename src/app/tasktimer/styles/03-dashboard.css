@@ -405,6 +405,43 @@
   position: relative;
   overflow: hidden;
 }
+.dashboardGoalProgressWrap{
+  position: relative;
+  margin-top: 10px;
+}
+.dashboardGoalProgressWrap .dashboardGoalProgressBar{
+  margin-top: 0;
+}
+.dashboardGoalProjectionMarker{
+  --dashboard-projection-marker-color: #7dfcff;
+  --dashboard-projection-marker-glow: rgba(59, 236, 255, .34);
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--dashboard-projection-marker-color);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 5px var(--dashboard-projection-marker-glow));
+  animation: dashboardProjectionMarkerPulse 1s ease-in-out infinite;
+}
+.dashboardGoalProjectionMarker.isAtEnd{
+  left: auto !important;
+  right: 0;
+  transform: none;
+}
+@keyframes dashboardProjectionMarkerPulse{
+  0%, 100%{
+    opacity: .32;
+  }
+  50%{
+    opacity: .96;
+  }
+}
 .dashboardGoalProgressBar > #dashboardWeeklyGoalsProgressFill{
   position: absolute;
   inset: 0 auto 0 0;
@@ -529,6 +566,42 @@
   display:grid;
   gap:8px;
 }
+.dashboardTimelineHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.dashboardTimelineDensity{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+}
+.dashboardTimelineDensityBtn{
+  min-height:24px;
+  padding:4px 8px;
+  border:1px solid rgba(117,231,255,.22);
+  background: rgba(255,255,255,.03);
+  color: rgba(188,214,230,.82);
+  font-family:var(--font-tight);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.dashboardTimelineDensityBtn.isOn{
+  border-color: rgba(117,231,255,.52);
+  background: rgba(53,232,255,.12);
+  color: rgba(232,248,255,.95);
+}
+.dashboardTimelineNote{
+  margin-top:8px;
+  min-height:14px;
+  font-size:11px;
+  color: rgba(188,214,230,.72);
+}
 .dashboardTimeline li{
   display:grid;
   grid-template-columns: 56px 1fr;
@@ -550,6 +623,12 @@
   margin:0;
   font-size:13px;
   color: rgba(210,230,246,.82);
+}
+body[data-control-style="parallelogram"] .dashboardTimelineDensityBtn{
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+body[data-control-style="square"] .dashboardTimelineDensityBtn{
+  clip-path:none;
 }
 .dashboardHeatHeaderRow{
   margin-top:8px;
@@ -719,6 +798,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMe
   border-color: rgba(233,134,245,.74) !important;
   background: linear-gradient(180deg, rgba(217,85,231,.28), rgba(255,255,255,.07)) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
+}
+body[data-theme="purple"] .dashboardTimelineDensityBtn{
+  border-color: rgba(214,96,229,.28);
+  color: rgba(239,228,255,.84);
+}
+body[data-theme="purple"] .dashboardTimelineDensityBtn.isOn{
+  border-color: rgba(233,134,245,.6);
+  background: rgba(217,85,231,.16);
+  color: rgba(251,244,255,.96);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
   display: block;
@@ -1513,6 +1601,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin-top: 6px;
   height: 6px;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard[data-dashboard-size="eighth"] .dashboardGoalProgressWrap{
+  margin-top: 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard[data-dashboard-size="eighth"] .dashboardGoalProjectionMarker{
+  top: -6px;
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top-width: 6px;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard[data-dashboard-size="eighth"] .dashboardStreakBar{
   margin-top: 6px;
   height: 6px;
@@ -1586,41 +1683,40 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   --dashboard-bar-gap: 4px;
 }
 
-/* Final override: use much smaller fixed-size segments for Streak and This Week only. */
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
+/* Final override: keep Streak and This Week bars as clean stepped segments with tiny non-filling gaps. */
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
   --dashboard-bar-segment: 18px;
-  --dashboard-bar-gap: 4px;
+  --dashboard-bar-gap: 3px;
   --dashboard-bar-skew: 7px;
-  --dashboard-bar-track-base: #051419;
-  --dashboard-bar-track-stripe: rgba(8, 62, 70, .96);
-  --dashboard-bar-track-edge: rgba(39, 217, 233, .32);
-  --dashboard-bar-fill-bright: #6dfdff;
-  --dashboard-bar-fill-mid: #28eef3;
-  --dashboard-bar-fill-deep: #00b7cc;
-  --dashboard-bar-fill-glow: rgba(35, 233, 255, .22);
+  --dashboard-bar-track-base: #041217;
+  --dashboard-bar-track-fill: rgba(19, 108, 121, .98);
+  --dashboard-bar-gap-color: rgba(4, 15, 20, .98);
+  --dashboard-bar-fill-bright: #76feff;
+  --dashboard-bar-fill-mid: #2ef2f4;
+  --dashboard-bar-fill-deep: #00c4d7;
+  --dashboard-bar-fill-glow: rgba(54, 239, 255, .18);
   position: relative;
   overflow: hidden;
   height: 10px;
-  border: 1px solid var(--dashboard-bar-track-edge);
+  border: none;
   clip-path: polygon(var(--dashboard-bar-skew) 0, 100% 0, calc(100% - var(--dashboard-bar-skew)) 100%, 0 100%);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05);
   background:
     repeating-linear-gradient(
-      -52deg,
-      rgba(255,255,255,.03) 0 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew) - 2px),
-      rgba(0,0,0,0) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew) - 2px) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew)),
-      rgba(0,0,0,.62) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew)) var(--dashboard-bar-segment)
-    ),
-    repeating-linear-gradient(
       90deg,
-      var(--dashboard-bar-track-stripe) 0 var(--dashboard-bar-segment),
-      rgba(1, 9, 11, .98) var(--dashboard-bar-segment) calc(var(--dashboard-bar-segment) + var(--dashboard-bar-gap))
+      var(--dashboard-bar-track-fill) 0 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
+      var(--dashboard-bar-gap-color) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
     ),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)),
     var(--dashboard-bar-track-base);
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar > #dashboardStreakBarFill,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar > #dashboardWeeklyGoalsProgressFill{
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProjectionMarker{
+  top: -8px;
+}
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar > #dashboardStreakBarFill,
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar > #dashboardWeeklyGoalsProgressFill{
   position: absolute;
   inset: 1px auto 1px 1px;
   z-index: 1;
@@ -1628,48 +1724,118 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   clip-path: polygon(var(--dashboard-bar-skew) 0, 100% 0, calc(100% - var(--dashboard-bar-skew)) 100%, 0 100%);
   background:
     repeating-linear-gradient(
-      -52deg,
-      rgba(255,255,255,.08) 0 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew) - 2px),
-      rgba(255,255,255,0) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew) - 2px) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew)),
-      rgba(0, 88, 96, .34) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-skew)) var(--dashboard-bar-segment)
-    ),
+      90deg,
+      var(--dashboard-bar-fill-mid) 0,
+      var(--dashboard-bar-fill-deep) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
+      transparent calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
+    ) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(203,255,255,.05),
+    0 0 4px var(--dashboard-bar-fill-glow);
+}
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarTrack,
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarTrack{
+  display: none;
+}
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarSegment,
+body[data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarSegment{
+  display: none;
+}
+body[data-theme="cyan"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-theme="cyan"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
+  --dashboard-bar-track-base: #041318;
+  --dashboard-bar-track-fill: rgba(18, 111, 122, .98);
+  --dashboard-bar-gap-color: rgba(4, 15, 20, .98);
+  --dashboard-bar-fill-bright: #35e8ff;
+  --dashboard-bar-fill-mid: #35e8ff;
+  --dashboard-bar-fill-deep: #00cfc8;
+  --dashboard-bar-fill-glow: rgba(0,220,255,.18);
+}
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProjectionMarker{
+  --dashboard-projection-marker-color: #86ffff;
+  --dashboard-projection-marker-glow: rgba(68, 244, 255, .44);
+}
+body[data-theme="purple"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-theme="purple"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
+  --dashboard-bar-track-base: #110c1b;
+  --dashboard-bar-track-fill: rgba(101, 59, 160, .98);
+  --dashboard-bar-gap-color: rgba(18, 10, 29, .98);
+  --dashboard-bar-fill-bright: #f06ee0;
+  --dashboard-bar-fill-mid: #d447d2;
+  --dashboard-bar-fill-deep: #f06ee0;
+  --dashboard-bar-fill-glow: rgba(212,71,210,.18);
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProjectionMarker{
+  --dashboard-projection-marker-color: #e3b2ff;
+  --dashboard-projection-marker-glow: rgba(191, 124, 255, .38);
+}
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
+  --dashboard-bar-segment: 18px;
+  --dashboard-bar-gap: 3px;
+  --dashboard-bar-track-base: #041318;
+  --dashboard-bar-track-fill: rgba(18, 111, 122, .98);
+  --dashboard-bar-gap-color: rgba(4, 15, 20, .98);
+  --dashboard-bar-fill-bright: #35e8ff;
+  --dashboard-bar-fill-mid: #35e8ff;
+  --dashboard-bar-fill-deep: #00cfc8;
+  --dashboard-bar-fill-glow: rgba(0,220,255,.18);
+  position: relative;
+  overflow: hidden;
+  height: 10px;
+  border: none;
+  border-radius: 0;
+  clip-path: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05);
+  background:
     repeating-linear-gradient(
       90deg,
-      var(--dashboard-bar-fill-bright) 0 var(--dashboard-bar-segment),
-      rgba(2, 83, 84, .08) var(--dashboard-bar-segment) calc(var(--dashboard-bar-segment) + var(--dashboard-bar-gap))
+      var(--dashboard-bar-track-fill) 0 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
+      var(--dashboard-bar-gap-color) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
     ),
-    linear-gradient(180deg, var(--dashboard-bar-fill-mid), var(--dashboard-bar-fill-deep)) !important;
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)),
+    var(--dashboard-bar-track-base);
+}
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProjectionMarker{
+  top: -8px;
+}
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar > #dashboardStreakBarFill,
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar > #dashboardWeeklyGoalsProgressFill{
+  position: absolute;
+  inset: 1px auto 1px 1px;
+  z-index: 1;
+  min-width: 0;
+  border-radius: 0;
+  clip-path: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--dashboard-bar-fill-mid) 0,
+      var(--dashboard-bar-fill-deep) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
+      transparent calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
+    ) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(203, 255, 255, .1),
-    0 0 8px var(--dashboard-bar-fill-glow);
+    inset 0 0 0 1px rgba(203,255,255,.05),
+    0 0 4px var(--dashboard-bar-fill-glow);
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarTrack,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarTrack{
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarTrack,
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarTrack{
   display: none;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarSegment,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarSegment{
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBarSegment,
+body[data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBarSegment{
   display: none;
 }
-body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
-body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
-  --dashboard-bar-track-base: #041318;
-  --dashboard-bar-track-stripe: rgba(8, 68, 78, .98);
-  --dashboard-bar-track-edge: rgba(57, 231, 247, .34);
-  --dashboard-bar-fill-bright: #75feff;
-  --dashboard-bar-fill-mid: #2ef2f4;
-  --dashboard-bar-fill-deep: #00c4d7;
-  --dashboard-bar-fill-glow: rgba(54, 239, 255, .38);
-}
-body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
-body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
+body[data-theme="purple"][data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-theme="purple"][data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar{
   --dashboard-bar-track-base: #110c1b;
-  --dashboard-bar-track-stripe: rgba(63, 34, 104, .96);
-  --dashboard-bar-track-edge: rgba(196, 136, 255, .3);
-  --dashboard-bar-fill-bright: #d9abff;
-  --dashboard-bar-fill-mid: #bb7cff;
-  --dashboard-bar-fill-deep: #7f52ec;
-  --dashboard-bar-fill-glow: rgba(170, 105, 255, .28);
+  --dashboard-bar-track-fill: rgba(101, 59, 160, .98);
+  --dashboard-bar-gap-color: rgba(18, 10, 29, .98);
+  --dashboard-bar-fill-bright: #f06ee0;
+  --dashboard-bar-fill-mid: #d447d2;
+  --dashboard-bar-fill-deep: #f06ee0;
+  --dashboard-bar-fill-glow: rgba(212,71,210,.18);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
