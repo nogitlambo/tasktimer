@@ -213,6 +213,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                           aria-valuemax={100}
                           aria-valuenow={0}
                         >
+                          <span id="dashboardWeeklyGoalsProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
                           <span id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
                           <span className="dashboardSegmentedBarTrack" aria-hidden="true">
                             <span className="dashboardSegmentedBarSegment" />

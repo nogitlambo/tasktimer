@@ -5462,6 +5462,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const metaEl = els.dashboardWeeklyGoalsMeta as HTMLElement | null;
     const progressBarEl = els.dashboardWeeklyGoalsProgressBar as HTMLElement | null;
     const projectionMarkerEl = els.dashboardWeeklyGoalsProjectionMarker as HTMLElement | null;
+    const projectionFillEl = els.dashboardWeeklyGoalsProjectionFill as HTMLElement | null;
     const progressFillEl = els.dashboardWeeklyGoalsProgressFill as HTMLElement | null;
     const progressTextEl = els.dashboardWeeklyGoalsProgressText as HTMLElement | null;
 
@@ -5506,12 +5507,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
     const showProjectionMarker = totalGoalMs > 0 && runningMs > 0;
+    const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";
     }
     if (progressFillEl) progressFillEl.style.width = `${progressPct}%`;
+    if (projectionFillEl) {
+      if (showProjectionMarker && projectedDeltaPct > 0) {
+        projectionFillEl.style.display = "";
+        projectionFillEl.style.left = `${progressPct}%`;
+        projectionFillEl.style.width = `${projectedDeltaPct}%`;
+      } else {
+        projectionFillEl.style.display = "none";
+        projectionFillEl.style.left = "0%";
+        projectionFillEl.style.width = "0%";
+      }
+    }
     if (projectionMarkerEl) {
       if (showProjectionMarker) {
         projectionMarkerEl.style.display = "";
@@ -5551,6 +5564,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const valueEl = document.getElementById("dashboardTodayHoursValue") as HTMLElement | null;
     const deltaEl = document.getElementById("dashboardTodayHoursDelta") as HTMLElement | null;
     const nowValue = nowMs();
+    const todayStartDate = new Date(nowValue);
+    todayStartDate.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStartDate.getTime();
+    const elapsedTodayMs = Math.max(0, nowValue - todayStartMs);
+    const yesterdayStartMs = todayStartMs - 86400000;
+    const yesterdaySameTimeCutoffMs = yesterdayStartMs + elapsedTodayMs;
     const todayKey = localDayKey(nowValue);
     const yesterdayDate = new Date(nowValue);
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -5562,7 +5581,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     );
 
     let todayMs = 0;
-    let yesterdayMs = 0;
+    let yesterdaySameTimeMs = 0;
     includedTaskIds.forEach((taskId) => {
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
@@ -5571,7 +5590,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (!Number.isFinite(ts) || ms <= 0) return;
         const entryDayKey = localDayKey(ts);
         if (entryDayKey === todayKey) todayMs += ms;
-        else if (entryDayKey === yesterdayKey) yesterdayMs += ms;
+        else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) yesterdaySameTimeMs += ms;
       });
     });
 
@@ -5579,28 +5598,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
     if (!deltaEl) return;
 
-    deltaEl.classList.remove("positive");
-    if (todayMs <= 0 && yesterdayMs <= 0) {
+    deltaEl.classList.remove("positive", "negative");
+    if (todayMs <= 0 && yesterdaySameTimeMs <= 0) {
       deltaEl.textContent = "No time logged today";
       return;
     }
-    if (yesterdayMs <= 0) {
-      deltaEl.textContent = todayMs > 0 ? "New activity vs yesterday" : "0% vs yesterday";
+    if (yesterdaySameTimeMs <= 0) {
+      deltaEl.textContent = todayMs > 0 ? "New activity vs this time yesterday" : "0% vs this time yesterday";
       if (todayMs > 0) deltaEl.classList.add("positive");
       return;
     }
 
-    const deltaPct = Math.round((Math.abs(todayMs - yesterdayMs) / yesterdayMs) * 100);
-    if (todayMs > yesterdayMs) {
-      deltaEl.textContent = `+${deltaPct}% vs yesterday`;
+    const deltaPct = Math.round((Math.abs(todayMs - yesterdaySameTimeMs) / yesterdaySameTimeMs) * 100);
+    if (todayMs > yesterdaySameTimeMs) {
+      deltaEl.textContent = `+${deltaPct}% vs this time yesterday`;
       deltaEl.classList.add("positive");
       return;
     }
-    if (todayMs < yesterdayMs) {
-      deltaEl.textContent = `-${deltaPct}% vs yesterday`;
+    if (todayMs < yesterdaySameTimeMs) {
+      deltaEl.textContent = `-${deltaPct}% vs this time yesterday`;
+      deltaEl.classList.add("negative");
       return;
     }
-    deltaEl.textContent = "0% vs yesterday";
+    deltaEl.textContent = "0% vs this time yesterday";
   }
 
   function renderDashboardTimelineCard() {

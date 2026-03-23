@@ -157,6 +157,7 @@ const els = {
   dashboardWeeklyGoalsMeta: documentRef.getElementById("dashboardWeeklyGoalsMeta"),
   dashboardWeeklyGoalsProgressBar: documentRef.getElementById("dashboardWeeklyGoalsProgressBar"),
   dashboardWeeklyGoalsProjectionMarker: documentRef.getElementById("dashboardWeeklyGoalsProjectionMarker"),
+  dashboardWeeklyGoalsProjectionFill: documentRef.getElementById("dashboardWeeklyGoalsProjectionFill"),
   dashboardWeeklyGoalsProgressFill: documentRef.getElementById("dashboardWeeklyGoalsProgressFill"),
   dashboardWeeklyGoalsProgressText: documentRef.getElementById("dashboardWeeklyGoalsProgressText"),
   dashboardAvgSessionChart: documentRef.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
