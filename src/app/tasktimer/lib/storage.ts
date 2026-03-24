@@ -35,10 +35,11 @@ const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
-const HISTORY_SAVE_WORKING_MIN_VISIBLE_MS = 600;
+const HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS = 600;
 let historySaveWorkingActiveCount = 0;
 let historySaveWorkingShownAtMs = 0;
 let historySaveWorkingHideTimer: number | null = null;
+let historySaveWorkingMinVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS;
 
 function applyHistorySaveWorkingVisibility(visible: boolean): void {
   if (typeof document === "undefined") return;
@@ -50,12 +51,20 @@ function applyHistorySaveWorkingVisibility(visible: boolean): void {
   if (text) text.textContent = visible ? "Saving history..." : "";
 }
 
-function dispatchHistorySaveWorking(phase: "start" | "end"): void {
+function dispatchHistorySaveWorking(phase: "start" | "end", minVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS): void {
   if (typeof window === "undefined") return;
   try {
     if (phase === "start") {
+      if (historySaveWorkingActiveCount === 0) {
+        historySaveWorkingShownAtMs = nowMs();
+        historySaveWorkingMinVisibleMs = Math.max(0, Math.floor(Number(minVisibleMs) || 0));
+      } else {
+        historySaveWorkingMinVisibleMs = Math.max(
+          historySaveWorkingMinVisibleMs,
+          Math.max(0, Math.floor(Number(minVisibleMs) || 0))
+        );
+      }
       historySaveWorkingActiveCount += 1;
-      historySaveWorkingShownAtMs = nowMs();
       if (historySaveWorkingHideTimer != null) {
         window.clearTimeout(historySaveWorkingHideTimer);
         historySaveWorkingHideTimer = null;
@@ -65,14 +74,18 @@ function dispatchHistorySaveWorking(phase: "start" | "end"): void {
       historySaveWorkingActiveCount = Math.max(0, historySaveWorkingActiveCount - 1);
       if (historySaveWorkingActiveCount > 0) return;
       const elapsedMs = Math.max(0, nowMs() - historySaveWorkingShownAtMs);
-      const remainingMs = Math.max(0, HISTORY_SAVE_WORKING_MIN_VISIBLE_MS - elapsedMs);
+      const remainingMs = Math.max(0, historySaveWorkingMinVisibleMs - elapsedMs);
       if (remainingMs > 0) {
         historySaveWorkingHideTimer = window.setTimeout(() => {
           historySaveWorkingHideTimer = null;
-          if (historySaveWorkingActiveCount === 0) applyHistorySaveWorkingVisibility(false);
+          if (historySaveWorkingActiveCount === 0) {
+            applyHistorySaveWorkingVisibility(false);
+            historySaveWorkingMinVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS;
+          }
         }, remainingMs);
       } else {
         applyHistorySaveWorkingVisibility(false);
+        historySaveWorkingMinVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS;
       }
     }
     if (typeof window.dispatchEvent === "function") {
@@ -83,8 +96,11 @@ function dispatchHistorySaveWorking(phase: "start" | "end"): void {
   }
 }
 
-async function runHistorySaveWithSignal<T>(work: () => Promise<T>): Promise<T> {
-  dispatchHistorySaveWorking("start");
+async function runHistorySaveWithSignal<T>(
+  work: () => Promise<T>,
+  opts?: { minVisibleMs?: number }
+): Promise<T> {
+  dispatchHistorySaveWorking("start", opts?.minVisibleMs);
   try {
     return await work();
   } finally {
@@ -92,9 +108,12 @@ async function runHistorySaveWithSignal<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-async function runHistorySave<T>(work: () => Promise<T>, opts?: { showIndicator?: boolean }): Promise<T> {
+async function runHistorySave<T>(
+  work: () => Promise<T>,
+  opts?: { showIndicator?: boolean; minVisibleMs?: number }
+): Promise<T> {
   if (opts?.showIndicator === false) return await work();
-  return await runHistorySaveWithSignal(work);
+  return await runHistorySaveWithSignal(work, { minVisibleMs: opts?.minVisibleMs });
 }
 
 function currentUid(): string {
@@ -867,7 +886,7 @@ type SaveHistoryOptions = {
   showIndicator?: boolean;
 };
 
-export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): void {
+export function saveHistoryLocally(historyByTaskId: HistoryByTaskId): void {
   const prevHistory = cachedHistory || {};
   cachedHistory = historyByTaskId || {};
   saveShadowHistory(cachedHistory);
@@ -875,6 +894,10 @@ export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistory
     new Set([...Object.keys(prevHistory || {}), ...Object.keys(cachedHistory || {})].filter(Boolean))
   );
   markPendingHistorySync(touchedTaskIds);
+}
+
+export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): void {
+  saveHistoryLocally(historyByTaskId);
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});
@@ -891,27 +914,27 @@ export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistory
   );
 }
 
+export function hasPendingTaskOrHistorySync(): boolean {
+  return (
+    Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).length > 0 ||
+    Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).length > 0 ||
+    Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).length > 0
+  );
+}
+
 export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
   const normalizedTaskId = String(taskId || "").trim();
   const normalizedEntry = normalizeHistoryEntry(entry);
   if (!normalizedTaskId || !normalizedEntry) return;
   const uid = currentUid();
   if (!uid) return;
-  void runHistorySaveWithSignal(() =>
-    appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
-      // Keep local history state when direct cloud append is denied/unavailable.
-    })
-  );
+  void appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
+    // Keep local history state when direct cloud append is denied/unavailable.
+  });
 }
 
 export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): Promise<void> {
-  const prevHistory = cachedHistory || {};
-  cachedHistory = historyByTaskId || {};
-  saveShadowHistory(cachedHistory);
-  const touchedTaskIds = Array.from(
-    new Set([...Object.keys(prevHistory || {}), ...Object.keys(cachedHistory || {})].filter(Boolean))
-  );
-  markPendingHistorySync(touchedTaskIds);
+  saveHistoryLocally(historyByTaskId);
   const uid = currentUid();
   if (!uid) return;
   const entries = Object.entries(cachedHistory || {});

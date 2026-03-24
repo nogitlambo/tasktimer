@@ -2,6 +2,15 @@
 
 import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
+
+function formatHistoryManagerElapsed(msRaw: unknown) {
+  const totalSeconds = Math.max(0, Math.floor(Math.max(0, Number(msRaw) || 0) / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${formatTwo(days)}d ${formatTwo(hours)}h ${formatTwo(minutes)}m ${formatTwo(seconds)}s`;
+}
 import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
@@ -57,6 +66,7 @@ import {
   saveTasks,
   loadHistory,
   appendHistoryEntry,
+  saveHistoryLocally,
   saveHistory,
   saveHistoryAndWait,
   loadDeletedMeta,
@@ -71,6 +81,7 @@ import {
   saveCloudPreferences,
   saveCloudTaskUi,
   subscribeCloudTaskCollection,
+  hasPendingTaskOrHistorySync,
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, getRankThumbnailDescriptor, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
@@ -300,6 +311,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let deferredCloudRefreshTimer: number | null = null;
   let pendingDeferredCloudRefresh = initialState.pendingDeferredCloudRefresh;
   let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
+  let historyManagerRefreshInFlight: Promise<void> | null = null;
   const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
   const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
@@ -966,6 +978,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const uid = currentUid();
     if (!uid) return;
     runtime.removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
+      if (hasPendingTaskOrHistorySync()) {
+        scheduleDeferredCloudRefresh(5000);
+        return;
+      }
       refreshCloudStateIfStale(0);
     });
   }
@@ -3424,15 +3440,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
     closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-    if (opts.logHistory) {
-      try {
-        await saveHistoryAndWait(historyByTaskId);
-      } catch {
-        // Keep locally logged history when cloud sync is unavailable.
-      }
-    }
     save();
-    void syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    if (!opts.logHistory) {
+      void syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    }
     render();
     openDeferredFocusModeTimeGoalModal();
   }
@@ -3504,7 +3515,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
     historyByTaskId[taskId].push(normalizedEntry);
     appendHistoryEntry(taskId, normalizedEntry);
-    saveHistory(historyByTaskId);
+    saveHistoryLocally(historyByTaskId);
     void syncSharedTaskSummariesForTask(taskId).catch(() => {});
   }
 
@@ -4497,7 +4508,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
                 ${
                   t.running
                     ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                    : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
+                    : elapsedMs > 0
+                      ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
+                      : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
                 }
                 ${
                   themeMode === "cyan"
@@ -5184,6 +5197,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderDashboardOverviewChart();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
+    renderDashboardTasksCompletedCard();
     renderDashboardTimelineCard();
     renderDashboardFocusTrend();
     renderDashboardModeDistribution();
@@ -5498,9 +5512,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     const runningMs = goalTasks.reduce((sum, task) => {
       if (!task?.running) return sum;
-      const startMs = Math.floor(Number(task.startMs) || 0);
-      if (!Number.isFinite(startMs) || startMs <= 0 || startMs > nowValue) return sum;
-      return sum + Math.max(0, nowValue - startMs);
+      return sum + Math.max(0, getElapsedMs(task));
     }, 0);
 
     const projectedMs = loggedMs + runningMs;
@@ -5559,10 +5571,188 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function applyDashboardGoalProgressUi(opts: {
+    progressBarEl: HTMLElement | null;
+    progressFillEl: HTMLElement | null;
+    projectionFillEl: HTMLElement | null;
+    projectionMarkerEl: HTMLElement | null;
+    goalTotalMs: number;
+    loggedMs: number;
+    projectedMs: number;
+    runningMs: number;
+    emptyLabel: string;
+    activeLabel: string;
+    projectedLabel?: string;
+  }) {
+    const {
+      progressBarEl,
+      progressFillEl,
+      projectionFillEl,
+      projectionMarkerEl,
+      goalTotalMs,
+      loggedMs,
+      projectedMs,
+      runningMs,
+      emptyLabel,
+      activeLabel,
+      projectedLabel,
+    } = opts;
+
+    const progressPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / goalTotalMs) * 100))) : 0;
+    const projectedPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / goalTotalMs) * 100))) : 0;
+    const showProjectionMarker = goalTotalMs > 0 && runningMs > 0;
+    const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
+
+    if (progressFillEl) progressFillEl.style.width = `${progressPct}%`;
+    if (projectionFillEl) {
+      if (showProjectionMarker && projectedDeltaPct > 0) {
+        projectionFillEl.style.display = "";
+        projectionFillEl.style.left = `${progressPct}%`;
+        projectionFillEl.style.width = `${projectedDeltaPct}%`;
+      } else {
+        projectionFillEl.style.display = "none";
+        projectionFillEl.style.left = "0%";
+        projectionFillEl.style.width = "0%";
+      }
+    }
+    if (projectionMarkerEl) {
+      if (showProjectionMarker) {
+        projectionMarkerEl.style.display = "";
+        projectionMarkerEl.classList.toggle("isAtEnd", projectedPct >= 100);
+        if (projectedPct >= 100) {
+          projectionMarkerEl.style.left = "";
+        } else {
+          projectionMarkerEl.style.left = `${projectedPct}%`;
+        }
+      } else {
+        projectionMarkerEl.style.display = "none";
+        projectionMarkerEl.classList.remove("isAtEnd");
+        projectionMarkerEl.style.left = "";
+      }
+    }
+    if (progressBarEl) {
+      progressBarEl.setAttribute("aria-valuenow", String(progressPct));
+      progressBarEl.setAttribute(
+        "aria-label",
+        goalTotalMs > 0
+          ? showProjectionMarker
+            ? `${activeLabel}: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(goalTotalMs)} logged, ${formatDashboardDurationShort(projectedMs)} ${projectedLabel || "projected if running tasks are logged"}`
+            : `${activeLabel}: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(goalTotalMs)} logged`
+          : emptyLabel
+      );
+    }
+
+    return { progressPct, projectedPct, showProjectionMarker };
+  }
+
+  function renderDashboardTasksCompletedCard() {
+    const valueEl = document.getElementById("dashboardTasksCompletedValue") as HTMLElement | null;
+    const metaEl = document.getElementById("dashboardTasksCompletedMeta") as HTMLElement | null;
+    const cardEl = valueEl?.closest(".dashboardTasksCompletedCard") as HTMLElement | null;
+    const nowValue = nowMs();
+    const weekStartMs = startOfCurrentWeekMondayMs(nowValue);
+    const goalTasks = getDashboardFilteredTasks().filter((task) => {
+      if (!task) return false;
+      if (!task.timeGoalEnabled) return false;
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      if (goalMinutes <= 0) return false;
+      return task.timeGoalPeriod === "day" || task.timeGoalPeriod === "week";
+    });
+
+    const dailyTaskGoalMinutes = new Map<string, number>();
+    const weeklyTaskGoalMinutes = new Map<string, number>();
+    goalTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return;
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      if (task.timeGoalPeriod === "day") dailyTaskGoalMinutes.set(taskId, goalMinutes);
+      else if (task.timeGoalPeriod === "week") weeklyTaskGoalMinutes.set(taskId, goalMinutes);
+    });
+
+    const dailyLoggedMsByTaskDay = new Map<string, Map<string, number>>();
+    const weeklyLoggedMsByTask = new Map<string, number>();
+
+    goalTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue) return;
+        if (!Number.isFinite(ms) || ms <= 0) return;
+        if (dailyTaskGoalMinutes.has(taskId)) {
+          const dayKey = localDayKey(ts);
+          let byDay = dailyLoggedMsByTaskDay.get(taskId);
+          if (!byDay) {
+            byDay = new Map<string, number>();
+            dailyLoggedMsByTaskDay.set(taskId, byDay);
+          }
+          byDay.set(dayKey, (byDay.get(dayKey) || 0) + ms);
+        }
+        if (weeklyTaskGoalMinutes.has(taskId)) {
+          weeklyLoggedMsByTask.set(taskId, (weeklyLoggedMsByTask.get(taskId) || 0) + ms);
+        }
+      });
+    });
+
+    let dailyCompletedDays = 0;
+    dailyLoggedMsByTaskDay.forEach((byDay, taskId) => {
+      const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
+      if (!(goalMinutes > 0)) return;
+      byDay.forEach((loggedMs) => {
+        if (loggedMs >= goalMinutes * 60000) dailyCompletedDays += 1;
+      });
+    });
+
+    let weeklyCompletedTasks = 0;
+    weeklyLoggedMsByTask.forEach((loggedMs, taskId) => {
+      const goalMinutes = weeklyTaskGoalMinutes.get(taskId) || 0;
+      if (goalMinutes > 0 && loggedMs >= goalMinutes * 60000) weeklyCompletedTasks += 1;
+    });
+
+    const totalCompleted = dailyCompletedDays + weeklyCompletedTasks;
+    const hasData = totalCompleted > 0;
+    if (shouldHoldDashboardWidget("tasksCompleted", hasData)) return;
+
+    const formatCompletionText = (count: number, singular: string, plural: string) =>
+      `${count} ${count === 1 ? singular : plural}`;
+
+    if (valueEl) valueEl.textContent = String(totalCompleted);
+    if (metaEl) {
+      if (dailyCompletedDays > 0 && weeklyCompletedTasks > 0) {
+        metaEl.textContent = `${formatCompletionText(dailyCompletedDays, "daily completion", "daily completions")} • ${formatCompletionText(
+          weeklyCompletedTasks,
+          "weekly completion",
+          "weekly completions"
+        )}`;
+      } else if (dailyCompletedDays > 0) {
+        metaEl.textContent = formatCompletionText(dailyCompletedDays, "daily completion", "daily completions");
+      } else if (weeklyCompletedTasks > 0) {
+        metaEl.textContent = formatCompletionText(weeklyCompletedTasks, "weekly completion", "weekly completions");
+      } else {
+        metaEl.textContent = "No weekly goal completions yet";
+      }
+    }
+    if (cardEl) {
+      cardEl.setAttribute(
+        "aria-label",
+        totalCompleted > 0
+          ? `Task completion. ${totalCompleted} goal completions this week: ${dailyCompletedDays} daily and ${weeklyCompletedTasks} weekly.`
+          : "Task completion. No weekly goal completions yet."
+      );
+    }
+  }
+
   function renderDashboardTodayHoursCard() {
     const titleEl = document.getElementById("dashboardTodayHoursTitle") as HTMLElement | null;
     const valueEl = document.getElementById("dashboardTodayHoursValue") as HTMLElement | null;
+    const metaEl = document.getElementById("dashboardTodayHoursMeta") as HTMLElement | null;
     const deltaEl = document.getElementById("dashboardTodayHoursDelta") as HTMLElement | null;
+    const progressBarEl = document.getElementById("dashboardTodayHoursProgressBar") as HTMLElement | null;
+    const projectionMarkerEl = document.getElementById("dashboardTodayHoursProjectionMarker") as HTMLElement | null;
+    const projectionFillEl = document.getElementById("dashboardTodayHoursProjectionFill") as HTMLElement | null;
+    const progressFillEl = document.getElementById("dashboardTodayHoursProgressFill") as HTMLElement | null;
     const nowValue = nowMs();
     const todayStartDate = new Date(nowValue);
     todayStartDate.setHours(0, 0, 0, 0);
@@ -5579,8 +5769,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         .map((task) => String(task?.id || "").trim())
         .filter(Boolean)
     );
+    const dailyGoalTasks = getDashboardFilteredTasks().filter((task) => {
+      if (!task) return false;
+      if (!task.timeGoalEnabled) return false;
+      if (task.timeGoalPeriod !== "day") return false;
+      return Math.max(0, Number(task.timeGoalMinutes || 0)) > 0;
+    });
+    const totalDailyGoalMs = dailyGoalTasks.reduce((sum, task) => sum + Math.max(0, Number(task.timeGoalMinutes || 0)) * 60000, 0);
 
-    let todayMs = 0;
+    let todayLoggedMs = 0;
     let yesterdaySameTimeMs = 0;
     includedTaskIds.forEach((taskId) => {
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
@@ -5589,13 +5786,58 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (!Number.isFinite(ts) || ms <= 0) return;
         const entryDayKey = localDayKey(ts);
-        if (entryDayKey === todayKey) todayMs += ms;
+        if (entryDayKey === todayKey) todayLoggedMs += ms;
         else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) yesterdaySameTimeMs += ms;
       });
     });
+    const todayRunningMs = getDashboardFilteredTasks().reduce((sum, task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId || !includedTaskIds.has(taskId) || !task?.running) return sum;
+      return sum + Math.max(0, getElapsedMs(task));
+    }, 0);
+    const todayMs = todayLoggedMs + todayRunningMs;
+    const dailyGoalLoggedMs = dailyGoalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return sum;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      const taskTodayMs = entries.reduce((entrySum, entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ms <= 0) return entrySum;
+        return localDayKey(ts) === todayKey ? entrySum + ms : entrySum;
+      }, 0);
+      return sum + taskTodayMs;
+    }, 0);
+    const dailyGoalRunningMs = dailyGoalTasks.reduce((sum, task) => {
+      if (!task?.running) return sum;
+      return sum + Math.max(0, getElapsedMs(task));
+    }, 0);
+    const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalRunningMs;
 
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
+    applyDashboardGoalProgressUi({
+      progressBarEl,
+      progressFillEl,
+      projectionFillEl,
+      projectionMarkerEl,
+      goalTotalMs: totalDailyGoalMs,
+      loggedMs: dailyGoalLoggedMs,
+      projectedMs: dailyGoalProjectedMs,
+      runningMs: dailyGoalRunningMs,
+      emptyLabel: "Today's time goal progress: no daily time goals enabled",
+      activeLabel: "Today's time goal progress",
+      projectedLabel: "projected if running tasks are logged",
+    });
+    if (metaEl) {
+      if (totalDailyGoalMs > 0) {
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
+      } else {
+        metaEl.textContent = "No daily time goals enabled";
+        metaEl.style.display = "";
+      }
+    }
     if (!deltaEl) return;
 
     deltaEl.classList.remove("positive", "negative");
@@ -5646,23 +5888,111 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const nowValue = nowMs();
     const thirtyDaysAgoMs = nowValue - 30 * 86400000;
     const showWeekendRoutine = [0, 6].includes(new Date(nowValue).getDay());
-    const minimumDistinctDays = showWeekendRoutine ? 2 : 3;
-    const bucketSizeMinutes = 180;
+    const minimumActivityDays = 4;
+    const preferredBranchMinimumDistinctDays = showWeekendRoutine ? 2 : 2;
+    const fallbackMinimumDistinctDays = 2;
+    const bucketSizeMinutes = 60;
     const minimumSessionMs = 10 * 60 * 1000;
-    const bucketMap = new Map<
-      number,
-      Map<
-        string,
-        {
-          taskName: string;
-          distinctDayKeys: Set<string>;
-          totalMs: number;
-          sessionCount: number;
-          weightedMinuteSum: number;
-        }
-      >
-    >();
+    type TimelineBucketStats = {
+      taskName: string;
+      distinctDayKeys: Set<string>;
+      totalMs: number;
+      sessionCount: number;
+      weightedMinuteSum: number;
+    };
+    type TimelineBucketMap = Map<number, Map<string, TimelineBucketStats>>;
+    type TimelineSuggestionItem = {
+      taskId: string;
+      taskName: string;
+      distinctDays: number;
+      totalMs: number;
+      sessionCount: number;
+      suggestedMinute: number;
+      bucketIndex: number;
+    };
+    const bucketMap: TimelineBucketMap = new Map();
+    const fallbackBucketMap: TimelineBucketMap = new Map();
     const matchedDayKeys = new Set<string>();
+    const fallbackMatchedDayKeys = new Set<string>();
+
+    const getTimelineHourRangeLabel = (suggestedMinute: number) => {
+      const boundedMinute = Math.max(0, Math.min(1439, Math.floor(suggestedMinute)));
+      const startHour = Math.floor(boundedMinute / 60);
+      const endHour = Math.min(24, startHour + 1);
+      return `${formatTwo(startHour)}:00 - ${formatTwo(endHour)}:00`;
+    };
+
+    const addTimelineEntryToBucketMap = (
+      targetBucketMap: TimelineBucketMap,
+      bucketIndex: number,
+      taskId: string,
+      taskName: string,
+      dayKey: string,
+      minuteOfDay: number,
+      ms: number
+    ) => {
+      let bucket = targetBucketMap.get(bucketIndex);
+      if (!bucket) {
+        bucket = new Map();
+        targetBucketMap.set(bucketIndex, bucket);
+      }
+      let stats = bucket.get(taskId);
+      if (!stats) {
+        stats = {
+          taskName,
+          distinctDayKeys: new Set<string>(),
+          totalMs: 0,
+          sessionCount: 0,
+          weightedMinuteSum: 0,
+        };
+        bucket.set(taskId, stats);
+      }
+      stats.distinctDayKeys.add(dayKey);
+      stats.totalMs += ms;
+      stats.sessionCount += 1;
+      stats.weightedMinuteSum += minuteOfDay * ms;
+    };
+
+    const buildTimelineItems = (
+      targetBucketMap: TimelineBucketMap,
+      minimumDistinctDays: number
+    ): TimelineSuggestionItem[] =>
+      Array.from(targetBucketMap.entries())
+        .map(([bucketIndex, taskMap]) => {
+          const ranked = Array.from(taskMap.entries())
+            .map(([taskId, stats]) => ({
+              taskId,
+              taskName: stats.taskName,
+              distinctDays: stats.distinctDayKeys.size,
+              totalMs: stats.totalMs,
+              sessionCount: stats.sessionCount,
+              suggestedMinute:
+                stats.totalMs > 0
+                  ? Math.max(0, Math.min(1439, Math.round(stats.weightedMinuteSum / stats.totalMs)))
+                  : bucketIndex * bucketSizeMinutes,
+            }))
+            .filter((row) => row.distinctDays >= minimumDistinctDays)
+            .sort((a, b) => {
+              if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
+              if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
+              if (b.sessionCount !== a.sessionCount) return b.sessionCount - a.sessionCount;
+              return a.taskName.localeCompare(b.taskName);
+            });
+          if (!ranked.length) return null;
+          const winner = ranked[0]!;
+          return {
+            ...winner,
+            bucketIndex,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => !!item)
+        .sort((a, b) => {
+          if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
+          if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
+          if (b.sessionCount !== a.sessionCount) return b.sessionCount - a.sessionCount;
+          if (a.bucketIndex !== b.bucketIndex) return a.bucketIndex - b.bucketIndex;
+          return a.taskName.localeCompare(b.taskName);
+        });
 
     getDashboardFilteredTasks().forEach((task) => {
       const taskId = String(task?.id || "").trim();
@@ -5677,80 +6007,85 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const midpointMs = Math.max(thirtyDaysAgoMs, Math.min(nowValue, Math.round(ts - ms / 2)));
         const midpointDate = new Date(midpointMs);
         const isWeekendEntry = midpointDate.getDay() === 0 || midpointDate.getDay() === 6;
-        if (isWeekendEntry !== showWeekendRoutine) return;
         const dayKey = localDayKey(midpointMs);
-        matchedDayKeys.add(dayKey);
+        fallbackMatchedDayKeys.add(dayKey);
         const minuteOfDay =
           midpointDate.getHours() * 60 +
           midpointDate.getMinutes() +
           midpointDate.getSeconds() / 60;
-        const bucketIndex = Math.max(0, Math.min(7, Math.floor(minuteOfDay / bucketSizeMinutes)));
-        let bucket = bucketMap.get(bucketIndex);
-        if (!bucket) {
-          bucket = new Map();
-          bucketMap.set(bucketIndex, bucket);
-        }
-        let stats = bucket.get(taskId);
-        if (!stats) {
-          stats = {
-            taskName,
-            distinctDayKeys: new Set<string>(),
-            totalMs: 0,
-            sessionCount: 0,
-            weightedMinuteSum: 0,
-          };
-          bucket.set(taskId, stats);
-        }
-        stats.distinctDayKeys.add(dayKey);
-        stats.totalMs += ms;
-        stats.sessionCount += 1;
-        stats.weightedMinuteSum += minuteOfDay * ms;
+        const bucketIndex = Math.max(0, Math.min(23, Math.floor(minuteOfDay / bucketSizeMinutes)));
+        addTimelineEntryToBucketMap(fallbackBucketMap, bucketIndex, taskId, taskName, dayKey, minuteOfDay, ms);
+        if (isWeekendEntry !== showWeekendRoutine) return;
+        matchedDayKeys.add(dayKey);
+        addTimelineEntryToBucketMap(bucketMap, bucketIndex, taskId, taskName, dayKey, minuteOfDay, ms);
       });
     });
 
-    const items = Array.from(bucketMap.entries())
-      .map(([bucketIndex, taskMap]) => {
-        const ranked = Array.from(taskMap.entries())
-          .map(([taskId, stats]) => ({
-            taskId,
-            taskName: stats.taskName,
-            distinctDays: stats.distinctDayKeys.size,
-            totalMs: stats.totalMs,
-            sessionCount: stats.sessionCount,
-            suggestedMinute:
-              stats.totalMs > 0
-                ? Math.max(0, Math.min(1439, Math.round(stats.weightedMinuteSum / stats.totalMs)))
-                : bucketIndex * bucketSizeMinutes,
-          }))
-          .filter((row) => row.distinctDays >= minimumDistinctDays)
-          .sort((a, b) => {
-            if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
-            if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
-            if (b.sessionCount !== a.sessionCount) return b.sessionCount - a.sessionCount;
-            return a.taskName.localeCompare(b.taskName);
-          });
-        if (!ranked.length) return null;
-        const winner = ranked[0]!;
-        return {
-          ...winner,
-          bucketIndex,
-        };
+    const qualifyingActivityDayCount = fallbackMatchedDayKeys.size;
+    const preferredBranchActivityDayCount = matchedDayKeys.size;
+    const preferredItems = buildTimelineItems(bucketMap, preferredBranchMinimumDistinctDays);
+    const fallbackItems = buildTimelineItems(fallbackBucketMap, fallbackMinimumDistinctDays);
+    const mergedItems: TimelineSuggestionItem[] = [];
+    const seenSuggestionKeys = new Set<string>();
+    preferredItems.forEach((item) => {
+      const key = `${item.taskId}|${item.bucketIndex}`;
+      if (seenSuggestionKeys.has(key)) return;
+      seenSuggestionKeys.add(key);
+      mergedItems.push(item);
+    });
+    fallbackItems.forEach((item) => {
+      if (mergedItems.length >= targetCount) return;
+      const key = `${item.taskId}|${item.bucketIndex}`;
+      if (seenSuggestionKeys.has(key)) return;
+      seenSuggestionKeys.add(key);
+      mergedItems.push(item);
+    });
+    const items = mergedItems
+      .sort((a, b) => {
+        if (a.bucketIndex !== b.bucketIndex) return a.bucketIndex - b.bucketIndex;
+        if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
+        if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
+        return a.taskName.localeCompare(b.taskName);
       })
-      .filter((item): item is NonNullable<typeof item> => !!item)
-      .sort((a, b) => a.suggestedMinute - b.suggestedMinute)
       .slice(0, targetCount);
+    const usingFallbackItems = items.some(
+      (item) => !preferredItems.some((preferred) => preferred.taskId === item.taskId && preferred.bucketIndex === item.bucketIndex)
+    );
 
-    if (!items.length) {
+    if (qualifyingActivityDayCount < minimumActivityDays) {
       listEl.innerHTML = "";
       if (noteEl) {
-        noteEl.textContent = matchedDayKeys.size
-          ? `Not enough recent ${showWeekendRoutine ? "weekend" : "weekday"} history to suggest a routine yet`
-          : `No ${showWeekendRoutine ? "weekend" : "weekday"} history found in the last 30 days`;
+        noteEl.textContent =
+          qualifyingActivityDayCount > 0
+            ? `Add activity on ${minimumActivityDays}+ days to unlock routine suggestions`
+            : `Log activity on ${minimumActivityDays}+ days to unlock routine suggestions`;
       }
       if (cardEl) {
         cardEl.setAttribute(
           "aria-description",
-          `Timeline suggestions unavailable. ${showWeekendRoutine ? "Weekend" : "Weekday"} history is too sparse.`
+          `Timeline suggestions unavailable. ${qualifyingActivityDayCount} of ${minimumActivityDays} qualifying activity days found in the last 30 days.`
+        );
+      }
+      if (!shouldHoldDashboardWidget("timeline", false)) {
+        dashboardWidgetHasRenderedData.timeline = false;
+      }
+      return;
+    }
+
+    if (!items.length) {
+      listEl.innerHTML = "";
+      if (noteEl) {
+        noteEl.textContent =
+          preferredBranchActivityDayCount > 0
+            ? `Recent ${showWeekendRoutine ? "weekend" : "weekday"} activity is too scattered to suggest a routine yet`
+            : `No recent ${showWeekendRoutine ? "weekend" : "weekday"} routine yet. Broader history is still too scattered to suggest a time window`;
+      }
+      if (cardEl) {
+        cardEl.setAttribute(
+          "aria-description",
+          preferredBranchActivityDayCount > 0
+            ? `Timeline suggestions unavailable. ${qualifyingActivityDayCount} qualifying activity days were found, but recent ${showWeekendRoutine ? "weekend" : "weekday"} history is still too scattered across time windows.`
+            : `Timeline suggestions unavailable. ${qualifyingActivityDayCount} qualifying activity days were found, but there is not enough consistent ${showWeekendRoutine ? "weekend" : "weekday"} history and broader history is still too scattered across time windows.`
         );
       }
       if (!shouldHoldDashboardWidget("timeline", false)) {
@@ -5763,9 +6098,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     listEl.innerHTML = items
       .map((item) => {
-        const hours = Math.floor(item.suggestedMinute / 60);
-        const minutes = item.suggestedMinute % 60;
-        const timeText = `${formatTwo(hours)}:${formatTwo(minutes)}`;
+        const timeText = getTimelineHourRangeLabel(item.suggestedMinute);
         const title = `${timeText} ${item.taskName}. Seen on ${item.distinctDays} day${
           item.distinctDays === 1 ? "" : "s"
         } in the last 30 days.`;
@@ -5773,14 +6106,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       })
       .join("");
     if (noteEl) {
-      noteEl.textContent = `${items.length} ${showWeekendRoutine ? "weekend" : "weekday"} suggestion${
-        items.length === 1 ? "" : "s"
-      } from the last 30 days`;
+      noteEl.textContent = usingFallbackItems
+        ? `${items.length} suggestion${items.length === 1 ? "" : "s"} from your last 30 days of activity`
+        : `${items.length} ${showWeekendRoutine ? "weekend" : "weekday"} suggestion${items.length === 1 ? "" : "s"} from the last 30 days`;
     }
     if (cardEl) {
       cardEl.setAttribute(
         "aria-description",
-        `Timeline suggestions based on ${showWeekendRoutine ? "weekend" : "weekday"} history from the last 30 days. Showing up to ${targetCount} items.`
+        usingFallbackItems
+          ? `Timeline suggestions based on hour windows from qualifying history in the last 30 days. Showing up to ${targetCount} items.`
+          : `Timeline suggestions based on ${showWeekendRoutine ? "weekend" : "weekday"} hour windows from the last 30 days. Showing up to ${targetCount} items.`
       );
     }
   }
@@ -5867,6 +6202,124 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function getDashboardHeatDaySummaryRows(dayKeyRaw: string) {
+    const dayKey = String(dayKeyRaw || "").trim();
+    const includedTaskIds = getDashboardIncludedTaskIds();
+    const taskNameById = new Map<string, string>();
+    getDashboardFilteredTasks().forEach((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId) return;
+      taskNameById.set(taskId, String(task?.name || "").trim() || "Task");
+    });
+
+    const rows: Array<{ taskId: string; taskName: string; totalMs: number }> = [];
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId || !includedTaskIds.has(taskId)) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      if (!entries.length) return;
+      const totalMs = entries.reduce((sum, entry: any) => {
+        const ts = normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ms <= 0) return sum;
+        return localDayKey(ts) === dayKey ? sum + ms : sum;
+      }, 0);
+      if (totalMs <= 0) return;
+      rows.push({
+        taskId,
+        taskName: taskNameById.get(taskId) || "Task",
+        totalMs,
+      });
+    });
+
+    rows.sort((a, b) => {
+      if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
+      return a.taskName.localeCompare(b.taskName);
+    });
+    return rows;
+  }
+
+  let dashboardHeatSelectedDayKey = "";
+
+  function findDashboardHeatDayButton(dayKeyRaw: string): HTMLElement | null {
+    const dayKey = String(dayKeyRaw || "").trim();
+    if (!dayKey) return null;
+    const grid = els.dashboardHeatCalendarGrid as HTMLElement | null;
+    if (!grid) return null;
+    try {
+      const escaped =
+        typeof (window as any).CSS !== "undefined" && typeof (window as any).CSS.escape === "function"
+          ? (window as any).CSS.escape(dayKey)
+          : dayKey.replace(/["\\]/g, "\\$&");
+      return grid.querySelector(`.dashboardHeatDayCell.isInteractive[data-heat-date="${escaped}"]`) as HTMLElement | null;
+    } catch {
+      return grid.querySelector(`.dashboardHeatDayCell.isInteractive[data-heat-date="${dayKey}"]`) as HTMLElement | null;
+    }
+  }
+
+  function setDashboardHeatFlipState(isFlipped: boolean) {
+    const card = els.dashboardHeatCard as HTMLElement | null;
+    const front = els.dashboardHeatFaceFront as HTMLElement | null;
+    const back = els.dashboardHeatFaceBack as HTMLElement | null;
+    card?.classList.toggle("isFlipped", isFlipped);
+    if (front) {
+      front.setAttribute("aria-hidden", isFlipped ? "true" : "false");
+      if (isFlipped) front.setAttribute("inert", "");
+      else front.removeAttribute("inert");
+    }
+    if (back) {
+      back.setAttribute("aria-hidden", isFlipped ? "false" : "true");
+      if (isFlipped) back.removeAttribute("inert");
+      else back.setAttribute("inert", "");
+    }
+    if (els.dashboardHeatSummaryCloseBtn) {
+      els.dashboardHeatSummaryCloseBtn.setAttribute("aria-expanded", isFlipped ? "true" : "false");
+    }
+  }
+
+  function closeDashboardHeatSummaryCard(opts?: { restoreFocus?: boolean }) {
+    setDashboardHeatFlipState(false);
+    if (opts?.restoreFocus && dashboardHeatSelectedDayKey) {
+      window.setTimeout(() => {
+        findDashboardHeatDayButton(dashboardHeatSelectedDayKey)?.focus();
+      }, 0);
+    }
+  }
+
+  function openDashboardHeatSummaryCard(dayKeyRaw: string, dateLabelRaw: string) {
+    const dayKey = String(dayKeyRaw || "").trim();
+    if (!dayKey) return;
+    const dateLabel = String(dateLabelRaw || "").trim() || dayKey;
+    const rows = getDashboardHeatDaySummaryRows(dayKey);
+    if (!rows.length) return;
+    dashboardHeatSelectedDayKey = dayKey;
+    if (els.dashboardHeatSummaryDate) {
+      els.dashboardHeatSummaryDate.textContent = dateLabel;
+    }
+    if (els.dashboardHeatSummaryBody) {
+      els.dashboardHeatSummaryBody.innerHTML = `
+        <div class="dashboardHeatSummaryList" role="list" aria-label="Logged task time for ${escapeHtmlUI(dateLabel)}">
+          ${rows
+            .map(
+              (row) => `<div class="dashboardHeatSummaryRow" role="listitem">
+                <span class="dashboardHeatSummaryTask">${escapeHtmlUI(row.taskName)}</span>
+                <span class="dashboardHeatSummaryTime">${escapeHtmlUI(formatTime(row.totalMs))}</span>
+              </div>`
+            )
+            .join("")}
+        </div>
+      `;
+    }
+    setDashboardHeatFlipState(true);
+    window.setTimeout(() => {
+      try {
+        els.dashboardHeatSummaryCloseBtn?.focus();
+      } catch {
+        // ignore focus failures
+      }
+    }, 0);
+  }
+
   function renderDashboardHeatCalendar() {
     const monthLabelEl = els.dashboardHeatMonthLabel as HTMLElement | null;
     const gridEl = els.dashboardHeatCalendarGrid as HTMLElement | null;
@@ -5886,6 +6339,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
 
     const byDayMs = new Map<string, number>();
+    const historyByDayMs = new Map<string, number>();
     const includedTaskIds = getDashboardIncludedTaskIds();
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
@@ -5899,6 +6353,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (ts < monthStart.getTime() || ts >= monthEnd.getTime()) return;
         const key = localDayKey(ts);
         byDayMs.set(key, (byDayMs.get(key) || 0) + ms);
+        historyByDayMs.set(key, (historyByDayMs.get(key) || 0) + ms);
       });
     });
 
@@ -5952,8 +6407,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       const durationText = formatDashboardDurationShort(dayMs);
       const aria = `${dateText}: ${durationText} of focused time`;
       const styleAttr = colorCss ? ` style="--heat-color:${colorCss}"` : "";
+      const hasHistoryEntries = (historyByDayMs.get(key) || 0) > 0;
       html.push(
-        `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></span>`
+        hasHistoryEntries
+          ? `<button class="dashboardHeatDayCell isActive isInteractive" type="button" data-activity-level="${activityLevel}" data-heat-date="${escapeHtmlUI(
+              key
+            )}" data-heat-date-label="${escapeHtmlUI(dateText)}" role="gridcell" aria-label="${escapeHtmlUI(aria)}" title="${escapeHtmlUI(
+              aria
+            )}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></button>`
+          : `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${escapeHtmlUI(
+              aria
+            )}" title="${escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></span>`
       );
     }
 
@@ -6400,15 +6864,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (sessionNote) setFocusSessionDraft(String(t.id || ""), sessionNote);
         try {
           resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
-          if (doLog) {
-            try {
-              await saveHistoryAndWait(historyByTaskId);
-            } catch {
-              // Keep local logged history when cloud history sync is temporarily unavailable.
-            }
-          }
           save();
-          void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
+          if (!doLog) {
+            void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
+          }
           closeConfirm();
           if (shouldExitFocusModeAfterReset) closeFocusMode();
           else render();
@@ -7034,12 +7493,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
 
-    const currentOrder = (tasks || []).map((t) => String(t.id));
+    const currentOrder = new Map((tasks || []).map((t, index) => [String(t.id), index] as const));
     filteredIds.sort((a, b) => {
-      const ai = currentOrder.indexOf(String(a));
-      const bi = currentOrder.indexOf(String(b));
-      const aIsCurrent = ai !== -1;
-      const bIsCurrent = bi !== -1;
+      const ai = currentOrder.get(String(a));
+      const bi = currentOrder.get(String(b));
+      const aIsCurrent = ai != null;
+      const bIsCurrent = bi != null;
       if (aIsCurrent && bIsCurrent) return ai - bi;
       if (aIsCurrent) return -1;
       if (bIsCurrent) return 1;
@@ -7086,12 +7545,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             });
             const rowIds = entries.map((e: any) => `${taskId}|${e.ts}|${e.ms}|${String(e.name || "")}`);
             hmRowsByTaskDate[`${taskId}|${dateKey}`] = rowIds;
-            hmRowsByTask[taskId] = (hmRowsByTask[taskId] || []).concat(rowIds);
+            if (!hmRowsByTask[taskId]) hmRowsByTask[taskId] = [];
+            hmRowsByTask[taskId].push(...rowIds);
             const dateChecked = rowIds.length > 0 && rowIds.every((id) => hmBulkSelectedRows.has(id));
             const rows = entries
               .map((e: any) => {
                 const dt = formatDateTime(e.ts);
-                const tm = formatTime(e.ms || 0);
+                const tm = formatHistoryManagerElapsed(e.ms || 0);
                 const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
                 const rowId = `${taskId}|${rowKey}`;
                 const rowCheckbox = hmBulkEditMode
@@ -7189,24 +7649,46 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       (els.historyManagerScreen as HTMLElement).style.display = "block";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
-    if (els.hmList) {
-      els.hmList.innerHTML = `<div class="hmEmpty">Loading history...</div>`;
-    }
+    renderHistoryManager();
     void refreshHistoryManagerFromCloud().then(() => {
-      if (runtime.destroyed) return;
+      if (runtime.destroyed || !isHistoryManagerOpen()) return;
       renderHistoryManager();
     });
   }
 
-  async function refreshHistoryManagerFromCloud() {
+  function getHistoryManagerReturnRoute() {
     try {
-      await refreshHistoryFromCloud();
-      deletedTaskMeta = loadDeletedMeta();
-      load();
-      historyByTaskId = loadHistory();
+      const params = new URLSearchParams(window.location.search || "");
+      const explicit = String(params.get("returnTo") || "").trim();
+      if (explicit === "tasks") return "/tasktimer";
+      if (explicit === "settings") return "/tasktimer/settings";
+      const taskId = String(params.get("taskId") || "").trim();
+      return taskId ? "/tasktimer" : "/tasktimer/settings";
     } catch {
-      // Keep last known in-memory state if cloud refresh fails.
+      return "/tasktimer/settings";
     }
+  }
+
+  function isHistoryManagerOpen() {
+    const screen = els.historyManagerScreen as HTMLElement | null;
+    return !!screen && screen.style.display !== "none" && screen.getAttribute("aria-hidden") !== "true";
+  }
+
+  async function refreshHistoryManagerFromCloud() {
+    if (historyManagerRefreshInFlight) return historyManagerRefreshInFlight;
+    historyManagerRefreshInFlight = (async () => {
+      try {
+        await refreshHistoryFromCloud();
+        deletedTaskMeta = loadDeletedMeta();
+        load();
+        historyByTaskId = loadHistory();
+      } catch {
+        // Keep last known in-memory state if cloud refresh fails.
+      } finally {
+        historyManagerRefreshInFlight = null;
+      }
+    })();
+    return historyManagerRefreshInFlight;
   }
 
   function closeHistoryManager() {
@@ -10849,7 +11331,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
       if (action === "manage") {
-        navigateToAppRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}`);
+        navigateToAppRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
         return;
       }
       if (action === "analyse") {
@@ -11213,6 +11695,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
     });
     on(els.dashboardGrid, "click", (e: any) => {
+      const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
+      if (heatDayBtn) {
+        const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();
+        const dateLabel = String(heatDayBtn.getAttribute("data-heat-date-label") || "").trim();
+        if (dayKey) {
+          openDashboardHeatSummaryCard(dayKey, dateLabel);
+        }
+        e.preventDefault();
+        return;
+      }
       const sizeToggle = e.target?.closest?.("[data-dashboard-size-toggle]") as HTMLElement | null;
       if (sizeToggle) {
         if (!dashboardEditMode) return;
@@ -11915,6 +12407,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncEditSaveAvailability(t);
     });
 
+    on(els.dashboardHeatSummaryCloseBtn, "click", () => {
+      closeDashboardHeatSummaryCard({ restoreFocus: true });
+    });
     on(els.confirmCancelBtn, "click", closeConfirm);
     on(els.confirmAltBtn, "click", () => {
       if (typeof confirmActionAlt === "function") confirmActionAlt();
@@ -12107,7 +12602,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       );
     });
     on(els.historyManagerBackBtn, "click", () => {
-      navigateToAppRoute("/tasktimer/settings");
+      navigateToAppRoute(getHistoryManagerReturnRoute());
     });
     on(els.focusModeBackBtn, "click", closeFocusMode);
     on(els.focusCheckpointToggle, "click", () => {

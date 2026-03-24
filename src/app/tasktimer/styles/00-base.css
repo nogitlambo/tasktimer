@@ -213,6 +213,12 @@ body[data-app-page="test2"] #modeSwitch{
   border-color: rgba(255,77,77,.35);
   color:#ffd4d4;
 }
+.btn-resume{
+  background: linear-gradient(180deg, rgba(255,214,64,.24), rgba(179,132,24,.16));
+  border-color: rgba(255,214,64,.42);
+  color:#fff3bf;
+  box-shadow: 0 0 14px rgba(255,214,64,.18);
+}
 .small{ padding:8px 12px; font-size:12px; font-weight:700; }
 .iconBtn{
   width:36px;height:36px;
@@ -2076,6 +2082,12 @@ body[data-theme="purple"] .modeBtn.isOn{
   border-color: rgba(240,138,245,.72) !important;
   color:#fff !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset, 0 0 14px rgba(211,86,230,.28);
+}
+body[data-theme="purple"] .btn-resume{
+  background: linear-gradient(180deg, rgba(255,214,64,.26), rgba(175,122,28,.18)) !important;
+  border-color: rgba(255,214,64,.46) !important;
+  color:#fff2c2 !important;
+  box-shadow: 0 0 0 1px rgba(255,228,145,.12) inset, 0 0 14px rgba(255,214,64,.18) !important;
 }
 body[data-theme="purple"] .btn-ghost,
 body[data-theme="purple"] .iconBtn{

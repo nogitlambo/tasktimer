@@ -200,6 +200,7 @@ export type TaskTimerMutableState = {
   lastUiInteractionAtMs: number;
   dashboardWidgetHasRenderedData: {
     streak: boolean;
+    tasksCompleted: boolean;
     overview: boolean;
     focusTrend: boolean;
     heatCalendar: boolean;

@@ -70,3 +70,186 @@
 #confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
   opacity: 0.86;
 }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive {
+  appearance: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    filter 0.16s ease;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:hover {
+  filter: brightness(1.04);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:focus-visible {
+  outline: 2px solid rgba(124, 232, 255, 0.96);
+  outline-offset: 2px;
+  border-color: rgba(124, 232, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(124, 232, 255, 0.16), 0 0 20px rgba(0, 220, 255, 0.16);
+}
+
+.dashboardHeatCard {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 332px;
+  min-width: 0;
+  overflow: hidden;
+  perspective: 1800px;
+}
+
+.dashboardHeatFlipScene {
+  position: relative;
+  display: grid;
+  align-self: stretch;
+  justify-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  min-height: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 560ms cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+
+.dashboardHeatCard.isFlipped .dashboardHeatFlipScene {
+  transform: rotateY(180deg);
+}
+
+.dashboardHeatFace {
+  min-width: 0;
+  min-height: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.dashboardHeatFaceFront {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 100%;
+  height: 100%;
+}
+
+.dashboardHeatFaceBack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+  padding: 0;
+  overflow: hidden;
+  transform: rotateY(180deg);
+}
+
+.dashboardHeatCard:not(.isFlipped) .dashboardHeatFaceBack {
+  pointer-events: none;
+}
+
+.dashboardHeatCard.isFlipped .dashboardHeatFaceFront {
+  pointer-events: none;
+}
+
+.dashboardHeatDetailHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dashboardHeatDetailCopy {
+  min-width: 0;
+}
+
+.dashboardHeatDetailCopy .dashboardCardTitle {
+  margin-bottom: 0;
+}
+
+.dashboardHeatDetailCopy .modalSubtext {
+  margin: 3px 0 0;
+}
+
+.dashboardHeatFlipBackBtn {
+  flex: 0 0 auto;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatFaceFront .dashboardHeatCalendarGrid {
+  min-height: 220px;
+  height: 100%;
+}
+
+#dashboardHeatSummaryBody {
+  display: grid;
+  gap: 0;
+  margin-top: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  align-content: start;
+  padding: 0 6px 0 0;
+}
+
+.dashboardHeatSummaryList {
+  display: grid;
+  gap: 0;
+}
+
+.dashboardHeatSummaryRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+}
+
+.dashboardHeatSummaryRow + .dashboardHeatSummaryRow {
+  margin-top: 12px;
+}
+
+.dashboardHeatSummaryRow:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.dashboardHeatSummaryTask {
+  min-width: 0;
+  font-family: var(--font-tight);
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(230, 245, 255, 0.94);
+  overflow-wrap: anywhere;
+}
+
+.dashboardHeatSummaryTime {
+  font-family: var(--font-tight);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #b78cff;
+  white-space: nowrap;
+}
+
+.dashboardHeatSummaryEmpty {
+  padding: 10px 0 2px;
+  color: rgba(211, 229, 240, 0.78);
+}

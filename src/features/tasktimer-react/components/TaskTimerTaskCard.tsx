@@ -60,6 +60,10 @@ export default function TaskTimerTaskCard({ task }: TaskTimerTaskCardProps) {
             <button className="btn btn-warn small" type="button" data-action="stop" onClick={() => actions.stopTask(task.id)}>
               Stop
             </button>
+          ) : elapsedMs > 0 ? (
+            <button className="btn btn-resume small" type="button" data-action="start" onClick={() => actions.startTask(task.id)}>
+              Resume
+            </button>
           ) : (
             <button className="btn btn-accent small" type="button" data-action="start" onClick={() => actions.startTask(task.id)}>
               Launch

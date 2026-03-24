@@ -184,6 +184,36 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     >
                       <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
                       <div className="dashboardBigValue" id="dashboardTodayHoursValue">0m</div>
+                      <div className="dashboardGoalProgressWrap">
+                        <span
+                          className="dashboardGoalProjectionMarker"
+                          id="dashboardTodayHoursProjectionMarker"
+                          aria-hidden="true"
+                          style={{ display: "none" }}
+                        />
+                        <div
+                          className="dashboardGoalProgressBar dashboardSegmentedBar"
+                          id="dashboardTodayHoursProgressBar"
+                          role="progressbar"
+                          aria-label="Today's time goal progress"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={0}
+                        >
+                          <span id="dashboardTodayHoursProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
+                          <span id="dashboardTodayHoursProgressFill" style={{ width: "0%" }} />
+                          <span className="dashboardSegmentedBarTrack" aria-hidden="true">
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                            <span className="dashboardSegmentedBarSegment" />
+                          </span>
+                        </div>
+                      </div>
+                      <div className="dashboardDelta" id="dashboardTodayHoursMeta" style={{ display: "none" }}>
+                        No daily time goals enabled
+                      </div>
                       <div className="dashboardDelta" id="dashboardTodayHoursDelta">No time logged today</div>
                     </section>
 
@@ -234,8 +264,8 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
 
                     <section className="dashboardCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                       <div className="dashboardCardTitle">Tasks Completed</div>
-                      <div className="dashboardBigValue">18</div>
-                      <div className="dashboardDelta">2 carried over</div>
+                      <div className="dashboardBigValue" id="dashboardTasksCompletedValue">0</div>
+                      <div className="dashboardDelta" id="dashboardTasksCompletedMeta">No weekly goal completions yet</div>
                     </section>
 
                     <section
@@ -340,26 +370,53 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <ul className="dashboardTimeline" id="dashboardTimelineList" aria-live="polite" />
                     </section>
 
-                    <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" aria-label="Activity heatmap">
-                      <div className="dashboardCardTitle">Focus Heatmap</div>
-                      <div className="dashboardHeatHeaderRow">
-                        <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite">
-                          -
+                    <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">
+                      <div className="dashboardHeatFlipScene">
+                        <div className="dashboardHeatFace dashboardHeatFaceFront" id="dashboardHeatFaceFront" aria-hidden="false">
+                          <div className="dashboardCardTitle">Focus Heatmap</div>
+                          <div className="dashboardHeatHeaderRow">
+                            <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite">
+                              -
+                            </div>
+                          </div>
+                          <div className="dashboardHeatWeekdays" id="dashboardHeatWeekdays" aria-hidden="true">
+                            <span>Sun</span>
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                          </div>
+                          <div className="dashboardHeatCalendarGrid" id="dashboardHeatCalendarGrid" role="grid" aria-label="Monthly focus heatmap calendar">
+                            {Array.from({ length: 42 }).map((_, idx) => (
+                              <span key={`hm-cal-${idx}`} className="dashboardHeatDayCell isFiller" aria-hidden="true" />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <div className="dashboardHeatWeekdays" id="dashboardHeatWeekdays" aria-hidden="true">
-                        <span>Sun</span>
-                        <span>Mon</span>
-                        <span>Tue</span>
-                        <span>Wed</span>
-                        <span>Thu</span>
-                        <span>Fri</span>
-                        <span>Sat</span>
-                      </div>
-                      <div className="dashboardHeatCalendarGrid" id="dashboardHeatCalendarGrid" role="grid" aria-label="Monthly focus heatmap calendar">
-                        {Array.from({ length: 42 }).map((_, idx) => (
-                          <span key={`hm-cal-${idx}`} className="dashboardHeatDayCell isFiller" aria-hidden="true" />
-                        ))}
+                        <div className="dashboardHeatFace dashboardHeatFaceBack" id="dashboardHeatFaceBack" aria-hidden="true" inert={true}>
+                          <div className="dashboardHeatDetailHead">
+                            <div className="dashboardHeatDetailCopy">
+                              <div className="dashboardCardTitle">Focus Heatmap</div>
+                              <p className="modalSubtext" id="dashboardHeatSummaryDate">
+                                Select a day to review logged time.
+                              </p>
+                            </div>
+                            <button
+                              className="iconBtn dashboardHeatFlipBackBtn"
+                              id="dashboardHeatSummaryCloseBtn"
+                              type="button"
+                              title="Back to heatmap"
+                              aria-label="Back to heatmap"
+                              aria-expanded="false"
+                            >
+                              &#8594;
+                            </button>
+                          </div>
+                          <div className="confirmText dashboardHeatSummaryBody" id="dashboardHeatSummaryBody">
+                            <div className="dashboardHeatSummaryEmpty">No logged sessions for this day.</div>
+                          </div>
+                        </div>
                       </div>
                     </section>
                   </div>

@@ -1039,8 +1039,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                     <div className="settingsAccountIdCard" aria-label="Account profile card">
                       <div className="settingsAccountIdCardHeader">
                         <div className="settingsAccountIdCardBrandBlock">
-                          <div className="settingsAccountIdCardBrandEyebrow">TaskTimer</div>
-                          <div className="settingsAccountIdCardBrandTitle">Profile Pass</div>
+                          <div className="settingsAccountIdCardBrandEyebrow">TASKLAUNCH</div>
+                          <div className="settingsAccountIdCardBrandTitle">PROFILE.</div>
                         </div>
                         <div className="settingsAccountIdCardHeaderRankCluster">
                           <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardHeaderRankMeta">
@@ -1091,7 +1091,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                       </div>
                       <div className="settingsAccountIdCardIdentity">
                         <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
-                          <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Profile Name</div>
+                          <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Name</div>
                           <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
                             {authUserAliasEditing ? (
                               <>
