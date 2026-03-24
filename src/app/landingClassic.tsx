@@ -46,12 +46,12 @@ export default function LandingClassic({
         >
           <div className="relative inline-block">
             <Image
-              src="/timebase-logo.svg"
-              alt="Timebase"
-              width={420}
-              height={94}
+              src="/logo/tasklaunch-logo-v2.png"
+              alt="TaskLaunch"
+              width={1868}
+              height={422}
               priority
-              className="h-auto w-[240px] sm:w-[320px] md:w-[380px]"
+              className="h-auto w-[260px] sm:w-[340px] md:w-[410px]"
               style={{ clipPath: `inset(0 ${(1 - landingDialProgress) * 100}% 0 28%)` }}
             />
             <div

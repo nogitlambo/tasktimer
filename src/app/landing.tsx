@@ -225,10 +225,10 @@ export default function Landing({
         <header className="landingV2Header flex items-center justify-between">
           <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
             <Image
-              src="/logo/tasklaunch.svg"
+              src="/logo/tasklaunch-logo-v2.png"
               alt="TaskLaunch"
-              width={255}
-              height={35}
+              width={1868}
+              height={422}
               priority
               className="block w-[225px] sm:w-[255px] h-auto"
             />
