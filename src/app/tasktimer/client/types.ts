@@ -48,7 +48,7 @@ export type HistoryViewState = {
 
 export type DashboardCardSize = "full" | "half" | "quarter" | "eighth";
 
-export type DashboardAvgRange = "past7" | "currentWeek" | "past30" | "currentMonth";
+export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
 
 export type TaskTimerMutableState = {

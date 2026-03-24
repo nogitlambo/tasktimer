@@ -700,86 +700,33 @@ body[data-control-style="square"] .dashboardTimelineDensityBtn{
   margin-top: 8px;
 }
 /* Final Dashboard Avg Session range control override:
-   replace inline pills with a dropdown menu while preserving existing dashboard styling language. */
+   use a single borderless toggle instead of the old dropdown menu. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgSessionRangeRow{
   margin-top: 10px;
   justify-content: flex-end;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu{
-  position: relative;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu > summary{
-  list-style: none;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu > summary::-webkit-details-marker{
-  display: none;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuBtn{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle{
   min-height: 36px;
-  min-width: 168px;
+  min-width: 140px;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuLabelPrefix{
-  opacity: .82;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuBtn::after{
-  content: "▾";
-  font-size: 11px;
-  line-height: 1;
-  opacity: .9;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu[open] .dashboardAvgRangeMenuBtn::after{
-  content: "▴";
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  min-width: 220px;
-  max-height: 280px;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border: 1px solid rgba(121,226,255,.34);
-  background: #0d0f13;
-  box-shadow: 0 10px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenu:not([open]) .dashboardAvgRangeMenuList{
-  display: none;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 28px;
-  width: 100%;
-  text-align: left;
-  padding: 6px 8px;
-  border: 1px solid rgba(121,226,255,.2);
-  background: rgba(255,255,255,.03);
+  justify-content: flex-end;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: rgba(225,247,255,.93);
   font-family: var(--font-tight);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   cursor: pointer;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
-  border-color: rgba(121,226,255,.38);
-  background: rgba(53,232,255,.1);
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
-  border-color: rgba(53,232,255,.62) !important;
-  background: linear-gradient(180deg, rgba(53,232,255,.2), rgba(255,255,255,.06)) !important;
-  box-shadow: 0 0 0 1px rgba(53,232,255,.2) inset;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:hover,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:focus-visible{
+  color: rgba(83,236,255,.98);
+  outline: none;
 }
 body[data-theme="purple"] .name,
 body[data-theme="purple"] .time,
@@ -787,21 +734,12 @@ body[data-theme="purple"] .dashboardTitle,
 body[data-theme="purple"] .menuTitle{
   color:#f7f1ff;
 }
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuList{
-  border-color: rgba(214,96,229,.42) !important;
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem{
-  border-color: rgba(214,96,229,.3) !important;
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle{
   color: rgba(245,235,255,.92) !important;
 }
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem:hover{
-  border-color: rgba(233,134,245,.54) !important;
-  background: rgba(217,85,231,.16) !important;
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeMenuItem.isOn{
-  border-color: rgba(233,134,245,.74) !important;
-  background: linear-gradient(180deg, rgba(217,85,231,.28), rgba(255,255,255,.07)) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:focus-visible{
+  color: rgba(255,164,250,.96) !important;
 }
 body[data-theme="purple"] .dashboardTimelineDensityBtn{
   border-color: rgba(214,96,229,.28);
@@ -1478,6 +1416,12 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
 }
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta.negative{
   color: #ff7a7a;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard #dashboardTodayHoursDelta.positive{
+  color: #47ffb5;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard #dashboardTodayHoursDelta.negative{
+  color: #ff6b6b;
 }
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
   color: rgba(248,225,255,.92);

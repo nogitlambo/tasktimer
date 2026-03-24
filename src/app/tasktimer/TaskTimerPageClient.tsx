@@ -284,55 +284,15 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         No completed sessions in this range.
                       </p>
                       <div className="historyRangeRow dashboardAvgSessionRangeRow">
-                        <details className="dashboardAvgRangeMenu" id="dashboardAvgRangeMenu">
-                          <summary
-                            className="btn btn-ghost small dashboardAvgRangeMenuBtn"
-                            id="dashboardAvgRangeMenuBtn"
-                            role="button"
-                            aria-label="Select average session range"
-                          >
-                            <span className="dashboardAvgRangeMenuLabelPrefix">Range:</span>
-                            <span id="dashboardAvgRangeMenuLabel">Past 7 Days</span>
-                          </summary>
-                          <div className="dashboardAvgRangeMenuList" role="menu" aria-label="Average session range options">
-                            <button
-                              className="dashboardAvgRangeMenuItem isOn"
-                              type="button"
-                              data-dashboard-avg-range="past7"
-                              role="menuitemradio"
-                              aria-checked="true"
-                            >
-                              Past 7 Days
-                            </button>
-                            <button
-                              className="dashboardAvgRangeMenuItem"
-                              type="button"
-                              data-dashboard-avg-range="currentWeek"
-                              role="menuitemradio"
-                              aria-checked="false"
-                            >
-                              Current Week
-                            </button>
-                            <button
-                              className="dashboardAvgRangeMenuItem"
-                              type="button"
-                              data-dashboard-avg-range="past30"
-                              role="menuitemradio"
-                              aria-checked="false"
-                            >
-                              Past 30 Days
-                            </button>
-                            <button
-                              className="dashboardAvgRangeMenuItem"
-                              type="button"
-                              data-dashboard-avg-range="currentMonth"
-                              role="menuitemradio"
-                              aria-checked="false"
-                            >
-                              Current Month
-                            </button>
-                          </div>
-                        </details>
+                        <button
+                          className="btn btn-ghost small dashboardAvgRangeToggle"
+                          id="dashboardAvgRangeToggleBtn"
+                          type="button"
+                          data-dashboard-avg-range-toggle="true"
+                          aria-label="Toggle average session range between past 7 days and past 30 days"
+                        >
+                          <span id="dashboardAvgRangeMenuLabel">Past 7 Days</span>
+                        </button>
                       </div>
                     </section>
 

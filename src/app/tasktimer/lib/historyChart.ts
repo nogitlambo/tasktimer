@@ -15,20 +15,16 @@ export function startOfCurrentMonthMs(nowValue: number) {
 }
 
 export function getDashboardAvgRangeWindow(
-  range: "past7" | "currentWeek" | "past30" | "currentMonth",
+  range: "past7" | "past30",
   nowValue: number
 ) {
   const endMs = nowValue;
-  if (range === "currentWeek") return { startMs: startOfCurrentWeekMondayMs(nowValue), endMs };
   if (range === "past30") return { startMs: nowValue - 30 * 24 * 60 * 60 * 1000, endMs };
-  if (range === "currentMonth") return { startMs: startOfCurrentMonthMs(nowValue), endMs };
   return { startMs: nowValue - 7 * 24 * 60 * 60 * 1000, endMs };
 }
 
-export function dashboardAvgRangeLabel(range: "past7" | "currentWeek" | "past30" | "currentMonth") {
-  if (range === "currentWeek") return "Current Week";
+export function dashboardAvgRangeLabel(range: "past7" | "past30") {
   if (range === "past30") return "Past 30 Days";
-  if (range === "currentMonth") return "Current Month";
   return "Past 7 Days";
 }
 
@@ -39,6 +35,17 @@ export function formatDashboardDurationShort(ms: number) {
   const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
   const minutes = totalMinutes % 60;
   if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+export function formatDashboardDurationWithMinutes(ms: number) {
+  const safeMs = Math.max(0, Math.floor(ms || 0));
+  const totalMinutes = Math.floor(safeMs / 60000);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }

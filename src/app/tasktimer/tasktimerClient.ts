@@ -20,6 +20,7 @@ import {
   getDashboardAvgRangeWindow,
   dashboardAvgRangeLabel,
   formatDashboardDurationShort,
+  formatDashboardDurationWithMinutes,
   formatDashboardHeatMonthLabel,
   startOfCurrentWeekMondayMs,
 } from "./lib/historyChart";
@@ -1750,7 +1751,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
     const raw = String(value || "").trim();
-    if (raw === "currentWeek" || raw === "past30" || raw === "currentMonth") return raw;
+    if (raw === "past30" || raw === "currentMonth") return "past30";
+    if (raw === "currentWeek") return "past7";
     return "past7";
   }
 
@@ -5520,7 +5522,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
     const showProjectionMarker = totalGoalMs > 0 && runningMs > 0;
     const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
-    if (valueEl) valueEl.textContent = formatDashboardDurationShort(loggedMs);
+    if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";
@@ -6543,19 +6545,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const titleEl = els.dashboardAvgSessionTitle as HTMLElement | null;
     const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
     const canvas = els.dashboardAvgSessionChart;
-    const card = canvas?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
-    const rangeBtns = Array.from((card || document).querySelectorAll("[data-dashboard-avg-range]")) as HTMLElement[];
     const rangeLabelEl = document.getElementById("dashboardAvgRangeMenuLabel") as HTMLElement | null;
     const range = sanitizeDashboardAvgRange(dashboardAvgRange);
     dashboardAvgRange = range;
 
     if (titleEl) titleEl.textContent = `Avg Session by Task (${dashboardAvgRangeLabel(range)})`;
     if (rangeLabelEl) rangeLabelEl.textContent = dashboardAvgRangeLabel(range);
-    rangeBtns.forEach((btn) => {
-      const isOn = btn.getAttribute("data-dashboard-avg-range") === range;
-      btn.classList.toggle("isOn", isOn);
-      btn.setAttribute("aria-checked", String(isOn));
-    });
 
     if (!canvas) return;
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
@@ -11741,11 +11736,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         e.preventDefault();
         return;
       }
-      const btn = e.target?.closest?.("[data-dashboard-avg-range]") as HTMLElement | null;
+      const btn = e.target?.closest?.("[data-dashboard-avg-range-toggle]") as HTMLElement | null;
       if (!btn) return;
-      const nextRange = sanitizeDashboardAvgRange(btn.getAttribute("data-dashboard-avg-range"));
-      const rangeMenu = btn.closest("details") as HTMLDetailsElement | null;
-      if (rangeMenu) rangeMenu.open = false;
+      const nextRange: DashboardAvgRange = sanitizeDashboardAvgRange(dashboardAvgRange) === "past30" ? "past7" : "past30";
       if (nextRange === dashboardAvgRange) {
         renderDashboardWidgets();
         return;
@@ -11761,10 +11754,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
       if (!target.closest("#dashboardPanelMenu")) {
         closeDashboardPanelMenu();
-      }
-      const avgRangeMenu = document.getElementById("dashboardAvgRangeMenu") as HTMLDetailsElement | null;
-      if (avgRangeMenu && !target.closest("#dashboardAvgRangeMenu")) {
-        avgRangeMenu.open = false;
       }
     });
     on(els.dashboardGrid, "dragstart", (e: any) => {
