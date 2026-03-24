@@ -68,7 +68,7 @@ export default function WebSignIn(props: WebSignInProps) {
           >
             <div className="relative">
               <p className="displayFont text-center text-[12px] uppercase tracking-[0.22em] text-[#f1c9ff]">
-                LAUNCH YOUR INTENTION TODAY
+                TURN INTENTION INTO ACTION
               </p>
             </div>
 

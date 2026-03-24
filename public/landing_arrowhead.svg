@@ -1,0 +1,85 @@
+<svg width="512" height="384" viewBox="0 0 512 384" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="arrowFill" x1="118" y1="314" x2="394" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#74FBFF"/>
+      <stop offset="0.16" stop-color="#66F4FF"/>
+      <stop offset="0.34" stop-color="#F8FCFF"/>
+      <stop offset="0.58" stop-color="#BE5BFF"/>
+      <stop offset="0.82" stop-color="#EB6FFF"/>
+      <stop offset="1" stop-color="#FF92EE"/>
+    </linearGradient>
+    <linearGradient id="arrowSpec" x1="175" y1="274" x2="326" y2="115" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A7FEFF"/>
+      <stop offset="0.28" stop-color="#EEF9FF"/>
+      <stop offset="0.54" stop-color="#FFE4FF"/>
+      <stop offset="1" stop-color="#FFC2FF"/>
+    </linearGradient>
+    <radialGradient id="leftGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(159 272) rotate(58.7) scale(119 82)">
+      <stop offset="0" stop-color="#59F7FF" stop-opacity="0.78"/>
+      <stop offset="0.52" stop-color="#39C9F7" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#39C9F7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rightGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(350 168) rotate(90) scale(148 104)">
+      <stop offset="0" stop-color="#FF85F0" stop-opacity="0.8"/>
+      <stop offset="0.46" stop-color="#E14BFF" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#E14BFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="outerGlow" x="58" y="18" width="396" height="336" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+      <feGaussianBlur stdDeviation="28" result="effect1_foregroundBlur"/>
+    </filter>
+    <filter id="coreGlow" x="100" y="56" width="316" height="266" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+      <feGaussianBlur stdDeviation="10" result="effect1_foregroundBlur"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#outerGlow)" opacity="0.88">
+    <path
+      d="M127 309L246 84C250 76 262 76 266 84L385 309L326 300L256 157L185 300L127 309Z"
+      fill="url(#leftGlow)"
+    />
+    <path
+      d="M127 309L246 84C250 76 262 76 266 84L385 309L326 300L256 157L185 300L127 309Z"
+      fill="url(#rightGlow)"
+    />
+  </g>
+
+  <g filter="url(#coreGlow)">
+    <path
+      d="M133 304L247 89C251 82 261 82 265 89L379 304L325 296L256 162L187 296L133 304Z"
+      fill="url(#arrowFill)"
+    />
+  </g>
+
+  <g opacity="0.92">
+    <path
+      d="M140 300L249 93C252 87 260 87 263 93L372 300L322 293L256 168L190 293L140 300Z"
+      fill="url(#arrowFill)"
+    />
+  </g>
+
+  <path
+    d="M150 294L251 102C254 96 258 96 261 102L362 294L316 288L256 173L196 288L150 294Z"
+    fill="url(#arrowFill)"
+  />
+
+  <path
+    d="M160 286L252 112C254 108 258 108 260 112L352 286L318 281L256 165L194 281L160 286Z"
+    stroke="url(#arrowSpec)"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.92"
+  />
+
+  <path
+    d="M252 96L252 170"
+    stroke="#FFE8FF"
+    stroke-opacity="0.42"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+</svg>
