@@ -183,12 +183,41 @@ export default function Landing({
     }
 
     const ctx = gsap.context(() => {
-      gsap.to(arrow, {
-        rotationY: 360,
-        duration: 12,
+      const spinTimeline = gsap.timeline({
         repeat: -1,
-        ease: "none",
       });
+
+      spinTimeline
+        .to(arrow, {
+          rotationY: 60,
+          duration: 2.6,
+          ease: "none",
+        })
+        .to(arrow, {
+          rotationY: 120,
+          duration: 1.4,
+          ease: "none",
+        })
+        .to(arrow, {
+          rotationY: 180,
+          duration: 2,
+          ease: "none",
+        })
+        .to(arrow, {
+          rotationY: 240,
+          duration: 2.6,
+          ease: "none",
+        })
+        .to(arrow, {
+          rotationY: 300,
+          duration: 1.4,
+          ease: "none",
+        })
+        .to(arrow, {
+          rotationY: 360,
+          duration: 2,
+          ease: "none",
+        });
     }, arrow);
 
     return () => ctx.revert();
@@ -199,29 +228,33 @@ export default function Landing({
       className="landingV2 displayFont relative min-h-screen overflow-hidden bg-[#05010b] text-white"
     >
       <div className="absolute inset-0" aria-hidden="true">
-        <Image
-          src="/landing_page_bg-bare.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,1,11,0.68)_0%,rgba(5,1,11,0.52)_45%,rgba(5,1,11,0.76)_100%)]" />
-        <div className="landingV2ArrowOverlay">
-          <div className="landingV2ArrowStage">
-            <div ref={arrowRef} className="landingV2ArrowShell">
-              <Image
-                src="/landing_arrowhead_vector.svg"
-                alt=""
-                width={900}
-                height={700}
-                priority
-                className="landingV2ArrowGraphic"
-              />
+        <div className="landingV2ArtLayer">
+          <div className="landingV2ArtStage">
+            <Image
+              src="/landing_page_bg-bare2.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="landingV2ArtImage"
+            />
+            <div className="landingV2ArrowOverlay">
+              <div className="landingV2ArrowStage">
+                <div ref={arrowRef} className="landingV2ArrowShell">
+                  <Image
+                    src="/landing_arrowhead_vector.svg"
+                    alt=""
+                    width={900}
+                    height={700}
+                    priority
+                    className="landingV2ArrowGraphic"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,1,11,0.68)_0%,rgba(5,1,11,0.52)_45%,rgba(5,1,11,0.76)_100%)]" />
       </div>
 
       <div className="landingV2Glow landingV2GlowTop" aria-hidden="true" />

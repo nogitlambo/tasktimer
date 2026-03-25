@@ -11,17 +11,18 @@
   </defs>
 
   <path
-    d="M142 606L418 90C429 70 471 70 482 90L758 606L590 590L450 334L310 590L142 606Z"
+    d="M132 614L450 58L768 614L578 596L450 343L322 596L132 614Z"
     fill="url(#arrowFill)"
   />
 
   <path
-    d="M142 606L418 90C429 70 471 70 482 90L758 606L590 590L450 334L310 590L142 606Z"
+    d="M132 614L450 58L768 614L578 596L450 343L322 596L132 614Z"
     stroke="#FFF8FF"
-    stroke-width="15"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    opacity="0.96"
+    stroke-width="12"
+    stroke-linecap="butt"
+    stroke-linejoin="miter"
+    stroke-miterlimit="8"
+    opacity="0.98"
   />
 
   <path
