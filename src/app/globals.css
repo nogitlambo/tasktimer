@@ -50,6 +50,9 @@ canvas {
   --v2-purple-2: #8f2cff;
   --v2-text-soft: #d8d6e8;
   --v2-safe-top: max(20px, env(safe-area-inset-top, 0px));
+  --landing-arrow-left: 61.35%;
+  --landing-arrow-top: 29.95%;
+  --landing-arrow-width: clamp(132px, 13.9vw, 212px);
 }
 
 .landingV2 .landingV2Container {
@@ -78,6 +81,32 @@ canvas {
   right: -6rem;
   bottom: -6rem;
   background: radial-gradient(circle at 50% 50%, rgba(145, 34, 219, 0.38), rgba(57, 10, 88, 0));
+}
+
+.landingV2 .landingV2ArrowOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.landingV2 .landingV2ArrowStage {
+  position: absolute;
+  left: var(--landing-arrow-left);
+  top: var(--landing-arrow-top);
+  width: var(--landing-arrow-width);
+  transform: translate(-50%, -50%);
+}
+
+.landingV2 .landingV2ArrowShell {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.landingV2 .landingV2ArrowGraphic {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .landingV2 .landingV2Brand {
@@ -322,6 +351,10 @@ canvas {
   color: var(--v2-text-soft);
 }
 
+.landingV2 .landingV2Intro {
+  min-height: 100%;
+}
+
 .landingV2 .landingV2HeroMedia {
   position: relative;
   display: flex;
@@ -539,6 +572,12 @@ canvas {
 }
 
 @media (max-width: 1024px) {
+  .landingV2 {
+    --landing-arrow-left: 61.4%;
+    --landing-arrow-top: 30.15%;
+    --landing-arrow-width: clamp(122px, 15vw, 188px);
+  }
+
   .landingV2 .landingV2Container {
     padding-top: calc(var(--v2-safe-top) + 10px);
   }
@@ -600,6 +639,12 @@ canvas {
 }
 
 @media (max-width: 760px) {
+  .landingV2 {
+    --landing-arrow-left: 61.6%;
+    --landing-arrow-top: 30.45%;
+    --landing-arrow-width: clamp(108px, 24.8vw, 156px);
+  }
+
   .landingV2 .landingV2Container {
     padding-top: calc(var(--v2-safe-top) + 12px);
   }
@@ -626,6 +671,10 @@ canvas {
     gap: 24px;
   }
 
+  .landingV2 .landingV2Intro {
+    min-height: calc(100svh - var(--v2-safe-top) - 120px);
+  }
+
   .landingV2 .landingV2Title,
   .landingV2 .landingV2Lead {
     max-width: none;
@@ -644,6 +693,12 @@ canvas {
     width: 100%;
     justify-content: center;
     text-align: center;
+  }
+
+  .landingV2 .landingV2Actions {
+    margin-top: auto;
+    padding-top: 18px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
   }
 
   .landingV2 .landingV2HeroMedia {
@@ -692,6 +747,12 @@ canvas {
 }
 
 @media (max-width: 480px) {
+  .landingV2 {
+    --landing-arrow-left: 61.8%;
+    --landing-arrow-top: 30.7%;
+    --landing-arrow-width: clamp(100px, 26vw, 142px);
+  }
+
   .landingV2 .landingV2Container {
     padding-left: 18px;
     padding-right: 18px;
@@ -709,6 +770,10 @@ canvas {
   .landingV2 .landingV2Hero {
     padding-top: 22px;
     gap: 20px;
+  }
+
+  .landingV2 .landingV2Intro {
+    min-height: calc(100svh - var(--v2-safe-top) - 112px);
   }
 
   .landingV2 .landingV2Title {
@@ -741,5 +806,8 @@ canvas {
   }
   .landingV2 .landingV2SignalLetter.isFlickering {
     animation: none;
+  }
+  .landingV2 .landingV2ArrowShell {
+    transform: none !important;
   }
 }

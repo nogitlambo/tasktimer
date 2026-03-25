@@ -1,5 +1,6 @@
 "use client";
 
+import { gsap } from "gsap";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -83,7 +84,11 @@ function LandingIntroSequence({
 
   return (
     <>
-      <div className={`space-y-8 transition-all duration-700 ${entered ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
+      <div
+        className={`landingV2Intro flex min-h-full flex-col space-y-8 transition-all duration-700 ${
+          entered ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+        }`}
+      >
         {preHeroText ? (
           <p
             className={`landingV2PreHero displayFont text-[12px] tracking-[0.22em] text-[#e7ccf5]${
@@ -124,7 +129,7 @@ function LandingIntroSequence({
         </p>
 
         <div
-          className={`flex flex-wrap items-center gap-7 transition-all duration-700 ${
+          className={`landingV2Actions flex flex-wrap items-center gap-7 transition-all duration-700 ${
             isActionsVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
           aria-hidden={!isActionsVisible}
@@ -149,6 +154,7 @@ export default function Landing({
   showTitlePhase,
   showActions,
 }: LandingExperimentalProps) {
+  const arrowRef = useRef<HTMLDivElement | null>(null);
   const preHeroText = "";
   const fullHeroText = "TURN INTENTION INTO ACTION.";
   const supportLineOne =
@@ -156,13 +162,45 @@ export default function Landing({
   const supportLineTwo = "Powered by a smarter system built for neurodivergent minds.";
   const typeMsPerChar = Math.max(14, Math.round(1000 / fullHeroText.length));
 
+  useEffect(() => {
+    const arrow = arrowRef.current;
+
+    if (!arrow) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    gsap.set(arrow, {
+      transformPerspective: 1600,
+      transformOrigin: "50% 60%",
+      rotationX: 0,
+      rotationY: 0,
+      scale: 1,
+      z: 0,
+    });
+
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      gsap.to(arrow, {
+        rotationY: 360,
+        duration: 12,
+        repeat: -1,
+        ease: "none",
+      });
+    }, arrow);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <main
       className="landingV2 displayFont relative min-h-screen overflow-hidden bg-[#05010b] text-white"
     >
       <div className="absolute inset-0" aria-hidden="true">
         <Image
-          src="/landing_page_bg.png"
+          src="/landing_page_bg-bare.png"
           alt=""
           fill
           priority
@@ -170,6 +208,20 @@ export default function Landing({
           className="object-cover object-top"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,1,11,0.68)_0%,rgba(5,1,11,0.52)_45%,rgba(5,1,11,0.76)_100%)]" />
+        <div className="landingV2ArrowOverlay">
+          <div className="landingV2ArrowStage">
+            <div ref={arrowRef} className="landingV2ArrowShell">
+              <Image
+                src="/landing_arrowhead_vector.svg"
+                alt=""
+                width={900}
+                height={700}
+                priority
+                className="landingV2ArrowGraphic"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="landingV2Glow landingV2GlowTop" aria-hidden="true" />
@@ -202,7 +254,7 @@ export default function Landing({
 
         </header>
 
-        <section className="landingV2Hero grid grid-cols-1 gap-12 pt-12 lg:grid-cols-[1.02fr_1fr] lg:items-start">
+        <section className="landingV2Hero grid flex-1 grid-cols-1 gap-12 pt-12 lg:grid-cols-[1.02fr_1fr] lg:items-start">
           {showTitlePhase ? (
             <LandingIntroSequence
               showActions={showActions}

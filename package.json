@@ -26,6 +26,7 @@
     "@capacitor/push-notifications": "^8.0.2",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.6.1",
+    "gsap": "^3.14.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
