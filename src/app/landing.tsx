@@ -241,6 +241,7 @@ export default function Landing({
             <div className="landingV2ArrowOverlay">
               <div className="landingV2ArrowStage">
                 <div ref={arrowRef} className="landingV2ArrowShell">
+                  <div className="landingV2ArrowBeamBlend" aria-hidden="true" />
                   <Image
                     src="/landing_arrowhead_vector.svg"
                     alt=""

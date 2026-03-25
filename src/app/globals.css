@@ -125,10 +125,47 @@ canvas {
   will-change: transform;
 }
 
+.landingV2 .landingV2ArrowBeamBlend {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.82;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(157, 241, 255, 0) 0%,
+      rgba(157, 241, 255, 0.08) 22%,
+      rgba(194, 249, 255, 0.2) 42%,
+      rgba(208, 252, 255, 0.5) 68%,
+      rgba(218, 254, 255, 0.78) 84%,
+      rgba(231, 255, 255, 0.96) 100%
+    ),
+    radial-gradient(
+      22% 88% at 50% 74%,
+      rgba(236, 255, 255, 0.78) 0%,
+      rgba(173, 244, 255, 0.48) 38%,
+      rgba(130, 223, 255, 0.16) 68%,
+      rgba(130, 223, 255, 0) 100%
+    );
+  mix-blend-mode: screen;
+  -webkit-mask-image: url("/landing_arrowhead_vector.svg");
+  mask-image: url("/landing_arrowhead_vector.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .landingV2 .landingV2ArrowGraphic {
   display: block;
   width: 100%;
   height: auto;
+  filter:
+    drop-shadow(0 0 10px rgba(158, 242, 255, 0.2))
+    drop-shadow(0 0 22px rgba(137, 226, 255, 0.14))
+    drop-shadow(0 0 40px rgba(126, 186, 255, 0.08));
 }
 
 .landingV2 .landingV2Brand {

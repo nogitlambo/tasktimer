@@ -201,8 +201,15 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
                 {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
               </span>
             </span>
-            <span className="signedInHeaderBadgeTrack" aria-hidden="true">
-              <span className="signedInHeaderBadgeFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+            <span className="signedInHeaderBadgeTrack rewardSegmentedBar" aria-hidden="true">
+              <span className="signedInHeaderBadgeFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+              <span className="rewardSegmentedBarTrack">
+                <span className="rewardSegmentedBarSegment" />
+                <span className="rewardSegmentedBarSegment" />
+                <span className="rewardSegmentedBarSegment" />
+                <span className="rewardSegmentedBarSegment" />
+                <span className="rewardSegmentedBarSegment" />
+              </span>
             </span>
           </span>
         </span>

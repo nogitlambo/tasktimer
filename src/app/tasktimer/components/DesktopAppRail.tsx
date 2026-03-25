@@ -428,8 +428,15 @@ export default function DesktopAppRail({
                   <span>XP Progress</span>
                   <strong>{rewardsHeader.totalXp} XP</strong>
                 </div>
-                <div className="progressTrack dashboardRailProfileXpTrack" aria-hidden="true">
-                  <div className="progressFill dashboardRailProfileXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                <div className="dashboardRailProfileXpTrack rewardSegmentedBar" aria-hidden="true">
+                  <div className="dashboardRailProfileXpFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                  <span className="rewardSegmentedBarTrack">
+                    <span className="rewardSegmentedBarSegment" />
+                    <span className="rewardSegmentedBarSegment" />
+                    <span className="rewardSegmentedBarSegment" />
+                    <span className="rewardSegmentedBarSegment" />
+                    <span className="rewardSegmentedBarSegment" />
+                  </span>
                 </div>
                 <div className="dashboardRailProfileXpMeta">
                   <span>{rewardsHeader.progressLabel}</span>

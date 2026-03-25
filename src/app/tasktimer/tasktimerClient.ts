@@ -3383,6 +3383,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function openTimeGoalNoteModal(task: Task) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
+    const capturedNote = captureSessionNoteSnapshot(taskId);
+    if (capturedNote) setFocusSessionDraft(taskId, capturedNote);
     if (els.timeGoalCompleteNoteTitle) {
       els.timeGoalCompleteNoteTitle.textContent = `${String(task.name || "Task")} Notes`;
     }
@@ -3390,7 +3392,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els.timeGoalCompleteNoteText.textContent = "Add a note for this saved session before the timer resets.";
     }
     if (els.timeGoalCompleteNoteInput) {
-      els.timeGoalCompleteNoteInput.value = getFocusSessionDraft(taskId);
+      els.timeGoalCompleteNoteInput.value = capturedNote;
     }
     persistPendingTimeGoalFlow(task, "note");
     openOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);

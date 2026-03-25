@@ -99,6 +99,79 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: 0 0 0 1px rgba(124, 232, 255, 0.16), 0 0 20px rgba(0, 220, 255, 0.16);
 }
 
+.rewardSegmentedBar {
+  --reward-bar-segment: 18px;
+  --reward-bar-gap: 3px;
+  --reward-bar-track-base: #041318;
+  --reward-bar-track-fill: rgba(18, 111, 122, 0.18);
+  --reward-bar-gap-color: rgba(4, 15, 20, 0.32);
+  --reward-bar-fill-mid: #35e8ff;
+  --reward-bar-fill-deep: #00cfc8;
+  --reward-bar-fill-glow: rgba(0, 220, 255, 0.18);
+  --reward-bar-skew: 8px;
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+  border-radius: 0;
+  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--reward-bar-track-fill) 0 calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      var(--reward-bar-gap-color) calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+    var(--reward-bar-track-base);
+}
+
+.rewardSegmentedBarFill {
+  position: absolute;
+  inset: 1px auto 1px 1px;
+  z-index: 2;
+  min-width: 0;
+  display: block;
+  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--reward-bar-fill-mid) 0,
+      var(--reward-bar-fill-deep) calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      transparent calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(203, 255, 255, 0.05),
+    0 0 4px var(--reward-bar-fill-glow);
+}
+
+.rewardSegmentedBarTrack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--reward-bar-gap);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.rewardSegmentedBarSegment {
+  min-width: 0;
+}
+
+body[data-theme="purple"] .rewardSegmentedBar {
+  --reward-bar-track-base: #110c1b;
+  --reward-bar-track-fill: rgba(101, 59, 160, 0.18);
+  --reward-bar-gap-color: rgba(18, 10, 29, 0.32);
+  --reward-bar-fill-mid: #d447d2;
+  --reward-bar-fill-deep: #f06ee0;
+  --reward-bar-fill-glow: rgba(212, 71, 210, 0.18);
+}
+
+body[data-control-style="square"] .rewardSegmentedBar,
+body[data-control-style="parallelogram"] .rewardSegmentedBar {
+  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+}
+
 .dashboardHeatCard {
   display: grid;
   grid-template-rows: minmax(0, 1fr);

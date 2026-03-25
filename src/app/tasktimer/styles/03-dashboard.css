@@ -564,6 +564,10 @@
 .dashboardLegend .dot.mode2{ background: var(--mode2-accent); }
 .dashboardLegend .dot.mode3{ background: var(--mode3-accent); }
 .dashboardTimeline{
+  --dashboard-timeline-note-color: rgba(188,214,230,.72);
+  --dashboard-timeline-row-border: rgba(117,231,255,.16);
+  --dashboard-timeline-time-color: rgba(142,242,255,.92);
+  --dashboard-timeline-copy-color: rgba(210,230,246,.82);
   margin:8px 0 0;
   padding:0;
   list-style:none;
@@ -604,13 +608,13 @@
   margin-top:8px;
   min-height:14px;
   font-size:11px;
-  color: rgba(188,214,230,.72);
+  color: var(--dashboard-timeline-note-color);
 }
 .dashboardTimeline li{
   display:grid;
   grid-template-columns: 56px 1fr;
   gap:10px;
-  border-top:1px solid rgba(117,231,255,.16);
+  border-top:1px solid var(--dashboard-timeline-row-border);
   padding-top:8px;
 }
 .dashboardTimeline li:first-child{
@@ -619,14 +623,14 @@
 }
 .dashboardTimeline li > span{
   font-size:11px;
-  color: rgba(142,242,255,.92);
+  color: var(--dashboard-timeline-time-color);
   font-family:var(--font-tight);
   letter-spacing:.08em;
 }
 .dashboardTimeline li > p{
   margin:0;
   font-size:13px;
-  color: rgba(210,230,246,.82);
+  color: var(--dashboard-timeline-copy-color);
 }
 body[data-control-style="parallelogram"] .dashboardTimelineDensityBtn{
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
@@ -749,6 +753,12 @@ body[data-theme="purple"] .dashboardTimelineDensityBtn.isOn{
   border-color: rgba(233,134,245,.6);
   background: rgba(217,85,231,.16);
   color: rgba(251,244,255,.96);
+}
+body[data-theme="purple"] .dashboardTimeline{
+  --dashboard-timeline-note-color: rgba(227,216,245,.76);
+  --dashboard-timeline-row-border: rgba(214,96,229,.18);
+  --dashboard-timeline-time-color: rgba(240,174,255,.94);
+  --dashboard-timeline-copy-color: rgba(232,223,247,.84);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
   display: block;
