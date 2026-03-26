@@ -1,7 +1,7 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
 import type { AppPage, MainMode } from "./types";
-import type { Task } from "../lib/types";
+import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -32,8 +32,12 @@ export type TaskTimerCachedPreferences = {
 
 export type TaskTimerConfirmOptions = {
   okLabel?: string;
+  cancelLabel?: string;
+  checkboxLabel?: string;
+  checkboxChecked?: boolean;
   textHtml?: string;
   onOk?: (() => void) | null;
+  onCancel?: (() => void) | null;
 };
 
 export type TaskTimerAppShellContext = {
@@ -129,4 +133,59 @@ export type TaskTimerPreferencesContext = {
   escapeHtmlUI: (value: unknown) => string;
   stopCheckpointRepeatAlert: () => void;
   getCurrentAppPage: () => AppPage;
+};
+
+export type TaskTimerHistoryManagerSortKey = "ts" | "ms";
+export type TaskTimerHistoryManagerSortDir = "asc" | "desc";
+
+export type TaskTimerHistoryManagerContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  runtime: TaskTimerRuntime;
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getDeletedTaskMeta: () => DeletedTaskMeta;
+  setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
+  getHmExpandedTaskGroups: () => Set<string>;
+  setHmExpandedTaskGroups: (value: Set<string>) => void;
+  getHmExpandedDateGroups: () => Set<string>;
+  setHmExpandedDateGroups: (value: Set<string>) => void;
+  getHmSortKey: () => TaskTimerHistoryManagerSortKey;
+  setHmSortKey: (value: TaskTimerHistoryManagerSortKey) => void;
+  getHmSortDir: () => TaskTimerHistoryManagerSortDir;
+  setHmSortDir: (value: TaskTimerHistoryManagerSortDir) => void;
+  getHmBulkEditMode: () => boolean;
+  setHmBulkEditMode: (value: boolean) => void;
+  getHmBulkSelectedRows: () => Set<string>;
+  setHmBulkSelectedRows: (value: Set<string>) => void;
+  getHmRowsByTask: () => Record<string, string[]>;
+  setHmRowsByTask: (value: Record<string, string[]>) => void;
+  getHmRowsByTaskDate: () => Record<string, string[]>;
+  setHmRowsByTaskDate: (value: Record<string, string[]>) => void;
+  getHistoryManagerRefreshInFlight: () => Promise<void> | null;
+  setHistoryManagerRefreshInFlight: (value: Promise<void> | null) => void;
+  isArchitectUser: () => boolean;
+  getHistoryEntryNote: (entry: unknown) => string;
+  csvEscape: (value: unknown) => string;
+  parseCsvRows: (input: string) => string[][];
+  downloadCsvFile: (filename: string, text: string) => void;
+  formatTwo: (value: number) => string;
+  formatDateTime: (value: number) => string;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  saveHistory: (history: HistoryByTaskId) => void;
+  saveHistoryAndWait: (history: HistoryByTaskId) => Promise<void>;
+  loadHistory: () => HistoryByTaskId;
+  refreshHistoryFromCloud: () => Promise<HistoryByTaskId>;
+  saveDeletedMeta: (meta: DeletedTaskMeta) => void;
+  loadDeletedMeta: () => DeletedTaskMeta;
+  load: () => void;
+  render: () => void;
+  navigateToAppRoute: (path: string) => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  closeConfirm: () => void;
+  escapeHtmlUI: (value: unknown) => string;
+  syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
+  syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
 };

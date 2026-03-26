@@ -58,17 +58,27 @@
 .hmEmpty{
   color: rgba(255,255,255,.65);
   padding:16px 14px;
-  border:1px solid rgba(255,255,255,.08);
+  border:1px solid transparent;
   border-radius: 14px;
-  background: rgba(255,255,255,.04);
+  background: transparent;
 }
 
 .hmGroup{
-  border:1px solid rgba(255,255,255,.10);
+  border:1px solid transparent;
   border-radius: 0;
-  background: rgba(255,255,255,.04);
+  background: transparent;
   overflow:hidden;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  transition: border-color .16s ease;
+}
+
+.hmGroup:hover,
+.hmGroup:focus-within{
+  border-color: rgba(160,232,255,.34);
+}
+
+.hmGroup:has(.hmBulkTaskChk:checked){
+  border-color: rgba(160,232,255,.58);
 }
 
 .hmSummary{
@@ -141,14 +151,23 @@
 }
 
 .hmTable th, .hmTable td{
-  border-top:1px solid rgba(255,255,255,.08);
+  border-top:1px solid transparent;
   padding:10px 12px;
   text-align:left;
 }
 
 .hmTable tbody tr{
-  background: rgba(255,255,255,.03);
+  background: transparent;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  transition: box-shadow .16s ease;
+}
+
+.hmTable tbody tr:hover{
+  box-shadow: inset 0 0 0 1px rgba(160,232,255,.32);
+}
+
+.hmTable tbody tr:has(.hmBulkRowChk:checked){
+  box-shadow: inset 0 0 0 1px rgba(160,232,255,.56);
 }
 
 .hmSelectHead,
@@ -160,7 +179,7 @@
 }
 
 .hmSelectHead{
-  border-top:1px solid rgba(255,255,255,.08);
+  border-top:1px solid transparent;
 }
 
 .hmSortBtn{
@@ -199,7 +218,7 @@
 }
 
 .hmDateGroup + .hmDateGroup{
-  border-top:1px solid rgba(255,255,255,.08);
+  border-top:1px solid transparent;
 }
 
 .hmDateHeading{
@@ -211,7 +230,18 @@
   font-size:12px;
   font-weight:800;
   letter-spacing:.04em;
+  border:1px solid transparent;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  transition: border-color .16s ease;
+}
+
+.hmDateGroup:hover .hmDateHeading,
+.hmDateGroup:focus-within .hmDateHeading{
+  border-color: rgba(160,232,255,.3);
+}
+
+.hmDateGroup:has(.hmBulkDateChk:checked) .hmDateHeading{
+  border-color: rgba(160,232,255,.54);
 }
 
 .hmDateHeading::-webkit-details-marker{
@@ -238,3 +268,11 @@
 }
 
 .hmDelBtn:hover{ background: rgba(255,77,77,.16); }
+
+/* Keep history-manager surface flat in both themes.
+   A broader purple-theme rule in overlays.css styles .hmGroup globally. */
+body[data-theme="purple"] #historyManagerScreen .hmGroup{
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
