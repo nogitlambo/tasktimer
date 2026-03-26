@@ -97,6 +97,7 @@ import type {
 } from "./client/types";
 import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
+import { createTaskTimerAppShell } from "./client/app-shell";
 import {
   createInitialTaskTimerState,
   createTaskTimerStorageKeys,
@@ -403,248 +404,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   const els = collectTaskTimerElements(document);
 
-  function taskTimerRootPath() {
-    const pathname = window.location.pathname || "";
-    const normalized = pathname.replace(/\/+$/, "");
-    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-    if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
-    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends)$/, "");
-    return pageStyleRoot || normalized || "/tasktimer";
-  }
-
-  function taskTimerExportBasePath() {
-    const pathname = window.location.pathname || "";
-    const normalized = pathname.replace(/\/+$/, "");
-    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-    if (taskTimerMatch) return taskTimerMatch[1] || "";
-    return "";
-  }
-
-  function appRoute(path: string) {
-    if (!path.startsWith("/tasktimer")) return path;
-    const hashIndex = path.indexOf("#");
-    const queryIndex = path.indexOf("?");
-    const cutIndex =
-      queryIndex === -1 ? hashIndex : hashIndex === -1 ? queryIndex : Math.min(queryIndex, hashIndex);
-    const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
-    const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
-    const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
-    const suffix = normalizedPath.replace(/^\/tasktimer/, "");
-    const resolved = `${taskTimerRootPath()}${suffix}${trailing}`;
-
-    // In exported/mobile builds (e.g. Android WebView), folder URLs like `/tasktimer/settings/`
-    // can fall back to the app root. Target the actual exported file path instead.
-    const currentPath = window.location.pathname || "";
-    const capacitorApi = (window as any).Capacitor;
-    const isNativeCapacitorRuntime = !!(
-      capacitorApi &&
-      typeof capacitorApi.isNativePlatform === "function" &&
-      capacitorApi.isNativePlatform()
-    );
-    const usesExportedHtmlPaths =
-      window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativeCapacitorRuntime;
-    if (!usesExportedHtmlPaths) return resolved;
-
-    const resolvedHashIndex = resolved.indexOf("#");
-    const resolvedQueryIndex = resolved.indexOf("?");
-    const resolvedCutIndex =
-      resolvedQueryIndex === -1
-        ? resolvedHashIndex
-        : resolvedHashIndex === -1
-          ? resolvedQueryIndex
-          : Math.min(resolvedQueryIndex, resolvedHashIndex);
-    const resolvedPathOnly = resolvedCutIndex >= 0 ? resolved.slice(0, resolvedCutIndex) : resolved;
-    const resolvedTrailing = resolvedCutIndex >= 0 ? resolved.slice(resolvedCutIndex) : "";
-    if (/\/index\.html$/i.test(resolvedPathOnly)) return resolved;
-    const noTrailingSlash = resolvedPathOnly.replace(/\/+$/, "");
-    return `${noTrailingSlash}/index.html${resolvedTrailing}`;
-  }
-
-  function isTaskTimerTasksPath(path: string) {
-    return /\/tasktimer$/i.test(path) || /\/tasktimer\/index\.html$/i.test(path);
-  }
-
-  function isTaskTimerDashboardPath(path: string) {
-    return /\/tasktimer\/dashboard$/i.test(path) || /\/tasktimer\/dashboard\/index\.html$/i.test(path);
-  }
-
-  function isTaskTimerFriendsPath(path: string) {
-    return /\/tasktimer\/friends$/i.test(path) || /\/tasktimer\/friends\/index\.html$/i.test(path);
-  }
-
-  function isTaskTimerMainAppPath(path: string) {
-    return isTaskTimerTasksPath(path) || isTaskTimerDashboardPath(path) || isTaskTimerFriendsPath(path);
-  }
-
-  function appPathForPage(page: AppPage) {
-    if (page === "dashboard") return appRoute("/tasktimer/dashboard");
-    if (page === "test1") return `${appRoute("/tasktimer")}?page=test1`;
-    if (page === "test2") return appRoute("/tasktimer/friends");
-    return appRoute("/tasktimer");
-  }
-
-  function getInitialAppPageFromLocation(defaultPage: AppPage = initialAppPage): AppPage {
-    try {
-      const path = normalizedPathname();
-      if (isTaskTimerDashboardPath(path)) return "dashboard";
-      if (isTaskTimerFriendsPath(path)) return "test2";
-      const params = new URLSearchParams(window.location.search || "");
-      const page = String(params.get("page") || "").toLowerCase();
-      if (page === "dashboard") return "dashboard";
-      if (page === "test1") return "test1";
-      if (page === "test2") return "test2";
-    } catch {
-      // ignore
-    }
-    return isTaskTimerTasksPath(normalizedPathname()) ? "tasks" : defaultPage;
-  }
-
-  function normalizedPathname() {
-    try {
-      return (window.location.pathname || "").replace(/\/+$/, "") || "/";
-    } catch {
-      return "/";
-    }
-  }
-
-  function normalizeTaskTimerRoutePath(pathRaw: string) {
-    const trimmed = String(pathRaw || "").trim();
-    if (!trimmed) return "";
-    const withoutQuery = trimmed.split("#")[0]?.split("?")[0] || "";
-    let normalized = withoutQuery.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
-    normalized = normalized.replace(/\/index\.html$/i, "");
-    if (/\/tasktimer\/settings\.html$/i.test(normalized)) return "/tasktimer/settings";
-    if (/\/tasktimer\/history-manager\.html$/i.test(normalized)) return "/tasktimer/history-manager";
-    if (/\/tasktimer\/user-guide\.html$/i.test(normalized)) return "/tasktimer/user-guide";
-    if (/\/tasktimer\/feedback\.html$/i.test(normalized)) return "/tasktimer/feedback";
-    if (/\/tasktimer(?:\/index)?$/i.test(normalized)) return "/tasktimer";
-    return normalized;
-  }
-
-  function isValidTaskTimerBackRoute(pathRaw: string) {
-    const path = normalizeTaskTimerRoutePath(pathRaw);
-    return (
-      path === "/tasktimer" ||
-      path === "/tasktimer/settings" ||
-      path === "/tasktimer/history-manager" ||
-      path === "/tasktimer/user-guide" ||
-      path === "/tasktimer/feedback"
-    );
-  }
-
-  function screenTokenForCurrent(pageOverride?: AppPage) {
-    const path = normalizedPathname();
-    if (isTaskTimerMainAppPath(path)) {
-      const page = pageOverride || currentAppPage || "tasks";
-      return `app:tasktimer|page=${page}`;
-    }
-    return `route:${path}`;
-  }
-
-  function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
-    const m = String(token || "").match(/\|page=(tasks|dashboard|test1|test2)$/);
-    if (!m) return null;
-    const p = m[1];
-    if (p === "tasks" || p === "dashboard" || p === "test1" || p === "test2") return p;
-    return null;
-  }
-
-  function normalizeNavStack(raw: unknown): string[] {
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .map((entry) => String(entry || "").trim())
-      .filter((entry) => !!entry)
-      .slice(-NAV_STACK_MAX);
-  }
-
-  function loadNavStack(): string[] {
-    try {
-      const raw = localStorage.getItem(NAV_STACK_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const next = normalizeNavStack(parsed);
-        navStackMemory = next.slice();
-        return next;
-      }
-    } catch {
-      // ignore localStorage/JSON failures
-    }
-    const fallback = normalizeNavStack(navStackMemory);
-    navStackMemory = fallback.slice();
-    return fallback;
-  }
-
-  function saveNavStack(stack: string[]) {
-    const next = normalizeNavStack(stack);
-    navStackMemory = next.slice();
-    try {
-      if (next.length) localStorage.setItem(NAV_STACK_KEY, JSON.stringify(next));
-      else localStorage.removeItem(NAV_STACK_KEY);
-    } catch {
-      // ignore localStorage failures
-    }
-  }
-
-  function pushCurrentScreenToNavStack(pageOverride?: AppPage) {
-    if (suppressNavStackPush) return;
-    const token = screenTokenForCurrent(pageOverride);
-    const stack = loadNavStack();
-    if (stack[stack.length - 1] === token) return;
-    stack.push(token);
-    saveNavStack(stack);
-  }
-
-  function ensureNavStackCurrentScreen() {
-    pushCurrentScreenToNavStack();
-  }
-
-  function navigateToAppRoute(path: string) {
-    if (currentAppPage === "tasks") resetAllOpenHistoryChartSelections();
-    pushCurrentScreenToNavStack();
-    window.location.href = appRoute(path);
-  }
-
-  function getCapAppPlugin() {
-    const cap = (window as any)?.Capacitor;
-    if (!cap) return null;
-    const direct = cap?.Plugins?.App || cap?.App;
-    if (direct) return direct;
-    if (typeof cap?.registerPlugin === "function") {
-      try {
-        return cap.registerPlugin("App");
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  function exitAppNow() {
-    try {
-      const capApp = getCapAppPlugin();
-      if (capApp?.exitApp) {
-        capApp.exitApp();
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    try {
-      const navApp = (navigator as any)?.app;
-      if (navApp?.exitApp) {
-        navApp.exitApp();
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    try {
-      window.close();
-    } catch {
-      // ignore
-    }
-  }
-
   function showExitAppConfirm() {
     confirm("Exit App", "Do you want to exit the app?", {
       okLabel: "Yes",
@@ -700,133 +459,61 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return true;
   }
 
-  function resolveBackNavigationTarget(token: string, currentToken: string, currentPath: string) {
-    const rawToken = String(token || "").trim();
-    if (!rawToken || rawToken === currentToken) return null;
+  const appShell = createTaskTimerAppShell({
+    els,
+    runtime,
+    on,
+    initialAppPage,
+    navStackKey: NAV_STACK_KEY,
+    navStackMax: NAV_STACK_MAX,
+    nativeBackDebounceMs: NATIVE_BACK_DEBOUNCE_MS,
+    getCurrentAppPage: () => currentAppPage,
+    setCurrentAppPage: (page) => {
+      currentAppPage = page;
+    },
+    getSuppressNavStackPush: () => suppressNavStackPush,
+    setSuppressNavStackPush: (value) => {
+      suppressNavStackPush = value;
+    },
+    getNavStackMemory: () => navStackMemory,
+    setNavStackMemory: (stack) => {
+      navStackMemory = stack;
+    },
+    getLastNativeBackHandledAtMs: () => lastNativeBackHandledAtMs,
+    setLastNativeBackHandledAtMs: (value) => {
+      lastNativeBackHandledAtMs = value;
+    },
+    resetAllOpenHistoryChartSelections,
+    clearTaskFlipStates,
+    renderFriendsFooterAlertBadge,
+    closeTaskExportModal,
+    closeShareTaskModal,
+    closeFriendProfileModal,
+    closeFriendRequestModal,
+    render,
+    renderHistory,
+    renderDashboardWidgets,
+    renderGroupsPage,
+    refreshGroupsData,
+    getOpenHistoryTaskIds: () => openHistoryTaskIds,
+    closeTopOverlayIfOpen,
+    closeMobileDetailPanelIfOpen,
+    showExitAppConfirm,
+  });
 
-    if (rawToken.startsWith("app:")) {
-      const page = parseAppPageFromToken(rawToken);
-      if (!page) return null;
-      if (screenTokenForCurrent(page) === currentToken) return null;
-      return { kind: "app" as const, page };
-    }
-
-    if (rawToken.startsWith("route:")) {
-      const routePath = normalizeTaskTimerRoutePath(rawToken.slice("route:".length));
-      const currentRoutePath = normalizeTaskTimerRoutePath(currentPath);
-      if (!routePath || routePath === currentRoutePath) return null;
-      if (!isValidTaskTimerBackRoute(routePath)) return null;
-      return { kind: "route" as const, path: routePath };
-    }
-
-    return null;
-  }
-
-  function canUseBrowserHistoryFallback(currentPath: string) {
-    try {
-      if ((window.history?.length || 0) <= 1) return false;
-      const referrer = String(document.referrer || "").trim();
-      if (!referrer) return false;
-      const url = new URL(referrer, window.location.href);
-      if (url.origin !== window.location.origin) return false;
-      const refPath = normalizeTaskTimerRoutePath(url.pathname || "");
-      const nowPath = normalizeTaskTimerRoutePath(currentPath);
-      return !!refPath && refPath !== nowPath && isValidTaskTimerBackRoute(refPath);
-    } catch {
-      return false;
-    }
-  }
-
-  function handleAppBackNavigation(): boolean {
-    if (closeTopOverlayIfOpen()) return true;
-    if (closeMobileDetailPanelIfOpen()) return true;
-
-    const path = normalizedPathname();
-    const stack = loadNavStack();
-    const currentToken = screenTokenForCurrent();
-    while (stack.length && stack[stack.length - 1] === currentToken) stack.pop();
-    let nextTarget: ReturnType<typeof resolveBackNavigationTarget> = null;
-    while (stack.length && !nextTarget) {
-      const candidate = stack.pop() || "";
-      nextTarget = resolveBackNavigationTarget(candidate, currentToken, path);
-    }
-    saveNavStack(stack);
-
-    if (nextTarget?.kind === "app") {
-      suppressNavStackPush = true;
-      applyAppPage(nextTarget.page);
-      suppressNavStackPush = false;
-      ensureNavStackCurrentScreen();
-      return true;
-    }
-
-    if (nextTarget?.kind === "route") {
-      window.location.href = appRoute(nextTarget.path);
-      return true;
-    }
-
-    if (canUseBrowserHistoryFallback(path)) {
-      window.history.back();
-      return true;
-    }
-
-    showExitAppConfirm();
-    return true;
-  }
-
-  function onNativeBackPressed(ev?: any) {
-    try {
-      ev?.preventDefault?.();
-    } catch {
-      // ignore
-    }
-    const now = Date.now();
-    if (now - lastNativeBackHandledAtMs < NATIVE_BACK_DEBOUNCE_MS) return;
-    lastNativeBackHandledAtMs = now;
-    handleAppBackNavigation();
-  }
-
-  function initMobileBackHandling() {
-    ensureNavStackCurrentScreen();
-
-    const onPopState = () => {
-      const path = normalizedPathname();
-      if (!isTaskTimerMainAppPath(path)) return;
-      const nextPage = getInitialAppPageFromLocation();
-      suppressNavStackPush = true;
-      applyAppPage(nextPage);
-      suppressNavStackPush = false;
-      ensureNavStackCurrentScreen();
-    };
-    on(window, "popstate", onPopState as any);
-
-    let capBackHooked = false;
-
-    try {
-      const capApp = getCapAppPlugin();
-      if (capApp?.addListener) {
-        capBackHooked = true;
-        const maybePromise = capApp.addListener("backButton", (ev: any) => {
-          onNativeBackPressed(ev);
-        });
-        if (maybePromise && typeof maybePromise.then === "function") {
-          maybePromise.then((h: any) => {
-            if (h?.remove) runtime.removeCapBackListener = () => h.remove();
-          }).catch(() => {});
-        } else if (maybePromise?.remove) {
-          runtime.removeCapBackListener = () => maybePromise.remove();
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    if (!capBackHooked) {
-      on(document as any, "backbutton", (e: any) => {
-        onNativeBackPressed(e);
-      });
-    }
-  }
+  const {
+    taskTimerExportBasePath,
+    appPathForPage,
+    getInitialAppPageFromLocation,
+    normalizedPathname,
+    normalizeTaskTimerRoutePath,
+    navigateToAppRoute,
+    getCapAppPlugin,
+    exitAppNow,
+    handleAppBackNavigation,
+    initMobileBackHandling,
+    applyAppPage,
+  } = appShell;
 
   function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
     if (runtime.destroyed) return Promise.resolve();
@@ -10251,69 +9938,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.mode2View?.classList.toggle("modeViewOn", mode === "mode2");
     els.mode3View?.classList.toggle("modeViewOn", mode === "mode3");
     render();
-  }
-
-  function applyAppPage(page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }) {
-    if (currentAppPage === "tasks" && page !== "tasks") resetAllOpenHistoryChartSelections();
-    if (page !== "tasks") clearTaskFlipStates();
-    currentAppPage = page;
-    if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
-    document.body.setAttribute("data-app-page", page);
-    els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
-    els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
-    els.appPageTest1?.classList.toggle("appPageOn", page === "test1");
-    els.appPageTest2?.classList.toggle("appPageOn", page === "test2");
-    if (els.modeSwitch) (els.modeSwitch as HTMLElement).style.display = page === "tasks" ? "flex" : "none";
-    els.footerTasksBtn?.classList.toggle("isOn", page === "tasks");
-    els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
-    els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
-    els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
-    els.commandCenterTasksBtn?.classList.toggle("isOn", page === "tasks");
-    els.commandCenterDashboardBtn?.classList.toggle("isOn", page === "dashboard");
-    els.commandCenterGroupsBtn?.classList.toggle("isOn", page === "test2");
-    if (els.commandCenterDashboardBtn) {
-      if (page === "dashboard") els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
-      else els.commandCenterDashboardBtn.removeAttribute("aria-current");
-    }
-    if (els.signedInHeaderBadge) {
-      els.signedInHeaderBadge.style.display = "inline-flex";
-    }
-    renderFriendsFooterAlertBadge();
-    const syncUrlMode = opts?.syncUrl;
-    const canSyncMainPageUrl = isTaskTimerMainAppPath(normalizedPathname());
-    if (syncUrlMode && canSyncMainPageUrl) {
-      try {
-        const nextUrl = appPathForPage(page);
-        if (syncUrlMode === "replace") window.history.replaceState({ page }, "", nextUrl);
-        else window.history.pushState({ page }, "", nextUrl);
-      } catch {
-        // ignore history API failures
-      }
-    }
-    closeTaskExportModal();
-    closeShareTaskModal();
-    if (page === "test2") {
-      renderGroupsPage();
-      void refreshGroupsData();
-      return;
-    }
-    closeFriendProfileModal();
-    closeFriendRequestModal();
-    if (page === "tasks") {
-      render();
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          if (runtime.destroyed || currentAppPage !== "tasks") return;
-          for (const taskId of openHistoryTaskIds) {
-            renderHistory(taskId);
-          }
-        });
-      });
-      return;
-    }
-    if (page === "dashboard") {
-      renderDashboardWidgets();
-    }
   }
 
   function deleteTasksInMode(mode: MainMode) {
