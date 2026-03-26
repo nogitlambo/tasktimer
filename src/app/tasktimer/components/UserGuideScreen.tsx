@@ -93,7 +93,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         icon: "/History_Manager.svg",
         paragraphs: [
           "Inline History opens from each task and shows recent session entries as bars. You can toggle between 7-day and 14-day ranges, page through entries, and inspect values directly on the chart.",
-          "Pin keeps a task history panel open for quick reference. Export, Analyse, and Manage actions are available from the inline panel footer.",
+          "Pin keeps a task history panel open for quick reference. Analyse and Manage actions are available from the inline panel footer.",
           "History entry colors follow the same color logic as progress bars when dynamic colors are enabled. If dynamic colors are disabled in Task Settings, static mode color is used.",
         ],
         shots: [

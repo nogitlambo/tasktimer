@@ -180,7 +180,6 @@
 - `data-history-action="analyse"`
 - `data-history-action="clearLocks"`
 - `data-history-action="delete"`
-- `data-history-action="export"`
 - `data-history-action="manage"`
 - `data-history-action="newer"`
 - `data-history-action="older"`

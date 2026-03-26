@@ -1,6 +1,6 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
-import type { AppPage, MainMode } from "./types";
+import type { AppPage, HistoryViewState, MainMode } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
@@ -188,4 +188,44 @@ export type TaskTimerHistoryManagerContext = {
   escapeHtmlUI: (value: unknown) => string;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+};
+
+export type TaskTimerHistoryInlineContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;
+  getHistoryRangeModeByTaskId: () => Record<string, "entries" | "day">;
+  getHistoryViewByTaskId: () => Record<string, HistoryViewState>;
+  getOpenHistoryTaskIds: () => Set<string>;
+  getCurrentAppPage: () => AppPage;
+  getPinnedHistoryTaskIds: () => Set<string>;
+  setPinnedHistoryTaskIds: (value: Set<string>) => void;
+  savePinnedHistoryTaskIds: () => void;
+  getHistoryEntryNoteAnchorTaskId: () => string;
+  setHistoryEntryNoteAnchorTaskId: (value: string) => void;
+  persistTaskUiToCloud: () => void;
+  saveHistory: (history: HistoryByTaskId) => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  closeConfirm: () => void;
+  navigateToAppRoute: (path: string) => void;
+  openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
+  render: () => void;
+  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  nowMs: () => number;
+  normalizeHistoryTimestampMs: (value: unknown) => number;
+  formatTime: (value: number) => string;
+  formatTwo: (value: number) => string;
+  formatDateTime: (value: number) => string;
+  escapeHtmlUI: (value: unknown) => string;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  getModeColor: (mode: MainMode) => string;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  milestoneUnitSec: (task: Task | undefined | null) => number;
+  milestoneUnitSuffix: (task: Task | undefined | null) => string;
+  getDynamicColorsEnabled: () => boolean;
 };
