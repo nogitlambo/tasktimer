@@ -232,11 +232,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeB
     0 0 0 1px color-mix(in srgb, var(--mode-accent) 24%, transparent) inset,
     0 0 12px color-mix(in srgb, var(--mode-accent) 30%, transparent) !important;
 }
-/* Final footer icon parity override: increase Friends footer icon size to match visual weight. */
-#app[aria-label="TaskLaunch App"] #footerTest2Btn .appFooterIconImage{
-  width: 46px;
-  height: 46px;
-}
 body[data-theme="purple"] .wrap{
   background: rgba(8,4,14,.96) !important;
   border:1px solid rgba(210,94,223,.32);

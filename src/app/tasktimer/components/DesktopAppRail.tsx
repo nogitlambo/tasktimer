@@ -68,7 +68,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "test2",
     label: "Friends",
     ariaLabel: "Friends",
-    iconSrc: "/Groups.svg",
+    iconSrc: "/Friends.svg",
     desktopId: "commandCenterGroupsBtn",
     mobileId: "footerTest2Btn",
     href: "/tasktimer/friends",
@@ -178,7 +178,7 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
     return (
       <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button">
         <img
-          className={`dashboardRailMenuIconImage${item.page === "test2" ? " dashboardRailMenuIconImageFriends" : ""}`}
+          className="dashboardRailMenuIconImage"
           src={item.iconSrc}
           alt=""
           aria-hidden="true"
@@ -191,7 +191,7 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   return (
     <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href}>
       <img
-        className={`dashboardRailMenuIconImage${item.page === "test2" ? " dashboardRailMenuIconImageFriends" : ""}`}
+        className="dashboardRailMenuIconImage"
         src={item.iconSrc}
         alt=""
         aria-hidden="true"
@@ -235,7 +235,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
     return (
       <button key={item.mobileId} {...commonProps} id={item.mobileId} type="button">
         <img
-          className={`appFooterIconImage${item.page === "test2" ? " appFooterIconImageFriends" : ""}`}
+          className="appFooterIconImage"
           src={item.iconSrc}
           alt=""
           aria-hidden="true"
@@ -257,7 +257,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   return (
     <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href}>
       <img
-        className={`appFooterIconImage${item.page === "test2" ? " appFooterIconImageFriends" : ""}`}
+        className="appFooterIconImage"
         src={item.iconSrc}
         alt=""
         aria-hidden="true"

@@ -5817,12 +5817,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) yesterdaySameTimeMs += ms;
       });
     });
-    const todayRunningMs = getDashboardFilteredTasks().reduce((sum, task) => {
+    const todayInProgressMs = getDashboardFilteredTasks().reduce((sum, task) => {
       const taskId = String(task?.id || "").trim();
-      if (!taskId || !includedTaskIds.has(taskId) || !task?.running) return sum;
-      return sum + Math.max(0, getElapsedMs(task));
+      if (!taskId || !includedTaskIds.has(taskId)) return sum;
+      const elapsedMs = Math.max(0, getElapsedMs(task));
+      if (elapsedMs <= 0) return sum;
+      return sum + elapsedMs;
     }, 0);
-    const todayMs = todayLoggedMs + todayRunningMs;
+    const todayMs = todayLoggedMs + todayInProgressMs;
     const dailyGoalLoggedMs = dailyGoalTasks.reduce((sum, task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return sum;
@@ -5835,11 +5837,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }, 0);
       return sum + taskTodayMs;
     }, 0);
-    const dailyGoalRunningMs = dailyGoalTasks.reduce((sum, task) => {
-      if (!task?.running) return sum;
-      return sum + Math.max(0, getElapsedMs(task));
+    const dailyGoalInProgressMs = dailyGoalTasks.reduce((sum, task) => {
+      const elapsedMs = Math.max(0, getElapsedMs(task));
+      if (elapsedMs <= 0) return sum;
+      return sum + elapsedMs;
     }, 0);
-    const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalRunningMs;
+    const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalInProgressMs;
 
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
@@ -5851,7 +5854,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       goalTotalMs: totalDailyGoalMs,
       loggedMs: dailyGoalLoggedMs,
       projectedMs: dailyGoalProjectedMs,
-      runningMs: dailyGoalRunningMs,
+      runningMs: dailyGoalInProgressMs,
       emptyLabel: "Today's time goal progress: no daily time goals enabled",
       activeLabel: "Today's time goal progress",
       projectedLabel: "projected if running tasks are logged",

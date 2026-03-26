@@ -71,6 +71,64 @@
   opacity: 0.86;
 }
 
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow {
+  align-items: center;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #16181d;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel .confirmChkLabelText {
+  flex: 1 1 auto;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 39px;
+  height: 21px;
+  min-width: 39px;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch::after {
+  width: 18px;
+  height: 18px;
+  top: 1px;
+  left: 1px;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch.on::after {
+  left: 19px;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch {
+  outline: 2px solid rgba(0, 217, 245, 0.95);
+  outline-offset: 2px;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow.is-disabled {
+  opacity: 0.68;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
+  opacity: 0.86;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive {
   appearance: none;
   padding: 0;

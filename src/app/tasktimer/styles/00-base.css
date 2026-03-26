@@ -169,9 +169,6 @@ body[data-app-page="test2"] #modeSwitch{
   margin:0 auto;
   filter: drop-shadow(0 0 6px rgba(0,190,255,.35));
 }
-.appFooterIconImageFriends{
-  transform: translateY(3px);
-}
 .appFooterLabel{
   font-family:var(--font-tight);
   font-size:10px;

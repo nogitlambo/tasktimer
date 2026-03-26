@@ -132,9 +132,6 @@
     width:40px;
     height:40px;
   }
-  .appFooterIconImageFriends{
-    transform: translateY(2px);
-  }
   .appFooterLabel{
     font-size:10px;
     letter-spacing:.03em;
@@ -384,9 +381,6 @@
   .appFooterIconImage{
     width:32px;
     height:32px;
-  }
-  .appFooterLabel{
-    display:none;
   }
   .dashboardGrid{
     grid-template-columns: 1fr;
@@ -1462,10 +1456,6 @@
     line-height: 1.1;
     white-space: nowrap;
   }
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImageFriends,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuIconImageFriends{
-    transform: translateY(3px);
-  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailPromo{
     padding: 16px;
@@ -2328,5 +2318,38 @@
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
     padding: 12px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appFooterNav{
+    gap: 6px !important;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appFooterBtn{
+    min-height: 66px !important;
+    padding: 6px 2px !important;
+    gap: 3px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appFooterIconImage{
+    width: 30px;
+    height: 30px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appFooterLabel{
+    display: block;
+    font-size: 9px;
+    line-height: 1.05;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+
+  #app[aria-label="TaskLaunch App"] #footerTest2Btn .appFooterLabel{
+    transform: translateY(-1px);
+  }
+
+  #app[aria-label="TaskLaunch App"] .appFooterAlertBadge{
+    top: 5px;
+    right: 10%;
   }
 }
