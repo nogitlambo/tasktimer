@@ -35,7 +35,7 @@ import {
   formatAddTaskDurationReadout,
   getAddTaskDurationMaxForPeriod,
   normalizeTaskConfigMilestones,
-} from "@/features/tasktimer-react/model/taskConfig";
+} from "./lib/taskConfig";
 import { computeFocusInsights } from "./lib/focusInsights";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
@@ -3029,7 +3029,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const filename = `taskticka-backup-${y}${mo}${da}-${hh}${mi}${ss}.json`;
     const payload = makeBackupPayload();
     downloadTextFile(filename, JSON.stringify(payload, null, 2));
-    closeOverlay(els.menuOverlay as HTMLElement | null);
   }
 
   function exportTask(i: number, opts?: { includeHistory?: boolean }) {
@@ -4576,9 +4575,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     maybeRestorePendingTimeGoalFlow();
   }
 
+  function getTaskDisplayName(task: Task | null | undefined) {
+    const name = String(task?.name || "").trim();
+    return name || "Unnamed task";
+  }
+
+  function findOtherRunningTaskIndex(targetIndex: number) {
+    return tasks.findIndex((task, index) => index !== targetIndex && !!task?.running);
+  }
+
   function startTask(i: number) {
     const t = tasks[i];
     if (!t || t.running) return;
+    const otherRunningIndex = findOtherRunningTaskIndex(i);
+    if (otherRunningIndex >= 0) {
+      const runningTask = tasks[otherRunningIndex];
+      confirm("Task Already Running", `${getTaskDisplayName(runningTask)} is currently running.`, {
+        okLabel: "Stop running task and launch this task",
+        cancelLabel: "Continue running task",
+        onOk: () => {
+          closeConfirm();
+          stopTask(otherRunningIndex);
+          startTask(i);
+        },
+        onCancel: () => closeConfirm(),
+      });
+      return;
+    }
     clearTaskTimeGoalFlow(String(t.id || ""));
     flushPendingFocusSessionNoteSave(String(t.id || ""));
     awardLaunchXpForTask(t);
@@ -5850,23 +5873,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     if (yesterdaySameTimeMs <= 0) {
-      deltaEl.textContent = todayMs > 0 ? "New activity vs this time yesterday" : "0% vs this time yesterday";
-      if (todayMs > 0) deltaEl.classList.add("positive");
+      if (todayMs > 0) {
+        deltaEl.textContent = `+${formatDashboardDurationShort(todayMs)} vs this time yesterday`;
+        deltaEl.classList.add("positive");
+      } else {
+        deltaEl.textContent = "Same as this time yesterday";
+      }
       return;
     }
 
-    const deltaPct = Math.round((Math.abs(todayMs - yesterdaySameTimeMs) / yesterdaySameTimeMs) * 100);
-    if (todayMs > yesterdaySameTimeMs) {
-      deltaEl.textContent = `+${deltaPct}% vs this time yesterday`;
+    const deltaMs = todayMs - yesterdaySameTimeMs;
+    const deltaText = formatDashboardDurationShort(Math.abs(deltaMs));
+    if (deltaMs > 0) {
+      deltaEl.textContent = `+${deltaText} vs this time yesterday`;
       deltaEl.classList.add("positive");
       return;
     }
-    if (todayMs < yesterdaySameTimeMs) {
-      deltaEl.textContent = `-${deltaPct}% vs this time yesterday`;
+    if (deltaMs < 0) {
+      deltaEl.textContent = `-${deltaText} vs this time yesterday`;
       deltaEl.classList.add("negative");
       return;
     }
-    deltaEl.textContent = "0% vs this time yesterday";
+    deltaEl.textContent = "Same as this time yesterday";
   }
 
   function renderDashboardTimelineCard() {
@@ -7638,7 +7666,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function openHistoryManager() {
-    if (els.menuOverlay) (els.menuOverlay as HTMLElement).style.display = "none";
     if (els.historyManagerGenerateBtn) {
       els.historyManagerGenerateBtn.style.display = isArchitectUser() ? "" : "none";
     }
@@ -8094,9 +8121,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (which === "taskSettings") {
       syncTaskSettingsUi();
     }
-
-    closeOverlay(els.menuOverlay as HTMLElement | null);
-
     const map: Record<string, HTMLElement | null> = {
       about: els.aboutOverlay as HTMLElement | null,
       howto: els.howtoOverlay as HTMLElement | null,
@@ -11834,10 +11858,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskDragEl = null;
     });
     on(els.closeMenuBtn, "click", () => {
-      if (els.menuOverlay) {
-        closeOverlay(els.menuOverlay as HTMLElement | null);
-        return;
-      }
       const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
       if (currentRoutePath === "/tasktimer/settings") {
         window.location.href = appPathForPage("dashboard");

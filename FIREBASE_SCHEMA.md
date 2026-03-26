@@ -14,7 +14,6 @@ Primary sources:
 - `firestore.rules`
 - `src/app/tasktimer/lib/cloudStore.ts`
 - `src/app/tasktimer/lib/friendsStore.ts`
-- `src/app/tasktimer/lib/userPreferencesSync.ts`
 - `src/app/tasktimer/components/SettingsPanel.tsx`
 
 ## Firestore

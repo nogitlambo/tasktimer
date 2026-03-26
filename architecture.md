@@ -14,7 +14,6 @@
 - `src/app`
 - `src/lib`
 - `src/app/tasktimer`
-- `src/features/tasktimer-react`
 - `scripts`
 - `.github/workflows`
 
@@ -71,7 +70,6 @@
 
 - [`src/app/tasktimer/lib/addTaskNames.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/addTaskNames.ts)
 - [`src/app/tasktimer/lib/avatarCatalog.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/avatarCatalog.ts)
-- [`src/app/tasktimer/lib/backup.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/backup.ts)
 - [`src/app/tasktimer/lib/cloudStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/cloudStore.ts)
 - [`src/app/tasktimer/lib/colors.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/colors.ts)
 - [`src/app/tasktimer/lib/focusInsights.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/focusInsights.ts)
@@ -85,18 +83,15 @@
 - [`src/app/tasktimer/lib/pushNotifications.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/pushNotifications.ts)
 - [`src/app/tasktimer/lib/rewards.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/rewards.ts)
 - [`src/app/tasktimer/lib/storage.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/storage.ts)
+- [`src/app/tasktimer/lib/taskConfig.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/taskConfig.ts)
 - [`src/app/tasktimer/lib/tasks.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/tasks.ts)
 - [`src/app/tasktimer/lib/time.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/time.ts)
 - [`src/app/tasktimer/lib/types.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/types.ts)
 - [`src/app/tasktimer/lib/usernameClaim.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/usernameClaim.ts)
-- [`src/app/tasktimer/lib/userPreferencesSync.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/userPreferencesSync.ts)
 
 ## Secondary React Feature Module
 
-- [`src/features/tasktimer-react/adapters`](/S:/Apps/repo/tasktimer-app/src/features/tasktimer-react/adapters)
-- [`src/features/tasktimer-react/components`](/S:/Apps/repo/tasktimer-app/src/features/tasktimer-react/components)
-- [`src/features/tasktimer-react/hooks`](/S:/Apps/repo/tasktimer-app/src/features/tasktimer-react/hooks)
-- [`src/features/tasktimer-react/model`](/S:/Apps/repo/tasktimer-app/src/features/tasktimer-react/model)
+- (none)
 
 ## Documentation Automation
 

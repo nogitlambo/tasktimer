@@ -14,7 +14,6 @@
 - Components are modular, but many interactions are ID/class/data-attribute based (`getElementById`, delegated click handlers).
 - Preserve IDs and selector hooks in JSX when editing UI.
 - Main stylesheet in active use is `src/app/tasktimer/tasktimer.css`.
-- `src/app/tasktimer/styles/tasktimer.css` also exists; avoid unintended dual edits.
 - Auth behavior is centralized in `src/lib/firebaseClient.ts`; detect native/mobile runtime with `Capacitor.isNativePlatform()` (or `file:`), not `!!window.Capacitor`.
 
 ## Modes and categories
@@ -58,7 +57,7 @@
 - Preserve selector hooks used by delegated handlers (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
 
 ## Styling guardrails
-- Main active stylesheet is `src/app/tasktimer/tasktimer.css`; avoid unintended edits to `src/app/tasktimer/styles/tasktimer.css`.
+- Main active stylesheet is `src/app/tasktimer/tasktimer.css`.
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure purple/cyan theme parity when introducing new visual elements.
 - New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.

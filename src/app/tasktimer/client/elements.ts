@@ -186,7 +186,6 @@ const els = {
   dashboardHeatSummaryCloseBtn: documentRef.getElementById("dashboardHeatSummaryCloseBtn") as HTMLButtonElement | null,
 
   menuIcon: documentRef.getElementById("menuIcon"),
-  menuOverlay: documentRef.getElementById("menuOverlay"),
   historyManagerScreen: documentRef.getElementById("historyManagerScreen"),
   historyManagerBtn: documentRef.getElementById("historyManagerBtn"),
   historyManagerExportBtn: documentRef.getElementById("historyManagerExportBtn") as HTMLButtonElement | null,

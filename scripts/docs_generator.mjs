@@ -133,16 +133,6 @@ function getTopLevelSourceDirs(root) {
   return candidates.filter((entry) => exists(path.join(root, entry)));
 }
 
-function getTaskTimerComponentFiles(root) {
-  const dir = path.join(root, "src", "app", "tasktimer", "components");
-  if (!exists(dir)) return [];
-  return uniqueSorted(
-    fs.readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")))
-      .map((entry) => `src/app/tasktimer/components/${entry.name}`)
-  );
-}
-
 function getTaskTimerLibFiles(root) {
   const dir = path.join(root, "src", "app", "tasktimer", "lib");
   if (!exists(dir)) return [];
