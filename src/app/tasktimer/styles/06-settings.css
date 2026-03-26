@@ -3135,3 +3135,123 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   margin-left: 0;
   margin-right: auto;
 }
+
+/* Final Settings route cleanup: remove outer frame and keep overflow inside panels only when needed. */
+#app[aria-label="TaskLaunch Settings"]{
+  overflow-y: visible;
+  min-height: 100dvh;
+  height: auto !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .list.settingsPageList{
+  min-height: calc(100dvh - 72px - var(--safe-top) - var(--safe-bottom));
+  overflow: visible;
+  padding-bottom: 0 !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell,
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell.dashboardShell{
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  margin: 0 !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+  min-height: 0;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+  max-height: calc(100dvh - 150px - var(--safe-top) - var(--safe-bottom));
+}
+
+@media (max-width: 900px){
+  #app[aria-label="TaskLaunch Settings"] .list.settingsPageList{
+    min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+    max-height: none;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isActive .settingsDetailHead{
+    display: none;
+  }
+}
+
+/* Final Preferences timer-format override: compact equal-square buttons for D / H / M. */
+#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatDay,
+#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatHour,
+#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatMinute{
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Final Appearance select option shading: match the soft dropdown hover treatment used in Edit Task. */
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect optgroup,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect optgroup{
+  background: #0c131a;
+  color: #eafcff;
+}
+
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:hover,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:focus,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:hover,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:focus{
+  background: #183846;
+  color: #eaf7ff;
+}
+
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:hover,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:focus,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:hover,
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:focus{
+  background: #122a35;
+  color: #f0fcff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect optgroup,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect optgroup{
+  background: #140c19;
+  color: #fff8ff;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:focus,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:focus{
+  background: #3f234f;
+  color: #fff8ff;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:focus,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:focus{
+  background: #2b1737;
+  color: #f7eeff;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08);
+}

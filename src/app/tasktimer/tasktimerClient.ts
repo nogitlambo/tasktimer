@@ -87,6 +87,7 @@ import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
 import { createTaskTimerGroups } from "./client/groups";
+import { createTaskTimerTasks } from "./client/tasks";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
@@ -530,6 +531,188 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncSharedTaskSummariesForTasks,
     registerGroupsEvents,
   } = groupsApi;
+  const tasksApi = createTaskTimerTasks({
+    els,
+    on,
+    getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
+    getHistoryByTaskId: () => historyByTaskId,
+    setHistoryByTaskId: (value) => {
+      historyByTaskId = value;
+    },
+    getDeletedTaskMeta: () => deletedTaskMeta,
+    setDeletedTaskMeta: (value) => {
+      deletedTaskMeta = value;
+    },
+    getCurrentUid: () => currentUid(),
+    getCurrentAppPage: () => currentAppPage,
+    getCurrentMode: () => currentMode,
+    getTaskView: () => taskView,
+    getCurrentTileColumnCount: () => currentTileColumnCount,
+    setCurrentTileColumnCount: (value) => {
+      currentTileColumnCount = value;
+    },
+    getFocusModeTaskId: () => focusModeTaskId,
+    getOpenHistoryTaskIds: () => openHistoryTaskIds,
+    getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
+    getHistoryViewByTaskId: () => historyViewByTaskId,
+    getThemeMode: () => themeMode,
+    getAutoFocusOnTaskLaunchEnabled: () => autoFocusOnTaskLaunchEnabled,
+    getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
+    getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    getEditIndex: () => editIndex,
+    setEditIndex: (value) => {
+      editIndex = value;
+    },
+    getEditTaskDraft: () => editTaskDraft,
+    setEditTaskDraft: (value) => {
+      editTaskDraft = value;
+    },
+    getEditTaskDurationUnit: () => editTaskDurationUnit,
+    setEditTaskDurationUnit: (value) => {
+      editTaskDurationUnit = value;
+    },
+    getEditTaskDurationPeriod: () => editTaskDurationPeriod,
+    setEditTaskDurationPeriod: (value) => {
+      editTaskDurationPeriod = value;
+    },
+    getEditDraftSnapshot: () => editDraftSnapshot,
+    setEditDraftSnapshot: (value) => {
+      editDraftSnapshot = value;
+    },
+    getEditMoveTargetMode: () => editMoveTargetMode,
+    setEditMoveTargetMode: (value) => {
+      editMoveTargetMode = value;
+    },
+    getElapsedPadTarget: () => elapsedPadTarget,
+    setElapsedPadTarget: (value) => {
+      elapsedPadTarget = value;
+    },
+    getElapsedPadMilestoneRef: () => elapsedPadMilestoneRef,
+    setElapsedPadMilestoneRef: (value) => {
+      elapsedPadMilestoneRef = value;
+    },
+    getElapsedPadDraft: () => elapsedPadDraft,
+    setElapsedPadDraft: (value) => {
+      elapsedPadDraft = value;
+    },
+    getElapsedPadOriginal: () => elapsedPadOriginal,
+    setElapsedPadOriginal: (value) => {
+      elapsedPadOriginal = value;
+    },
+    getCheckpointAutoResetDirty: () => checkpointAutoResetDirty,
+    setCheckpointAutoResetDirty: (value) => {
+      checkpointAutoResetDirty = value;
+    },
+    render,
+    renderHistory,
+    renderDashboardWidgets,
+    syncTimeGoalModalWithTaskState,
+    maybeRestorePendingTimeGoalFlow,
+    getElapsedMs,
+    getTaskElapsedMs,
+    save,
+    saveHistory,
+    saveDeletedMeta,
+    escapeHtmlUI,
+    taskModeOf: (task) => taskModeOf(task),
+    milestoneUnitSec: (task) => milestoneUnitSec(task),
+    milestoneUnitSuffix: (task) => milestoneUnitSuffix(task),
+    getModeColor: (mode) => getModeColor(mode),
+    fillBackgroundForPct,
+    formatMainTaskElapsedHtml,
+    sortMilestones,
+    isTaskSharedByOwner,
+    confirm,
+    closeConfirm,
+    clearTaskTimeGoalFlow,
+    flushPendingFocusSessionNoteSave,
+    awardLaunchXpForTask,
+    clearCheckpointBaseline,
+    openFocusMode,
+    closeFocusMode,
+    canLogSession,
+    appendCompletedSessionHistory,
+    resetCheckpointAlertTracking,
+    clearFocusSessionDraft,
+    syncFocusSessionNotesInput,
+    syncFocusSessionNotesAccordion,
+    captureResetActionSessionNote,
+    setFocusSessionDraft,
+    setResetTaskConfirmBusy,
+    syncConfirmPrimaryToggleUi,
+    cloneTaskForEdit: (task) => cloneTaskForEdit(task),
+    getModeLabel: (mode) => getModeLabel(mode),
+    isModeEnabled: (mode) => isModeEnabled(mode),
+    setEditTimeGoalEnabled: (enabled) => setEditTimeGoalEnabled(enabled),
+    syncEditTaskTimeGoalUi: (task) => syncEditTaskTimeGoalUi(task),
+    syncEditCheckpointAlertUi: (task) => syncEditCheckpointAlertUi(task),
+    syncEditSaveAvailability: (task) => syncEditSaveAvailability(task),
+    syncEditMilestoneSectionUi: (task) => syncEditMilestoneSectionUi(task),
+    setMilestoneUnitUi: (unit) => setMilestoneUnitUi(unit),
+    renderMilestoneEditor: (task) => renderMilestoneEditor(task),
+    clearEditValidationState: () => clearEditValidationState(),
+    validateEditTimeGoal: () => validateEditTimeGoal(),
+    showEditValidationError: (task, message) => showEditValidationError(task, message),
+    editTaskHasActiveTimeGoal: () => editTaskHasActiveTimeGoal(),
+    hasNonPositiveCheckpoint: (milestones) => hasNonPositiveCheckpoint(milestones),
+    hasCheckpointAtOrAboveTimeGoal: (milestones, unitSec, timeGoalMinutes) =>
+      hasCheckpointAtOrAboveTimeGoal(milestones, unitSec, timeGoalMinutes),
+    isCheckpointAtOrAboveTimeGoal: (checkpointHours, unitSec, timeGoalMinutes) =>
+      isCheckpointAtOrAboveTimeGoal(checkpointHours, unitSec, timeGoalMinutes),
+    formatCheckpointTimeGoalText: (task, opts) => formatCheckpointTimeGoalText(task, opts),
+    getEditTaskTimeGoalMinutes: () => getEditTaskTimeGoalMinutes(),
+    getEditTaskTimeGoalMinutesFor: (value, unit, period) => getEditTaskTimeGoalMinutesFor(value, unit, period),
+    getAddTaskTimeGoalMinutesState: () => getAddTaskTimeGoalMinutesState(),
+    isEditTimeGoalEnabled: () => isEditTimeGoalEnabled(),
+    ensureMilestoneIdentity: (task) => ensureMilestoneIdentity(task),
+    toggleSwitchElement: (el, on) => toggleSwitchElement(el, on),
+    isSwitchOn: (el) => isSwitchOn(el),
+    buildEditDraftSnapshot: (task) => buildEditDraftSnapshot(task),
+    getCurrentEditTask: () => getCurrentEditTask(),
+    syncEditTaskDurationReadout: (task) => syncEditTaskDurationReadout(task),
+    maybeToggleEditPresetIntervals: (nextEnabled) => maybeToggleEditPresetIntervals(nextEnabled),
+    hasValidPresetInterval: (task) => hasValidPresetInterval(task),
+    addMilestoneWithCurrentPreset: (task, timeGoalMinutes) => addMilestoneWithCurrentPreset(task, timeGoalMinutes),
+    getPresetIntervalNextSeqNum: (task) => getPresetIntervalNextSeqNum(task),
+    isEditMilestoneUnitDay: () => isEditMilestoneUnitDay(),
+    setTaskFlipped: (taskId, flipped, taskEl) => setTaskFlipped(taskId, flipped, taskEl),
+    syncTaskFlipStatesForVisibleTasks: (activeTaskIds) => syncTaskFlipStatesForVisibleTasks(activeTaskIds),
+    applyTaskFlipDomState: (taskId, taskEl) => applyTaskFlipDomState(taskId, taskEl),
+    openHistoryInline: (index) => historyInlineApi?.openHistory(index),
+    openTaskExportModal: (index) => openTaskExportModal(index),
+    openShareTaskModal: (index) => openShareTaskModal(index),
+    currentUid: () => currentUid(),
+    deleteSharedTaskSummariesForTask,
+    refreshOwnSharedSummaries,
+    refreshGroupsData,
+    deleteTask: (index) => deleteTask(index),
+    isFocusModeFilteringAlerts: () => isFocusModeFilteringAlerts(),
+    getSuppressedFocusModeAlert: (taskId) => getSuppressedFocusModeAlert(taskId),
+    checkpointRepeatActiveTaskId: () => checkpointRepeatActiveTaskId,
+    activeCheckpointToastTaskId: () => activeCheckpointToast?.taskId || null,
+    stopCheckpointRepeatAlert: () => stopCheckpointRepeatAlert(),
+    enqueueCheckpointToast: (title, text, opts) => enqueueCheckpointToast(title, text, opts as any),
+    clearSuppressedFocusModeAlert: (taskId) => clearSuppressedFocusModeAlert(taskId),
+    syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
+    syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
+  } as any);
+  const {
+    renderTasksPage,
+    startTask: startTaskApi,
+    stopTask: stopTaskApi,
+    resetTask: resetTaskApi,
+    resetAll: resetAllApi,
+    openEdit: openEditApi,
+    closeEdit: closeEditApi,
+    openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
+    closeElapsedPad: closeElapsedPadApi,
+    openHistory: openHistoryApi,
+    registerTaskEvents,
+  } = tasksApi;
 
   const appShell = createTaskTimerAppShell({
     els,
@@ -3311,241 +3494,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function render() {
-    if (!els.taskList) return;
-
-    tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
-    els.taskList.innerHTML = "";
-    const useTileColumns = taskView === "tile";
-    const tileColumnCount = useTileColumns ? getTileColumnCount() : 1;
-    currentTileColumnCount = tileColumnCount;
-    if (useTileColumns) {
-      els.taskList.setAttribute("data-tile-columns", String(tileColumnCount));
-    } else {
-      els.taskList.removeAttribute("data-tile-columns");
-    }
-    const modeTasks = tasks.filter((t) => taskModeOf(t) === currentMode);
-    const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
-    syncTaskFlipStatesForVisibleTasks(activeTaskIds);
-    for (const taskId of Array.from(pinnedHistoryTaskIds)) {
-      if (activeTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
-    }
-    for (const taskId of Array.from(openHistoryTaskIds)) {
-      if (!activeTaskIds.has(taskId)) {
-        openHistoryTaskIds.delete(taskId);
-        delete historyViewByTaskId[taskId];
-      }
-    }
-
-    let visibleTaskIndex = 0;
-    tasks.forEach((t, index) => {
-      if (taskModeOf(t) !== currentMode) return;
-      const elapsedMs = getElapsedMs(t);
-      const elapsedSec = elapsedMs / 1000;
-
-      const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
-      const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
-      const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-      const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-      const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
-      const maxSec = Math.max(maxValue * milestoneUnitSec(t), timeGoalSec, 1);
-      const pct = hasMilestones || hasTimeGoal ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
-
-      const taskEl = document.createElement("div");
-      const taskId = String(t.id || "");
-      const hasActiveToastForTask = !!activeCheckpointToast?.taskId && String(activeCheckpointToast.taskId) === taskId;
-      const suppressedCheckpointAlert = !isFocusModeFilteringAlerts() ? getSuppressedFocusModeAlert(taskId) : null;
-      taskEl.className =
-        "task" +
-        (t.collapsed ? " collapsed" : "") +
-        ((checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === String(t.id || "")) || hasActiveToastForTask
-          ? " taskAlertPulse"
-          : "");
-      (taskEl as any).dataset.index = String(index);
-      (taskEl as any).dataset.taskId = String(t.id || "");
-      taskEl.setAttribute("draggable", "true");
-
-      const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
-
-      let progressHTML = "";
-      if (hasMilestones || hasTimeGoal) {
-        let markers = "";
-        const unitSuffix = milestoneUnitSuffix(t);
-        markers += `
-          <div class="mkLine" style="left:0%"></div>
-          <div class="mkTime mkAch mkEdgeL" style="left:0%">0${unitSuffix}</div>`;
-
-        const nextPendingIndex = msSorted.findIndex((m) => elapsedSec < (+m.hours || 0) * milestoneUnitSec(t));
-        const labelTargetIndex = nextPendingIndex >= 0 ? nextPendingIndex : Math.max(0, msSorted.length - 1);
-
-        msSorted.forEach((m, msIdx) => {
-          const val = +m.hours || 0;
-          const secTarget = val * milestoneUnitSec(t);
-          const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
-          const reached = elapsedSec >= secTarget;
-          const cls = reached ? "mkAch" : "mkPend";
-          const label = `${val}${unitSuffix}`;
-          const desc = (m.description || "").trim();
-          const edgeCls = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
-          const leftPos = edgeCls === "mkEdgeL" ? 0 : edgeCls === "mkEdgeR" ? 100 : left;
-          const wrapCls = edgeCls && label.length > 8 ? "mkWrap8" : "";
-          const showCheckpointLabel = msIdx === labelTargetIndex;
-          markers += `
-            <div class="mkFlag ${cls}" style="left:${leftPos}%"></div>
-            ${
-              showCheckpointLabel
-                ? `<div class="mkTime ${cls} ${edgeCls} ${wrapCls}" style="left:${leftPos}%">${escapeHtmlUI(label)}</div>`
-                : ``
-            }
-            ${
-              showCheckpointLabel && desc
-                ? `<div class="mkDesc ${cls} ${edgeCls}" style="left:${leftPos}%">${escapeHtmlUI(desc)}</div>`
-                : ``
-            }`;
-        });
-        if (hasTimeGoal) {
-          const goalLeft = Math.max(0, Math.min((timeGoalSec / maxSec) * 100, 100));
-          const goalEdgeCls = goalLeft <= 1 ? "mkEdgeL" : goalLeft >= 99 ? "mkEdgeR" : "";
-          const goalLeftPos = goalEdgeCls === "mkEdgeL" ? 0 : goalEdgeCls === "mkEdgeR" ? 100 : goalLeft;
-          markers += `
-            <div class="mkFlag mkGoal ${elapsedSec >= timeGoalSec ? "mkAch" : "mkPend"} ${goalEdgeCls}" style="left:${goalLeftPos}%"></div>`;
-        }
-
-        progressHTML = `
-          <div class="progressRow">
-            <div class="progressWrap">
-              <div class="progressTrack">
-                <div class="progressFill" style="width:${pct}%;background:${
-                  dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t))
-                }"></div>
-                ${markers}
-              </div>
-            </div>
-          </div>`;
-      }
-
-      const showHistory = openHistoryTaskIds.has(taskId);
-      const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
-      const historyHTML = showHistory
-        ? `
-          <section class="historyInline" aria-label="History for ${escapeHtmlUI(t.name)}">
-            <div class="historyTop">
-              <div class="historyMeta">
-                <div class="historyTitle historyInlineTitle">History</div>
-              </div>
-              <div class="historyMeta historyTopActions">
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="analyse" title="Analysis" aria-label="Analysis">&#128269;</button>
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="manage" title="Manage" aria-label="Manage">&#9881;</button>
-                <button class="historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">X</button>
-                <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${
-                    isHistoryPinned ? "Unpin chart" : "Pin chart"
-                  }" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
-              </div>
-            </div>
-            <div class="historyCanvasWrap">
-              <canvas class="historyChartInline"></canvas>
-            </div>
-            <div class="historyTrashRow"></div>
-            <div class="historyRangeRow">
-              <div class="historyRangeInfo">
-                <div class="historyMeta historyRangeText">&nbsp;</div>
-                <div class="historyRangeToggleRow" aria-label="History range">
-                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
-                  <button class="historyRangeModePill isOn" type="button" data-history-range-mode="entries" aria-pressed="true">Entries</button>
-                  <button class="historyRangeModePill" type="button" data-history-range-mode="day" aria-pressed="false">Day</button>
-                </div>
-              </div>
-              <div class="historyMeta historyRangeActions">
-              </div>
-            </div>
-          </section>
-        `
-        : "";
-
-      taskEl.innerHTML = `
-        <div class="taskFlipScene">
-          <div class="taskFace taskFaceFront">
-            <div class="taskFaceShell taskFaceShellFront">
-            ${
-              checkpointRepeatActiveTaskId && checkpointRepeatActiveTaskId === taskId
-                ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
-                : ""
-            }
-            ${
-              suppressedCheckpointAlert
-                ? '<button class="iconBtn checkpointMissedAlertBtn" data-action="showSuppressedCheckpointAlert" title="Show missed checkpoint alert" aria-label="Show missed checkpoint alert">&#9888;</button>'
-                : ""
-            }
-            <div class="row">
-              <div class="taskHeadMain">
-                <div class="name" data-action="editName" title="Open focus mode">${escapeHtmlUI(t.name)}</div>
-              </div>
-              <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
-              <div class="actions">
-                ${
-                  t.running
-                    ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                    : elapsedMs > 0
-                      ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
-                      : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
-                }
-                ${
-                  themeMode === "cyan"
-                    ? `<button class="iconBtn" data-action="reset" title="${
-                        t.running ? "Stop task to reset" : "Reset"
-                      }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
-                    : `<button class="iconBtn" data-action="reset" title="${
-                        t.running ? "Stop task to reset" : "Reset"
-                      }" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>`
-                }
-                <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-                <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${
-                  isHistoryPinned ? "isPinned" : ""
-                }" data-action="history" title="${
-                  isHistoryPinned ? "History pinned" : "History"
-                }" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${
-                  isHistoryPinned ? "disabled" : ""
-                }><img src="/Dashboard.svg" alt="" aria-hidden="true" width="18" height="18"></button>
-                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#8942;</button>
-              </div>
-            </div>
-            ${progressHTML}
-            ${historyHTML}
-            </div>
-          </div>
-          <div class="taskFace taskFaceBack" aria-hidden="true" inert>
-            <div class="taskFaceShell taskFaceShellBack">
-            <div class="taskBack">
-              <div class="taskBackHead">
-                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
-                <div class="taskBackTitle">${escapeHtmlUI(t.name)}</div>
-              </div>
-              <div class="taskBackActions">
-                <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
-                <button class="taskMenuItem" data-action="collapse" title="${escapeHtmlUI(collapseLabel)}" type="button">${escapeHtmlUI(collapseLabel)}</button>
-                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
-                <button class="taskMenuItem" data-action="${isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}" type="button">${isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}</button>
-                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-      `;
-      applyTaskFlipDomState(taskId, taskEl);
-
-      els.taskList!.appendChild(taskEl);
-      visibleTaskIndex += 1;
-    });
-
-    save();
-    for (const taskId of openHistoryTaskIds) {
-      renderHistory(taskId);
-    }
-    if (currentAppPage === "dashboard") {
-      renderDashboardWidgets();
-    }
-    syncTimeGoalModalWithTaskState();
-    maybeRestorePendingTimeGoalFlow();
+    renderTasksPage();
   }
 
   function getTaskDisplayName(task: Task | null | undefined) {
@@ -3558,50 +3507,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function startTask(i: number) {
-    const t = tasks[i];
-    if (!t || t.running) return;
-    const otherRunningIndex = findOtherRunningTaskIndex(i);
-    if (otherRunningIndex >= 0) {
-      const runningTask = tasks[otherRunningIndex];
-      confirm("Task Already Running", `${getTaskDisplayName(runningTask)} is currently running.`, {
-        okLabel: "Stop running task and launch this task",
-        cancelLabel: "Continue running task",
-        onOk: () => {
-          closeConfirm();
-          stopTask(otherRunningIndex);
-          startTask(i);
-        },
-        onCancel: () => closeConfirm(),
-      });
-      return;
-    }
-    clearTaskTimeGoalFlow(String(t.id || ""));
-    flushPendingFocusSessionNoteSave(String(t.id || ""));
-    awardLaunchXpForTask(t);
-    t.running = true;
-    t.startMs = nowMs();
-    t.hasStarted = true;
-    clearCheckpointBaseline(t.id);
-    save();
-    void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-    render();
-    if (autoFocusOnTaskLaunchEnabled && String(focusModeTaskId || "") !== String(t.id || "")) {
-      openFocusMode(i);
-    }
+    startTaskApi(i);
   }
 
   function stopTask(i: number) {
-    const t = tasks[i];
-    if (!t || !t.running) return;
-    clearTaskTimeGoalFlow(String(t.id || ""));
-    flushPendingFocusSessionNoteSave(String(t.id || ""));
-    t.accumulatedMs = getElapsedMs(t);
-    t.running = false;
-    t.startMs = null;
-    clearCheckpointBaseline(t.id);
-    save();
-    void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-    render();
+    stopTaskApi(i);
   }
 
   function getTileColumnCount() {
@@ -3719,7 +3629,118 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function openHistory(i: number) {
-    historyInlineApi?.openHistory(i);
+    openHistoryApi(i);
+  }
+
+  function handleTaskListClick(e: any) {
+    const taskEl = e.target?.closest?.(".task");
+    if (!taskEl) return;
+    const i = parseInt(taskEl.dataset.index, 10);
+    if (!Number.isFinite(i)) return;
+    const taskId = String(taskEl.dataset.taskId || "").trim();
+    const flipBtn = e.target?.closest?.("[data-task-flip]") as HTMLElement | null;
+    if (flipBtn && taskId) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      setTaskFlipped(taskId, flipBtn.getAttribute("data-task-flip") === "open", taskEl as HTMLElement);
+      return;
+    }
+
+    const btn = e.target?.closest?.("[data-action]");
+    if (!btn) {
+      const inTopRow = !!e.target?.closest?.(".row");
+      const inActions = !!e.target?.closest?.(".actions");
+      if (inTopRow && !inActions) {
+        openFocusMode(i);
+      }
+      return;
+    }
+    const action = btn.getAttribute("data-action");
+
+    if (action === "start") startTask(i);
+    else if (action === "stop") stopTask(i);
+    else if (action === "reset") resetTask(i);
+    else if (action === "delete") deleteTask(i);
+    else if (action === "edit") openEdit(i);
+    else if (action === "history") openHistory(i);
+    else if (action === "duplicate") duplicateTask(i);
+    else if (action === "editName" || action === "focus") openFocusMode(i);
+    else if (action === "collapse") toggleCollapse(i);
+    else if (action === "exportTask") openTaskExportModal(i);
+    else if (action === "shareTask") openShareTaskModal(i);
+    else if (action === "unshareTask") {
+      const t = tasks[i];
+      if (!t) return;
+      confirm("Unshare Task", "Unshare this task from all friends?", {
+        okLabel: "Unshare",
+        cancelLabel: "Cancel",
+        onOk: () => {
+          const uid = currentUid();
+          if (!uid) {
+            closeConfirm();
+            return;
+          }
+          void deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
+            .then(async () => {
+              await refreshOwnSharedSummaries();
+              if (currentAppPage === "test2") await refreshGroupsData();
+              render();
+            })
+            .finally(() => closeConfirm());
+        },
+      });
+    } else if (action === "muteCheckpointAlert") {
+      stopCheckpointRepeatAlert();
+      return;
+    } else if (action === "showSuppressedCheckpointAlert") {
+      const suppressedAlert = getSuppressedFocusModeAlert(taskId);
+      if (!suppressedAlert) return;
+      enqueueCheckpointToast(suppressedAlert.title, suppressedAlert.text, {
+        autoCloseMs: suppressedAlert.autoCloseMs,
+        taskId: suppressedAlert.taskId,
+        taskName: suppressedAlert.taskName,
+        counterText: suppressedAlert.counterText,
+        checkpointTimeText: suppressedAlert.checkpointTimeText,
+        checkpointDescText: suppressedAlert.checkpointDescText,
+        muteRepeatOnManualDismiss: suppressedAlert.muteRepeatOnManualDismiss,
+      });
+      clearSuppressedFocusModeAlert(taskId);
+      render();
+      return;
+    }
+
+    if (taskId) setTaskFlipped(taskId, false, taskEl as HTMLElement);
+  }
+
+  function handleEditNameInput() {
+    const t = getCurrentEditTask();
+    if (!t) return;
+    syncEditTaskDurationReadout(t);
+    syncEditSaveAvailability(t);
+  }
+
+  function handleElapsedPadOverlayClick(e: any) {
+    if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
+  }
+
+  function handleElapsedPadKeyClick(event: any) {
+    const el = event?.currentTarget as HTMLElement | null;
+    if (!el) return;
+    const digit = el.getAttribute("data-pad-digit");
+    const action = el.getAttribute("data-pad-action");
+    if (digit != null) {
+      padAppendDigit(digit);
+      return;
+    }
+    if (action === "back") {
+      padBackspace();
+      return;
+    }
+    if (action === "dot") {
+      padAppendDot();
+      return;
+    }
+    if (action === "clear") padClear();
   }
 
   function resetAllOpenHistoryChartSelections() {
@@ -5199,293 +5220,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function resetTask(i: number) {
-    const t = tasks[i];
-    if (!t) return;
-    if (t.running) return;
-    const shouldExitFocusModeAfterReset = String(focusModeTaskId || "").trim() === String(t.id || "").trim();
-
-    const applyResetTaskConfirmState = () => {
-      const shouldLog = !!els.confirmDeleteAll?.checked;
-      setResetTaskConfirmBusy(false, shouldLog);
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
-      if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", shouldLog);
-      syncConfirmPrimaryToggleUi();
-    };
-    const clearResetTaskConfirmState = () => {
-      if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = null;
-      setResetTaskConfirmBusy(false, false);
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetTaskConfirm");
-    };
-
-    confirm("Reset Task", "Reset timer to zero?", {
-      okLabel: "Reset",
-      cancelLabel: "Cancel",
-      checkboxLabel: "Log this entry",
-      checkboxChecked: true,
-      onOk: async () => {
-        const doLog = !!els.confirmDeleteAll?.checked;
-        setResetTaskConfirmBusy(true, doLog);
-        const sessionNote = captureResetActionSessionNote(String(t.id || ""));
-        if (sessionNote) setFocusSessionDraft(String(t.id || ""), sessionNote);
-        try {
-          resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
-          save();
-          if (!doLog) {
-            void syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-          }
-          closeConfirm();
-          if (shouldExitFocusModeAfterReset) closeFocusMode();
-          else render();
-        } finally {
-          clearResetTaskConfirmState();
-        }
-      },
-      onCancel: () => {
-        clearResetTaskConfirmState();
-        closeConfirm();
-      },
-    });
-
-    applyResetTaskConfirmState();
-    if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = applyResetTaskConfirmState;
+    resetTaskApi(i);
   }
 
   function resetAll() {
-    const eligibleTasks = tasks.filter((t) => canLogSession(t));
-
-    confirm("Reset All", "Reset all timers?", {
-      okLabel: "Reset",
-      checkboxLabel: "Also delete all tasks",
-      checkboxChecked: false,
-      checkbox2Label: eligibleTasks.length ? "Log eligible sessions to History" : null,
-      checkbox2Checked: eligibleTasks.length ? true : false,
-      onOk: () => {
-        const alsoDelete = !!els.confirmDeleteAll?.checked;
-        const doLog = eligibleTasks.length ? !!els.confirmLogChk?.checked : false;
-        const affectedTaskIds = (tasks || []).map((row) => String(row.id || "")).filter(Boolean);
-        const uid = String(currentUid() || "");
-        const deletedTaskCount = alsoDelete ? (tasks || []).length : 0;
-
-        if (doLog) {
-          eligibleTasks.forEach((t) => {
-            const ms = getTaskElapsedMs(t);
-            if (ms > 0) {
-              appendCompletedSessionHistory(t, nowMs(), ms, captureResetActionSessionNote(String(t.id || "")));
-            }
-          });
-        }
-
-        if (alsoDelete) {
-          const deletedHistoryEntryCount = Object.values(historyByTaskId || {}).reduce(
-            (sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0),
-            0
-          );
-          tasks = [];
-          historyByTaskId = {};
-          saveHistory(historyByTaskId);
-          deletedTaskMeta = {} as DeletedTaskMeta;
-          saveDeletedMeta(deletedTaskMeta);
-          save();
-          if (uid && affectedTaskIds.length) {
-            void Promise.all(affectedTaskIds.map((taskId) => deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
-              .then(() => refreshOwnSharedSummaries())
-              .catch(() => {});
-          }
-          render();
-          closeConfirm();
-          confirm(
-            "Reset Complete",
-            `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
-              deletedHistoryEntryCount === 1 ? "y" : "ies"
-            } deleted.`,
-            {
-              okLabel: "Close",
-              cancelLabel: "Done",
-              onOk: () => closeConfirm(),
-              onCancel: () => closeConfirm(),
-            }
-          );
-          return;
-        } else {
-          tasks.forEach((t) => {
-            t.accumulatedMs = 0;
-            t.running = false;
-            t.startMs = null;
-            t.hasStarted = false;
-            t.xpDisqualifiedUntilReset = false;
-            resetCheckpointAlertTracking(t.id);
-          });
-        }
-
-        save();
-        if (affectedTaskIds.length) {
-          void syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
-        }
-        render();
-        closeConfirm();
-      },
-    });
+    resetAllApi();
   }
 
   function openEdit(i: number) {
-    const sourceTask = tasks[i];
-    if (!sourceTask) return;
-    const t = cloneTaskForEdit(sourceTask);
-    editIndex = i;
-    editTaskDraft = t;
-
-    if (els.editName) els.editName.value = t.name || "";
-    setEditTimeGoalEnabled(!!t.timeGoalEnabled);
-    if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
-    editTaskDurationUnit = t.timeGoalUnit === "minute" ? "minute" : "hour";
-    editTaskDurationPeriod = t.timeGoalPeriod === "day" ? "day" : "week";
-    syncEditTaskTimeGoalUi(t);
-
-    const elapsedMs = getElapsedMs(t);
-    const totalSec = Math.floor(elapsedMs / 1000);
-    const d = Math.floor(totalSec / 86400);
-    const remAfterDays = totalSec % 86400;
-    const h = Math.floor(remAfterDays / 3600);
-    const m = Math.floor((remAfterDays % 3600) / 60);
-    const s = remAfterDays % 60;
-
-    if (els.editD) els.editD.value = String(d);
-    if (els.editH) els.editH.value = String(h);
-    if (els.editM) els.editM.value = String(m);
-    if (els.editS) els.editS.value = String(s);
-    [els.editD, els.editH, els.editM, els.editS].forEach((input) => {
-      if (!input) return;
-      input.dataset.autoclearPending = "1";
-    });
-    setEditElapsedOverrideEnabled(!!t.xpDisqualifiedUntilReset);
-    if (els.editAdvancedSection) els.editAdvancedSection.open = !!t.xpDisqualifiedUntilReset;
-    syncEditCheckpointAlertUi(t);
-    syncEditSaveAvailability(t);
-    {
-      const current = taskModeOf(t);
-      editMoveTargetMode = current;
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(current);
-      [els.editMoveMode1, els.editMoveMode2, els.editMoveMode3].forEach((btn) => {
-        if (!btn) return;
-        const moveMode = btn.getAttribute("data-move-mode") as MainMode;
-        const disabled = btn.getAttribute("data-move-mode") === current || !isModeEnabled(moveMode);
-        btn.disabled = disabled;
-        btn.classList.toggle("is-disabled", disabled);
-      });
-      if (els.editMoveMenu) els.editMoveMenu.open = false;
-    }
-
-    if (els.msArea && "open" in (els.msArea as any)) {
-      (els.msArea as HTMLDetailsElement).open = false;
-    }
-    syncEditMilestoneSectionUi(t);
-    setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
-
-    renderMilestoneEditor(t);
-    ensureMilestoneIdentity(t);
-    if (els.editPresetIntervalInput) els.editPresetIntervalInput.value = String(Number(t.presetIntervalValue || 0) || 0);
-    toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, !!t.presetIntervalsEnabled);
-    syncEditCheckpointAlertUi(t);
-    editDraftSnapshot = buildEditDraftSnapshot(t);
-    clearEditValidationState();
-    syncEditSaveAvailability(t);
-
-    if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "flex";
+    openEditApi(i);
   }
 
   function closeEdit(saveChanges: boolean) {
-    const sourceTask = editIndex != null ? tasks[editIndex] : null;
-    const t = editTaskDraft;
-
-    if (saveChanges && t && sourceTask) {
-      els.editTaskDurationValueInput?.classList.remove("isInvalid");
-      if (!validateEditTimeGoal()) {
-        showEditValidationError(t, "Enter a valid time goal or turn Time Goal off.");
-        return;
-      }
-      const checkpointingActiveForSave = !!t.milestonesEnabled && editTaskHasActiveTimeGoal();
-      if (checkpointingActiveForSave && (!Array.isArray(t.milestones) || t.milestones.length === 0)) {
-        syncEditSaveAvailability(t);
-        showEditValidationError(t, "Add at least 1 timer checkpoint before saving.");
-        return;
-      }
-      if (checkpointingActiveForSave && hasNonPositiveCheckpoint(t.milestones)) {
-        syncEditSaveAvailability(t);
-        showEditValidationError(t, "Checkpoint times must be greater than 0.");
-        return;
-      }
-      if (checkpointingActiveForSave && hasCheckpointAtOrAboveTimeGoal(t.milestones, milestoneUnitSec(t), getEditTaskTimeGoalMinutes())) {
-        syncEditSaveAvailability(t);
-        showEditValidationError(t, "Checkpoint times must be less than the time goal.");
-        return;
-      }
-      if (checkpointingActiveForSave && t.presetIntervalsEnabled && !hasValidPresetInterval(t)) {
-        syncEditSaveAvailability(t);
-        showEditValidationError(t, "Enter a preset interval greater than 0.");
-        return;
-      }
-      const prevElapsedMs = getElapsedMs(sourceTask);
-      t.name = (els.editName?.value || "").trim() || t.name;
-
-      if (isEditElapsedOverrideEnabled()) {
-        const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
-        const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
-        const hh = isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
-        const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
-        const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
-
-        const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
-
-        t.accumulatedMs = newMs;
-        t.startMs = t.running ? nowMs() : null;
-        if (newMs < prevElapsedMs) resetCheckpointAlertTracking(t.id);
-        else clearCheckpointBaseline(t.id);
-      }
-      t.xpDisqualifiedUntilReset = isEditElapsedOverrideEnabled();
-
-      const timeGoalEnabledForSave = isEditTimeGoalEnabled();
-      const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
-      t.checkpointSoundEnabled = checkpointingEnabledForSave && isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-      t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      t.checkpointToastEnabled = checkpointingEnabledForSave && isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-      t.presetIntervalsEnabled = checkpointingEnabledForSave && isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
-      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      t.timeGoalAction =
-        els.editFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
-            ? "confirmModal"
-              : "continue";
-      t.timeGoalEnabled = timeGoalEnabledForSave;
-      if (!t.timeGoalEnabled) t.milestonesEnabled = false;
-      t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
-      t.timeGoalUnit = editTaskDurationUnit;
-      t.timeGoalPeriod = editTaskDurationPeriod;
-      t.timeGoalMinutes = getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
-
-      ensureMilestoneIdentity(t);
-      t.milestones = sortMilestones(t.milestones);
-      const moveMode = editMoveTargetMode || taskModeOf(t);
-      if ((moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") && isModeEnabled(moveMode)) {
-        (t as any).mode = moveMode;
-      }
-
-      Object.assign(sourceTask, cloneTaskForEdit(t));
-      save();
-      void syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
-      render();
-    }
-
-    if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
-    clearEditValidationState();
-    closeElapsedPad(false);
-    if (els.editAdvancedSection) els.editAdvancedSection.open = false;
-    if (els.editMoveMenu) els.editMoveMenu.open = false;
-    editIndex = null;
-    editTaskDraft = null;
-    editDraftSnapshot = "";
+    closeEditApi(saveChanges);
   }
 
   function isEditElapsedOverrideEnabled() {
@@ -5591,70 +5338,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     ms: Task["milestones"],
     onApplied?: () => void
   ) {
-    if (!els.elapsedPadOverlay) return;
-    elapsedPadTarget = null;
-    elapsedPadMilestoneRef = { task, milestone, ms, onApplied };
-    elapsedPadOriginal = String(+milestone.hours || 0);
-    elapsedPadDraft = elapsedPadOriginal;
-    if (els.elapsedPadTitle) {
-      const unit = task?.milestoneTimeUnit === "day" ? "days" : task?.milestoneTimeUnit === "minute" ? "minutes" : "hours";
-      els.elapsedPadTitle.textContent = `Set Checkpoint <${unit}>`;
-    }
-    clearElapsedPadError();
-    renderElapsedPadDisplay();
-    (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
+    openElapsedPadForMilestoneApi(task, milestone, ms, onApplied);
   }
 
   function closeElapsedPad(applyValue: boolean) {
-    if (applyValue && (elapsedPadTarget || elapsedPadMilestoneRef)) {
-      const valid =
-        elapsedPadMilestoneRef && !elapsedPadTarget
-          ? (() => {
-              const parsed = parseFloat(elapsedPadDraft || "");
-              if (!Number.isFinite(parsed) || isNaN(parsed) || parsed < 0) return null;
-              return String(parsed);
-            })()
-          : elapsedPadValidatedValue(elapsedPadDraft, elapsedPadTarget);
-      if (valid == null) {
-        setElapsedPadError(
-          elapsedPadMilestoneRef && !elapsedPadTarget
-            ? "Enter a valid number"
-            : elapsedPadErrorTextForInput(elapsedPadTarget)
-        );
-        return;
-      }
-      if (elapsedPadTarget) {
-        elapsedPadTarget.value = valid;
-      } else if (elapsedPadMilestoneRef) {
-        const nextHours = Number(valid);
-        const isEditDraftMilestone = elapsedPadMilestoneRef.task === getCurrentEditTask();
-        const timeGoalMinutes = isEditDraftMilestone ? getEditTaskTimeGoalMinutes() : getAddTaskTimeGoalMinutesState();
-        if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(elapsedPadMilestoneRef.task), timeGoalMinutes)) {
-          const timeGoalText = formatCheckpointTimeGoalText(elapsedPadMilestoneRef.task, {
-            timeGoalMinutes,
-            forEditDraft: isEditDraftMilestone,
-          });
-          setElapsedPadError(`Checkpoint must be less than the time goal of ${timeGoalText}`);
-          return;
-        }
-        elapsedPadMilestoneRef.milestone.hours = nextHours;
-        elapsedPadMilestoneRef.task.milestones = elapsedPadMilestoneRef.ms;
-        if (elapsedPadMilestoneRef.onApplied) elapsedPadMilestoneRef.onApplied();
-        else renderMilestoneEditor(elapsedPadMilestoneRef.task);
-      }
-    } else if (!applyValue && elapsedPadTarget) {
-      elapsedPadTarget.value = elapsedPadOriginal;
-    }
-    clearElapsedPadError();
-    if (els.elapsedPadOverlay) (els.elapsedPadOverlay as HTMLElement).style.display = "none";
-    if (editIndex != null && tasks[editIndex]) {
-      syncEditCheckpointAlertUi(tasks[editIndex]);
-      syncEditSaveAvailability(tasks[editIndex]);
-    }
-    elapsedPadTarget = null;
-    elapsedPadMilestoneRef = null;
-    elapsedPadDraft = "";
-    elapsedPadOriginal = "";
+    closeElapsedPadApi(applyValue);
   }
 
   function padAppendDigit(digit: string) {
@@ -8798,89 +8486,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       submitAddTaskWizard();
     });
 
-    on(els.taskList, "click", (e: any) => {
-      const taskEl = e.target?.closest?.(".task");
-      if (!taskEl) return;
-      const i = parseInt(taskEl.dataset.index, 10);
-      if (!Number.isFinite(i)) return;
-      const taskId = String(taskEl.dataset.taskId || "").trim();
-      const flipBtn = e.target?.closest?.("[data-task-flip]") as HTMLElement | null;
-      if (flipBtn && taskId) {
-        e?.preventDefault?.();
-        e?.stopPropagation?.();
-        setTaskFlipped(taskId, flipBtn.getAttribute("data-task-flip") === "open", taskEl as HTMLElement);
-        return;
-      }
-
-      const btn = e.target?.closest?.("[data-action]");
-      if (!btn) {
-        const inTopRow = !!e.target?.closest?.(".row");
-        const inActions = !!e.target?.closest?.(".actions");
-        if (inTopRow && !inActions) {
-          openFocusMode(i);
-        }
-        return;
-      }
-      const action = btn.getAttribute("data-action");
-
-      if (action === "start") startTask(i);
-      else if (action === "stop") stopTask(i);
-      else if (action === "reset") resetTask(i);
-      else if (action === "delete") deleteTask(i);
-      else if (action === "edit") openEdit(i);
-      else if (action === "history") openHistory(i);
-      else if (action === "duplicate") duplicateTask(i);
-      else if (action === "editName" || action === "focus") openFocusMode(i);
-      else if (action === "collapse") toggleCollapse(i);
-      else if (action === "exportTask") openTaskExportModal(i);
-      else if (action === "shareTask") openShareTaskModal(i);
-      else if (action === "unshareTask") {
-        const t = tasks[i];
-        if (!t) return;
-        confirm("Unshare Task", "Unshare this task from all friends?", {
-          okLabel: "Unshare",
-          cancelLabel: "Cancel",
-          onOk: () => {
-            const uid = currentUid();
-            if (!uid) {
-              closeConfirm();
-              return;
-            }
-            void deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
-              .then(async () => {
-                await refreshOwnSharedSummaries();
-                if (currentAppPage === "test2") await refreshGroupsData();
-                render();
-              })
-              .finally(() => closeConfirm());
-          },
-        });
-      }
-      else if (action === "muteCheckpointAlert") {
-        stopCheckpointRepeatAlert();
-        return;
-      }
-      else if (action === "showSuppressedCheckpointAlert") {
-        const suppressedAlert = getSuppressedFocusModeAlert(taskId);
-        if (!suppressedAlert) return;
-        enqueueCheckpointToast(suppressedAlert.title, suppressedAlert.text, {
-          autoCloseMs: suppressedAlert.autoCloseMs,
-          taskId: suppressedAlert.taskId,
-          taskName: suppressedAlert.taskName,
-          counterText: suppressedAlert.counterText,
-          checkpointTimeText: suppressedAlert.checkpointTimeText,
-          checkpointDescText: suppressedAlert.checkpointDescText,
-          muteRepeatOnManualDismiss: suppressedAlert.muteRepeatOnManualDismiss,
-        });
-        clearSuppressedFocusModeAlert(taskId);
-        render();
-        return;
-      }
-
-      if (taskId) setTaskFlipped(taskId, false, taskEl as HTMLElement);
-    });
-
-    on(els.resetAllBtn, "click", resetAll);
+    registerTaskEvents();
 
     on(document, "click", (ev: any) => {
       const insideMenu = ev.target?.closest?.(".taskMenu");
@@ -9174,14 +8780,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (ov) closeOverlay(ov);
       });
     });
-    on(els.cancelEditBtn, "click", () => closeEdit(false));
-    on(els.saveEditBtn, "click", () => closeEdit(true));
-    on(els.editName, "input", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      syncEditTaskDurationReadout(t);
-      syncEditSaveAvailability(t);
-    });
     const syncEditTimeGoalToggle = (nextEnabled: boolean) => {
       const t = getCurrentEditTask();
       if (!t) return;
@@ -9397,35 +8995,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.editH, "click", () => maybeAutoClearEditElapsedField(els.editH));
     on(els.editM, "click", () => maybeAutoClearEditElapsedField(els.editM));
     on(els.editS, "click", () => maybeAutoClearEditElapsedField(els.editS));
-
-    on(els.elapsedPadOverlay, "click", (e: any) => {
-      if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
-    });
-    on(els.elapsedPadCancelBtn, "click", () => closeElapsedPad(false));
-    on(els.elapsedPadDoneBtn, "click", () => closeElapsedPad(true));
-
-    document.querySelectorAll(".elapsedPadKey").forEach((btn) => {
-      on(btn, "click", () => {
-        const el = btn as HTMLElement;
-        const digit = el.getAttribute("data-pad-digit");
-        const action = el.getAttribute("data-pad-action");
-        if (digit != null) {
-          padAppendDigit(digit);
-          return;
-        }
-        if (action === "back") {
-          padBackspace();
-          return;
-        }
-        if (action === "dot") {
-          padAppendDot();
-          return;
-        }
-        if (action === "clear") {
-          padClear();
-        }
-      });
-    });
 
     on(els.msArea?.querySelector?.("summary") as HTMLElement | null, "click", (e: any) => {
       const t = getCurrentEditTask();

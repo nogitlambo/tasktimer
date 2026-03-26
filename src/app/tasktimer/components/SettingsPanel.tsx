@@ -1485,15 +1485,15 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                 <div className="unitRow">
                   <span>Default Task Timer Format</span>
                   <div className="unitButtons">
-                    <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatDay" type="button">
-                      Day
-                    </button>
-                    <button className="btn btn-ghost small unitBtn isOn" id="taskDefaultFormatHour" type="button">
-                      Hour
-                    </button>
-                    <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatMinute" type="button">
-                      Minute
-                    </button>
+                    <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatDay" type="button">
+                      D
+                    </button>
+                    <button className="btn btn-ghost small unitBtn isOn" id="taskDefaultFormatHour" type="button">
+                      H
+                    </button>
+                    <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatMinute" type="button">
+                      M
+                    </button>
                   </div>
                 </div>
                 <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">

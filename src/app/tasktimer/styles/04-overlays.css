@@ -1204,11 +1204,24 @@ body[data-theme="purple"] #editOverlay optgroup{
   background: #140b20;
   color: #f3e8ff;
 }
-body[data-theme="purple"] #editOverlay option:checked,
+body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:hover,
+body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:focus-visible{
+  border-color: rgba(206,136,230,.42) !important;
+  background: linear-gradient(180deg, rgba(186,110,214,.18), rgba(108,58,132,.14)) !important;
+  color: #fff8ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.06), 0 0 10px rgba(176,82,198,.1) !important;
+}
 body[data-theme="purple"] #editOverlay option:hover,
 body[data-theme="purple"] #editOverlay option:focus{
-  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
-  color: #fff6ff;
+  background: #3f234f;
+  color: #fff8ff;
+}
+body[data-theme="purple"] #editOverlay option:checked,
+body[data-theme="purple"] #editOverlay option:checked:hover,
+body[data-theme="purple"] #editOverlay option:checked:focus{
+  background: #2b1737;
+  color: #f7eeff;
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08);
 }
 
 body[data-theme="cyan"] #editOverlay input[type="text"],
@@ -1235,11 +1248,25 @@ body[data-theme="cyan"] #editOverlay optgroup{
   color: #eafcff;
 }
 
-body[data-theme="cyan"] #editOverlay option:checked,
+body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:hover,
+body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:focus-visible{
+  border-color: rgba(116,198,226,.55) !important;
+  background: linear-gradient(180deg, rgba(94,172,202,.18), rgba(52,109,134,.14)) !important;
+  color: #eaf7ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 0 10px rgba(92,170,201,.1) !important;
+}
+
 body[data-theme="cyan"] #editOverlay option:hover,
 body[data-theme="cyan"] #editOverlay option:focus{
-  background: linear-gradient(180deg, rgba(53,232,255,.34), rgba(8,83,110,.96));
-  color: #f3feff;
+  background: #183846;
+  color: #eaf7ff;
+}
+body[data-theme="cyan"] #editOverlay option:checked,
+body[data-theme="cyan"] #editOverlay option:checked:hover,
+body[data-theme="cyan"] #editOverlay option:checked:focus{
+  background: #122a35;
+  color: #f0fcff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
 }
 
 body[data-theme="purple"] #editOverlay .switch.on{

@@ -129,6 +129,167 @@ export type TaskTimerGroupsContext = {
   getOpenFriendSharedTaskUids: () => Set<string>;
 };
 
+export type TaskTimerTasksContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
+  getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getDeletedTaskMeta: () => DeletedTaskMeta;
+  setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
+  getCurrentUid: () => string | null;
+  getCurrentAppPage: () => AppPage;
+  getCurrentMode: () => MainMode;
+  getTaskView: () => "list" | "tile";
+  getCurrentTileColumnCount: () => number;
+  setCurrentTileColumnCount: (value: number) => void;
+  getFocusModeTaskId: () => string | null;
+  getOpenHistoryTaskIds: () => Set<string>;
+  getPinnedHistoryTaskIds: () => Set<string>;
+  getHistoryViewByTaskId: () => Record<string, HistoryViewState>;
+  getThemeMode: () => "purple" | "cyan";
+  getAutoFocusOnTaskLaunchEnabled: () => boolean;
+  getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertToastEnabled: () => boolean;
+  getDynamicColorsEnabled: () => boolean;
+  getEditIndex: () => number | null;
+  setEditIndex: (value: number | null) => void;
+  getEditTaskDraft: () => Task | null;
+  setEditTaskDraft: (value: Task | null) => void;
+  getEditTaskDurationUnit: () => "minute" | "hour";
+  setEditTaskDurationUnit: (value: "minute" | "hour") => void;
+  getEditTaskDurationPeriod: () => "day" | "week";
+  setEditTaskDurationPeriod: (value: "day" | "week") => void;
+  getEditDraftSnapshot: () => string;
+  setEditDraftSnapshot: (value: string) => void;
+  getEditMoveTargetMode: () => MainMode;
+  setEditMoveTargetMode: (value: MainMode) => void;
+  getElapsedPadTarget: () => HTMLInputElement | null;
+  setElapsedPadTarget: (value: HTMLInputElement | null) => void;
+  getElapsedPadMilestoneRef: () =>
+    | {
+        task: Task;
+        milestone: { hours: number; description: string };
+        ms: Task["milestones"];
+        onApplied?: (() => void) | undefined;
+      }
+    | null;
+  setElapsedPadMilestoneRef: (
+    value:
+      | {
+          task: Task;
+          milestone: { hours: number; description: string };
+          ms: Task["milestones"];
+          onApplied?: (() => void) | undefined;
+        }
+      | null
+  ) => void;
+  getElapsedPadDraft: () => string;
+  setElapsedPadDraft: (value: string) => void;
+  getElapsedPadOriginal: () => string;
+  setElapsedPadOriginal: (value: string) => void;
+  getCheckpointAutoResetDirty: () => boolean;
+  setCheckpointAutoResetDirty: (value: boolean) => void;
+  render: () => void;
+  renderHistory: (taskId: string) => void;
+  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  syncTimeGoalModalWithTaskState: () => void;
+  maybeRestorePendingTimeGoalFlow: () => void;
+  getElapsedMs: (task: Task) => number;
+  getTaskElapsedMs: (task: Task) => number;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  saveHistory: (history: HistoryByTaskId) => void;
+  saveDeletedMeta: (meta: DeletedTaskMeta) => void;
+  escapeHtmlUI: (value: unknown) => string;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  milestoneUnitSec: (task: Task | null | undefined) => number;
+  milestoneUnitSuffix: (task: Task | null | undefined) => string;
+  getModeColor: (mode: MainMode) => string;
+  fillBackgroundForPct: (pct: number) => string;
+  formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  isTaskSharedByOwner: (taskId: string) => boolean;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions & { checkbox2Label?: string | null; checkbox2Checked?: boolean }) => void;
+  closeConfirm: () => void;
+  clearTaskTimeGoalFlow: (taskId: string) => void;
+  flushPendingFocusSessionNoteSave: (taskId: string) => void;
+  awardLaunchXpForTask: (task: Task) => void;
+  clearCheckpointBaseline: (taskId: string | null | undefined) => void;
+  openFocusMode: (index: number) => void;
+  closeFocusMode: () => void;
+  canLogSession: (task: Task) => boolean;
+  appendCompletedSessionHistory: (task: Task, completedAtMs: number, elapsedMs: number, note?: string) => void;
+  resetCheckpointAlertTracking: (taskId: string | null | undefined) => void;
+  clearFocusSessionDraft: (taskId: string) => void;
+  syncFocusSessionNotesInput: (taskId: string | null) => void;
+  syncFocusSessionNotesAccordion: (taskId: string | null) => void;
+  captureResetActionSessionNote: (taskId: string) => string;
+  setFocusSessionDraft: (taskId: string, note: string) => void;
+  setResetTaskConfirmBusy: (busy: boolean, logging: boolean) => void;
+  syncConfirmPrimaryToggleUi: () => void;
+  cloneTaskForEdit: (task: Task) => Task;
+  getModeLabel: (mode: MainMode) => string;
+  isModeEnabled: (mode: MainMode) => boolean;
+  setEditTimeGoalEnabled: (enabled: boolean) => void;
+  syncEditTaskTimeGoalUi: (task: Task) => void;
+  syncEditCheckpointAlertUi: (task: Task) => void;
+  syncEditSaveAvailability: (task: Task) => void;
+  syncEditMilestoneSectionUi: (task: Task) => void;
+  setMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
+  renderMilestoneEditor: (task: Task) => void;
+  clearEditValidationState: () => void;
+  validateEditTimeGoal: () => boolean;
+  showEditValidationError: (task: Task, message: string) => void;
+  editTaskHasActiveTimeGoal: () => boolean;
+  hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
+  hasCheckpointAtOrAboveTimeGoal: (
+    milestones: Task["milestones"],
+    unitSec: number,
+    timeGoalMinutes: number
+  ) => boolean;
+  isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
+  formatCheckpointTimeGoalText: (
+    task: Task,
+    opts?: { timeGoalMinutes?: number; forEditDraft?: boolean }
+  ) => string;
+  getEditTaskTimeGoalMinutes: () => number;
+  getEditTaskTimeGoalMinutesFor: (value: number, unit: "minute" | "hour", period: "day" | "week") => number;
+  getAddTaskTimeGoalMinutesState: () => number;
+  isEditTimeGoalEnabled: () => boolean;
+  ensureMilestoneIdentity: (task: Task) => void;
+  toggleSwitchElement: (el: HTMLElement | null, on: boolean) => void;
+  isSwitchOn: (el: HTMLElement | null) => boolean;
+  buildEditDraftSnapshot: (task: Task) => string;
+  getCurrentEditTask: () => Task | null;
+  syncEditTaskDurationReadout: (task?: Task | null) => void;
+  maybeToggleEditPresetIntervals: (nextEnabled: boolean) => void;
+  hasValidPresetInterval: (task: Task) => boolean;
+  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutes: number) => boolean;
+  getPresetIntervalNextSeqNum: (task: Task) => number;
+  isEditMilestoneUnitDay: () => boolean;
+  setTaskFlipped: (taskId: string, flipped: boolean, taskEl?: HTMLElement | null) => void;
+  syncTaskFlipStatesForVisibleTasks: (activeTaskIds: Set<string>) => void;
+  applyTaskFlipDomState: (taskId: string, taskEl?: HTMLElement | null) => void;
+  openHistoryInline: (index: number) => void;
+  openTaskExportModal: (index: number) => void;
+  openShareTaskModal: (index: number) => void;
+  currentUid: () => string | null;
+  deleteSharedTaskSummariesForTask: (uid: string, taskId: string) => Promise<void>;
+  refreshOwnSharedSummaries: () => Promise<void>;
+  refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
+  deleteTask: (index: number) => void;
+  isFocusModeFilteringAlerts: () => boolean;
+  getSuppressedFocusModeAlert: (taskId: string) => unknown;
+  checkpointRepeatActiveTaskId: () => string | null;
+  activeCheckpointToastTaskId: () => string | null;
+  stopCheckpointRepeatAlert: () => void;
+  enqueueCheckpointToast: (title: string, text: string, opts: unknown) => void;
+  clearSuppressedFocusModeAlert: (taskId: string) => void;
+  syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
+};
+
 export type TaskTimerPreferencesContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
