@@ -5,7 +5,7 @@ import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
-import { normalizeHistoryTimestampMs, localDayKey, getCalendarWeekStartMs } from "./lib/history";
+import { normalizeHistoryTimestampMs, localDayKey } from "./lib/history";
 import {
   getDashboardAvgRangeWindow,
   dashboardAvgRangeLabel,
@@ -32,7 +32,6 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   approveFriendRequest,
   cancelOutgoingFriendRequest,
-  deleteFriendship,
   deleteSharedTaskSummary,
   deleteSharedTaskSummariesForTask,
   declineFriendRequest,
@@ -74,7 +73,7 @@ import {
   subscribeCloudTaskCollection,
   hasPendingTaskOrHistorySync,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, getRankLabelById, getRankThumbnailDescriptor, normalizeRewardProgress } from "./lib/rewards";
+import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
 import type {
   AppPage,
@@ -87,6 +86,7 @@ import type {
 import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
+import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
@@ -434,6 +434,102 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     mobileBackBtn.click();
     return true;
   }
+
+  const groupsApi = createTaskTimerGroups({
+    els,
+    on,
+    getTasks: () => tasks,
+    getHistoryByTaskId: () => historyByTaskId,
+    getCurrentUid: () => currentUid(),
+    getCurrentAppPage: () => currentAppPage,
+    getCurrentMode: () => currentMode,
+    applyMainMode,
+    applyAppPage: (page, opts) => applyAppPage(page, opts),
+    render,
+    closeConfirm,
+    confirm,
+    escapeHtmlUI,
+    taskModeOf: (task) => taskModeOf(task),
+    normalizeHistoryTimestampMs,
+    showWorkingIndicator,
+    hideWorkingIndicator,
+    getMergedFriendProfile,
+    getFriendAvatarSrcById,
+    buildFriendInitialAvatarDataUrl,
+    getFriendAvatarSrc,
+    jumpToTaskById,
+    getGroupsIncomingRequests: () => groupsIncomingRequests,
+    setGroupsIncomingRequests: (value) => {
+      groupsIncomingRequests = value;
+    },
+    getGroupsOutgoingRequests: () => groupsOutgoingRequests,
+    setGroupsOutgoingRequests: (value) => {
+      groupsOutgoingRequests = value;
+    },
+    getGroupsFriendships: () => groupsFriendships,
+    setGroupsFriendships: (value) => {
+      groupsFriendships = value;
+    },
+    getGroupsSharedSummaries: () => groupsSharedSummaries,
+    setGroupsSharedSummaries: (value) => {
+      groupsSharedSummaries = value;
+    },
+    getOwnSharedSummaries: () => ownSharedSummaries,
+    setOwnSharedSummaries: (value) => {
+      ownSharedSummaries = value;
+    },
+    getGroupsLoading: () => groupsLoading,
+    setGroupsLoading: (value) => {
+      groupsLoading = value;
+    },
+    getGroupsLoadingDepth: () => groupsLoadingDepth,
+    setGroupsLoadingDepth: (value) => {
+      groupsLoadingDepth = value;
+    },
+    getGroupsRefreshSeq: () => groupsRefreshSeq,
+    setGroupsRefreshSeq: (value) => {
+      groupsRefreshSeq = value;
+    },
+    getActiveFriendProfileUid: () => activeFriendProfileUid,
+    setActiveFriendProfileUid: (value) => {
+      activeFriendProfileUid = value;
+    },
+    getActiveFriendProfileName: () => activeFriendProfileName,
+    setActiveFriendProfileName: (value) => {
+      activeFriendProfileName = value;
+    },
+    getFriendProfileCacheByUid: () => friendProfileCacheByUid,
+    setFriendProfileCacheByUid: (value) => {
+      friendProfileCacheByUid = value;
+    },
+    getShareTaskIndex: () => shareTaskIndex,
+    setShareTaskIndex: (value) => {
+      shareTaskIndex = value;
+    },
+    getShareTaskMode: () => shareTaskMode,
+    setShareTaskMode: (value) => {
+      shareTaskMode = value;
+    },
+    getShareTaskTaskId: () => shareTaskTaskId,
+    setShareTaskTaskId: (value) => {
+      shareTaskTaskId = value;
+    },
+    getOpenFriendSharedTaskUids: () => openFriendSharedTaskUids,
+  });
+  const {
+    renderGroupsPage,
+    renderFriendsFooterAlertBadge,
+    refreshGroupsData,
+    closeFriendProfileModal,
+    closeFriendRequestModal,
+    openShareTaskModal,
+    closeShareTaskModal,
+    refreshOwnSharedSummaries,
+    reconcileOwnedSharedSummaryStates,
+    syncSharedTaskSummariesForTask,
+    syncSharedTaskSummariesForTasks,
+    registerGroupsEvents,
+  } = groupsApi;
 
   const appShell = createTaskTimerAppShell({
     els,
@@ -7022,255 +7118,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeTaskExportModal();
   }
 
-  function openFriendRequestModal() {
-    if (!els.friendRequestModal) return;
-    (els.friendRequestModal as HTMLElement).style.display = "flex";
-    if (els.friendRequestEmailInput) els.friendRequestEmailInput.value = "";
-    setFriendRequestModalStatus("");
-    window.setTimeout(() => {
-      try {
-        els.friendRequestEmailInput?.focus();
-      } catch {
-        // ignore
-      }
-    }, 0);
-  }
-
-  function closeFriendRequestModal() {
-    if (!els.friendRequestModal) return;
-    (els.friendRequestModal as HTMLElement).style.display = "none";
-    setFriendRequestModalStatus("");
-  }
-
-  function setFriendRequestModalStatus(message: string, tone: "error" | "success" | "info" = "info") {
-    if (!els.friendRequestModalStatus) return;
-    const text = String(message || "").trim();
-    const statusEl = els.friendRequestModalStatus as HTMLElement;
-    statusEl.textContent = text;
-    statusEl.style.display = text ? "block" : "none";
-    statusEl.style.color = "";
-    if (!text) return;
-    if (tone === "error") {
-      statusEl.style.color = "#ff8f8f";
-      return;
-    }
-    if (tone === "success") {
-      statusEl.style.color = "var(--accent, #35e8ff)";
-      return;
-    }
-    statusEl.style.color = "rgba(188,214,230,.78)";
-  }
-
-  function closeFriendProfileModal() {
-    if (!els.friendProfileModal) return;
-    (els.friendProfileModal as HTMLElement).style.display = "none";
-    activeFriendProfileUid = null;
-    activeFriendProfileName = "";
-  }
-
-  function openFriendProfileModal(friendUid: string) {
-    const uid = currentUid();
-    if (!uid || !els.friendProfileModal) return;
-    const targetUid = String(friendUid || "").trim();
-    if (!targetUid) return;
-
-    const rankedFriends = groupsFriendships
-      .map((row) => {
-        const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        if (!peerUid) return null;
-        const profile = getMergedFriendProfile(peerUid, row.profileByUid?.[peerUid]);
-        const alias = String(profile?.alias || "").trim() || peerUid;
-        const rankThumbnailSrc = String(profile?.rankThumbnailSrc || "").trim();
-        const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
-        const avatarSrc = getFriendAvatarSrc(profile);
-        const sharedCount = groupsSharedSummaries.filter((entry) => entry.ownerUid === peerUid).length;
-        const createdAtMs =
-          row.createdAt && typeof (row.createdAt as any).toMillis === "function"
-            ? Number((row.createdAt as any).toMillis())
-            : Number.NaN;
-        return { peerUid, alias, avatarSrc, rankThumbnailSrc, currentRankId, sharedCount, createdAtMs };
-      })
-      .filter(
-        (row): row is {
-          peerUid: string;
-          alias: string;
-          avatarSrc: string;
-          rankThumbnailSrc: string;
-          currentRankId: string;
-          sharedCount: number;
-          createdAtMs: number;
-        } =>
-          !!row
-      )
-      .sort((a, b) => {
-        if (b.sharedCount !== a.sharedCount) return b.sharedCount - a.sharedCount;
-        const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
-        if (byAlias !== 0) return byAlias;
-        return a.peerUid.localeCompare(b.peerUid, undefined, { sensitivity: "base" });
-      });
-
-    const row = rankedFriends.find((entry) => entry.peerUid === targetUid);
-    if (!row) return;
-    const memberSinceText = Number.isFinite(row.createdAtMs) ? new Date(row.createdAtMs).toLocaleDateString() : "Unknown";
-
-    if (els.friendProfileAvatar) {
-      els.friendProfileAvatar.src = row.avatarSrc;
-      els.friendProfileAvatar.alt = `${row.alias} avatar`;
-    }
-    if (els.friendProfileName) els.friendProfileName.textContent = row.alias;
-    if (els.friendProfileRankImage) {
-      const rankThumbnail = getRankThumbnailDescriptor(row.currentRankId);
-      if (rankThumbnail.kind === "image") {
-        els.friendProfileRankImage.src = rankThumbnail.src;
-        els.friendProfileRankImage.style.display = "block";
-        if (els.friendProfileRankPlaceholder) (els.friendProfileRankPlaceholder as HTMLElement).style.display = "none";
-      } else {
-        els.friendProfileRankImage.removeAttribute("src");
-        els.friendProfileRankImage.style.display = "none";
-        if (els.friendProfileRankPlaceholder) {
-          (els.friendProfileRankPlaceholder as HTMLElement).textContent = rankThumbnail.label;
-          (els.friendProfileRankPlaceholder as HTMLElement).style.display = "grid";
-        }
-      }
-    }
-    if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: ${getRankLabelById(row.currentRankId)}`;
-    if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
-    activeFriendProfileUid = row.peerUid;
-    activeFriendProfileName = row.alias;
-    (els.friendProfileModal as HTMLElement).style.display = "flex";
-  }
-
-  function getTaskCreatedAtMs(taskId: string): number | null {
-    const t = tasks.find((row) => String(row.id || "") === String(taskId));
-    const raw = (t as any)?.createdAt;
-    if (raw && typeof raw.toMillis === "function") return Math.max(0, Number(raw.toMillis()) || 0);
-    if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return Math.floor(raw);
-    const entries = (historyByTaskId[taskId] || []).slice();
-    if (!entries.length) return null;
-    const minTs = entries.reduce((min, e) => Math.min(min, normalizeHistoryTimestampMs(e?.ts)), Number.MAX_SAFE_INTEGER);
-    return minTs > 0 && Number.isFinite(minTs) ? Math.floor(minTs) : null;
-  }
-
-  function computeTaskSharingMetrics(taskId: string): {
-    createdAtMs: number | null;
-    avgWeekMs: number;
-    totalMs: number;
-    focusTrend7dMs: number[];
-    checkpointScaleMs: number | null;
-  } {
-    const weekStartMs = getCalendarWeekStartMs(new Date());
-    const weekEntries = (historyByTaskId[taskId] || []).filter((e) => normalizeHistoryTimestampMs(e?.ts) >= weekStartMs);
-    const weekTotalMs = weekEntries.reduce((sum, e) => sum + Math.max(0, Number(e?.ms || 0)), 0);
-    const daysElapsed = Math.max(1, Math.floor((Date.now() - weekStartMs) / (24 * 60 * 60 * 1000)) + 1);
-    const avgWeekMs = Math.floor(weekTotalMs / daysElapsed);
-    const allHistoryMs = (historyByTaskId[taskId] || []).reduce((sum, e) => sum + Math.max(0, Number(e?.ms || 0)), 0);
-    const task = tasks.find((row) => String(row.id || "") === String(taskId));
-    const runningMs =
-      task && task.running && Number.isFinite(Number(task.startMs))
-        ? Math.max(0, Date.now() - Number(task.startMs || 0))
-        : 0;
-    const focusTrend7dMs = [0, 0, 0, 0, 0, 0, 0];
-    weekEntries.forEach((e) => {
-      const ts = normalizeHistoryTimestampMs(e?.ts);
-      if (!ts) return;
-      const dayIdx = new Date(ts).getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) {
-        focusTrend7dMs[dayIdx] += Math.max(0, Number(e?.ms || 0));
-      }
-    });
-    if (runningMs > 0) {
-      const dayIdx = new Date().getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) {
-        focusTrend7dMs[dayIdx] += runningMs;
-      }
-    }
-    let checkpointScaleMs: number | null = null;
-    if (task && Array.isArray((task as any).milestones) && (task as any).milestones.length) {
-      const unitSec =
-        (task as any).milestoneTimeUnit === "day"
-          ? 86400
-          : (task as any).milestoneTimeUnit === "minute"
-            ? 60
-            : 3600;
-      const maxCheckpointUnits = (task as any).milestones.reduce((max: number, m: any) => {
-        const hours = Number(m?.hours || 0);
-        return Number.isFinite(hours) ? Math.max(max, hours) : max;
-      }, 0);
-      const candidate = Math.floor(maxCheckpointUnits * unitSec * 1000);
-      checkpointScaleMs = candidate > 0 ? candidate : null;
-    }
-    return {
-      createdAtMs: getTaskCreatedAtMs(taskId),
-      avgWeekMs,
-      totalMs: Math.floor(allHistoryMs + runningMs),
-      focusTrend7dMs: focusTrend7dMs.map((v) => Math.max(0, Math.floor(Number(v) || 0))),
-      checkpointScaleMs,
-    };
-  }
-
-  function formatCompactDurationForSharedCard(msRaw: number): string {
-    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
-    let totalSeconds = Math.floor(totalMs / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    totalSeconds -= days * 86400;
-    const hours = Math.floor(totalSeconds / 3600);
-    totalSeconds -= hours * 3600;
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds - minutes * 60;
-    const parts: string[] = [];
-    if (days > 0) parts.push(`${String(days).padStart(2, "0")}d`);
-    if (hours > 0) parts.push(`${String(hours).padStart(2, "0")}h`);
-    if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
-    if (seconds > 0) parts.push(`${String(seconds).padStart(2, "0")}s`);
-    if (!parts.length) parts.push("00s");
-    return parts.join(" ");
-  }
-
-  function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
-    const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
-    const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
-    const maxVal = Math.max(...vals, 1);
-    const width = 170;
-    const height = 56;
-    const padX = 6;
-    const padY = 6;
-    const usableW = width - padX * 2;
-    const usableH = height - padY * 2;
-    const step = usableW / 7;
-    const barW = Math.max(6, Math.min(14, step - 4));
-    const checkpointLines: string[] = [];
-    if (scaleRef > 0) {
-      let n = 1;
-      while (n <= 8) {
-        const yVal = scaleRef * n;
-        if (yVal > maxVal) break;
-        const y = padY + usableH - (usableH * yVal) / maxVal;
-        checkpointLines.push(
-          `<line class="friendSharedTrendCheckpointLine" x1="${padX.toFixed(1)}" y1="${y.toFixed(
-            1
-          )}" x2="${(padX + usableW).toFixed(1)}" y2="${y.toFixed(1)}" />`
-        );
-        n += 1;
-      }
-    }
-    const bars = vals
-      .map((v, i) => {
-        const h = (usableH * v) / maxVal;
-        const x = padX + i * step + (step - barW) / 2;
-        const y = padY + usableH - h;
-        return `<rect class="friendSharedTrendBar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(
-          1
-        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1" />`;
-      })
-      .join("");
-    return `${checkpointLines.join("")}${bars}`;
-  }
-
   function isTaskSharedByOwner(taskId: string): boolean {
     const uid = currentUid();
     if (!uid || !taskId) return false;
     return ownSharedSummaries.some((row) => row.ownerUid === uid && row.taskId === taskId);
   }
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  {
 
   function getSharedFriendUidsForTask(taskId: string): string[] {
     const uid = currentUid();
@@ -7990,6 +7845,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderGroupsPage();
     void refreshGroupsData({ preserveStatus: true });
   }
+
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   function applyMainMode(mode: MainMode) {
     if (!isModeEnabled(mode)) mode = "mode1";
@@ -8759,107 +8617,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       e?.preventDefault?.();
       navigateToAppRoute("/tasktimer/settings?pane=general");
     });
-    on(els.openFriendRequestModalBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (groupsLoading) return;
-      openFriendRequestModal();
-    });
-    on(els.friendRequestCancelBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      closeFriendRequestModal();
-    });
-    on(els.friendRequestModal, "click", (e: any) => {
-      if (e?.target === els.friendRequestModal) closeFriendRequestModal();
-    });
-    on(els.friendProfileCloseBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      closeFriendProfileModal();
-    });
-    on(els.friendProfileModal, "click", (e: any) => {
-      if (e?.target === els.friendProfileModal) closeFriendProfileModal();
-    });
-    on(els.friendProfileDeleteBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (groupsLoading) return;
-      const fallbackName = String(els.friendProfileName?.textContent || "").trim();
-      const friendName = String(activeFriendProfileName || fallbackName || "this user").trim();
-      confirm("Delete Friend", `Are you sure you want to delete ${friendName} as a friend?`, {
-        okLabel: "Delete",
-        cancelLabel: "Cancel",
-        onOk: () => {
-          if (groupsLoading) return;
-          const ownUid = String(currentUid() || "").trim();
-          const friendUid = String(activeFriendProfileUid || "").trim();
-          if (!ownUid) {
-            closeConfirm();
-            setGroupsStatus("Sign in to manage friends.");
-            return;
-          }
-          if (!friendUid) {
-            closeConfirm();
-            setGroupsStatus("Friend account could not be resolved.");
-            return;
-          }
-          closeConfirm();
-          closeFriendProfileModal();
-          setGroupsStatus(`Deleting ${friendName}...`);
-          renderGroupsPage();
-          void (async () => {
-            const result = await runGroupsBusy(`Deleting ${friendName}...`, "Deleting friend timed out. Please try again.", () =>
-              deleteFriendship(ownUid, friendUid)
-            );
-            if (!result.ok) {
-              setGroupsStatus(result.timedOut ? result.message : "Could not delete friend.");
-              renderGroupsPage();
-              return;
-            }
-            if (!result.value.ok) {
-              setGroupsStatus(result.value.message || "Could not delete friend.");
-              renderGroupsPage();
-              return;
-            }
-            activeFriendProfileUid = null;
-            activeFriendProfileName = "";
-            groupsFriendships = groupsFriendships.filter((row) => !row.users.includes(friendUid));
-            groupsSharedSummaries = groupsSharedSummaries.filter(
-              (row) => String(row.ownerUid || "").trim() !== friendUid && String(row.friendUid || "").trim() !== friendUid
-            );
-            ownSharedSummaries = ownSharedSummaries.filter((row) => String(row.friendUid || "").trim() !== friendUid);
-            delete friendProfileCacheByUid[friendUid];
-            setGroupsStatus(result.value.message || `${friendName} was removed from your friends.`);
-            renderGroupsPage();
-            void refreshGroupsData({ preserveStatus: true });
-          })();
-        },
-      });
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteFriendConfirm");
-    });
-    on(els.friendRequestSendBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (groupsLoading) return;
-      void handleSendFriendRequest();
-    });
-    on(els.friendRequestEmailInput, "keydown", (e: any) => {
-      if (e?.key !== "Enter") return;
-      e?.preventDefault?.();
-      if (groupsLoading) return;
-      void handleSendFriendRequest();
-    });
-    on(els.shareTaskCancelBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      closeShareTaskModal();
-    });
-    on(els.shareTaskModal, "click", (e: any) => {
-      if (e?.target === els.shareTaskModal) closeShareTaskModal();
-    });
-    on(els.shareTaskScopeSelect, "change", () => {
-      syncShareTaskScopeUi();
-      setShareTaskStatus("");
-    });
-    on(els.shareTaskConfirmBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      void submitShareTaskModal();
-    });
+    registerGroupsEvents();
     on(els.exportTaskCancelBtn, "click", (e: any) => {
       e?.preventDefault?.();
       closeTaskExportModal();
@@ -8875,72 +8633,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (e?.key !== "Enter") return;
       e?.preventDefault?.();
       submitTaskExportModal();
-    });
-    on(els.groupsIncomingRequestsList, "click", (e: any) => {
-      const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
-      if (!btn) return;
-      const requestId = String(btn.getAttribute("data-request-id") || "").trim();
-      const action = btn.getAttribute("data-friend-action");
-      if (!requestId) return;
-      if (action !== "approve" && action !== "decline" && action !== "cancel") return;
-      if (groupsLoading) return;
-      void handleFriendRequestAction(requestId, action);
-    });
-    on(els.groupsOutgoingRequestsList, "click", (e: any) => {
-      const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
-      if (!btn) return;
-      const requestId = String(btn.getAttribute("data-request-id") || "").trim();
-      const action = btn.getAttribute("data-friend-action");
-      if (!requestId) return;
-      if (action !== "approve" && action !== "decline" && action !== "cancel") return;
-      if (groupsLoading) return;
-      void handleFriendRequestAction(requestId, action);
-    });
-    on(els.groupsFriendsList, "click", (e: any) => {
-      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
-      if (!btn) return;
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
-      if (!friendUid) return;
-      openFriendProfileModal(friendUid);
-    });
-    on(els.groupsFriendsList, "keydown", (e: any) => {
-      if (e?.key !== "Enter" && e?.key !== " ") return;
-      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
-      if (!btn) return;
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
-      if (!friendUid) return;
-      openFriendProfileModal(friendUid);
-    });
-    on(els.groupsSharedByYouList, "click", (e: any) => {
-      const unshareBtn = e.target?.closest?.('[data-friend-action="open-unshare-task"]') as HTMLElement | null;
-      if (unshareBtn) {
-        e?.preventDefault?.();
-        e?.stopPropagation?.();
-        const taskId = String(unshareBtn.getAttribute("data-task-id") || "").trim();
-        if (!taskId) return;
-        openUnshareTaskModal(taskId);
-        return;
-      }
-      const card = e.target?.closest?.("[data-shared-owned-task-id]") as HTMLElement | null;
-      if (!card) return;
-      const taskId = String(card.getAttribute("data-shared-owned-task-id") || "").trim();
-      if (!taskId) return;
-      jumpToTaskById(taskId);
-    });
-    on(els.groupsSharedByYouList, "keydown", (e: any) => {
-      if (e?.key !== "Enter" && e?.key !== " ") return;
-      const actionBtn = e.target?.closest?.('[data-friend-action="open-unshare-task"]') as HTMLElement | null;
-      if (actionBtn) return;
-      const card = e.target?.closest?.("[data-shared-owned-task-id]") as HTMLElement | null;
-      if (!card) return;
-      e?.preventDefault?.();
-      const taskId = String(card.getAttribute("data-shared-owned-task-id") || "").trim();
-      if (!taskId) return;
-      jumpToTaskById(taskId);
     });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;

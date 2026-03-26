@@ -2,6 +2,7 @@ import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
 import type { AppPage, HistoryViewState, MainMode } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -72,6 +73,60 @@ export type TaskTimerAppShellContext = {
   closeTopOverlayIfOpen: () => boolean;
   closeMobileDetailPanelIfOpen: () => boolean;
   showExitAppConfirm: () => void;
+};
+
+export type TaskTimerGroupsContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  getCurrentUid: () => string | null;
+  getCurrentAppPage: () => AppPage;
+  getCurrentMode: () => MainMode;
+  applyMainMode: (mode: MainMode) => void;
+  applyAppPage: (page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: TaskTimerAppPageSyncUrlMode }) => void;
+  render: () => void;
+  closeConfirm: () => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  escapeHtmlUI: (value: unknown) => string;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  normalizeHistoryTimestampMs: (value: unknown) => number;
+  showWorkingIndicator: (message: string) => number;
+  hideWorkingIndicator: (key?: number) => void;
+  getMergedFriendProfile: (friendUid: string, baseProfile?: FriendProfile | null) => FriendProfile;
+  getFriendAvatarSrcById: (avatarIdRaw: string) => string;
+  buildFriendInitialAvatarDataUrl: (labelRaw: string) => string;
+  getFriendAvatarSrc: (profile?: FriendProfile | null) => string;
+  jumpToTaskById: (taskId: string) => void;
+  getGroupsIncomingRequests: () => FriendRequest[];
+  setGroupsIncomingRequests: (value: FriendRequest[]) => void;
+  getGroupsOutgoingRequests: () => FriendRequest[];
+  setGroupsOutgoingRequests: (value: FriendRequest[]) => void;
+  getGroupsFriendships: () => Friendship[];
+  setGroupsFriendships: (value: Friendship[]) => void;
+  getGroupsSharedSummaries: () => SharedTaskSummary[];
+  setGroupsSharedSummaries: (value: SharedTaskSummary[]) => void;
+  getOwnSharedSummaries: () => SharedTaskSummary[];
+  setOwnSharedSummaries: (value: SharedTaskSummary[]) => void;
+  getGroupsLoading: () => boolean;
+  setGroupsLoading: (value: boolean) => void;
+  getGroupsLoadingDepth: () => number;
+  setGroupsLoadingDepth: (value: number) => void;
+  getGroupsRefreshSeq: () => number;
+  setGroupsRefreshSeq: (value: number) => void;
+  getActiveFriendProfileUid: () => string | null;
+  setActiveFriendProfileUid: (value: string | null) => void;
+  getActiveFriendProfileName: () => string;
+  setActiveFriendProfileName: (value: string) => void;
+  getFriendProfileCacheByUid: () => Record<string, FriendProfile>;
+  setFriendProfileCacheByUid: (value: Record<string, FriendProfile>) => void;
+  getShareTaskIndex: () => number | null;
+  setShareTaskIndex: (value: number | null) => void;
+  getShareTaskMode: () => "share" | "unshare";
+  setShareTaskMode: (value: "share" | "unshare") => void;
+  getShareTaskTaskId: () => string | null;
+  setShareTaskTaskId: (value: string | null) => void;
+  getOpenFriendSharedTaskUids: () => Set<string>;
 };
 
 export type TaskTimerPreferencesContext = {
