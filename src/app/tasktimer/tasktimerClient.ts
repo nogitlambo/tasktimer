@@ -98,6 +98,7 @@ import type {
 import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
+import { createTaskTimerPreferences } from "./client/preferences";
 import {
   createInitialTaskTimerState,
   createTaskTimerStorageKeys,
@@ -2022,88 +2023,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       customTaskNames: addTaskCustomNames.slice(0, 5),
     };
     saveCloudTaskUi(cloudTaskUiCache);
-  }
-
-  function sanitizeModeLabel(value: unknown, fallback: string) {
-    const raw = String(value ?? "").trim().replace(/\s+/g, " ");
-    if (!raw) return fallback;
-    return raw.slice(0, 10);
-  }
-  function getModeLabel(mode: MainMode) {
-    return modeLabels[mode] || DEFAULT_MODE_LABELS[mode];
-  }
-  function getModeColor(mode: MainMode) {
-    return DEFAULT_MODE_COLORS[mode];
-  }
-  function applyModeAccent(mode: MainMode) {
-    document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
-    document.documentElement.style.setProperty("--mode1-accent", getModeColor("mode1"));
-    document.documentElement.style.setProperty("--mode2-accent", getModeColor("mode2"));
-    document.documentElement.style.setProperty("--mode3-accent", getModeColor("mode3"));
-  }
-
-  function isModeEnabled(mode: MainMode) {
-    if (mode === "mode1") return true;
-    return !!modeEnabled[mode];
-  }
-
-  function syncModeLabelsUi() {
-    if (els.mode1Btn) els.mode1Btn.textContent = getModeLabel("mode1");
-    if (els.mode2Btn) els.mode2Btn.textContent = getModeLabel("mode2");
-    if (els.mode3Btn) els.mode3Btn.textContent = getModeLabel("mode3");
-    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(currentMode);
-    if (els.mode2Btn) els.mode2Btn.disabled = !isModeEnabled("mode2");
-    if (els.mode3Btn) els.mode3Btn.disabled = !isModeEnabled("mode3");
-    if (els.mode1Btn) els.mode1Btn.setAttribute("aria-checked", String(currentMode === "mode1"));
-    if (els.mode2Btn) els.mode2Btn.setAttribute("aria-checked", String(currentMode === "mode2"));
-    if (els.mode3Btn) els.mode3Btn.setAttribute("aria-checked", String(currentMode === "mode3"));
-    if (els.editMoveMode1) els.editMoveMode1.textContent = getModeLabel("mode1");
-    if (els.editMoveMode2) els.editMoveMode2.textContent = getModeLabel("mode2");
-    if (els.editMoveMode3) els.editMoveMode3.textContent = getModeLabel("mode3");
-    if (els.categoryMode1Input) els.categoryMode1Input.value = getModeLabel("mode1");
-    if (els.categoryMode2Input) els.categoryMode2Input.value = getModeLabel("mode2");
-    if (els.categoryMode3Input) els.categoryMode3Input.value = getModeLabel("mode3");
-    els.categoryMode2Toggle?.classList.toggle("on", isModeEnabled("mode2"));
-    els.categoryMode2Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode2")));
-    els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
-    els.categoryMode3Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode3")));
-    if (els.categoryMode2ToggleLabel) {
-      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Category 2" : "Enable Category 2";
-    }
-    if (els.categoryMode3ToggleLabel) {
-      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Category 3" : "Enable Category 3";
-    }
-    if (els.categoryMode2Row) (els.categoryMode2Row as HTMLElement).style.display = isModeEnabled("mode2") ? "block" : "none";
-    if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
-    if (els.editMoveMode2) els.editMoveMode2.classList.toggle("is-disabled", !isModeEnabled("mode2"));
-    if (els.editMoveMode3) els.editMoveMode3.classList.toggle("is-disabled", !isModeEnabled("mode3"));
-    ensureDashboardIncludedModesValid();
-    renderDashboardPanelMenu();
-    if (currentAppPage === "dashboard") renderDashboardWidgets();
-  }
-
-  function saveModeSettings() {
-    persistPreferencesToCloud();
-  }
-
-  function loadModeLabels() {
-    modeLabels = { ...DEFAULT_MODE_LABELS };
-    modeEnabled = { ...DEFAULT_MODE_ENABLED };
-    try {
-      const parsed = (cloudPreferencesCache || loadCachedPreferences())?.modeSettings;
-      if (parsed && typeof parsed === "object") {
-        modeLabels.mode1 = sanitizeModeLabel((parsed as any).mode1?.label, DEFAULT_MODE_LABELS.mode1);
-        modeLabels.mode2 = sanitizeModeLabel((parsed as any).mode2?.label, DEFAULT_MODE_LABELS.mode2);
-        modeLabels.mode3 = sanitizeModeLabel((parsed as any).mode3?.label, DEFAULT_MODE_LABELS.mode3);
-        modeEnabled.mode2 = !!(parsed as any).mode2?.enabled;
-        modeEnabled.mode3 = !!(parsed as any).mode3?.enabled;
-        return;
-      }
-      modeLabels = { ...DEFAULT_MODE_LABELS };
-      modeEnabled = { ...DEFAULT_MODE_ENABLED };
-    } catch {
-      // ignore
-    }
   }
 
   function downloadTextFile(filename: string, text: string) {
@@ -7823,190 +7742,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (map[which]) openOverlay(map[which]);
   }
 
-  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" {
-    const value = String(raw || "").trim().toLowerCase();
-    return value === "cyan" || value === "command" ? "cyan" : "purple";
-  }
-
-  function applyTheme(mode: "purple" | "cyan") {
-    themeMode = mode;
-    const body = document.body;
-    body.setAttribute("data-theme", mode);
-    if (els.themeSelect && els.themeSelect.value !== mode) {
-      els.themeSelect.value = mode;
-    }
-  }
-
-  function applyTaskViewPreference(next: "list" | "tile") {
-    taskView = next === "tile" ? "tile" : "list";
-    document.body.setAttribute("data-task-view", taskView);
-    els.taskViewList?.classList.toggle("isOn", taskView === "list");
-    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
-    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
-    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
-  }
-
-  function applyMenuButtonStyle(next: "parallelogram" | "square") {
-    menuButtonStyle = next === "square" ? "square" : "parallelogram";
-    const body = document.body;
-    body.setAttribute("data-control-style", menuButtonStyle);
-    if (els.menuButtonStyleSelect && els.menuButtonStyleSelect.value !== menuButtonStyle) {
-      els.menuButtonStyleSelect.value = menuButtonStyle;
-    }
-  }
-
-  function loadThemePreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(THEME_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.theme || "").trim().toLowerCase();
-    const raw = cloudRaw || localRaw;
-    const mode = normalizeThemeMode(raw);
-    applyTheme(mode);
-    try {
-      localStorage.setItem(THEME_KEY, mode);
-    } catch {
-      // ignore localStorage write failures
-    }
-  }
-
-  function loadMenuButtonStylePreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(MENU_BUTTON_STYLE_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.menuButtonStyle || "").trim().toLowerCase();
-    const raw = cloudRaw || localRaw;
-    const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
-    applyMenuButtonStyle(next);
-    try {
-      localStorage.setItem(MENU_BUTTON_STYLE_KEY, next);
-    } catch {
-      // ignore localStorage write failures
-    }
-  }
-
   function loadAddTaskCustomNames() {
     const settings = (cloudTaskUiCache || loadCachedTaskUi()) as any;
     const raw = Array.isArray(settings?.customTaskNames) ? JSON.stringify(settings.customTaskNames) : "";
     addTaskCustomNames = parseRecentCustomTaskNames(raw, 5);
-  }
-
-  function loadDefaultTaskTimerFormat() {
-    const raw = (cloudPreferencesCache || loadCachedPreferences())?.defaultTaskTimerFormat;
-    const next: "day" | "hour" | "minute" = raw === "day" || raw === "minute" ? raw : "hour";
-    defaultTaskTimerFormat = next;
-  }
-
-  function loadTaskViewPreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(TASK_VIEW_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    if (localRaw === "tile" || localRaw === "list") {
-      applyTaskViewPreference(localRaw);
-      return;
-    }
-    const cloudRaw = String((cloudPreferencesCache || loadCachedPreferences())?.taskView || "").trim().toLowerCase();
-    if (cloudRaw === "tile" || cloudRaw === "list") {
-      applyTaskViewPreference(cloudRaw);
-      return;
-    }
-    applyTaskViewPreference("tile");
-  }
-
-  function saveDefaultTaskTimerFormat() {
-    persistPreferencesToCloud();
-  }
-
-  function saveTaskViewPreference() {
-    try {
-      localStorage.setItem(TASK_VIEW_KEY, taskView);
-    } catch {
-      // ignore localStorage write failures
-    }
-    persistPreferencesToCloud();
-  }
-
-  function loadAutoFocusOnTaskLaunchSetting() {
-    const cloudValue = (cloudPreferencesCache || loadCachedPreferences())?.autoFocusOnTaskLaunchEnabled;
-    if (typeof cloudValue === "boolean") {
-      autoFocusOnTaskLaunchEnabled = cloudValue;
-      return;
-    }
-    try {
-      const raw = String(localStorage.getItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY) || "").trim().toLowerCase();
-      if (raw === "false" || raw === "0" || raw === "off") {
-        autoFocusOnTaskLaunchEnabled = false;
-        return;
-      }
-      if (raw === "true" || raw === "1" || raw === "on") {
-        autoFocusOnTaskLaunchEnabled = true;
-        return;
-      }
-    } catch {
-      // ignore localStorage read failures
-    }
-    autoFocusOnTaskLaunchEnabled = false;
-  }
-
-  function saveAutoFocusOnTaskLaunchSetting() {
-    try {
-      localStorage.setItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY, autoFocusOnTaskLaunchEnabled ? "true" : "false");
-    } catch {
-      // ignore localStorage write failures
-    }
-    persistPreferencesToCloud();
-  }
-
-  function toggleSwitchElement(el: HTMLElement | null | undefined, enabled: boolean) {
-    el?.classList.toggle("on", enabled);
-    el?.setAttribute("aria-checked", String(enabled));
-  }
-
-  function isSwitchOn(el: HTMLElement | null | undefined) {
-    return !!el?.classList.contains("on");
-  }
-
-  function syncTaskSettingsUi() {
-    els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
-    els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
-    els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
-    els.taskViewList?.classList.toggle("isOn", taskView === "list");
-    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
-    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
-    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
-    toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, autoFocusOnTaskLaunchEnabled);
-    toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, dynamicColorsEnabled);
-    toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, checkpointAlertSoundEnabled);
-    toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, checkpointAlertToastEnabled);
-    const currentEditTask = getCurrentEditTask();
-    if (currentEditTask) syncEditCheckpointAlertUi(currentEditTask);
-  }
-
-  function loadDynamicColorsSetting() {
-    dynamicColorsEnabled = (cloudPreferencesCache || loadCachedPreferences())?.dynamicColorsEnabled !== false;
-  }
-
-  function saveDynamicColorsSetting() {
-    persistPreferencesToCloud();
-  }
-
-  function loadCheckpointAlertSettings() {
-    const prefs = cloudPreferencesCache || loadCachedPreferences();
-    checkpointAlertSoundEnabled = prefs?.checkpointAlertSoundEnabled !== false;
-    checkpointAlertToastEnabled = prefs?.checkpointAlertToastEnabled !== false;
-  }
-
-  function saveCheckpointAlertSettings() {
-    persistPreferencesToCloud();
   }
 
   function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
@@ -8663,16 +8402,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.addTaskNameCustomTitle) (els.addTaskNameCustomTitle as HTMLElement).style.display = hasCustom ? "block" : "none";
     if (els.addTaskNameDivider) (els.addTaskNameDivider as HTMLElement).style.display = hasCustom ? "block" : "none";
     if (els.addTaskNamePresetTitle) (els.addTaskNamePresetTitle as HTMLElement).style.display = presets.length ? "block" : "none";
-  }
-
-  function setThemeMode(next: "purple" | "cyan") {
-    applyTheme(next);
-    persistPreferencesToCloud();
-  }
-
-  function setMenuButtonStyle(next: "parallelogram" | "square") {
-    applyMenuButtonStyle(next);
-    persistPreferencesToCloud();
   }
 
   function setGroupsStatus(message: string) {
@@ -9949,6 +9678,115 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     save({ deletedTaskIds });
     render();
   }
+
+  const preferences = createTaskTimerPreferences({
+    els,
+    on,
+    storageKeys: {
+      THEME_KEY,
+      TASK_VIEW_KEY,
+      AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+      MENU_BUTTON_STYLE_KEY,
+      MODE_SETTINGS_KEY,
+      DEFAULT_TASK_TIMER_FORMAT_KEY,
+    },
+    defaultModeLabels: DEFAULT_MODE_LABELS,
+    defaultModeEnabled: DEFAULT_MODE_ENABLED,
+    defaultModeColors: DEFAULT_MODE_COLORS,
+    getThemeMode: () => themeMode,
+    setThemeModeState: (value) => {
+      themeMode = value;
+    },
+    getTaskView: () => taskView,
+    setTaskViewState: (value) => {
+      taskView = value;
+    },
+    getMenuButtonStyle: () => menuButtonStyle,
+    setMenuButtonStyleState: (value) => {
+      menuButtonStyle = value;
+    },
+    getDefaultTaskTimerFormat: () => defaultTaskTimerFormat,
+    setDefaultTaskTimerFormatState: (value) => {
+      defaultTaskTimerFormat = value;
+    },
+    getAutoFocusOnTaskLaunchEnabled: () => autoFocusOnTaskLaunchEnabled,
+    setAutoFocusOnTaskLaunchEnabledState: (value) => {
+      autoFocusOnTaskLaunchEnabled = value;
+    },
+    getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    setDynamicColorsEnabledState: (value) => {
+      dynamicColorsEnabled = value;
+    },
+    getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
+    setCheckpointAlertSoundEnabledState: (value) => {
+      checkpointAlertSoundEnabled = value;
+    },
+    getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    setCheckpointAlertToastEnabledState: (value) => {
+      checkpointAlertToastEnabled = value;
+    },
+    getModeLabels: () => modeLabels,
+    setModeLabelsState: (value) => {
+      modeLabels = value;
+    },
+    getModeEnabled: () => modeEnabled,
+    setModeEnabledState: (value) => {
+      modeEnabled = value;
+    },
+    getCurrentMode: () => currentMode,
+    getEditMoveTargetMode: () => editMoveTargetMode,
+    setEditMoveTargetModeState: (value) => {
+      editMoveTargetMode = value;
+    },
+    persistPreferencesToCloud,
+    loadCachedPreferences,
+    loadCachedTaskUi,
+    getCloudPreferencesCache: () => cloudPreferencesCache,
+    saveDashboardWidgetState,
+    getDashboardCardSizeMapForStorage,
+    getDashboardAvgRange: () => dashboardAvgRange,
+    getCurrentEditTask,
+    syncEditCheckpointAlertUi,
+    applyMainMode,
+    clearTaskFlipStates,
+    render,
+    renderDashboardPanelMenu,
+    renderDashboardWidgets,
+    ensureDashboardIncludedModesValid,
+    closeOverlay,
+    closeConfirm,
+    confirm,
+    deleteTasksInMode,
+    escapeHtmlUI,
+    stopCheckpointRepeatAlert,
+    getCurrentAppPage: () => currentAppPage,
+  });
+  const {
+    sanitizeModeLabel,
+    getModeLabel,
+    getModeColor,
+    applyModeAccent,
+    isModeEnabled,
+    syncModeLabelsUi,
+    saveModeSettings,
+    loadModeLabels,
+    loadThemePreference,
+    loadMenuButtonStylePreference,
+    loadDefaultTaskTimerFormat,
+    loadTaskViewPreference,
+    saveDefaultTaskTimerFormat,
+    saveTaskViewPreference,
+    loadAutoFocusOnTaskLaunchSetting,
+    saveAutoFocusOnTaskLaunchSetting,
+    toggleSwitchElement,
+    isSwitchOn,
+    syncTaskSettingsUi,
+    loadDynamicColorsSetting,
+    saveDynamicColorsSetting,
+    loadCheckpointAlertSettings,
+    saveCheckpointAlertSettings,
+    registerPreferenceEvents,
+  } = preferences;
 
   function jumpToTaskAndHighlight(taskId: string) {
     if (!taskId) return;
@@ -11484,171 +11322,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (taskDragEl) taskDragEl.classList.remove("isDragging");
       taskDragEl = null;
     });
-    on(els.closeMenuBtn, "click", () => {
-      const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
-      if (currentRoutePath === "/tasktimer/settings") {
-        window.location.href = appPathForPage("dashboard");
-        return;
-      }
-      handleAppBackNavigation();
+    registerPreferenceEvents({
+      handleAppBackNavigation: () => {
+        const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
+        if (currentRoutePath === "/tasktimer/settings") {
+          window.location.href = appPathForPage("dashboard");
+          return true;
+        }
+        return handleAppBackNavigation();
+      },
+      persistInlineTaskSettingsImmediate,
+      applyAndPersistModeSettingsImmediate,
     });
-    on(els.themeSelect, "change", () => {
-      const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
-      const next = normalizeThemeMode(raw);
-      setThemeMode(next);
-    });
-    on(els.menuButtonStyleSelect, "change", () => {
-      const raw = String(els.menuButtonStyleSelect?.value || "").trim().toLowerCase();
-      const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
-      setMenuButtonStyle(next);
-    });
-    on(els.preferencesLoadDefaultsBtn, "click", () => {
-      defaultTaskTimerFormat = "hour";
-      autoFocusOnTaskLaunchEnabled = false;
-      taskView = "tile";
-      dynamicColorsEnabled = true;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.appearanceLoadDefaultsBtn, "click", () => {
-      setThemeMode("purple");
-      setMenuButtonStyle("square");
-    });
-    on(els.taskDefaultFormatDay, "click", () => {
-      defaultTaskTimerFormat = "day";
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskDefaultFormatHour, "click", () => {
-      defaultTaskTimerFormat = "hour";
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskDefaultFormatMinute, "click", () => {
-      defaultTaskTimerFormat = "minute";
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskViewList, "click", () => {
-      applyTaskViewPreference("list");
-      clearTaskFlipStates();
-      render();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-
-    on(els.taskViewTile, "click", () => {
-      applyTaskViewPreference("tile");
-      clearTaskFlipStates();
-      render();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskAutoFocusOnLaunchToggle, "click", () => {
-      autoFocusOnTaskLaunchEnabled = !autoFocusOnTaskLaunchEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskAutoFocusOnLaunchToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#taskAutoFocusOnLaunchToggle")) return;
-      autoFocusOnTaskLaunchEnabled = !autoFocusOnTaskLaunchEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskDynamicColorsToggle, "click", () => {
-      dynamicColorsEnabled = !dynamicColorsEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskDynamicColorsToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#taskDynamicColorsToggle")) return;
-      dynamicColorsEnabled = !dynamicColorsEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskCheckpointSoundToggle, "click", () => {
-      checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
-      if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskCheckpointSoundToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#taskCheckpointSoundToggle")) return;
-      checkpointAlertSoundEnabled = !checkpointAlertSoundEnabled;
-      if (!checkpointAlertSoundEnabled) stopCheckpointRepeatAlert();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskCheckpointToastToggle, "click", () => {
-      checkpointAlertToastEnabled = !checkpointAlertToastEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskCheckpointToastToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#taskCheckpointToastToggle")) return;
-      checkpointAlertToastEnabled = !checkpointAlertToastEnabled;
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    on(els.taskSettingsSaveBtn, "click", () => {
-      saveDefaultTaskTimerFormat();
-      saveAutoFocusOnTaskLaunchSetting();
-      saveDynamicColorsSetting();
-      saveCheckpointAlertSettings();
-      render();
-      closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
-    });
-    const toggleCategoryEnabled = (mode: "mode2" | "mode3") => {
-      modeEnabled[mode] = !modeEnabled[mode];
-      syncModeLabelsUi();
-      applyAndPersistModeSettingsImmediate();
-    };
-    on(els.categoryMode2Toggle, "click", () => toggleCategoryEnabled("mode2"));
-    on(els.categoryMode3Toggle, "click", () => toggleCategoryEnabled("mode3"));
-    on(els.categoryMode2ToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#categoryMode2Toggle")) return;
-      toggleCategoryEnabled("mode2");
-    });
-    on(els.categoryMode3ToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#categoryMode3Toggle")) return;
-      toggleCategoryEnabled("mode3");
-    });
-    on(els.categoryMode1Input, "change", () => applyAndPersistModeSettingsImmediate());
-    on(els.categoryMode2Input, "change", () => applyAndPersistModeSettingsImmediate());
-    on(els.categoryMode3Input, "change", () => applyAndPersistModeSettingsImmediate());
-    on(els.categoryMode1Input, "blur", () => applyAndPersistModeSettingsImmediate());
-    on(els.categoryMode2Input, "blur", () => applyAndPersistModeSettingsImmediate());
-    on(els.categoryMode3Input, "blur", () => applyAndPersistModeSettingsImmediate());
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
     });
-
-    on(els.categorySaveBtn, "click", () => {
-      applyAndPersistModeSettingsImmediate({ closeOverlay: true });
-    });
-    on(els.categoryResetBtn, "click", () => {
-      modeLabels = { ...DEFAULT_MODE_LABELS };
-      modeEnabled = { ...DEFAULT_MODE_ENABLED };
-      saveModeSettings();
-      syncModeLabelsUi();
-      applyModeAccent(currentMode);
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
-    });
-    const confirmDeleteCategory = (mode: MainMode) => {
-      const label = getModeLabel(mode);
-      const safeLabel = escapeHtmlUI(label);
-      confirm("Delete Category Tasks", "", {
-        okLabel: "Delete",
-        textHtml: `<span class="confirmDanger">All tasks under the ${safeLabel} category will be deleted. Proceed?</span>`,
-        onOk: () => {
-          deleteTasksInMode(mode);
-          closeConfirm();
-        },
-      });
-    };
-    on(els.categoryMode2TrashBtn, "click", () => confirmDeleteCategory("mode2"));
-    on(els.categoryMode3TrashBtn, "click", () => confirmDeleteCategory("mode3"));
 
     on(els.exportBtn, "click", exportBackup);
     on(els.importBtn, "click", () => els.importFile?.click());

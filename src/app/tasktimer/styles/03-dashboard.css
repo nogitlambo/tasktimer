@@ -1505,7 +1505,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
-  grid-row: span 12;
+  grid-row: span 13;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  align-content: start;
+  align-items: start;
+  min-height: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileCard{
   grid-row: span 17;
@@ -1534,9 +1539,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard[data-dashboard-size="eighth"]{
   grid-row: span 6;
   padding: 12px 14px 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  align-content: start;
+  align-items: start;
+  min-height: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard[data-dashboard-size="eighth"] .dashboardCardTitle,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard[data-dashboard-size="eighth"] .dashboardCardTitle,
@@ -1551,7 +1558,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard[data-dashboard-size="eighth"] .dashboardBigValue{
   margin-top: 2px;
   font-size: clamp(19px, 1.7vw, 24px);
-  line-height: 1.02;
+  line-height: .98;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard[data-dashboard-size="eighth"] .dashboardDelta,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard[data-dashboard-size="eighth"] .dashboardDelta,
@@ -1578,6 +1588,63 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard[data-dashboard-size="eighth"] .dashboardStreakBar{
   margin-top: 6px;
   height: 6px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardCardTitle{
+  align-self: start;
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardBigValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardBigValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
+  align-self: start;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 4px;
+  font-size: clamp(20px, 2.25vw, 36px);
+  line-height: .96;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardBigValue,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardBigValue{
+  font-size: clamp(18px, 2vw, 32px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakValue{
+  font-size: clamp(20px, 2.1vw, 34px);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardGoalProgressWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardGoalProgressWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProgressWrap{
+  align-self: end;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakBar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardGoalProgressBar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProgressBar{
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardDelta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardDelta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardDelta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardDelta,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakMeta{
+  align-self: end;
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard[data-dashboard-size="eighth"]{
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 /* Final authoritative Dashboard segmented neon progress bars */
@@ -1869,6 +1936,36 @@ body[data-theme="purple"][data-control-style="square"][data-app-page="dashboard"
   --dashboard-bar-fill-mid: #d447d2;
   --dashboard-bar-fill-deep: #f06ee0;
   --dashboard-bar-fill-glow: rgba(212,71,210,.18);
+}
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardBigValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardBigValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
+    font-size: clamp(18px, 3.9vw, 28px);
+  }
+}
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
+    grid-row: span 12;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardBigValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardBigValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
+    font-size: clamp(17px, 5.6vw, 24px);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardDelta,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardDelta,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardDelta,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardDelta,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakMeta{
+    font-size: 11px;
+    line-height: 1.12;
+  }
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{

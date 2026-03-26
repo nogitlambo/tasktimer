@@ -1,8 +1,40 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
-import type { AppPage } from "./types";
+import type { AppPage, MainMode } from "./types";
+import type { Task } from "../lib/types";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
+
+export type TaskTimerCachedModeSettings =
+  | Partial<
+      Record<
+        MainMode,
+        {
+          label?: unknown;
+          enabled?: unknown;
+        }
+      >
+    >
+  | Record<string, unknown>
+  | null;
+
+export type TaskTimerCachedPreferences = {
+  theme?: unknown;
+  menuButtonStyle?: unknown;
+  defaultTaskTimerFormat?: unknown;
+  taskView?: unknown;
+  autoFocusOnTaskLaunchEnabled?: unknown;
+  dynamicColorsEnabled?: unknown;
+  checkpointAlertSoundEnabled?: unknown;
+  checkpointAlertToastEnabled?: unknown;
+  modeSettings?: TaskTimerCachedModeSettings;
+};
+
+export type TaskTimerConfirmOptions = {
+  okLabel?: string;
+  textHtml?: string;
+  onOk?: (() => void) | null;
+};
 
 export type TaskTimerAppShellContext = {
   els: TaskTimerElements;
@@ -36,4 +68,65 @@ export type TaskTimerAppShellContext = {
   closeTopOverlayIfOpen: () => boolean;
   closeMobileDetailPanelIfOpen: () => boolean;
   showExitAppConfirm: () => void;
+};
+
+export type TaskTimerPreferencesContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  storageKeys: {
+    THEME_KEY: string;
+    TASK_VIEW_KEY: string;
+    AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+    MENU_BUTTON_STYLE_KEY: string;
+    MODE_SETTINGS_KEY: string;
+    DEFAULT_TASK_TIMER_FORMAT_KEY: string;
+  };
+  defaultModeLabels: Record<MainMode, string>;
+  defaultModeEnabled: Record<MainMode, boolean>;
+  defaultModeColors: Record<MainMode, string>;
+  getThemeMode: () => "purple" | "cyan";
+  setThemeModeState: (value: "purple" | "cyan") => void;
+  getTaskView: () => "list" | "tile";
+  setTaskViewState: (value: "list" | "tile") => void;
+  getMenuButtonStyle: () => "parallelogram" | "square";
+  setMenuButtonStyleState: (value: "parallelogram" | "square") => void;
+  getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
+  setDefaultTaskTimerFormatState: (value: "day" | "hour" | "minute") => void;
+  getAutoFocusOnTaskLaunchEnabled: () => boolean;
+  setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
+  getDynamicColorsEnabled: () => boolean;
+  setDynamicColorsEnabledState: (value: boolean) => void;
+  getCheckpointAlertSoundEnabled: () => boolean;
+  setCheckpointAlertSoundEnabledState: (value: boolean) => void;
+  getCheckpointAlertToastEnabled: () => boolean;
+  setCheckpointAlertToastEnabledState: (value: boolean) => void;
+  getModeLabels: () => Record<MainMode, string>;
+  setModeLabelsState: (value: Record<MainMode, string>) => void;
+  getModeEnabled: () => Record<MainMode, boolean>;
+  setModeEnabledState: (value: Record<MainMode, boolean>) => void;
+  getCurrentMode: () => MainMode;
+  getEditMoveTargetMode: () => MainMode;
+  setEditMoveTargetModeState: (value: MainMode) => void;
+  persistPreferencesToCloud: () => void;
+  loadCachedPreferences: () => TaskTimerCachedPreferences | null | undefined;
+  loadCachedTaskUi: () => unknown;
+  getCloudPreferencesCache: () => TaskTimerCachedPreferences | null | undefined;
+  saveDashboardWidgetState: (partialWidgets: Record<string, unknown>) => void;
+  getDashboardCardSizeMapForStorage: () => Record<string, unknown>;
+  getDashboardAvgRange: () => string;
+  getCurrentEditTask: () => Task | null;
+  syncEditCheckpointAlertUi: (task: Task) => void;
+  applyMainMode: (mode: MainMode) => void;
+  clearTaskFlipStates: () => void;
+  render: () => void;
+  renderDashboardPanelMenu: () => void;
+  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  ensureDashboardIncludedModesValid: () => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
+  closeConfirm: () => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  deleteTasksInMode: (mode: MainMode) => void;
+  escapeHtmlUI: (value: unknown) => string;
+  stopCheckpointRepeatAlert: () => void;
+  getCurrentAppPage: () => AppPage;
 };
