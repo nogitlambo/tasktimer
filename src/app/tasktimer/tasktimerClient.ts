@@ -86,6 +86,7 @@ import type {
 import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
+import { createTaskTimerDashboard } from "./client/dashboard";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerTasks } from "./client/tasks";
 import { createTaskTimerPreferences } from "./client/preferences";
@@ -531,6 +532,84 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncSharedTaskSummariesForTasks,
     registerGroupsEvents,
   } = groupsApi;
+  const dashboardApi = createTaskTimerDashboard({
+    els,
+    on,
+    getCurrentAppPage: () => currentAppPage,
+    getDashboardEditMode: () => dashboardEditMode,
+    setDashboardEditMode: (value: typeof dashboardEditMode) => {
+      dashboardEditMode = value;
+    },
+    getDashboardDragEl: () => dashboardDragEl,
+    setDashboardDragEl: (value: typeof dashboardDragEl) => {
+      dashboardDragEl = value;
+    },
+    getDashboardOrderDraftBeforeEdit: () => dashboardOrderDraftBeforeEdit,
+    setDashboardOrderDraftBeforeEdit: (value: typeof dashboardOrderDraftBeforeEdit) => {
+      dashboardOrderDraftBeforeEdit = value;
+    },
+    getDashboardCardSizes: () => dashboardCardSizes,
+    setDashboardCardSizes: (value: typeof dashboardCardSizes) => {
+      dashboardCardSizes = value;
+    },
+    getDashboardCardSizesDraftBeforeEdit: () => dashboardCardSizesDraftBeforeEdit,
+    setDashboardCardSizesDraftBeforeEdit: (value: typeof dashboardCardSizesDraftBeforeEdit) => {
+      dashboardCardSizesDraftBeforeEdit = value;
+    },
+    getDashboardCardVisibility: () => dashboardCardVisibility,
+    setDashboardCardVisibility: (value: typeof dashboardCardVisibility) => {
+      dashboardCardVisibility = value;
+    },
+    getDashboardIncludedModes: () => dashboardIncludedModes,
+    setDashboardIncludedModes: (value: typeof dashboardIncludedModes) => {
+      dashboardIncludedModes = value;
+    },
+    getDashboardAvgRange: () => dashboardAvgRange,
+    setDashboardAvgRange: (value: typeof dashboardAvgRange) => {
+      dashboardAvgRange = value;
+    },
+    getDashboardTimelineDensity: () => dashboardTimelineDensity,
+    setDashboardTimelineDensity: (value: typeof dashboardTimelineDensity) => {
+      dashboardTimelineDensity = value;
+    },
+    getCloudDashboardCache: () => cloudDashboardCache,
+    setCloudDashboardCache: (value: unknown) => {
+      cloudDashboardCache = value as typeof cloudDashboardCache;
+    },
+    loadCachedDashboard,
+    saveCloudDashboard: (value: unknown) => {
+      const nextDashboard = value as NonNullable<typeof cloudDashboardCache>;
+      if (nextDashboard) saveCloudDashboard(nextDashboard);
+    },
+    getModeLabel: (mode) => getModeLabel(mode),
+    isModeEnabled: (mode) => isModeEnabled(mode),
+    renderDashboardOverviewChart: () => renderDashboardOverviewChart(),
+    renderDashboardStreakCard: () => renderDashboardStreakCard(),
+    renderDashboardTodayHoursCard: () => renderDashboardTodayHoursCard(),
+    renderDashboardWeeklyGoalsCard: () => renderDashboardWeeklyGoalsCard(),
+    renderDashboardTasksCompletedCard: () => renderDashboardTasksCompletedCard(),
+    renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
+    renderDashboardFocusTrend: () => renderDashboardFocusTrend(),
+    renderDashboardModeDistribution: () => renderDashboardModeDistribution(),
+    renderDashboardAvgSessionChart: () => renderDashboardAvgSessionChart(),
+    renderDashboardHeatCalendar: () => renderDashboardHeatCalendar(),
+    openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCard(dayKey, dateLabel),
+    closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
+  });
+  const {
+    renderDashboardPanelMenu: renderDashboardPanelMenuApi,
+    renderDashboardWidgets: renderDashboardWidgetsApi,
+    saveDashboardWidgetState: saveDashboardWidgetStateApi,
+    getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
+    getDashboardAvgRange: getDashboardAvgRangeApi,
+    ensureDashboardIncludedModesValid: ensureDashboardIncludedModesValidApi,
+    loadDashboardWidgetState: loadDashboardWidgetStateApi,
+    applyDashboardCardVisibility: applyDashboardCardVisibilityApi,
+    applyDashboardCardSizes: applyDashboardCardSizesApi,
+    applyDashboardOrderFromStorage: applyDashboardOrderFromStorageApi,
+    applyDashboardEditMode: applyDashboardEditModeApi,
+    registerDashboardEvents,
+  } = dashboardApi;
   const tasksApi = createTaskTimerTasks({
     els,
     on,
@@ -609,7 +688,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     render,
     renderHistory,
-    renderDashboardWidgets,
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
     syncTimeGoalModalWithTaskState,
     maybeRestorePendingTimeGoalFlow,
     getElapsedMs,
@@ -747,7 +826,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeFriendRequestModal,
     render,
     renderHistory,
-    renderDashboardWidgets,
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
     renderGroupsPage,
     refreshGroupsData,
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
@@ -7822,7 +7901,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     openOverlay,
     closeOverlay,
     render,
-    renderDashboardWidgets,
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
     nowMs,
     normalizeHistoryTimestampMs,
     formatTime,
@@ -7903,17 +7982,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadCachedPreferences,
     loadCachedTaskUi,
     getCloudPreferencesCache: () => cloudPreferencesCache,
-    saveDashboardWidgetState,
-    getDashboardCardSizeMapForStorage,
-    getDashboardAvgRange: () => dashboardAvgRange,
+    saveDashboardWidgetState: saveDashboardWidgetStateApi,
+    getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
+    getDashboardAvgRange: getDashboardAvgRangeApi,
     getCurrentEditTask,
     syncEditCheckpointAlertUi,
     applyMainMode,
     clearTaskFlipStates,
     render,
-    renderDashboardPanelMenu,
-    renderDashboardWidgets,
-    ensureDashboardIncludedModesValid,
+    renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    ensureDashboardIncludedModesValid: () => ensureDashboardIncludedModesValidApi(),
     closeOverlay,
     closeConfirm,
     confirm,
@@ -8002,9 +8081,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       modeEnabled.mode1 = true;
       saveModeSettings();
       syncModeLabelsUi();
-      saveDashboardWidgetState({
-        cardSizes: getDashboardCardSizeMapForStorage(),
-        avgSessionByTaskRange: dashboardAvgRange,
+      saveDashboardWidgetStateApi({
+        cardSizes: getDashboardCardSizeMapForStorageApi(),
+        avgSessionByTaskRange: getDashboardAvgRangeApi(),
       });
       if (!isModeEnabled(currentMode)) applyMainMode("mode1");
       else applyModeAccent(currentMode);
@@ -8668,161 +8747,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.menuIcon, "click", () => {
       navigateToAppRoute("/tasktimer/settings");
     });
-    on(els.dashboardEditBtn, "click", beginDashboardEditMode);
-    on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
-    on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
-    on(els.dashboardPanelMenuList, "change", (e: any) => {
-      const categoryInput = e.target?.closest?.("input[data-dashboard-category-id]") as HTMLInputElement | null;
-      if (categoryInput) {
-        const modeAttr = String(categoryInput.getAttribute("data-dashboard-category-id") || "").trim();
-        const mode: MainMode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
-        const categoryMeta = getDashboardCategoryMeta();
-        const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
-        const nextChecked = !!categoryInput.checked;
-        if (!nextChecked && isDashboardModeIncluded(mode) && includedCount <= 1) {
-          categoryInput.checked = true;
-          syncDashboardPanelMenuState();
-          return;
-        }
-        dashboardIncludedModes[mode] = nextChecked;
-        ensureDashboardIncludedModesValid();
-        syncDashboardPanelMenuState();
-        saveDashboardWidgetState({
-          cardSizes: getDashboardCardSizeMapForStorage(),
-          avgSessionByTaskRange: dashboardAvgRange,
-        });
-        if (currentAppPage === "dashboard") {
-          renderDashboardWidgets();
-        }
-        return;
-      }
-      const input = e.target?.closest?.("input[data-dashboard-panel-id]") as HTMLInputElement | null;
-      if (!input) return;
-      const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();
-      if (!cardId) return;
-      const meta = collectDashboardPanelMeta();
-      const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
-      const nextChecked = !!input.checked;
-      if (!nextChecked && isDashboardCardVisible(cardId) && visibleCount <= 1) {
-        input.checked = true;
-        syncDashboardPanelMenuState();
-        return;
-      }
-      dashboardCardVisibility[cardId] = nextChecked;
-      applyDashboardCardVisibility();
-      saveDashboardWidgetState({
-        cardSizes: getDashboardCardSizeMapForStorage(),
-        avgSessionByTaskRange: dashboardAvgRange,
-      });
-      if (currentAppPage === "dashboard") {
-        renderDashboardWidgets();
-      }
-    });
-    on(els.dashboardGrid, "click", (e: any) => {
-      const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
-      if (heatDayBtn) {
-        const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();
-        const dateLabel = String(heatDayBtn.getAttribute("data-heat-date-label") || "").trim();
-        if (dayKey) {
-          openDashboardHeatSummaryCard(dayKey, dateLabel);
-        }
-        e.preventDefault();
-        return;
-      }
-      const sizeToggle = e.target?.closest?.("[data-dashboard-size-toggle]") as HTMLElement | null;
-      if (sizeToggle) {
-        if (!dashboardEditMode) return;
-        const card = sizeToggle.closest(".dashboardCard") as HTMLElement | null;
-        if (!card || !els.dashboardGrid?.contains(card)) return;
-        const wasOpen = card.classList.contains("isSizeMenuOpen");
-        closeDashboardCardSizeMenus();
-        card.classList.toggle("isSizeMenuOpen", !wasOpen);
-        syncDashboardCardSizeControlState();
-        e.preventDefault();
-        return;
-      }
-      const sizeOption = e.target?.closest?.(".dashboardSizeOption[data-dashboard-size]") as HTMLElement | null;
-      if (sizeOption) {
-        if (!dashboardEditMode) return;
-        const card = sizeOption.closest(".dashboardCard") as HTMLElement | null;
-        const cardId = String(card?.getAttribute("data-dashboard-id") || "");
-        const nextSize = sanitizeDashboardCardSize(sizeOption.getAttribute("data-dashboard-size"), cardId);
-        if (!card || !cardId || !nextSize) return;
-        dashboardCardSizes[cardId] = nextSize;
-        applyDashboardCardSizes();
-        closeDashboardCardSizeMenus();
-        if (currentAppPage === "dashboard") {
-          renderDashboardWidgets();
-        }
-        e.preventDefault();
-        return;
-      }
-      const densityBtn = e.target?.closest?.("[data-dashboard-timeline-density]") as HTMLElement | null;
-      if (densityBtn) {
-        const nextDensity = sanitizeDashboardTimelineDensity(densityBtn.getAttribute("data-dashboard-timeline-density"));
-        if (nextDensity !== dashboardTimelineDensity) saveDashboardTimelineDensity(nextDensity);
-        renderDashboardTimelineCard();
-        e.preventDefault();
-        return;
-      }
-      const btn = e.target?.closest?.("[data-dashboard-avg-range-toggle]") as HTMLElement | null;
-      if (!btn) return;
-      const nextRange: DashboardAvgRange = sanitizeDashboardAvgRange(dashboardAvgRange) === "past30" ? "past7" : "past30";
-      if (nextRange === dashboardAvgRange) {
-        renderDashboardWidgets();
-        return;
-      }
-      saveDashboardAvgRange(nextRange);
-      renderDashboardWidgets();
-    });
-    on(document as any, "click", (e: any) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (dashboardEditMode && !target.closest(".dashboardSizeControl")) {
-        closeDashboardCardSizeMenus();
-      }
-      if (!target.closest("#dashboardPanelMenu")) {
-        closeDashboardPanelMenu();
-      }
-    });
-    on(els.dashboardGrid, "dragstart", (e: any) => {
-      if (!dashboardEditMode) return;
-      if (e.target?.closest?.(".dashboardSizeControl")) return;
-      closeDashboardCardSizeMenus();
-      const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
-      if (!card || !els.dashboardGrid?.contains(card)) return;
-      dashboardDragEl = card;
-      card.classList.add("isDragging");
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = "move";
-        try {
-          e.dataTransfer.setData("text/plain", card.getAttribute("data-dashboard-id") || "");
-        } catch {
-          // ignore
-        }
-      }
-    });
-    on(els.dashboardGrid, "dragover", (e: any) => {
-      if (!dashboardEditMode) return;
-      const grid = els.dashboardGrid;
-      const dragging = dashboardDragEl;
-      if (!grid || !dragging) return;
-      const over = Array.from(grid.children).find((child) => child.contains(e.target as Node)) as HTMLElement | undefined;
-      if (!over || over === dragging || !grid.contains(over)) return;
-      e.preventDefault();
-      const rect = over.getBoundingClientRect();
-      const before = e.clientY < rect.top + rect.height / 2;
-      if (before) grid.insertBefore(dragging, over);
-      else grid.insertBefore(dragging, over.nextSibling);
-    });
-    on(els.dashboardGrid, "drop", (e: any) => {
-      if (!dashboardEditMode) return;
-      e.preventDefault();
-    });
-    on(els.dashboardGrid, "dragend", () => {
-      if (dashboardDragEl) dashboardDragEl.classList.remove("isDragging");
-      dashboardDragEl = null;
-    });
+    registerDashboardEvents();
     on(els.taskList, "dragstart", (e: any) => {
       if (shouldIgnoreTaskDragStart(e.target)) return;
       const card = e.target?.closest?.(".task") as HTMLElement | null;
@@ -9431,7 +9356,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderCheckpointToast();
     }
     if (currentAppPage === "dashboard") {
-      renderDashboardWidgets({ includeAvgSession: false });
+      renderDashboardWidgetsApi({ includeAvgSession: false });
     }
 
     runtime.tickRaf = window.requestAnimationFrame(() => {
@@ -9453,7 +9378,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadAutoFocusOnTaskLaunchSetting();
     loadDynamicColorsSetting();
     loadCheckpointAlertSettings();
-    loadDashboardWidgetState();
+    loadDashboardWidgetStateApi();
     loadThemePreference();
     loadMenuButtonStylePreference();
     // Keep Preferences controls in sync with hydrated cloud values on both
@@ -9465,13 +9390,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncModeLabelsUi();
     applyMainMode("mode1");
     applyAppPage(getInitialAppPageFromLocation(initialAppPage), { syncUrl: "replace" });
-    applyDashboardOrderFromStorage();
-    applyDashboardCardSizes();
-    renderDashboardPanelMenu();
-    applyDashboardCardVisibility();
-    applyDashboardEditMode();
+    applyDashboardOrderFromStorageApi();
+    applyDashboardCardSizesApi();
+    renderDashboardPanelMenuApi();
+    applyDashboardCardVisibilityApi();
+    applyDashboardEditModeApi();
     if (currentAppPage === "dashboard") {
-      renderDashboardWidgets();
+      renderDashboardWidgetsApi();
     }
   }
 

@@ -1,6 +1,6 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
-import type { AppPage, HistoryViewState, MainMode } from "./types";
+import type { AppPage, DashboardAvgRange, DashboardCardSize, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 
@@ -288,6 +288,48 @@ export type TaskTimerTasksContext = {
   clearSuppressedFocusModeAlert: (taskId: string) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
+};
+
+export type TaskTimerDashboardContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getCurrentAppPage: () => AppPage;
+  getDashboardEditMode: () => boolean;
+  setDashboardEditMode: (value: boolean) => void;
+  getDashboardDragEl: () => HTMLElement | null;
+  setDashboardDragEl: (value: HTMLElement | null) => void;
+  getDashboardOrderDraftBeforeEdit: () => string[] | null;
+  setDashboardOrderDraftBeforeEdit: (value: string[] | null) => void;
+  getDashboardCardSizes: () => Record<string, DashboardCardSize>;
+  setDashboardCardSizes: (value: Record<string, DashboardCardSize>) => void;
+  getDashboardCardSizesDraftBeforeEdit: () => Record<string, DashboardCardSize> | null;
+  setDashboardCardSizesDraftBeforeEdit: (value: Record<string, DashboardCardSize> | null) => void;
+  getDashboardCardVisibility: () => Record<string, boolean>;
+  setDashboardCardVisibility: (value: Record<string, boolean>) => void;
+  getDashboardIncludedModes: () => Record<MainMode, boolean>;
+  setDashboardIncludedModes: (value: Record<MainMode, boolean>) => void;
+  getDashboardAvgRange: () => DashboardAvgRange;
+  setDashboardAvgRange: (value: DashboardAvgRange) => void;
+  getDashboardTimelineDensity: () => DashboardTimelineDensity;
+  setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
+  getCloudDashboardCache: () => unknown;
+  setCloudDashboardCache: (value: unknown) => void;
+  loadCachedDashboard: () => unknown;
+  saveCloudDashboard: (value: unknown) => void;
+  getModeLabel: (mode: MainMode) => string;
+  isModeEnabled: (mode: MainMode) => boolean;
+  renderDashboardOverviewChart: () => void;
+  renderDashboardStreakCard: () => void;
+  renderDashboardTodayHoursCard: () => void;
+  renderDashboardWeeklyGoalsCard: () => void;
+  renderDashboardTasksCompletedCard: () => void;
+  renderDashboardTimelineCard: () => void;
+  renderDashboardFocusTrend: () => void;
+  renderDashboardModeDistribution: () => void;
+  renderDashboardAvgSessionChart: () => void;
+  renderDashboardHeatCalendar: () => void;
+  openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
+  closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
 
 export type TaskTimerPreferencesContext = {

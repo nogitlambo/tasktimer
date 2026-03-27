@@ -63,6 +63,7 @@
 
 - [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
 - [`src/app/tasktimer/client/context.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/context.ts)
+- [`src/app/tasktimer/client/dashboard.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard.ts)
 - [`src/app/tasktimer/client/elements.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/elements.ts)
 - [`src/app/tasktimer/client/groups.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/groups.ts)
 - [`src/app/tasktimer/client/history-inline.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-inline.ts)
