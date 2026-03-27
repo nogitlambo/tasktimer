@@ -290,6 +290,76 @@ export type TaskTimerTasksContext = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
 };
 
+export type TaskTimerAddTaskContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
+  getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
+  getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertToastEnabled: () => boolean;
+  getAddTaskWizardStep: () => 1 | 2 | 3;
+  setAddTaskWizardStepState: (value: 1 | 2 | 3) => void;
+  getAddTaskDurationValue: () => number;
+  setAddTaskDurationValueState: (value: number) => void;
+  getAddTaskDurationUnit: () => "minute" | "hour";
+  setAddTaskDurationUnitState: (value: "minute" | "hour") => void;
+  getAddTaskDurationPeriod: () => "day" | "week";
+  setAddTaskDurationPeriodState: (value: "day" | "week") => void;
+  getAddTaskNoTimeGoal: () => boolean;
+  setAddTaskNoTimeGoalState: (value: boolean) => void;
+  getAddTaskMilestonesEnabled: () => boolean;
+  setAddTaskMilestonesEnabledState: (value: boolean) => void;
+  getAddTaskMilestoneTimeUnit: () => "day" | "hour" | "minute";
+  setAddTaskMilestoneTimeUnitState: (value: "day" | "hour" | "minute") => void;
+  getAddTaskMilestones: () => Task["milestones"];
+  setAddTaskMilestonesState: (value: Task["milestones"]) => void;
+  getAddTaskCheckpointSoundEnabled: () => boolean;
+  setAddTaskCheckpointSoundEnabledState: (value: boolean) => void;
+  getAddTaskCheckpointSoundMode: () => "once" | "repeat";
+  setAddTaskCheckpointSoundModeState: (value: "once" | "repeat") => void;
+  getAddTaskCheckpointToastEnabled: () => boolean;
+  setAddTaskCheckpointToastEnabledState: (value: boolean) => void;
+  getAddTaskCheckpointToastMode: () => "auto5s" | "manual";
+  setAddTaskCheckpointToastModeState: (value: "auto5s" | "manual") => void;
+  getAddTaskPresetIntervalsEnabled: () => boolean;
+  setAddTaskPresetIntervalsEnabledState: (value: boolean) => void;
+  getAddTaskPresetIntervalValue: () => number;
+  setAddTaskPresetIntervalValueState: (value: number) => void;
+  getAddTaskTimeGoalAction: () => "continue" | "resetLog" | "resetNoLog" | "confirmModal";
+  setAddTaskTimeGoalActionState: (value: "continue" | "resetLog" | "resetNoLog" | "confirmModal") => void;
+  getAddTaskCustomNames: () => string[];
+  setAddTaskCustomNamesState: (value: string[]) => void;
+  getSuppressAddTaskNameFocusOpen: () => boolean;
+  setSuppressAddTaskNameFocusOpenState: (value: boolean) => void;
+  loadCachedTaskUi: () => unknown;
+  saveCloudTaskUi: (value: unknown) => void;
+  openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  render: () => void;
+  escapeHtmlUI: (value: unknown) => string;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  makeTask: (name: string, order: number) => Task;
+  jumpToTaskAndHighlight: (taskId: string) => void;
+  clearAddTaskValidationState: () => void;
+  showAddTaskValidationError: (
+    message: string,
+    opts?: { name?: boolean; duration?: boolean; checkpoints?: boolean; checkpointRows?: boolean; presetInterval?: boolean }
+  ) => void;
+  syncAddTaskCheckpointAlertUi: () => void;
+  syncAddTaskDurationReadout: () => void;
+  setAddTaskMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
+  renderAddTaskMilestoneEditor: () => void;
+  hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
+  hasCheckpointAtOrAboveTimeGoal: (
+    milestones: Task["milestones"],
+    unitSec: number,
+    timeGoalMinutes: number
+  ) => boolean;
+  isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
+};
+
 export type TaskTimerSessionContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];

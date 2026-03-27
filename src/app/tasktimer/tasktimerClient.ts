@@ -16,12 +16,6 @@ import {
 } from "./lib/historyChart";
 import { formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import {
-  ADD_TASK_PRESET_NAMES,
-  filterTaskNameOptions,
-  parseRecentCustomTaskNames,
-  rememberRecentCustomTaskName,
-} from "./lib/addTaskNames";
-import {
   formatAddTaskDurationReadout,
   getAddTaskDurationMaxForPeriod,
   normalizeTaskConfigMilestones,
@@ -88,6 +82,7 @@ import { createTaskTimerDashboard } from "./client/dashboard";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerSession } from "./client/session";
 import { createTaskTimerTasks } from "./client/tasks";
+import { createTaskTimerAddTask } from "./client/add-task";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
@@ -277,6 +272,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let historyEntryNoteAnchorTaskId = initialState.historyEntryNoteAnchorTaskId;
   let historyInlineApi: ReturnType<typeof createTaskTimerHistoryInline> | null = null;
   let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
+  let addTaskApi: ReturnType<typeof createTaskTimerAddTask> | null = null;
   let groupsStatusMessage = initialState.groupsStatusMessage;
   const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const workingIndicatorStack = initialState.workingIndicatorStack;
@@ -746,7 +742,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     formatCheckpointTimeGoalText: (task, opts) => formatCheckpointTimeGoalText(task, opts),
     getEditTaskTimeGoalMinutes: () => getEditTaskTimeGoalMinutes(),
     getEditTaskTimeGoalMinutesFor: (value, unit, period) => getEditTaskTimeGoalMinutesFor(value, unit, period),
-    getAddTaskTimeGoalMinutesState: () => getAddTaskTimeGoalMinutesState(),
+    getAddTaskTimeGoalMinutesState: () => addTaskApi?.getAddTaskTimeGoalMinutes() ?? 0,
     isEditTimeGoalEnabled: () => isEditTimeGoalEnabled(),
     ensureMilestoneIdentity: (task) => ensureMilestoneIdentity(task),
     toggleSwitchElement: (el, on) => toggleSwitchElement(el, on),
@@ -791,6 +787,111 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeElapsedPad: closeElapsedPadApi,
     registerTaskEvents,
   } = tasksApi;
+  addTaskApi = createTaskTimerAddTask({
+    els,
+    on,
+    getTasks: () => tasks,
+    setTasks: (value: typeof tasks) => {
+      tasks = value;
+    },
+    getAddTaskWizardStep: () => addTaskWizardStep,
+    setAddTaskWizardStepState: (value) => {
+      addTaskWizardStep = value;
+    },
+    getAddTaskDurationValue: () => addTaskDurationValue,
+    setAddTaskDurationValueState: (value) => {
+      addTaskDurationValue = value;
+    },
+    getAddTaskDurationUnit: () => addTaskDurationUnit,
+    setAddTaskDurationUnitState: (value) => {
+      addTaskDurationUnit = value;
+    },
+    getAddTaskDurationPeriod: () => addTaskDurationPeriod,
+    setAddTaskDurationPeriodState: (value) => {
+      addTaskDurationPeriod = value;
+    },
+    getAddTaskNoTimeGoal: () => addTaskNoTimeGoal,
+    setAddTaskNoTimeGoalState: (value) => {
+      addTaskNoTimeGoal = value;
+    },
+    getAddTaskMilestonesEnabled: () => addTaskMilestonesEnabled,
+    setAddTaskMilestonesEnabledState: (value) => {
+      addTaskMilestonesEnabled = value;
+    },
+    getAddTaskMilestoneTimeUnit: () => addTaskMilestoneTimeUnit,
+    setAddTaskMilestoneTimeUnitState: (value) => {
+      addTaskMilestoneTimeUnit = value;
+    },
+    getAddTaskMilestones: () => addTaskMilestones,
+    setAddTaskMilestonesState: (value) => {
+      addTaskMilestones = value;
+    },
+    getAddTaskCheckpointSoundEnabled: () => addTaskCheckpointSoundEnabled,
+    setAddTaskCheckpointSoundEnabledState: (value) => {
+      addTaskCheckpointSoundEnabled = value;
+    },
+    getAddTaskCheckpointSoundMode: () => addTaskCheckpointSoundMode,
+    setAddTaskCheckpointSoundModeState: (value) => {
+      addTaskCheckpointSoundMode = value;
+    },
+    getAddTaskCheckpointToastEnabled: () => addTaskCheckpointToastEnabled,
+    setAddTaskCheckpointToastEnabledState: (value) => {
+      addTaskCheckpointToastEnabled = value;
+    },
+    getAddTaskCheckpointToastMode: () => addTaskCheckpointToastMode,
+    setAddTaskCheckpointToastModeState: (value) => {
+      addTaskCheckpointToastMode = value;
+    },
+    getAddTaskPresetIntervalsEnabled: () => addTaskPresetIntervalsEnabled,
+    setAddTaskPresetIntervalsEnabledState: (value) => {
+      addTaskPresetIntervalsEnabled = value;
+    },
+    getAddTaskPresetIntervalValue: () => addTaskPresetIntervalValue,
+    setAddTaskPresetIntervalValueState: (value) => {
+      addTaskPresetIntervalValue = value;
+    },
+    getAddTaskTimeGoalAction: () => addTaskTimeGoalAction,
+    setAddTaskTimeGoalActionState: (value) => {
+      addTaskTimeGoalAction = value;
+    },
+    getAddTaskCustomNames: () => addTaskCustomNames,
+    setAddTaskCustomNamesState: (value) => {
+      addTaskCustomNames = value;
+    },
+    getSuppressAddTaskNameFocusOpen: () => suppressAddTaskNameFocusOpen,
+    setSuppressAddTaskNameFocusOpenState: (value) => {
+      suppressAddTaskNameFocusOpen = value;
+    },
+    getDefaultTaskTimerFormat: () => defaultTaskTimerFormat,
+    getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
+    getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    loadCachedTaskUi: () => cloudTaskUiCache || loadCachedTaskUi(),
+    saveCloudTaskUi: (next) => {
+      cloudTaskUiCache = next as typeof cloudTaskUiCache;
+      saveCloudTaskUi(next as Parameters<typeof saveCloudTaskUi>[0]);
+    },
+    openOverlay: (overlay) => openOverlay(overlay),
+    closeOverlay: (overlay) => closeOverlay(overlay),
+    save,
+    render,
+    escapeHtmlUI,
+    sortMilestones,
+    makeTask,
+    jumpToTaskAndHighlight,
+    clearAddTaskValidationState,
+    showAddTaskValidationError,
+    syncAddTaskCheckpointAlertUi,
+    syncAddTaskDurationReadout,
+    setAddTaskMilestoneUnitUi,
+    renderAddTaskMilestoneEditor,
+    hasNonPositiveCheckpoint,
+    hasCheckpointAtOrAboveTimeGoal,
+    isCheckpointAtOrAboveTimeGoal,
+  });
+  const {
+    registerAddTaskEvents,
+    loadAddTaskCustomNames: loadAddTaskCustomNamesApi,
+  } = addTaskApi;
 
   sessionApi = createTaskTimerSession({
     els,
@@ -4950,12 +5051,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (map[which]) openOverlay(map[which]);
   }
 
-  function loadAddTaskCustomNames() {
-    const settings = (cloudTaskUiCache || loadCachedTaskUi()) as any;
-    const raw = Array.isArray(settings?.customTaskNames) ? JSON.stringify(settings.customTaskNames) : "";
-    addTaskCustomNames = parseRecentCustomTaskNames(raw, 5);
-  }
-
   function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
     const unitSeconds = milestoneUnitSec(t);
     const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
@@ -5299,17 +5394,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncEditCheckpointAlertUi(t);
   }
 
-  function saveAddTaskCustomNames() {
-    const next = {
-      historyRangeDaysByTaskId,
-      historyRangeModeByTaskId,
-      pinnedHistoryTaskIds: Array.from(pinnedHistoryTaskIds),
-      customTaskNames: addTaskCustomNames.slice(0, 5),
-    } as any;
-    cloudTaskUiCache = next;
-    saveCloudTaskUi(next);
-  }
-
   function loadPinnedHistoryTaskIds() {
     const parsed = (cloudTaskUiCache || loadCachedTaskUi())?.pinnedHistoryTaskIds;
     if (!Array.isArray(parsed)) {
@@ -5324,8 +5408,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function rememberCustomTaskName(name: string) {
-    addTaskCustomNames = rememberRecentCustomTaskName(name, addTaskCustomNames, ADD_TASK_PRESET_NAMES, 5);
-    saveAddTaskCustomNames();
+    addTaskApi?.rememberCustomTaskName(name);
   }
 
   function setAddTaskNameMenuOpen(open: boolean) {
@@ -5333,23 +5416,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     (els.addTaskNameMenu as HTMLElement).style.display = open ? "block" : "none";
   }
 
-  function renderAddTaskNameMenu(filterText = "") {
-    const { custom, presets } = filterTaskNameOptions(addTaskCustomNames, ADD_TASK_PRESET_NAMES, filterText);
-
-    if (els.addTaskNameCustomList) {
-      els.addTaskNameCustomList.innerHTML = custom
-        .map((name) => `<button class="addTaskNameItem" type="button" data-add-task-name="${escapeHtmlUI(name)}">${escapeHtmlUI(name)}</button>`)
-        .join("");
-    }
-    if (els.addTaskNamePresetList) {
-      els.addTaskNamePresetList.innerHTML = presets
-        .map((name) => `<button class="addTaskNameItem" type="button" data-add-task-name="${escapeHtmlUI(name)}">${escapeHtmlUI(name)}</button>`)
-        .join("");
-    }
-    const hasCustom = custom.length > 0;
-    if (els.addTaskNameCustomTitle) (els.addTaskNameCustomTitle as HTMLElement).style.display = hasCustom ? "block" : "none";
-    if (els.addTaskNameDivider) (els.addTaskNameDivider as HTMLElement).style.display = hasCustom ? "block" : "none";
-    if (els.addTaskNamePresetTitle) (els.addTaskNamePresetTitle as HTMLElement).style.display = presets.length ? "block" : "none";
+  function renderAddTaskNameMenu(_filterText?: string) {
+    // Compatibility stub during Add Task extraction; the live menu rendering now lives in client/add-task.ts.
   }
 
   function setGroupsStatus(message: string) {
@@ -7091,86 +7159,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       resetAddTaskWizardState();
     };
 
-    on(els.openAddTaskBtn, "click", openAddTaskModal);
-    on(els.addTaskCancelBtn, "click", closeAddTaskModal);
-    on(els.addTaskStep1NextBtn, "click", () => {
-      if (!validateAddTaskStep1()) return;
-      setAddTaskWizardStep(2);
-      try {
-        els.addTaskDurationValueInput?.focus();
-      } catch {
-        // ignore
-      }
-    });
-    on(els.addTaskStep2BackBtn, "click", () => {
-      setAddTaskWizardStep(1);
-      try {
-        els.addTaskName?.focus();
-      } catch {
-        // ignore
-      }
-    });
-    on(els.addTaskStep2NextBtn, "click", () => {
-      if (!validateAddTaskStep2()) return;
-      if (addTaskNoTimeGoal) {
-        if (!validateAddTaskStep1()) return;
-        submitAddTaskWizard();
-        return;
-      }
-      setAddTaskWizardStep(3);
-    });
-    on(els.addTaskStep3BackBtn, "click", () => {
-      setAddTaskWizardStep(2);
-      try {
-        els.addTaskDurationValueInput?.focus();
-      } catch {
-        // ignore
-      }
-    });
-    on(els.addTaskDurationValueInput, "input", () => {
-      clearAddTaskValidationState();
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskDurationValueInput, "change", () => {
-      clearAddTaskValidationState();
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskDurationUnitMinute, "click", () => {
-      clearAddTaskValidationState();
-      addTaskDurationUnit = "minute";
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskDurationUnitHour, "click", () => {
-      clearAddTaskValidationState();
-      addTaskDurationUnit = "hour";
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskDurationPeriodDay, "click", () => {
-      clearAddTaskValidationState();
-      addTaskDurationPeriod = "day";
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskDurationPeriodWeek, "click", () => {
-      clearAddTaskValidationState();
-      addTaskDurationPeriod = "week";
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskNoGoalCheckbox, "change", () => {
-      clearAddTaskValidationState();
-      syncAddTaskDurationUi();
-    });
-    on(els.addTaskCheckpointInfoBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const isOpen = (els.addTaskCheckpointInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
-      setAddTaskCheckpointInfoOpen(!isOpen);
-    });
-    on(els.addTaskPresetIntervalsInfoBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const isOpen = (els.addTaskPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
-      setAddTaskPresetIntervalsInfoOpen(!isOpen);
-    });
     on(els.editPresetIntervalsInfoBtn, "click", (e: any) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
@@ -7179,53 +7167,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(document as any, "click", (e: any) => {
       const target = e?.target as HTMLElement | null;
-      if (target?.closest?.("#addTaskCheckpointInfoBtn")) return;
-      if (target?.closest?.("#addTaskCheckpointInfoDialog")) return;
-      if (target?.closest?.("#addTaskPresetIntervalsInfoBtn")) return;
-      if (target?.closest?.("#addTaskPresetIntervalsInfoDialog")) return;
       if (target?.closest?.("#editPresetIntervalsInfoBtn")) return;
       if (target?.closest?.("#editPresetIntervalsInfoDialog")) return;
-      setAddTaskCheckpointInfoOpen(false);
-      setAddTaskPresetIntervalsInfoOpen(false);
       setEditPresetIntervalsInfoOpen(false);
-    });
-
-    on(els.addTaskMsToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      if (getAddTaskTimeGoalMinutes() <= 0) {
-        syncAddTaskCheckpointAlertUi();
-        return;
-      }
-      addTaskMilestonesEnabled = !addTaskMilestonesEnabled;
-      if (els.addTaskMsArea && "open" in (els.addTaskMsArea as any)) {
-        const hasCheckpoints = Array.isArray(addTaskMilestones) && addTaskMilestones.length > 0;
-        (els.addTaskMsArea as HTMLDetailsElement).open = !!addTaskMilestonesEnabled && !hasCheckpoints;
-      }
-      if (!addTaskMilestonesEnabled) {
-        addTaskPresetIntervalsEnabled = false;
-      }
-      syncAddTaskMilestonesUi();
-    });
-
-    on(els.addTaskMsUnitDay, "click", () => {
-      addTaskMilestoneTimeUnit = "day";
-      setAddTaskMilestoneUnitUi("day");
-      renderAddTaskMilestoneEditor();
-      syncAddTaskCheckpointAlertUi();
-    });
-
-    on(els.addTaskMsUnitHour, "click", () => {
-      addTaskMilestoneTimeUnit = "hour";
-      setAddTaskMilestoneUnitUi("hour");
-      renderAddTaskMilestoneEditor();
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskMsUnitMinute, "click", () => {
-      addTaskMilestoneTimeUnit = "minute";
-      setAddTaskMilestoneUnitUi("minute");
-      renderAddTaskMilestoneEditor();
-      syncAddTaskCheckpointAlertUi();
     });
     on(els.mode1Btn, "click", () => applyMainMode("mode1"));
     on(els.mode2Btn, "click", () => applyMainMode("mode2"));
@@ -7307,151 +7251,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode3");
       if (els.editMoveMenu) els.editMoveMenu.open = false;
     });
-
-    on(els.addTaskName, "input", () => {
-      if ((els.addTaskName?.value || "").trim()) clearAddTaskValidationState();
-      renderAddTaskNameMenu(els.addTaskName?.value || "");
-      setAddTaskNameMenuOpen(true);
-    });
-    on(els.addTaskName, "focus", () => {
-      if (suppressAddTaskNameFocusOpen) return;
-      renderAddTaskNameMenu(els.addTaskName?.value || "");
-      setAddTaskNameMenuOpen(true);
-    });
-    on(els.addTaskNameToggle, "click", (ev: any) => {
-      ev.preventDefault?.();
-      const isOpen = (els.addTaskNameMenu as HTMLElement | null)?.style.display === "block";
-      if (!isOpen) renderAddTaskNameMenu(els.addTaskName?.value || "");
-      setAddTaskNameMenuOpen(!isOpen);
-      if (!isOpen) els.addTaskName?.focus();
-    });
-    on(els.addTaskNameMenu, "click", (ev: any) => {
-      const item = ev.target?.closest?.("[data-add-task-name]");
-      if (!item) return;
-      const name = item.getAttribute("data-add-task-name") || "";
-      if (els.addTaskName) {
-        els.addTaskName.value = name;
-        els.addTaskName.focus();
-      }
-      setAddTaskError("");
-      setAddTaskNameMenuOpen(false);
-    });
-
-    on(els.addTaskPresetIntervalsToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0) return;
-      addTaskPresetIntervalsEnabled = !addTaskPresetIntervalsEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskPresetIntervalsToggleRow, "click", (e: any) => {
-      if (
-        !addTaskMilestonesEnabled ||
-        getAddTaskTimeGoalMinutes() <= 0 ||
-        e.target?.closest?.("#addTaskPresetIntervalsToggle") ||
-        e.target?.closest?.("#addTaskPresetIntervalsInfoBtn") ||
-        e.target?.closest?.("#addTaskPresetIntervalsInfoSlot") ||
-        e.target?.closest?.("#addTaskPresetIntervalsInfoDialog")
-      )
-        return;
-      addTaskPresetIntervalsEnabled = !addTaskPresetIntervalsEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskPresetIntervalInput, "input", () => {
-      addTaskPresetIntervalValue = Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0);
-      clearAddTaskValidationState();
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskPresetIntervalInput, "change", () => {
-      addTaskPresetIntervalValue = Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0);
-      clearAddTaskValidationState();
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskFinalCheckpointActionSelect, "change", () => {
-      addTaskTimeGoalAction =
-        els.addTaskFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.addTaskFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.addTaskFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue";
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointSoundToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0 || !checkpointAlertSoundEnabled) return;
-      addTaskCheckpointSoundEnabled = !addTaskCheckpointSoundEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointSoundToggleRow, "click", (e: any) => {
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0 || !checkpointAlertSoundEnabled || e.target?.closest?.("#addTaskCheckpointSoundToggle")) return;
-      addTaskCheckpointSoundEnabled = !addTaskCheckpointSoundEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointSoundModeSelect, "change", () => {
-      addTaskCheckpointSoundMode = els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointToastToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0 || !checkpointAlertToastEnabled) return;
-      addTaskCheckpointToastEnabled = !addTaskCheckpointToastEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointToastToggleRow, "click", (e: any) => {
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0 || !checkpointAlertToastEnabled || e.target?.closest?.("#addTaskCheckpointToastToggle")) return;
-      addTaskCheckpointToastEnabled = !addTaskCheckpointToastEnabled;
-      syncAddTaskCheckpointAlertUi();
-    });
-    on(els.addTaskCheckpointToastModeSelect, "change", () => {
-      addTaskCheckpointToastMode = els.addTaskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
-      syncAddTaskCheckpointAlertUi();
-    });
-
-    on(els.addTaskAddMsBtn, "click", () => {
-      if (!addTaskMilestonesEnabled || getAddTaskTimeGoalMinutes() <= 0) {
-        syncAddTaskCheckpointAlertUi();
-        return;
-      }
-      if (addTaskPresetIntervalsEnabled) {
-        const interval = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
-        if (interval <= 0) {
-          syncAddTaskCheckpointAlertUi();
-          return;
-        }
-        const base = addTaskMilestones.length ? Number(addTaskMilestones[addTaskMilestones.length - 1]?.hours || 0) : 0;
-        const nextHours = base + interval;
-        if (
-          isCheckpointAtOrAboveTimeGoal(
-            nextHours,
-            addTaskMilestoneTimeUnit === "day" ? 86400 : addTaskMilestoneTimeUnit === "minute" ? 60 : 3600,
-            getAddTaskTimeGoalMinutes()
-          )
-        ) {
-          showAddTaskValidationError("Checkpoint times must be less than the time goal", {
-            checkpoints: true,
-            checkpointRows: true,
-          });
-          syncAddTaskCheckpointAlertUi();
-          return;
-        }
-        addTaskMilestones.push({ hours: nextHours, description: "" });
-      } else {
-        addTaskMilestones.push({ hours: 0, description: "" });
-      }
-      renderAddTaskMilestoneEditor();
-      clearAddTaskValidationState();
-      syncAddTaskCheckpointAlertUi();
-    });
-
-    on(els.addTaskForm, "submit", (e: any) => {
-      e.preventDefault();
-      clearAddTaskValidationState();
-      if (addTaskWizardStep !== 3) return;
-      if (!validateAddTaskStep1()) return;
-      if (!validateAddTaskStep3()) return;
-      submitAddTaskWizard();
-    });
+    registerAddTaskEvents();
 
     registerTaskEvents();
 
@@ -7468,8 +7268,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
       const insideEditMove = ev.target?.closest?.(".editMoveMenu");
       if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
-      const insideAddNameMenu = ev.target?.closest?.("#addTaskNameCombo");
-      if (!insideAddNameMenu) setAddTaskNameMenuOpen(false);
     });
     on(els.taskList, "click", (ev: any) => {
       const summary = ev.target?.closest?.(".taskMenu > summary");
@@ -7894,7 +7692,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     load();
-    loadAddTaskCustomNames();
+    loadAddTaskCustomNamesApi();
     loadDefaultTaskTimerFormat();
     loadTaskViewPreference();
     loadAutoFocusOnTaskLaunchSetting();

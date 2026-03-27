@@ -61,6 +61,7 @@
 
 ## TaskTimer Client Support Modules
 
+- [`src/app/tasktimer/client/add-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/add-task.ts)
 - [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
 - [`src/app/tasktimer/client/context.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/context.ts)
 - [`src/app/tasktimer/client/dashboard.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard.ts)
