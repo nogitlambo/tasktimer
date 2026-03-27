@@ -91,10 +91,6 @@
     flex:1 1 0;
     min-width:0;
   }
-  .brandLogo{
-    height:33px;
-    max-width:180px;
-  }
   #app[aria-label="TaskLaunch App"]{
     --mobile-footer-offset: 10px;
     --mobile-footer-height: 72px;
@@ -341,8 +337,8 @@
     padding:10px;
   }
   .brandLogo{
-    height:27px;
-    max-width:142.5px;
+    width:min(225px, 100%);
+    max-width:225px;
   }
   #openAddTaskBtn{
     min-height:34px;
@@ -544,10 +540,6 @@
   .topbar{
     gap:8px;
     padding:8px;
-  }
-  .brandLogo{
-    height:22.5px;
-    max-width:120px;
   }
   #openAddTaskBtn{
     min-height:36px;

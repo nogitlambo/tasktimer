@@ -1362,6 +1362,40 @@ body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
 body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   clip-path: none;
 }
+
+#confirmOverlay.isTaskAlreadyRunningConfirm .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(53,232,255,.24);
+  border-radius: 0;
+  clip-path: none;
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+#confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+
+#confirmOverlay.isTaskAlreadyRunningConfirm .confirmBtns{
+  margin-top: 8px;
+  gap: 8px;
+}
+
+#confirmOverlay.isTaskAlreadyRunningConfirm #confirmCancelBtn,
+#confirmOverlay.isTaskAlreadyRunningConfirm #confirmOkBtn{
+  min-width: 92px;
+  justify-content: center;
+}
+
+body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .modal{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+
+body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
+  color: rgba(247,232,255,.92);
+}
+
 #timeGoalCompleteOverlay .modal{
   background: #0d0f13;
   border-radius: 0;

@@ -35,7 +35,12 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     );
   }
 
+  function isFixedFullWidthDashboardCard(cardId: string) {
+    return cardId === "timeline";
+  }
+
   function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
+    if (isFixedFullWidthDashboardCard(String(cardId || "").trim())) return "full";
     if (value === "full" || value === "half" || value === "quarter") return value;
     if (value === "eighth" && canUseCompactDashboardCardSize(String(cardId || "").trim())) return value;
     return null;
@@ -328,6 +333,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const card = el as HTMLElement;
       if (card.querySelector(".dashboardSizeControl")) return;
       const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
+      if (isFixedFullWidthDashboardCard(cardId)) return;
       const compactSizeOption = canUseCompactDashboardCardSize(cardId)
         ? `
           <button class="dashboardSizeOption" type="button" data-dashboard-size="eighth" role="menuitemradio" aria-checked="false">Compact</button>`
@@ -360,6 +366,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const selectedSize = sanitizeDashboardCardSize(cardSizes[cardId], cardId);
       const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
       const menuOpen = card.classList.contains("isSizeMenuOpen");
+      if (isFixedFullWidthDashboardCard(cardId)) {
+        if (toggle) toggle.remove();
+        const menu = card.querySelector("[data-dashboard-size-menu]") as HTMLElement | null;
+        if (menu) menu.remove();
+      }
       if (toggle) toggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
       Array.from(card.querySelectorAll(".dashboardSizeOption[data-dashboard-size]")).forEach((btn) => {
         const option = btn as HTMLButtonElement;

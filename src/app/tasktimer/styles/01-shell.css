@@ -48,9 +48,9 @@
 }
 .brandLogo{
   display:block;
-  height:42px;
-  width:auto;
-  max-width:330px;
+  width:min(255px, 100%);
+  height:auto;
+  max-width:255px;
   object-fit:contain;
   margin-left:0;
   align-self:center;

@@ -228,16 +228,28 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     const otherRunningIndex = findOtherRunningTaskIndex(i);
     if (otherRunningIndex >= 0) {
       const runningTask = ctx.getTasks()[otherRunningIndex];
-      ctx.confirm("Task Already Running", `${getTaskDisplayName(runningTask)} is currently running.`, {
-        okLabel: "Stop running task and launch this task",
-        cancelLabel: "Continue running task",
-        onOk: () => {
-          ctx.closeConfirm();
-          stopTask(otherRunningIndex);
-          startTask(i);
-        },
-        onCancel: () => ctx.closeConfirm(),
-      });
+      const clearTaskAlreadyRunningConfirmState = () => {
+        if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
+      };
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isTaskAlreadyRunningConfirm");
+      ctx.confirm(
+        "Task Already Running",
+        `${getTaskDisplayName(runningTask)} is currently running. Do you want to stop this timer and launch ${getTaskDisplayName(t)}?`,
+        {
+          okLabel: "Yes",
+          cancelLabel: "Cancel",
+          onOk: () => {
+            clearTaskAlreadyRunningConfirmState();
+            ctx.closeConfirm();
+            stopTask(otherRunningIndex);
+            startTask(i);
+          },
+          onCancel: () => {
+            clearTaskAlreadyRunningConfirmState();
+            ctx.closeConfirm();
+          },
+        }
+      );
       return;
     }
     ctx.clearTaskTimeGoalFlow(String(t.id || ""));

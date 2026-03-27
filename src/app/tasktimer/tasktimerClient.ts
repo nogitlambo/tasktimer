@@ -2623,6 +2623,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "none";
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
     confirmAction = null;
     confirmActionAlt = null;
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
@@ -4004,12 +4005,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const fallbackMinimumDistinctDays = 2;
     const bucketSizeMinutes = 60;
     const minimumSessionMs = 10 * 60 * 1000;
+    const minimumSegmentMinutes = 20;
     type TimelineBucketStats = {
       taskName: string;
       distinctDayKeys: Set<string>;
       totalMs: number;
       sessionCount: number;
       weightedMinuteSum: number;
+      durationTotalMs: number;
     };
     type TimelineBucketMap = Map<number, Map<string, TimelineBucketStats>>;
     type TimelineSuggestionItem = {
@@ -4020,17 +4023,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       sessionCount: number;
       suggestedMinute: number;
       bucketIndex: number;
+      avgDurationMs: number;
+      segmentStartMinute: number;
+      segmentEndMinute: number;
+      maxStartMinute: number;
+      maxEndMinute: number;
+      goalStartMinute: number | null;
+      goalEndMinute: number | null;
+      isPreferredBranch: boolean;
+      colorIndex: number;
     };
     const bucketMap: TimelineBucketMap = new Map();
     const fallbackBucketMap: TimelineBucketMap = new Map();
     const matchedDayKeys = new Set<string>();
     const fallbackMatchedDayKeys = new Set<string>();
+    const timeGoalMinutesByTaskId = new Map<string, number>();
 
-    const getTimelineHourRangeLabel = (suggestedMinute: number) => {
-      const boundedMinute = Math.max(0, Math.min(1439, Math.floor(suggestedMinute)));
-      const startHour = Math.floor(boundedMinute / 60);
-      const endHour = Math.min(24, startHour + 1);
-      return `${formatTwo(startHour)}:00 - ${formatTwo(endHour)}:00`;
+    const formatTimelineClockMinute = (minuteRaw: number, opts?: { end?: boolean }) => {
+      const boundedMinute = Math.max(0, Math.min(1440, Math.round(minuteRaw)));
+      const normalizedMinute = boundedMinute === 1440 ? 0 : boundedMinute;
+      const hours = boundedMinute === 1440 ? 24 : Math.floor(normalizedMinute / 60);
+      const minutes = normalizedMinute % 60;
+      if (opts?.end && boundedMinute === 1440) return "24:00";
+      return `${formatTwo(hours)}:${formatTwo(minutes)}`;
+    };
+
+    const getTimelineSegmentRangeLabel = (startMinute: number, endMinute: number) => {
+      return `${formatTimelineClockMinute(startMinute)} - ${formatTimelineClockMinute(endMinute, { end: true })}`;
     };
 
     const addTimelineEntryToBucketMap = (
@@ -4055,6 +4074,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           totalMs: 0,
           sessionCount: 0,
           weightedMinuteSum: 0,
+          durationTotalMs: 0,
         };
         bucket.set(taskId, stats);
       }
@@ -4062,6 +4082,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       stats.totalMs += ms;
       stats.sessionCount += 1;
       stats.weightedMinuteSum += minuteOfDay * ms;
+      stats.durationTotalMs += ms;
     };
 
     const buildTimelineItems = (
@@ -4077,6 +4098,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
               distinctDays: stats.distinctDayKeys.size,
               totalMs: stats.totalMs,
               sessionCount: stats.sessionCount,
+              avgDurationMs:
+                stats.sessionCount > 0 ? Math.max(minimumSessionMs, Math.round(stats.durationTotalMs / stats.sessionCount)) : minimumSessionMs,
               suggestedMinute:
                 stats.totalMs > 0
                   ? Math.max(0, Math.min(1439, Math.round(stats.weightedMinuteSum / stats.totalMs)))
@@ -4091,9 +4114,43 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             });
           if (!ranked.length) return null;
           const winner = ranked[0]!;
+          const averageDurationMinutes = Math.max(
+            minimumSegmentMinutes,
+            Math.round((winner.avgDurationMs / 60000) || minimumSegmentMinutes)
+          );
+          const halfDurationMinutes = averageDurationMinutes / 2;
+          const startMinute = Math.max(0, Math.round(winner.suggestedMinute - halfDurationMinutes));
+          const endMinute = Math.min(1440, Math.round(winner.suggestedMinute + halfDurationMinutes));
+          const normalizedSegmentStartMinute = Math.max(0, Math.min(1440 - minimumSegmentMinutes, startMinute));
+          const normalizedSegmentEndMinute = Math.max(normalizedSegmentStartMinute + minimumSegmentMinutes, endMinute);
+          const goalDurationMinutes = Math.round(timeGoalMinutesByTaskId.get(winner.taskId) || 0);
+          const goalHalfDurationMinutes = goalDurationMinutes / 2;
+          const goalStartMinuteRaw = Math.max(0, Math.round(winner.suggestedMinute - goalHalfDurationMinutes));
+          const goalEndMinuteRaw = Math.min(1440, Math.round(winner.suggestedMinute + goalHalfDurationMinutes));
+          const hasExtendedGoal = goalDurationMinutes > averageDurationMinutes;
           return {
             ...winner,
             bucketIndex,
+            segmentStartMinute: normalizedSegmentStartMinute,
+            segmentEndMinute: normalizedSegmentEndMinute,
+            maxStartMinute: hasExtendedGoal
+              ? Math.max(0, Math.min(1440 - minimumSegmentMinutes, goalStartMinuteRaw))
+              : normalizedSegmentStartMinute,
+            maxEndMinute: hasExtendedGoal
+              ? Math.max(
+                  Math.max(0, Math.min(1440 - minimumSegmentMinutes, goalStartMinuteRaw)) + minimumSegmentMinutes,
+                  goalEndMinuteRaw
+                )
+              : normalizedSegmentEndMinute,
+            goalStartMinute: hasExtendedGoal ? Math.max(0, Math.min(1440 - minimumSegmentMinutes, goalStartMinuteRaw)) : null,
+            goalEndMinute: hasExtendedGoal
+              ? Math.max(
+                  Math.max(0, Math.min(1440 - minimumSegmentMinutes, goalStartMinuteRaw)) + minimumSegmentMinutes,
+                  goalEndMinuteRaw
+                )
+              : null,
+            isPreferredBranch: false,
+            colorIndex: 0,
           };
         })
         .filter((item): item is NonNullable<typeof item> => !!item)
@@ -4108,6 +4165,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getDashboardFilteredTasks().forEach((task) => {
       const taskId = String(task?.id || "").trim();
       if (!taskId) return;
+      const timeGoalMinutes =
+        !!task?.timeGoalEnabled && Number(task?.timeGoalMinutes || 0) > 0 ? Math.max(0, Number(task?.timeGoalMinutes || 0)) : 0;
+      if (timeGoalMinutes > 0) timeGoalMinutesByTaskId.set(taskId, timeGoalMinutes);
       const taskName = String(task?.name || "").trim() || "Task";
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
@@ -4136,32 +4196,70 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const preferredBranchActivityDayCount = matchedDayKeys.size;
     const preferredItems = buildTimelineItems(bucketMap, preferredBranchMinimumDistinctDays);
     const fallbackItems = buildTimelineItems(fallbackBucketMap, fallbackMinimumDistinctDays);
-    const mergedItems: TimelineSuggestionItem[] = [];
-    const seenSuggestionKeys = new Set<string>();
-    preferredItems.forEach((item) => {
-      const key = `${item.taskId}|${item.bucketIndex}`;
-      if (seenSuggestionKeys.has(key)) return;
-      seenSuggestionKeys.add(key);
-      mergedItems.push(item);
-    });
-    fallbackItems.forEach((item) => {
-      if (mergedItems.length >= targetCount) return;
-      const key = `${item.taskId}|${item.bucketIndex}`;
-      if (seenSuggestionKeys.has(key)) return;
-      seenSuggestionKeys.add(key);
-      mergedItems.push(item);
-    });
-    const items = mergedItems
+    const bestItemsByTaskId = new Map<string, TimelineSuggestionItem>();
+    const rankTimelineItem = (candidate: TimelineSuggestionItem, isPreferredBranch: boolean) => {
+      const nextItem = { ...candidate, isPreferredBranch };
+      const current = bestItemsByTaskId.get(candidate.taskId);
+      if (!current) {
+        bestItemsByTaskId.set(candidate.taskId, nextItem);
+        return;
+      }
+      if (Number(isPreferredBranch) !== Number(current.isPreferredBranch)) {
+        if (isPreferredBranch) bestItemsByTaskId.set(candidate.taskId, nextItem);
+        return;
+      }
+      if (candidate.distinctDays !== current.distinctDays) {
+        if (candidate.distinctDays > current.distinctDays) bestItemsByTaskId.set(candidate.taskId, nextItem);
+        return;
+      }
+      if (candidate.totalMs !== current.totalMs) {
+        if (candidate.totalMs > current.totalMs) bestItemsByTaskId.set(candidate.taskId, nextItem);
+        return;
+      }
+      if (candidate.sessionCount !== current.sessionCount) {
+        if (candidate.sessionCount > current.sessionCount) bestItemsByTaskId.set(candidate.taskId, nextItem);
+        return;
+      }
+      if (candidate.bucketIndex < current.bucketIndex) bestItemsByTaskId.set(candidate.taskId, nextItem);
+    };
+    preferredItems.forEach((item) => rankTimelineItem(item, true));
+    fallbackItems.forEach((item) => rankTimelineItem(item, false));
+    const items = Array.from(bestItemsByTaskId.values())
       .sort((a, b) => {
-        if (a.bucketIndex !== b.bucketIndex) return a.bucketIndex - b.bucketIndex;
+        if (a.suggestedMinute !== b.suggestedMinute) return a.suggestedMinute - b.suggestedMinute;
+        if (a.maxStartMinute !== b.maxStartMinute) return a.maxStartMinute - b.maxStartMinute;
         if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
         if (b.totalMs !== a.totalMs) return b.totalMs - a.totalMs;
         return a.taskName.localeCompare(b.taskName);
       })
-      .slice(0, targetCount);
-    const usingFallbackItems = items.some(
-      (item) => !preferredItems.some((preferred) => preferred.taskId === item.taskId && preferred.bucketIndex === item.bucketIndex)
-    );
+      .slice(0, targetCount)
+      .map((item) => ({ ...item }));
+
+    for (let index = 0; index < items.length - 1; index += 1) {
+      const current = items[index]!;
+      const next = items[index + 1]!;
+      const boundaryMinute = Math.round((current.suggestedMinute + next.suggestedMinute) / 2);
+      current.maxEndMinute = Math.min(current.maxEndMinute, boundaryMinute);
+      next.maxStartMinute = Math.max(next.maxStartMinute, boundaryMinute);
+    }
+
+    items.forEach((item, index) => {
+      const desiredDurationMinutes = Math.max(minimumSegmentMinutes, Math.round(item.avgDurationMs / 60000) || minimumSegmentMinutes);
+      const availableDurationMinutes = Math.max(minimumSegmentMinutes, item.maxEndMinute - item.maxStartMinute);
+      const actualDurationMinutes = Math.min(desiredDurationMinutes, availableDurationMinutes);
+      const centeredStartMinute = Math.round(item.suggestedMinute - actualDurationMinutes / 2);
+      const segmentStartMinute = Math.max(
+        item.maxStartMinute,
+        Math.min(centeredStartMinute, Math.max(item.maxStartMinute, item.maxEndMinute - actualDurationMinutes))
+      );
+      item.segmentStartMinute = segmentStartMinute;
+      item.segmentEndMinute = Math.min(item.maxEndMinute, segmentStartMinute + actualDurationMinutes);
+      const hasGoalWindow = item.goalStartMinute != null && item.goalEndMinute != null && item.maxEndMinute > item.segmentEndMinute;
+      item.goalStartMinute = hasGoalWindow ? item.maxStartMinute : null;
+      item.goalEndMinute = hasGoalWindow ? item.maxEndMinute : null;
+      item.colorIndex = index % 6;
+    });
+    const usingFallbackItems = items.some((item) => !item.isPreferredBranch);
 
     if (qualifyingActivityDayCount < minimumActivityDays) {
       listEl.innerHTML = "";
@@ -4207,26 +4305,71 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
     if (shouldHoldDashboardWidget("timeline", true)) return;
 
-    listEl.innerHTML = items
-      .map((item) => {
-        const timeText = getTimelineHourRangeLabel(item.suggestedMinute);
-        const title = `${timeText} ${item.taskName}. Seen on ${item.distinctDays} day${
-          item.distinctDays === 1 ? "" : "s"
-        } in the last 30 days.`;
-        return `<li title="${escapeHtmlUI(title)}"><span>${escapeHtmlUI(timeText)}</span><p>${escapeHtmlUI(item.taskName)}</p></li>`;
-      })
-      .join("");
+    const formatTimelineDurationLabel = (durationMs: number) => {
+      const totalMinutes = Math.max(minimumSegmentMinutes, Math.round(durationMs / 60000) || minimumSegmentMinutes);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+      if (hours > 0) return `${hours}h`;
+      return `${totalMinutes}m`;
+    };
+    const timelineHourLabels = ["12a", "4a", "8a", "12p", "4p", "8p", "12a"];
+    listEl.innerHTML = `
+      <div class="dashboardTimelineTrackHours" aria-hidden="true">
+        ${timelineHourLabels.map((label) => `<span>${escapeHtmlUI(label)}</span>`).join("")}
+      </div>
+      <div class="dashboardTimelineTrack">
+        ${items
+          .map((item) => {
+            const timeText = getTimelineSegmentRangeLabel(item.segmentStartMinute, item.segmentEndMinute);
+            const durationText = formatTimelineDurationLabel(item.avgDurationMs);
+            const markerLeftPct = Math.max(0, Math.min(100, (item.suggestedMinute / 1440) * 100));
+            const segmentStartPct = Math.max(0, Math.min(100, (item.segmentStartMinute / 1440) * 100));
+            const segmentEndPct = Math.max(segmentStartPct, Math.min(100, (item.segmentEndMinute / 1440) * 100));
+            const goalStartPct =
+              item.goalStartMinute == null ? null : Math.max(0, Math.min(100, (item.goalStartMinute / 1440) * 100));
+            const goalEndPct =
+              item.goalEndMinute == null ? null : Math.max(goalStartPct || 0, Math.min(100, (item.goalEndMinute / 1440) * 100));
+            const title = `${item.taskName} around ${timeText}. Typical duration ${durationText}. Seen on ${item.distinctDays} day${
+              item.distinctDays === 1 ? "" : "s"
+            } in the last 30 days.`;
+            return `
+              ${
+                goalStartPct != null && goalEndPct != null
+                  ? `<span class="dashboardTimelineSegment dashboardTimelineSegmentGoal dashboardTimelineSegmentGoalColor-${item.colorIndex}" style="left:${goalStartPct.toFixed(
+                      2
+                    )}%;width:${Math.max(0.8, goalEndPct - goalStartPct).toFixed(2)}%;" aria-hidden="true"></span>`
+                  : ""
+              }
+              <span class="dashboardTimelineSegment dashboardTimelineSegmentColor-${item.colorIndex}" style="left:${segmentStartPct.toFixed(
+                2
+              )}%;width:${Math.max(0.8, segmentEndPct - segmentStartPct).toFixed(2)}%;" aria-hidden="true"></span>
+              <span class="dashboardTimelineMarker" style="left:${markerLeftPct.toFixed(2)}%;" aria-hidden="true"></span>
+              <div class="dashboardTimelineItem" style="left:${markerLeftPct.toFixed(
+                2
+              )}%;" title="${escapeHtmlUI(title)}" aria-label="${escapeHtmlUI(title)}">
+                <span class="dashboardTimelineTime">${escapeHtmlUI(timeText)}</span>
+                <div class="dashboardTimelineMeta">
+                  <p class="dashboardTimelineLabel">${escapeHtmlUI(item.taskName)}</p>
+                  <span class="dashboardTimelineDuration">${escapeHtmlUI(durationText)}</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
     if (noteEl) {
       noteEl.textContent = usingFallbackItems
-        ? `${items.length} suggestion${items.length === 1 ? "" : "s"} from your last 30 days of activity`
-        : `${items.length} ${showWeekendRoutine ? "weekend" : "weekday"} suggestion${items.length === 1 ? "" : "s"} from the last 30 days`;
+        ? `${items.length} task marker${items.length === 1 ? "" : "s"} arranged from your last 30 days of activity`
+        : `${items.length} ${showWeekendRoutine ? "weekend" : "weekday"} task marker${items.length === 1 ? "" : "s"} across your day`;
     }
     if (cardEl) {
       cardEl.setAttribute(
         "aria-description",
         usingFallbackItems
-          ? `Timeline suggestions based on hour windows from qualifying history in the last 30 days. Showing up to ${targetCount} items.`
-          : `Timeline suggestions based on ${showWeekendRoutine ? "weekend" : "weekday"} hour windows from the last 30 days. Showing up to ${targetCount} items.`
+          ? `Horizontal task timeline based on qualifying history from the last 30 days. Showing up to ${targetCount} suggested task markers and duration spans.`
+          : `Horizontal ${showWeekendRoutine ? "weekend" : "weekday"} task timeline based on the last 30 days. Showing up to ${targetCount} suggested task markers and duration spans.`
       );
     }
   }
