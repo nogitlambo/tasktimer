@@ -41,7 +41,7 @@ export default function FeedbackScreen() {
     <div className="wrap" id="app" aria-label="TaskLaunch Feedback">
       <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
+          <img className="brandLogo" src="/logo/tasklaunch-logo.png" alt="TaskLaunch" />
         </div>
         <SignedInHeaderBadge />
       </div>

@@ -24,16 +24,17 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   }
 
   function renderTasksPage() {
-    if (!els.taskList) return;
+    const taskListEl = els.taskList;
+    if (!taskListEl) return;
 
     const tasks = ctx.getTasks();
     tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
-    els.taskList.innerHTML = "";
+    taskListEl.innerHTML = "";
     const useTileColumns = ctx.getTaskView() === "tile";
     const tileColumnCount = useTileColumns ? getTileColumnCount() : 1;
     ctx.setCurrentTileColumnCount(tileColumnCount);
-    if (useTileColumns) els.taskList.setAttribute("data-tile-columns", String(tileColumnCount));
-    else els.taskList.removeAttribute("data-tile-columns");
+    if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
+    else taskListEl.removeAttribute("data-tile-columns");
 
     const currentMode = ctx.getCurrentMode();
     const openHistoryTaskIds = ctx.getOpenHistoryTaskIds();
@@ -211,7 +212,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         </div>
       `;
       ctx.applyTaskFlipDomState(taskId, taskEl);
-      els.taskList.appendChild(taskEl);
+      taskListEl.appendChild(taskEl);
     });
 
     ctx.save();

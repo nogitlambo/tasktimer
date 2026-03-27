@@ -219,7 +219,7 @@ export default function UserGuideScreen({ onBack }: Props) {
     <div className="wrap" id="app" aria-label="TaskLaunch User Guide">
       <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
+          <img className="brandLogo" src="/logo/tasklaunch-logo.png" alt="TaskLaunch" />
         </div>
       </div>
       <div className="list settingsPageList userGuidePage" style={{ paddingTop: 18 }}>

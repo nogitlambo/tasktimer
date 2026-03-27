@@ -1041,6 +1041,12 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const email = auth?.currentUser?.email || null;
     const receiverEmail = String(els.friendRequestEmailInput?.value || "").trim();
     setFriendRequestModalStatus("");
+    if (!uid || !email) {
+      setFriendRequestModalStatus("Sign in to send friend requests.", "error");
+      setGroupsStatus("Sign in to send friend requests.");
+      renderGroupsPage();
+      return;
+    }
     setGroupsStatus("Sending request...");
     const result = await runGroupsBusy("Sending friend request...", "Friend request timed out. Please try again.", () =>
       sendFriendRequest(uid, email, receiverEmail)

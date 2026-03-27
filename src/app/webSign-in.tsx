@@ -52,11 +52,11 @@ export default function WebSignIn(props: WebSignInProps) {
       <div className="landingV2Container relative mx-auto flex min-h-screen w-full max-w-[1625px] items-center justify-center px-6 pb-20 pt-8 sm:px-8 md:px-12">
         <section className="relative flex w-full max-w-[560px] flex-col items-center justify-center gap-4 text-center">
           <div className="relative z-10 flex flex-col items-center gap-3">
-            <Image
-              src="/logo/tasklaunch.svg"
-              alt="TaskLaunch"
-              width={560}
-              height={76}
+              <Image
+                src="/logo/tasklaunch-logo.png"
+                alt="TaskLaunch"
+                width={560}
+                height={76}
               priority
               className="h-auto w-[230px] sm:w-[280px] md:w-[340px]"
             />

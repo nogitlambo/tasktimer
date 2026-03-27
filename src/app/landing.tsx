@@ -265,7 +265,7 @@ export default function Landing({
         <header className="landingV2Header flex items-center justify-between">
           <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
             <Image
-              src="/logo/tasklaunch-logo-v2.png"
+              src="/logo/tasklaunch-logo.png"
               alt="TaskLaunch"
               width={1868}
               height={422}

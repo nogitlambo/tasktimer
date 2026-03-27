@@ -57,12 +57,12 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  font-family:var(--font-tight);
-  font-size:18px;
-  font-weight:800;
-  line-height:1;
-  letter-spacing:.08em;
-  transform: translateY(-1px);
+  width:12px;
+  height:10px;
+  background:
+    linear-gradient(currentColor, currentColor) center top / 12px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center center / 12px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center bottom / 12px 2px no-repeat;
 }
 .dashboardPanelMenuList{
   position:absolute;
@@ -213,14 +213,21 @@
   width:26px;
   height:26px;
   min-width:26px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
   border-color: rgba(121,226,255,.32);
   background: rgba(4,12,22,.85);
 }
 .dashboardSizeGlyph{
-  width:4px;
-  height:4px;
-  background: currentColor;
-  box-shadow: 6px 0 0 currentColor, 0 6px 0 currentColor, 6px 6px 0 currentColor;
+  display:block;
+  width:12px;
+  height:10px;
+  background:
+    linear-gradient(currentColor, currentColor) center top / 12px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center center / 12px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center bottom / 12px 2px no-repeat;
 }
 .dashboardSizeMenu{
   min-width:112px;

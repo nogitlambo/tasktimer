@@ -450,7 +450,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeConfirm,
     confirm,
     escapeHtmlUI,
-    taskModeOf: (task) => taskModeOf(task),
+    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
     normalizeHistoryTimestampMs,
     showWorkingIndicator,
     hideWorkingIndicator,
@@ -535,15 +535,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els,
     on,
     getTasks: () => tasks,
-    setTasks: (value) => {
+    setTasks: (value: typeof tasks) => {
       tasks = value;
     },
     getHistoryByTaskId: () => historyByTaskId,
-    setHistoryByTaskId: (value) => {
+    setHistoryByTaskId: (value: typeof historyByTaskId) => {
       historyByTaskId = value;
     },
     getDeletedTaskMeta: () => deletedTaskMeta,
-    setDeletedTaskMeta: (value) => {
+    setDeletedTaskMeta: (value: typeof deletedTaskMeta) => {
       deletedTaskMeta = value;
     },
     getCurrentUid: () => currentUid(),
@@ -551,7 +551,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCurrentMode: () => currentMode,
     getTaskView: () => taskView,
     getCurrentTileColumnCount: () => currentTileColumnCount,
-    setCurrentTileColumnCount: (value) => {
+    setCurrentTileColumnCount: (value: typeof currentTileColumnCount) => {
       currentTileColumnCount = value;
     },
     getFocusModeTaskId: () => focusModeTaskId,
@@ -564,47 +564,47 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
     getEditIndex: () => editIndex,
-    setEditIndex: (value) => {
+    setEditIndex: (value: typeof editIndex) => {
       editIndex = value;
     },
     getEditTaskDraft: () => editTaskDraft,
-    setEditTaskDraft: (value) => {
+    setEditTaskDraft: (value: typeof editTaskDraft) => {
       editTaskDraft = value;
     },
     getEditTaskDurationUnit: () => editTaskDurationUnit,
-    setEditTaskDurationUnit: (value) => {
+    setEditTaskDurationUnit: (value: typeof editTaskDurationUnit) => {
       editTaskDurationUnit = value;
     },
     getEditTaskDurationPeriod: () => editTaskDurationPeriod,
-    setEditTaskDurationPeriod: (value) => {
+    setEditTaskDurationPeriod: (value: typeof editTaskDurationPeriod) => {
       editTaskDurationPeriod = value;
     },
     getEditDraftSnapshot: () => editDraftSnapshot,
-    setEditDraftSnapshot: (value) => {
+    setEditDraftSnapshot: (value: typeof editDraftSnapshot) => {
       editDraftSnapshot = value;
     },
     getEditMoveTargetMode: () => editMoveTargetMode,
-    setEditMoveTargetMode: (value) => {
+    setEditMoveTargetMode: (value: typeof editMoveTargetMode) => {
       editMoveTargetMode = value;
     },
     getElapsedPadTarget: () => elapsedPadTarget,
-    setElapsedPadTarget: (value) => {
+    setElapsedPadTarget: (value: typeof elapsedPadTarget) => {
       elapsedPadTarget = value;
     },
     getElapsedPadMilestoneRef: () => elapsedPadMilestoneRef,
-    setElapsedPadMilestoneRef: (value) => {
+    setElapsedPadMilestoneRef: (value: typeof elapsedPadMilestoneRef) => {
       elapsedPadMilestoneRef = value;
     },
     getElapsedPadDraft: () => elapsedPadDraft,
-    setElapsedPadDraft: (value) => {
+    setElapsedPadDraft: (value: typeof elapsedPadDraft) => {
       elapsedPadDraft = value;
     },
     getElapsedPadOriginal: () => elapsedPadOriginal,
-    setElapsedPadOriginal: (value) => {
+    setElapsedPadOriginal: (value: typeof elapsedPadOriginal) => {
       elapsedPadOriginal = value;
     },
     getCheckpointAutoResetDirty: () => checkpointAutoResetDirty,
-    setCheckpointAutoResetDirty: (value) => {
+    setCheckpointAutoResetDirty: (value: typeof checkpointAutoResetDirty) => {
       checkpointAutoResetDirty = value;
     },
     render,
@@ -618,7 +618,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     saveHistory,
     saveDeletedMeta,
     escapeHtmlUI,
-    taskModeOf: (task) => taskModeOf(task),
+    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
     milestoneUnitSec: (task) => milestoneUnitSec(task),
     milestoneUnitSuffix: (task) => milestoneUnitSuffix(task),
     getModeColor: (mode) => getModeColor(mode),
@@ -699,7 +699,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     clearSuppressedFocusModeAlert: (taskId) => clearSuppressedFocusModeAlert(taskId),
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
     syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
-  } as any);
+  });
   const {
     renderTasksPage,
     startTask: startTaskApi,
@@ -7004,6 +7004,152 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     } catch {
       ownSharedSummaries = [];
     }
+  }
+
+  function getTaskCreatedAtMs(taskId: string): number | null {
+    const task = tasks.find((row) => String(row.id || "") === String(taskId));
+    const raw = (task as any)?.createdAt;
+    if (raw && typeof raw.toMillis === "function") return Math.max(0, Number(raw.toMillis()) || 0);
+    if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return Math.floor(raw);
+    const entries = (historyByTaskId[taskId] || []).slice();
+    if (!entries.length) return null;
+    const minTs = entries.reduce(
+      (min, entry) => Math.min(min, normalizeHistoryTimestampMs((entry as any)?.ts)),
+      Number.MAX_SAFE_INTEGER
+    );
+    return minTs > 0 && Number.isFinite(minTs) ? Math.floor(minTs) : null;
+  }
+
+  function getCalendarWeekStartMs(date: Date) {
+    const base = new Date(date);
+    base.setHours(0, 0, 0, 0);
+    base.setDate(base.getDate() - base.getDay());
+    return base.getTime();
+  }
+
+  function computeTaskSharingMetrics(taskId: string) {
+    const weekStartMs = getCalendarWeekStartMs(new Date());
+    const history = historyByTaskId;
+    const weekEntries = (history[taskId] || []).filter((entry) => normalizeHistoryTimestampMs((entry as any)?.ts) >= weekStartMs);
+    const weekTotalMs = weekEntries.reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
+    const daysElapsed = Math.max(1, Math.floor((Date.now() - weekStartMs) / (24 * 60 * 60 * 1000)) + 1);
+    const avgWeekMs = Math.floor(weekTotalMs / daysElapsed);
+    const allHistoryMs = (history[taskId] || []).reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
+    const task = tasks.find((row) => String(row.id || "") === String(taskId));
+    const runningMs =
+      task && task.running && Number.isFinite(Number(task.startMs))
+        ? Math.max(0, Date.now() - Number(task.startMs || 0))
+        : 0;
+    const focusTrend7dMs = [0, 0, 0, 0, 0, 0, 0];
+    weekEntries.forEach((entry) => {
+      const ts = normalizeHistoryTimestampMs((entry as any)?.ts);
+      if (!ts) return;
+      const dayIdx = new Date(ts).getDay();
+      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += Math.max(0, Number((entry as any)?.ms || 0));
+    });
+    if (runningMs > 0) {
+      const dayIdx = new Date().getDay();
+      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += runningMs;
+    }
+    let checkpointScaleMs: number | null = null;
+    if (task && Array.isArray((task as any).milestones) && (task as any).milestones.length) {
+      const unitSec =
+        (task as any).milestoneTimeUnit === "day"
+          ? 86400
+          : (task as any).milestoneTimeUnit === "minute"
+            ? 60
+            : 3600;
+      const maxCheckpointUnits = (task as any).milestones.reduce((max: number, milestone: any) => {
+        const hours = Number(milestone?.hours || 0);
+        return Number.isFinite(hours) ? Math.max(max, hours) : max;
+      }, 0);
+      const candidate = Math.floor(maxCheckpointUnits * unitSec * 1000);
+      checkpointScaleMs = candidate > 0 ? candidate : null;
+    }
+    return {
+      createdAtMs: getTaskCreatedAtMs(taskId),
+      avgWeekMs,
+      totalMs: Math.floor(allHistoryMs + runningMs),
+      focusTrend7dMs: focusTrend7dMs.map((value) => Math.max(0, Math.floor(Number(value) || 0))),
+      checkpointScaleMs,
+    };
+  }
+
+  function formatCompactDurationForSharedCard(msRaw: number): string {
+    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
+    let totalSeconds = Math.floor(totalMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    totalSeconds -= days * 86400;
+    const hours = Math.floor(totalSeconds / 3600);
+    totalSeconds -= hours * 3600;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds - minutes * 60;
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${String(days).padStart(2, "0")}d`);
+    if (hours > 0) parts.push(`${String(hours).padStart(2, "0")}h`);
+    if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
+    if (seconds > 0) parts.push(`${String(seconds).padStart(2, "0")}s`);
+    if (!parts.length) parts.push("00s");
+    return parts.join(" ");
+  }
+
+  function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
+    const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
+    const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
+    const maxVal = Math.max(...vals, 1);
+    const width = 170;
+    const height = 56;
+    const padX = 6;
+    const padY = 6;
+    const usableW = width - padX * 2;
+    const usableH = height - padY * 2;
+    const step = usableW / 7;
+    const barW = Math.max(6, Math.min(14, step - 4));
+    const checkpointLines: string[] = [];
+    if (scaleRef > 0) {
+      let n = 1;
+      while (n <= 8) {
+        const yVal = scaleRef * n;
+        if (yVal > maxVal) break;
+        const y = padY + usableH - (usableH * yVal) / maxVal;
+        checkpointLines.push(
+          `<line class="friendSharedTrendCheckpointLine" x1="${padX.toFixed(1)}" y1="${y.toFixed(
+            1
+          )}" x2="${(padX + usableW).toFixed(1)}" y2="${y.toFixed(1)}" />`
+        );
+        n += 1;
+      }
+    }
+    const bars = vals
+      .map((value, i) => {
+        const h = (usableH * value) / maxVal;
+        const x = padX + i * step + (step - barW) / 2;
+        const y = padY + usableH - h;
+        return `<rect class="friendSharedTrendBar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(
+          1
+        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1" />`;
+      })
+      .join("");
+    return `${checkpointLines.join("")}${bars}`;
+  }
+
+  function setFriendRequestModalStatus(message: string, tone: "error" | "success" | "info" = "info") {
+    if (!els.friendRequestModalStatus) return;
+    const text = String(message || "").trim();
+    const statusEl = els.friendRequestModalStatus as HTMLElement;
+    statusEl.textContent = text;
+    statusEl.style.display = text ? "block" : "none";
+    statusEl.style.color = "";
+    if (!text) return;
+    if (tone === "error") {
+      statusEl.style.color = "#ff8f8f";
+      return;
+    }
+    if (tone === "success") {
+      statusEl.style.color = "var(--accent, #35e8ff)";
+      return;
+    }
+    statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
   function getOwnedSharedSummaryMismatchedTaskIds(): string[] {
