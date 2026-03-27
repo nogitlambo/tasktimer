@@ -190,32 +190,32 @@ export default function Landing({
       spinTimeline
         .to(arrow, {
           rotationY: 60,
-          duration: 2.6,
+          duration: 2.08,
           ease: "none",
         })
         .to(arrow, {
           rotationY: 120,
-          duration: 1.4,
+          duration: 1.12,
           ease: "none",
         })
         .to(arrow, {
           rotationY: 180,
-          duration: 2,
+          duration: 1.6,
           ease: "none",
         })
         .to(arrow, {
           rotationY: 240,
-          duration: 2.6,
+          duration: 2.08,
           ease: "none",
         })
         .to(arrow, {
           rotationY: 300,
-          duration: 1.4,
+          duration: 1.12,
           ease: "none",
         })
         .to(arrow, {
           rotationY: 360,
-          duration: 2,
+          duration: 1.6,
           ease: "none",
         });
     }, arrow);
@@ -229,7 +229,8 @@ export default function Landing({
     >
       <div className="absolute inset-0" aria-hidden="true">
         <div className="landingV2ArtLayer">
-          <div className="landingV2ArtStage">
+          <div className="landingV2ArtAnchor">
+            <div className="landingV2ArtStage">
             <Image
               src="/landing_page_bg-bare2.png"
               alt=""
@@ -238,18 +239,19 @@ export default function Landing({
               sizes="100vw"
               className="landingV2ArtImage"
             />
-            <div className="landingV2ArrowOverlay">
-              <div className="landingV2ArrowStage">
-                <div ref={arrowRef} className="landingV2ArrowShell">
-                  <div className="landingV2ArrowBeamBlend" aria-hidden="true" />
-                  <Image
-                    src="/landing_arrowhead_vector.svg"
-                    alt=""
-                    width={900}
-                    height={700}
-                    priority
-                    className="landingV2ArrowGraphic"
-                  />
+              <div className="landingV2ArrowOverlay">
+                <div className="landingV2ArrowStage">
+                  <div ref={arrowRef} className="landingV2ArrowShell">
+                    <div className="landingV2ArrowBeamBlend" aria-hidden="true" />
+                    <Image
+                      src="/logo/launch-icon.png"
+                      alt=""
+                      width={131075}
+                      height={131075}
+                      priority
+                      className="landingV2ArrowGraphic"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -265,7 +267,7 @@ export default function Landing({
         <header className="landingV2Header flex items-center justify-between">
           <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
             <Image
-              src="/logo/tasklaunch-logo.png"
+              src="/logo/tasklaunch-logo-v2.png"
               alt="TaskLaunch"
               width={1868}
               height={422}

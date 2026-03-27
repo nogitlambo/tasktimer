@@ -46,7 +46,7 @@ export default function LandingClassic({
         >
           <div className="relative inline-block">
             <Image
-              src="/logo/tasklaunch-logo.png"
+              src="/logo/tasklaunch-logo-v2.png"
               alt="TaskLaunch"
               width={1868}
               height={422}

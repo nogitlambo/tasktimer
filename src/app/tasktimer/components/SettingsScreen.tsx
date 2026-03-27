@@ -9,7 +9,7 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
     <div className="wrap" id="app" aria-label="TaskLaunch Settings">
       <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/logo/tasklaunch-logo.png" alt="TaskLaunch" />
+          <img className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
         <SignedInHeaderBadge />
       </div>

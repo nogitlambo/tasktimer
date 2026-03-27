@@ -52,9 +52,11 @@ canvas {
   --v2-safe-top: max(20px, env(safe-area-inset-top, 0px));
   --landing-art-width: max(100vw, calc(100svh * 1.7777778));
   --landing-art-top: 0px;
-  --landing-arrow-left: 61.35%;
-  --landing-arrow-top: 41.75%;
+  --landing-beam-x: 61.35%;
+  --landing-beam-y: 41.75%;
   --landing-arrow-width: 11.4%;
+  --landing-anchor-left: calc(50% + (var(--landing-art-width) * 0.1135));
+  --landing-anchor-top: calc(var(--landing-art-top) + (var(--landing-art-width) * 0.23484375));
 }
 
 .landingV2 .landingV2Container {
@@ -92,13 +94,20 @@ canvas {
   pointer-events: none;
 }
 
-.landingV2 .landingV2ArtStage {
+.landingV2 .landingV2ArtAnchor {
   position: absolute;
-  left: 50%;
-  top: var(--landing-art-top);
+  left: var(--landing-anchor-left);
+  top: var(--landing-anchor-top);
+}
+
+.landingV2 .landingV2ArtStage {
+  position: relative;
   width: var(--landing-art-width);
   aspect-ratio: 16 / 9;
-  transform: translateX(-50%);
+  transform: translate(
+    calc(var(--landing-beam-x) * -1),
+    calc(var(--landing-beam-y) * -1)
+  );
 }
 
 .landingV2 .landingV2ArtImage {
@@ -113,8 +122,8 @@ canvas {
 
 .landingV2 .landingV2ArrowStage {
   position: absolute;
-  left: var(--landing-arrow-left);
-  top: var(--landing-arrow-top);
+  left: var(--landing-beam-x);
+  top: var(--landing-beam-y);
   width: var(--landing-arrow-width);
   transform: translate(-50%, -50%);
 }
@@ -148,8 +157,8 @@ canvas {
       rgba(130, 223, 255, 0) 100%
     );
   mix-blend-mode: screen;
-  -webkit-mask-image: url("/landing_arrowhead_vector.svg");
-  mask-image: url("/landing_arrowhead_vector.svg");
+  -webkit-mask-image: url("/logo/launch-icon.png");
+  mask-image: url("/logo/launch-icon.png");
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
@@ -632,11 +641,20 @@ canvas {
 
 @media (max-width: 1024px) {
   .landingV2 {
-    --landing-art-top: 0px;
+    --landing-art-width: max(140vw, calc(100svh * 1.18));
+    --landing-art-top: 2vh;
+    --landing-arrow-width: 14.5%;
+    --landing-anchor-left: 50%;
+    --landing-anchor-top: 47%;
   }
 
   .landingV2 .landingV2Container {
     padding-top: calc(var(--v2-safe-top) + 10px);
+  }
+
+  .landingV2 .landingV2ArtImage {
+    object-fit: cover;
+    object-position: center center;
   }
 
   .landingV2 .landingV2Header {
@@ -697,11 +715,19 @@ canvas {
 
 @media (max-width: 760px) {
   .landingV2 {
-    --landing-art-top: 0px;
+    --landing-art-width: max(185vw, calc(100svh * 1.22));
+    --landing-art-top: 10vh;
+    --landing-arrow-width: 22%;
+    --landing-anchor-left: 50%;
+    --landing-anchor-top: 56%;
   }
 
   .landingV2 .landingV2Container {
     padding-top: calc(var(--v2-safe-top) + 12px);
+  }
+
+  .landingV2 .landingV2ArrowStage {
+    max-width: 180px;
   }
 
   .landingV2 .landingV2Header {
@@ -803,7 +829,11 @@ canvas {
 
 @media (max-width: 480px) {
   .landingV2 {
-    --landing-art-top: 0px;
+    --landing-art-width: max(225vw, calc(100svh * 1.26));
+    --landing-art-top: 13vh;
+    --landing-arrow-width: 28%;
+    --landing-anchor-left: 50%;
+    --landing-anchor-top: 58%;
   }
 
   .landingV2 .landingV2Container {
@@ -845,6 +875,10 @@ canvas {
 
   .landingV2 .landingV2HeroImage {
     border-radius: 12px;
+  }
+
+  .landingV2 .landingV2ArrowStage {
+    max-width: 156px;
   }
 }
 
