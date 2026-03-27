@@ -70,6 +70,7 @@
 - [`src/app/tasktimer/client/history-manager.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-manager.ts)
 - [`src/app/tasktimer/client/preferences.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/preferences.ts)
 - [`src/app/tasktimer/client/runtime.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/runtime.ts)
+- [`src/app/tasktimer/client/session.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/session.ts)
 - [`src/app/tasktimer/client/state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/state.ts)
 - [`src/app/tasktimer/client/tasks.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/tasks.ts)
 - [`src/app/tasktimer/client/types.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/types.ts)

@@ -964,6 +964,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     stopTask,
     resetTask,
     resetAll,
+    resetTaskStateImmediate,
     openEdit,
     closeEdit,
     openElapsedPadForMilestone,

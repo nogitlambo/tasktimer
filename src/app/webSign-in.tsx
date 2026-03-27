@@ -53,7 +53,7 @@ export default function WebSignIn(props: WebSignInProps) {
         <section className="relative flex w-full max-w-[560px] flex-col items-center justify-center gap-4 text-center">
           <div className="relative z-10 flex flex-col items-center gap-3">
               <Image
-                src="/logo/tasklaunch-logo.png"
+                src="/logo/tasklaunch-logo-v2.png"
                 alt="TaskLaunch"
                 width={560}
                 height={76}

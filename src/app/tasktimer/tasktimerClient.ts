@@ -88,6 +88,7 @@ import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtim
 import { createTaskTimerAppShell } from "./client/app-shell";
 import { createTaskTimerDashboard } from "./client/dashboard";
 import { createTaskTimerGroups } from "./client/groups";
+import { createTaskTimerSession } from "./client/session";
 import { createTaskTimerTasks } from "./client/tasks";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
@@ -141,6 +142,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const { on } = runtime;
 
   const destroy = () => {
+    sessionApi?.destroySessionRuntime();
     destroyTaskTimerRuntime({
       runtime,
       deferredCloudRefreshTimer,
@@ -276,6 +278,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let activeFriendProfileName = initialState.activeFriendProfileName;
   let historyEntryNoteAnchorTaskId = initialState.historyEntryNoteAnchorTaskId;
   let historyInlineApi: ReturnType<typeof createTaskTimerHistoryInline> | null = null;
+  let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
   let groupsStatusMessage = initialState.groupsStatusMessage;
   const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const workingIndicatorStack = initialState.workingIndicatorStack;
@@ -689,10 +692,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     render,
     renderHistory,
     renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
-    syncTimeGoalModalWithTaskState,
-    maybeRestorePendingTimeGoalFlow,
-    getElapsedMs,
-    getTaskElapsedMs,
+    syncTimeGoalModalWithTaskState: () => sessionApi?.syncTimeGoalModalWithTaskState(),
+    maybeRestorePendingTimeGoalFlow: () => sessionApi?.maybeRestorePendingTimeGoalFlow(),
+    getElapsedMs: (task) => sessionApi?.getElapsedMs(task) ?? 0,
+    getTaskElapsedMs: (task) => sessionApi?.getTaskElapsedMs(task) ?? 0,
     save,
     saveHistory,
     saveDeletedMeta,
@@ -707,20 +710,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     isTaskSharedByOwner,
     confirm,
     closeConfirm,
-    clearTaskTimeGoalFlow,
-    flushPendingFocusSessionNoteSave,
+    clearTaskTimeGoalFlow: (taskId) => sessionApi?.clearTaskTimeGoalFlow(taskId),
+    flushPendingFocusSessionNoteSave: (taskId) => sessionApi?.flushPendingFocusSessionNoteSave(taskId),
     awardLaunchXpForTask,
-    clearCheckpointBaseline,
-    openFocusMode,
-    closeFocusMode,
+    clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
+    openFocusMode: (index) => sessionApi?.openFocusMode(index),
+    closeFocusMode: () => sessionApi?.closeFocusMode(),
     canLogSession,
     appendCompletedSessionHistory,
-    resetCheckpointAlertTracking,
-    clearFocusSessionDraft,
-    syncFocusSessionNotesInput,
-    syncFocusSessionNotesAccordion,
-    captureResetActionSessionNote,
-    setFocusSessionDraft,
+    resetCheckpointAlertTracking: (taskId) => sessionApi?.resetCheckpointAlertTracking(taskId),
+    clearFocusSessionDraft: (taskId) => sessionApi?.clearFocusSessionDraft(taskId),
+    syncFocusSessionNotesInput: (taskId) => sessionApi?.syncFocusSessionNotesInput(taskId),
+    syncFocusSessionNotesAccordion: (taskId) => sessionApi?.syncFocusSessionNotesAccordion(taskId),
+    captureResetActionSessionNote: (taskId) => sessionApi?.captureResetActionSessionNote(taskId) || "",
+    setFocusSessionDraft: (taskId, note) => sessionApi?.setFocusSessionDraft(taskId, note),
     setResetTaskConfirmBusy,
     syncConfirmPrimaryToggleUi,
     cloneTaskForEdit: (task) => cloneTaskForEdit(task),
@@ -769,13 +772,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     refreshOwnSharedSummaries,
     refreshGroupsData,
     deleteTask: (index) => deleteTask(index),
-    isFocusModeFilteringAlerts: () => isFocusModeFilteringAlerts(),
-    getSuppressedFocusModeAlert: (taskId) => getSuppressedFocusModeAlert(taskId),
-    checkpointRepeatActiveTaskId: () => checkpointRepeatActiveTaskId,
-    activeCheckpointToastTaskId: () => activeCheckpointToast?.taskId || null,
-    stopCheckpointRepeatAlert: () => stopCheckpointRepeatAlert(),
-    enqueueCheckpointToast: (title, text, opts) => enqueueCheckpointToast(title, text, opts as any),
-    clearSuppressedFocusModeAlert: (taskId) => clearSuppressedFocusModeAlert(taskId),
+    isFocusModeFilteringAlerts: () => sessionApi?.isFocusModeFilteringAlerts() || false,
+    getSuppressedFocusModeAlert: (taskId) => sessionApi?.getSuppressedFocusModeAlert(taskId) || null,
+    checkpointRepeatActiveTaskId: () => sessionApi?.checkpointRepeatActiveTaskId() || null,
+    activeCheckpointToastTaskId: () => sessionApi?.activeCheckpointToastTaskId() || null,
+    stopCheckpointRepeatAlert: () => sessionApi?.stopCheckpointRepeatAlert(),
+    enqueueCheckpointToast: (title, text, opts) => sessionApi?.enqueueCheckpointToast(title, text, opts as any),
+    clearSuppressedFocusModeAlert: (taskId) => sessionApi?.clearSuppressedFocusModeAlert(taskId),
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
     syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
   });
@@ -785,6 +788,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     stopTask: stopTaskApi,
     resetTask: resetTaskApi,
     resetAll: resetAllApi,
+    resetTaskStateImmediate: resetTaskStateImmediateApi,
     openEdit: openEditApi,
     closeEdit: closeEditApi,
     openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
@@ -792,6 +796,150 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     openHistory: openHistoryApi,
     registerTaskEvents,
   } = tasksApi;
+
+  sessionApi = createTaskTimerSession({
+    els,
+    on,
+    runtime,
+    storageKeys: {
+      FOCUS_SESSION_NOTES_KEY,
+      TIME_GOAL_PENDING_FLOW_KEY,
+    },
+    getTasks: () => tasks,
+    getCurrentAppPage: () => currentAppPage,
+    getHistoryByTaskId: () => historyByTaskId,
+    getCurrentUid: () => currentUid(),
+    getFocusModeTaskId: () => focusModeTaskId,
+    setFocusModeTaskId: (value) => {
+      focusModeTaskId = value;
+    },
+    getFocusModeTaskName: () => focusModeTaskName,
+    setFocusModeTaskName: (value) => {
+      focusModeTaskName = value;
+    },
+    getFocusShowCheckpoints: () => focusShowCheckpoints,
+    setFocusShowCheckpoints: (value) => {
+      focusShowCheckpoints = value;
+    },
+    getFocusCheckpointSig: () => focusCheckpointSig,
+    setFocusCheckpointSig: (value) => {
+      focusCheckpointSig = value;
+    },
+    getSuppressedFocusModeCheckpointAlertsByTaskId: () => suppressedFocusModeCheckpointAlertsByTaskId,
+    setSuppressedFocusModeCheckpointAlertsByTaskId: (value) => {
+      suppressedFocusModeCheckpointAlertsByTaskId = value as typeof suppressedFocusModeCheckpointAlertsByTaskId;
+    },
+    getDeferredFocusModeTimeGoalModals: () => deferredFocusModeTimeGoalModals,
+    setDeferredFocusModeTimeGoalModals: (value) => {
+      deferredFocusModeTimeGoalModals = value;
+    },
+    getTimeGoalModalTaskId: () => timeGoalModalTaskId,
+    setTimeGoalModalTaskId: (value) => {
+      timeGoalModalTaskId = value;
+    },
+    getTimeGoalModalFrozenElapsedMs: () => timeGoalModalFrozenElapsedMs,
+    setTimeGoalModalFrozenElapsedMs: (value) => {
+      timeGoalModalFrozenElapsedMs = value;
+    },
+    getTimeGoalReminderAtMsByTaskId: () => timeGoalReminderAtMsByTaskId,
+    getTimeGoalCompleteDurationUnit: () => timeGoalCompleteDurationUnit,
+    setTimeGoalCompleteDurationUnit: (value) => {
+      timeGoalCompleteDurationUnit = value;
+    },
+    getTimeGoalCompleteDurationPeriod: () => timeGoalCompleteDurationPeriod,
+    setTimeGoalCompleteDurationPeriod: (value) => {
+      timeGoalCompleteDurationPeriod = value;
+    },
+    getFocusSessionNotesByTaskId: () => focusSessionNotesByTaskId,
+    setFocusSessionNotesByTaskId: (value) => {
+      focusSessionNotesByTaskId = value;
+    },
+    getFocusSessionNoteSaveTimer: () => focusSessionNoteSaveTimer,
+    setFocusSessionNoteSaveTimer: (value) => {
+      focusSessionNoteSaveTimer = value;
+    },
+    getCheckpointToastQueue: () => checkpointToastQueue,
+    getActiveCheckpointToast: () => activeCheckpointToast,
+    setActiveCheckpointToast: (value) => {
+      activeCheckpointToast = value as typeof activeCheckpointToast;
+    },
+    getCheckpointToastAutoCloseTimer: () => checkpointToastAutoCloseTimer,
+    setCheckpointToastAutoCloseTimer: (value) => {
+      checkpointToastAutoCloseTimer = value;
+    },
+    getCheckpointToastCountdownRefreshTimer: () => checkpointToastCountdownRefreshTimer,
+    setCheckpointToastCountdownRefreshTimer: (value) => {
+      checkpointToastCountdownRefreshTimer = value;
+    },
+    getCheckpointBeepAudio: () => checkpointBeepAudio,
+    setCheckpointBeepAudio: (value) => {
+      checkpointBeepAudio = value;
+    },
+    getCheckpointBeepQueueCount: () => checkpointBeepQueueCount,
+    setCheckpointBeepQueueCount: (value) => {
+      checkpointBeepQueueCount = value;
+    },
+    getCheckpointBeepQueueTimer: () => checkpointBeepQueueTimer,
+    setCheckpointBeepQueueTimer: (value) => {
+      checkpointBeepQueueTimer = value;
+    },
+    getCheckpointRepeatStopAtMs: () => checkpointRepeatStopAtMs,
+    setCheckpointRepeatStopAtMs: (value) => {
+      checkpointRepeatStopAtMs = value;
+    },
+    getCheckpointRepeatCycleTimer: () => checkpointRepeatCycleTimer,
+    setCheckpointRepeatCycleTimer: (value) => {
+      checkpointRepeatCycleTimer = value;
+    },
+    getCheckpointRepeatActiveTaskId: () => checkpointRepeatActiveTaskId,
+    setCheckpointRepeatActiveTaskId: (value) => {
+      checkpointRepeatActiveTaskId = value;
+    },
+    getCheckpointAutoResetDirty: () => checkpointAutoResetDirty,
+    setCheckpointAutoResetDirty: (value) => {
+      checkpointAutoResetDirty = value;
+    },
+    getCheckpointFiredKeysByTaskId: () => checkpointFiredKeysByTaskId,
+    getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
+    getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
+    getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    render,
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    save,
+    openOverlay: (overlay) => openOverlay(overlay),
+    closeOverlay: (overlay) => closeOverlay(overlay),
+    navigateToAppRoute: (path) => navigateToAppRoute(path),
+    normalizedPathname: () => normalizedPathname(),
+    savePendingTaskJump: (taskId) => savePendingTaskJump(taskId),
+    jumpToTaskById: (taskId) => jumpToTaskById(taskId),
+    escapeHtmlUI,
+    formatTime,
+    formatMainTaskElapsed,
+    formatMainTaskElapsedHtml,
+    formatCheckpointTimeGoalText: (task, opts) => formatCheckpointTimeGoalText(task, opts),
+    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
+    milestoneUnitSec: (task) => milestoneUnitSec(task),
+    milestoneUnitSuffix: (task) => milestoneUnitSuffix(task),
+    getModeColor: (mode) => getModeColor(mode),
+    fillBackgroundForPct,
+    sortMilestones,
+    normalizeHistoryTimestampMs,
+    getHistoryEntryNote: (entry) => historyInlineApi?.getHistoryEntryNote(entry) || "",
+    syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
+    startTask: (index) => startTaskApi(index),
+    stopTask: (index) => stopTaskApi(index),
+    resetTask: (index) => resetTaskApi(index),
+    resetTaskStateImmediate: (task, opts) => resetTaskStateImmediateApi(task, opts),
+  });
+
+  const {
+    loadFocusSessionNotes: loadFocusSessionNotesApi,
+    tick: tickApi,
+    syncTimeGoalModalWithTaskState: syncTimeGoalModalWithTaskStateApi,
+    maybeRestorePendingTimeGoalFlow: maybeRestorePendingTimeGoalFlowApi,
+    registerSessionEvents,
+  } = sessionApi;
 
   const appShell = createTaskTimerAppShell({
     els,
@@ -856,10 +1004,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       .then(() => {
         if (runtime.destroyed) return;
         hydrateUiStateFromCaches();
-        syncTimeGoalModalWithTaskState();
+        syncTimeGoalModalWithTaskStateApi();
         render();
         maybeHandlePendingTaskJump();
-        maybeRestorePendingTimeGoalFlow();
+        maybeRestorePendingTimeGoalFlowApi();
         lastCloudRefreshAtMs = nowMs();
       })
       .catch(() => {
@@ -8799,37 +8947,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     registerHistoryInlineEvents();
     registerHistoryManagerEvents();
-    on(els.focusModeBackBtn, "click", closeFocusMode);
-    on(els.focusCheckpointToggle, "click", () => {
-      if (!focusModeTaskId) return;
-      const t = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
-      if (!t) return;
-      if (!hasFocusCheckpoints(t)) {
-        syncFocusCheckpointToggle(t);
-        return;
-      }
-      focusShowCheckpoints = !focusShowCheckpoints;
-      syncFocusCheckpointToggle(t);
-    });
-    on(els.focusDial, "click", () => {
-      if (!focusModeTaskId) return;
-      const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
-      if (idx < 0) return;
-      const t = tasks[idx];
-      if (!t) return;
-      if (t.running) stopTask(idx);
-      else startTask(idx);
-    });
-    on(els.focusResetBtn, "click", () => {
-      if (!focusModeTaskId) return;
-      const idx = tasks.findIndex((x) => String(x.id || "") === String(focusModeTaskId));
-      if (idx < 0) return;
-      resetTask(idx);
-    });
-    on(els.focusSessionNotesInput, "input", () => {
-      if (!focusModeTaskId) return;
-      scheduleFocusSessionNoteSave(String(focusModeTaskId || ""), String(els.focusSessionNotesInput?.value || ""));
-    });
+    registerSessionEvents();
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
@@ -9172,106 +9290,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (typeof confirmAction === "function") confirmAction();
       else closeConfirm();
     });
-    on(els.timeGoalCompleteUpdateGoalBtn, "click", () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      populateTimeGoalCompleteEditor(task);
-      setTimeGoalCompleteEditorVisible(true);
-    });
-    on(els.timeGoalCompleteContinueCancelBtn, "click", () => {
-      setTimeGoalCompleteEditorVisible(false);
-    });
-    on(els.timeGoalCompleteDurationValueInput, "input", syncTimeGoalCompleteDurationUnitUi);
-    on(els.timeGoalCompleteDurationUnitMinute, "click", () => {
-      timeGoalCompleteDurationUnit = "minute";
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    on(els.timeGoalCompleteDurationUnitHour, "click", () => {
-      timeGoalCompleteDurationUnit = "hour";
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    on(els.timeGoalCompleteDurationPeriodDay, "click", () => {
-      timeGoalCompleteDurationPeriod = "day";
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    on(els.timeGoalCompleteDurationPeriodWeek, "click", () => {
-      timeGoalCompleteDurationPeriod = "week";
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    on(els.timeGoalCompleteSaveBtn, "click", async () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      openTimeGoalSaveNoteChoice(task);
-    });
-    on(els.timeGoalCompleteDiscardBtn, "click", async () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      await resolveTimeGoalCompletion(task, { logHistory: false });
-    });
-    on(els.timeGoalCompleteSaveNoteNoBtn, "click", async () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-      persistPendingTimeGoalFlow(task, "main");
-      await resolveTimeGoalCompletion(task, { logHistory: true });
-    });
-    on(els.timeGoalCompleteSaveNoteYesBtn, "click", () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-      openTimeGoalNoteModal(task);
-    });
-    on(els.timeGoalCompleteNoteInput, "input", () => {
-      const taskId = String(timeGoalModalTaskId || "").trim();
-      if (!taskId) return;
-      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
-    });
-    on(els.timeGoalCompleteNoteDoneBtn, "click", async () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      const taskId = String(timeGoalModalTaskId || "").trim();
-      if (!task || !taskId) return;
-      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
-      closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-      await resolveTimeGoalCompletion(task, { logHistory: true });
-    });
-    on(els.timeGoalCompleteContinueConfirmBtn, "click", () => {
-      const task = tasks.find((row) => String(row.id || "") === String(timeGoalModalTaskId || ""));
-      if (!task) return;
-      const currentElapsedMs = Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0));
-      const nextGoalMinutes = getTimeGoalCompleteDurationMinutes();
-      const rawValue = Math.max(1, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "1") || 1));
-      task.timeGoalEnabled = nextGoalMinutes > 0;
-      task.timeGoalValue = rawValue;
-      task.timeGoalUnit = timeGoalCompleteDurationUnit;
-      task.timeGoalPeriod = timeGoalCompleteDurationPeriod;
-      task.timeGoalMinutes = nextGoalMinutes;
-      resumeTaskAfterTimeGoalModal(task);
-      if (!(nextGoalMinutes > 0) || nextGoalMinutes * 60 <= Math.floor(currentElapsedMs / 1000)) {
-        timeGoalReminderAtMsByTaskId[String(task.id || "")] = nowMs() + getTimeGoalReminderDelayMs();
-      } else {
-        delete timeGoalReminderAtMsByTaskId[String(task.id || "")];
-      }
-      checkpointBaselineSecByTaskId[String(task.id || "")] = Math.floor(currentElapsedMs / 1000);
-      closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-      clearPendingTimeGoalFlow();
-      save();
-      void syncSharedTaskSummariesForTask(String(task.id || "")).catch(() => {});
-      render();
-      openDeferredFocusModeTimeGoalModal();
-    });
-    on(els.checkpointToastHost, "click", (e: any) => {
-      const btn = e.target?.closest?.("[data-action]");
-      if (!btn) return;
-      const action = btn.getAttribute("data-action");
-      if (action === "closeCheckpointToast") {
-        dismissCheckpointToast({ manual: true });
-        return;
-      }
-      if (action === "jumpToCheckpointTask") {
-        dismissCheckpointToastAndJumpToTask();
-      }
-    });
-
   }
 
   function tick() {
@@ -9368,7 +9386,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     primeDashboardCacheFromShadow();
     deletedTaskMeta = loadDeletedMeta();
     loadHistoryIntoMemory();
-    focusSessionNotesByTaskId = loadFocusSessionNotes();
+    focusSessionNotesByTaskId = loadFocusSessionNotesApi();
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     load();
@@ -9429,7 +9447,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       maybeHandlePendingTaskJump();
       void rehydrateFromCloudAndRender({ force: true }).then(() => {
         if (runtime.destroyed) return;
-        maybeRestorePendingTimeGoalFlow();
+        maybeRestorePendingTimeGoalFlowApi();
       });
     });
     render();
@@ -9439,7 +9457,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openHistoryManager();
     }
     if (!runtime.tickStarted) {
-      tick();
+      tickApi();
       runtime.tickStarted = true;
     }
   };
