@@ -414,7 +414,7 @@ canvas {
 
 .landingV2 .landingV2Lead {
   max-width: 38ch;
-  font-size: clamp(22px, 2.2vw, 29px);
+  font-size: clamp(20px, 1.95vw, 25px);
   line-height: 1.38;
   color: var(--v2-text-soft);
 }
@@ -471,7 +471,7 @@ canvas {
   justify-content: center;
   min-height: 56px;
   padding: 0 30px;
-  border-radius: 6px;
+  border-radius: 0;
   border: 1px solid rgba(222, 95, 242, 0.88);
   background: linear-gradient(135deg, #d84be0, #ab36c4);
   color: #fff;
@@ -680,7 +680,7 @@ canvas {
   }
 
   .landingV2 .landingV2Lead {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .landingV2 .landingV2HeroImageFrame {
@@ -766,7 +766,7 @@ canvas {
   }
 
   .landingV2 .landingV2Lead {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .landingV2 .landingV2PrimaryBtn,
@@ -865,7 +865,7 @@ canvas {
   }
 
   .landingV2 .landingV2Lead {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.5;
   }
 

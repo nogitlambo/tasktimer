@@ -100,7 +100,7 @@ function LandingIntroSequence({
             <span>{preHeroText}</span>
           </p>
         ) : null}
-        <h1 className="landingV2Title displayFont font-black uppercase tracking-[0.08em] text-[#f5f4fc]">
+        <h1 className="landingV2Title mt-8 mb-8 displayFont font-black uppercase tracking-[0.08em] text-[#f5f4fc]">
           <span>{typedHero}</span>
           {isTypingHero ? (
             <span
@@ -111,7 +111,7 @@ function LandingIntroSequence({
         </h1>
 
         <p
-          className={`landingV2Lead displayFont text-[#f1f2ff] transition-all duration-500 ${
+          className={`landingV2Lead text-[#f1f2ff] [font-family:var(--font-geist-sans),sans-serif] transition-all duration-500 ${
             isSubHeroVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
           }`}
           aria-hidden={!isSubHeroVisible}
@@ -120,7 +120,7 @@ function LandingIntroSequence({
         </p>
 
         <p
-          className={`landingV2Lead displayFont text-[#f1f2ff] transition-all duration-500 ${
+          className={`landingV2Lead text-[#f1f2ff] [font-family:var(--font-geist-sans),sans-serif] transition-all duration-500 ${
             isSubHeroVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
           }`}
           aria-hidden={!isSubHeroVisible}
@@ -142,7 +142,10 @@ function LandingIntroSequence({
             href="https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu-0b/view?usp=drive_link"
             className="landingV2TextBtn displayFont"
           >
-            Watch Demo
+            <span aria-hidden="true" className="mr-2">
+              ▶
+            </span>
+            <span>Watch Demo</span>
           </Link>
         </div>
       </div>
@@ -156,10 +159,10 @@ export default function Landing({
 }: LandingExperimentalProps) {
   const arrowRef = useRef<HTMLDivElement | null>(null);
   const preHeroText = "";
-  const fullHeroText = "TURN INTENTION INTO ACTION.";
+  const fullHeroText = "YOUR DAILY PRODUCTIVITY ENGINE";
   const supportLineOne =
-    "Break through the procrastination loop and generate momentum instantly from your very first action.";
-  const supportLineTwo = "Powered by a smarter system built for neurodivergent minds.";
+    "Eliminate the procrastination barrier and turn inaction into consistent action with a smarter system built for neurodivergent users - combining rewards, actionable insights, and peer accountability with the latest in AI-powered functionality.";
+  const supportLineTwo = "";
   const typeMsPerChar = Math.max(14, Math.round(1000 / fullHeroText.length));
 
   useEffect(() => {

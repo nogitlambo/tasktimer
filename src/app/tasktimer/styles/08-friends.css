@@ -93,6 +93,62 @@
   gap: 10px;
   margin-top: 8px;
 }
+.friendIdentityRow {
+  list-style: none;
+}
+.friendIdentityRow::-webkit-details-marker {
+  display: none;
+}
+.friendIdentityBtn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.friendIdentityAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid rgba(121, 226, 255, 0.3);
+  flex: 0 0 auto;
+}
+.friendIdentityText {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  align-content: center;
+}
+.friendIdentityAlias {
+  min-width: 0;
+  display: block;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friendIdentityMeta {
+  min-width: 0;
+  display: block;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.3;
+  color: rgba(188, 214, 230, 0.82);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .friendRequestAvatar {
   width: 44px;
   height: 44px;
@@ -534,9 +590,15 @@ body[data-theme="purple"] #shareTaskModal input[type="email"]:focus{
 body[data-theme="purple"] .friendRequestAvatar{
   border-color: rgba(214,96,229,.42) !important;
 }
+body[data-theme="purple"] .friendIdentityAvatar{
+  border-color: rgba(214,96,229,.42) !important;
+}
 body[data-theme="purple"] .friendIdentityUid,
 body[data-theme="purple"] .friendRequestUid,
 body[data-theme="purple"] .friendSharedTasksCountText{
+  color: rgba(230,208,250,.84) !important;
+}
+body[data-theme="purple"] .friendIdentityMeta{
   color: rgba(230,208,250,.84) !important;
 }
 body[data-theme="purple"] .friendSharedTaskCard{

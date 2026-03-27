@@ -212,6 +212,7 @@ export type TaskTimerTasksContext = {
   isTaskSharedByOwner: (taskId: string) => boolean;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions & { checkbox2Label?: string | null; checkbox2Checked?: boolean }) => void;
   closeConfirm: () => void;
+  openEdit: (index: number) => void;
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;
   awardLaunchXpForTask: (task: Task) => void;
@@ -288,6 +289,100 @@ export type TaskTimerTasksContext = {
   clearSuppressedFocusModeAlert: (taskId: string) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
+};
+
+export type TaskTimerEditTaskContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  getEditIndex: () => number | null;
+  setEditIndex: (value: number | null) => void;
+  getEditTaskDraft: () => Task | null;
+  setEditTaskDraft: (value: Task | null) => void;
+  setEditDraftSnapshot: (value: string) => void;
+  getEditTaskDurationUnit: () => "minute" | "hour";
+  setEditTaskDurationUnit: (value: "minute" | "hour") => void;
+  getEditTaskDurationPeriod: () => "day" | "week";
+  setEditTaskDurationPeriod: (value: "day" | "week") => void;
+  getEditMoveTargetMode: () => MainMode;
+  setEditMoveTargetMode: (value: MainMode) => void;
+  getElapsedPadTarget: () => HTMLInputElement | null;
+  setElapsedPadTarget: (value: HTMLInputElement | null) => void;
+  getElapsedPadMilestoneRef: () =>
+    | {
+        task: Task;
+        milestone: { hours: number; description: string };
+        ms: Task["milestones"];
+        onApplied?: (() => void) | undefined;
+      }
+    | null;
+  setElapsedPadMilestoneRef: (
+    value:
+      | {
+          task: Task;
+          milestone: { hours: number; description: string };
+          ms: Task["milestones"];
+          onApplied?: (() => void) | undefined;
+        }
+      | null
+  ) => void;
+  getElapsedPadDraft: () => string;
+  setElapsedPadDraft: (value: string) => void;
+  getElapsedPadOriginal: () => string;
+  setElapsedPadOriginal: (value: string) => void;
+  getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertToastEnabled: () => boolean;
+  getElapsedMs: (task: Task) => number;
+  render: () => void;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  closeConfirm: () => void;
+  cloneTaskForEdit: (task: Task) => Task;
+  getModeLabel: (mode: MainMode) => string;
+  isModeEnabled: (mode: MainMode) => boolean;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  setEditTimeGoalEnabled: (enabled: boolean) => void;
+  isEditTimeGoalEnabled: () => boolean;
+  editTaskHasActiveTimeGoal: () => boolean;
+  syncEditTaskTimeGoalUi: (task?: Task | null) => void;
+  syncEditCheckpointAlertUi: (task: Task) => void;
+  syncEditSaveAvailability: (task?: Task | null) => void;
+  syncEditMilestoneSectionUi: (task: Task) => void;
+  setMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
+  renderMilestoneEditor: (task: Task) => void;
+  clearEditValidationState: () => void;
+  validateEditTimeGoal: () => boolean;
+  showEditValidationError: (task: Task | null | undefined, message: string) => void;
+  hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
+  hasCheckpointAtOrAboveTimeGoal: (
+    milestones: Task["milestones"],
+    unitSec: number,
+    timeGoalMinutes: number
+  ) => boolean;
+  isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
+  milestoneUnitSec: (task: Task | null | undefined) => number;
+  formatCheckpointTimeGoalText: (
+    task: Task,
+    opts?: { timeGoalMinutes?: number; forEditDraft?: boolean }
+  ) => string;
+  getEditTaskTimeGoalMinutes: () => number;
+  getEditTaskTimeGoalMinutesFor: (value: number, unit: "minute" | "hour", period: "day" | "week") => number;
+  getAddTaskTimeGoalMinutesState: () => number;
+  ensureMilestoneIdentity: (task: Task) => void;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  toggleSwitchElement: (el: HTMLElement | null, on: boolean) => void;
+  isSwitchOn: (el: HTMLElement | null) => boolean;
+  buildEditDraftSnapshot: (task: Task) => string;
+  syncEditTaskDurationReadout: (task?: Task | null) => void;
+  maybeToggleEditPresetIntervals: (nextEnabled: boolean) => void;
+  hasValidPresetInterval: (task: Task) => boolean;
+  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutes: number) => boolean;
+  getPresetIntervalNextSeqNum: (task: Task) => number;
+  isEditMilestoneUnitDay: () => boolean;
+  createId: () => string;
+  resetCheckpointAlertTracking: (taskId: string | null | undefined) => void;
+  clearCheckpointBaseline: (taskId: string | null | undefined) => void;
+  syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
 };
 
 export type TaskTimerAddTaskContext = {

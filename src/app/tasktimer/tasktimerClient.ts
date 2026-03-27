@@ -21,24 +21,10 @@ import {
   normalizeTaskConfigMilestones,
 } from "./lib/taskConfig";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
-  approveFriendRequest,
-  cancelOutgoingFriendRequest,
-  deleteSharedTaskSummary,
   deleteSharedTaskSummariesForTask,
-  declineFriendRequest,
-  loadFriendProfile,
-  loadFriendships,
-  loadIncomingRequests,
-  loadOutgoingRequests,
-  loadSharedTaskSummariesForViewer,
-  loadSharedTaskSummariesForOwner,
-  sendFriendRequest,
   syncOwnFriendshipProfile,
-  upsertSharedTaskSummary,
   type FriendProfile,
-  type FriendRequest,
 } from "./lib/friendsStore";
 import {
   STORAGE_KEY,
@@ -68,6 +54,7 @@ import {
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, normalizeRewardProgress } from "./lib/rewards";
 import { onAuthStateChanged } from "firebase/auth";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import type {
   AppPage,
   DashboardAvgRange,
@@ -82,6 +69,7 @@ import { createTaskTimerDashboard } from "./client/dashboard";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerSession } from "./client/session";
 import { createTaskTimerTasks } from "./client/tasks";
+import { createTaskTimerEditTask } from "./client/edit-task";
 import { createTaskTimerAddTask } from "./client/add-task";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
@@ -273,7 +261,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let historyInlineApi: ReturnType<typeof createTaskTimerHistoryInline> | null = null;
   let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
   let addTaskApi: ReturnType<typeof createTaskTimerAddTask> | null = null;
-  let groupsStatusMessage = initialState.groupsStatusMessage;
+  let editTaskApi: ReturnType<typeof createTaskTimerEditTask> | null = null;
   const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const workingIndicatorStack = initialState.workingIndicatorStack;
   let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
@@ -704,6 +692,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     isTaskSharedByOwner,
     confirm,
     closeConfirm,
+    openEdit: (index) => editTaskApi?.openEdit(index),
     clearTaskTimeGoalFlow: (taskId) => sessionApi?.clearTaskTimeGoalFlow(taskId),
     flushPendingFocusSessionNoteSave: (taskId) => sessionApi?.flushPendingFocusSessionNoteSave(taskId),
     awardLaunchXpForTask,
@@ -782,9 +771,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     stopTask: stopTaskApi,
     resetTask: resetTaskApi,
     resetTaskStateImmediate: resetTaskStateImmediateApi,
-    closeEdit: closeEditApi,
-    openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
-    closeElapsedPad: closeElapsedPadApi,
     registerTaskEvents,
   } = tasksApi;
   addTaskApi = createTaskTimerAddTask({
@@ -4789,60 +4775,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return !!els.editOverrideElapsedToggle?.classList.contains("on");
   }
 
-  function setEditElapsedOverrideEnabled(enabled: boolean) {
-    els.editOverrideElapsedToggle?.classList.toggle("on", enabled);
-    els.editOverrideElapsedToggle?.setAttribute("aria-checked", String(enabled));
-    els.editOverrideElapsedFields?.classList.toggle("isDisabled", !enabled);
-  }
-
-  function confirmEnableElapsedOverride() {
-    confirm(
-      "Manual Time Override",
-      "Manual time override will disqualify this task from earning XP until the next reset. Proceed?",
-      {
-        okLabel: "Proceed",
-        cancelLabel: "Cancel",
-        onOk: () => {
-          setEditElapsedOverrideEnabled(true);
-          if (getCurrentEditTask()) syncEditSaveAvailability(getCurrentEditTask());
-          closeConfirm();
-        },
-        onCancel: () => closeConfirm(),
-      }
-    );
-  }
-
-  function normalizeEditElapsedValue(input: HTMLInputElement | null) {
-    if (!input) return;
-    const raw = String(input.value || "").trim();
-    if (!raw) {
-      input.value = "0";
-      return;
-    }
-    const parsed = Math.floor(Number(raw));
-    if (!Number.isFinite(parsed) || isNaN(parsed)) {
-      input.value = "0";
-      return;
-    }
-    if (input === els.editM || input === els.editS) {
-      input.value = String(Math.min(59, Math.max(0, parsed)));
-      return;
-    }
-    if (input === els.editH && isEditMilestoneUnitDay()) {
-      input.value = String(Math.min(23, Math.max(0, parsed)));
-      return;
-    }
-    input.value = String(Math.max(0, parsed));
-  }
-
-  function maybeAutoClearEditElapsedField(input: HTMLInputElement | null) {
-    if (!input) return;
-    if (!isEditElapsedOverrideEnabled()) return;
-    if (input.dataset.autoclearPending !== "1") return;
-    input.value = "";
-    input.dataset.autoclearPending = "0";
-  }
-
   function openElapsedPadForMilestone(
     task: Task,
     milestone: { hours: number; description: string },
@@ -5407,29 +5339,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     persistTaskUiToCloud();
   }
 
-  function rememberCustomTaskName(name: string) {
-    addTaskApi?.rememberCustomTaskName(name);
-  }
-
-  function setAddTaskNameMenuOpen(open: boolean) {
-    if (!els.addTaskNameMenu) return;
-    (els.addTaskNameMenu as HTMLElement).style.display = open ? "block" : "none";
-  }
-
-  function renderAddTaskNameMenu(_filterText?: string) {
-    // Compatibility stub during Add Task extraction; the live menu rendering now lives in client/add-task.ts.
-  }
-
-  function setGroupsStatus(message: string) {
-    const nextMessage = String(message || "").trim();
-    groupsStatusMessage = nextMessage || "Ready.";
-    if (els.groupsFriendRequestStatus) {
-      els.groupsFriendRequestStatus.textContent = groupsStatusMessage;
-      (els.groupsFriendRequestStatus as HTMLElement).style.display =
-        nextMessage && nextMessage !== "Ready." ? "block" : "none";
-    }
-  }
-
   function setWorkingIndicatorVisible(isOn: boolean, message?: string) {
     const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
     const textEl = els.historySaveWorkingText as HTMLElement | null;
@@ -5521,134 +5430,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setWorkingIndicatorVisible(!!current, current?.message);
   }
 
-  function beginGroupsLoading() {
-    groupsLoadingDepth += 1;
-    groupsLoading = true;
-  }
-
-  function endGroupsLoading() {
-    groupsLoadingDepth = Math.max(0, groupsLoadingDepth - 1);
-    groupsLoading = groupsLoadingDepth > 0;
-  }
-
-  type GroupsBusyResult<T> =
-    | { ok: true; value: T; timedOut: false }
-    | { ok: false; message: string; timedOut: boolean; error?: unknown };
-
-  async function runGroupsBusy<T>(
-    message: string,
-    timeoutMessage: string,
-    work: () => Promise<T>
-  ): Promise<GroupsBusyResult<T>> {
-    beginGroupsLoading();
-    renderGroupsPage();
-    let workingIndicatorKey: number | null = null;
-    let indicatorDelayTimer = window.setTimeout(() => {
-      workingIndicatorKey = showWorkingIndicator(message);
-    }, 300);
-    let timeoutHandle = 0 as number;
-    try {
-      const result = await Promise.race<
-        | { kind: "value"; value: T }
-        | { kind: "error"; error: unknown }
-        | { kind: "timeout" }
-      >([
-        work()
-          .then((value) => ({ kind: "value" as const, value }))
-          .catch((error) => ({ kind: "error" as const, error })),
-        new Promise<{ kind: "timeout" }>((resolve) => {
-          timeoutHandle = window.setTimeout(() => resolve({ kind: "timeout" }), 60000);
-        }),
-      ]);
-      if (result.kind === "timeout") {
-        return { ok: false, message: timeoutMessage, timedOut: true };
-      }
-      if (result.kind === "error") {
-        return { ok: false, message: "", timedOut: false, error: result.error };
-      }
-      return { ok: true, value: result.value, timedOut: false };
-    } finally {
-      if (indicatorDelayTimer) {
-        window.clearTimeout(indicatorDelayTimer);
-        indicatorDelayTimer = 0 as number;
-      }
-      if (timeoutHandle) window.clearTimeout(timeoutHandle);
-      if (workingIndicatorKey != null) hideWorkingIndicator(workingIndicatorKey);
-      endGroupsLoading();
-      renderGroupsPage();
-    }
-  }
-
-  async function loadGroupsSnapshot(uid: string) {
-    const [incoming, outgoing, friendships] = await Promise.all([
-      loadIncomingRequests(uid),
-      loadOutgoingRequests(uid),
-      loadFriendships(uid),
-    ]);
-    const profileEntries = await Promise.allSettled(
-      friendships.map(async (row) => {
-        const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        if (!peerUid) return null;
-        const profile = await loadFriendProfile(peerUid);
-        return [peerUid, profile] as const;
-      })
-    );
-    const nextFriendProfileCache: Record<string, FriendProfile> = {};
-    profileEntries.forEach((result) => {
-      if (result.status !== "fulfilled" || !result.value) return;
-      const [peerUid, profile] = result.value;
-      if (!peerUid) return;
-      nextFriendProfileCache[peerUid] = profile;
-    });
-    const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
-      loadSharedTaskSummariesForViewer(uid),
-      loadSharedTaskSummariesForOwner(uid),
-    ]);
-    return {
-      incoming,
-      outgoing,
-      friendships,
-      friendProfileCache: nextFriendProfileCache,
-      sharedSummaries: sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [],
-      ownSharedSummaries: sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [],
-    };
-  }
-
-  function applyGroupsSnapshot(snapshot: Awaited<ReturnType<typeof loadGroupsSnapshot>>) {
-    groupsIncomingRequests = snapshot.incoming;
-    groupsOutgoingRequests = snapshot.outgoing;
-    groupsFriendships = snapshot.friendships;
-    friendProfileCacheByUid = snapshot.friendProfileCache;
-    groupsSharedSummaries = snapshot.sharedSummaries;
-    ownSharedSummaries = snapshot.ownSharedSummaries;
-  }
-
-  function syncOpenFriendSharedTaskUidsFromDom() {
-    const list = els.groupsFriendsList as HTMLElement | null;
-    if (!list) return;
-    list.querySelectorAll(".friendSharedTasksDetails[data-friend-uid]").forEach((node) => {
-      const details = node as HTMLDetailsElement;
-      const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
-      if (!friendUid) return;
-      if (details.open) openFriendSharedTaskUids.add(friendUid);
-      else openFriendSharedTaskUids.delete(friendUid);
-    });
-  }
-
-  function wireFriendSharedTaskDetailsState() {
-    const list = els.groupsFriendsList as HTMLElement | null;
-    if (!list) return;
-    list.querySelectorAll(".friendSharedTasksDetails[data-friend-uid]").forEach((node) => {
-      const details = node as HTMLDetailsElement;
-      const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
-      if (!friendUid) return;
-      details.addEventListener("toggle", () => {
-        if (details.open) openFriendSharedTaskUids.add(friendUid);
-        else openFriendSharedTaskUids.delete(friendUid);
-      });
-    });
-  }
-
   function openTaskExportModal(i: number) {
     const t = tasks[i];
     if (!t || !els.exportTaskOverlay) return;
@@ -5700,877 +5481,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!uid || !taskId) return false;
     return ownSharedSummaries.some((row) => row.ownerUid === uid && row.taskId === taskId);
   }
-
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  {
-
-  function getSharedFriendUidsForTask(taskId: string): string[] {
-    const uid = currentUid();
-    if (!uid || !taskId) return [];
-    return ownSharedSummaries.filter((row) => row.ownerUid === uid && row.taskId === taskId).map((row) => row.friendUid);
-  }
-
-  function setShareTaskStatus(message: string, tone: "error" | "success" | "info" = "info") {
-    if (!els.shareTaskStatus) return;
-    const text = String(message || "").trim();
-    const statusEl = els.shareTaskStatus as HTMLElement;
-    statusEl.textContent = text;
-    statusEl.style.display = text ? "block" : "none";
-    statusEl.style.color = "";
-    if (!text) return;
-    if (tone === "error") {
-      statusEl.style.color = "#ff8f8f";
-      return;
-    }
-    if (tone === "success") {
-      statusEl.style.color = "var(--accent, #35e8ff)";
-      return;
-    }
-    statusEl.style.color = "rgba(188,214,230,.78)";
-  }
-
-  function setShareTaskModalModeUi(opts: { mode: "share" | "unshare"; taskName: string; hasChoices?: boolean }) {
-    const mode = opts.mode === "unshare" ? "unshare" : "share";
-    const taskName = String(opts.taskName || "").trim() || "Untitled task";
-    const hasChoices = opts.hasChoices !== false;
-    const scopeField = (els.shareTaskScopeSelect?.parentElement as HTMLElement | null) || null;
-    const friendsField = els.shareTaskFriendsField as HTMLElement | null;
-    const friendsLabel = friendsField?.querySelector("label") as HTMLElement | null;
-    if (els.shareTaskTitle) {
-      els.shareTaskTitle.textContent = mode === "unshare" ? `Unshare "${taskName}"` : `Share "${taskName}"`;
-    }
-    const subtextEl = (els.shareTaskTitle?.nextElementSibling as HTMLElement | null) || null;
-    if (subtextEl && subtextEl.classList.contains("shareTaskModalSubtext")) {
-      subtextEl.textContent =
-        mode === "unshare"
-          ? "Choose which friends should no longer receive this task and its live progress."
-          : "Choose who should receive this task and its live progress.";
-    }
-    if (scopeField) scopeField.style.display = mode === "share" ? "grid" : "none";
-    if (friendsField) friendsField.style.display = mode === "share" ? (isShareTaskSpecificScopeSelected() ? "grid" : "none") : "grid";
-    if (friendsLabel) {
-      friendsLabel.textContent = mode === "unshare" ? "Select friend(s) to unshare" : "Select friend(s)";
-    }
-    if (els.shareTaskConfirmBtn) {
-      els.shareTaskConfirmBtn.textContent = mode === "unshare" ? "Unshare" : "Share";
-      els.shareTaskConfirmBtn.disabled = !hasChoices;
-    }
-  }
-
-  function renderShareTaskFriendOptions() {
-    const listEl = els.shareTaskFriendsList as HTMLElement | null;
-    if (!listEl) return;
-    const uid = currentUid();
-    const mode = shareTaskMode === "unshare" ? "unshare" : "share";
-    let rows: Array<{ friendUid: string; alias: string }> = [];
-    if (uid && groupsFriendships.length) {
-      rows = groupsFriendships
-        .map((row) => {
-          const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-          if (!friendUid) return null;
-          const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
-          return { friendUid, alias };
-        })
-        .filter((row): row is { friendUid: string; alias: string } => !!row);
-    }
-    if (mode === "unshare") {
-      const activeTaskId = String(shareTaskTaskId || "").trim();
-      const targetUids = new Set(getSharedFriendUidsForTask(activeTaskId));
-      rows = rows.filter((row) => targetUids.has(row.friendUid));
-      if (!rows.length && activeTaskId) {
-        rows = ownSharedSummaries
-          .filter((row) => row.ownerUid === uid && row.taskId === activeTaskId)
-          .map((row) => ({ friendUid: row.friendUid, alias: String(row.friendUid || "").trim() || "Unknown friend" }));
-      }
-    }
-    if (!uid || !rows.length) {
-      listEl.innerHTML = `<div class="settingsDetailNote isEmptyStatus">${
-        mode === "unshare" ? "This task is not currently shared with any friends." : "No friends available."
-      }</div>`;
-      return;
-    }
-    listEl.innerHTML = rows
-      .map((row) => {
-        const friendUid = row.friendUid;
-        const alias = row.alias;
-        const inputId = `shareFriend_${escapeHtmlUI(friendUid)}`;
-        return `<label class="shareTaskFriendOption" for="${inputId}">
-          <input id="${inputId}" type="checkbox" data-share-friend-uid="${escapeHtmlUI(friendUid)}" />
-          <span>${escapeHtmlUI(alias)}</span>
-        </label>`;
-      })
-      .join("");
-  }
-
-  function isShareTaskSpecificScopeSelected() {
-    return String(els.shareTaskScopeSelect?.value || "all") === "specific";
-  }
-
-  function syncShareTaskScopeUi() {
-    if (shareTaskMode === "unshare") {
-      if (els.shareTaskFriendsField) {
-        (els.shareTaskFriendsField as HTMLElement).style.display = "grid";
-      }
-      return;
-    }
-    const specificMode = isShareTaskSpecificScopeSelected();
-    if (els.shareTaskFriendsField) {
-      (els.shareTaskFriendsField as HTMLElement).style.display = specificMode ? "grid" : "none";
-    }
-  }
-
-  function closeShareTaskModal() {
-    if (!els.shareTaskModal) return;
-    (els.shareTaskModal as HTMLElement).style.display = "none";
-    shareTaskIndex = null;
-    shareTaskTaskId = null;
-    shareTaskMode = "share";
-    if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
-    if (els.shareTaskConfirmBtn) els.shareTaskConfirmBtn.disabled = false;
-    setShareTaskStatus("");
-  }
-
-  function openShareTaskModal(taskIndex: number) {
-    const t = tasks[taskIndex];
-    if (!t) return;
-    shareTaskIndex = taskIndex;
-    shareTaskTaskId = String(t.id || "").trim();
-    shareTaskMode = "share";
-    setShareTaskModalModeUi({ mode: "share", taskName: String(t.name || "").trim() || "Untitled task", hasChoices: true });
-    if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
-    syncShareTaskScopeUi();
-    renderShareTaskFriendOptions();
-    const uid = currentUid();
-    if (uid && !groupsFriendships.length) {
-      void loadFriendships(uid)
-        .then((rows) => {
-          groupsFriendships = rows || [];
-          renderShareTaskFriendOptions();
-        })
-        .catch(() => {});
-    }
-    setShareTaskStatus("");
-    if (els.shareTaskModal) (els.shareTaskModal as HTMLElement).style.display = "flex";
-  }
-
-  function openUnshareTaskModal(taskId: string) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) return;
-    const taskName =
-      String(tasks.find((row) => String(row.id || "").trim() === normalizedTaskId)?.name || "").trim() ||
-      String(ownSharedSummaries.find((row) => String(row.taskId || "").trim() === normalizedTaskId)?.taskName || "").trim() ||
-      "Untitled task";
-    shareTaskIndex = null;
-    shareTaskTaskId = normalizedTaskId;
-    shareTaskMode = "unshare";
-    const openModal = () => {
-      const targetCount = getSharedFriendUidsForTask(normalizedTaskId).length;
-      setShareTaskModalModeUi({ mode: "unshare", taskName, hasChoices: targetCount > 0 });
-      renderShareTaskFriendOptions();
-      setShareTaskStatus(targetCount > 0 ? "" : "This task is not currently shared with any friends.");
-      if (els.shareTaskModal) (els.shareTaskModal as HTMLElement).style.display = "flex";
-    };
-    if (currentUid() && !groupsFriendships.length) {
-      void loadFriendships(String(currentUid() || ""))
-        .then((rows) => {
-          groupsFriendships = rows || [];
-          openModal();
-        })
-        .catch(() => openModal());
-      return;
-    }
-    openModal();
-  }
-
-  async function refreshOwnSharedSummaries() {
-    const uid = currentUid();
-    if (!uid) {
-      ownSharedSummaries = [];
-      return;
-    }
-    try {
-      ownSharedSummaries = await loadSharedTaskSummariesForOwner(uid);
-    } catch {
-      ownSharedSummaries = [];
-    }
-  }
-
-  function getTaskCreatedAtMs(taskId: string): number | null {
-    const task = tasks.find((row) => String(row.id || "") === String(taskId));
-    const raw = (task as any)?.createdAt;
-    if (raw && typeof raw.toMillis === "function") return Math.max(0, Number(raw.toMillis()) || 0);
-    if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return Math.floor(raw);
-    const entries = (historyByTaskId[taskId] || []).slice();
-    if (!entries.length) return null;
-    const minTs = entries.reduce(
-      (min, entry) => Math.min(min, normalizeHistoryTimestampMs((entry as any)?.ts)),
-      Number.MAX_SAFE_INTEGER
-    );
-    return minTs > 0 && Number.isFinite(minTs) ? Math.floor(minTs) : null;
-  }
-
-  function getCalendarWeekStartMs(date: Date) {
-    const base = new Date(date);
-    base.setHours(0, 0, 0, 0);
-    base.setDate(base.getDate() - base.getDay());
-    return base.getTime();
-  }
-
-  function computeTaskSharingMetrics(taskId: string) {
-    const weekStartMs = getCalendarWeekStartMs(new Date());
-    const history = historyByTaskId;
-    const weekEntries = (history[taskId] || []).filter((entry) => normalizeHistoryTimestampMs((entry as any)?.ts) >= weekStartMs);
-    const weekTotalMs = weekEntries.reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
-    const daysElapsed = Math.max(1, Math.floor((Date.now() - weekStartMs) / (24 * 60 * 60 * 1000)) + 1);
-    const avgWeekMs = Math.floor(weekTotalMs / daysElapsed);
-    const allHistoryMs = (history[taskId] || []).reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
-    const task = tasks.find((row) => String(row.id || "") === String(taskId));
-    const runningMs =
-      task && task.running && Number.isFinite(Number(task.startMs))
-        ? Math.max(0, Date.now() - Number(task.startMs || 0))
-        : 0;
-    const focusTrend7dMs = [0, 0, 0, 0, 0, 0, 0];
-    weekEntries.forEach((entry) => {
-      const ts = normalizeHistoryTimestampMs((entry as any)?.ts);
-      if (!ts) return;
-      const dayIdx = new Date(ts).getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += Math.max(0, Number((entry as any)?.ms || 0));
-    });
-    if (runningMs > 0) {
-      const dayIdx = new Date().getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += runningMs;
-    }
-    let checkpointScaleMs: number | null = null;
-    if (task && Array.isArray((task as any).milestones) && (task as any).milestones.length) {
-      const unitSec =
-        (task as any).milestoneTimeUnit === "day"
-          ? 86400
-          : (task as any).milestoneTimeUnit === "minute"
-            ? 60
-            : 3600;
-      const maxCheckpointUnits = (task as any).milestones.reduce((max: number, milestone: any) => {
-        const hours = Number(milestone?.hours || 0);
-        return Number.isFinite(hours) ? Math.max(max, hours) : max;
-      }, 0);
-      const candidate = Math.floor(maxCheckpointUnits * unitSec * 1000);
-      checkpointScaleMs = candidate > 0 ? candidate : null;
-    }
-    return {
-      createdAtMs: getTaskCreatedAtMs(taskId),
-      avgWeekMs,
-      totalMs: Math.floor(allHistoryMs + runningMs),
-      focusTrend7dMs: focusTrend7dMs.map((value) => Math.max(0, Math.floor(Number(value) || 0))),
-      checkpointScaleMs,
-    };
-  }
-
-  function formatCompactDurationForSharedCard(msRaw: number): string {
-    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
-    let totalSeconds = Math.floor(totalMs / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    totalSeconds -= days * 86400;
-    const hours = Math.floor(totalSeconds / 3600);
-    totalSeconds -= hours * 3600;
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds - minutes * 60;
-    const parts: string[] = [];
-    if (days > 0) parts.push(`${String(days).padStart(2, "0")}d`);
-    if (hours > 0) parts.push(`${String(hours).padStart(2, "0")}h`);
-    if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
-    if (seconds > 0) parts.push(`${String(seconds).padStart(2, "0")}s`);
-    if (!parts.length) parts.push("00s");
-    return parts.join(" ");
-  }
-
-  function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
-    const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
-    const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
-    const maxVal = Math.max(...vals, 1);
-    const width = 170;
-    const height = 56;
-    const padX = 6;
-    const padY = 6;
-    const usableW = width - padX * 2;
-    const usableH = height - padY * 2;
-    const step = usableW / 7;
-    const barW = Math.max(6, Math.min(14, step - 4));
-    const checkpointLines: string[] = [];
-    if (scaleRef > 0) {
-      let n = 1;
-      while (n <= 8) {
-        const yVal = scaleRef * n;
-        if (yVal > maxVal) break;
-        const y = padY + usableH - (usableH * yVal) / maxVal;
-        checkpointLines.push(
-          `<line class="friendSharedTrendCheckpointLine" x1="${padX.toFixed(1)}" y1="${y.toFixed(
-            1
-          )}" x2="${(padX + usableW).toFixed(1)}" y2="${y.toFixed(1)}" />`
-        );
-        n += 1;
-      }
-    }
-    const bars = vals
-      .map((value, i) => {
-        const h = (usableH * value) / maxVal;
-        const x = padX + i * step + (step - barW) / 2;
-        const y = padY + usableH - h;
-        return `<rect class="friendSharedTrendBar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(
-          1
-        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1" />`;
-      })
-      .join("");
-    return `${checkpointLines.join("")}${bars}`;
-  }
-
-  function setFriendRequestModalStatus(message: string, tone: "error" | "success" | "info" = "info") {
-    if (!els.friendRequestModalStatus) return;
-    const text = String(message || "").trim();
-    const statusEl = els.friendRequestModalStatus as HTMLElement;
-    statusEl.textContent = text;
-    statusEl.style.display = text ? "block" : "none";
-    statusEl.style.color = "";
-    if (!text) return;
-    if (tone === "error") {
-      statusEl.style.color = "#ff8f8f";
-      return;
-    }
-    if (tone === "success") {
-      statusEl.style.color = "var(--accent, #35e8ff)";
-      return;
-    }
-    statusEl.style.color = "rgba(188,214,230,.78)";
-  }
-
-  function getOwnedSharedSummaryMismatchedTaskIds(): string[] {
-    const uid = String(currentUid() || "");
-    if (!uid || !Array.isArray(ownSharedSummaries) || !ownSharedSummaries.length) return [];
-    const runningByTaskId = new Map<string, boolean>();
-    (tasks || []).forEach((t) => {
-      const taskId = String(t?.id || "").trim();
-      if (!taskId) return;
-      runningByTaskId.set(taskId, !!t.running);
-    });
-    const mismatched = new Set<string>();
-    ownSharedSummaries.forEach((row) => {
-      const ownerUid = String(row?.ownerUid || "").trim();
-      if (!ownerUid || ownerUid !== uid) return;
-      const taskId = String(row?.taskId || "").trim();
-      if (!taskId || !runningByTaskId.has(taskId)) return;
-      const summaryRunning = String(row?.timerState || "").trim().toLowerCase() === "running";
-      const taskRunning = !!runningByTaskId.get(taskId);
-      if (summaryRunning !== taskRunning) mismatched.add(taskId);
-    });
-    return Array.from(mismatched);
-  }
-
-  async function reconcileOwnedSharedSummaryStates() {
-    const mismatchedTaskIds = getOwnedSharedSummaryMismatchedTaskIds();
-    if (!mismatchedTaskIds.length) return;
-    await syncSharedTaskSummariesForTasks(mismatchedTaskIds);
-  }
-
-  async function syncSharedTaskSummariesForTask(taskId: string) {
-    const uid = currentUid();
-    if (!uid || !taskId) return;
-    const t = tasks.find((row) => String(row.id || "") === String(taskId));
-    if (!t) return;
-    const friendUids = getSharedFriendUidsForTask(taskId);
-    if (!friendUids.length) return;
-    const metrics = computeTaskSharingMetrics(taskId);
-    const taskMode = taskModeOf(t);
-    await Promise.all(
-      friendUids.map((friendUid) =>
-        upsertSharedTaskSummary({
-          ownerUid: uid,
-          friendUid,
-          taskId,
-          taskName: String(t.name || ""),
-          taskMode,
-          timerState: t.running ? "running" : "stopped",
-          focusTrend7dMs: metrics.focusTrend7dMs,
-          checkpointScaleMs: metrics.checkpointScaleMs,
-          taskCreatedAtMs: metrics.createdAtMs,
-          avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
-          totalTimeLoggedMs: metrics.totalMs,
-        })
-      )
-    );
-    await refreshOwnSharedSummaries();
-  }
-
-  async function syncSharedTaskSummariesForTasks(taskIds: string[]) {
-    const ids = Array.from(new Set((taskIds || []).map((id) => String(id || "").trim()).filter(Boolean)));
-    if (!ids.length) return;
-    await Promise.all(ids.map((id) => syncSharedTaskSummariesForTask(id).catch(() => {})));
-  }
-
-  async function submitShareTaskModal() {
-    const uid = currentUid();
-    const activeMode = shareTaskMode === "unshare" ? "unshare" : "share";
-    if (!uid) return;
-    if (activeMode === "share" && shareTaskIndex == null) return;
-    const activeTaskId =
-      activeMode === "share" ? String(tasks[shareTaskIndex!]?.id || "").trim() : String(shareTaskTaskId || "").trim();
-    const shareTask = activeMode === "share" && shareTaskIndex != null ? tasks[shareTaskIndex] : null;
-    if (!activeTaskId || (activeMode === "share" && !shareTask)) return;
-    const selectedTargets = Array.from(
-      (els.shareTaskFriendsList as HTMLElement | null)?.querySelectorAll<HTMLInputElement>("[data-share-friend-uid]:checked") || []
-    )
-      .map((el) => String(el.getAttribute("data-share-friend-uid") || "").trim())
-      .filter(Boolean);
-    if (activeMode === "unshare") {
-      if (!selectedTargets.length) {
-        setShareTaskStatus("Select at least one friend.", "error");
-        return;
-      }
-      const results = await Promise.allSettled(selectedTargets.map((friendUid) => deleteSharedTaskSummary(uid, friendUid, activeTaskId)));
-      const failures = results.filter((row) => row.status === "rejected");
-      await refreshOwnSharedSummaries();
-      render();
-      if (!failures.length) {
-        setShareTaskStatus("Task unshared successfully.", "success");
-        window.setTimeout(() => closeShareTaskModal(), 500);
-        return;
-      }
-      setShareTaskStatus(
-        `Unshared with ${selectedTargets.length - failures.length} friend(s). ${failures.length} failed.`,
-        "error"
-      );
-      return;
-    }
-    const specificMode = isShareTaskSpecificScopeSelected();
-    if (!groupsFriendships.length) {
-      try {
-        groupsFriendships = await loadFriendships(uid);
-      } catch {
-        groupsFriendships = [];
-      }
-    }
-    let targets: string[] = [];
-    if (specificMode) {
-      targets = selectedTargets;
-      if (!targets.length) {
-        setShareTaskStatus("Select at least one friend.", "error");
-        return;
-      }
-    } else {
-      targets = groupsFriendships.map((row) => (row.users[0] === uid ? row.users[1] : row.users[0])).filter(Boolean);
-      if (!targets.length) {
-        setShareTaskStatus("No friends available to share with.", "error");
-        return;
-      }
-    }
-    if (!shareTask) return;
-    const metrics = computeTaskSharingMetrics(activeTaskId);
-    const taskMode = taskModeOf(shareTask);
-    const writes = await Promise.all(
-      targets.map((friendUid) =>
-        upsertSharedTaskSummary({
-          ownerUid: uid,
-          friendUid,
-          taskId: activeTaskId,
-          taskName: String(shareTask.name || ""),
-          taskMode,
-          timerState: shareTask.running ? "running" : "stopped",
-          focusTrend7dMs: metrics.focusTrend7dMs,
-          checkpointScaleMs: metrics.checkpointScaleMs,
-          taskCreatedAtMs: metrics.createdAtMs,
-          avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
-          totalTimeLoggedMs: metrics.totalMs,
-        })
-      )
-    );
-    const failures = writes.filter((row) => !row.ok).length;
-    if (failures) {
-      const firstFailure = writes.find((row) => !row.ok);
-      const reason = String(firstFailure?.message || "").trim();
-      setShareTaskStatus(
-        `Shared with ${writes.length - failures} friend(s). ${failures} failed.${reason ? ` ${reason}` : ""}`,
-        "error"
-      );
-    }
-    else setShareTaskStatus("Task shared successfully.", "success");
-    await refreshOwnSharedSummaries();
-    render();
-    if (!failures) window.setTimeout(() => closeShareTaskModal(), 500);
-  }
-
-  function renderGroupsRequestsList(
-    container: HTMLElement | null,
-    rows: FriendRequest[],
-    opts: { incoming: boolean }
-  ) {
-    const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
-    const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
-    const titleSuffix = opts.incoming ? "Incoming Requests" : "Outgoing Requests";
-    if (titleEl) titleEl.textContent = `${rows.length} ${titleSuffix}`;
-    if (detailsEl) detailsEl.open = rows.length > 0;
-    if (!container) return;
-    if (!rows.length) {
-      container.classList.add("isEmptyStatus");
-      container.textContent = opts.incoming ? "No incoming requests." : "No outgoing requests.";
-      return;
-    }
-    container.classList.remove("isEmptyStatus");
-    container.innerHTML = rows
-      .map((row) => {
-        const peerAliasRaw = opts.incoming ? row.senderAlias : row.receiverAlias;
-        const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
-        const peerAlias = String(peerAliasRaw || "").trim() || String(peerEmail || "").trim() || "Unknown user";
-        const requestedAtMs =
-          row.createdAt && typeof (row.createdAt as any).toMillis === "function"
-            ? Number((row.createdAt as any).toMillis())
-            : Number.NaN;
-        const requestedDate = Number.isFinite(requestedAtMs) ? new Date(requestedAtMs).toLocaleString() : "Unknown";
-        const status = String(row.status || "pending");
-        const statusLabel = status[0].toUpperCase() + status.slice(1);
-        const disabledAttr = groupsLoading ? ' disabled aria-disabled="true"' : "";
-        const actionBtns =
-          status !== "pending"
-            ? ""
-            : opts.incoming
-              ? `<div class="footerBtns groupsIncomingRequestActions"><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${escapeHtmlUI(
-                  row.requestId
-                )}"${disabledAttr}>Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${escapeHtmlUI(
-                  row.requestId
-                )}"${disabledAttr}>Approve</button></div>`
-              : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${escapeHtmlUI(
-                  row.requestId
-                )}"${disabledAttr}>Cancel request</button></div>`;
-        const identityAvatarSrc = opts.incoming
-          ? getFriendAvatarSrcById(String(row.senderAvatarId || "").trim())
-          : buildFriendInitialAvatarDataUrl(peerAlias);
-        const identityHtml = `<div class="friendRequestIdentityRow">
-          <img src="${escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
-          <div class="friendRequestIdentityText">
-            <div class="friendRequestAlias">${escapeHtmlUI(peerAlias)}</div>
-          </div>
-        </div>`;
-        if (opts.incoming) {
-          const incomingSentence = `<b>${escapeHtmlUI(peerAlias)}</b> has sent you a friend request!`;
-          return `<div class="settingsDetailNote"><div>${incomingSentence}</div><div>Date Requested: ${escapeHtmlUI(
-            requestedDate
-          )}</div>${identityHtml}${actionBtns}</div>`;
-        }
-        return `<div class="settingsDetailNote"><div><b>${escapeHtmlUI(statusLabel)}</b></div>${identityHtml}${actionBtns}</div>`;
-      })
-      .join("");
-  }
-
-  function renderGroupsFriendsList() {
-    if (!els.groupsFriendsList) return;
-    syncOpenFriendSharedTaskUidsFromDom();
-    const uid = currentUid();
-    if (!uid) {
-      openFriendSharedTaskUids.clear();
-      els.groupsFriendsList.textContent = "Sign in to view friends.";
-      return;
-    }
-    if (!groupsFriendships.length) {
-      openFriendSharedTaskUids.clear();
-      els.groupsFriendsList.textContent = "No friends yet.";
-      return;
-    }
-    const friendRows = groupsFriendships
-      .map((row) => {
-        const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        const profile = getMergedFriendProfile(friendUid, row.profileByUid?.[friendUid]);
-        const alias = String(profile?.alias || "").trim() || friendUid;
-        const avatarSrc = getFriendAvatarSrc(profile);
-        const summaries = groupsSharedSummaries.filter((entry) => entry.ownerUid === friendUid);
-        const isOpen = openFriendSharedTaskUids.has(friendUid);
-        return { friendUid, alias, avatarSrc, summaries, isOpen };
-      })
-      .sort((a, b) => {
-        const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
-        if (byAlias !== 0) return byAlias;
-        return a.friendUid.localeCompare(b.friendUid, undefined, { sensitivity: "base" });
-      });
-
-    const visibleFriendUids = new Set(friendRows.map((row) => row.friendUid).filter(Boolean));
-    openFriendSharedTaskUids.forEach((friendUid) => {
-      if (!visibleFriendUids.has(friendUid)) openFriendSharedTaskUids.delete(friendUid);
-    });
-
-    els.groupsFriendsList.innerHTML = friendRows
-      .map((row) => {
-        const summaryHtml = row.summaries
-          .map((entry) => {
-            const createdDate =
-              entry.taskCreatedAtMs != null && Number.isFinite(Number(entry.taskCreatedAtMs))
-                ? new Date(Number(entry.taskCreatedAtMs)).toLocaleDateString()
-                : "Unknown";
-            const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
-            const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
-            const timerStateClass =
-              String(entry.timerState || "stopped").toLowerCase() === "running"
-                ? "friendSharedTaskState isRunning"
-                : "friendSharedTaskState isStopped";
-            const trendBars = buildSharedTrendBarSvgMarkup(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
-            return `<div class="friendSharedTaskCard friendSharedTaskCardState-${escapeHtmlUI(timerStateKey)}">
-              <div class="friendSharedTaskCardLayout">
-                <div class="friendSharedTaskInfo">
-                  <div class="friendSharedTaskTitle">${escapeHtmlUI(entry.taskName)}</div>
-                  <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${escapeHtmlUI(timerState)}</span></div>
-                  <div class="friendSharedTaskMeta">Created: ${escapeHtmlUI(createdDate)}</div>
-                  <div class="friendSharedTaskMeta">Daily avg: ${escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(entry.avgTimeLoggedThisWeekMs || 0))
-                  )}</div>
-                  <div class="friendSharedTaskMeta">Total logged: ${escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(entry.totalTimeLoggedMs || 0))
-                  )}</div>
-                </div>
-                <div class="friendSharedTaskTrend" aria-label="Focus Trend chart">
-                  <div class="friendSharedTaskTrendLabel">Focus Trend</div>
-                  <svg viewBox="0 0 170 56" role="img" aria-label="Focus trend over this week">
-                    ${trendBars}
-                  </svg>
-                  <div class="friendSharedTaskTrendDays" aria-hidden="true">
-                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                  </div>
-                </div>
-              </div>
-            </div>`;
-          })
-          .join("");
-        const taskCount = row.summaries.length;
-        const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
-        return `<div class="friendEntryWrap">
-          <details class="friendSharedTasksDetails" data-friend-uid="${escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
-            <summary class="settingsDetailNote friendIdentityRow">
-              <span class="friendIdentityProfileBtn friendIdentityAvatarBtn" role="button" tabindex="0" data-friend-profile-open="${escapeHtmlUI(
-                row.friendUid
-              )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
-                <img src="${escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" class="friendIdentityAvatar" />
-              </span>
-              <span class="friendIdentityProfileBtn friendIdentityNameBtn" role="button" tabindex="0" data-friend-profile-open="${escapeHtmlUI(
-                row.friendUid
-              )}" aria-label="Open ${escapeHtmlUI(row.alias)} profile">
-                <span class="friendIdentityNameBlock">
-                  <span class="friendIdentityName">${escapeHtmlUI(row.alias)}</span>
-                </span>
-              </span>
-              <span class="friendSharedTasksCountText">${escapeHtmlUI(sharedCountLabel)}</span>
-            </summary>
-            <div class="friendSharedTasksSection">
-              ${
-                summaryHtml
-                  ? `<div class="friendSharedTasksGrid">${summaryHtml}</div>`
-                  : `<div class="settingsDetailNote sharedTasksEmpty">No shared tasks.</div>`
-              }
-            </div>
-          </details>
-        </div>`;
-      })
-      .join("");
-    wireFriendSharedTaskDetailsState();
-  }
-
-  function renderGroupsSharedByYouList() {
-    const container = els.groupsSharedByYouList as HTMLElement | null;
-    const titleEl = els.groupsSharedByYouTitle as HTMLElement | null;
-    if (!container) return;
-    const uniqueSharedTaskCount = new Set(
-      ownSharedSummaries.map((entry) => String(entry.taskId || "").trim()).filter(Boolean)
-    ).size;
-    if (titleEl) {
-      titleEl.textContent = `${uniqueSharedTaskCount} shared by you`;
-    }
-    if (!ownSharedSummaries.length) {
-      container.classList.add("sharedTasksEmpty");
-      container.textContent = "No shared tasks.";
-      return;
-    }
-
-    const uid = currentUid();
-    const friendNameByUid = new Map<string, string>();
-    groupsFriendships.forEach((friendship) => {
-      const users = friendship.users;
-      if (!uid || users.indexOf(uid) === -1) return;
-      const friendUid = users[0] === uid ? users[1] : users[0];
-      if (!friendUid) return;
-      const alias = String(friendship.profileByUid?.[friendUid]?.alias || "").trim();
-      friendNameByUid.set(friendUid, alias || friendUid);
-    });
-
-    const sharedByTaskId = new Map<
-      string,
-      { taskId: string; taskName: string; taskMode: "mode1" | "mode2" | "mode3"; friendLabels: string[] }
-    >();
-    ownSharedSummaries.forEach((entry) => {
-      const taskId = String(entry.taskId || "").trim();
-      if (!taskId) return;
-      const friendLabel = friendNameByUid.get(entry.friendUid) || String(entry.friendUid || "").trim() || "Unknown friend";
-      const taskMode: "mode1" | "mode2" | "mode3" =
-        entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
-      const existing = sharedByTaskId.get(taskId);
-      if (existing) {
-        if (existing.friendLabels.indexOf(friendLabel) === -1) existing.friendLabels.push(friendLabel);
-        return;
-      }
-      sharedByTaskId.set(taskId, {
-        taskId,
-        taskName: String(entry.taskName || "").trim() || "Untitled task",
-        taskMode,
-        friendLabels: [friendLabel],
-      });
-    });
-
-    const listHtml = Array.from(sharedByTaskId.values())
-      .sort((a, b) => a.taskName.localeCompare(b.taskName, undefined, { sensitivity: "base" }))
-      .map((entry) => {
-        const friendLabel = entry.friendLabels
-          .slice()
-          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-          .join(", ");
-        return `<div class="friendSharedTaskCard isJumpCard friendSharedTaskCardMode-${escapeHtmlUI(
-          entry.taskMode
-        )}" role="button" tabindex="0" data-shared-owned-task-id="${escapeHtmlUI(entry.taskId)}" title="Open task">
-          <div class="friendSharedTaskInfo">
-            <div class="friendSharedTaskTitle">${escapeHtmlUI(entry.taskName)}</div>
-            <div class="friendSharedTaskMeta">Shared with: ${escapeHtmlUI(friendLabel)}</div>
-          </div>
-          <div class="friendSharedTaskActions">
-            <button class="btn btn-ghost small" type="button" data-friend-action="open-unshare-task" data-task-id="${escapeHtmlUI(entry.taskId)}">Unshare</button>
-          </div>
-        </div>`;
-      })
-      .join("");
-
-    container.classList.remove("sharedTasksEmpty");
-    container.innerHTML = `<div class="friendSharedTasksGrid">${listHtml}</div>`;
-  }
-
-  function renderGroupsPage() {
-    renderFriendsFooterAlertBadge();
-    renderGroupsRequestsList(els.groupsIncomingRequestsList as HTMLElement | null, groupsIncomingRequests, { incoming: true });
-    renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, groupsOutgoingRequests, { incoming: false });
-    renderGroupsFriendsList();
-    renderGroupsSharedByYouList();
-    if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = groupsLoading;
-    if (els.friendRequestSendBtn) els.friendRequestSendBtn.disabled = groupsLoading;
-    if (els.friendProfileDeleteBtn) els.friendProfileDeleteBtn.disabled = groupsLoading;
-  }
-
-  function renderFriendsFooterAlertBadge() {
-    const badgeEl = els.footerTest2AlertBadge as HTMLElement | null;
-    if (!badgeEl) return;
-    const uid = currentUid();
-    const count = uid ? Math.max(0, Number(groupsIncomingRequests.length) || 0) : 0;
-    if (count <= 0) {
-      badgeEl.style.display = "none";
-      badgeEl.textContent = "";
-      badgeEl.setAttribute("aria-label", "No incoming friend requests");
-      return;
-    }
-    const countLabel = count > 99 ? "99+" : String(count);
-    badgeEl.style.display = "inline-flex";
-    badgeEl.textContent = countLabel;
-    badgeEl.setAttribute("aria-label", `${count} incoming friend request${count === 1 ? "" : "s"}`);
-  }
-
-  async function refreshGroupsData(opts?: { preserveStatus?: boolean }) {
-    const uid = currentUid();
-    if (!uid) {
-      groupsIncomingRequests = [];
-      groupsOutgoingRequests = [];
-      groupsFriendships = [];
-      groupsSharedSummaries = [];
-      ownSharedSummaries = [];
-      friendProfileCacheByUid = {};
-      setGroupsStatus("Sign in to use Groups.");
-      renderGroupsPage();
-      return;
-    }
-    const refreshSeq = ++groupsRefreshSeq;
-    try {
-      const snapshot = await loadGroupsSnapshot(uid);
-      if (refreshSeq !== groupsRefreshSeq) return;
-      applyGroupsSnapshot(snapshot);
-      if (!opts?.preserveStatus) setGroupsStatus("Ready.");
-    } catch {
-      if (refreshSeq !== groupsRefreshSeq) return;
-      if (!opts?.preserveStatus) setGroupsStatus("Could not load friend data.");
-    } finally {
-      renderGroupsPage();
-    }
-  }
-
-  async function handleSendFriendRequest() {
-    const uid = currentUid();
-    const auth = getFirebaseAuthClient();
-    const email = auth?.currentUser?.email || null;
-    const receiverEmail = String(els.friendRequestEmailInput?.value || "").trim();
-    setFriendRequestModalStatus("");
-    setGroupsStatus("Sending request...");
-    const result = await runGroupsBusy("Sending friend request...", "Friend request timed out. Please try again.", () =>
-      sendFriendRequest(uid, email, receiverEmail)
-    );
-    if (!result.ok) {
-      const message = result.timedOut ? result.message : "Could not send friend request.";
-      setFriendRequestModalStatus(`Friend request failed: ${message}`, "error");
-      setGroupsStatus(message);
-      renderGroupsPage();
-      return;
-    }
-    if (!result.value.ok) {
-      const failureMessage = result.value.message || "Could not find a matching email.";
-      setFriendRequestModalStatus(`Friend request failed: ${failureMessage}`, "error");
-      setGroupsStatus(failureMessage);
-      renderGroupsPage();
-      return;
-    }
-    setFriendRequestModalStatus("Friend request success.", "success");
-    setGroupsStatus("Friend request sent.");
-    renderGroupsPage();
-    void refreshGroupsData({ preserveStatus: true });
-    window.setTimeout(() => {
-      closeFriendRequestModal();
-    }, 700);
-  }
-
-  async function handleFriendRequestAction(requestId: string, action: "approve" | "decline" | "cancel") {
-    const uid = currentUid();
-    if (!uid || !requestId) return;
-    const pendingStatus =
-      action === "approve" ? "Approving request..." : action === "decline" ? "Declining request..." : "Cancelling request...";
-    setGroupsStatus(pendingStatus);
-    const timeoutStatus =
-      action === "approve"
-        ? "Approving request timed out. Please try again."
-        : action === "decline"
-          ? "Declining request timed out. Please try again."
-          : "Cancelling request timed out. Please try again.";
-    const result = await runGroupsBusy(pendingStatus, timeoutStatus, async () =>
-      action === "approve"
-        ? await approveFriendRequest(requestId, uid)
-        : action === "decline"
-          ? await declineFriendRequest(requestId, uid)
-          : await cancelOutgoingFriendRequest(requestId, uid)
-    );
-    if (!result.ok) {
-      setGroupsStatus(result.timedOut ? result.message : "Could not update friend request.");
-      renderGroupsPage();
-      return;
-    }
-    if (!result.value.ok) {
-      setGroupsStatus(result.value.message || "Action failed.");
-      renderGroupsPage();
-      return;
-    }
-    const completeStatus =
-      action === "approve"
-        ? "Friend request approved."
-        : action === "decline"
-          ? "Friend request declined."
-          : "Friend request cancelled.";
-    setGroupsStatus(completeStatus);
-    renderGroupsPage();
-    void refreshGroupsData({ preserveStatus: true });
-  }
-
-  }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   function applyMainMode(mode: MainMode) {
     if (!isModeEnabled(mode)) mode = "mode1";
@@ -6838,6 +5748,103 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerPreferenceEvents,
   } = preferences;
 
+  editTaskApi = createTaskTimerEditTask({
+    els,
+    on,
+    getTasks: () => tasks,
+    getEditIndex: () => editIndex,
+    setEditIndex: (value) => {
+      editIndex = value;
+    },
+    getEditTaskDraft: () => editTaskDraft,
+    setEditTaskDraft: (value) => {
+      editTaskDraft = value;
+    },
+    setEditDraftSnapshot: (value) => {
+      editDraftSnapshot = value;
+    },
+    getEditTaskDurationUnit: () => editTaskDurationUnit,
+    setEditTaskDurationUnit: (value) => {
+      editTaskDurationUnit = value;
+    },
+    getEditTaskDurationPeriod: () => editTaskDurationPeriod,
+    setEditTaskDurationPeriod: (value) => {
+      editTaskDurationPeriod = value;
+    },
+    getEditMoveTargetMode: () => editMoveTargetMode,
+    setEditMoveTargetMode: (value) => {
+      editMoveTargetMode = value;
+    },
+    getElapsedPadTarget: () => elapsedPadTarget,
+    setElapsedPadTarget: (value) => {
+      elapsedPadTarget = value;
+    },
+    getElapsedPadMilestoneRef: () => elapsedPadMilestoneRef,
+    setElapsedPadMilestoneRef: (value) => {
+      elapsedPadMilestoneRef = value;
+    },
+    getElapsedPadDraft: () => elapsedPadDraft,
+    setElapsedPadDraft: (value) => {
+      elapsedPadDraft = value;
+    },
+    getElapsedPadOriginal: () => elapsedPadOriginal,
+    setElapsedPadOriginal: (value) => {
+      elapsedPadOriginal = value;
+    },
+    getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
+    getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    getElapsedMs,
+    render,
+    save,
+    confirm,
+    closeConfirm,
+    cloneTaskForEdit,
+    getModeLabel,
+    isModeEnabled,
+    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
+    setEditTimeGoalEnabled,
+    isEditTimeGoalEnabled,
+    editTaskHasActiveTimeGoal,
+    syncEditTaskTimeGoalUi,
+    syncEditCheckpointAlertUi,
+    syncEditSaveAvailability,
+    syncEditMilestoneSectionUi,
+    setMilestoneUnitUi,
+    renderMilestoneEditor,
+    clearEditValidationState,
+    validateEditTimeGoal,
+    showEditValidationError,
+    hasNonPositiveCheckpoint,
+    hasCheckpointAtOrAboveTimeGoal,
+    isCheckpointAtOrAboveTimeGoal,
+    milestoneUnitSec,
+    formatCheckpointTimeGoalText,
+    getEditTaskTimeGoalMinutes,
+    getEditTaskTimeGoalMinutesFor,
+    getAddTaskTimeGoalMinutesState: () => addTaskApi?.getAddTaskTimeGoalMinutes() ?? 0,
+    ensureMilestoneIdentity,
+    sortMilestones,
+    toggleSwitchElement,
+    isSwitchOn,
+    buildEditDraftSnapshot,
+    syncEditTaskDurationReadout,
+    maybeToggleEditPresetIntervals,
+    hasValidPresetInterval,
+    addMilestoneWithCurrentPreset,
+    getPresetIntervalNextSeqNum,
+    isEditMilestoneUnitDay,
+    createId: () => cryptoRandomId(),
+    resetCheckpointAlertTracking: (taskId) => sessionApi?.resetCheckpointAlertTracking(taskId),
+    clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
+    syncSharedTaskSummariesForTask,
+  });
+  const {
+    closeEdit: closeEditApi,
+    openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
+    closeElapsedPad: closeElapsedPadApi,
+    registerEditTaskEvents,
+  } = editTaskApi;
+
   function jumpToTaskAndHighlight(taskId: string) {
     if (!taskId) return;
     window.setTimeout(() => {
@@ -6871,11 +5878,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function wireEvents() {
-    const setAddTaskError = (msg: string) => {
-      if (!els.addTaskError) return;
-      els.addTaskError.textContent = msg;
-      els.addTaskError.classList.toggle("isOn", !!String(msg || "").trim());
-    };
     const persistInlineTaskSettingsImmediate = () => {
       saveDefaultTaskTimerFormat();
       saveTaskViewPreference();
@@ -6902,75 +5904,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (opts?.closeOverlay) closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
       else render();
     };
-    const syncAddTaskMilestonesUi = () => {
-      els.addTaskMsToggle?.classList.toggle("on", addTaskMilestonesEnabled);
-      els.addTaskMsToggle?.setAttribute("aria-checked", String(addTaskMilestonesEnabled));
-      els.addTaskMsArea?.classList.toggle("on", addTaskMilestonesEnabled);
-      setAddTaskMilestoneUnitUi(addTaskMilestoneTimeUnit);
-      syncAddTaskCheckpointAlertUi();
-    };
-
-    const syncAddTaskDurationUi = () => {
-      addTaskNoTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
-      if (els.addTaskStep2NextBtn) {
-        els.addTaskStep2NextBtn.textContent = addTaskNoTimeGoal ? "Done" : "Next";
-      }
-      els.addTaskDurationRow?.classList.toggle("isDisabled", addTaskNoTimeGoal);
-      els.addTaskDurationReadout?.classList.toggle("isDisabled", addTaskNoTimeGoal);
-      if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = addTaskNoTimeGoal;
-      if (addTaskNoTimeGoal) {
-        const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
-          if (!btn) return;
-          btn.classList.toggle("isOn", isOn);
-          btn.classList.toggle("isHidden", hidden);
-          btn.disabled = true;
-          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
-          btn.setAttribute("aria-hidden", hidden ? "true" : "false");
-        };
-        syncPill(els.addTaskDurationUnitMinute, addTaskDurationUnit === "minute");
-        syncPill(els.addTaskDurationUnitHour, addTaskDurationUnit === "hour");
-        syncPill(els.addTaskDurationPeriodDay, addTaskDurationPeriod === "day", Number(addTaskDurationValue) > getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "day"));
-        syncPill(els.addTaskDurationPeriodWeek, addTaskDurationPeriod === "week");
-        syncAddTaskDurationReadout();
-        return;
-      }
-      const parsedValue = Math.max(0, Math.floor(parseFloat(els.addTaskDurationValueInput?.value || "0") || 0));
-      addTaskDurationValue = parsedValue;
-      const maxDay = getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "day");
-      const canUseDay = Number(addTaskDurationValue) <= maxDay;
-      addTaskDurationPeriod = canUseDay && addTaskDurationPeriod === "day" ? "day" : "week";
-      if (els.addTaskDurationValueInput && String(parsedValue || "") !== String(els.addTaskDurationValueInput.value || "")) {
-        els.addTaskDurationValueInput.value = String(parsedValue || 0);
-      }
-      const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
-        if (!btn) return;
-        btn.classList.toggle("isOn", isOn);
-        btn.classList.toggle("isHidden", hidden);
-        btn.disabled = hidden;
-        btn.setAttribute("aria-pressed", isOn ? "true" : "false");
-        btn.setAttribute("aria-hidden", hidden ? "true" : "false");
-      };
-      syncPill(els.addTaskDurationUnitMinute, addTaskDurationUnit === "minute");
-      syncPill(els.addTaskDurationUnitHour, addTaskDurationUnit === "hour");
-      syncPill(els.addTaskDurationPeriodDay, addTaskDurationPeriod === "day", !canUseDay);
-      syncPill(els.addTaskDurationPeriodWeek, addTaskDurationPeriod === "week");
-      syncAddTaskDurationReadout();
-    };
-
-    const setAddTaskCheckpointInfoOpen = (open: boolean) => {
-      const dialog = els.addTaskCheckpointInfoDialog as HTMLElement | null;
-      dialog?.classList.toggle("isOpen", open);
-      if (els.addTaskCheckpointInfoBtn) {
-        els.addTaskCheckpointInfoBtn.setAttribute("aria-expanded", String(open));
-      }
-    };
-    const setAddTaskPresetIntervalsInfoOpen = (open: boolean) => {
-      const dialog = els.addTaskPresetIntervalsInfoDialog as HTMLElement | null;
-      dialog?.classList.toggle("isOpen", open);
-      if (els.addTaskPresetIntervalsInfoBtn) {
-        els.addTaskPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
-      }
-    };
     const setEditPresetIntervalsInfoOpen = (open: boolean) => {
       const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
       dialog?.classList.toggle("isOpen", open);
@@ -6978,187 +5911,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         els.editPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
       }
     };
-    const syncAddTaskWizardUi = () => {
-      els.addTaskStep1?.classList.toggle("isActive", addTaskWizardStep === 1);
-      els.addTaskStep2?.classList.toggle("isActive", addTaskWizardStep === 2);
-      els.addTaskStep3?.classList.toggle("isActive", addTaskWizardStep === 3);
-      if (els.addTaskWizardProgress) {
-        els.addTaskWizardProgress.textContent = `Step ${addTaskWizardStep} of 3`;
-      }
-      els.addTaskStep1NextBtn?.classList.toggle("isHidden", addTaskWizardStep !== 1);
-      els.addTaskStep2BackBtn?.classList.toggle("isHidden", addTaskWizardStep !== 2);
-      els.addTaskStep2NextBtn?.classList.toggle("isHidden", addTaskWizardStep !== 2);
-      els.addTaskStep3BackBtn?.classList.toggle("isHidden", addTaskWizardStep !== 3);
-      els.addTaskConfirmBtn?.classList.toggle("isHidden", addTaskWizardStep !== 3);
-      if (addTaskWizardStep !== 1) setAddTaskNameMenuOpen(false);
-      syncAddTaskDurationUi();
-    };
-
-    const setAddTaskWizardStep = (step: 1 | 2 | 3) => {
-      addTaskWizardStep = step;
-      clearAddTaskValidationState();
-      syncAddTaskWizardUi();
-    };
-
-    const validateAddTaskStep1 = () => {
-      const name = (els.addTaskName?.value || "").trim();
-      if (!name) {
-        showAddTaskValidationError("Task name is required", { name: true });
-        return false;
-      }
-      return true;
-    };
-
-    const validateAddTaskStep2 = () => {
-      syncAddTaskDurationUi();
-      if (addTaskNoTimeGoal) return true;
-      if (!(Number(addTaskDurationValue) > 0)) {
-        showAddTaskValidationError("Enter a time amount greater than 0", { duration: true });
-        return false;
-      }
-      const maxWeek = getAddTaskDurationMaxForPeriod(addTaskDurationUnit, "week");
-      if (Number(addTaskDurationValue) > maxWeek) {
-        const unitLabel = addTaskDurationUnit === "minute" ? "minutes" : "hours";
-        showAddTaskValidationError(`Enter ${maxWeek} ${unitLabel} or less per week`, { duration: true });
-        return false;
-      }
-      return true;
-    };
-
-    function getAddTaskTimeGoalMinutes() {
-      const value = Math.max(0, Number(addTaskDurationValue) || 0);
-      if (!(value > 0) || addTaskNoTimeGoal) return 0;
-      if (addTaskDurationUnit === "minute") {
-        return addTaskDurationPeriod === "day" ? value : value * 7;
-      }
-      return addTaskDurationPeriod === "day" ? value * 60 : value * 60 * 7;
-    }
-
-    const validateAddTaskStep3 = () => {
-      if (addTaskMilestonesEnabled && getAddTaskTimeGoalMinutes() <= 0) {
-        showAddTaskValidationError("Set a time goal before enabling Time Checkpoints", { checkpoints: true });
-        return false;
-      }
-      if (addTaskMilestonesEnabled && (!Array.isArray(addTaskMilestones) || addTaskMilestones.length === 0)) {
-        showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
-        return false;
-      }
-      if (addTaskMilestonesEnabled && hasNonPositiveCheckpoint(addTaskMilestones)) {
-        showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
-        return false;
-      }
-      if (
-        addTaskMilestonesEnabled &&
-        hasCheckpointAtOrAboveTimeGoal(
-          addTaskMilestones,
-          addTaskMilestoneTimeUnit === "day" ? 86400 : addTaskMilestoneTimeUnit === "minute" ? 60 : 3600,
-          getAddTaskTimeGoalMinutes()
-        )
-      ) {
-        showAddTaskValidationError("Checkpoint times must be less than the time goal", {
-          checkpoints: true,
-          checkpointRows: true,
-        });
-        return false;
-      }
-      if (addTaskMilestonesEnabled && addTaskPresetIntervalsEnabled && !(Number(addTaskPresetIntervalValue) > 0)) {
-        showAddTaskValidationError("Enter a preset interval greater than 0", { presetInterval: true });
-        return false;
-      }
-      return true;
-    };
-
-    const submitAddTaskWizard = () => {
-      const name = (els.addTaskName?.value || "").trim();
-      rememberCustomTaskName(name);
-      setAddTaskError("");
-      const nextOrder = (tasks.reduce((mx, t) => Math.max(mx, t.order || 0), 0) || 0) + 1;
-      const newTask = makeTask(name, nextOrder);
-      const addTaskCheckpointingEnabled = !!addTaskMilestonesEnabled && getAddTaskTimeGoalMinutes() > 0;
-      newTask.milestonesEnabled = addTaskCheckpointingEnabled;
-      newTask.milestoneTimeUnit = addTaskMilestoneTimeUnit;
-      newTask.milestones = sortMilestones(addTaskMilestones.slice());
-      newTask.checkpointSoundEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointSoundEnabled;
-      newTask.checkpointSoundMode = addTaskCheckpointSoundMode === "repeat" ? "repeat" : "once";
-      newTask.checkpointToastEnabled = addTaskCheckpointingEnabled && !!addTaskCheckpointToastEnabled;
-      newTask.checkpointToastMode = addTaskCheckpointToastMode === "manual" ? "manual" : "auto5s";
-      newTask.presetIntervalsEnabled = addTaskCheckpointingEnabled && !!addTaskPresetIntervalsEnabled;
-      newTask.presetIntervalValue = Math.max(0, Number(addTaskPresetIntervalValue) || 0);
-      newTask.timeGoalAction =
-        addTaskTimeGoalAction === "resetLog" || addTaskTimeGoalAction === "resetNoLog" || addTaskTimeGoalAction === "confirmModal"
-          ? addTaskTimeGoalAction
-          : "confirmModal";
-      newTask.timeGoalEnabled = !addTaskNoTimeGoal;
-      newTask.timeGoalValue = addTaskNoTimeGoal ? 0 : Math.max(0, Number(addTaskDurationValue) || 0);
-      newTask.timeGoalUnit = addTaskNoTimeGoal ? "hour" : addTaskDurationUnit;
-      newTask.timeGoalPeriod = addTaskNoTimeGoal ? "week" : addTaskDurationPeriod;
-      newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
-      tasks.push(newTask);
-      closeAddTaskModal();
-      save();
-      render();
-      jumpToTaskAndHighlight(String(newTask.id || ""));
-    };
-
-    const resetAddTaskWizardState = () => {
-      addTaskWizardStep = 1;
-      addTaskDurationValue = 5;
-      addTaskDurationUnit = "hour";
-      addTaskDurationPeriod = "week";
-      addTaskNoTimeGoal = false;
-      if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = String(addTaskDurationValue);
-      if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
-      setAddTaskCheckpointInfoOpen(false);
-      setAddTaskPresetIntervalsInfoOpen(false);
-      syncAddTaskWizardUi();
-    };
-
-    const resetAddTaskMilestones = () => {
-      addTaskMilestonesEnabled = false;
-      addTaskMilestoneTimeUnit = defaultTaskTimerFormat;
-      addTaskMilestones = [];
-      addTaskCheckpointSoundEnabled = false;
-      addTaskCheckpointSoundMode = "once";
-      addTaskCheckpointToastEnabled = false;
-      addTaskCheckpointToastMode = "auto5s";
-      addTaskPresetIntervalsEnabled = false;
-      addTaskPresetIntervalValue = 0;
-      addTaskTimeGoalAction = "confirmModal";
-      if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
-      if (els.addTaskMsArea && "open" in (els.addTaskMsArea as any)) {
-        (els.addTaskMsArea as HTMLDetailsElement).open = false;
-      }
-      clearAddTaskValidationState();
-      syncAddTaskMilestonesUi();
-    };
-
-    const openAddTaskModal = () => {
-      resetAddTaskMilestones();
-      resetAddTaskWizardState();
-      setAddTaskError("");
-      renderAddTaskNameMenu("");
-      setAddTaskNameMenuOpen(false);
-      suppressAddTaskNameFocusOpen = true;
-      openOverlay(els.addTaskOverlay as HTMLElement | null);
-      setTimeout(() => {
-        try {
-          els.addTaskName?.focus();
-        } catch {
-          // ignore
-        }
-        suppressAddTaskNameFocusOpen = false;
-      }, 60);
-    };
-
-    const closeAddTaskModal = () => {
-      closeOverlay(els.addTaskOverlay as HTMLElement | null);
-      if (els.addTaskName) els.addTaskName.value = "";
-      setAddTaskNameMenuOpen(false);
-      setAddTaskError("");
-      resetAddTaskMilestones();
-      resetAddTaskWizardState();
-    };
-
     on(els.editPresetIntervalsInfoBtn, "click", (e: any) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
@@ -7340,6 +6092,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerHistoryInlineEvents();
     registerHistoryManagerEvents();
     registerSessionEvents();
+    registerEditTaskEvents();
 
     document.querySelectorAll(".menuItem").forEach((btn) => {
       on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
@@ -7361,316 +6114,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (ov) closeOverlay(ov);
       });
     });
-    const syncEditTimeGoalToggle = (nextEnabled: boolean) => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      setEditTimeGoalEnabled(nextEnabled);
-      clearEditValidationState();
-      if (!nextEnabled && els.msArea && "open" in (els.msArea as any)) {
-        (els.msArea as HTMLDetailsElement).open = false;
-      }
-      syncEditTaskTimeGoalUi(t);
-      syncEditMilestoneSectionUi(t);
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    };
-    on(els.editNoGoalCheckbox, "change", () => {
-      syncEditTimeGoalToggle(isEditTimeGoalEnabled());
-    });
-    on(els.editTimeGoalToggle, "click", () => {
-      syncEditTimeGoalToggle(!isEditTimeGoalEnabled());
-    });
-    on(els.editTimeGoalToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#editTimeGoalToggle")) return;
-      syncEditTimeGoalToggle(!isEditTimeGoalEnabled());
-    });
-    on(els.editTaskDurationValueInput, "input", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      els.editTaskDurationValueInput?.classList.remove("isInvalid");
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editTaskDurationValueInput, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editTaskDurationUnitMinute, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      editTaskDurationUnit = "minute";
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editTaskDurationUnitHour, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      editTaskDurationUnit = "hour";
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editTaskDurationPeriodDay, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      editTaskDurationPeriod = "day";
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editTaskDurationPeriodWeek, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      editTaskDurationPeriod = "week";
-      syncEditTaskTimeGoalUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editOverrideElapsedToggle, "click", () => {
-      if (isEditElapsedOverrideEnabled()) {
-        setEditElapsedOverrideEnabled(false);
-        if (getCurrentEditTask()) syncEditSaveAvailability(getCurrentEditTask());
-        return;
-      }
-      confirmEnableElapsedOverride();
-    });
-    on(els.editCheckpointSoundToggle, "click", () => {
-      if (!checkpointAlertSoundEnabled || !editTaskHasActiveTimeGoal()) return;
-      toggleSwitchElement(
-        els.editCheckpointSoundToggle as HTMLElement | null,
-        !isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null)
-      );
-    });
-    on(els.editCheckpointSoundToggleRow, "click", (e: any) => {
-      if (!checkpointAlertSoundEnabled || !editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointSoundToggle")) return;
-      toggleSwitchElement(
-        els.editCheckpointSoundToggle as HTMLElement | null,
-        !isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null)
-      );
-      const t = getCurrentEditTask();
-      if (t) {
-        t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(t);
-        syncEditSaveAvailability(t);
-      }
-    });
-    on(els.editCheckpointSoundToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (t) {
-        t.checkpointSoundEnabled = isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(t);
-        syncEditSaveAvailability(t);
-      }
-    });
-    on(els.editCheckpointSoundModeSelect, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editCheckpointToastToggle, "click", () => {
-      if (!checkpointAlertToastEnabled || !editTaskHasActiveTimeGoal()) return;
-      toggleSwitchElement(
-        els.editCheckpointToastToggle as HTMLElement | null,
-        !isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null)
-      );
-    });
-    on(els.editCheckpointToastToggleRow, "click", (e: any) => {
-      if (!checkpointAlertToastEnabled || !editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointToastToggle")) return;
-      toggleSwitchElement(
-        els.editCheckpointToastToggle as HTMLElement | null,
-        !isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null)
-      );
-      const t = getCurrentEditTask();
-      if (t) {
-        t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(t);
-        syncEditSaveAvailability(t);
-      }
-    });
-    on(els.editCheckpointToastToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (t) {
-        t.checkpointToastEnabled = isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-        syncEditCheckpointAlertUi(t);
-        syncEditSaveAvailability(t);
-      }
-    });
-    on(els.editCheckpointToastModeSelect, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editPresetIntervalsToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-      maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editPresetIntervalsToggleRow, "click", (e: any) => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-      if (
-        e.target?.closest?.("#editPresetIntervalsToggle") ||
-        e.target?.closest?.("#editPresetIntervalsInfoBtn") ||
-        e.target?.closest?.("#editPresetIntervalsInfoSlot") ||
-        e.target?.closest?.("#editPresetIntervalsInfoDialog")
-      )
-        return;
-      maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editPresetIntervalInput, "input", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      clearEditValidationState();
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editPresetIntervalInput, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      clearEditValidationState();
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.editFinalCheckpointActionSelect, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.timeGoalAction =
-        els.editFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue";
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-    const onEditElapsedInputChanged = (input: HTMLInputElement | null, normalize: boolean) => {
-      if (!isEditElapsedOverrideEnabled()) return;
-      if (normalize) normalizeEditElapsedValue(input);
-      const t = getCurrentEditTask();
-      if (!t) return;
-      clearEditValidationState();
-      syncEditSaveAvailability(t);
-    };
-    on(els.editD, "input", () => onEditElapsedInputChanged(els.editD, false));
-    on(els.editH, "input", () => onEditElapsedInputChanged(els.editH, false));
-    on(els.editM, "input", () => onEditElapsedInputChanged(els.editM, false));
-    on(els.editS, "input", () => onEditElapsedInputChanged(els.editS, false));
-    on(els.editD, "change", () => onEditElapsedInputChanged(els.editD, true));
-    on(els.editH, "change", () => onEditElapsedInputChanged(els.editH, true));
-    on(els.editM, "change", () => onEditElapsedInputChanged(els.editM, true));
-    on(els.editS, "change", () => onEditElapsedInputChanged(els.editS, true));
-    on(els.editD, "focus", () => maybeAutoClearEditElapsedField(els.editD));
-    on(els.editH, "focus", () => maybeAutoClearEditElapsedField(els.editH));
-    on(els.editM, "focus", () => maybeAutoClearEditElapsedField(els.editM));
-    on(els.editS, "focus", () => maybeAutoClearEditElapsedField(els.editS));
-    on(els.editD, "click", () => maybeAutoClearEditElapsedField(els.editD));
-    on(els.editH, "click", () => maybeAutoClearEditElapsedField(els.editH));
-    on(els.editM, "click", () => maybeAutoClearEditElapsedField(els.editM));
-    on(els.editS, "click", () => maybeAutoClearEditElapsedField(els.editS));
-
-    on(els.msArea?.querySelector?.("summary") as HTMLElement | null, "click", (e: any) => {
-      const t = getCurrentEditTask();
-      if (els.msArea && "open" in (els.msArea as any)) {
-        if (!t || !editTaskHasActiveTimeGoal() || !t.milestonesEnabled) {
-          e?.preventDefault?.();
-          e?.stopPropagation?.();
-          (els.msArea as HTMLDetailsElement).open = false;
-          return;
-        }
-        e?.preventDefault?.();
-        e?.stopPropagation?.();
-        (els.msArea as HTMLDetailsElement).open = true;
-      }
-    });
-
-    on(els.msToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-
-      t.milestonesEnabled = !t.milestonesEnabled;
-      if (els.msArea && "open" in (els.msArea as any)) {
-        (els.msArea as HTMLDetailsElement).open = !!t.milestonesEnabled;
-      }
-      syncEditMilestoneSectionUi(t);
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-
-      if (!t.milestonesEnabled) {
-        t.presetIntervalsEnabled = false;
-        toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, false);
-        syncEditMilestoneSectionUi(t);
-      }
-    });
-
-    on(els.msUnitDay, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-      t.milestoneTimeUnit = "day";
-      setMilestoneUnitUi("day");
-      renderMilestoneEditor(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.msUnitHour, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-      t.milestoneTimeUnit = "hour";
-      setMilestoneUnitUi("hour");
-      renderMilestoneEditor(t);
-      syncEditSaveAvailability(t);
-    });
-    on(els.msUnitMinute, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) return;
-      t.milestoneTimeUnit = "minute";
-      setMilestoneUnitUi("minute");
-      renderMilestoneEditor(t);
-      syncEditSaveAvailability(t);
-    });
-
-    on(els.addMsBtn, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !editTaskHasActiveTimeGoal()) {
-        const currentTask = getCurrentEditTask();
-        if (currentTask) syncEditCheckpointAlertUi(currentTask);
-        return;
-      }
-
-      if (t.presetIntervalsEnabled) {
-        if (!hasValidPresetInterval(t)) {
-          syncEditCheckpointAlertUi(t);
-          return;
-        }
-        if (!addMilestoneWithCurrentPreset(t, getEditTaskTimeGoalMinutes())) {
-          showEditValidationError(t, "Checkpoint times must be less than the time goal.");
-          syncEditCheckpointAlertUi(t);
-          syncEditSaveAvailability(t);
-          return;
-        }
-      } else {
-        t.milestones = t.milestones || [];
-        ensureMilestoneIdentity(t);
-        const nextSeq = getPresetIntervalNextSeqNum(t);
-        t.milestones.push({ id: cryptoRandomId(), createdSeq: nextSeq, hours: 0, description: "" });
-        t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
-        t.presetIntervalNextSeq = nextSeq + 1;
-      }
-      renderMilestoneEditor(t);
-      clearEditValidationState();
-      syncEditCheckpointAlertUi(t);
-      syncEditSaveAvailability(t);
-    });
-
     on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       closeDashboardHeatSummaryCard({ restoreFocus: true });
     });

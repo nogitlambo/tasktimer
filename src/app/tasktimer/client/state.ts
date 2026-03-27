@@ -161,7 +161,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     activeFriendProfileUid: null,
     activeFriendProfileName: "",
     historyEntryNoteAnchorTaskId: "",
-    groupsStatusMessage: "Ready.",
     openFriendSharedTaskUids: new Set(),
     workingIndicatorStack: [],
     workingIndicatorKeySeq: 0,

@@ -187,7 +187,6 @@ export type TaskTimerMutableState = {
   activeFriendProfileUid: string | null;
   activeFriendProfileName: string;
   historyEntryNoteAnchorTaskId: string;
-  groupsStatusMessage: string;
   openFriendSharedTaskUids: Set<string>;
   workingIndicatorStack: Array<{ key: number; message: string }>;
   workingIndicatorKeySeq: number;

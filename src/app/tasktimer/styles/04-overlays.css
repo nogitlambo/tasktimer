@@ -1192,7 +1192,8 @@ body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select{
 
 body[data-theme="purple"] #editOverlay input[type="text"]:focus,
 body[data-theme="purple"] #editOverlay input[type="number"]:focus,
-body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select:focus{
+body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select:focus,
+body[data-theme="purple"] #addTaskOverlay .checkpointAlertSoundModeField select:focus{
   border-color: rgba(233,134,245,.7) !important;
   outline: 1px solid rgba(255,164,250,.3) !important;
   outline-offset: 0;
@@ -1200,25 +1201,38 @@ body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select:foc
 }
 
 body[data-theme="purple"] #editOverlay option,
-body[data-theme="purple"] #editOverlay optgroup{
+body[data-theme="purple"] #editOverlay optgroup,
+body[data-theme="purple"] #addTaskOverlay option,
+body[data-theme="purple"] #addTaskOverlay optgroup{
   background: #140b20;
   color: #f3e8ff;
 }
 body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:hover,
-body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:focus-visible{
+body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:focus-visible,
+body[data-theme="purple"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:hover,
+body[data-theme="purple"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:focus-visible,
+body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:hover,
+body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:focus-visible,
+body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointToastModeSelect:hover,
+body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointToastModeSelect:focus-visible{
   border-color: rgba(206,136,230,.42) !important;
   background: linear-gradient(180deg, rgba(186,110,214,.18), rgba(108,58,132,.14)) !important;
   color: #fff8ff !important;
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.06), 0 0 10px rgba(176,82,198,.1) !important;
 }
 body[data-theme="purple"] #editOverlay option:hover,
-body[data-theme="purple"] #editOverlay option:focus{
+body[data-theme="purple"] #editOverlay option:focus,
+body[data-theme="purple"] #addTaskOverlay option:hover,
+body[data-theme="purple"] #addTaskOverlay option:focus{
   background: #3f234f;
   color: #fff8ff;
 }
 body[data-theme="purple"] #editOverlay option:checked,
 body[data-theme="purple"] #editOverlay option:checked:hover,
-body[data-theme="purple"] #editOverlay option:checked:focus{
+body[data-theme="purple"] #editOverlay option:checked:focus,
+body[data-theme="purple"] #addTaskOverlay option:checked,
+body[data-theme="purple"] #addTaskOverlay option:checked:hover,
+body[data-theme="purple"] #addTaskOverlay option:checked:focus{
   background: #2b1737;
   color: #f7eeff;
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.08);
@@ -1235,7 +1249,8 @@ body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select{
 
 body[data-theme="cyan"] #editOverlay input[type="text"]:focus,
 body[data-theme="cyan"] #editOverlay input[type="number"]:focus,
-body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select:focus{
+body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select:focus,
+body[data-theme="cyan"] #addTaskOverlay .checkpointAlertSoundModeField select:focus{
   border-color: rgba(93,239,255,.68) !important;
   outline: 1px solid rgba(126,243,255,.24) !important;
   outline-offset: 0;
@@ -1243,13 +1258,21 @@ body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select:focus
 }
 
 body[data-theme="cyan"] #editOverlay option,
-body[data-theme="cyan"] #editOverlay optgroup{
+body[data-theme="cyan"] #editOverlay optgroup,
+body[data-theme="cyan"] #addTaskOverlay option,
+body[data-theme="cyan"] #addTaskOverlay optgroup{
   background: #0c131a;
   color: #eafcff;
 }
 
 body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:hover,
-body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:focus-visible{
+body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:focus-visible,
+body[data-theme="cyan"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:hover,
+body[data-theme="cyan"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:focus-visible,
+body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:hover,
+body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:focus-visible,
+body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointToastModeSelect:hover,
+body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointToastModeSelect:focus-visible{
   border-color: rgba(116,198,226,.55) !important;
   background: linear-gradient(180deg, rgba(94,172,202,.18), rgba(52,109,134,.14)) !important;
   color: #eaf7ff !important;
@@ -1257,13 +1280,18 @@ body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:focus-visi
 }
 
 body[data-theme="cyan"] #editOverlay option:hover,
-body[data-theme="cyan"] #editOverlay option:focus{
+body[data-theme="cyan"] #editOverlay option:focus,
+body[data-theme="cyan"] #addTaskOverlay option:hover,
+body[data-theme="cyan"] #addTaskOverlay option:focus{
   background: #183846;
   color: #eaf7ff;
 }
 body[data-theme="cyan"] #editOverlay option:checked,
 body[data-theme="cyan"] #editOverlay option:checked:hover,
-body[data-theme="cyan"] #editOverlay option:checked:focus{
+body[data-theme="cyan"] #editOverlay option:checked:focus,
+body[data-theme="cyan"] #addTaskOverlay option:checked,
+body[data-theme="cyan"] #addTaskOverlay option:checked:hover,
+body[data-theme="cyan"] #addTaskOverlay option:checked:focus{
   background: #122a35;
   color: #f0fcff;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
@@ -1562,6 +1590,19 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   width:100% !important;
   max-width:none !important;
   min-width:0;
+}
+
+#addTaskOverlay #addTaskTimerSettingsGroup,
+#addTaskOverlay #addTaskFinalCheckpointActionField{
+  width:100%;
+  max-width:none;
+}
+#addTaskOverlay #addTaskFinalCheckpointActionSelect,
+#addTaskOverlay #addTaskCheckpointSoundModeSelect,
+#addTaskOverlay #addTaskCheckpointToastModeSelect{
+  display:block;
+  width:100%;
+  max-width:none;
 }
 
 /* Final Edit Task section flattening + typography normalization */

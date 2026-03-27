@@ -625,25 +625,38 @@ body[data-theme="cyan"] option:focus{
 .addTaskNameList{
   display:flex;
   flex-direction:column;
-  gap:4px;
-  padding:4px 8px;
+  gap:0;
+  padding:2px 0;
 }
 .addTaskNameItem{
   width:100%;
   text-align:left;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background: transparent;
   color:var(--text);
-  padding:7px 9px;
+  padding:8px 10px;
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
   cursor:pointer;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path: none;
 }
 .addTaskNameItem:hover{
-  background: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.08);
+}
+
+body[data-theme="purple"] .addTaskNameItem:hover,
+body[data-theme="purple"] .addTaskNameItem:focus{
+  background: #3f234f;
+  color: #fff8ff;
+}
+
+body[data-theme="cyan"] .addTaskNameItem:hover,
+body[data-theme="cyan"] .addTaskNameItem:focus{
+  background: #183846;
+  color: #eaf7ff;
 }
 .categoryFieldRow{
   margin-top:10px;
