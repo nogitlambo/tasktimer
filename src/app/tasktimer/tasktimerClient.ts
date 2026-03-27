@@ -2,7 +2,7 @@
 
 import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
-import { cryptoRandomId, escapeRegExp, newTaskId } from "./lib/ids";
+import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
 import { normalizeHistoryTimestampMs, localDayKey } from "./lib/history";
@@ -14,7 +14,7 @@ import {
   formatDashboardHeatMonthLabel,
   startOfCurrentWeekMondayMs,
 } from "./lib/historyChart";
-import { formatFocusElapsed, formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
+import { formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import {
   ADD_TASK_PRESET_NAMES,
   filterTaskNameOptions,
@@ -26,7 +26,6 @@ import {
   getAddTaskDurationMaxForPeriod,
   normalizeTaskConfigMilestones,
 } from "./lib/taskConfig";
-import { computeFocusInsights } from "./lib/focusInsights";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
@@ -78,7 +77,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import type {
   AppPage,
   DashboardAvgRange,
-  DashboardCardSize,
   DashboardTimelineDensity,
   MainMode,
   TaskTimerClientHandle,
@@ -787,13 +785,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     startTask: startTaskApi,
     stopTask: stopTaskApi,
     resetTask: resetTaskApi,
-    resetAll: resetAllApi,
     resetTaskStateImmediate: resetTaskStateImmediateApi,
-    openEdit: openEditApi,
     closeEdit: closeEditApi,
     openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
     closeElapsedPad: closeElapsedPadApi,
-    openHistory: openHistoryApi,
     registerTaskEvents,
   } = tasksApi;
 
@@ -1082,31 +1077,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return !!cloudRefreshInFlight && dashboardWidgetHasRenderedData[widget];
   }
 
-  function getVisibleDashboardModes(): MainMode[] {
-    return (["mode1", "mode2", "mode3"] as MainMode[]).filter((mode) => isModeEnabled(mode));
-  }
-
   function isDashboardModeIncluded(mode: MainMode) {
     return dashboardIncludedModes[mode] !== false;
-  }
-
-  function ensureDashboardIncludedModesValid() {
-    const visibleModes = getVisibleDashboardModes();
-    if (!visibleModes.length) {
-      dashboardIncludedModes.mode1 = true;
-      return;
-    }
-    const hasVisibleMode = visibleModes.some((mode) => isDashboardModeIncluded(mode));
-    if (hasVisibleMode) return;
-    dashboardIncludedModes[visibleModes[0] || "mode1"] = true;
-  }
-
-  function getDashboardIncludedModesMapForStorage() {
-    return {
-      mode1: dashboardIncludedModes.mode1 !== false,
-      mode2: dashboardIncludedModes.mode2 !== false,
-      mode3: dashboardIncludedModes.mode3 !== false,
-    } satisfies Record<MainMode, boolean>;
   }
 
   function getDashboardIncludedTaskIds() {
@@ -1383,21 +1355,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return true;
   }
 
-  function regeneratePresetIntervalMilestones(task: Task) {
-    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return;
-    if (!hasValidPresetInterval(task)) return;
-    const taskAny = task as any;
-    ensureMilestoneIdentity(task);
-    const interval = Math.max(0, +taskAny.presetIntervalValue || 0);
-    const ordered = task.milestones.slice().sort((a, b) => (+((a as any).createdSeq) || 0) - (+((b as any).createdSeq) || 0));
-    ordered.forEach((m, idx) => {
-      m.hours = interval * (idx + 1);
-    });
-    const last = ordered[ordered.length - 1];
-    taskAny.presetIntervalLastMilestoneId = last?.id ? String(last.id) : null;
-    task.milestones = sortMilestones(ordered);
-  }
-
   function savePendingTaskJump(taskId: string | null) {
     pendingTaskJumpMemory = taskId ? String(taskId) : null;
     try {
@@ -1477,24 +1434,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return parts.join("||");
   }
 
-  function loadFocusSessionNotes() {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = window.localStorage.getItem(FOCUS_SESSION_NOTES_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      if (!parsed || typeof parsed !== "object") return {};
-      const next: Record<string, string> = {};
-      Object.keys(parsed).forEach((taskId) => {
-        const value = String(parsed[taskId] || "").trim();
-        if (value) next[taskId] = value;
-      });
-      return next;
-    } catch {
-      return {};
-    }
-  }
-
   function persistFocusSessionNotes() {
     if (typeof window === "undefined") return;
     try {
@@ -1543,17 +1482,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els.focusSessionNotesSection.open = !!noteValue.trim();
   }
 
-  function scheduleFocusSessionNoteSave(taskId: string, noteRaw: string) {
-    if (focusSessionNoteSaveTimer != null) {
-      window.clearTimeout(focusSessionNoteSaveTimer);
-      focusSessionNoteSaveTimer = null;
-    }
-    focusSessionNoteSaveTimer = window.setTimeout(() => {
-      setFocusSessionDraft(taskId, noteRaw);
-      focusSessionNoteSaveTimer = null;
-    }, 250);
-  }
-
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {
     const pendingTaskId = String(taskId || focusModeTaskId || "").trim();
     if (focusSessionNoteSaveTimer != null) {
@@ -1584,17 +1512,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return liveNote;
     }
     return getFocusSessionDraft(taskKey);
-  }
-
-  function captureResetActionSessionNote(taskId?: string | null): string {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    const liveFocusNote = getLiveFocusSessionNoteValue(taskKey);
-    if (liveFocusNote) {
-      setFocusSessionDraft(taskKey, liveFocusNote);
-      return liveFocusNote;
-    }
-    return captureSessionNoteSnapshot(taskKey);
   }
 
   function getHistoryEntryNote(entry: any) {
@@ -1667,439 +1584,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (value === "low") return 3;
     if (value === "high") return 7;
     return 5;
-  }
-
-  function collectDashboardPanelMeta() {
-    const out = [] as Array<{ panel: HTMLElement; panelId: string; label: string }>;
-    const heroPanel = document.querySelector(
-      '#appPageDashboard .dashboardHeroPanel[data-dashboard-panel-id]'
-    ) as HTMLElement | null;
-    if (heroPanel) {
-      const panelId = String(heroPanel.getAttribute("data-dashboard-panel-id") || "").trim();
-      if (panelId) {
-        const titleEl = heroPanel.querySelector(".dashboardHeroTitle") as HTMLElement | null;
-        const title = String(titleEl?.textContent || "").trim();
-        const ariaLabel = String(heroPanel.getAttribute("aria-label") || "").trim();
-        out.push({
-          panel: heroPanel,
-          panelId,
-          label: title || ariaLabel || panelId,
-        });
-      }
-    }
-    const grid = els.dashboardGrid;
-    if (!grid) return out;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const panel = el as HTMLElement;
-      const panelId = String(panel.getAttribute("data-dashboard-id") || "").trim();
-      if (!panelId) return;
-      const customLabel = String(panel.getAttribute("data-dashboard-label") || "").trim();
-      const titleEl = panel.querySelector(".dashboardCardTitle") as HTMLElement | null;
-      const title = String(titleEl?.textContent || "").trim();
-      const ariaLabel = String(panel.getAttribute("aria-label") || "").trim();
-      out.push({
-        panel,
-        panelId,
-        label: customLabel || title || ariaLabel || panelId,
-      });
-    });
-    return out;
-  }
-
-  function getDashboardCardVisibilityMapForStorage() {
-    const out: Record<string, boolean> = {};
-    collectDashboardPanelMeta().forEach(({ panelId }) => {
-      out[panelId] = dashboardCardVisibility[panelId] !== false;
-    });
-    return out;
-  }
-
-  function getDashboardCategoryMeta() {
-    return getVisibleDashboardModes().map((mode) => ({
-      mode,
-      label: getModeLabel(mode),
-    }));
-  }
-
-  function isDashboardCardVisible(cardId: string) {
-    return dashboardCardVisibility[cardId] !== false;
-  }
-
-  function syncDashboardPanelMenuState() {
-    const menuList = els.dashboardPanelMenuList;
-    if (!menuList) return;
-    const meta = collectDashboardPanelMeta();
-    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
-    Array.from(menuList.querySelectorAll("input[data-dashboard-panel-id]")).forEach((node) => {
-      const checkbox = node as HTMLInputElement;
-      const panelId = String(checkbox.getAttribute("data-dashboard-panel-id") || "");
-      const isVisible = isDashboardCardVisible(panelId);
-      checkbox.checked = isVisible;
-      checkbox.disabled = isVisible && visibleCount <= 1;
-    });
-    const categoryMeta = getDashboardCategoryMeta();
-    const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
-    Array.from(menuList.querySelectorAll("input[data-dashboard-category-id]")).forEach((node) => {
-      const checkbox = node as HTMLInputElement;
-      const modeAttr = String(checkbox.getAttribute("data-dashboard-category-id") || "").trim();
-      const mode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
-      const isIncluded = isDashboardModeIncluded(mode);
-      checkbox.checked = isIncluded;
-      checkbox.disabled = isIncluded && includedCount <= 1;
-    });
-  }
-
-  function renderDashboardPanelMenu() {
-    const menuList = els.dashboardPanelMenuList;
-    if (!menuList) return;
-    const meta = collectDashboardPanelMeta();
-    const categories = getDashboardCategoryMeta();
-    menuList.innerHTML = "";
-    if (!categories.length && !meta.length) return;
-    const appendSectionTitle = (title: string) => {
-      const heading = document.createElement("div");
-      heading.className = "dashboardPanelMenuSectionTitle";
-      heading.textContent = title;
-      menuList.appendChild(heading);
-    };
-    if (categories.length) {
-      appendSectionTitle("Categories");
-      categories.forEach(({ mode, label }) => {
-        const row = document.createElement("label");
-        row.className = "dashboardPanelMenuItem";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.setAttribute("data-dashboard-category-id", mode);
-        const text = document.createElement("span");
-        text.textContent = label;
-        row.appendChild(input);
-        row.appendChild(text);
-        menuList.appendChild(row);
-      });
-    }
-    if (meta.length) {
-      if (categories.length) {
-        const divider = document.createElement("div");
-        divider.className = "dashboardPanelMenuDivider";
-        divider.setAttribute("aria-hidden", "true");
-        menuList.appendChild(divider);
-      }
-      appendSectionTitle("Panels");
-      meta.forEach(({ panelId, label }) => {
-        const row = document.createElement("label");
-        row.className = "dashboardPanelMenuItem";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.setAttribute("data-dashboard-panel-id", panelId);
-        const text = document.createElement("span");
-        text.textContent = label;
-        row.appendChild(input);
-        row.appendChild(text);
-        menuList.appendChild(row);
-      });
-    }
-    syncDashboardPanelMenuState();
-  }
-
-  function closeDashboardPanelMenu() {
-    if (els.dashboardPanelMenu) els.dashboardPanelMenu.open = false;
-  }
-
-  function saveDashboardWidgetState(partialWidgets: Record<string, unknown>) {
-    const dashboard = cloudDashboardCache || loadCachedDashboard();
-    const existingWidgets =
-      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    const existingOrder = Array.isArray(dashboard?.order) ? dashboard!.order : getCurrentDashboardOrder();
-    const widgets = {
-      ...existingWidgets,
-      ...partialWidgets,
-      cardVisibility: getDashboardCardVisibilityMapForStorage(),
-      includedModes: getDashboardIncludedModesMapForStorage(),
-    };
-    cloudDashboardCache = { order: existingOrder, widgets };
-    saveCloudDashboard(cloudDashboardCache);
-  }
-
-  function applyDashboardCardVisibility() {
-    const meta = collectDashboardPanelMeta();
-    if (!meta.length) return;
-    let visibleCount = 0;
-    meta.forEach(({ panelId }) => {
-      if (isDashboardCardVisible(panelId)) visibleCount += 1;
-    });
-    if (visibleCount <= 0) {
-      const fallbackPanelId = meta[0].panelId;
-      dashboardCardVisibility[fallbackPanelId] = true;
-      visibleCount = 1;
-    }
-    meta.forEach(({ panel, panelId }) => {
-      panel.style.display = isDashboardCardVisible(panelId) ? "" : "none";
-    });
-    syncDashboardPanelMenuState();
-  }
-
-  function loadDashboardWidgetState() {
-    const dashboard = cloudDashboardCache || loadCachedDashboard();
-    const widgets =
-      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    dashboardAvgRange = sanitizeDashboardAvgRange((widgets as any).avgSessionByTaskRange);
-    dashboardTimelineDensity = sanitizeDashboardTimelineDensity((widgets as any).timelineDensity);
-    const nextSizes: Record<string, DashboardCardSize> = {};
-    const rawSizes = (widgets as any).cardSizes;
-    if (rawSizes && typeof rawSizes === "object") {
-      Object.entries(rawSizes as Record<string, unknown>).forEach(([cardId, size]) => {
-        const nextSize = sanitizeDashboardCardSize(size, cardId);
-        if (!cardId || !nextSize) return;
-        nextSizes[cardId] = nextSize;
-      });
-    }
-    dashboardCardSizes = nextSizes;
-    const nextVisibility: Record<string, boolean> = {};
-    const rawVisibility = (widgets as any).cardVisibility;
-    if (rawVisibility && typeof rawVisibility === "object") {
-      Object.entries(rawVisibility as Record<string, unknown>).forEach(([cardId, visible]) => {
-        if (!cardId) return;
-        if (typeof visible !== "boolean") return;
-        nextVisibility[cardId] = visible;
-      });
-    }
-    dashboardCardVisibility = nextVisibility;
-    const nextIncludedModes: Record<MainMode, boolean> = { mode1: true, mode2: true, mode3: true };
-    const rawIncludedModes = (widgets as any).includedModes;
-    if (rawIncludedModes && typeof rawIncludedModes === "object") {
-      (["mode1", "mode2", "mode3"] as MainMode[]).forEach((mode) => {
-        if (typeof (rawIncludedModes as Record<string, unknown>)[mode] === "boolean") {
-          nextIncludedModes[mode] = (rawIncludedModes as Record<string, boolean>)[mode];
-        }
-      });
-    }
-    dashboardIncludedModes = nextIncludedModes;
-    ensureDashboardIncludedModesValid();
-  }
-
-  function saveDashboardAvgRange(range: DashboardAvgRange) {
-    dashboardAvgRange = sanitizeDashboardAvgRange(range);
-    saveDashboardWidgetState({
-      avgSessionByTaskRange: dashboardAvgRange,
-    });
-  }
-
-  function saveDashboardTimelineDensity(value: DashboardTimelineDensity) {
-    dashboardTimelineDensity = sanitizeDashboardTimelineDensity(value);
-    saveDashboardWidgetState({
-      timelineDensity: dashboardTimelineDensity,
-    });
-  }
-
-  function canUseCompactDashboardCardSize(cardId: string) {
-    return (
-      cardId === "streak" ||
-      cardId === "week-hours" ||
-      cardId === "weekly-time-goals" ||
-      cardId === "tasks-completed"
-    );
-  }
-
-  function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
-    if (value === "full" || value === "half" || value === "quarter") return value;
-    if (value === "eighth" && canUseCompactDashboardCardSize(String(cardId || "").trim())) return value;
-    return null;
-  }
-
-  function getDashboardCardSizeMapForStorage() {
-    const out: Record<string, DashboardCardSize> = {};
-    Object.entries(dashboardCardSizes || {}).forEach(([cardId, size]) => {
-      if (!cardId) return;
-      const nextSize = sanitizeDashboardCardSize(size, cardId);
-      if (nextSize) out[cardId] = nextSize;
-    });
-    return out;
-  }
-
-  function applyDashboardCardSizes() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "");
-      if (!cardId) return;
-      const size = sanitizeDashboardCardSize(dashboardCardSizes[cardId], cardId);
-      if (size) card.setAttribute("data-dashboard-size", size);
-      else card.removeAttribute("data-dashboard-size");
-    });
-  }
-
-  function ensureDashboardCardSizeControls() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      if (card.querySelector(".dashboardSizeControl")) return;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      const compactSizeOption = canUseCompactDashboardCardSize(cardId)
-        ? `
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="eighth" role="menuitemradio" aria-checked="false">Compact</button>`
-        : "";
-      const control = document.createElement("div");
-      control.className = "dashboardSizeControl";
-      control.innerHTML = `
-        <button class="iconBtn dashboardSizeBtn" type="button" data-dashboard-size-toggle="true" aria-label="Panel size options" title="Panel size options" aria-expanded="false">
-          <span class="dashboardSizeGlyph" aria-hidden="true"></span>
-        </button>
-        <div class="dashboardSizeMenu" data-dashboard-size-menu="true" role="menu" aria-label="Panel size options">
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="full" role="menuitemradio" aria-checked="false">Full width</button>
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="half" role="menuitemradio" aria-checked="false">Half width</button>
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="quarter" role="menuitemradio" aria-checked="false">Quarter width</button>
-          ${compactSizeOption}
-        </div>
-      `;
-      card.prepend(control);
-    });
-  }
-
-  function syncDashboardCardSizeControlState() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "");
-      if (!cardId) return;
-      const selectedSize = sanitizeDashboardCardSize(dashboardCardSizes[cardId], cardId);
-      const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
-      const menuOpen = card.classList.contains("isSizeMenuOpen");
-      if (toggle) toggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
-      Array.from(card.querySelectorAll(".dashboardSizeOption[data-dashboard-size]")).forEach((btn) => {
-        const option = btn as HTMLButtonElement;
-        const optionSize = sanitizeDashboardCardSize(option.getAttribute("data-dashboard-size"), cardId);
-        const isSelected = !!optionSize && !!selectedSize && optionSize === selectedSize;
-        option.classList.toggle("isOn", isSelected);
-        option.setAttribute("aria-checked", isSelected ? "true" : "false");
-      });
-    });
-  }
-
-  function closeDashboardCardSizeMenus() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard.isSizeMenuOpen")).forEach((el) => {
-      (el as HTMLElement).classList.remove("isSizeMenuOpen");
-    });
-    syncDashboardCardSizeControlState();
-  }
-
-  function applyOrderedDashboardCards(grid: HTMLElement, order: string[] | null | undefined) {
-    if (!Array.isArray(order) || !order.length) return;
-    const cards = Array.from(grid.querySelectorAll(".dashboardCard")) as HTMLElement[];
-    if (!cards.length) return;
-    const byId = new Map<string, HTMLElement>();
-    cards.forEach((card) => {
-      const id = card.getAttribute("data-dashboard-id");
-      if (id) byId.set(id, card);
-    });
-    const ordered: HTMLElement[] = [];
-    const seen = new Set<string>();
-    order.forEach((idRaw) => {
-      const id = String(idRaw || "");
-      if (!id || seen.has(id)) return;
-      seen.add(id);
-      const card = byId.get(id);
-      if (card) ordered.push(card);
-    });
-    const unordered = cards.filter((card) => {
-      const id = card.getAttribute("data-dashboard-id") || "";
-      return !seen.has(id);
-    });
-    [...ordered, ...unordered].forEach((card) => grid.appendChild(card));
-  }
-
-  function applyDashboardOrderFromStorage() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    const dashboard = cloudDashboardCache || loadCachedDashboard();
-    const order = Array.isArray(dashboard?.order) ? dashboard?.order : [];
-    if (!order.length) return;
-    applyOrderedDashboardCards(grid, order);
-  }
-
-  function saveDashboardOrder() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    const order = getCurrentDashboardOrder();
-    const dashboard = cloudDashboardCache || loadCachedDashboard();
-    const existingWidgets =
-      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    const widgets = {
-      ...existingWidgets,
-      cardSizes: getDashboardCardSizeMapForStorage(),
-      cardVisibility: getDashboardCardVisibilityMapForStorage(),
-    };
-    cloudDashboardCache = { order, widgets };
-    saveCloudDashboard(cloudDashboardCache);
-  }
-
-  function getCurrentDashboardOrder() {
-    const grid = els.dashboardGrid;
-    if (!grid) return [] as string[];
-    return Array.from(grid.querySelectorAll(".dashboardCard"))
-      .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
-      .filter(Boolean);
-  }
-
-  function applyDashboardOrder(order: string[] | null | undefined) {
-    const grid = els.dashboardGrid;
-    if (!grid || !Array.isArray(order) || !order.length) return;
-    applyOrderedDashboardCards(grid, order);
-  }
-
-  function beginDashboardEditMode() {
-    if (dashboardEditMode) return;
-    dashboardOrderDraftBeforeEdit = getCurrentDashboardOrder();
-    dashboardCardSizesDraftBeforeEdit = { ...dashboardCardSizes };
-    dashboardEditMode = true;
-    applyDashboardEditMode();
-  }
-
-  function cancelDashboardEditMode() {
-    if (!dashboardEditMode) return;
-    if (dashboardOrderDraftBeforeEdit && dashboardOrderDraftBeforeEdit.length) {
-      applyDashboardOrder(dashboardOrderDraftBeforeEdit);
-    }
-    dashboardCardSizes = dashboardCardSizesDraftBeforeEdit ? { ...dashboardCardSizesDraftBeforeEdit } : {};
-    applyDashboardCardSizes();
-    dashboardEditMode = false;
-    dashboardOrderDraftBeforeEdit = null;
-    dashboardCardSizesDraftBeforeEdit = null;
-    applyDashboardEditMode();
-  }
-
-  function commitDashboardEditMode() {
-    if (!dashboardEditMode) return;
-    saveDashboardOrder();
-    dashboardEditMode = false;
-    dashboardOrderDraftBeforeEdit = null;
-    dashboardCardSizesDraftBeforeEdit = null;
-    applyDashboardEditMode();
-    if (currentAppPage === "dashboard") {
-      renderDashboardWidgets();
-    }
-  }
-
-  function applyDashboardEditMode() {
-    const grid = els.dashboardGrid;
-    if (!grid) return;
-    ensureDashboardCardSizeControls();
-    if (!dashboardEditMode) closeDashboardCardSizeMenus();
-    grid.classList.toggle("isEditMode", dashboardEditMode);
-    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-      (el as HTMLElement).setAttribute("draggable", dashboardEditMode ? "true" : "false");
-    });
-    syncDashboardCardSizeControlState();
-    if (els.dashboardEditBtn) {
-      els.dashboardEditBtn.classList.toggle("isOn", dashboardEditMode);
-      (els.dashboardEditBtn as HTMLElement).style.display = dashboardEditMode ? "none" : "inline-flex";
-    }
-    if (els.dashboardEditCancelBtn) (els.dashboardEditCancelBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
-    if (els.dashboardEditDoneBtn) (els.dashboardEditDoneBtn as HTMLElement).style.display = dashboardEditMode ? "inline-flex" : "none";
   }
 
   function shouldIgnoreTaskDragStart(target: EventTarget | null) {
@@ -2684,19 +2168,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       : "continue";
   }
 
-  function getTimeGoalReminderDelayMs() {
-    return 60 * 60 * 1000;
-  }
-
-  function getTimeGoalCompleteDurationMinutes() {
-    const value = Math.max(0, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "0") || 0));
-    if (!(value > 0)) return 0;
-    if (timeGoalCompleteDurationUnit === "minute") {
-      return timeGoalCompleteDurationPeriod === "day" ? value : value * 7;
-    }
-    return timeGoalCompleteDurationPeriod === "day" ? value * 60 : value * 60 * 7;
-  }
-
   function setUnitButtonActive(btn: HTMLButtonElement | null, active: boolean) {
     if (!btn) return;
     btn.classList.toggle("isOn", active);
@@ -2805,46 +2276,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
     if (!overdueTask) return;
     openTimeGoalCompleteModal(overdueTask, getTaskElapsedMs(overdueTask), { reminder: true });
-  }
-
-  function syncTimeGoalModalWithTaskState() {
-    const activeTaskId = String(timeGoalModalTaskId || "").trim();
-    if (!activeTaskId) return;
-    const task = tasks.find((row) => String(row.id || "") === activeTaskId) || null;
-    if (shouldKeepTimeGoalCompletionFlow(task, timeGoalModalFrozenElapsedMs)) return;
-    clearTaskTimeGoalFlow(activeTaskId);
-    closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-    closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-    closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-  }
-
-  async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
-    const taskId = String(task.id || "");
-    const sessionNote = captureResetActionSessionNote(taskId);
-    if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote });
-    clearTaskTimeGoalFlow(taskId);
-    closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-    closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-    closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-    save();
-    if (!opts.logHistory) {
-      void syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    }
-    render();
-    openDeferredFocusModeTimeGoalModal();
-  }
-
-  function resumeTaskAfterTimeGoalModal(task: Task) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId || timeGoalModalTaskId !== taskId) return;
-    const frozenElapsedMs = Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0));
-    task.accumulatedMs = frozenElapsedMs;
-    task.startMs = nowMs();
-    task.running = true;
-    task.hasStarted = true;
-    timeGoalModalTaskId = null;
-    timeGoalModalFrozenElapsedMs = 0;
   }
 
   function addRangeMsToLocalDayMap(dayMap: Map<string, number>, startMs: number, endMs: number) {
@@ -3724,52 +3155,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderTasksPage();
   }
 
-  function getTaskDisplayName(task: Task | null | undefined) {
-    const name = String(task?.name || "").trim();
-    return name || "Unnamed task";
-  }
-
-  function findOtherRunningTaskIndex(targetIndex: number) {
-    return tasks.findIndex((task, index) => index !== targetIndex && !!task?.running);
-  }
-
-  function startTask(i: number) {
-    startTaskApi(i);
-  }
-
-  function stopTask(i: number) {
-    stopTaskApi(i);
-  }
-
   function getTileColumnCount() {
     if (typeof window === "undefined") return 1;
     if (window.matchMedia("(min-width: 1200px)").matches) return 3;
     if (window.matchMedia("(min-width: 720px)").matches) return 2;
     return 1;
-  }
-
-  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string }) {
-    if (!t) return;
-    const taskId = String(t.id || "");
-    flushPendingFocusSessionNoteSave(taskId);
-    if (!!opts?.logHistory && canLogSession(t)) {
-      const ms = getTaskElapsedMs(t);
-      const completedAtMs = nowMs();
-      if (ms > 0) appendCompletedSessionHistory(t, completedAtMs, ms, opts?.sessionNote);
-    }
-    t.accumulatedMs = 0;
-    t.running = false;
-    t.startMs = null;
-    t.hasStarted = false;
-    t.xpDisqualifiedUntilReset = false;
-    clearTaskTimeGoalFlow(taskId);
-    resetCheckpointAlertTracking(t.id);
-    checkpointAutoResetDirty = true;
-    clearFocusSessionDraft(taskId);
-    if (String(focusModeTaskId || "") === taskId) {
-      syncFocusSessionNotesInput(taskId);
-      syncFocusSessionNotesAccordion(taskId);
-    }
   }
 
   function syncFocusRunButtons(t?: Task | null) {
@@ -3827,164 +3217,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     el.classList.add("is-neutral");
   }
 
-  function updateFocusInsights(t: Task) {
-    const taskId = String(t.id || "");
-    const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-    const insights = computeFocusInsights(entries as Array<{ ts: number; ms: number }>, nowMs());
-    if (els.focusInsightBest) els.focusInsightBest.textContent = insights.bestMs > 0 ? formatTime(insights.bestMs) : "--";
-
-    if (els.focusInsightWeekday) {
-      if (!insights.weekdayName || insights.weekdaySessionCount <= 0) {
-        els.focusInsightWeekday.textContent = "No logged sessions yet";
-        els.focusInsightWeekday.classList.add("is-empty");
-      } else {
-        const sessionLabel = insights.weekdaySessionCount === 1 ? "session" : "sessions";
-        els.focusInsightWeekday.textContent = `${insights.weekdayName} (${insights.weekdaySessionCount} ${sessionLabel})`;
-        els.focusInsightWeekday.classList.remove("is-empty");
-      }
-    }
-    setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, insights.todayDeltaMs);
-    setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, insights.weekDeltaMs);
-  }
-
-  function toggleCollapse(i: number) {
-    const t = tasks[i];
-    if (!t) return;
-    t.collapsed = !t.collapsed;
-    save();
-    render();
-  }
-
-  function openHistory(i: number) {
-    openHistoryApi(i);
-  }
-
-  function handleTaskListClick(e: any) {
-    const taskEl = e.target?.closest?.(".task");
-    if (!taskEl) return;
-    const i = parseInt(taskEl.dataset.index, 10);
-    if (!Number.isFinite(i)) return;
-    const taskId = String(taskEl.dataset.taskId || "").trim();
-    const flipBtn = e.target?.closest?.("[data-task-flip]") as HTMLElement | null;
-    if (flipBtn && taskId) {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      setTaskFlipped(taskId, flipBtn.getAttribute("data-task-flip") === "open", taskEl as HTMLElement);
-      return;
-    }
-
-    const btn = e.target?.closest?.("[data-action]");
-    if (!btn) {
-      const inTopRow = !!e.target?.closest?.(".row");
-      const inActions = !!e.target?.closest?.(".actions");
-      if (inTopRow && !inActions) {
-        openFocusMode(i);
-      }
-      return;
-    }
-    const action = btn.getAttribute("data-action");
-
-    if (action === "start") startTask(i);
-    else if (action === "stop") stopTask(i);
-    else if (action === "reset") resetTask(i);
-    else if (action === "delete") deleteTask(i);
-    else if (action === "edit") openEdit(i);
-    else if (action === "history") openHistory(i);
-    else if (action === "duplicate") duplicateTask(i);
-    else if (action === "editName" || action === "focus") openFocusMode(i);
-    else if (action === "collapse") toggleCollapse(i);
-    else if (action === "exportTask") openTaskExportModal(i);
-    else if (action === "shareTask") openShareTaskModal(i);
-    else if (action === "unshareTask") {
-      const t = tasks[i];
-      if (!t) return;
-      confirm("Unshare Task", "Unshare this task from all friends?", {
-        okLabel: "Unshare",
-        cancelLabel: "Cancel",
-        onOk: () => {
-          const uid = currentUid();
-          if (!uid) {
-            closeConfirm();
-            return;
-          }
-          void deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
-            .then(async () => {
-              await refreshOwnSharedSummaries();
-              if (currentAppPage === "test2") await refreshGroupsData();
-              render();
-            })
-            .finally(() => closeConfirm());
-        },
-      });
-    } else if (action === "muteCheckpointAlert") {
-      stopCheckpointRepeatAlert();
-      return;
-    } else if (action === "showSuppressedCheckpointAlert") {
-      const suppressedAlert = getSuppressedFocusModeAlert(taskId);
-      if (!suppressedAlert) return;
-      enqueueCheckpointToast(suppressedAlert.title, suppressedAlert.text, {
-        autoCloseMs: suppressedAlert.autoCloseMs,
-        taskId: suppressedAlert.taskId,
-        taskName: suppressedAlert.taskName,
-        counterText: suppressedAlert.counterText,
-        checkpointTimeText: suppressedAlert.checkpointTimeText,
-        checkpointDescText: suppressedAlert.checkpointDescText,
-        muteRepeatOnManualDismiss: suppressedAlert.muteRepeatOnManualDismiss,
-      });
-      clearSuppressedFocusModeAlert(taskId);
-      render();
-      return;
-    }
-
-    if (taskId) setTaskFlipped(taskId, false, taskEl as HTMLElement);
-  }
-
-  function handleEditNameInput() {
-    const t = getCurrentEditTask();
-    if (!t) return;
-    syncEditTaskDurationReadout(t);
-    syncEditSaveAvailability(t);
-  }
-
-  function handleElapsedPadOverlayClick(e: any) {
-    if (e.target === els.elapsedPadOverlay) closeElapsedPad(false);
-  }
-
-  function handleElapsedPadKeyClick(event: any) {
-    const el = event?.currentTarget as HTMLElement | null;
-    if (!el) return;
-    const digit = el.getAttribute("data-pad-digit");
-    const action = el.getAttribute("data-pad-action");
-    if (digit != null) {
-      padAppendDigit(digit);
-      return;
-    }
-    if (action === "back") {
-      padBackspace();
-      return;
-    }
-    if (action === "dot") {
-      padAppendDot();
-      return;
-    }
-    if (action === "clear") padClear();
-  }
-
   function resetAllOpenHistoryChartSelections() {
     historyInlineApi?.resetAllOpenHistoryChartSelections();
-  }
-
-  function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
-    renderDashboardStreakCard();
-    renderDashboardOverviewChart();
-    renderDashboardTodayHoursCard();
-    renderDashboardWeeklyGoalsCard();
-    renderDashboardTasksCompletedCard();
-    renderDashboardTimelineCard();
-    renderDashboardFocusTrend();
-    renderDashboardModeDistribution();
-    if (opts?.includeAvgSession !== false) renderDashboardAvgSessionChart();
-    renderDashboardHeatCalendar();
   }
 
   function renderDashboardOverviewChart() {
@@ -5446,18 +4680,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     historyInlineApi?.renderHistory(taskId);
   }
 
-  function resetTask(i: number) {
-    resetTaskApi(i);
-  }
-
-  function resetAll() {
-    resetAllApi();
-  }
-
-  function openEdit(i: number) {
-    openEditApi(i);
-  }
-
   function closeEdit(saveChanges: boolean) {
     closeEditApi(saveChanges);
   }
@@ -5520,45 +4742,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     input.dataset.autoclearPending = "0";
   }
 
-  function elapsedPadRangeForInput(input: HTMLInputElement | null) {
-    if (input === els.editD) return { min: 0, max: Number.POSITIVE_INFINITY };
-    if (input === els.editH) {
-      return isEditMilestoneUnitDay()
-        ? { min: 0, max: 23 }
-        : { min: 0, max: Number.POSITIVE_INFINITY };
-    }
-    if (input === els.editM || input === els.editS) return { min: 0, max: 59 };
-    return { min: 0, max: 59 };
-  }
-
-  function elapsedPadErrorTextForInput(input: HTMLInputElement | null) {
-    const range = elapsedPadRangeForInput(input);
-    if (!Number.isFinite(range.max)) return `Enter a number greater than or equal to ${range.min}`;
-    return `Enter a number within the range ${range.min}-${range.max}`;
-  }
-
-  function clearElapsedPadError() {
-    if (els.elapsedPadError) els.elapsedPadError.textContent = "";
-  }
-
-  function setElapsedPadError(msg: string) {
-    if (els.elapsedPadError) els.elapsedPadError.textContent = msg;
-  }
-
-  function elapsedPadValidatedValue(raw: string, input: HTMLInputElement | null) {
-    const parsed = parseInt(raw || "", 10);
-    const range = elapsedPadRangeForInput(input);
-    if (!Number.isFinite(parsed) || isNaN(parsed)) return null;
-    if (parsed < range.min || parsed > range.max) return null;
-    return String(parsed);
-  }
-
-  function renderElapsedPadDisplay() {
-    if (!els.elapsedPadDisplay) return;
-    const text = (elapsedPadDraft || "0").replace(/^0+(?=\d)/, "") || "0";
-    els.elapsedPadDisplay.textContent = text;
-  }
-
   function openElapsedPadForMilestone(
     task: Task,
     milestone: { hours: number; description: string },
@@ -5570,76 +4753,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function closeElapsedPad(applyValue: boolean) {
     closeElapsedPadApi(applyValue);
-  }
-
-  function padAppendDigit(digit: string) {
-    clearElapsedPadError();
-    const raw = `${elapsedPadDraft || ""}${digit}`;
-    const next = raw.includes(".") ? raw : raw.replace(/^0+(?=\d)/, "");
-    elapsedPadDraft = next.slice(0, 6) || "0";
-    renderElapsedPadDisplay();
-  }
-
-  function padAppendDot() {
-    clearElapsedPadError();
-    if (!elapsedPadMilestoneRef || elapsedPadTarget) return;
-    const current = elapsedPadDraft || "0";
-    if (current.includes(".")) return;
-    elapsedPadDraft = `${current}.`;
-    renderElapsedPadDisplay();
-  }
-
-  function padBackspace() {
-    clearElapsedPadError();
-    const next = (elapsedPadDraft || "").slice(0, -1);
-    elapsedPadDraft = next || "0";
-    renderElapsedPadDisplay();
-  }
-
-  function padClear() {
-    clearElapsedPadError();
-    elapsedPadDraft = "0";
-    renderElapsedPadDisplay();
-  }
-
-  function nextDuplicateName(originalName: string) {
-    const name = (originalName || "Task").trim();
-    const root = name.replace(/\s\d+$/, "").trim();
-    let maxN = 0;
-
-    tasks.forEach((t) => {
-      const n = (t.name || "").trim();
-      if (n === root) return;
-      const mm = n.match(new RegExp("^" + escapeRegExp(root) + "\\s(\\d+)$"));
-      if (mm) {
-        const v = parseInt(mm[1], 10);
-        if (!isNaN(v)) maxN = Math.max(maxN, v);
-      }
-    });
-
-    return root + " " + (maxN + 1);
-  }
-
-  function duplicateTask(i: number) {
-    const t = tasks[i];
-    if (!t) return;
-
-    const newId = newTaskId();
-    const copy = JSON.parse(JSON.stringify(t));
-    copy.id = newId;
-    copy.name = nextDuplicateName(t.name);
-
-    copy.running = false;
-    copy.startMs = null;
-
-    tasks.splice(i + 1, 0, copy);
-
-    const h = historyByTaskId && historyByTaskId[t.id] ? JSON.parse(JSON.stringify(historyByTaskId[t.id])) : [];
-    historyByTaskId[newId] = h;
-
-    saveHistory(historyByTaskId);
-    save();
-    render();
   }
 
   function deleteTask(i: number) {
@@ -5691,28 +4804,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
   }
 
-
-  function openFocusMode(i: number) {
-    const t = tasks[i];
-    if (!t) return;
-    focusModeTaskId = t.id;
-    suppressedFocusModeCheckpointAlertsByTaskId = {};
-    deferredFocusModeTimeGoalModals = [];
-    dismissNonFocusTaskAlertsForFocusTask(String(t.id || ""));
-    focusModeTaskName = (t.name || "").trim();
-    if (els.focusTaskName) els.focusTaskName.textContent = focusModeTaskName || "Task";
-    focusCheckpointSig = "";
-    updateFocusDial(t);
-    renderFocusCheckpointCompletionLog(t);
-    syncFocusRunButtons(t);
-    updateFocusInsights(t);
-    syncFocusSessionNotesInput(String(t.id || ""));
-    syncFocusSessionNotesAccordion(String(t.id || ""));
-    if (els.focusModeScreen) {
-      (els.focusModeScreen as HTMLElement).style.display = "block";
-      (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
-    }
-  }
 
   function closeFocusMode() {
     const focusScreenEl = els.focusModeScreen as HTMLElement | null;
@@ -5768,52 +4859,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     openDeferredFocusModeTimeGoalModal();
   }
 
-  function isFocusModeFilteringAlerts() {
-    return String(focusModeTaskId || "").trim().length > 0;
-  }
-
-  function shouldSuppressTaskAlertsInFocusMode(taskIdRaw: string | null | undefined) {
-    const activeFocusTaskId = String(focusModeTaskId || "").trim();
-    const taskId = String(taskIdRaw || "").trim();
-    return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
-  }
-
-  function noteSuppressedFocusModeAlert(toast: SuppressedCheckpointToast) {
-    const taskId = String(toast.taskId || "").trim();
-    if (!taskId) return;
-    suppressedFocusModeCheckpointAlertsByTaskId[taskId] = {
-      ...toast,
-      taskId,
-      taskName: toast.taskName ? String(toast.taskName) : null,
-      counterText: toast.counterText ? String(toast.counterText) : null,
-      checkpointTimeText: toast.checkpointTimeText ? String(toast.checkpointTimeText) : null,
-      checkpointDescText: toast.checkpointDescText ? String(toast.checkpointDescText) : null,
-    };
-  }
-
-  function getSuppressedFocusModeAlert(taskIdRaw: string | null | undefined): SuppressedCheckpointToast | null {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return null;
-    return suppressedFocusModeCheckpointAlertsByTaskId[taskId] || null;
-  }
-
-  function clearSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId || !suppressedFocusModeCheckpointAlertsByTaskId[taskId]) return;
-    delete suppressedFocusModeCheckpointAlertsByTaskId[taskId];
-  }
-
-  function queueDeferredFocusModeTimeGoalModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId) return;
-    if (deferredFocusModeTimeGoalModals.some((entry) => entry.taskId === taskId)) return;
-    deferredFocusModeTimeGoalModals.push({
-      taskId,
-      frozenElapsedMs: Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)),
-      reminder: !!opts?.reminder,
-    });
-  }
-
   function openDeferredFocusModeTimeGoalModal() {
     if (!deferredFocusModeTimeGoalModals.length) return;
     const nextPending = deferredFocusModeTimeGoalModals.shift() || null;
@@ -5824,35 +4869,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return;
     }
     openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
-  }
-
-  function dismissNonFocusTaskAlertsForFocusTask(focusTaskIdRaw: string | null | undefined) {
-    const focusTaskId = String(focusTaskIdRaw || "").trim();
-    if (!focusTaskId) return;
-    checkpointToastQueue.length = 0;
-    if (checkpointRepeatActiveTaskId && String(checkpointRepeatActiveTaskId || "").trim() !== focusTaskId) {
-      stopCheckpointRepeatAlert();
-    }
-    if (activeCheckpointToast && String(activeCheckpointToast.taskId || "").trim() !== focusTaskId) {
-      dismissCheckpointToast({ manual: false });
-    }
-  }
-
-  function hasFocusCheckpoints(t: Task): boolean {
-    return !!(t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.some((m) => (+m.hours || 0) > 0));
-  }
-
-  function syncFocusCheckpointToggle(t: Task) {
-    const hasCp = hasFocusCheckpoints(t);
-    const effectiveOn = hasCp ? focusShowCheckpoints : false;
-    if (els.focusCheckpointToggle) {
-      els.focusCheckpointToggle.classList.toggle("on", effectiveOn);
-      els.focusCheckpointToggle.setAttribute("aria-checked", String(effectiveOn));
-      els.focusCheckpointToggle.classList.toggle("opaque", !hasCp);
-    }
-    if (els.focusCheckpointRing) {
-      (els.focusCheckpointRing as HTMLElement).style.display = effectiveOn ? "block" : "none";
-    }
   }
 
   function renderFocusCheckpointCompletionLog(t: Task | null) {
@@ -5907,168 +4923,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     emptyEl.style.display = "none";
   }
 
-  function updateFocusDial(t: Task) {
-    const elapsedMs = getElapsedMs(t);
-    const elapsedSec = elapsedMs / 1000;
-    if (els.focusTaskName) els.focusTaskName.textContent = (t.name || "").trim() || focusModeTaskName || "Task";
-    const f = formatFocusElapsed(elapsedMs);
-    if (els.focusTimerDays) {
-      els.focusTimerDays.textContent = f.daysText;
-      (els.focusTimerDays as HTMLElement).style.display = f.showDays ? "block" : "none";
-    }
-    if (els.focusTimerClock) els.focusTimerClock.textContent = f.clockText;
-    syncFocusRunButtons(t);
-    updateFocusInsights(t);
-
-    const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
-    const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
-    syncFocusCheckpointToggle(t);
-    const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-    const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-    const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
-    const maxSec = Math.max(maxValue * milestoneUnitSec(t), timeGoalSec, 1);
-    const pct = hasTimeGoal && timeGoalSec > 0 ? Math.min((elapsedSec / timeGoalSec) * 100, 100) : 0;
-    if (els.focusDial) {
-      (els.focusDial as HTMLElement).style.setProperty("--focus-progress", `${pct}%`);
-      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", fillBackgroundForPct(pct));
-    }
-
-    if (!els.focusCheckpointRing) return;
-    if (!hasMilestones || maxValue <= 0) {
-      (els.focusCheckpointRing as HTMLElement).innerHTML = "";
-      renderFocusCheckpointCompletionLog(t);
-      focusCheckpointSig = "";
-      return;
-    }
-
-    const dialRect = (els.focusDial as HTMLElement | null)?.getBoundingClientRect();
-    const dialPx = Math.max(1, Math.round(dialRect?.width || 0));
-    const sig = `${t.milestoneTimeUnit || "hour"}|${dialPx}|${msSorted.map((m) => `${+m.hours || 0}:${m.description || ""}`).join(",")}`;
-    if (sig !== focusCheckpointSig) {
-      const parseConicStartDeg = () => {
-        const progressEl = (els.focusDial as HTMLElement | null)?.querySelector(".focusDialProgress") as HTMLElement | null;
-        if (!progressEl) return 0;
-        const bg = window.getComputedStyle(progressEl).backgroundImage || "";
-        const m = bg.match(/conic-gradient\(\s*from\s*([-\d.]+)deg/i);
-        return m ? Number(m[1]) || 0 : 0;
-      };
-      const parseRingCenterRatio = () => {
-        const progressEl = (els.focusDial as HTMLElement | null)?.querySelector(".focusDialProgress") as HTMLElement | null;
-        if (!progressEl) return 0.82;
-        const cs = window.getComputedStyle(progressEl);
-        const mask = (cs.maskImage || (cs as CSSStyleDeclaration & { webkitMaskImage?: string }).webkitMaskImage || "").toLowerCase();
-        const pct = [...mask.matchAll(/(\d+(?:\.\d+)?)%/g)].map((m) => Number(m[1])).filter((n) => Number.isFinite(n));
-        if (pct.length < 2) return 0.82;
-        const centerHolePct = (pct[0] + pct[1]) / 2;
-        return Math.max(0, Math.min(1, (centerHolePct + 100) / 200));
-      };
-      const parseProgressInsetPx = () => {
-        const progressEl = (els.focusDial as HTMLElement | null)?.querySelector(".focusDialProgress") as HTMLElement | null;
-        if (!progressEl) return 16;
-        const cs = window.getComputedStyle(progressEl);
-        const rawInset =
-          ((cs as CSSStyleDeclaration & { inset?: string }).inset || "").trim() ||
-          (cs.top || "").trim() ||
-          (cs.left || "").trim();
-        const firstToken = rawInset.split(/\s+/)[0] || "";
-        const px = parseFloat(firstToken);
-        return Number.isFinite(px) ? px : 16;
-      };
-      const dialRadiusPx = dialPx / 2;
-      const dialScale = Math.max(0.72, Math.min(1, dialPx / 420));
-      const ringInsetPx = parseProgressInsetPx();
-      const progressBoxRadiusPx = Math.max(0, dialRadiusPx - ringInsetPx);
-      const markerRadiusPx = Math.max(0, progressBoxRadiusPx * parseRingCenterRatio());
-      const outerRingRadiusPx = Math.max(0, dialRadiusPx - 2);
-      const markerLineLenPx = Math.max(2, (outerRingRadiusPx - markerRadiusPx) * 0.5);
-      const centerX = (dialRect?.left || 0) + (dialRect?.width || dialPx) / 2;
-      const centerY = (dialRect?.top || 0) + (dialRect?.height || dialPx) / 2;
-      const viewportPadPx = 10;
-      const availableOuterRadiusPx = Math.max(
-        outerRingRadiusPx + 4,
-        Math.min(
-          centerX - viewportPadPx,
-          window.innerWidth - centerX - viewportPadPx,
-          centerY - viewportPadPx,
-          window.innerHeight - centerY - viewportPadPx
-        )
-      );
-      const ringStartCssDeg = parseConicStartDeg();
-
-      const dots = msSorted
-        .filter((m) => (+m.hours || 0) > 0)
-        .map((m) => {
-          const v = +m.hours || 0;
-          const secTarget = v * milestoneUnitSec(t);
-          const ratioFromStart = Math.max(0, Math.min(1, secTarget / maxSec));
-          const checkpointCssDeg = ringStartCssDeg + ratioFromStart * 360;
-          const theta = (checkpointCssDeg * Math.PI) / 180;
-          const mx = Math.sin(theta) * markerRadiusPx;
-          const my = -Math.cos(theta) * markerRadiusPx;
-          const markerAngleDeg = checkpointCssDeg - 90;
-          const isRight = mx >= 0;
-          const desiredFlagGapPx = 4 + 6 * dialScale;
-          const minFlagRadiusPx = outerRingRadiusPx + 2;
-          const maxFlagRadiusPx = Math.max(minFlagRadiusPx, availableOuterRadiusPx - 10);
-          const flagRadiusPx = Math.min(Math.max(minFlagRadiusPx, outerRingRadiusPx + desiredFlagGapPx), maxFlagRadiusPx);
-          const labelPadFromFlagPx = 8 + 8 * dialScale;
-          let lx = Math.sin(theta) * (flagRadiusPx + labelPadFromFlagPx);
-          let ly = -Math.cos(theta) * (flagRadiusPx + labelPadFromFlagPx);
-          const labelDist = Math.sqrt(lx * lx + ly * ly) || 1;
-          const preferredLabelRadiusPx = Math.max(dialRadiusPx + 10 * dialScale, flagRadiusPx + 8);
-          const minOutsideRadius = Math.min(
-            Math.max(flagRadiusPx + 6, availableOuterRadiusPx - 6),
-            preferredLabelRadiusPx
-          );
-          if (labelDist < minOutsideRadius) {
-            const k = minOutsideRadius / labelDist;
-            lx *= k;
-            ly *= k;
-          }
-          const fx = Math.sin(theta) * flagRadiusPx;
-          const fy = -Math.cos(theta) * flagRadiusPx;
-          const lineText = `${v}${milestoneUnitSuffix(t)}`;
-          const descText = String(m.description || "").trim();
-          return `
-            <div class="focusCheckpointMark" style="--mxpx:${mx}px;--mypx:${my}px;--madeg:${markerAngleDeg}deg;--mlpx:${markerLineLenPx}px" data-seconds="${secTarget}"></div>
-            <div class="focusCheckpointFlag" style="--fxpx:${fx}px;--fypx:${fy}px" data-seconds="${secTarget}"></div>
-            <div class="focusCheckpointLabel ${isRight ? "right" : "left"}" style="--lxpx:${lx}px;--lypx:${ly}px" data-seconds="${secTarget}">
-              <span class="focusCheckpointLabelTitle">${escapeHtmlUI(lineText)}</span>
-              ${descText ? `<span class="focusCheckpointLabelDesc">${escapeHtmlUI(descText)}</span>` : ""}
-            </div>
-          `;
-        })
-        .join("");
-      (els.focusCheckpointRing as HTMLElement).innerHTML = dots;
-      focusCheckpointSig = sig;
-    }
-
-    (els.focusCheckpointRing as HTMLElement)
-      .querySelectorAll(".focusCheckpointMark, .focusCheckpointFlag, .focusCheckpointLabel, .focusCheckpointConnector")
-      .forEach((dot) => {
-      const secTarget = Number((dot as HTMLElement).dataset.seconds || "0");
-      (dot as HTMLElement).classList.toggle("reached", elapsedSec >= secTarget);
-      });
-
-    // Match task progress-bar behavior: keep all flags/markers visible, but only show
-    // the next checkpoint label/description (or the final checkpoint after all are reached).
-    const validMs = msSorted.filter((m) => (+m.hours || 0) > 0);
-    if (validMs.length) {
-      const nextPending = validMs.find((m) => elapsedSec < (+m.hours || 0) * milestoneUnitSec(t)) || null;
-      const displayMs = nextPending || validMs[validMs.length - 1];
-      const displayTargetSec = Math.max(0, (+displayMs.hours || 0) * milestoneUnitSec(t));
-      (els.focusCheckpointRing as HTMLElement).querySelectorAll(".focusCheckpointLabel").forEach((el) => {
-        const secTarget = Number((el as HTMLElement).dataset.seconds || "0");
-        (el as HTMLElement).classList.toggle("isActive", Math.abs(secTarget - displayTargetSec) < 0.001);
-      });
-    } else {
-      (els.focusCheckpointRing as HTMLElement).querySelectorAll(".focusCheckpointLabel").forEach((el) => {
-        (el as HTMLElement).classList.remove("isActive");
-      });
-    }
-    renderFocusCheckpointCompletionLog(t);
-  }
-
   function openPopup(which: string) {
     if (which === "historyManager") {
       openHistoryManager();
@@ -6109,45 +4963,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return `${targetSec}|${label}`;
   }
 
-  function resetCheckpointAlertTracking(taskId: string | null | undefined, opts?: { clearBaseline?: boolean }) {
-    const id = String(taskId || "");
-    if (!id) return;
-    delete checkpointFiredKeysByTaskId[id];
-    if (opts?.clearBaseline !== false) delete checkpointBaselineSecByTaskId[id];
-  }
-
-  function clearCheckpointBaseline(taskId: string | null | undefined) {
-    const id = String(taskId || "");
-    if (!id) return;
-    delete checkpointBaselineSecByTaskId[id];
-  }
-
   function getCheckpointFiredSet(taskId: string) {
     if (!checkpointFiredKeysByTaskId[taskId]) checkpointFiredKeysByTaskId[taskId] = new Set<string>();
     return checkpointFiredKeysByTaskId[taskId];
-  }
-
-  function ensureCheckpointBeepAudio() {
-    if (checkpointBeepAudio) return checkpointBeepAudio;
-    try {
-      checkpointBeepAudio = new Audio("/checkpoint-beep.wav");
-      checkpointBeepAudio.preload = "auto";
-    } catch {
-      checkpointBeepAudio = null;
-    }
-    return checkpointBeepAudio;
-  }
-
-  function playCheckpointBeep() {
-    const audio = ensureCheckpointBeepAudio();
-    if (!audio) return;
-    try {
-      audio.currentTime = 0;
-      const p = audio.play();
-      if (p && typeof (p as any).catch === "function") (p as any).catch(() => {});
-    } catch {
-      // ignore playback restrictions
-    }
   }
 
   function stopCheckpointRepeatAlert() {
@@ -6171,45 +4989,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       }
     }
     if (!runtime.destroyed) render();
-  }
-
-  function flushCheckpointBeepQueue() {
-    if (checkpointBeepQueueCount <= 0) {
-      checkpointBeepQueueCount = 0;
-      checkpointBeepQueueTimer = null;
-      return;
-    }
-    playCheckpointBeep();
-    checkpointBeepQueueCount -= 1;
-    if (checkpointBeepQueueCount > 0) checkpointBeepQueueTimer = window.setTimeout(flushCheckpointBeepQueue, 150);
-    else checkpointBeepQueueTimer = null;
-  }
-
-  function scheduleCheckpointRepeatCycle() {
-    if (checkpointRepeatStopAtMs <= 0) {
-      stopCheckpointRepeatAlert();
-      return;
-    }
-    if (Date.now() >= checkpointRepeatStopAtMs) {
-      stopCheckpointRepeatAlert();
-      return;
-    }
-    enqueueCheckpointBeeps(1);
-    checkpointRepeatCycleTimer = window.setTimeout(scheduleCheckpointRepeatCycle, 2000);
-  }
-
-  function startCheckpointRepeatAlert(taskId: string) {
-    checkpointRepeatActiveTaskId = taskId;
-    checkpointRepeatStopAtMs = Date.now() + 60_000;
-    if (!runtime.destroyed) render();
-    if (checkpointRepeatCycleTimer != null) return;
-    scheduleCheckpointRepeatCycle();
-  }
-
-  function enqueueCheckpointBeeps(count: number) {
-    if (!Number.isFinite(count) || count <= 0) return;
-    checkpointBeepQueueCount += Math.floor(count);
-    if (checkpointBeepQueueTimer == null) flushCheckpointBeepQueue();
   }
 
   function renderCheckpointToast() {
@@ -6332,64 +5111,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (checkpointToastQueue.length) {
       window.setTimeout(showNextCheckpointToast, 50);
     }
-  }
-
-  function dismissCheckpointToastAndJumpToTask() {
-    const taskId = String(activeCheckpointToast?.taskId || "").trim();
-    dismissCheckpointToast({ manual: true });
-    if (!taskId) return;
-    const path = normalizedPathname();
-    const onMainTaskTimerRoute = /\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path);
-    if (onMainTaskTimerRoute) {
-      jumpToTaskById(taskId);
-      return;
-    }
-    savePendingTaskJump(taskId);
-    navigateToAppRoute("/tasktimer");
-  }
-
-  function enqueueCheckpointToast(
-    title: string,
-    text: string,
-    opts?: {
-      autoCloseMs?: number | null;
-      taskId?: string | null;
-      taskName?: string | null;
-      counterText?: string | null;
-      checkpointTimeText?: string | null;
-      checkpointDescText?: string | null;
-      muteRepeatOnManualDismiss?: boolean;
-    }
-  ) {
-    const autoCloseMs = opts?.autoCloseMs === null ? null : Math.max(0, Number(opts?.autoCloseMs ?? 5000)) || 0;
-    // Do not stack checkpoint alerts: replace any existing/queued toast with the newest one.
-    checkpointToastQueue.length = 0;
-    if (checkpointToastAutoCloseTimer != null) {
-      window.clearTimeout(checkpointToastAutoCloseTimer);
-      checkpointToastAutoCloseTimer = null;
-    }
-    activeCheckpointToast = null;
-
-    checkpointToastQueue.push({
-      id: `${Date.now()}-${Math.random()}`,
-      title,
-      text,
-      checkpointTimeText: opts?.checkpointTimeText ?? null,
-      checkpointDescText: opts?.checkpointDescText ?? null,
-      taskName: opts?.taskName ?? null,
-      counterText: opts?.counterText ?? null,
-      autoCloseMs,
-      autoCloseAtMs: null,
-      taskId: opts?.taskId ?? null,
-      muteRepeatOnManualDismiss: !!opts?.muteRepeatOnManualDismiss,
-    });
-    showNextCheckpointToast();
-  }
-
-  function formatCheckpointAlertText(task: Task, milestone: { hours: number; description: string }) {
-    const targetMs = Math.max(0, (+milestone.hours || 0) * milestoneUnitSec(task) * 1000);
-    const label = String(milestone.description || "").trim();
-    return label ? `${formatTime(targetMs)} - ${label}` : formatTime(targetMs);
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
@@ -6576,133 +5297,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     t.presetIntervalsEnabled = true;
     syncEditCheckpointAlertUi(t);
-  }
-
-  function processCheckpointAlertsForTask(t: Task, elapsedSecNow: number) {
-    const taskId = String(t.id || "");
-    if (!taskId || !t.running) {
-      if (taskId) clearCheckpointBaseline(taskId);
-      return;
-    }
-    const hasMilestones = !!t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
-
-    const elapsedWholeSec = Math.floor(Math.max(0, elapsedSecNow));
-    const prevBaseline = checkpointBaselineSecByTaskId[taskId];
-    if (!Number.isFinite(prevBaseline)) {
-      checkpointBaselineSecByTaskId[taskId] = elapsedWholeSec;
-      return;
-    }
-    if (elapsedWholeSec <= prevBaseline) {
-      checkpointBaselineSecByTaskId[taskId] = elapsedWholeSec;
-      return;
-    }
-
-    const fired = getCheckpointFiredSet(taskId);
-    const msSorted = hasMilestones ? sortMilestones((t.milestones || []).slice()) : [];
-    const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t))) > 0);
-    const totalCheckpoints = validMilestones.length;
-    let beepCount = 0;
-    let shouldResetAtTimeGoal: null | "resetLog" | "resetNoLog" = null;
-    let shouldOpenTimeGoalModal = false;
-    let openTimeGoalModalAsReminder = false;
-    msSorted.forEach((m) => {
-      const targetSec = Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec(t)));
-      if (targetSec <= 0) return;
-      if (targetSec <= prevBaseline || targetSec > elapsedWholeSec) return;
-      const key = checkpointKeyForTask(m, t);
-      if (fired.has(key)) return;
-      fired.add(key);
-      const text = formatCheckpointAlertText(t, m);
-      const checkpointIndex = Math.max(
-        1,
-        validMilestones.findIndex((vm) => checkpointKeyForTask(vm, t) === key) + 1
-      );
-      const checkpointTimeText = formatTime(targetSec * 1000);
-      const checkpointDescText = String(m.description || "").trim();
-      const suppressForFocusMode = shouldSuppressTaskAlertsInFocusMode(taskId);
-      if (checkpointAlertToastEnabled && t.checkpointToastEnabled && !suppressForFocusMode) {
-        const toastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-        enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
-          autoCloseMs: toastMode === "manual" ? null : 5000,
-          taskId,
-          taskName: t.name || "",
-          counterText: formatMainTaskElapsed(getElapsedMs(t)),
-          checkpointTimeText,
-          checkpointDescText,
-          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && !!t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
-        });
-      }
-      if (suppressForFocusMode && ((checkpointAlertToastEnabled && t.checkpointToastEnabled) || (checkpointAlertSoundEnabled && t.checkpointSoundEnabled))) {
-        const toastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-        noteSuppressedFocusModeAlert({
-          title: `Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`,
-          text,
-          autoCloseMs: checkpointAlertToastEnabled && t.checkpointToastEnabled
-            ? (toastMode === "manual" ? null : 5000)
-            : 5000,
-          taskId,
-          taskName: t.name || "",
-          counterText: formatMainTaskElapsed(getElapsedMs(t)),
-          checkpointTimeText,
-          checkpointDescText,
-          muteRepeatOnManualDismiss: checkpointAlertSoundEnabled && !!t.checkpointSoundEnabled && (t.checkpointSoundMode || "once") === "repeat",
-        });
-      }
-      if (checkpointAlertSoundEnabled && t.checkpointSoundEnabled && !suppressForFocusMode) {
-        beepCount += 1;
-      }
-    });
-    const timeGoalSec = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0 ? Math.round(Number(t.timeGoalMinutes || 0) * 60) : 0;
-    const taskTimeGoalAction = getTaskTimeGoalAction(t);
-    if (
-      timeGoalSec > 0 &&
-      prevBaseline < timeGoalSec &&
-      elapsedWholeSec >= timeGoalSec &&
-      (taskTimeGoalAction === "resetLog" || taskTimeGoalAction === "resetNoLog")
-    ) {
-      shouldResetAtTimeGoal = taskTimeGoalAction;
-    }
-    if (
-      timeGoalSec > 0 &&
-      taskTimeGoalAction === "confirmModal" &&
-      timeGoalModalTaskId !== taskId &&
-      prevBaseline < timeGoalSec &&
-      elapsedWholeSec >= timeGoalSec
-    ) {
-      shouldOpenTimeGoalModal = true;
-    }
-    if (
-      timeGoalSec > 0 &&
-      taskTimeGoalAction === "confirmModal" &&
-      timeGoalModalTaskId !== taskId &&
-      !shouldOpenTimeGoalModal &&
-      Number(timeGoalReminderAtMsByTaskId[taskId] || 0) > 0 &&
-      nowMs() >= Number(timeGoalReminderAtMsByTaskId[taskId] || 0) &&
-      elapsedWholeSec >= timeGoalSec
-    ) {
-      shouldOpenTimeGoalModal = true;
-      openTimeGoalModalAsReminder = true;
-    }
-    checkpointBaselineSecByTaskId[taskId] = elapsedWholeSec;
-    if (beepCount > 0) {
-      if ((t.checkpointSoundMode || "once") === "repeat") startCheckpointRepeatAlert(taskId);
-      else enqueueCheckpointBeeps(beepCount);
-    }
-    if (shouldOpenTimeGoalModal) {
-      if (shouldSuppressTaskAlertsInFocusMode(taskId)) {
-        queueDeferredFocusModeTimeGoalModal(t, getTaskElapsedMs(t), { reminder: openTimeGoalModalAsReminder });
-        return;
-      }
-      openTimeGoalCompleteModal(t, getTaskElapsedMs(t), { reminder: openTimeGoalModalAsReminder });
-      checkpointBaselineSecByTaskId[taskId] = Math.floor(getElapsedMs(t) / 1000);
-      return;
-    }
-    if (shouldResetAtTimeGoal) {
-      resetTaskStateImmediate(t, {
-        logHistory: shouldResetAtTimeGoal === "resetLog",
-        sessionNote: captureResetActionSessionNote(String(t.id || "")),
-      });
-    }
   }
 
   function saveAddTaskCustomNames() {
@@ -9289,96 +7883,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.confirmOkBtn, "click", () => {
       if (typeof confirmAction === "function") confirmAction();
       else closeConfirm();
-    });
-  }
-
-  function tick() {
-    if (runtime.destroyed) return;
-
-    const processedCheckpointTaskIds = new Set<string>();
-    const taskList = els.taskList as HTMLElement | null;
-    if (taskList) {
-      const nodes = taskList.querySelectorAll(".task");
-      nodes.forEach((node) => {
-        const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
-        const t = tasks[i];
-        if (!t) return;
-
-        const timeEl = node.querySelector(".time");
-        const elapsedMs = getElapsedMs(t);
-        if (timeEl) (timeEl as HTMLElement).innerHTML = formatMainTaskElapsedHtml(elapsedMs, !!t.running);
-        processCheckpointAlertsForTask(t, elapsedMs / 1000);
-        processedCheckpointTaskIds.add(String(t.id || ""));
-
-        const hasMilestones = t.milestonesEnabled && t.milestones && t.milestones.length > 0;
-        const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
-        if (hasMilestones || hasTimeGoal) {
-          const msSorted = hasMilestones ? sortMilestones(t.milestones) : [];
-          const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
-          const maxSec = Math.max(maxValue * milestoneUnitSec(t), hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0, 1);
-          const pct = Math.min((elapsedMs / 1000 / maxSec) * 100, 100);
-
-          const fill = node.querySelector(".progressFill") as HTMLElement | null;
-          if (fill) {
-            fill.style.width = pct + "%";
-            fill.style.background = dynamicColorsEnabled ? fillBackgroundForPct(pct) : getModeColor(taskModeOf(t));
-          }
-
-          if (hasMilestones) {
-            const elapsedSec = elapsedMs / 1000;
-            const mkTimes = node.querySelectorAll(".mkTime");
-
-            mkTimes.forEach((mt) => {
-              const txt = (mt.textContent || "").trim();
-              const v = parseFloat(txt.replace(/[^0-9.]/g, "")) || 0;
-              const reached = elapsedSec >= v * milestoneUnitSec(t);
-              mt.classList.toggle("mkAch", reached);
-              mt.classList.toggle("mkPend", !reached);
-            });
-          }
-        }
-      });
-    }
-
-    tasks.forEach((t) => {
-      const taskId = String(t.id || "");
-      if (!taskId || processedCheckpointTaskIds.has(taskId)) return;
-      processCheckpointAlertsForTask(t, getElapsedMs(t) / 1000);
-    });
-
-    if (checkpointAutoResetDirty) {
-      checkpointAutoResetDirty = false;
-      save();
-      render();
-      if (focusModeTaskId) {
-        const ft = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
-        if (ft) {
-          // Force a full checkpoint marker re-layout after auto-reset/log, since the dial
-          // update was skipped in the same tick that triggered the reset.
-          focusCheckpointSig = "";
-          updateFocusDial(ft);
-        }
-      }
-    }
-
-    if (focusModeTaskId) {
-      const ft = tasks.find((x) => String(x.id || "") === String(focusModeTaskId));
-      if (ft) {
-        updateFocusDial(ft);
-      } else if (els.focusTaskName && focusModeTaskName) {
-        els.focusTaskName.textContent = focusModeTaskName;
-      }
-    }
-
-    if (activeCheckpointToast) {
-      renderCheckpointToast();
-    }
-    if (currentAppPage === "dashboard") {
-      renderDashboardWidgetsApi({ includeAvgSession: false });
-    }
-
-    runtime.tickRaf = window.requestAnimationFrame(() => {
-      runtime.tickTimeout = window.setTimeout(tick, 200);
     });
   }
 
