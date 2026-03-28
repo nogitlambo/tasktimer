@@ -5,6 +5,7 @@ import type { TaskTimerEditTaskContext } from "./context";
 
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
+  const { sharedTasks } = ctx;
 
   function getCurrentEditTask() {
     return ctx.getEditTaskDraft();
@@ -148,8 +149,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         const nextHours = Number(valid);
         const isEditDraftMilestone = elapsedPadMilestoneRef.task === getCurrentEditTask();
         const timeGoalMinutes = isEditDraftMilestone ? ctx.getEditTaskTimeGoalMinutes() : ctx.getAddTaskTimeGoalMinutesState();
-        if (ctx.isCheckpointAtOrAboveTimeGoal(nextHours, ctx.milestoneUnitSec(elapsedPadMilestoneRef.task), timeGoalMinutes)) {
-          const timeGoalText = ctx.formatCheckpointTimeGoalText(elapsedPadMilestoneRef.task, {
+        if (sharedTasks.isCheckpointAtOrAboveTimeGoal(nextHours, sharedTasks.milestoneUnitSec(elapsedPadMilestoneRef.task), timeGoalMinutes)) {
+          const timeGoalText = sharedTasks.formatCheckpointTimeGoalText(elapsedPadMilestoneRef.task, {
             timeGoalMinutes,
             forEditDraft: isEditDraftMilestone,
           });
@@ -239,7 +240,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editAdvancedSection) els.editAdvancedSection.open = !!t.xpDisqualifiedUntilReset;
     ctx.syncEditCheckpointAlertUi(t);
     ctx.syncEditSaveAvailability(t);
-    const current = ctx.taskModeOf(t);
+    const current = sharedTasks.taskModeOf(t);
     ctx.setEditMoveTargetMode(current);
     if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = ctx.getModeLabel(current);
     [els.editMoveMode1, els.editMoveMode2, els.editMoveMode3].forEach((btn) => {
@@ -254,7 +255,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.syncEditMilestoneSectionUi(t);
     ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
     ctx.renderMilestoneEditor(t);
-    ctx.ensureMilestoneIdentity(t);
+    sharedTasks.ensureMilestoneIdentity(t);
     if (els.editPresetIntervalInput) els.editPresetIntervalInput.value = String(Number(t.presetIntervalValue || 0) || 0);
     ctx.toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, !!t.presetIntervalsEnabled);
     ctx.syncEditCheckpointAlertUi(t);
@@ -276,15 +277,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         ctx.syncEditSaveAvailability(t);
         return void ctx.showEditValidationError(t, "Add at least 1 timer checkpoint before saving.");
       }
-      if (checkpointingActiveForSave && ctx.hasNonPositiveCheckpoint(t.milestones)) {
+      if (checkpointingActiveForSave && sharedTasks.hasNonPositiveCheckpoint(t.milestones)) {
         ctx.syncEditSaveAvailability(t);
         return void ctx.showEditValidationError(t, "Checkpoint times must be greater than 0.");
       }
-      if (checkpointingActiveForSave && ctx.hasCheckpointAtOrAboveTimeGoal(t.milestones, ctx.milestoneUnitSec(t), ctx.getEditTaskTimeGoalMinutes())) {
+      if (
+        checkpointingActiveForSave &&
+        sharedTasks.hasCheckpointAtOrAboveTimeGoal(t.milestones, sharedTasks.milestoneUnitSec(t), ctx.getEditTaskTimeGoalMinutes())
+      ) {
         ctx.syncEditSaveAvailability(t);
         return void ctx.showEditValidationError(t, "Checkpoint times must be less than the time goal.");
       }
-      if (checkpointingActiveForSave && t.presetIntervalsEnabled && !ctx.hasValidPresetInterval(t)) {
+      if (checkpointingActiveForSave && t.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(t)) {
         ctx.syncEditSaveAvailability(t);
         return void ctx.showEditValidationError(t, "Enter a preset interval greater than 0.");
       }
@@ -324,9 +328,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.timeGoalUnit = ctx.getEditTaskDurationUnit();
       t.timeGoalPeriod = ctx.getEditTaskDurationPeriod();
       t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
-      ctx.ensureMilestoneIdentity(t);
+      sharedTasks.ensureMilestoneIdentity(t);
       t.milestones = ctx.sortMilestones(t.milestones);
-      const moveMode = ctx.getEditMoveTargetMode() || ctx.taskModeOf(t);
+      const moveMode = ctx.getEditMoveTargetMode() || sharedTasks.taskModeOf(t);
       if ((moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") && ctx.isModeEnabled(moveMode)) {
         (t as any).mode = moveMode;
       }
@@ -641,11 +645,11 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         return;
       }
       if (t.presetIntervalsEnabled) {
-        if (!ctx.hasValidPresetInterval(t)) {
+        if (!sharedTasks.hasValidPresetInterval(t)) {
           ctx.syncEditCheckpointAlertUi(t);
           return;
         }
-        if (!ctx.addMilestoneWithCurrentPreset(t, ctx.getEditTaskTimeGoalMinutes())) {
+        if (!sharedTasks.addMilestoneWithCurrentPreset(t, ctx.getEditTaskTimeGoalMinutes())) {
           ctx.showEditValidationError(t, "Checkpoint times must be less than the time goal.");
           ctx.syncEditCheckpointAlertUi(t);
           ctx.syncEditSaveAvailability(t);
@@ -653,9 +657,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         }
       } else {
         t.milestones = t.milestones || [];
-        ctx.ensureMilestoneIdentity(t);
-        const nextSeq = ctx.getPresetIntervalNextSeqNum(t);
-        t.milestones.push({ id: ctx.createId(), createdSeq: nextSeq, hours: 0, description: "" });
+        sharedTasks.ensureMilestoneIdentity(t);
+        const nextSeq = sharedTasks.getPresetIntervalNextSeqNum(t);
+        t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "" });
         t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
         t.presetIntervalNextSeq = nextSeq + 1;
       }

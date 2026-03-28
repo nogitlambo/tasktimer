@@ -33,6 +33,7 @@ type HistoryUI = {
 
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
+  const { sharedTasks } = ctx;
 
   function historyLocalDateKey(tsRaw: unknown) {
     const ts = ctx.normalizeHistoryTimestampMs(tsRaw);
@@ -605,7 +606,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
         ? ctx
             .sortMilestones(historyTask.milestones)
-            .map((m) => ({ value: +m.hours || 0, ms: Math.max(0, (+m.hours || 0) * ctx.milestoneUnitSec(historyTask) * 1000) }))
+            .map((m) => ({
+              value: +m.hours || 0,
+              ms: Math.max(0, (+m.hours || 0) * sharedTasks.milestoneUnitSec(historyTask) * 1000),
+            }))
             .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
         : [];
     const maxGoalMs = milestoneMs.length ? Math.max(...milestoneMs.map((m) => m.ms || 0), 0) : 0;
@@ -640,7 +644,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
       const historyStaticColor = (() => {
         const t = (ctx.getTasks() || []).find((task) => String(task.id || "") === String(taskId));
-        return t ? ctx.getModeColor(ctx.taskModeOf(t)) : "rgb(0,207,200)";
+        return t ? ctx.getModeColor(sharedTasks.taskModeOf(t)) : "rgb(0,207,200)";
       })();
       draw.fillStyle = ctx.getDynamicColorsEnabled() ? e.color || "rgb(0,207,200)" : historyStaticColor;
       draw.fillRect(x, y, drawW, drawH);
@@ -773,7 +777,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
         draw.textAlign = "right";
         draw.textBaseline = "middle";
-        draw.fillText(`${goal.value}${ctx.milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
+        draw.fillText(`${goal.value}${sharedTasks.milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
       }
       draw.restore();
       draw.textAlign = "center";

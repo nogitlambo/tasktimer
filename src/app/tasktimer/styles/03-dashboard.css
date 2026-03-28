@@ -649,16 +649,35 @@
 .dashboardTimelineSegmentGoalColor-3{ background: linear-gradient(90deg, rgba(255,143,171,.28), rgba(255,93,143,.28)); }
 .dashboardTimelineSegmentGoalColor-4{ background: linear-gradient(90deg, rgba(141,162,255,.28), rgba(97,114,255,.28)); }
 .dashboardTimelineSegmentGoalColor-5{ background: linear-gradient(90deg, rgba(123,241,255,.28), rgba(185,150,255,.28)); }
-.dashboardTimelineMarker{
+.dashboardTimelineMarkerBtn{
   position:absolute;
   top:48px;
+  width:24px;
+  height:24px;
+  padding:0;
+  border:0;
+  background:transparent;
+  transform: translate(-50%, -50%);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.dashboardTimelineMarkerBtn.isSelected .dashboardTimelineMarker{
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 0 0 2px rgba(5,8,15,.92), 0 0 0 4px var(--dashboard-timeline-marker-shadow);
+}
+.dashboardTimelineMarkerBtn:focus-visible{
+  outline:1px solid rgba(117,231,255,.7);
+  outline-offset:2px;
+}
+.dashboardTimelineMarker{
   width:12px;
   height:12px;
   border-radius:999px;
   border:2px solid rgba(5,8,15,.92);
   background: var(--dashboard-timeline-marker-color);
   box-shadow: 0 0 0 2px var(--dashboard-timeline-marker-shadow);
-  transform: translate(-50%, -50%);
 }
 .dashboardTimelineItem{
   position:absolute;
@@ -732,6 +751,34 @@
   margin-top:8px;
   min-height:14px;
   font-size:11px;
+  color: var(--dashboard-timeline-note-color);
+}
+.dashboardTimelineSummary{
+  min-height:56px;
+  margin-top:2px;
+}
+.dashboardTimelineSummaryCard{
+  display:grid;
+  gap:6px;
+  padding:10px 12px;
+  border:1px solid rgba(117,231,255,.14);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(4,10,18,.42);
+  color: var(--dashboard-timeline-copy-color);
+}
+.dashboardTimelineSummaryTitle{
+  margin:0;
+  font-size:12px;
+  line-height:1.2;
+  color:#f2fbff;
+}
+.dashboardTimelineSummaryMeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  font-size:10px;
+  line-height:1.3;
   color: var(--dashboard-timeline-note-color);
 }
 body[data-control-style="parallelogram"] .dashboardTimelineDensityBtn{

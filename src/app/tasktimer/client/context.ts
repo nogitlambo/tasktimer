@@ -1,5 +1,6 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
+import type { TaskTimerSharedTaskApi } from "./task-shared";
 import type { AppPage, DashboardAvgRange, DashboardCardSize, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
@@ -132,6 +133,7 @@ export type TaskTimerGroupsContext = {
 export type TaskTimerTasksContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
@@ -202,9 +204,6 @@ export type TaskTimerTasksContext = {
   saveHistory: (history: HistoryByTaskId) => void;
   saveDeletedMeta: (meta: DeletedTaskMeta) => void;
   escapeHtmlUI: (value: unknown) => string;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  milestoneUnitSec: (task: Task | null | undefined) => number;
-  milestoneUnitSuffix: (task: Task | null | undefined) => string;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
@@ -294,6 +293,7 @@ export type TaskTimerTasksContext = {
 export type TaskTimerEditTaskContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   getEditIndex: () => number | null;
   setEditIndex: (value: number | null) => void;
@@ -340,7 +340,6 @@ export type TaskTimerEditTaskContext = {
   cloneTaskForEdit: (task: Task) => Task;
   getModeLabel: (mode: MainMode) => string;
   isModeEnabled: (mode: MainMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   setEditTimeGoalEnabled: (enabled: boolean) => void;
   isEditTimeGoalEnabled: () => boolean;
   editTaskHasActiveTimeGoal: () => boolean;
@@ -353,33 +352,16 @@ export type TaskTimerEditTaskContext = {
   clearEditValidationState: () => void;
   validateEditTimeGoal: () => boolean;
   showEditValidationError: (task: Task | null | undefined, message: string) => void;
-  hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
-  hasCheckpointAtOrAboveTimeGoal: (
-    milestones: Task["milestones"],
-    unitSec: number,
-    timeGoalMinutes: number
-  ) => boolean;
-  isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
-  milestoneUnitSec: (task: Task | null | undefined) => number;
-  formatCheckpointTimeGoalText: (
-    task: Task,
-    opts?: { timeGoalMinutes?: number; forEditDraft?: boolean }
-  ) => string;
   getEditTaskTimeGoalMinutes: () => number;
   getEditTaskTimeGoalMinutesFor: (value: number, unit: "minute" | "hour", period: "day" | "week") => number;
   getAddTaskTimeGoalMinutesState: () => number;
-  ensureMilestoneIdentity: (task: Task) => void;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   toggleSwitchElement: (el: HTMLElement | null, on: boolean) => void;
   isSwitchOn: (el: HTMLElement | null) => boolean;
   buildEditDraftSnapshot: (task: Task) => string;
   syncEditTaskDurationReadout: (task?: Task | null) => void;
   maybeToggleEditPresetIntervals: (nextEnabled: boolean) => void;
-  hasValidPresetInterval: (task: Task) => boolean;
-  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutes: number) => boolean;
-  getPresetIntervalNextSeqNum: (task: Task) => number;
   isEditMilestoneUnitDay: () => boolean;
-  createId: () => string;
   resetCheckpointAlertTracking: (taskId: string | null | undefined) => void;
   clearCheckpointBaseline: (taskId: string | null | undefined) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
@@ -388,6 +370,7 @@ export type TaskTimerEditTaskContext = {
 export type TaskTimerAddTaskContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
   getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
@@ -435,7 +418,6 @@ export type TaskTimerAddTaskContext = {
   render: () => void;
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
-  makeTask: (name: string, order: number) => Task;
   jumpToTaskAndHighlight: (taskId: string) => void;
   clearAddTaskValidationState: () => void;
   showAddTaskValidationError: (
@@ -446,19 +428,13 @@ export type TaskTimerAddTaskContext = {
   syncAddTaskDurationReadout: () => void;
   setAddTaskMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
   renderAddTaskMilestoneEditor: () => void;
-  hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
-  hasCheckpointAtOrAboveTimeGoal: (
-    milestones: Task["milestones"],
-    unitSec: number,
-    timeGoalMinutes: number
-  ) => boolean;
-  isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
 };
 
 export type TaskTimerSessionContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
   runtime: TaskTimerRuntime;
+  sharedTasks: TaskTimerSharedTaskApi;
   storageKeys: {
     FOCUS_SESSION_NOTES_KEY: string;
     TIME_GOAL_PENDING_FLOW_KEY: string;
@@ -533,10 +509,6 @@ export type TaskTimerSessionContext = {
   formatTime: (value: number) => string;
   formatMainTaskElapsed: (elapsedMs: number, running?: boolean) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
-  formatCheckpointTimeGoalText: (task: Task, opts?: { timeGoalMinutes?: number; forEditDraft?: boolean }) => string;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  milestoneUnitSec: (task: Task | null | undefined) => number;
-  milestoneUnitSuffix: (task: Task | null | undefined) => string;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
@@ -579,6 +551,7 @@ export type TaskTimerDashboardContext = {
   isModeEnabled: (mode: MainMode) => boolean;
   renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
   renderDashboardTimelineCard: () => void;
+  selectDashboardTimelineSuggestion: (key: string | null) => void;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
@@ -734,6 +707,7 @@ export type TaskTimerHistoryManagerContext = {
 export type TaskTimerHistoryInlineContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
@@ -765,8 +739,5 @@ export type TaskTimerHistoryInlineContext = {
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   getModeColor: (mode: MainMode) => string;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  milestoneUnitSec: (task: Task | undefined | null) => number;
-  milestoneUnitSuffix: (task: Task | undefined | null) => string;
   getDynamicColorsEnabled: () => boolean;
 };

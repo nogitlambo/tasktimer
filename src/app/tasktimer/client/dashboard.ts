@@ -606,6 +606,13 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       e.preventDefault();
       return;
     }
+    const timelineMarkerBtn = e.target?.closest?.("[data-dashboard-timeline-key]") as HTMLElement | null;
+    if (timelineMarkerBtn) {
+      const suggestionKey = String(timelineMarkerBtn.getAttribute("data-dashboard-timeline-key") || "").trim();
+      ctx.selectDashboardTimelineSuggestion(suggestionKey || null);
+      e.preventDefault();
+      return;
+    }
     const btn = e.target?.closest?.("[data-dashboard-avg-range-toggle]") as HTMLElement | null;
     if (!btn) return;
     const nextRange: DashboardAvgRange = sanitizeDashboardAvgRange(ctx.getDashboardAvgRange()) === "past30" ? "past7" : "past30";

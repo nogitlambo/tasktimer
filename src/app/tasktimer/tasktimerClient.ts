@@ -64,6 +64,7 @@ import { createTaskTimerHistoryInline } from "./client/history-inline";
 import { createTaskTimerCloudSync } from "./client/cloud-sync";
 import { createTaskTimerPersistence } from "./client/persistence";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
+import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
   DEFAULT_MODE_COLORS,
   DEFAULT_MODE_ENABLED,
@@ -357,6 +358,31 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   const els = collectTaskTimerElements(document);
+  const sharedTaskApi = createTaskTimerSharedTask({
+    createId: () => cryptoRandomId(),
+    getCurrentMode: () => currentMode,
+    getEditTimeGoalDraft: () => ({
+      value: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
+      unit: editTaskDurationUnit,
+      period: editTaskDurationPeriod,
+    }),
+  });
+  const {
+    makeTask,
+    taskModeOf,
+    normalizeLoadedTask,
+    ensureMilestoneIdentity,
+    hasValidPresetInterval,
+    getPresetIntervalValueNum,
+    getPresetIntervalNextSeqNum,
+    addMilestoneWithCurrentPreset,
+    milestoneUnitSec,
+    milestoneUnitSuffix,
+    hasNonPositiveCheckpoint,
+    formatCheckpointTimeGoalText,
+    isCheckpointAtOrAboveTimeGoal,
+    hasCheckpointAtOrAboveTimeGoal,
+  } = sharedTaskApi;
 
   function showExitAppConfirm() {
     confirm("Exit App", "Do you want to exit the app?", {
@@ -537,6 +563,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const {
     renderDashboardTimelineCard: renderDashboardTimelineCardApi,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
+    selectDashboardTimelineSuggestion: selectDashboardTimelineSuggestionApi,
     openDashboardHeatSummaryCard: openDashboardHeatSummaryCardApi,
     closeDashboardHeatSummaryCard: closeDashboardHeatSummaryCardApi,
   } = dashboardRenderApi;
@@ -593,6 +620,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     isModeEnabled: (mode) => isModeEnabled(mode),
     renderDashboardWidgets: (opts) => renderDashboardWidgetsFromRenderApi(opts),
     renderDashboardTimelineCard: () => renderDashboardTimelineCardApi(),
+    selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestionApi(key),
     openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCardApi(dayKey, dateLabel),
     closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCardApi(opts),
   });
@@ -613,6 +641,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const tasksApi = createTaskTimerTasks({
     els,
     on,
+    sharedTasks: sharedTaskApi,
     getTasks: () => tasks,
     setTasks: (value: typeof tasks) => {
       tasks = value;
@@ -697,9 +726,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     saveHistory,
     saveDeletedMeta,
     escapeHtmlUI,
-    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
-    milestoneUnitSec: (task) => milestoneUnitSec(task),
-    milestoneUnitSuffix: (task) => milestoneUnitSuffix(task),
     getModeColor: (mode) => getModeColor(mode),
     fillBackgroundForPct,
     formatMainTaskElapsedHtml,
@@ -791,6 +817,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   addTaskApi = createTaskTimerAddTask({
     els,
     on,
+    sharedTasks: sharedTaskApi,
     getTasks: () => tasks,
     setTasks: (value: typeof tasks) => {
       tasks = value;
@@ -877,7 +904,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     render,
     escapeHtmlUI,
     sortMilestones,
-    makeTask,
     jumpToTaskAndHighlight,
     clearAddTaskValidationState,
     showAddTaskValidationError,
@@ -885,9 +911,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncAddTaskDurationReadout,
     setAddTaskMilestoneUnitUi,
     renderAddTaskMilestoneEditor,
-    hasNonPositiveCheckpoint,
-    hasCheckpointAtOrAboveTimeGoal,
-    isCheckpointAtOrAboveTimeGoal,
   });
   const {
     registerAddTaskEvents,
@@ -898,6 +921,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els,
     on,
     runtime,
+    sharedTasks: sharedTaskApi,
     storageKeys: {
       FOCUS_SESSION_NOTES_KEY,
       TIME_GOAL_PENDING_FLOW_KEY,
@@ -1014,10 +1038,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     formatTime,
     formatMainTaskElapsed,
     formatMainTaskElapsedHtml,
-    formatCheckpointTimeGoalText: (task, opts) => formatCheckpointTimeGoalText(task, opts),
-    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
-    milestoneUnitSec: (task) => milestoneUnitSec(task),
-    milestoneUnitSuffix: (task) => milestoneUnitSuffix(task),
     getModeColor: (mode) => getModeColor(mode),
     fillBackgroundForPct,
     sortMilestones,
@@ -1130,144 +1150,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
-  function makeTask(name: string, order?: number): Task {
-    const t: Task = {
-      id: cryptoRandomId(),
-      name,
-      order: order || 1,
-      accumulatedMs: 0,
-      running: false,
-      startMs: null,
-      collapsed: false,
-      milestonesEnabled: false,
-      milestoneTimeUnit: "hour",
-      milestones: [],
-      hasStarted: false,
-      checkpointSoundEnabled: false,
-      checkpointSoundMode: "once",
-      checkpointToastEnabled: false,
-      checkpointToastMode: "auto5s",
-      timeGoalAction: "confirmModal",
-      presetIntervalsEnabled: false,
-      presetIntervalValue: 0,
-      presetIntervalLastMilestoneId: null,
-      presetIntervalNextSeq: 1,
-      timeGoalEnabled: false,
-      timeGoalValue: 0,
-      timeGoalUnit: "hour",
-      timeGoalPeriod: "week",
-      timeGoalMinutes: 0,
-    };
-    (t as any).mode = currentMode;
-    return t;
-  }
-
-  function taskModeOf(t: Task): "mode1" | "mode2" | "mode3" {
-    const m = String((t as any)?.mode || "mode1");
-    if (m === "mode2" || m === "mode3") return m;
-    return "mode1";
-  }
-
-  function normalizeLoadedTask(task: Task) {
-    const taskWithMode = task as Task & { mode?: "mode1" | "mode2" | "mode3"; finalCheckpointAction?: Task["timeGoalAction"] };
-    if (!taskWithMode.mode) taskWithMode.mode = "mode1";
-    if (task.milestoneTimeUnit !== "day" && task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
-      task.milestoneTimeUnit = "hour";
-    }
-    task.checkpointSoundEnabled = !!task.checkpointSoundEnabled;
-    task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
-    task.checkpointToastEnabled = !!task.checkpointToastEnabled;
-    task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
-    task.timeGoalAction =
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-        ? task.timeGoalAction
-        : taskWithMode.finalCheckpointAction === "resetLog" ||
-            taskWithMode.finalCheckpointAction === "resetNoLog" ||
-            taskWithMode.finalCheckpointAction === "confirmModal"
-          ? taskWithMode.finalCheckpointAction
-          : "continue";
-    task.timeGoalEnabled = !!task.timeGoalEnabled;
-    task.timeGoalValue = Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0;
-    task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
-    task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
-    task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
-  }
-
   function load() {
     persistenceApi?.load();
-  }
-
-  function ensureMilestoneIdentity(task: Task) {
-    if (!task || !Array.isArray(task.milestones)) return;
-    let nextSeq = 1;
-    let maxSeq = 0;
-    task.milestones.forEach((m) => {
-      if (!m) return;
-      if (!m.id) m.id = cryptoRandomId();
-      const mAny = m as any;
-      if (!Number.isFinite(+mAny.createdSeq) || (+mAny.createdSeq || 0) <= 0) {
-        mAny.createdSeq = nextSeq++;
-      }
-      maxSeq = Math.max(maxSeq, +mAny.createdSeq || 0);
-    });
-    const taskAny = task as any;
-    const currentNext = Number.isFinite(+taskAny.presetIntervalNextSeq)
-      ? Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq))
-      : 1;
-    taskAny.presetIntervalNextSeq = Math.max(currentNext, maxSeq + 1);
-    if (taskAny.presetIntervalLastMilestoneId) {
-      const exists = task.milestones.some((m) => String(m.id || "") === String(taskAny.presetIntervalLastMilestoneId || ""));
-      if (!exists) taskAny.presetIntervalLastMilestoneId = null;
-    }
-  }
-
-  function hasValidPresetInterval(task: Task | null | undefined) {
-    const taskAny = task as any;
-    return !!task && Number.isFinite(+taskAny?.presetIntervalValue) && +taskAny.presetIntervalValue > 0;
-  }
-
-  function getPresetIntervalValueNum(task: Task | null | undefined) {
-    const taskAny = task as any;
-    return Number.isFinite(+taskAny?.presetIntervalValue) ? Math.max(0, +taskAny.presetIntervalValue) : 0;
-  }
-
-  function getPresetIntervalNextSeqNum(task: Task | null | undefined) {
-    const taskAny = task as any;
-    return Number.isFinite(+taskAny?.presetIntervalNextSeq) ? Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq)) : 1;
-  }
-
-  function getPresetIntervalLastMilestone(task: Task | null | undefined) {
-    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return null;
-    const taskAny = task as any;
-    ensureMilestoneIdentity(task);
-    const lastId = String(taskAny.presetIntervalLastMilestoneId || "");
-    let match = task.milestones.find((m) => String(m.id || "") === lastId) || null;
-    if (match) return match;
-    match =
-      task.milestones
-        .slice()
-        .sort((a, b) => (+((a as any).createdSeq) || 0) - (+((b as any).createdSeq) || 0))
-        .pop() || null;
-    if (match?.id) taskAny.presetIntervalLastMilestoneId = String(match.id);
-    return match;
-  }
-
-  function addMilestoneWithCurrentPreset(task: Task, timeGoalMinutesOverride?: number | null): boolean {
-    const taskAny = task as any;
-    task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
-    ensureMilestoneIdentity(task);
-    const interval = Math.max(0, +taskAny.presetIntervalValue || 0);
-    const last = getPresetIntervalLastMilestone(task);
-    const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
-    const timeGoalMinutes = timeGoalMinutesOverride == null ? Number(task.timeGoalMinutes || 0) : timeGoalMinutesOverride;
-    if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(task), timeGoalMinutes)) return false;
-    const nextSeq = Math.max(1, Math.floor(+taskAny.presetIntervalNextSeq || 1));
-    const milestone = { id: cryptoRandomId(), createdSeq: nextSeq, hours: nextHours, description: "" };
-    task.milestones.push(milestone);
-    taskAny.presetIntervalLastMilestoneId = milestone.id;
-    taskAny.presetIntervalNextSeq = nextSeq + 1;
-    task.milestones = sortMilestones(task.milestones);
-    return true;
   }
 
   function savePendingTaskJump(taskId: string | null) {
@@ -2217,79 +2101,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const isOn = !!els.confirmDeleteAll?.checked;
     toggle.classList.toggle("on", isOn);
     toggle.setAttribute("aria-checked", isOn ? "true" : "false");
-  }
-
-  function milestoneUnitSec(t: Task | null | undefined): number {
-    if (!t) return 3600;
-    if (t.milestoneTimeUnit === "day") return 86400;
-    if (t.milestoneTimeUnit === "minute") return 60;
-    return 3600;
-  }
-
-  function milestoneUnitSuffix(t: Task | null | undefined): string {
-    if (!t) return "h";
-    if (t.milestoneTimeUnit === "day") return "d";
-    if (t.milestoneTimeUnit === "minute") return "m";
-    return "h";
-  }
-
-  function hasNonPositiveCheckpoint(milestones: Task["milestones"] | null | undefined): boolean {
-    if (!Array.isArray(milestones) || milestones.length === 0) return false;
-    return milestones.some((m) => !(Number(+m.hours) > 0));
-  }
-
-  function checkpointTimeGoalLimitSec(timeGoalMinutes: number | null | undefined): number {
-    const minutes = Number.isFinite(Number(timeGoalMinutes)) ? Math.max(0, Number(timeGoalMinutes)) : 0;
-    return minutes > 0 ? minutes * 60 : 0;
-  }
-
-  function formatCheckpointTimeGoalText(task: Task | null | undefined, opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }) {
-    const effectiveMinutesRaw =
-      opts && Object.prototype.hasOwnProperty.call(opts, "timeGoalMinutes")
-        ? Number(opts.timeGoalMinutes)
-        : Number(task?.timeGoalMinutes || 0);
-    const effectiveMinutes = Number.isFinite(effectiveMinutesRaw) ? Math.max(0, effectiveMinutesRaw) : 0;
-    if (!(effectiveMinutes > 0)) return "the current time goal";
-
-    const useEditDraft = !!opts?.forEditDraft;
-    const goalUnit =
-      useEditDraft ? editTaskDurationUnit : task?.timeGoalUnit === "minute" ? "minute" : task?.timeGoalUnit === "hour" ? "hour" : null;
-    const goalPeriod = useEditDraft ? editTaskDurationPeriod : task?.timeGoalPeriod === "day" ? "day" : task?.timeGoalPeriod === "week" ? "week" : null;
-    const goalValueRaw = useEditDraft ? Number(els.editTaskDurationValueInput?.value || 0) : Number(task?.timeGoalValue || 0);
-    const goalValue = Number.isFinite(goalValueRaw) ? Math.max(0, goalValueRaw) : 0;
-
-    if (goalUnit && goalPeriod && goalValue > 0) {
-      const unitLabel = goalValue === 1 ? goalUnit : `${goalUnit}s`;
-      const periodLabel = goalPeriod === "day" ? "per day" : "per week";
-      return `${goalValue} ${unitLabel} ${periodLabel}`;
-    }
-
-    if (effectiveMinutes % 60 === 0) {
-      const hours = effectiveMinutes / 60;
-      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
-    }
-    return `${effectiveMinutes} ${effectiveMinutes === 1 ? "minute" : "minutes"}`;
-  }
-
-  function isCheckpointAtOrAboveTimeGoal(
-    checkpointHours: number | null | undefined,
-    milestoneUnitSeconds: number,
-    timeGoalMinutes: number | null | undefined
-  ): boolean {
-    const checkpointValue = Number(checkpointHours);
-    if (!(checkpointValue > 0)) return false;
-    const timeGoalSec = checkpointTimeGoalLimitSec(timeGoalMinutes);
-    if (!(timeGoalSec > 0)) return false;
-    return checkpointValue * milestoneUnitSeconds >= timeGoalSec;
-  }
-
-  function hasCheckpointAtOrAboveTimeGoal(
-    milestones: Task["milestones"] | null | undefined,
-    milestoneUnitSeconds: number,
-    timeGoalMinutes: number | null | undefined
-  ): boolean {
-    if (!Array.isArray(milestones) || milestones.length === 0) return false;
-    return milestones.some((m) => isCheckpointAtOrAboveTimeGoal(m?.hours, milestoneUnitSeconds, timeGoalMinutes));
   }
 
   function getAddTaskTimeGoalMinutesState() {
@@ -3695,6 +3506,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const historyInline = createTaskTimerHistoryInline({
     els,
     on,
+    sharedTasks: sharedTaskApi,
     getTasks: () => tasks,
     getHistoryByTaskId: () => historyByTaskId,
     setHistoryByTaskId: (value) => {
@@ -3732,9 +3544,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     sortMilestones,
     sessionColorForTaskMs,
     getModeColor: (mode) => DEFAULT_MODE_COLORS[mode] || DEFAULT_MODE_COLORS.mode1,
-    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
-    milestoneUnitSec,
-    milestoneUnitSuffix,
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
   });
   historyInlineApi = historyInline;
@@ -3852,6 +3661,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   editTaskApi = createTaskTimerEditTask({
     els,
     on,
+    sharedTasks: sharedTaskApi,
     getTasks: () => tasks,
     getEditIndex: () => editIndex,
     setEditIndex: (value) => {
@@ -3902,7 +3712,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     cloneTaskForEdit,
     getModeLabel,
     isModeEnabled,
-    taskModeOf: (task) => (task ? taskModeOf(task) : "mode1"),
     setEditTimeGoalEnabled,
     isEditTimeGoalEnabled,
     editTaskHasActiveTimeGoal,
@@ -3915,26 +3724,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     clearEditValidationState,
     validateEditTimeGoal,
     showEditValidationError,
-    hasNonPositiveCheckpoint,
-    hasCheckpointAtOrAboveTimeGoal,
-    isCheckpointAtOrAboveTimeGoal,
-    milestoneUnitSec,
-    formatCheckpointTimeGoalText,
     getEditTaskTimeGoalMinutes,
     getEditTaskTimeGoalMinutesFor,
     getAddTaskTimeGoalMinutesState: () => addTaskApi?.getAddTaskTimeGoalMinutes() ?? 0,
-    ensureMilestoneIdentity,
     sortMilestones,
     toggleSwitchElement,
     isSwitchOn,
     buildEditDraftSnapshot,
     syncEditTaskDurationReadout,
     maybeToggleEditPresetIntervals,
-    hasValidPresetInterval,
-    addMilestoneWithCurrentPreset,
-    getPresetIntervalNextSeqNum,
     isEditMilestoneUnitDay,
-    createId: () => cryptoRandomId(),
     resetCheckpointAlertTracking: (taskId) => sessionApi?.resetCheckpointAlertTracking(taskId),
     clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
     syncSharedTaskSummariesForTask,

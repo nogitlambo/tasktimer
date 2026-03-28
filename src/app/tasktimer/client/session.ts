@@ -34,6 +34,7 @@ type CheckpointToast = {
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const { els, runtime } = ctx;
+  const { sharedTasks } = ctx;
 
   const getSuppressedMap = () => ctx.getSuppressedFocusModeCheckpointAlertsByTaskId() as Record<string, SuppressedCheckpointToast>;
   const setSuppressedMap = (value: Record<string, SuppressedCheckpointToast>) =>
@@ -332,7 +333,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteTitle) {
       els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete`;
     }
-    const elapsedLabel = ctx.formatCheckpointTimeGoalText(task);
+    const elapsedLabel = sharedTasks.formatCheckpointTimeGoalText(task);
     if (els.timeGoalCompleteText) {
       els.timeGoalCompleteText.textContent = opts?.reminder
         ? `This task is still running beyond its current time goal of ${elapsedLabel}. Please choose how you want to proceed.`
@@ -493,7 +494,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function checkpointKeyForTask(m: { hours: number; description: string }, task: Task) {
-    const unitSeconds = ctx.milestoneUnitSec(task);
+    const unitSeconds = sharedTasks.milestoneUnitSec(task);
     const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
     const label = String(m.description || "").trim();
     return `${targetSec}|${label}`;
@@ -550,7 +551,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     listEl.innerHTML = completedRows
       .map((row, idx) => {
-        const timeText = `${row.item.hours}${ctx.milestoneUnitSuffix(task)}`;
+        const timeText = `${row.item.hours}${sharedTasks.milestoneUnitSuffix(task)}`;
         const desc = String(row.item.description || "").trim();
         return `
           <div class="focusCheckpointLogItem${idx === 0 ? " isLatest" : ""}">
@@ -914,7 +915,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function formatCheckpointAlertText(task: Task, milestone: { hours: number; description: string }) {
-    const targetMs = Math.max(0, (+milestone.hours || 0) * ctx.milestoneUnitSec(task) * 1000);
+    const targetMs = Math.max(0, (+milestone.hours || 0) * sharedTasks.milestoneUnitSec(task) * 1000);
     const label = String(milestone.description || "").trim();
     return label ? `${ctx.formatTime(targetMs)} - ${label}` : ctx.formatTime(targetMs);
   }
@@ -935,14 +936,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const fired = getCheckpointFiredSet(taskId);
     const msSorted = hasMilestones ? ctx.sortMilestones((task.milestones || []).slice()) : [];
-    const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * ctx.milestoneUnitSec(task))) > 0);
+    const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task))) > 0);
     const totalCheckpoints = validMilestones.length;
     let beepCount = 0;
     let shouldResetAtTimeGoal: null | "resetLog" | "resetNoLog" = null;
     let shouldOpenTimeGoalModal = false;
     let openTimeGoalModalAsReminder = false;
     msSorted.forEach((m) => {
-      const targetSec = Math.max(0, Math.round((+m.hours || 0) * ctx.milestoneUnitSec(task)));
+      const targetSec = Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task)));
       if (targetSec <= 0 || targetSec <= prevBaseline || targetSec > elapsedWholeSec) return;
       const key = checkpointKeyForTask(m, task);
       if (fired.has(key)) return;

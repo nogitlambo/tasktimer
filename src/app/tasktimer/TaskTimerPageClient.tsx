@@ -326,6 +326,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       </div>
                       <div className="dashboardTimelineNote" id="dashboardTimelineNote" aria-live="polite" />
                       <div className="dashboardTimeline" id="dashboardTimelineList" aria-live="polite" role="group" aria-label="Suggested daily timeline" />
+                      <div className="dashboardTimelineSummary" id="dashboardTimelineSummary" aria-live="polite" />
                     </section>
 
                     <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">

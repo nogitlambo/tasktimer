@@ -1619,7 +1619,15 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
     border: 0;
-    background: #05080f;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+      radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+      linear-gradient(180deg, #06080d 0%, #04060b 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.06),
+      inset 0 0 0 1px rgba(255,255,255,.02),
+      0 18px 32px rgba(0,0,0,.34),
+      0 30px 70px rgba(0,0,0,.54);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -1703,6 +1711,26 @@
   body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
     color: rgba(226,251,255,.98);
     text-shadow: 0 0 8px rgba(53,232,255,.38);
+  }
+
+  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.05),
+      0 8px 16px rgba(0,0,0,.14),
+      0 18px 34px rgba(0,0,0,.24),
+      0 30px 68px rgba(0,0,0,.42),
+      0 10px 28px rgba(24,225,255,.05);
+  }
+
+  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.05),
+      0 8px 16px rgba(0,0,0,.14),
+      0 18px 34px rgba(0,0,0,.24),
+      0 30px 68px rgba(0,0,0,.42),
+      0 10px 28px rgba(145,86,255,.06);
   }
 }
 

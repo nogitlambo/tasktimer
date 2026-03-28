@@ -165,6 +165,7 @@ const els = {
   dashboardAvgSessionTitle: documentRef.getElementById("dashboardAvgSessionTitle"),
   dashboardTimelineList: documentRef.getElementById("dashboardTimelineList"),
   dashboardTimelineNote: documentRef.getElementById("dashboardTimelineNote"),
+  dashboardTimelineSummary: documentRef.getElementById("dashboardTimelineSummary"),
   dashboardFocusTrendCard: documentRef.getElementById("dashboardFocusTrendCard"),
   dashboardFocusTrendBars: documentRef.getElementById("dashboardFocusTrendBars"),
   dashboardFocusTrendAxis: documentRef.getElementById("dashboardFocusTrendAxis"),

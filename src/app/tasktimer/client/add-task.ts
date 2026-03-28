@@ -9,6 +9,7 @@ import type { TaskTimerAddTaskContext } from "./context";
 
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
+  const { sharedTasks } = ctx;
 
   function setAddTaskError(msg: string) {
     if (!els.addTaskError) return;
@@ -207,11 +208,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.showAddTaskValidationError("Add at least 1 checkpoint when Time Checkpoints is enabled", { checkpoints: true });
       return false;
     }
-    if (milestonesEnabled && ctx.hasNonPositiveCheckpoint(milestones)) {
+    if (milestonesEnabled && sharedTasks.hasNonPositiveCheckpoint(milestones)) {
       ctx.showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
       return false;
     }
-    if (milestonesEnabled && ctx.hasCheckpointAtOrAboveTimeGoal(milestones, unitSec, timeGoalMinutes)) {
+    if (milestonesEnabled && sharedTasks.hasCheckpointAtOrAboveTimeGoal(milestones, unitSec, timeGoalMinutes)) {
       ctx.showAddTaskValidationError("Checkpoint times must be less than the time goal", {
         checkpoints: true,
         checkpointRows: true,
@@ -231,7 +232,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     setAddTaskError("");
     const tasks = ctx.getTasks();
     const nextOrder = (tasks.reduce((mx, task) => Math.max(mx, task.order || 0), 0) || 0) + 1;
-    const newTask = ctx.makeTask(name, nextOrder);
+    const newTask = sharedTasks.makeTask(name, nextOrder);
     const checkpointingEnabled = !!ctx.getAddTaskMilestonesEnabled() && getAddTaskTimeGoalMinutes() > 0;
     newTask.milestonesEnabled = checkpointingEnabled;
     newTask.milestoneTimeUnit = ctx.getAddTaskMilestoneTimeUnit();
@@ -579,7 +580,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         const base = milestones.length ? Number(milestones[milestones.length - 1]?.hours || 0) : 0;
         const nextHours = base + interval;
         if (
-          ctx.isCheckpointAtOrAboveTimeGoal(
+          sharedTasks.isCheckpointAtOrAboveTimeGoal(
             nextHours,
             ctx.getAddTaskMilestoneTimeUnit() === "day" ? 86400 : ctx.getAddTaskMilestoneTimeUnit() === "minute" ? 60 : 3600,
             getAddTaskTimeGoalMinutes()

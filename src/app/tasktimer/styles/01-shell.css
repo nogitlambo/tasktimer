@@ -29,9 +29,7 @@
   gap:var(--space-3);
   padding:16px var(--space-3);
   border-bottom:1px solid rgba(117,231,255,.16);
-  background:
-              linear-gradient(180deg, rgba(0,200,255,.08), rgba(0,0,0,0)),
-              rgba(8,14,27,.56);
+  background:#0d0f13;
   position:sticky;
   top:0;
   z-index:3;
@@ -239,9 +237,7 @@ body[data-theme="purple"] .wrap{
 }
 body[data-theme="purple"] .topbar{
   border-bottom:1px solid rgba(218,112,235,.24);
-  background:
-    linear-gradient(180deg, rgba(201,78,220,.14), rgba(0,0,0,0)),
-    rgba(12,7,20,.72);
+  background:#0d0f13;
 }
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
   display: grid;

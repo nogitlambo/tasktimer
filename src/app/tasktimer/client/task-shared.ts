@@ -1,0 +1,288 @@
+import { sortMilestones } from "../lib/milestones";
+import type { Task } from "../lib/types";
+import type { MainMode } from "./types";
+
+export type TaskTimerSharedTaskContext = {
+  createId: () => string;
+  getCurrentMode: () => MainMode;
+  getEditTimeGoalDraft?: () => {
+    value: number;
+    unit: "minute" | "hour";
+    period: "day" | "week";
+  };
+};
+
+export type TaskTimerSharedTaskApi = {
+  createId: () => string;
+  makeTask: (name: string, order?: number) => Task;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  normalizeLoadedTask: (task: Task) => void;
+  ensureMilestoneIdentity: (task: Task) => void;
+  hasValidPresetInterval: (task: Task | null | undefined) => boolean;
+  getPresetIntervalValueNum: (task: Task | null | undefined) => number;
+  getPresetIntervalNextSeqNum: (task: Task | null | undefined) => number;
+  getPresetIntervalLastMilestone: (task: Task | null | undefined) => { hours: number; description: string } | null;
+  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutesOverride?: number | null) => boolean;
+  milestoneUnitSec: (task: Task | null | undefined) => number;
+  milestoneUnitSuffix: (task: Task | null | undefined) => string;
+  hasNonPositiveCheckpoint: (milestones: Task["milestones"] | null | undefined) => boolean;
+  formatCheckpointTimeGoalText: (
+    task: Task | null | undefined,
+    opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }
+  ) => string;
+  isCheckpointAtOrAboveTimeGoal: (
+    checkpointHours: number | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ) => boolean;
+  hasCheckpointAtOrAboveTimeGoal: (
+    milestones: Task["milestones"] | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ) => boolean;
+};
+
+function checkpointTimeGoalLimitSec(timeGoalMinutes: number | null | undefined): number {
+  const minutes = Number.isFinite(Number(timeGoalMinutes)) ? Math.max(0, Number(timeGoalMinutes)) : 0;
+  return minutes > 0 ? minutes * 60 : 0;
+}
+
+export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): TaskTimerSharedTaskApi {
+  function taskModeOf(task: Task | null | undefined): MainMode {
+    const mode = String((task as { mode?: string } | null | undefined)?.mode || "mode1");
+    if (mode === "mode2" || mode === "mode3") return mode;
+    return "mode1";
+  }
+
+  function makeTask(name: string, order?: number): Task {
+    const task: Task = {
+      id: ctx.createId(),
+      name,
+      order: order || 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
+      checkpointToastEnabled: false,
+      checkpointToastMode: "auto5s",
+      timeGoalAction: "confirmModal",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: 0,
+      presetIntervalLastMilestoneId: null,
+      presetIntervalNextSeq: 1,
+      timeGoalEnabled: false,
+      timeGoalValue: 0,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 0,
+    };
+    (task as Task & { mode?: MainMode }).mode = ctx.getCurrentMode();
+    return task;
+  }
+
+  function normalizeLoadedTask(task: Task) {
+    const taskWithMode = task as Task & {
+      mode?: MainMode;
+      finalCheckpointAction?: Task["timeGoalAction"];
+    };
+    if (!taskWithMode.mode) taskWithMode.mode = "mode1";
+    if (task.milestoneTimeUnit !== "day" && task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
+      task.milestoneTimeUnit = "hour";
+    }
+    task.checkpointSoundEnabled = !!task.checkpointSoundEnabled;
+    task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
+    task.checkpointToastEnabled = !!task.checkpointToastEnabled;
+    task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
+    task.timeGoalAction =
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
+        ? task.timeGoalAction
+        : taskWithMode.finalCheckpointAction === "resetLog" ||
+            taskWithMode.finalCheckpointAction === "resetNoLog" ||
+            taskWithMode.finalCheckpointAction === "confirmModal"
+          ? taskWithMode.finalCheckpointAction
+          : "continue";
+    task.timeGoalEnabled = !!task.timeGoalEnabled;
+    task.timeGoalValue = Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0;
+    task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
+    task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
+    task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+  }
+
+  function ensureMilestoneIdentity(task: Task) {
+    if (!task || !Array.isArray(task.milestones)) return;
+    let nextSeq = 1;
+    let maxSeq = 0;
+    task.milestones.forEach((milestone) => {
+      if (!milestone) return;
+      if (!milestone.id) milestone.id = ctx.createId();
+      const milestoneAny = milestone as { createdSeq?: number };
+      const createdSeq = Number(milestoneAny.createdSeq ?? 0);
+      if (!Number.isFinite(createdSeq) || createdSeq <= 0) {
+        milestoneAny.createdSeq = nextSeq++;
+      }
+      maxSeq = Math.max(maxSeq, Number(milestoneAny.createdSeq ?? 0) || 0);
+    });
+    const taskAny = task as Task & {
+      presetIntervalNextSeq?: number;
+      presetIntervalLastMilestoneId?: string | null;
+    };
+    const presetIntervalNextSeq = Number(taskAny.presetIntervalNextSeq ?? 0);
+    const currentNext = Number.isFinite(presetIntervalNextSeq)
+      ? Math.max(1, Math.floor(presetIntervalNextSeq))
+      : 1;
+    taskAny.presetIntervalNextSeq = Math.max(currentNext, maxSeq + 1);
+    if (taskAny.presetIntervalLastMilestoneId) {
+      const exists = task.milestones.some((milestone) => String(milestone.id || "") === String(taskAny.presetIntervalLastMilestoneId || ""));
+      if (!exists) taskAny.presetIntervalLastMilestoneId = null;
+    }
+  }
+
+  function hasValidPresetInterval(task: Task | null | undefined) {
+    const presetIntervalValue = Number((task as { presetIntervalValue?: number } | null | undefined)?.presetIntervalValue ?? 0);
+    return !!task && Number.isFinite(presetIntervalValue) && presetIntervalValue > 0;
+  }
+
+  function getPresetIntervalValueNum(task: Task | null | undefined) {
+    const presetIntervalValue = Number((task as { presetIntervalValue?: number } | null | undefined)?.presetIntervalValue ?? 0);
+    return Number.isFinite(presetIntervalValue) ? Math.max(0, presetIntervalValue) : 0;
+  }
+
+  function getPresetIntervalNextSeqNum(task: Task | null | undefined) {
+    const presetIntervalNextSeq = Number((task as { presetIntervalNextSeq?: number } | null | undefined)?.presetIntervalNextSeq ?? 0);
+    return Number.isFinite(presetIntervalNextSeq) ? Math.max(1, Math.floor(presetIntervalNextSeq)) : 1;
+  }
+
+  function getPresetIntervalLastMilestone(task: Task | null | undefined) {
+    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return null;
+    const taskAny = task as { presetIntervalLastMilestoneId?: string | null };
+    ensureMilestoneIdentity(task);
+    const lastId = String(taskAny.presetIntervalLastMilestoneId || "");
+    let match = task.milestones.find((milestone) => String(milestone.id || "") === lastId) || null;
+    if (match) return match;
+    match =
+      task.milestones
+        .slice()
+        .sort(
+          (a, b) =>
+            (Number((a as { createdSeq?: number }).createdSeq ?? 0) || 0) - (Number((b as { createdSeq?: number }).createdSeq ?? 0) || 0)
+        )
+        .pop() || null;
+    if (match?.id) taskAny.presetIntervalLastMilestoneId = String(match.id);
+    return match;
+  }
+
+  function milestoneUnitSec(task: Task | null | undefined): number {
+    if (!task) return 3600;
+    if (task.milestoneTimeUnit === "day") return 86400;
+    if (task.milestoneTimeUnit === "minute") return 60;
+    return 3600;
+  }
+
+  function milestoneUnitSuffix(task: Task | null | undefined): string {
+    if (!task) return "h";
+    if (task.milestoneTimeUnit === "day") return "d";
+    if (task.milestoneTimeUnit === "minute") return "m";
+    return "h";
+  }
+
+  function isCheckpointAtOrAboveTimeGoal(
+    checkpointHours: number | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ): boolean {
+    const checkpointValue = Number(checkpointHours);
+    if (!(checkpointValue > 0)) return false;
+    const timeGoalSec = checkpointTimeGoalLimitSec(timeGoalMinutes);
+    if (!(timeGoalSec > 0)) return false;
+    return checkpointValue * milestoneUnitSeconds >= timeGoalSec;
+  }
+
+  function hasCheckpointAtOrAboveTimeGoal(
+    milestones: Task["milestones"] | null | undefined,
+    milestoneUnitSeconds: number,
+    timeGoalMinutes: number | null | undefined
+  ): boolean {
+    if (!Array.isArray(milestones) || milestones.length === 0) return false;
+    return milestones.some((milestone) => isCheckpointAtOrAboveTimeGoal(milestone?.hours, milestoneUnitSeconds, timeGoalMinutes));
+  }
+
+  function addMilestoneWithCurrentPreset(task: Task, timeGoalMinutesOverride?: number | null): boolean {
+    const taskAny = task as Task & {
+      presetIntervalValue?: number;
+      presetIntervalLastMilestoneId?: string | null;
+      presetIntervalNextSeq?: number;
+    };
+    task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
+    ensureMilestoneIdentity(task);
+    const interval = Math.max(0, Number(taskAny.presetIntervalValue ?? 0) || 0);
+    const last = getPresetIntervalLastMilestone(task);
+    const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
+    const timeGoalMinutes = timeGoalMinutesOverride == null ? Number(task.timeGoalMinutes || 0) : timeGoalMinutesOverride;
+    if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(task), timeGoalMinutes)) return false;
+    const nextSeq = Math.max(1, Math.floor(Number(taskAny.presetIntervalNextSeq ?? 1) || 1));
+    const milestone = { id: ctx.createId(), createdSeq: nextSeq, hours: nextHours, description: "" };
+    task.milestones.push(milestone);
+    taskAny.presetIntervalLastMilestoneId = milestone.id;
+    taskAny.presetIntervalNextSeq = nextSeq + 1;
+    task.milestones = sortMilestones(task.milestones);
+    return true;
+  }
+
+  function hasNonPositiveCheckpoint(milestones: Task["milestones"] | null | undefined): boolean {
+    if (!Array.isArray(milestones) || milestones.length === 0) return false;
+    return milestones.some((milestone) => !(Number(+milestone.hours) > 0));
+  }
+
+  function formatCheckpointTimeGoalText(task: Task | null | undefined, opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }) {
+    const effectiveMinutesRaw =
+      opts && Object.prototype.hasOwnProperty.call(opts, "timeGoalMinutes")
+        ? Number(opts.timeGoalMinutes)
+        : Number(task?.timeGoalMinutes || 0);
+    const effectiveMinutes = Number.isFinite(effectiveMinutesRaw) ? Math.max(0, effectiveMinutesRaw) : 0;
+    if (!(effectiveMinutes > 0)) return "the current time goal";
+
+    const useEditDraft = !!opts?.forEditDraft;
+    const draft = useEditDraft ? ctx.getEditTimeGoalDraft?.() : null;
+    const goalUnit = draft ? draft.unit : task?.timeGoalUnit === "minute" ? "minute" : task?.timeGoalUnit === "hour" ? "hour" : null;
+    const goalPeriod = draft ? draft.period : task?.timeGoalPeriod === "day" ? "day" : task?.timeGoalPeriod === "week" ? "week" : null;
+    const goalValueRaw = draft ? Number(draft.value || 0) : Number(task?.timeGoalValue || 0);
+    const goalValue = Number.isFinite(goalValueRaw) ? Math.max(0, goalValueRaw) : 0;
+
+    if (goalUnit && goalPeriod && goalValue > 0) {
+      const unitLabel = goalValue === 1 ? goalUnit : `${goalUnit}s`;
+      const periodLabel = goalPeriod === "day" ? "per day" : "per week";
+      return `${goalValue} ${unitLabel} ${periodLabel}`;
+    }
+
+    if (effectiveMinutes % 60 === 0) {
+      const hours = effectiveMinutes / 60;
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+    }
+    return `${effectiveMinutes} ${effectiveMinutes === 1 ? "minute" : "minutes"}`;
+  }
+
+  return {
+    createId: ctx.createId,
+    makeTask,
+    taskModeOf,
+    normalizeLoadedTask,
+    ensureMilestoneIdentity,
+    hasValidPresetInterval,
+    getPresetIntervalValueNum,
+    getPresetIntervalNextSeqNum,
+    getPresetIntervalLastMilestone,
+    addMilestoneWithCurrentPreset,
+    milestoneUnitSec,
+    milestoneUnitSuffix,
+    hasNonPositiveCheckpoint,
+    formatCheckpointTimeGoalText,
+    isCheckpointAtOrAboveTimeGoal,
+    hasCheckpointAtOrAboveTimeGoal,
+  };
+}

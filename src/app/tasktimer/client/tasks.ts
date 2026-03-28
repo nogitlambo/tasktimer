@@ -6,6 +6,7 @@ import type { TaskTimerTasksContext } from "./context";
 
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
+  const { sharedTasks } = ctx;
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
@@ -40,7 +41,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     const openHistoryTaskIds = ctx.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = ctx.getPinnedHistoryTaskIds();
     const historyViewByTaskId = ctx.getHistoryViewByTaskId();
-    const modeTasks = tasks.filter((t) => ctx.taskModeOf(t) === currentMode);
+    const modeTasks = tasks.filter((t) => sharedTasks.taskModeOf(t) === currentMode);
     const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
 
     ctx.syncTaskFlipStatesForVisibleTasks(activeTaskIds);
@@ -55,7 +56,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     }
 
     tasks.forEach((t, index) => {
-      if (ctx.taskModeOf(t) !== currentMode) return;
+      if (sharedTasks.taskModeOf(t) !== currentMode) return;
       const elapsedMs = ctx.getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
@@ -63,7 +64,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       const msSorted = hasMilestones ? ctx.sortMilestones(t.milestones) : [];
       const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
       const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
-      const maxSec = Math.max(maxValue * ctx.milestoneUnitSec(t), timeGoalSec, 1);
+      const maxSec = Math.max(maxValue * sharedTasks.milestoneUnitSec(t), timeGoalSec, 1);
       const pct = hasMilestones || hasTimeGoal ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
@@ -85,15 +86,15 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       let progressHTML = "";
       if (hasMilestones || hasTimeGoal) {
         let markers = "";
-        const unitSuffix = ctx.milestoneUnitSuffix(t);
+        const unitSuffix = sharedTasks.milestoneUnitSuffix(t);
         markers += `
           <div class="mkLine" style="left:0%"></div>
           <div class="mkTime mkAch mkEdgeL" style="left:0%">0${unitSuffix}</div>`;
-        const nextPendingIndex = msSorted.findIndex((m) => elapsedSec < (+m.hours || 0) * ctx.milestoneUnitSec(t));
+        const nextPendingIndex = msSorted.findIndex((m) => elapsedSec < (+m.hours || 0) * sharedTasks.milestoneUnitSec(t));
         const labelTargetIndex = nextPendingIndex >= 0 ? nextPendingIndex : Math.max(0, msSorted.length - 1);
         msSorted.forEach((m, msIdx) => {
           const val = +m.hours || 0;
-          const secTarget = val * ctx.milestoneUnitSec(t);
+          const secTarget = val * sharedTasks.milestoneUnitSec(t);
           const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
           const reached = elapsedSec >= secTarget;
           const cls = reached ? "mkAch" : "mkPend";
@@ -119,7 +120,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           <div class="progressRow">
             <div class="progressWrap">
               <div class="progressTrack">
-                <div class="progressFill" style="width:${pct}%;background:${ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(pct) : ctx.getModeColor(ctx.taskModeOf(t))}"></div>
+                <div class="progressFill" style="width:${pct}%;background:${ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(pct) : ctx.getModeColor(sharedTasks.taskModeOf(t))}"></div>
                 ${markers}
               </div>
             </div>
