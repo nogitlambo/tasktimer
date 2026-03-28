@@ -66,6 +66,7 @@ import { createTaskTimerPersistence } from "./client/persistence";
 import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
 import { createTaskTimerPopupMenu } from "./client/popup-menu";
 import { createTaskTimerImportExport } from "./client/import-export";
+import { createTaskTimerTaskListUi } from "./client/task-list-ui";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
@@ -480,6 +481,42 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     maybeOpenImportFromQuery,
     registerImportExportEvents,
   } = importExport;
+  const taskListUi = createTaskTimerTaskListUi({
+    els,
+    on,
+    runtime,
+    getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
+    getCurrentMode: () => currentMode,
+    getCurrentAppPage: () => currentAppPage,
+    getTaskView: () => taskView,
+    getTaskDragEl: () => taskDragEl,
+    setTaskDragEl: (value) => {
+      taskDragEl = value;
+    },
+    getFlippedTaskIds: () => flippedTaskIds,
+    getLastRenderedTaskFlipMode: () => lastRenderedTaskFlipMode,
+    setLastRenderedTaskFlipMode: (value) => {
+      lastRenderedTaskFlipMode = value;
+    },
+    getLastRenderedTaskFlipView: () => lastRenderedTaskFlipView,
+    setLastRenderedTaskFlipView: (value) => {
+      lastRenderedTaskFlipView = value;
+    },
+    taskModeOf,
+    save,
+    render,
+  });
+  const {
+    clearTaskFlipStates,
+    syncTaskFlipStatesForVisibleTasks,
+    applyTaskFlipDomState,
+    setTaskFlipped,
+    jumpToTaskAndHighlight,
+    registerTaskListUiEvents,
+  } = taskListUi;
 
   const groupsApi = createTaskTimerGroups({
     els,
@@ -1240,100 +1277,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function clearHistoryEntryNoteOverlayPosition() {
     if (!historyInlineApi) return;
     historyInlineApi.clearHistoryEntryNoteOverlayPosition();
-  }
-
-  function shouldIgnoreTaskDragStart(target: EventTarget | null) {
-    const el = target as HTMLElement | null;
-    if (!el) return false;
-    return !!el.closest(
-      ".actions, .taskFlipBtn, .taskBack, .taskBackActions, .historyInline, .historyCanvasWrap, .progressRow, button, summary, details, canvas, input, select, textarea"
-    );
-  }
-
-  function clearTaskFlipStates() {
-    flippedTaskIds.clear();
-    lastRenderedTaskFlipMode = currentMode;
-    lastRenderedTaskFlipView = taskView;
-  }
-
-  function syncTaskFlipStatesForVisibleTasks(visibleTaskIds: Iterable<string>) {
-    if (currentAppPage !== "tasks") {
-      clearTaskFlipStates();
-      return;
-    }
-    if (lastRenderedTaskFlipMode && lastRenderedTaskFlipMode !== currentMode) flippedTaskIds.clear();
-    if (lastRenderedTaskFlipView && lastRenderedTaskFlipView !== taskView) flippedTaskIds.clear();
-    const visibleIdSet = new Set(Array.from(visibleTaskIds).map((taskId) => String(taskId || "").trim()).filter(Boolean));
-    Array.from(flippedTaskIds).forEach((taskId) => {
-      if (!visibleIdSet.has(taskId)) flippedTaskIds.delete(taskId);
-    });
-    lastRenderedTaskFlipMode = currentMode;
-    lastRenderedTaskFlipView = taskView;
-  }
-
-  function applyTaskFlipDomState(taskId: string, taskEl?: HTMLElement | null) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) return;
-    const card =
-      taskEl ||
-      ((els.taskList as HTMLElement | null)?.querySelector(`.task[data-task-id="${normalizedTaskId.replace(/["\\]/g, "\\$&")}"]`) as HTMLElement | null);
-    if (!card) return;
-    const isFlipped = flippedTaskIds.has(normalizedTaskId);
-    card.classList.toggle("isFlipped", isFlipped);
-    const front = card.querySelector(".taskFaceFront") as HTMLElement | null;
-    const back = card.querySelector(".taskFaceBack") as HTMLElement | null;
-    const openBtn = card.querySelector('[data-task-flip="open"]') as HTMLElement | null;
-    const closeBtn = card.querySelector('[data-task-flip="close"]') as HTMLElement | null;
-    if (front) {
-      front.setAttribute("aria-hidden", isFlipped ? "true" : "false");
-      if (isFlipped) front.setAttribute("inert", "");
-      else front.removeAttribute("inert");
-    }
-    if (back) {
-      back.setAttribute("aria-hidden", isFlipped ? "false" : "true");
-      if (!isFlipped) back.setAttribute("inert", "");
-      else back.removeAttribute("inert");
-    }
-    if (openBtn) openBtn.setAttribute("aria-expanded", isFlipped ? "true" : "false");
-    if (closeBtn) closeBtn.setAttribute("aria-expanded", isFlipped ? "true" : "false");
-  }
-
-  function setTaskFlipped(taskId: string, flipped: boolean, taskEl?: HTMLElement | null) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) return;
-    if (flipped) flippedTaskIds.add(normalizedTaskId);
-    else flippedTaskIds.delete(normalizedTaskId);
-    applyTaskFlipDomState(normalizedTaskId, taskEl);
-  }
-
-  function persistTaskOrderFromTaskListDom() {
-    if (!els.taskList) return;
-    const domTaskIds = Array.from(els.taskList.querySelectorAll(".task[data-task-id]"))
-      .map((el) => String((el as HTMLElement).dataset.taskId || ""))
-      .filter(Boolean);
-    if (!domTaskIds.length) return;
-
-    const byId = new Map(tasks.map((t) => [String(t.id || ""), t] as const));
-    const domModeTasks: Task[] = [];
-    domTaskIds.forEach((id) => {
-      const t = byId.get(id);
-      if (t && taskModeOf(t) === currentMode) domModeTasks.push(t);
-    });
-    if (!domModeTasks.length) return;
-
-    const sortedAll = tasks.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
-    let modePtr = 0;
-    const merged = sortedAll.map((t) => {
-      if (taskModeOf(t) !== currentMode) return t;
-      const next = domModeTasks[modePtr++];
-      return next || t;
-    });
-
-    merged.forEach((t, idx) => {
-      t.order = idx + 1;
-    });
-    tasks = merged;
-    save();
   }
 
   function currentUid() {
@@ -3413,38 +3356,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     currentUid: () => currentUid(),
   });
 
-  function jumpToTaskAndHighlight(taskId: string) {
-    if (!taskId) return;
-    window.setTimeout(() => {
-      const list = els.taskList as HTMLElement | null;
-      if (!list) return;
-      let taskEl: HTMLElement | null = null;
-      try {
-        const esc =
-          typeof (window as any).CSS !== "undefined" && typeof (window as any).CSS.escape === "function"
-            ? (window as any).CSS.escape(taskId)
-            : taskId.replace(/["\\]/g, "\\$&");
-        taskEl = list.querySelector(`.task[data-task-id="${esc}"]`) as HTMLElement | null;
-      } catch {
-        taskEl = list.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
-      }
-      if (!taskEl) return;
-      try {
-        taskEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-      } catch {
-        taskEl.scrollIntoView();
-      }
-      taskEl.classList.remove("isNewTaskGlow");
-      void taskEl.offsetWidth;
-      taskEl.classList.add("isNewTaskGlow");
-      if (runtime.newTaskHighlightTimer != null) window.clearTimeout(runtime.newTaskHighlightTimer);
-      runtime.newTaskHighlightTimer = window.setTimeout(() => {
-        taskEl?.classList.remove("isNewTaskGlow");
-        runtime.newTaskHighlightTimer = null;
-      }, 3000);
-    }, 0);
-  }
-
   function wireEvents() {
     const persistInlineTaskSettingsImmediate = () => {
       saveDefaultTaskTimerFormat();
@@ -3526,73 +3437,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerAddTaskEvents();
 
     registerTaskEvents();
-
-    on(document, "click", (ev: any) => {
-      const insideMenu = ev.target?.closest?.(".taskMenu");
-      if (insideMenu) {
-        document.querySelectorAll(".taskMenu[open]").forEach((el) => {
-          if (el !== insideMenu) (el as HTMLDetailsElement).open = false;
-        });
-      } else {
-        document.querySelectorAll(".taskMenu[open]").forEach((el) => {
-          (el as HTMLDetailsElement).open = false;
-        });
-      }
-      const insideEditMove = ev.target?.closest?.(".editMoveMenu");
-      if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
-    });
-    on(els.taskList, "click", (ev: any) => {
-      const summary = ev.target?.closest?.(".taskMenu > summary");
-      if (!summary) return;
-      const menu = summary.closest?.(".taskMenu") as HTMLDetailsElement | null;
-      if (!menu) return;
-
-      window.setTimeout(() => {
-        if (!menu.open) {
-          menu.classList.remove("open-up");
-          return;
-        }
-        menu.classList.remove("open-up");
-      }, 0);
-    });
+    registerTaskListUiEvents();
     registerDashboardEvents();
-    on(els.taskList, "dragstart", (e: any) => {
-      if (shouldIgnoreTaskDragStart(e.target)) return;
-      const card = e.target?.closest?.(".task") as HTMLElement | null;
-      if (!card || !els.taskList?.contains(card)) return;
-      taskDragEl = card;
-      card.classList.add("isDragging");
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = "move";
-        try {
-          e.dataTransfer.setData("text/plain", card.getAttribute("data-task-id") || "");
-        } catch {
-          // ignore
-        }
-      }
-    });
-    on(els.taskList, "dragover", (e: any) => {
-      const list = els.taskList;
-      const dragging = taskDragEl;
-      if (!list || !dragging) return;
-      const over = Array.from(list.children).find((child) => child.contains(e.target as Node)) as HTMLElement | undefined;
-      if (!over || over === dragging || !list.contains(over)) return;
-      e.preventDefault();
-      const rect = over.getBoundingClientRect();
-      const before = e.clientY < rect.top + rect.height / 2;
-      if (before) list.insertBefore(dragging, over);
-      else list.insertBefore(dragging, over.nextSibling);
-    });
-    on(els.taskList, "drop", (e: any) => {
-      if (!taskDragEl) return;
-      e.preventDefault();
-      persistTaskOrderFromTaskListDom();
-      render();
-    });
-    on(els.taskList, "dragend", () => {
-      if (taskDragEl) taskDragEl.classList.remove("isDragging");
-      taskDragEl = null;
-    });
     registerPreferenceEvents({
       handleAppBackNavigation: () => {
         const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());

@@ -98,6 +98,27 @@ export type TaskTimerImportExportContext = {
   cleanupHistory: (history: HistoryByTaskId) => HistoryByTaskId;
 };
 
+export type TaskTimerTaskListUiContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  runtime: TaskTimerRuntime;
+  getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
+  getCurrentMode: () => MainMode;
+  getCurrentAppPage: () => AppPage;
+  getTaskView: () => "list" | "tile";
+  getTaskDragEl: () => HTMLElement | null;
+  setTaskDragEl: (value: HTMLElement | null) => void;
+  getFlippedTaskIds: () => Set<string>;
+  getLastRenderedTaskFlipMode: () => MainMode | null;
+  setLastRenderedTaskFlipMode: (value: MainMode | null) => void;
+  getLastRenderedTaskFlipView: () => "list" | "tile" | null;
+  setLastRenderedTaskFlipView: (value: "list" | "tile" | null) => void;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  render: () => void;
+};
+
 export type TaskTimerAppShellContext = {
   els: TaskTimerElements;
   runtime: TaskTimerRuntime;
