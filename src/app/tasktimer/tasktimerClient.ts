@@ -1112,6 +1112,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     handleAppBackNavigation,
     initMobileBackHandling,
     applyAppPage,
+    registerAppShellEvents,
   } = appShell;
 
   function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
@@ -3954,33 +3955,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.mode1Btn, "click", () => applyMainMode("mode1"));
     on(els.mode2Btn, "click", () => applyMainMode("mode2"));
     on(els.mode3Btn, "click", () => applyMainMode("mode3"));
-    on(document as any, "click", (e: any) => {
-      const target = e?.target as HTMLElement | null;
-      const modeSwitch = els.modeSwitch as HTMLDetailsElement | null;
-      if (!target || !modeSwitch) return;
-      if (!target.closest?.("#modeSwitch")) modeSwitch.open = false;
-    });
-    on(els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
-    on(els.footerDashboardBtn, "click", () => applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" }));
-    on(els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
-    on(els.footerTest2Btn, "click", (e: any) => {
-      e?.preventDefault?.();
-      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
-    });
-    on(els.footerSettingsBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings");
-    });
-    on(els.commandCenterTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
-    on(els.commandCenterDashboardBtn, "click", () => applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" }));
-    on(els.commandCenterGroupsBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
-    });
-    on(els.commandCenterSettingsBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings");
-    });
+    registerAppShellEvents();
     on(els.rewardsInfoOpenBtn, "click", (e: any) => {
       e?.preventDefault?.();
       openOverlay(els.rewardsInfoOverlay as HTMLElement | null);
@@ -3989,12 +3964,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (taskView !== "tile" || !els.taskList) return;
       const nextCount = getTileColumnCount();
       if (nextCount !== currentTileColumnCount) render();
-    });
-    on(document as any, "click", (e: any) => {
-      const badge = e?.target?.closest?.("#signedInHeaderBadge");
-      if (!badge) return;
-      e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings?pane=general");
     });
     registerGroupsEvents();
     on(els.exportTaskCancelBtn, "click", (e: any) => {
@@ -4062,10 +4031,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         }
         menu.classList.remove("open-up");
       }, 0);
-    });
-
-    on(els.menuIcon, "click", () => {
-      navigateToAppRoute("/tasktimer/settings");
     });
     registerDashboardEvents();
     on(els.taskList, "dragstart", (e: any) => {

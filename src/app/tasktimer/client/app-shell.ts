@@ -437,6 +437,55 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
   }
 
+  function registerAppShellEvents() {
+    ctx.on(document as any, "click", (e: any) => {
+      const target = e?.target as HTMLElement | null;
+      const modeSwitch = ctx.els.modeSwitch as HTMLDetailsElement | null;
+      if (!target || !modeSwitch) return;
+      if (!target.closest?.("#modeSwitch")) modeSwitch.open = false;
+    });
+
+    ctx.on(ctx.els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
+    ctx.on(ctx.els.footerDashboardBtn, "click", () =>
+      applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
+    );
+    ctx.on(ctx.els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
+    ctx.on(ctx.els.footerTest2Btn, "click", (e: any) => {
+      e?.preventDefault?.();
+      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+    });
+    ctx.on(ctx.els.footerSettingsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      navigateToAppRoute("/tasktimer/settings");
+    });
+
+    ctx.on(ctx.els.commandCenterTasksBtn, "click", () =>
+      applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" })
+    );
+    ctx.on(ctx.els.commandCenterDashboardBtn, "click", () =>
+      applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
+    );
+    ctx.on(ctx.els.commandCenterGroupsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+    });
+    ctx.on(ctx.els.commandCenterSettingsBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      navigateToAppRoute("/tasktimer/settings");
+    });
+
+    ctx.on(document as any, "click", (e: any) => {
+      const badge = e?.target?.closest?.("#signedInHeaderBadge");
+      if (!badge) return;
+      e?.preventDefault?.();
+      navigateToAppRoute("/tasktimer/settings?pane=general");
+    });
+
+    ctx.on(ctx.els.menuIcon, "click", () => {
+      navigateToAppRoute("/tasktimer/settings");
+    });
+  }
+
   return {
     taskTimerRootPath,
     taskTimerExportBasePath,
@@ -464,5 +513,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     onNativeBackPressed,
     initMobileBackHandling,
     applyAppPage,
+    registerAppShellEvents,
   };
 }
