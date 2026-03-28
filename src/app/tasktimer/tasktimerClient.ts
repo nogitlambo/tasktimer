@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
@@ -29,10 +29,7 @@ import {
 import {
   STORAGE_KEY,
   buildDefaultCloudPreferences,
-  hydrateStorageFromCloud,
   refreshHistoryFromCloud,
-  loadTasks,
-  saveTasks,
   loadHistory,
   appendHistoryEntry,
   saveHistoryLocally,
@@ -49,11 +46,8 @@ import {
   saveCloudDashboard,
   saveCloudPreferences,
   saveCloudTaskUi,
-  subscribeCloudTaskCollection,
-  hasPendingTaskOrHistorySync,
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, normalizeRewardProgress } from "./lib/rewards";
-import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import type {
   AppPage,
@@ -75,9 +69,10 @@ import { createTaskTimerAddTask } from "./client/add-task";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
+import { createTaskTimerCloudSync } from "./client/cloud-sync";
+import { createTaskTimerPersistence } from "./client/persistence";
+import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import {
-  createInitialTaskTimerState,
-  createTaskTimerStorageKeys,
   DEFAULT_MODE_COLORS,
   DEFAULT_MODE_ENABLED,
   DEFAULT_MODE_LABELS,
@@ -91,20 +86,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return { destroy: () => {} };
   }
   const {
-    AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
-    THEME_KEY,
-    MENU_BUTTON_STYLE_KEY,
-    DEFAULT_TASK_TIMER_FORMAT_KEY,
-    TASK_VIEW_KEY,
-    DYNAMIC_COLORS_KEY,
-    CHECKPOINT_ALERT_SOUND_KEY,
-    CHECKPOINT_ALERT_TOAST_KEY,
-    MODE_SETTINGS_KEY,
-    NAV_STACK_KEY,
-    FOCUS_SESSION_NOTES_KEY,
-    NAV_STACK_MAX,
-    NATIVE_BACK_DEBOUNCE_MS,
-  } = createTaskTimerStorageKeys(STORAGE_KEY);
+    initialState,
+    storageKeys: {
+      AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+      THEME_KEY,
+      MENU_BUTTON_STYLE_KEY,
+      DEFAULT_TASK_TIMER_FORMAT_KEY,
+      TASK_VIEW_KEY,
+      DYNAMIC_COLORS_KEY,
+      CHECKPOINT_ALERT_SOUND_KEY,
+      CHECKPOINT_ALERT_TOAST_KEY,
+      MODE_SETTINGS_KEY,
+      NAV_STACK_KEY,
+      FOCUS_SESSION_NOTES_KEY,
+      NAV_STACK_MAX,
+      NATIVE_BACK_DEBOUNCE_MS,
+    },
+  } = createTaskTimerRootBootstrap(initialAppPage, STORAGE_KEY);
   const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
   const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
@@ -135,8 +133,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       unsubscribeCachedPreferences,
     });
   };
-
-  const initialState = createInitialTaskTimerState(initialAppPage);
 
   let deletedTaskMeta = initialState.deletedTaskMeta;
   let tasks = initialState.tasks;
@@ -263,6 +259,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
   let addTaskApi: ReturnType<typeof createTaskTimerAddTask> | null = null;
   let editTaskApi: ReturnType<typeof createTaskTimerEditTask> | null = null;
+  let persistenceApi: ReturnType<typeof createTaskTimerPersistence> | null = null;
+  let cloudSyncApi: ReturnType<typeof createTaskTimerCloudSync> | null = null;
   const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const workingIndicatorStack = initialState.workingIndicatorStack;
   let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
@@ -1105,80 +1103,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   } = appShell;
 
   function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
-    if (runtime.destroyed) return Promise.resolve();
-    if (cloudRefreshInFlight) return cloudRefreshInFlight;
-    cloudRefreshInFlight = hydrateStorageFromCloud(opts)
-      .then(() => {
-        if (runtime.destroyed) return;
-        hydrateUiStateFromCaches();
-        syncTimeGoalModalWithTaskStateApi();
-        render();
-        maybeHandlePendingTaskJump();
-        maybeRestorePendingTimeGoalFlowApi();
-        lastCloudRefreshAtMs = nowMs();
-      })
-      .catch(() => {
-        // Keep current in-memory state when cloud refresh is unavailable.
-      })
-      .finally(() => {
-        cloudRefreshInFlight = null;
-      });
-    return cloudRefreshInFlight;
-  }
-
-  function hasActiveFormInteraction() {
-    const active = document.activeElement as HTMLElement | null;
-    if (!active || active === document.body) return false;
-    return active.matches('input, textarea, select, [contenteditable="true"]');
-  }
-
-  function noteUiInteraction() {
-    lastUiInteractionAtMs = nowMs();
-  }
-
-  function hasRecentUiInteraction(windowMs = 1200) {
-    return nowMs() - lastUiInteractionAtMs < windowMs;
-  }
-
-  function isOverlayVisible(overlay: HTMLElement | null) {
-    if (!overlay) return false;
-    return overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
-  }
-
-  function hasActiveTimeGoalCompletionFlow() {
-    const taskId = String(timeGoalModalTaskId || "").trim();
-    if (!taskId) return false;
-    return (
-      isOverlayVisible(els.timeGoalCompleteOverlay as HTMLElement | null) ||
-      isOverlayVisible(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null) ||
-      isOverlayVisible(els.timeGoalCompleteNoteOverlay as HTMLElement | null)
-    );
-  }
-
-  function scheduleDeferredCloudRefresh(minIntervalMs = 0) {
-    pendingDeferredCloudRefresh = true;
-    if (deferredCloudRefreshTimer != null || runtime.destroyed) return;
-    deferredCloudRefreshTimer = window.setTimeout(() => {
-      deferredCloudRefreshTimer = null;
-      if (runtime.destroyed || !pendingDeferredCloudRefresh) return;
-      if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
-        scheduleDeferredCloudRefresh(minIntervalMs);
-        return;
-      }
-      pendingDeferredCloudRefresh = false;
-      refreshCloudStateIfStale(minIntervalMs);
-    }, 500);
-  }
-
-  function refreshCloudStateIfStale(minIntervalMs = 3000) {
-    if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
-      scheduleDeferredCloudRefresh(minIntervalMs);
-      return;
-    }
-    pendingDeferredCloudRefresh = false;
-    const currentMs = nowMs();
-    if (currentMs - lastCloudRefreshAtMs < minIntervalMs) return;
-    void rehydrateFromCloudAndRender({ force: true });
+    if (!cloudSyncApi) return Promise.resolve();
+    return cloudSyncApi.rehydrateFromCloudAndRender(opts);
   }
 
   function shouldHoldDashboardWidget<K extends keyof typeof dashboardWidgetHasRenderedData>(widget: K, hasData: boolean) {
@@ -1220,81 +1146,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
-  function syncCloudTaskCollectionListener() {
-    if (runtime.removeCloudTaskCollectionListener) {
-      try {
-        runtime.removeCloudTaskCollectionListener();
-      } catch {
-        // ignore
-      }
-      runtime.removeCloudTaskCollectionListener = null;
-    }
-    const uid = currentUid();
-    if (!uid) return;
-    runtime.removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
-      if (hasPendingTaskOrHistorySync()) {
-        scheduleDeferredCloudRefresh(5000);
-        return;
-      }
-      refreshCloudStateIfStale(0);
-    });
-  }
-
   function initCloudRefreshSync() {
-    on(document, "pointerdown", () => {
-      noteUiInteraction();
-    });
-    on(document, "focusin", () => {
-      noteUiInteraction();
-    });
-    on(document, "input", () => {
-      noteUiInteraction();
-    });
-    on(document, "change", () => {
-      noteUiInteraction();
-    });
-    on(window, "focus", () => {
-      refreshCloudStateIfStale(0);
-      maybeRestorePendingTimeGoalFlow();
-    });
-    on(document, "visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        refreshCloudStateIfStale(0);
-        maybeRestorePendingTimeGoalFlow();
-      }
-    });
-
-    try {
-      const capApp = getCapAppPlugin();
-      if (capApp?.addListener) {
-        const maybePromise = capApp.addListener("appStateChange", (state: { isActive?: boolean } | null) => {
-          if (state?.isActive) {
-            refreshCloudStateIfStale(0);
-            maybeRestorePendingTimeGoalFlow();
-          }
-        });
-        if (maybePromise && typeof (maybePromise as any).then === "function") {
-          (maybePromise as Promise<any>)
-            .then((h: any) => {
-              if (h?.remove) runtime.removeCapAppStateListener = () => h.remove();
-            })
-            .catch(() => {});
-        } else if ((maybePromise as any)?.remove) {
-          runtime.removeCapAppStateListener = () => (maybePromise as any).remove();
-        }
-      }
-    } catch {
-      // ignore native app-state listener failures
-    }
-
-    const auth = getFirebaseAuthClient();
-    if (auth) {
-      runtime.removeAuthStateListener = onAuthStateChanged(auth, () => {
-        syncCloudTaskCollectionListener();
-        refreshCloudStateIfStale(0);
-      });
-    }
-    syncCloudTaskCollectionListener();
+    cloudSyncApi?.initCloudRefreshSync();
   }
 
   function maybeOpenImportFromQuery() {
@@ -1362,36 +1215,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return "mode1";
   }
 
-  function load() {
-    const loaded = loadTasks();
-    if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
-      tasks = [];
-      return;
+  function normalizeLoadedTask(task: Task) {
+    const taskWithMode = task as Task & { mode?: "mode1" | "mode2" | "mode3"; finalCheckpointAction?: Task["timeGoalAction"] };
+    if (!taskWithMode.mode) taskWithMode.mode = "mode1";
+    if (task.milestoneTimeUnit !== "day" && task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
+      task.milestoneTimeUnit = "hour";
     }
-    tasks = loaded;
-    tasks.forEach((t) => {
-      if (!(t as any).mode) (t as any).mode = "mode1";
-      if (t.milestoneTimeUnit !== "day" && t.milestoneTimeUnit !== "hour" && t.milestoneTimeUnit !== "minute") {
-        t.milestoneTimeUnit = "hour";
-      }
-      t.checkpointSoundEnabled = !!t.checkpointSoundEnabled;
-      t.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
-      t.checkpointToastEnabled = !!t.checkpointToastEnabled;
-      t.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-      t.timeGoalAction =
-        t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
-          ? t.timeGoalAction
-          : t.finalCheckpointAction === "resetLog" ||
-              t.finalCheckpointAction === "resetNoLog" ||
-              t.finalCheckpointAction === "confirmModal"
-            ? t.finalCheckpointAction
-            : "continue";
-      t.timeGoalEnabled = !!t.timeGoalEnabled;
-      t.timeGoalValue = Number.isFinite(Number(t.timeGoalValue)) ? Math.max(0, Number(t.timeGoalValue)) : 0;
-      t.timeGoalUnit = t.timeGoalUnit === "minute" ? "minute" : "hour";
-      t.timeGoalPeriod = t.timeGoalPeriod === "day" ? "day" : "week";
-      t.timeGoalMinutes = Number.isFinite(Number(t.timeGoalMinutes)) ? Math.max(0, Number(t.timeGoalMinutes)) : 0;
-    });
+    task.checkpointSoundEnabled = !!task.checkpointSoundEnabled;
+    task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
+    task.checkpointToastEnabled = !!task.checkpointToastEnabled;
+    task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
+    task.timeGoalAction =
+      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
+        ? task.timeGoalAction
+        : taskWithMode.finalCheckpointAction === "resetLog" ||
+            taskWithMode.finalCheckpointAction === "resetNoLog" ||
+            taskWithMode.finalCheckpointAction === "confirmModal"
+          ? taskWithMode.finalCheckpointAction
+          : "continue";
+    task.timeGoalEnabled = !!task.timeGoalEnabled;
+    task.timeGoalValue = Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0;
+    task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
+    task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
+    task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+  }
+
+  function load() {
+    persistenceApi?.load();
   }
 
   function ensureMilestoneIdentity(task: Task) {
@@ -1468,24 +1318,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function savePendingTaskJump(taskId: string | null) {
-    pendingTaskJumpMemory = taskId ? String(taskId) : null;
-    try {
-      if (pendingTaskJumpMemory) window.localStorage.setItem(PENDING_PUSH_TASK_ID_KEY, pendingTaskJumpMemory);
-      else window.localStorage.removeItem(PENDING_PUSH_TASK_ID_KEY);
-    } catch {
-      // ignore localStorage failures
-    }
-  }
-
-  function loadPendingTaskJump() {
-    const raw = String(pendingTaskJumpMemory || "").trim();
-    if (raw) return raw || null;
-    try {
-      const stored = String(window.localStorage.getItem(PENDING_PUSH_TASK_ID_KEY) || "").trim();
-      return stored || null;
-    } catch {
-      return null;
-    }
+    persistenceApi?.savePendingTaskJump(taskId);
   }
 
   function jumpToTaskById(taskId: string) {
@@ -1516,114 +1349,35 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function maybeHandlePendingTaskJump() {
-    const taskId = loadPendingTaskJump();
-    if (!taskId) return;
-    if (!tasks.some((row) => String(row.id || "") === taskId)) return;
-    savePendingTaskJump(null);
-    jumpToTaskById(taskId);
-    maybeRestorePendingTimeGoalFlow();
-    window.setTimeout(() => {
-      if (runtime.destroyed || loadPendingTaskJump()) return;
-      maybeRestorePendingTimeGoalFlow();
-    }, 120);
+    persistenceApi?.maybeHandlePendingTaskJump();
   }
 
   function save(opts?: { deletedTaskIds?: string[] }) {
-    saveTasks(tasks, opts);
-  }
-
-  function historySignature(history: HistoryByTaskId) {
-    const parts: string[] = [];
-    Object.keys(history || {})
-      .sort()
-      .forEach((taskId) => {
-        const rows = Array.isArray(history?.[taskId]) ? history[taskId] : [];
-        const rowSig = rows
-          .map((e: any) => `${Number(e?.ts || 0)}|${Number(e?.ms || 0)}|${String(e?.name || "")}|${String(e?.note || "")}`)
-          .join(",");
-        parts.push(`${taskId}:${rowSig}`);
-      });
-    return parts.join("||");
-  }
-
-  function persistFocusSessionNotes() {
-    if (typeof window === "undefined") return;
-    try {
-      const next: Record<string, string> = {};
-      Object.keys(focusSessionNotesByTaskId || {}).forEach((taskId) => {
-        const value = String(focusSessionNotesByTaskId[taskId] || "").trim();
-        if (value) next[taskId] = value;
-      });
-      if (Object.keys(next).length) window.localStorage.setItem(FOCUS_SESSION_NOTES_KEY, JSON.stringify(next));
-      else window.localStorage.removeItem(FOCUS_SESSION_NOTES_KEY);
-    } catch {
-      // ignore localStorage failures
-    }
+    persistenceApi?.save(opts);
   }
 
   function setFocusSessionDraft(taskId: string, noteRaw: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return;
-    const value = String(noteRaw || "").trim();
-    if (value) focusSessionNotesByTaskId[taskKey] = value;
-    else delete focusSessionNotesByTaskId[taskKey];
-    persistFocusSessionNotes();
-  }
-
-  function getFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    return String(focusSessionNotesByTaskId[taskKey] || "");
+    persistenceApi?.setFocusSessionDraft(taskId, noteRaw);
   }
 
   function clearFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey || !focusSessionNotesByTaskId[taskKey]) return;
-    delete focusSessionNotesByTaskId[taskKey];
-    persistFocusSessionNotes();
+    persistenceApi?.clearFocusSessionDraft(taskId);
   }
 
   function syncFocusSessionNotesInput(taskId: string | null) {
-    if (!els.focusSessionNotesInput) return;
-    els.focusSessionNotesInput.value = taskId ? getFocusSessionDraft(taskId) : "";
+    persistenceApi?.syncFocusSessionNotesInput(taskId);
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    if (!els.focusSessionNotesSection) return;
-    const noteValue = taskId ? getFocusSessionDraft(taskId) : "";
-    els.focusSessionNotesSection.open = !!noteValue.trim();
+    persistenceApi?.syncFocusSessionNotesAccordion(taskId);
   }
 
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {
-    const pendingTaskId = String(taskId || focusModeTaskId || "").trim();
-    if (focusSessionNoteSaveTimer != null) {
-      window.clearTimeout(focusSessionNoteSaveTimer);
-      focusSessionNoteSaveTimer = null;
-    }
-    if (!pendingTaskId) return;
-    const isActiveFocusTask = String(focusModeTaskId || "").trim() === pendingTaskId;
-    if (isActiveFocusTask && els.focusSessionNotesInput) {
-      setFocusSessionDraft(pendingTaskId, String(els.focusSessionNotesInput.value || ""));
-    }
-  }
-
-  function getLiveFocusSessionNoteValue(taskId?: string | null): string {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    if (String(focusModeTaskId || "").trim() !== taskKey) return "";
-    return String(els.focusSessionNotesInput?.value || "").trim();
+    persistenceApi?.flushPendingFocusSessionNoteSave(taskId);
   }
 
   function captureSessionNoteSnapshot(taskId?: string | null): string {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    flushPendingFocusSessionNoteSave(taskKey);
-    const liveNote = getLiveFocusSessionNoteValue(taskKey);
-    if (liveNote) {
-      setFocusSessionDraft(taskKey, liveNote);
-      return liveNote;
-    }
-    return getFocusSessionDraft(taskKey);
+    return persistenceApi?.captureSessionNoteSnapshot(taskId) ?? "";
   }
 
   function getHistoryEntryNote(entry: any) {
@@ -1633,44 +1387,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function clearHistoryEntryNoteOverlayPosition() {
     if (!historyInlineApi) return;
     historyInlineApi.clearHistoryEntryNoteOverlayPosition();
-  }
-
-  function loadHistoryIntoMemory() {
-    const loadedHistory = loadHistory();
-    const cleanedHistory = cleanupHistory(loadedHistory);
-    historyByTaskId = cleanedHistory;
-    if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
-      saveHistory(historyByTaskId, { showIndicator: false });
-    }
-  }
-
-  function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
-    return Object.values(history || {}).some(
-      (rows) => Array.isArray(rows) && rows.some((row) => typeof row?.note === "string" && row.note.trim())
-    );
-  }
-
-  function maybeRepairHistoryNotesInCloud() {
-    if (historyNoteCloudRepairAttempted) return;
-    if (!currentUid()) return;
-    if (!hasHistoryEntryNotes(historyByTaskId)) return;
-    historyNoteCloudRepairAttempted = true;
-    saveHistory(historyByTaskId, { showIndicator: false });
-  }
-
-  function loadHistoryRangePrefs() {
-    historyRangeDaysByTaskId = {};
-    historyRangeModeByTaskId = {};
-    const taskUi = cloudTaskUiCache || loadCachedTaskUi();
-    if (!taskUi) return;
-    Object.keys(taskUi.historyRangeDaysByTaskId || {}).forEach((taskId) => {
-      const value = (taskUi.historyRangeDaysByTaskId as any)[taskId];
-      historyRangeDaysByTaskId[taskId] = value === 14 ? 14 : 7;
-    });
-    Object.keys(taskUi.historyRangeModeByTaskId || {}).forEach((taskId) => {
-      const value = (taskUi.historyRangeModeByTaskId as any)[taskId];
-      historyRangeModeByTaskId[taskId] = value === "day" ? "day" : "entries";
-    });
   }
 
   function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
@@ -2362,32 +2078,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     persistPendingTimeGoalFlow(task, "note");
     openOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-  }
-
-  function maybeRestorePendingTimeGoalFlow() {
-    const pending = loadPendingTimeGoalFlow();
-    if (pending) {
-      const task = tasks.find((row) => String(row.id || "") === pending.taskId) || null;
-      if (!shouldKeepTimeGoalCompletionFlow(task, pending.frozenElapsedMs)) {
-        clearPendingTimeGoalFlow();
-        if (pending.taskId) clearTaskTimeGoalFlow(pending.taskId);
-        return;
-      }
-      if (!task) return;
-      if (String(timeGoalModalTaskId || "") !== pending.taskId || !(Number(timeGoalModalFrozenElapsedMs || 0) > 0)) {
-        openTimeGoalCompleteModal(task, pending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: pending.reminder });
-      }
-      if (pending.step === "saveNote") {
-        openTimeGoalSaveNoteChoice(task);
-      } else if (pending.step === "note") {
-        openTimeGoalNoteModal(task);
-      }
-      return;
-    }
-    if (String(timeGoalModalTaskId || "").trim()) return;
-    const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
-    if (!overdueTask) return;
-    openTimeGoalCompleteModal(overdueTask, getTaskElapsedMs(overdueTask), { reminder: true });
   }
 
   function addRangeMsToLocalDayMap(dayMap: Map<string, number>, startMs: number, endMs: number) {
@@ -6013,6 +5703,134 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerEditTaskEvents,
   } = editTaskApi;
 
+  persistenceApi = createTaskTimerPersistence({
+    focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
+    pendingTaskJumpKey: PENDING_PUSH_TASK_ID_KEY,
+    getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
+    getHistoryByTaskId: () => historyByTaskId,
+    setHistoryByTaskId: (value) => {
+      historyByTaskId = value;
+    },
+    getHistoryRangeDaysByTaskId: () => historyRangeDaysByTaskId,
+    setHistoryRangeDaysByTaskId: (value) => {
+      historyRangeDaysByTaskId = value;
+    },
+    getHistoryRangeModeByTaskId: () => historyRangeModeByTaskId,
+    setHistoryRangeModeByTaskId: (value) => {
+      historyRangeModeByTaskId = value;
+    },
+    getFocusSessionNotesByTaskId: () => focusSessionNotesByTaskId,
+    setFocusSessionNotesByTaskId: (value) => {
+      focusSessionNotesByTaskId = value;
+    },
+    getPendingTaskJumpMemory: () => pendingTaskJumpMemory,
+    setPendingTaskJumpMemory: (value) => {
+      pendingTaskJumpMemory = value;
+    },
+    getRuntimeDestroyed: () => runtime.destroyed,
+    getCurrentUid: () => currentUid(),
+    getFocusModeTaskId: () => focusModeTaskId,
+    getFocusSessionNoteSaveTimer: () => focusSessionNoteSaveTimer,
+    setFocusSessionNoteSaveTimer: (value) => {
+      focusSessionNoteSaveTimer = value;
+    },
+    getFocusSessionNotesInputValue: () => String(els.focusSessionNotesInput?.value || ""),
+    setFocusSessionNotesInputValue: (value) => {
+      if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = value;
+    },
+    setFocusSessionNotesSectionOpen: (open) => {
+      if (els.focusSessionNotesSection) els.focusSessionNotesSection.open = open;
+    },
+    getCurrentAppPage: () => currentAppPage,
+    getInitialAppPageFromLocation,
+    initialAppPage,
+    getCloudTaskUiCache: () => cloudTaskUiCache,
+    loadCachedTaskUi,
+    loadDeletedMeta,
+    setDeletedTaskMeta: (value) => {
+      deletedTaskMeta = value;
+    },
+    primeDashboardCacheFromShadow,
+    loadFocusSessionNotes: () => loadFocusSessionNotesApi(),
+    loadAddTaskCustomNames: () => loadAddTaskCustomNamesApi(),
+    loadDefaultTaskTimerFormat,
+    loadTaskViewPreference,
+    loadAutoFocusOnTaskLaunchSetting,
+    loadDynamicColorsSetting,
+    loadCheckpointAlertSettings,
+    loadDashboardWidgetState: () => loadDashboardWidgetStateApi(),
+    loadThemePreference,
+    loadMenuButtonStylePreference,
+    syncTaskSettingsUi,
+    loadPinnedHistoryTaskIds,
+    loadModeLabels,
+    backfillHistoryColorsFromSessionLogic,
+    syncModeLabelsUi,
+    applyMainMode,
+    applyAppPage,
+    applyDashboardOrderFromStorage: () => applyDashboardOrderFromStorageApi(),
+    applyDashboardCardSizes: () => applyDashboardCardSizesApi(),
+    renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
+    applyDashboardCardVisibility: () => applyDashboardCardVisibilityApi(),
+    applyDashboardEditMode: () => applyDashboardEditModeApi(),
+    renderDashboardWidgets: () => renderDashboardWidgetsApi(),
+    maybeRepairHistoryNotesInCloudAfterHydrate: () => {
+      if (historyNoteCloudRepairAttempted) return;
+      historyNoteCloudRepairAttempted = true;
+      saveHistory(historyByTaskId, { showIndicator: false });
+    },
+    taskModeOf,
+    jumpToTaskById,
+    maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
+    normalizeLoadedTask,
+  });
+
+  cloudSyncApi = createTaskTimerCloudSync({
+    runtime,
+    on,
+    nowMs,
+    getCapAppPlugin,
+    cloudRefreshInFlight: createTaskTimerStateAccessor(
+      () => cloudRefreshInFlight,
+      (value) => {
+        cloudRefreshInFlight = value;
+      }
+    ),
+    lastCloudRefreshAtMs: createTaskTimerStateAccessor(
+      () => lastCloudRefreshAtMs,
+      (value) => {
+        lastCloudRefreshAtMs = value;
+      }
+    ),
+    pendingDeferredCloudRefresh: createTaskTimerStateAccessor(
+      () => pendingDeferredCloudRefresh,
+      (value) => {
+        pendingDeferredCloudRefresh = value;
+      }
+    ),
+    deferredCloudRefreshTimer: createTaskTimerStateAccessor(
+      () => deferredCloudRefreshTimer,
+      (value) => {
+        deferredCloudRefreshTimer = value;
+      }
+    ),
+    lastUiInteractionAtMs: createTaskTimerStateAccessor(
+      () => lastUiInteractionAtMs,
+      (value) => {
+        lastUiInteractionAtMs = value;
+      }
+    ),
+    hydrateUiStateFromCaches,
+    syncTimeGoalModalWithTaskState: () => syncTimeGoalModalWithTaskStateApi(),
+    render,
+    maybeHandlePendingTaskJump,
+    maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
+    currentUid: () => currentUid(),
+  });
+
   function jumpToTaskAndHighlight(taskId: string) {
     if (!taskId) return;
     window.setTimeout(() => {
@@ -6296,39 +6114,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function hydrateUiStateFromCaches() {
-    primeDashboardCacheFromShadow();
-    deletedTaskMeta = loadDeletedMeta();
-    loadHistoryIntoMemory();
-    focusSessionNotesByTaskId = loadFocusSessionNotesApi();
-    maybeRepairHistoryNotesInCloud();
-    loadHistoryRangePrefs();
-    load();
-    loadAddTaskCustomNamesApi();
-    loadDefaultTaskTimerFormat();
-    loadTaskViewPreference();
-    loadAutoFocusOnTaskLaunchSetting();
-    loadDynamicColorsSetting();
-    loadCheckpointAlertSettings();
-    loadDashboardWidgetStateApi();
-    loadThemePreference();
-    loadMenuButtonStylePreference();
-    // Keep Preferences controls in sync with hydrated cloud values on both
-    // /tasktimer and /tasktimer/settings routes.
-    syncTaskSettingsUi();
-    loadPinnedHistoryTaskIds();
-    loadModeLabels();
-    backfillHistoryColorsFromSessionLogic();
-    syncModeLabelsUi();
-    applyMainMode("mode1");
-    applyAppPage(getInitialAppPageFromLocation(initialAppPage), { syncUrl: "replace" });
-    applyDashboardOrderFromStorageApi();
-    applyDashboardCardSizesApi();
-    renderDashboardPanelMenuApi();
-    applyDashboardCardVisibilityApi();
-    applyDashboardEditModeApi();
-    if (currentAppPage === "dashboard") {
-      renderDashboardWidgetsApi();
-    }
+    persistenceApi?.hydrateUiStateFromCaches();
   }
 
   // Init

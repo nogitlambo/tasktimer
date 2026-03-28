@@ -63,6 +63,7 @@
 
 - [`src/app/tasktimer/client/add-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/add-task.ts)
 - [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
+- [`src/app/tasktimer/client/cloud-sync.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/cloud-sync.ts)
 - [`src/app/tasktimer/client/context.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/context.ts)
 - [`src/app/tasktimer/client/dashboard-render.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard-render.ts)
 - [`src/app/tasktimer/client/dashboard.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard.ts)
@@ -71,7 +72,9 @@
 - [`src/app/tasktimer/client/groups.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/groups.ts)
 - [`src/app/tasktimer/client/history-inline.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-inline.ts)
 - [`src/app/tasktimer/client/history-manager.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-manager.ts)
+- [`src/app/tasktimer/client/persistence.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/persistence.ts)
 - [`src/app/tasktimer/client/preferences.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/preferences.ts)
+- [`src/app/tasktimer/client/root-state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/root-state.ts)
 - [`src/app/tasktimer/client/runtime.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/runtime.ts)
 - [`src/app/tasktimer/client/session.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/session.ts)
 - [`src/app/tasktimer/client/state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/state.ts)
