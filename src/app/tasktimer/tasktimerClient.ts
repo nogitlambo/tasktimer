@@ -66,6 +66,7 @@ import { collectTaskTimerElements } from "./client/elements";
 import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
 import { createTaskTimerDashboard } from "./client/dashboard";
+import { createTaskTimerDashboardRender } from "./client/dashboard-render";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerSession } from "./client/session";
 import { createTaskTimerTasks } from "./client/tasks";
@@ -517,6 +518,38 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncSharedTaskSummariesForTasks,
     registerGroupsEvents,
   } = groupsApi;
+  const dashboardRenderApi = createTaskTimerDashboardRender({
+    els,
+    getTasks: () => tasks,
+    getHistoryByTaskId: () => historyByTaskId,
+    getDeletedTaskMeta: () => deletedTaskMeta,
+    getDashboardIncludedModes: () => dashboardIncludedModes,
+    getDashboardAvgRange: () => dashboardAvgRange,
+    setDashboardAvgRange: (value) => {
+      dashboardAvgRange = value;
+    },
+    getDashboardTimelineDensity: () => dashboardTimelineDensity,
+    setDashboardTimelineDensity: (value) => {
+      dashboardTimelineDensity = value;
+    },
+    getDashboardWidgetHasRenderedData: () => dashboardWidgetHasRenderedData,
+    getCloudRefreshInFlight: () => cloudRefreshInFlight,
+    getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    getElapsedMs,
+    escapeHtmlUI,
+    normalizeHistoryTimestampMs,
+    taskModeOf,
+    isModeEnabled: (mode) => isModeEnabled(mode),
+    getModeLabel: (mode) => getModeLabel(mode),
+    getModeColor: (mode) => getModeColor(mode),
+    addRangeMsToLocalDayMap,
+  });
+  const {
+    renderDashboardTimelineCard: renderDashboardTimelineCardApi,
+    renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
+    openDashboardHeatSummaryCard: openDashboardHeatSummaryCardApi,
+    closeDashboardHeatSummaryCard: closeDashboardHeatSummaryCardApi,
+  } = dashboardRenderApi;
   const dashboardApi = createTaskTimerDashboard({
     els,
     on,
@@ -568,18 +601,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     getModeLabel: (mode) => getModeLabel(mode),
     isModeEnabled: (mode) => isModeEnabled(mode),
-    renderDashboardOverviewChart: () => renderDashboardOverviewChart(),
-    renderDashboardStreakCard: () => renderDashboardStreakCard(),
-    renderDashboardTodayHoursCard: () => renderDashboardTodayHoursCard(),
-    renderDashboardWeeklyGoalsCard: () => renderDashboardWeeklyGoalsCard(),
-    renderDashboardTasksCompletedCard: () => renderDashboardTasksCompletedCard(),
-    renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
-    renderDashboardFocusTrend: () => renderDashboardFocusTrend(),
-    renderDashboardModeDistribution: () => renderDashboardModeDistribution(),
-    renderDashboardAvgSessionChart: () => renderDashboardAvgSessionChart(),
-    renderDashboardHeatCalendar: () => renderDashboardHeatCalendar(),
-    openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCard(dayKey, dateLabel),
-    closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsFromRenderApi(opts),
+    renderDashboardTimelineCard: () => renderDashboardTimelineCardApi(),
+    openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCardApi(dayKey, dateLabel),
+    closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCardApi(opts),
   });
   const {
     renderDashboardPanelMenu: renderDashboardPanelMenuApi,

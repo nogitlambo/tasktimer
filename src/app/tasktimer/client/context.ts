@@ -577,18 +577,42 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   getModeLabel: (mode: MainMode) => string;
   isModeEnabled: (mode: MainMode) => boolean;
-  renderDashboardOverviewChart: () => void;
-  renderDashboardStreakCard: () => void;
-  renderDashboardTodayHoursCard: () => void;
-  renderDashboardWeeklyGoalsCard: () => void;
-  renderDashboardTasksCompletedCard: () => void;
+  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
   renderDashboardTimelineCard: () => void;
-  renderDashboardFocusTrend: () => void;
-  renderDashboardModeDistribution: () => void;
-  renderDashboardAvgSessionChart: () => void;
-  renderDashboardHeatCalendar: () => void;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
+};
+
+export type TaskTimerDashboardRenderContext = {
+  els: TaskTimerElements;
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  getDeletedTaskMeta: () => DeletedTaskMeta;
+  getDashboardIncludedModes: () => Record<MainMode, boolean>;
+  getDashboardAvgRange: () => DashboardAvgRange;
+  setDashboardAvgRange: (value: DashboardAvgRange) => void;
+  getDashboardTimelineDensity: () => DashboardTimelineDensity;
+  setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
+  getDashboardWidgetHasRenderedData: () => {
+    streak: boolean;
+    tasksCompleted: boolean;
+    overview: boolean;
+    focusTrend: boolean;
+    heatCalendar: boolean;
+    modeDistribution: boolean;
+    avgSession: boolean;
+    timeline: boolean;
+  };
+  getCloudRefreshInFlight: () => Promise<void> | null;
+  getDynamicColorsEnabled: () => boolean;
+  getElapsedMs: (task: Task) => number;
+  escapeHtmlUI: (value: unknown) => string;
+  normalizeHistoryTimestampMs: (value: unknown) => number;
+  taskModeOf: (task: Task) => MainMode;
+  isModeEnabled: (mode: MainMode) => boolean;
+  getModeLabel: (mode: MainMode) => string;
+  getModeColor: (mode: MainMode) => string;
+  addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
 };
 
 export type TaskTimerPreferencesContext = {

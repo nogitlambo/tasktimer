@@ -513,16 +513,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
-    ctx.renderDashboardStreakCard();
-    ctx.renderDashboardOverviewChart();
-    ctx.renderDashboardTodayHoursCard();
-    ctx.renderDashboardWeeklyGoalsCard();
-    ctx.renderDashboardTasksCompletedCard();
-    ctx.renderDashboardTimelineCard();
-    ctx.renderDashboardFocusTrend();
-    ctx.renderDashboardModeDistribution();
-    if (opts?.includeAvgSession !== false) ctx.renderDashboardAvgSessionChart();
-    ctx.renderDashboardHeatCalendar();
+    ctx.renderDashboardWidgets(opts);
   }
 
   function handleDashboardPanelMenuChange(e: Event) {
