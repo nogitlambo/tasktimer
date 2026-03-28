@@ -35,11 +35,30 @@ export type TaskTimerCachedPreferences = {
 export type TaskTimerConfirmOptions = {
   okLabel?: string;
   cancelLabel?: string;
+  altLabel?: string | null;
   checkboxLabel?: string;
   checkboxChecked?: boolean;
+  checkboxDisabled?: boolean;
+  checkboxNote?: string;
+  checkbox2Label?: string | null;
+  checkbox2Checked?: boolean;
   textHtml?: string;
   onOk?: (() => void) | null;
+  onAlt?: (() => void) | null;
   onCancel?: (() => void) | null;
+};
+
+export type TaskTimerConfirmOverlayContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getConfirmAction: () => null | (() => void);
+  setConfirmAction: (value: null | (() => void)) => void;
+  getConfirmActionAlt: () => null | (() => void);
+  setConfirmActionAlt: (value: null | (() => void)) => void;
+  closeEdit: (saveChanges: boolean) => void;
+  closeElapsedPad: (applyValue: boolean) => void;
+  closeTaskExportModal: () => void;
+  closeShareTaskModal: () => void;
 };
 
 export type TaskTimerAppShellContext = {

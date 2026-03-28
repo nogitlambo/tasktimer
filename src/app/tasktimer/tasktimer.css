@@ -166,12 +166,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   --reward-bar-fill-mid: #35e8ff;
   --reward-bar-fill-deep: #00cfc8;
   --reward-bar-fill-glow: rgba(0, 220, 255, 0.18);
-  --reward-bar-skew: 8px;
+  --reward-bar-skew: var(--control-slant, 8px);
   position: relative;
   overflow: hidden;
   border: none !important;
   border-radius: 0;
-  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+  clip-path: none;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   background:
     repeating-linear-gradient(
@@ -189,7 +189,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   z-index: 2;
   min-width: 0;
   display: block;
-  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+  clip-path: none;
   background:
     repeating-linear-gradient(
       90deg,
@@ -225,8 +225,8 @@ body[data-theme="purple"] .rewardSegmentedBar {
   --reward-bar-fill-glow: rgba(212, 71, 210, 0.18);
 }
 
-body[data-control-style="square"] .rewardSegmentedBar,
-body[data-control-style="parallelogram"] .rewardSegmentedBar {
+body[data-control-style="parallelogram"] .rewardSegmentedBar,
+body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
   clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
 }
 

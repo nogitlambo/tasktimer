@@ -63,6 +63,7 @@ import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
 import { createTaskTimerCloudSync } from "./client/cloud-sync";
 import { createTaskTimerPersistence } from "./client/persistence";
+import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
@@ -254,6 +255,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let editTaskApi: ReturnType<typeof createTaskTimerEditTask> | null = null;
   let persistenceApi: ReturnType<typeof createTaskTimerPersistence> | null = null;
   let cloudSyncApi: ReturnType<typeof createTaskTimerCloudSync> | null = null;
+  let closeEditApi: (saveChanges: boolean) => void = () => {};
+  let openElapsedPadForMilestoneApi: (
+    task: Task,
+    milestone: { hours: number; description: string },
+    ms: Task["milestones"],
+    onApplied?: (() => void) | undefined
+  ) => void = () => {};
+  let closeElapsedPadApi: (applyValue: boolean) => void = () => {};
+  let registerEditTaskEvents: () => void = () => {};
   const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const workingIndicatorStack = initialState.workingIndicatorStack;
   let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
@@ -396,40 +406,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
-  function closeTopOverlayIfOpen() {
-    const openOverlays = Array.from(document.querySelectorAll(".overlay")).filter((el) => {
-      const node = el as HTMLElement;
-      return getComputedStyle(node).display !== "none";
-    }) as HTMLElement[];
-    if (!openOverlays.length) return false;
-    const top = openOverlays[openOverlays.length - 1];
-    if (top.id === "editOverlay") {
-      closeEdit(false);
-      return true;
-    }
-    if (top.id === "elapsedPadOverlay") {
-      closeElapsedPad(false);
-      return true;
-    }
-    if (top.id === "confirmOverlay") {
-      closeConfirm();
-      return true;
-    }
-    if (top.id === "timeGoalCompleteOverlay") {
-      return true;
-    }
-    if (top.id === "exportTaskOverlay") {
-      closeTaskExportModal();
-      return true;
-    }
-    if (top.id === "shareTaskModal") {
-      closeShareTaskModal();
-      return true;
-    }
-    closeOverlay(top);
-    return true;
-  }
-
   function closeMobileDetailPanelIfOpen() {
     const mobileBackBtn = document.querySelector(
       ".settingsDetailPanel.isMobileOpen .settingsMobileBackBtn"
@@ -438,6 +414,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     mobileBackBtn.click();
     return true;
   }
+
+  const confirmOverlay = createTaskTimerConfirmOverlay({
+    els,
+    on,
+    getConfirmAction: () => confirmAction,
+    setConfirmAction: (value) => {
+      confirmAction = value;
+    },
+    getConfirmActionAlt: () => confirmActionAlt,
+    setConfirmActionAlt: (value) => {
+      confirmActionAlt = value;
+    },
+    closeEdit: (saveChanges) => closeEditApi(saveChanges),
+    closeElapsedPad: (applyValue) => closeElapsedPadApi(applyValue),
+    closeTaskExportModal: () => closeTaskExportModal(),
+    closeShareTaskModal: () => closeShareTaskModal(),
+  });
+  const {
+    openOverlay,
+    closeOverlay,
+    confirm,
+    closeConfirm,
+    setResetTaskConfirmBusy,
+    syncConfirmPrimaryToggleUi,
+    closeTopOverlayIfOpen,
+    registerConfirmOverlayEvents,
+  } = confirmOverlay;
 
   const groupsApi = createTaskTimerGroups({
     els,
@@ -1980,130 +1983,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (changed) saveHistory(historyByTaskId, { showIndicator: false });
   }
 
-
-  function openOverlay(overlay: HTMLElement | null) {
-    if (!overlay) return;
-    overlay.style.display = "flex";
-  }
-
-  function closeOverlay(overlay: HTMLElement | null) {
-    if (!overlay) return;
-    try {
-      if (document.activeElement && (document.activeElement as any).blur) (document.activeElement as any).blur();
-    } catch {
-      // ignore
-    }
-    overlay.style.display = "none";
-  }
-
-  function confirm(title: string, text: string, opts: any) {
-    confirmAction = opts?.onOk || null;
-    confirmActionAlt = opts?.onAlt || null;
-
-    const okLabel = opts?.okLabel || "OK";
-    const altLabel = opts?.altLabel || null;
-
-    if (els.confirmOkBtn) {
-      els.confirmOkBtn.textContent = okLabel;
-      (els.confirmOkBtn as HTMLElement).style.display = "inline-flex";
-      (els.confirmOkBtn as HTMLButtonElement).disabled = false;
-      els.confirmOkBtn.classList.remove("btn-warn");
-      els.confirmOkBtn.classList.add("btn-accent");
-      if (String(okLabel).toLowerCase() === "delete") {
-        els.confirmOkBtn.classList.remove("btn-accent");
-        els.confirmOkBtn.classList.add("btn-warn");
-      }
-    }
-
-    if (els.confirmAltBtn) {
-      if (altLabel) {
-        els.confirmAltBtn.textContent = altLabel;
-        (els.confirmAltBtn as HTMLElement).style.display = "inline-flex";
-        (els.confirmAltBtn as HTMLButtonElement).disabled = false;
-      } else {
-        (els.confirmAltBtn as HTMLElement).style.display = "none";
-        els.confirmAltBtn.textContent = "";
-      }
-    }
-
-    const showChk = !!opts?.checkboxLabel;
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).style.display = showChk ? "flex" : "none";
-    if (showChk && els.confirmChkLabel) {
-      const labelTextEl = els.confirmChkLabel.querySelector(".confirmChkLabelText");
-      if (labelTextEl) labelTextEl.textContent = String(opts.checkboxLabel || "");
-      else els.confirmChkLabel.textContent = opts.checkboxLabel;
-    }
-    if (els.confirmDeleteAll) els.confirmDeleteAll.checked = showChk ? !!opts.checkboxChecked : false;
-    const disableChk = showChk ? !!opts?.checkboxDisabled : false;
-    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = disableChk;
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-disabled", disableChk);
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", !!els.confirmDeleteAll?.checked);
-    syncConfirmPrimaryToggleUi();
-    const showChkNote = showChk && !!opts?.checkboxNote;
-    if (els.confirmChkNote) {
-      (els.confirmChkNote as HTMLElement).style.display = showChkNote ? "block" : "none";
-      (els.confirmChkNote as HTMLElement).textContent = showChkNote ? String(opts.checkboxNote || "") : "";
-    }
-
-    const showChk2 = !!opts?.checkbox2Label;
-    if (els.confirmChkRow2) (els.confirmChkRow2 as HTMLElement).style.display = showChk2 ? "flex" : "none";
-    if (showChk2 && els.confirmChkLabel2) els.confirmChkLabel2.textContent = opts.checkbox2Label;
-    if (els.confirmLogChk) els.confirmLogChk.checked = showChk2 ? !!opts.checkbox2Checked : false;
-
-    if (els.confirmTitle) els.confirmTitle.textContent = title || "Confirm";
-    if (els.confirmText) {
-      if (opts?.textHtml) els.confirmText.innerHTML = String(opts.textHtml || "");
-      else els.confirmText.textContent = text || "";
-    }
-
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "flex";
-  }
-
-  function closeConfirm() {
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "none";
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
-    confirmAction = null;
-    confirmActionAlt = null;
-    if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
-    if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
-    if (els.confirmOkBtn) {
-      (els.confirmOkBtn as HTMLButtonElement).disabled = false;
-      els.confirmOkBtn.classList.remove("btn-warn");
-      els.confirmOkBtn.classList.add("btn-accent");
-    }
-    if (els.confirmCancelBtn) (els.confirmCancelBtn as HTMLButtonElement).disabled = false;
-    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = false;
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.remove("is-disabled");
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", !!els.confirmDeleteAll?.checked);
-    syncConfirmPrimaryToggleUi();
-    if (els.confirmChkNote) {
-      (els.confirmChkNote as HTMLElement).style.display = "none";
-      (els.confirmChkNote as HTMLElement).textContent = "";
-    }
-  }
-
-  function setResetTaskConfirmBusy(busy: boolean, shouldLog: boolean) {
-    if (els.confirmOkBtn) {
-      els.confirmOkBtn.textContent = busy ? (shouldLog ? "Logging..." : "Resetting...") : shouldLog ? "Log and Reset" : "Reset";
-      (els.confirmOkBtn as HTMLButtonElement).disabled = busy;
-    }
-    if (els.confirmCancelBtn) (els.confirmCancelBtn as HTMLButtonElement).disabled = busy;
-    if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = busy;
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-disabled", busy);
-    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", !!els.confirmDeleteAll?.checked);
-    syncConfirmPrimaryToggleUi();
-  }
-
-  function syncConfirmPrimaryToggleUi() {
-    const toggle = document.getElementById("confirmDeleteAllSwitch");
-    if (!(toggle instanceof HTMLElement)) return;
-    const isOn = !!els.confirmDeleteAll?.checked;
-    toggle.classList.toggle("on", isOn);
-    toggle.setAttribute("aria-checked", isOn ? "true" : "false");
-  }
-
   function getAddTaskTimeGoalMinutesState() {
     const value = Math.max(0, Number(addTaskDurationValue) || 0);
     if (!(value > 0) || addTaskNoTimeGoal) return 0;
@@ -2680,10 +2559,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     historyInlineApi?.renderHistory(taskId);
   }
 
-  function closeEdit(saveChanges: boolean) {
-    closeEditApi(saveChanges);
-  }
-
   function isEditElapsedOverrideEnabled() {
     return !!els.editOverrideElapsedToggle?.classList.contains("on");
   }
@@ -2695,10 +2570,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     onApplied?: () => void
   ) {
     openElapsedPadForMilestoneApi(task, milestone, ms, onApplied);
-  }
-
-  function closeElapsedPad(applyValue: boolean) {
-    closeElapsedPadApi(applyValue);
   }
 
   function deleteTask(i: number) {
@@ -3739,12 +3610,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
     syncSharedTaskSummariesForTask,
   });
-  const {
-    closeEdit: closeEditApi,
-    openElapsedPadForMilestone: openElapsedPadForMilestoneApi,
-    closeElapsedPad: closeElapsedPadApi,
-    registerEditTaskEvents,
-  } = editTaskApi;
+  {
+    const { closeEdit, openElapsedPadForMilestone, closeElapsedPad, registerEditTaskEvents: registerEditTaskEventsLocal } =
+      editTaskApi;
+    closeEditApi = closeEdit;
+    openElapsedPadForMilestoneApi = openElapsedPadForMilestone;
+    closeElapsedPadApi = closeElapsedPad;
+    registerEditTaskEvents = registerEditTaskEventsLocal;
+  }
 
   persistenceApi = createTaskTimerPersistence({
     focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
@@ -4110,14 +3983,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       closeDashboardHeatSummaryCardApi({ restoreFocus: true });
     });
-    on(els.confirmCancelBtn, "click", closeConfirm);
-    on(els.confirmAltBtn, "click", () => {
-      if (typeof confirmActionAlt === "function") confirmActionAlt();
-    });
-    on(els.confirmOkBtn, "click", () => {
-      if (typeof confirmAction === "function") confirmAction();
-      else closeConfirm();
-    });
+    registerConfirmOverlayEvents();
   }
 
   function hydrateUiStateFromCaches() {

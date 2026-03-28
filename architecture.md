@@ -64,6 +64,7 @@
 - [`src/app/tasktimer/client/add-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/add-task.ts)
 - [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
 - [`src/app/tasktimer/client/cloud-sync.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/cloud-sync.ts)
+- [`src/app/tasktimer/client/confirm-overlay.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/confirm-overlay.ts)
 - [`src/app/tasktimer/client/context.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/context.ts)
 - [`src/app/tasktimer/client/dashboard-render.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard-render.ts)
 - [`src/app/tasktimer/client/dashboard.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard.ts)
