@@ -263,7 +263,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                     <section className="dashboardCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                       <div className="dashboardCardTitle">Tasks Completed</div>
                       <div className="dashboardBigValue" id="dashboardTasksCompletedValue">0</div>
-                      <div className="dashboardDelta" id="dashboardTasksCompletedMeta">No weekly goal completions yet</div>
+                      <div className="dashboardDelta" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
                     </section>
 
                     <section

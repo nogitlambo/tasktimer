@@ -597,24 +597,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const hasData = totalCompleted > 0;
     if (shouldHoldDashboardWidget("tasksCompleted", hasData)) return;
 
-    const formatCompletionText = (count: number, singular: string, plural: string) =>
-      `${count} ${count === 1 ? singular : plural}`;
-
     if (valueEl) valueEl.textContent = String(totalCompleted);
     if (metaEl) {
-      if (dailyCompletedDays > 0 && weeklyCompletedTasks > 0) {
-        metaEl.textContent = `${formatCompletionText(dailyCompletedDays, "daily completion", "daily completions")} • ${formatCompletionText(
-          weeklyCompletedTasks,
-          "weekly completion",
-          "weekly completions"
-        )}`;
-      } else if (dailyCompletedDays > 0) {
-        metaEl.textContent = formatCompletionText(dailyCompletedDays, "daily completion", "daily completions");
-      } else if (weeklyCompletedTasks > 0) {
-        metaEl.textContent = formatCompletionText(weeklyCompletedTasks, "weekly completion", "weekly completions");
-      } else {
-        metaEl.textContent = "No weekly goal completions yet";
-      }
+      metaEl.textContent = "";
+      metaEl.style.display = "none";
     }
     if (cardEl) {
       cardEl.setAttribute(
