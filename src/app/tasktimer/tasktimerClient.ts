@@ -1,6 +1,6 @@
 ﻿﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { HistoryByTaskId, Task, DeletedTaskMeta } from "./lib/types";
+import type { Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
@@ -64,6 +64,8 @@ import { createTaskTimerHistoryInline } from "./client/history-inline";
 import { createTaskTimerCloudSync } from "./client/cloud-sync";
 import { createTaskTimerPersistence } from "./client/persistence";
 import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
+import { createTaskTimerPopupMenu } from "./client/popup-menu";
+import { createTaskTimerImportExport } from "./client/import-export";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
@@ -441,6 +443,43 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeTopOverlayIfOpen,
     registerConfirmOverlayEvents,
   } = confirmOverlay;
+
+  const importExport = createTaskTimerImportExport({
+    els,
+    on,
+    getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
+    getHistoryByTaskId: () => historyByTaskId,
+    setHistoryByTaskId: (value) => {
+      historyByTaskId = value;
+    },
+    getExportTaskIndex: () => exportTaskIndex,
+    setExportTaskIndex: (value) => {
+      exportTaskIndex = value;
+    },
+    openOverlay,
+    closeOverlay,
+    confirm,
+    closeConfirm,
+    save,
+    saveHistory,
+    render,
+    createId: () => cryptoRandomId(),
+    makeTask: (name, order) => makeTask(name, order),
+    sortMilestones,
+    ensureMilestoneIdentity: (task) => ensureMilestoneIdentity(task),
+    getPresetIntervalValueNum: (task) => getPresetIntervalValueNum(task),
+    getPresetIntervalNextSeqNum: (task) => getPresetIntervalNextSeqNum(task),
+    cleanupHistory,
+  });
+  const {
+    openTaskExportModal,
+    closeTaskExportModal,
+    maybeOpenImportFromQuery,
+    registerImportExportEvents,
+  } = importExport;
 
   const groupsApi = createTaskTimerGroups({
     els,
@@ -1127,33 +1166,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     cloudSyncApi?.initCloudRefreshSync();
   }
 
-  function maybeOpenImportFromQuery() {
-    let shouldOpenImport = false;
-    let nextSearch = "";
-    try {
-      const params = new URLSearchParams(window.location.search);
-      shouldOpenImport = params.get("import") === "1";
-      if (!shouldOpenImport) return;
-      params.delete("import");
-      nextSearch = params.toString();
-    } catch {
-      return;
-    }
-
-    if (!els.importBtn) return;
-
-    window.setTimeout(() => {
-      els.importBtn?.click();
-    }, 0);
-
-    try {
-      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash || ""}`;
-      window.history.replaceState({}, "", nextUrl);
-    } catch {
-      // ignore URL cleanup failures
-    }
-  }
-
   function load() {
     persistenceApi?.load();
   }
@@ -1324,14 +1336,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     save();
   }
 
-  function safeJsonParse(str: string) {
-    try {
-      return JSON.parse(str);
-    } catch {
-      return null;
-    }
-  }
-
   function currentUid() {
     return String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
   }
@@ -1358,20 +1362,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       customTaskNames: addTaskCustomNames.slice(0, 5),
     };
     saveCloudTaskUi(cloudTaskUiCache);
-  }
-
-  function downloadTextFile(filename: string, text: string) {
-    const blob = new Blob([text], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 0);
   }
 
   function downloadCsvFile(filename: string, text: string) {
@@ -1449,270 +1439,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     return rows;
   }
-
-
-  function makeBackupPayload() {
-    return {
-      schema: "taskticka_backup_v1",
-      exportedAt: new Date().toISOString(),
-      tasks: (tasks || []).map((t) => ({
-        ...t,
-        milestonesEnabled: !!t.milestonesEnabled,
-        milestoneTimeUnit:
-          t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
-        milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
-          id: String((m as any)?.id || cryptoRandomId()),
-          createdSeq: Number.isFinite(+(m as any)?.createdSeq) ? Math.max(1, Math.floor(+(m as any).createdSeq)) : undefined,
-          hours: Number.isFinite(+m.hours) ? +m.hours : 0,
-          description: String(m.description || ""),
-        })),
-        checkpointSoundEnabled: !!t.checkpointSoundEnabled,
-        checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
-        checkpointToastEnabled: !!t.checkpointToastEnabled,
-        checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto5s",
-        timeGoalAction:
-          t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
-            ? t.timeGoalAction
-            : t.finalCheckpointAction === "resetLog" ||
-                t.finalCheckpointAction === "resetNoLog" ||
-                t.finalCheckpointAction === "confirmModal"
-              ? t.finalCheckpointAction
-              : "continue",
-        presetIntervalsEnabled: !!t.presetIntervalsEnabled,
-        presetIntervalValue: getPresetIntervalValueNum(t),
-        presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
-        presetIntervalNextSeq: getPresetIntervalNextSeqNum(t),
-      })),
-      history: historyByTaskId || {},
-    };
-  }
-
-  function makeSingleTaskExportPayload(t: Task, opts?: { includeHistory?: boolean }) {
-    const taskId = String(t?.id || "");
-    const includeHistory = opts?.includeHistory !== false;
-    return {
-      schema: "taskticka_backup_v1",
-      exportedAt: new Date().toISOString(),
-      tasks: [
-        {
-          ...t,
-          milestonesEnabled: !!t.milestonesEnabled,
-          milestoneTimeUnit:
-            t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour",
-          milestones: sortMilestones(Array.isArray(t.milestones) ? t.milestones.slice() : []).map((m) => ({
-            id: String((m as any)?.id || cryptoRandomId()),
-            createdSeq: Number.isFinite(+(m as any)?.createdSeq) ? Math.max(1, Math.floor(+(m as any).createdSeq)) : undefined,
-            hours: Number.isFinite(+m.hours) ? +m.hours : 0,
-            description: String(m.description || ""),
-          })),
-          checkpointSoundEnabled: !!t.checkpointSoundEnabled,
-          checkpointSoundMode: t.checkpointSoundMode === "repeat" ? "repeat" : "once",
-          checkpointToastEnabled: !!t.checkpointToastEnabled,
-          checkpointToastMode: t.checkpointToastMode === "manual" ? "manual" : "auto5s",
-          timeGoalAction:
-            t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
-              ? t.timeGoalAction
-              : t.finalCheckpointAction === "resetLog" ||
-                  t.finalCheckpointAction === "resetNoLog" ||
-                  t.finalCheckpointAction === "confirmModal"
-                ? t.finalCheckpointAction
-                : "continue",
-          presetIntervalsEnabled: !!t.presetIntervalsEnabled,
-          presetIntervalValue: getPresetIntervalValueNum(t),
-          presetIntervalLastMilestoneId: t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null,
-          presetIntervalNextSeq: getPresetIntervalNextSeqNum(t),
-        },
-      ],
-      history:
-        includeHistory && taskId
-          ? { [taskId]: Array.isArray(historyByTaskId?.[taskId]) ? (historyByTaskId[taskId] || []).slice() : [] }
-          : {},
-    };
-  }
-
-  function exportBackup() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const mo = formatTwo(d.getMonth() + 1);
-    const da = formatTwo(d.getDate());
-    const hh = formatTwo(d.getHours());
-    const mi = formatTwo(d.getMinutes());
-    const ss = formatTwo(d.getSeconds());
-    const filename = `taskticka-backup-${y}${mo}${da}-${hh}${mi}${ss}.json`;
-    const payload = makeBackupPayload();
-    downloadTextFile(filename, JSON.stringify(payload, null, 2));
-  }
-
-  function exportTask(i: number, opts?: { includeHistory?: boolean }) {
-    const t = tasks[i];
-    if (!t) return;
-    const d = new Date();
-    const dd = formatTwo(d.getDate());
-    const mm = formatTwo(d.getMonth() + 1);
-    const yyyy = String(d.getFullYear());
-    const safeTaskName = String(t.name || "task")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "task";
-    const filename = `tasktimer-export-${safeTaskName}${dd}${mm}${yyyy}.json`;
-    const payload = makeSingleTaskExportPayload(t, opts);
-    downloadTextFile(filename, JSON.stringify(payload, null, 2));
-  }
-
-  function normalizeImportedTask(t: any): Task {
-    const out = makeTask(String(t.name || "Task"), 1);
-    out.id = String(t.id || cryptoRandomId());
-    out.order = Number.isFinite(+t.order) ? +t.order : 1;
-    out.accumulatedMs = Number.isFinite(+t.accumulatedMs) ? Math.max(0, +t.accumulatedMs) : 0;
-    out.running = false;
-    out.startMs = null;
-    out.collapsed = !!t.collapsed;
-    out.milestonesEnabled = !!t.milestonesEnabled;
-    out.milestoneTimeUnit = t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour";
-    out.milestones = Array.isArray(t.milestones)
-      ? t.milestones.map((m: any) => ({
-          id: m?.id ? String(m.id) : cryptoRandomId(),
-          createdSeq: Number.isFinite(+m?.createdSeq) ? Math.max(1, Math.floor(+m.createdSeq)) : undefined,
-          hours: Number.isFinite(+m.hours) ? +m.hours : 0,
-          description: String(m.description || ""),
-        }))
-      : [];
-    out.milestones = sortMilestones(out.milestones);
-    out.hasStarted = !!t.hasStarted;
-    out.checkpointSoundEnabled = !!t.checkpointSoundEnabled;
-    out.checkpointSoundMode = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
-    out.checkpointToastEnabled = !!t.checkpointToastEnabled;
-    out.checkpointToastMode = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-    out.timeGoalAction =
-      t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
-        ? t.timeGoalAction
-        : t.finalCheckpointAction === "resetLog" ||
-            t.finalCheckpointAction === "resetNoLog" ||
-            t.finalCheckpointAction === "confirmModal"
-          ? t.finalCheckpointAction
-          : "continue";
-    out.xpDisqualifiedUntilReset = !!t.xpDisqualifiedUntilReset;
-    out.presetIntervalsEnabled = !!t.presetIntervalsEnabled;
-    out.presetIntervalValue = getPresetIntervalValueNum(t as any);
-    out.presetIntervalLastMilestoneId = t.presetIntervalLastMilestoneId ? String(t.presetIntervalLastMilestoneId) : null;
-    out.presetIntervalNextSeq = getPresetIntervalNextSeqNum(t as any);
-    ensureMilestoneIdentity(out);
-    return out;
-  }
-
-  function mergeBackup(payload: any, opts?: { overwrite?: boolean }) {
-    if (!payload || typeof payload !== "object") return { ok: false, msg: "Invalid backup file." };
-    const overwrite = !!opts?.overwrite;
-
-    const importedTasks = Array.isArray(payload.tasks) ? payload.tasks : [];
-    const importedHistory = payload.history && typeof payload.history === "object" ? payload.history : {};
-
-    const existingMaxOrder = overwrite ? 0 : tasks.reduce((mx, t) => Math.max(mx, +t.order || 0), 0) || 0;
-    const existingIds = new Set(overwrite ? [] : tasks.map((t) => String(t.id)));
-    const idMap: Record<string, string> = {};
-
-    const orderedImport = importedTasks.slice().sort((a: any, b: any) => (+a.order || 0) - (+b.order || 0));
-
-    let added = 0;
-    const nextTasks: Task[] = overwrite ? [] : tasks.slice();
-
-    orderedImport.forEach((rawTask: any, idx: number) => {
-      if (!rawTask || typeof rawTask !== "object") return;
-      const nt = normalizeImportedTask(rawTask);
-
-      const oldId = String(nt.id || cryptoRandomId());
-      let newId = oldId;
-      if (existingIds.has(newId)) newId = cryptoRandomId();
-
-      idMap[oldId] = newId;
-      nt.id = newId;
-      nt.order = existingMaxOrder + idx + 1;
-
-      existingIds.add(newId);
-      nextTasks.push(nt);
-      added += 1;
-    });
-
-    const nextHistory: HistoryByTaskId = overwrite ? {} : { ...(historyByTaskId || {}) };
-
-    Object.keys(importedHistory).forEach((oldId) => {
-      const arr = (importedHistory as any)[oldId];
-      if (!Array.isArray(arr) || arr.length === 0) return;
-
-      const destId = idMap[String(oldId)] || String(oldId);
-      if (!Array.isArray(nextHistory[destId])) nextHistory[destId] = [];
-
-      arr.forEach((e: any) => {
-        if (!e || typeof e !== "object") return;
-        const ts = Number.isFinite(+e.ts) ? +e.ts : null;
-        const ms = Number.isFinite(+e.ms) ? Math.max(0, +e.ms) : null;
-        if (!ts || !ms) return;
-        const note = String(e.note || "").trim();
-        nextHistory[destId].push({
-          name: String(e.name || ""),
-          ms,
-          ts,
-          ...("xpDisqualifiedUntilReset" in e ? { xpDisqualifiedUntilReset: !!e.xpDisqualifiedUntilReset } : {}),
-          color: e.color ? String(e.color) : undefined,
-          note: note || undefined,
-        });
-      });
-    });
-
-    tasks = nextTasks;
-    historyByTaskId = cleanupHistory(nextHistory);
-    save();
-    saveHistory(historyByTaskId);
-    render();
-
-    return { ok: true, msg: `Imported ${added} task(s).` };
-  }
-
-  function importBackupFromFile(file: File | null) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result || "");
-      const payload = safeJsonParse(text);
-      const importedTasks = payload && Array.isArray(payload.tasks) ? payload.tasks : [];
-      const hasExistingTasks = Array.isArray(tasks) && tasks.length > 0;
-      const hasIncomingTasks = importedTasks.length > 0;
-
-      const runImport = (overwrite: boolean) => {
-        const res = mergeBackup(payload, { overwrite });
-        if (!res.ok) alert(res.msg || "Import failed.");
-        else alert(res.msg || "Import complete.");
-      };
-
-      if (hasExistingTasks && hasIncomingTasks) {
-        confirm(
-          "Import Backup",
-          "Existing tasks were found. Do you want to add imported tasks to existing tasks, or overwrite existing data?",
-          {
-            okLabel: "Add",
-            altLabel: "Overwrite",
-            cancelLabel: "Cancel",
-            onOk: () => {
-              runImport(false);
-              closeConfirm();
-            },
-            onAlt: () => {
-              runImport(true);
-              closeConfirm();
-            },
-            onCancel: () => closeConfirm(),
-          }
-        );
-        return;
-      }
-
-      runImport(false);
-    };
-    reader.onerror = () => alert("Could not read the file.");
-    reader.readAsText(file);
-  }
-
   function getElapsedMs(t: Task) {
     if (String(timeGoalModalTaskId || "") === String(t?.id || "")) {
       return Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0));
@@ -2740,33 +2466,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     emptyEl.style.display = "none";
   }
 
-  function openPopup(which: string) {
-    if (which === "historyManager") {
-      openHistoryManager();
-      return;
-    }
-    if (which === "howto") {
-      navigateToAppRoute("/tasktimer/user-guide");
-      return;
-    }
-    if (which === "categoryManager") {
-      syncModeLabelsUi();
-    }
-    if (which === "taskSettings") {
-      syncTaskSettingsUi();
-    }
-    const map: Record<string, HTMLElement | null> = {
-      about: els.aboutOverlay as HTMLElement | null,
-      howto: els.howtoOverlay as HTMLElement | null,
-      appearance: els.appearanceOverlay as HTMLElement | null,
-      taskSettings: els.taskSettingsOverlay as HTMLElement | null,
-      categoryManager: els.categoryManagerOverlay as HTMLElement | null,
-      contact: els.contactOverlay as HTMLElement | null,
-    };
-
-    if (map[which]) openOverlay(map[which]);
-  }
-
   function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
     const unitSeconds = milestoneUnitSec(t);
     const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
@@ -3214,52 +2913,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setWorkingIndicatorVisible(!!current, current?.message);
   }
 
-  function openTaskExportModal(i: number) {
-    const t = tasks[i];
-    if (!t || !els.exportTaskOverlay) return;
-    exportTaskIndex = i;
-    const taskId = String(t.id || "");
-    const hasHistoryEntries = taskId ? Array.isArray(historyByTaskId?.[taskId]) && (historyByTaskId[taskId] || []).length > 0 : false;
-    if (els.exportTaskTitle) {
-      const taskName = String(t.name || "Task").trim() || "Task";
-      els.exportTaskTitle.textContent = `Export ${taskName}`;
-    }
-    if (els.exportTaskIncludeHistory) {
-      els.exportTaskIncludeHistory.checked = false;
-      els.exportTaskIncludeHistory.disabled = !hasHistoryEntries;
-    }
-    if (els.exportTaskIncludeHistoryLabel) {
-      els.exportTaskIncludeHistoryLabel.textContent = hasHistoryEntries ? "Include history entries" : "No history entries to export";
-    }
-    if (els.exportTaskIncludeHistoryRow) {
-      els.exportTaskIncludeHistoryRow.classList.toggle("is-disabled", !hasHistoryEntries);
-    }
-    openOverlay(els.exportTaskOverlay as HTMLElement | null);
-  }
-
-  function closeTaskExportModal() {
-    exportTaskIndex = null;
-    if (els.exportTaskTitle) els.exportTaskTitle.textContent = "Export Task";
-    if (els.exportTaskIncludeHistory) {
-      els.exportTaskIncludeHistory.checked = false;
-      els.exportTaskIncludeHistory.disabled = false;
-    }
-    if (els.exportTaskIncludeHistoryLabel) {
-      els.exportTaskIncludeHistoryLabel.textContent = "Include history entries";
-    }
-    if (els.exportTaskIncludeHistoryRow) {
-      els.exportTaskIncludeHistoryRow.classList.remove("is-disabled");
-    }
-    closeOverlay(els.exportTaskOverlay as HTMLElement | null);
-  }
-
-  function submitTaskExportModal() {
-    if (exportTaskIndex == null) return;
-    const includeHistory = !!els.exportTaskIncludeHistory?.checked;
-    exportTask(exportTaskIndex, { includeHistory });
-    closeTaskExportModal();
-  }
-
   function isTaskSharedByOwner(taskId: string): boolean {
     const uid = currentUid();
     if (!uid || !taskId) return false;
@@ -3529,6 +3182,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     saveCheckpointAlertSettings,
     registerPreferenceEvents,
   } = preferences;
+
+  const popupMenu = createTaskTimerPopupMenu({
+    els,
+    on,
+    openOverlay,
+    closeOverlay,
+    navigateToAppRoute,
+    openHistoryManager,
+    syncModeLabelsUi,
+    syncTaskSettingsUi,
+    clearHistoryEntryNoteOverlayPosition,
+  });
+  const { registerPopupMenuEvents } = popupMenu;
 
   editTaskApi = createTaskTimerEditTask({
     els,
@@ -3839,22 +3505,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (nextCount !== currentTileColumnCount) render();
     });
     registerGroupsEvents();
-    on(els.exportTaskCancelBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      closeTaskExportModal();
-    });
-    on(els.exportTaskConfirmBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      submitTaskExportModal();
-    });
-    on(els.exportTaskOverlay, "click", (e: any) => {
-      if (e?.target === els.exportTaskOverlay) closeTaskExportModal();
-    });
-    on(els.exportTaskIncludeHistory, "keydown", (e: any) => {
-      if (e?.key !== "Enter") return;
-      e?.preventDefault?.();
-      submitTaskExportModal();
-    });
     on(els.editMoveMode1, "click", () => {
       if (els.editMoveMode1?.disabled) return;
       editMoveTargetMode = "mode1";
@@ -3960,26 +3610,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerSessionEvents();
     registerEditTaskEvents();
 
-    document.querySelectorAll(".menuItem").forEach((btn) => {
-      on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
-    });
+    registerPopupMenuEvents();
+    registerImportExportEvents();
 
-    on(els.exportBtn, "click", exportBackup);
-    on(els.importBtn, "click", () => els.importFile?.click());
-
-    on(els.importFile, "change", (e: any) => {
-      const f = e.target?.files && e.target.files[0] ? e.target.files[0] : null;
-      e.target.value = "";
-      if (f) importBackupFromFile(f);
-    });
-
-    document.querySelectorAll(".closePopup").forEach((btn) => {
-      on(btn, "click", () => {
-        const ov = (btn as HTMLElement).closest(".overlay") as HTMLElement | null;
-        if (ov?.id === "historyEntryNoteOverlay") clearHistoryEntryNoteOverlayPosition();
-        if (ov) closeOverlay(ov);
-      });
-    });
     on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       closeDashboardHeatSummaryCardApi({ restoreFocus: true });
     });

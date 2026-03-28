@@ -61,6 +61,43 @@ export type TaskTimerConfirmOverlayContext = {
   closeShareTaskModal: () => void;
 };
 
+export type TaskTimerPopupMenuContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
+  navigateToAppRoute: (path: string) => void;
+  openHistoryManager: () => void;
+  syncModeLabelsUi: () => void;
+  syncTaskSettingsUi: () => void;
+  clearHistoryEntryNoteOverlayPosition: () => void;
+};
+
+export type TaskTimerImportExportContext = {
+  els: TaskTimerElements;
+  on: TaskTimerRuntime["on"];
+  getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
+  getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getExportTaskIndex: () => number | null;
+  setExportTaskIndex: (value: number | null) => void;
+  openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  closeConfirm: () => void;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  saveHistory: (history: HistoryByTaskId) => void;
+  render: () => void;
+  createId: () => string;
+  makeTask: (name: string, order: number) => Task;
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
+  ensureMilestoneIdentity: (task: Task) => void;
+  getPresetIntervalValueNum: (task: Task) => number;
+  getPresetIntervalNextSeqNum: (task: Task) => number;
+  cleanupHistory: (history: HistoryByTaskId) => HistoryByTaskId;
+};
+
 export type TaskTimerAppShellContext = {
   els: TaskTimerElements;
   runtime: TaskTimerRuntime;
