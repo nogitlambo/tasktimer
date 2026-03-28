@@ -161,17 +161,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         <div className="dashboardCardTitle">Streak</div>
                       </div>
                       <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
-                      <div className="dashboardStreakBar dashboardSegmentedBar" id="dashboardStreakBar">
-                        <span id="dashboardStreakBarFill" style={{ width: "0%" }} />
-                        <span className="dashboardSegmentedBarTrack" aria-hidden="true">
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                          <span className="dashboardSegmentedBarSegment" />
-                        </span>
-                      </div>
-                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">Complete daily goals to start a streak</div>
+                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">XP Reward Rate: X1</div>
                     </section>
 
                     <section

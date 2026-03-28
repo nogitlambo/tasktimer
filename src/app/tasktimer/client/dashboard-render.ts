@@ -246,9 +246,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderDashboardStreakCard() {
     const valueEl = els.dashboardStreakValue as HTMLElement | null;
-    const fillEl = els.dashboardStreakBarFill as HTMLElement | null;
     const metaEl = els.dashboardStreakMeta as HTMLElement | null;
-    const barEl = els.dashboardStreakBar as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
 
     const eligibleTasks = getDashboardFilteredTasks().filter((task) => {
@@ -332,33 +330,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const isPendingToday = !todayComplete && yesterdayComplete && currentStreakDays > 0;
     const isBroken = !todayComplete && !isPendingToday && hasData;
     const dayLabel = (count: number) => `${count} Day${count === 1 ? "" : "s"}`;
+    const rewardMultiplierForStreak = (count: number) => {
+      if (count >= 7) return "X3";
+      if (count >= 3) return "X2";
+      return "X1";
+    };
 
     if (!hasData) {
       if (valueEl) valueEl.textContent = "No streak yet";
-      if (metaEl) metaEl.textContent = "Complete daily goals to start a streak";
-      if (fillEl) fillEl.style.width = "0%";
-      if (barEl) barEl.setAttribute("aria-label", "No streak progress yet");
+      if (metaEl) metaEl.textContent = "XP Reward Rate: X1";
       return;
     }
 
+    const rewardStreakDays = isBroken ? 0 : currentStreakDays;
     if (valueEl) valueEl.textContent = isBroken ? "0 Days" : dayLabel(currentStreakDays);
-    if (metaEl) {
-      metaEl.textContent = isBroken
-        ? `Longest: ${longestStreakDays} day${longestStreakDays === 1 ? "" : "s"} • Streak broken`
-        : `Longest: ${longestStreakDays} day${longestStreakDays === 1 ? "" : "s"} • ${todayComplete ? "Today complete" : "Today pending"}`;
-    }
-
-    const fillPct =
-      longestStreakDays > 0 ? Math.max(0, Math.min(100, Math.round((currentStreakDays / longestStreakDays) * 100))) : 0;
-    if (fillEl) fillEl.style.width = `${fillPct}%`;
-    if (barEl) {
-      barEl.setAttribute(
-        "aria-label",
-        isBroken
-          ? `Streak progress. Current streak broken. Longest streak ${longestStreakDays} days.`
-          : `Streak progress. Current streak ${currentStreakDays} days out of longest streak ${longestStreakDays} days.`
-      );
-    }
+    if (metaEl) metaEl.textContent = `XP Reward Rate: ${rewardMultiplierForStreak(rewardStreakDays)}`;
   }
 
   function renderDashboardWeeklyGoalsCard() {

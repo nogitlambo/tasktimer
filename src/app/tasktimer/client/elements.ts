@@ -140,8 +140,6 @@ const els = {
   dashboardPanelMenuList: documentRef.getElementById("dashboardPanelMenuList") as HTMLElement | null,
   dashboardGrid: documentRef.querySelector(".dashboardGrid") as HTMLElement | null,
   dashboardStreakValue: documentRef.getElementById("dashboardStreakValue"),
-  dashboardStreakBar: documentRef.getElementById("dashboardStreakBar"),
-  dashboardStreakBarFill: documentRef.getElementById("dashboardStreakBarFill"),
   dashboardStreakMeta: documentRef.getElementById("dashboardStreakMeta"),
   dashboardStreakInfoBtn: documentRef.getElementById("dashboardStreakInfoBtn"),
   dashboardStreakInfoDialog: documentRef.getElementById("dashboardStreakInfoDialog"),
