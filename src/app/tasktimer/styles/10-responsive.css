@@ -1114,8 +1114,7 @@
   }
   #app[aria-label="TaskLaunch App"] .signedInHeaderBadgePaneXp.isOn,
   #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePaneXp.isOn{
-    grid-template-columns:auto minmax(72px, 1fr);
-    column-gap:8px;
+    grid-template-columns:minmax(0, 1fr);
   }
   #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
   #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle{

@@ -35,6 +35,299 @@
   letter-spacing:.1px;
 }
 
+#rankLadderOverlay .modal{
+  width: min(860px, 100%);
+  max-height: min(92dvh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(53,232,255,.24);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+.rankLadderModal h2{
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.rankLadderModal .modalSubtext{
+  margin: 0 0 8px;
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+
+.rankLadderList{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.rankLadderItem{
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 16px 12px 14px;
+  border: 1px solid rgba(160,232,255,.18);
+  background: linear-gradient(180deg, rgba(11,19,27,.98), rgba(9,14,20,.98));
+  color: inherit;
+  text-align: center;
+  border-radius: 0;
+  clip-path: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.rankLadderItem.isSelectable{
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.rankLadderItem.isSelectable:hover{
+  transform: translateY(-1px);
+  border-color: rgba(126,243,255,.42);
+  box-shadow: inset 0 0 0 1px rgba(126,243,255,.08), 0 10px 22px rgba(0,0,0,.22);
+}
+
+.rankLadderItem.isSelectable:active{
+  transform: translateY(0);
+}
+
+.rankLadderItem.isSelectable:focus-visible{
+  outline: 2px solid rgba(124,232,255,.96);
+  outline-offset: 2px;
+  border-color: rgba(124,232,255,.88);
+  box-shadow: inset 0 0 0 1px rgba(126,243,255,.12), 0 0 0 1px rgba(126,243,255,.08);
+}
+
+.rankLadderItem.isUnlocked{
+  border-color: rgba(126,243,255,.28);
+}
+
+.rankLadderItem.isCurrent{
+  border-color: rgba(126,243,255,.52);
+  background: linear-gradient(180deg, rgba(11,24,34,.98), rgba(8,16,24,.98));
+  box-shadow: inset 0 0 0 1px rgba(126,243,255,.1), 0 0 24px rgba(0,220,255,.08);
+}
+
+.rankLadderItem.isSelectedThumbnail{
+  border-color: rgba(126,243,255,.68);
+  box-shadow: inset 0 0 0 1px rgba(210,249,255,.12), 0 0 0 1px rgba(126,243,255,.18), 0 0 24px rgba(0,220,255,.12);
+}
+
+.rankLadderItemBadge{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  flex: 0 0 auto;
+  margin-inline: auto;
+  border: 1px solid rgba(160,232,255,.22);
+  border-radius: 0;
+  background: rgba(6,14,22,.92);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.rankLadderItemBadgeShell{
+  width: 74px !important;
+  height: 74px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rankLadderItemBadgeImage,
+.rankLadderItemBadgePlaceholder{
+  width: 74px !important;
+  height: 74px !important;
+}
+
+.rankLadderItemBadgeImage{
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+.rankLadderItemBadgePlaceholder{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 0;
+}
+
+.rankLadderItemBody{
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.rankLadderItemTitleRow{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rankLadderItemTitle{
+  display: block;
+  font-family: var(--font-tight);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(236,248,255,.96);
+}
+
+.rankLadderItemMeta{
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(198,224,236,.84);
+}
+
+.rankLadderItemStateRow{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.rankLadderItemFlag{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 4px 10px;
+  font-family: var(--font-tight);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #dcfbff;
+  border: 1px solid rgba(126,243,255,.26);
+  background: rgba(45,128,148,.16);
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+
+.rankLadderModal .confirmBtns{
+  margin-top: 12px;
+  justify-content: center;
+}
+
+body[data-theme="purple"] #rankLadderOverlay .modal{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+
+body[data-theme="purple"] .rankLadderModal .modalSubtext{
+  color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] .rankLadderItem{
+  border-color: rgba(214,96,229,.24);
+  background: linear-gradient(180deg, rgba(22,12,34,.96), rgba(15,10,24,.98));
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.03);
+}
+
+body[data-theme="purple"] .rankLadderItem.isSelectable:hover{
+  border-color: rgba(233,134,245,.56);
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08), 0 10px 22px rgba(0,0,0,.22);
+}
+
+body[data-theme="purple"] .rankLadderItem.isSelectable:focus-visible{
+  outline-color: rgba(255,164,250,.96);
+  border-color: rgba(233,134,245,.7);
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.12), 0 0 0 1px rgba(255,164,250,.1);
+}
+
+body[data-theme="purple"] .rankLadderItem.isUnlocked{
+  border-color: rgba(214,96,229,.34);
+}
+
+body[data-theme="purple"] .rankLadderItem.isCurrent{
+  border-color: rgba(233,134,245,.56);
+  background: linear-gradient(180deg, rgba(31,15,46,.98), rgba(20,11,31,.98));
+  box-shadow: inset 0 0 0 1px rgba(255,190,252,.09), 0 0 24px rgba(211,86,230,.08);
+}
+
+body[data-theme="purple"] .rankLadderItem.isSelectedThumbnail{
+  border-color: rgba(233,134,245,.76);
+  box-shadow: inset 0 0 0 1px rgba(255,210,255,.11), 0 0 0 1px rgba(233,134,245,.16), 0 0 24px rgba(211,86,230,.12);
+}
+
+body[data-theme="purple"] .rankLadderItemBadge{
+  border-color: rgba(214,96,229,.28);
+  background: rgba(19,10,28,.94);
+}
+
+body[data-theme="purple"] .rankLadderItemTitle{
+  color: rgba(250,240,255,.96);
+}
+
+body[data-theme="purple"] .rankLadderItemMeta{
+  color: rgba(230,212,244,.84);
+}
+
+body[data-theme="purple"] .rankLadderItemFlag{
+  color: #fff7ff;
+  border-color: rgba(233,134,245,.32);
+  background: rgba(161,72,178,.18);
+}
+
+@media (max-width: 700px){
+  #rankLadderOverlay .modal{
+    width: min(560px, 100%);
+  }
+
+  .rankLadderList{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rankLadderItem{
+    aspect-ratio: auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 12px;
+  }
+
+  .rankLadderItemBody{
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .rankLadderItemStateRow{
+    align-items: flex-start;
+  }
+}
+
 /* Edit Task modal: parallelogram styling */
 
 #editOverlay .modal{

@@ -1850,9 +1850,8 @@ body[data-theme="purple"] .historyMeta{
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadgePaneXp.isOn,
 #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePaneXp.isOn,
 #app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadgePaneXp.isOn{
-  grid-template-columns:auto minmax(96px, 1fr);
-  align-items:center;
-  column-gap:10px;
+  grid-template-columns:minmax(0, 1fr);
+  align-items:start;
   animation:signedInHeaderBadgeXpSlideIn .32s ease-out;
 }
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
@@ -1886,36 +1885,6 @@ body[data-theme="purple"] .historyMeta{
   line-height:1.2;
   color:rgba(143,246,255,.82);
 }
-#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
-#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack,
-#app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadgeTrack{
-  display:block;
-  width:clamp(88px, 10vw, 132px);
-  height:10px;
-  overflow:hidden;
-  border:1px solid rgba(117,231,255,.24);
-  background:rgba(6,18,34,.55);
-}
-#app[aria-label="TaskLaunch App"] .signedInHeaderBadgeFill,
-#app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill,
-#app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadgeFill{
-  display:block;
-  height:100%;
-  background:linear-gradient(90deg, rgba(53,232,255,.9), rgba(0,207,200,.88));
-  box-shadow:0 0 10px rgba(53,232,255,.26);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadgeTrack{
-  border-color: rgba(214,96,229,.34);
-  background: rgba(26,12,38,.72);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeFill,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeFill,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadgeFill{
-  background: linear-gradient(90deg, #d447d2, #f06ee0);
-  box-shadow: 0 0 10px rgba(212,71,210,.28);
-}
 #app[aria-label="TaskLaunch App"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle,
 #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle,
 #app[aria-label="TaskLaunch Feedback"] .signedInHeaderBadge:hover .signedInHeaderBadgeTitle{
@@ -1946,23 +1915,28 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
 #app[aria-label="TaskLaunch App"] .rankLadderList,
 #app[aria-label="TaskLaunch Settings"] .rankLadderList{
   display:grid;
-  gap:10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:12px;
   margin-top:14px;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem{
   display:flex;
-  align-items:flex-start;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
   gap:12px;
-  padding:12px 14px;
+  min-height:190px;
+  padding:16px 12px 14px;
   border:1px solid rgba(148,163,184,0.24);
-  border-radius:16px;
+  border-radius:0;
   background:rgba(255,255,255,0.04);
+  text-align:center;
 }
 #app[aria-label="TaskLaunch App"] button.rankLadderItem,
 #app[aria-label="TaskLaunch Settings"] button.rankLadderItem{
   width:100%;
-  text-align:left;
+  text-align:center;
   cursor:pointer;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectable:hover,
@@ -1996,30 +1970,39 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
   display:grid;
   place-items:center;
   overflow:hidden;
-  width:34px;
-  min-width:34px;
-  height:34px;
-  border-radius:999px;
+  width:84px;
+  min-width:84px;
+  height:84px;
+  border-radius:0;
   border:1px solid rgba(148,163,184,0.3);
   background:rgba(13,15,19,0.9);
   color:#e5f6ff;
   font-size:12px;
   font-weight:800;
 }
+#app[aria-label="TaskLaunch App"] .rankLadderItemBadgeShell,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgeShell{
+  width:74px !important;
+  height:74px !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadgeImage,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgeImage{
-  width:100%;
-  height:100%;
+  width:74px !important;
+  height:74px !important;
   display:block;
-  object-fit:cover;
+  object-fit:contain;
+  object-position:center;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadgePlaceholder,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgePlaceholder{
-  width:100%;
-  height:100%;
+  width:74px !important;
+  height:74px !important;
   display:grid;
   place-items:center;
-  border-radius:999px;
+  border-radius:0;
   background:transparent;
   color:inherit;
   font:inherit;
@@ -2028,6 +2011,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBody{
   min-width:0;
   flex:1 1 auto;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemTitleRow,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemTitleRow{
@@ -2035,6 +2024,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
+  justify-content:center;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemTitle,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemTitle{
@@ -2058,9 +2048,39 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemMeta,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemMeta{
-  margin-top:4px;
+  margin-top:auto;
   color:rgba(226,232,240,0.82);
   font-size:12px;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
+  border-color: rgba(214,96,229,.28);
+  background: rgba(19,10,28,.94);
+}
+@media (max-width: 700px){
+  #app[aria-label="TaskLaunch App"] .rankLadderList,
+  #app[aria-label="TaskLaunch Settings"] .rankLadderList{
+    grid-template-columns:minmax(0, 1fr);
+  }
+  #app[aria-label="TaskLaunch App"] .rankLadderItem,
+  #app[aria-label="TaskLaunch Settings"] .rankLadderItem{
+    min-height:0;
+    flex-direction:row;
+    align-items:center;
+    text-align:left;
+  }
+  #app[aria-label="TaskLaunch App"] button.rankLadderItem,
+  #app[aria-label="TaskLaunch Settings"] button.rankLadderItem{
+    text-align:left;
+  }
+  #app[aria-label="TaskLaunch App"] .rankLadderItemBody,
+  #app[aria-label="TaskLaunch Settings"] .rankLadderItemBody{
+    align-items:flex-start;
+  }
+  #app[aria-label="TaskLaunch App"] .rankLadderItemTitleRow,
+  #app[aria-label="TaskLaunch Settings"] .rankLadderItemTitleRow{
+    justify-content:flex-start;
+  }
 }
 #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardAvatarImage,
 #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardAvatarImage{
@@ -2116,6 +2136,23 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .signedInHeader
   font-size:12px;
   font-weight:800;
   line-height:1;
+}
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileMetricRankBtn,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileMetricRankBtn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:inherit;
+  cursor:pointer;
+}
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileMetricRankBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileMetricRankBtn:focus-visible{
+  outline:2px solid rgba(97, 218, 251, 0.92);
+  outline-offset:2px;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileMetricRankBtn:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileMetricRankBtn:focus-visible{
+  outline-color: rgba(255,164,250,.94);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailTitle{
   font-size:16.5px;

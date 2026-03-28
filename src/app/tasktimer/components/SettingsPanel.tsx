@@ -4,7 +4,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
-import { clearScopedStorageState, STORAGE_KEY, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
+import {
+  buildDefaultCloudPreferences,
+  clearScopedStorageState,
+  loadCachedPreferences,
+  saveCloudPreferences,
+  STORAGE_KEY,
+  waitForPendingTaskSync,
+} from "@/app/tasktimer/lib/storage";
 import {
   deleteUser,
   getRedirectResult,
@@ -19,10 +26,12 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firest
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import {
+  buildRewardProgressForRankSelection,
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
+  RANK_OVERRIDE_ADMIN_UID,
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
@@ -73,7 +82,6 @@ const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
-const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 
 function avatarStorageKeyForUid(uid: string) {
@@ -555,7 +563,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)),
     [rewardProgress.currentRankId]
   );
-  const canSelectRankInsignia = authUserUid === RANK_INSIGNIA_ADMIN_UID;
+  const canSelectRankInsignia = authUserUid === RANK_OVERRIDE_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
   const rankLadderSummary =
     rewardsHeader.xpToNext != null
@@ -568,21 +576,30 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
 
   const handleSelectRankThumbnail = useCallback(
     async (rankId: string) => {
-      if (!authUserUid || authUserUid !== RANK_INSIGNIA_ADMIN_UID) return;
+      if (!authUserUid || authUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+      const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
       const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
-      if (!nextSrc) return;
       setRankThumbnailSrc(nextSrc);
+      setRewardProgress(nextRewards);
       writeStoredRankThumbnailSrc(authUserUid, nextSrc);
+      const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();
+      saveCloudPreferences({
+        ...currentPrefs,
+        rewards: nextRewards,
+      });
       try {
-        await saveUserDocPatch(authUserUid, { rankThumbnailSrc: nextSrc });
-        void syncOwnFriendshipProfile(authUserUid, { rankThumbnailSrc: nextSrc }).catch(() => {
+        await saveUserDocPatch(authUserUid, { rankThumbnailSrc: nextSrc || null });
+        void syncOwnFriendshipProfile(authUserUid, {
+          rankThumbnailSrc: nextSrc || null,
+          currentRankId: nextRewards.currentRankId,
+        }).catch(() => {
           // Ignore friendship profile sync failures from the settings surface.
         });
       } catch {
         // ignore rank thumbnail save failures from the settings surface
       }
     },
-    [authUserUid, saveUserDocPatch]
+    [authUserUid, rewardProgress, saveUserDocPatch]
   );
 
   useEffect(() => {
@@ -1202,16 +1219,13 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                       <p className="modalSubtext">
                         {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP. {rankLadderSummary}
                       </p>
-                      {canSelectRankInsignia ? (
-                        <p className="modalSubtext">Click an insignia thumbnail to use it as your profile rank badge.</p>
-                      ) : null}
                       <div className="rankLadderList" role="list" aria-label="Available ranks">
                         {RANK_LADDER.map((rank, index) => {
                           const isCurrent = rank.id === rewardProgress.currentRankId;
                           const isUnlocked = index <= currentRankIndex;
                           const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
                           const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-                          const isSelectable = canSelectRankInsignia && !!rankThumbnail;
+                          const isSelectable = canSelectRankInsignia;
                           const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
                           const content = (
                             <>
@@ -1234,10 +1248,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                                   {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
                                   {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
                                 </div>
-                                <div className="rankLadderItemMeta">
-                                  Unlocks at {thresholdLabel}
-                                  {isSelectable ? " Click to select this insignia." : ""}
-                                </div>
+                                <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
                               </div>
                             </>
                           );

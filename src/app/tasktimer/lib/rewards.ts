@@ -75,6 +75,8 @@ export const RANK_LADDER: RankDefinition[] = [
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
+  specialist: "/insignias/specialist.png",
+  integrator: "/insignias/integrator.png",
   strategist: "/insignias/strategist.svg",
   director: "/insignias/director.svg",
   ascendent: "/insignias/ascendent.svg",
@@ -82,7 +84,11 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   architect: "/insignias/architect.svg",
 };
 
+export const RANK_OVERRIDE_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
+
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
+  specialist: "/insignias/specialist.png",
+  integrator: "/insignias/integrator.png",
   strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",
   ascendent: "/insignias/ascendent.png",
@@ -221,6 +227,16 @@ export function getRankIdForThumbnailSrc(src: string): string | null {
 export function getRankLabelForThumbnailSrc(src: string): string | null {
   const rankId = getRankIdForThumbnailSrc(src);
   return rankId ? getRankLabelById(rankId) : null;
+}
+
+export function buildRewardProgressForRankSelection(progress: RewardProgressV1, rankId: string): RewardProgressV1 {
+  const base = normalizeRewardProgress(progress);
+  const rank = getRankById(rankId);
+  return {
+    ...base,
+    totalXp: rank.minXp,
+    currentRankId: rank.id,
+  };
 }
 
 export function awardSessionCompletionXp(progress: RewardProgressV1, awardedAt: number): RewardAwardResult {

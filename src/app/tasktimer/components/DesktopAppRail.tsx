@@ -6,13 +6,24 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
+import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import RankThumbnail from "./RankThumbnail";
 import {
+  buildRewardProgressForRankSelection,
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
+  RANK_LADDER,
+  RANK_MODAL_THUMBNAIL_BY_ID,
+  RANK_OVERRIDE_ADMIN_UID,
 } from "../lib/rewards";
-import { STORAGE_KEY, subscribeCachedPreferences } from "../lib/storage";
+import {
+  buildDefaultCloudPreferences,
+  loadCachedPreferences,
+  saveCloudPreferences,
+  STORAGE_KEY,
+  subscribeCachedPreferences,
+} from "../lib/storage";
 
 type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
 
@@ -134,6 +145,16 @@ function readStoredCustomAvatarSrc(uid: string) {
 function readStoredRankThumbnailSrc(uid: string) {
   if (typeof window === "undefined" || !uid) return "";
   return String(window.localStorage.getItem(rankThumbnailStorageKeyForUid(uid)) || "").trim();
+}
+
+function writeStoredRankThumbnailSrc(uid: string, src: string) {
+  if (typeof window === "undefined" || !uid) return;
+  const normalizedSrc = String(src || "").trim();
+  if (!normalizedSrc) {
+    window.localStorage.removeItem(rankThumbnailStorageKeyForUid(uid));
+    return;
+  }
+  window.localStorage.setItem(rankThumbnailStorageKeyForUid(uid), normalizedSrc);
 }
 
 function labelFromUser(user: User | null) {
@@ -282,10 +303,12 @@ export default function DesktopAppRail({
   showDesktopRail = true,
   showMobileFooter = true,
 }: DesktopAppRailProps) {
+  const [signedInUserUid, setSignedInUserUid] = useState("");
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -293,11 +316,13 @@ export default function DesktopAppRail({
     const googlePhotoUrl = String(user?.photoURL || "").trim();
 
     if (!uid) {
+      setSignedInUserUid("");
       setProfileLabel(fallbackLabel);
       setProfileAvatarSrc(googlePhotoUrl);
       setRankThumbnailSrc("");
       return;
     }
+    setSignedInUserUid(uid);
 
     const storedAvatarId = readStoredAvatarId(uid);
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
@@ -360,8 +385,62 @@ export default function DesktopAppRail({
     };
   }, [syncProfileFromUser]);
 
+  useEffect(() => {
+    if (!showRankLadderModal) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowRankLadderModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showRankLadderModal]);
+
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
+  const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
+  const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
+  const rankLadderSummary =
+    rewardsHeader.xpToNext != null
+      ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
+      : "You have reached the highest configured rank.";
+
+  const handleSelectRankThumbnail = async (rankId: string) => {
+    if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+    const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
+    const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
+    const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();
+    setRewardProgress(nextRewards);
+    setRankThumbnailSrc(nextSrc);
+    writeStoredRankThumbnailSrc(signedInUserUid, nextSrc);
+    saveCloudPreferences({
+      ...currentPrefs,
+      rewards: nextRewards,
+    });
+    try {
+      const db = getFirebaseFirestoreClient();
+      if (db) {
+        await setDoc(
+          doc(db, "users", signedInUserUid),
+          {
+            schemaVersion: 1,
+            updatedAt: serverTimestamp(),
+            rankThumbnailSrc: nextSrc || null,
+          },
+          { merge: true }
+        );
+      }
+    } catch {
+      // Keep local selection even if cloud sync fails.
+    }
+    try {
+      await syncOwnFriendshipProfile(signedInUserUid, {
+        rankThumbnailSrc: nextSrc || null,
+        currentRankId: nextRewards.currentRankId,
+      });
+    } catch {
+      // Ignore friendship profile rank sync failures from the desktop rail.
+    }
+    setShowRankLadderModal(false);
+  };
 
   return (
     <>
@@ -408,7 +487,12 @@ export default function DesktopAppRail({
                   </button>
                 </div>
               </div>
-              <div className="dashboardRailProfileMetricRank" aria-label={`Rank: ${rewardsHeader.rankLabel}`}>
+              <button
+                className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                type="button"
+                aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                onClick={() => setShowRankLadderModal(true)}
+              >
                 <RankThumbnail
                   rankId={rewardProgress.currentRankId}
                   storedThumbnailSrc={rankThumbnailSrc}
@@ -420,7 +504,7 @@ export default function DesktopAppRail({
                   aria-hidden
                 />
                 <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
-              </div>
+              </button>
             </div>
             <div className="dashboardProfileGrid dashboardRailProfileGrid">
               <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">
@@ -466,6 +550,78 @@ export default function DesktopAppRail({
           </div>
         </div>
       </div>
+      {showRankLadderModal ? (
+        <div className="overlay" id="rankLadderOverlay" onClick={() => setShowRankLadderModal(false)}>
+          <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
+            <h2>Rank Ladder</h2>
+            <p className="modalSubtext">
+              {rewardsHeader.rankLabel} is your current rank at {rewardsHeader.totalXp} XP. {rankLadderSummary}
+            </p>
+            <div className="rankLadderList" role="list" aria-label="Available ranks">
+              {RANK_LADDER.map((rank, index) => {
+                const isCurrent = rank.id === rewardProgress.currentRankId;
+                const isUnlocked = index <= currentRankIndex;
+                const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
+                const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
+                const isSelectable = canSelectRankInsignia;
+                const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
+                const content = (
+                  <>
+                    <div className="rankLadderItemBadge" aria-hidden="true">
+                      <RankThumbnail
+                        rankId={rank.id}
+                        storedThumbnailSrc=""
+                        className="rankLadderItemBadgeShell"
+                        imageClassName="rankLadderItemBadgeImage"
+                        placeholderClassName="rankLadderItemBadgePlaceholder"
+                        alt=""
+                        size={34}
+                        aria-hidden
+                      />
+                    </div>
+                    <div className="rankLadderItemBody">
+                      <div className="rankLadderItemTitleRow">
+                        <span className="rankLadderItemTitle">{rank.label}</span>
+                        {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
+                        {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
+                        {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
+                      </div>
+                      <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
+                    </div>
+                  </>
+                );
+                if (isSelectable) {
+                  return (
+                    <button
+                      key={rank.id}
+                      type="button"
+                      className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                      role="listitem"
+                      onClick={() => void handleSelectRankThumbnail(rank.id)}
+                    >
+                      {content}
+                    </button>
+                  );
+                }
+                return (
+                  <div
+                    key={rank.id}
+                    className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                    role="listitem"
+                  >
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="confirmBtns">
+              <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

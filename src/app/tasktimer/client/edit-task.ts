@@ -1,4 +1,9 @@
 import type { Task } from "../lib/types";
+import {
+  formatAddTaskDurationReadout,
+  getAddTaskDurationMaxForPeriod,
+  normalizeTaskConfigMilestones,
+} from "../lib/taskConfig";
 import type { TaskTimerEditTaskContext } from "./context";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -19,6 +24,497 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.editOverrideElapsedToggle?.classList.toggle("on", enabled);
     els.editOverrideElapsedToggle?.setAttribute("aria-checked", String(enabled));
     els.editOverrideElapsedFields?.classList.toggle("isDisabled", !enabled);
+  }
+
+  function clearEditValidationState() {
+    els.editValidationError?.classList.remove("isOn");
+    if (els.editValidationError) els.editValidationError.textContent = "";
+    els.msArea?.classList.remove("isInvalid");
+    els.editPresetIntervalField?.classList.remove("isInvalid");
+    els.msList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
+  }
+
+  function syncEditTaskDurationReadout(task?: Task | null) {
+    if (!els.editTaskDurationReadout) return;
+    const currentTask = task || getCurrentEditTask();
+    const noTimeGoal = !!els.editNoGoalCheckbox?.checked;
+    const durationValue = String(els.editTaskDurationValueInput?.value || currentTask?.timeGoalValue || 0);
+    const durationUnit =
+      ctx.getEditTaskDurationUnit() === "minute" ? "minute" : currentTask?.timeGoalUnit === "minute" ? "minute" : "hour";
+    const durationPeriod =
+      ctx.getEditTaskDurationPeriod() === "day" ? "day" : currentTask?.timeGoalPeriod === "day" ? "day" : "week";
+    els.editTaskDurationReadout.textContent = formatAddTaskDurationReadout({
+      name: String(els.editName?.value || currentTask?.name || "").trim(),
+      mode: currentTask ? sharedTasks.taskModeOf(currentTask) : ctx.getCurrentMode(),
+      durationValue,
+      durationUnit,
+      durationPeriod,
+      noTimeGoal,
+      milestonesEnabled: !!currentTask?.milestonesEnabled,
+      milestoneTimeUnit:
+        currentTask?.milestoneTimeUnit === "day"
+          ? "day"
+          : currentTask?.milestoneTimeUnit === "minute"
+            ? "minute"
+            : "hour",
+      milestones: normalizeTaskConfigMilestones(
+        (Array.isArray(currentTask?.milestones) ? currentTask.milestones : []).map((milestone, index) => ({
+          id: String(milestone?.id || ""),
+          createdSeq:
+            Number.isFinite(Number(milestone?.createdSeq)) && Number(milestone.createdSeq) > 0
+              ? Math.floor(Number(milestone.createdSeq))
+              : index + 1,
+          value: String(Number(milestone?.hours || 0)),
+          description: String(milestone?.description || ""),
+        }))
+      ),
+      checkpointSoundEnabled: !!currentTask?.checkpointSoundEnabled,
+      checkpointSoundMode: currentTask?.checkpointSoundMode === "repeat" ? "repeat" : "once",
+      checkpointToastEnabled: !!currentTask?.checkpointToastEnabled,
+      checkpointToastMode: currentTask?.checkpointToastMode === "manual" ? "manual" : "auto5s",
+      presetIntervalsEnabled: !!currentTask?.presetIntervalsEnabled,
+      presetIntervalValue: String(Number(currentTask?.presetIntervalValue || 0) || 0),
+      timeGoalAction:
+        currentTask?.timeGoalAction === "resetLog" ||
+        currentTask?.timeGoalAction === "resetNoLog" ||
+        currentTask?.timeGoalAction === "confirmModal"
+          ? currentTask.timeGoalAction
+          : currentTask?.finalCheckpointAction === "resetLog" ||
+              currentTask?.finalCheckpointAction === "resetNoLog" ||
+              currentTask?.finalCheckpointAction === "confirmModal"
+            ? currentTask.finalCheckpointAction
+            : "confirmModal",
+    });
+  }
+
+  function getEditTaskTimeGoalMinutesFor(value: number, unit: "minute" | "hour", period: "day" | "week") {
+    if (!(value > 0)) return 0;
+    if (unit === "minute") {
+      return period === "day" ? value : value * 7;
+    }
+    return period === "day" ? value * 60 : value * 60 * 7;
+  }
+
+  function isEditTimeGoalEnabled() {
+    return !els.editNoGoalCheckbox?.checked;
+  }
+
+  function setEditTimeGoalEnabled(enabled: boolean) {
+    if (els.editNoGoalCheckbox) els.editNoGoalCheckbox.checked = !enabled;
+    ctx.toggleSwitchElement(els.editTimeGoalToggle as HTMLElement | null, enabled);
+    els.editTimeGoalToggle?.setAttribute("aria-checked", enabled ? "true" : "false");
+  }
+
+  function getEditTaskTimeGoalMinutes() {
+    const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
+    if (!(value > 0) || !isEditTimeGoalEnabled()) return 0;
+    return getEditTaskTimeGoalMinutesFor(value, ctx.getEditTaskDurationUnit(), ctx.getEditTaskDurationPeriod());
+  }
+
+  function editTaskHasActiveTimeGoal() {
+    return getEditTaskTimeGoalMinutes() > 0;
+  }
+
+  function syncEditTaskTimeGoalUi(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    const timeGoalEnabled = isEditTimeGoalEnabled();
+    const noTimeGoal = !timeGoalEnabled;
+    const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
+    els.editTaskDurationRow?.classList.toggle("isHidden", !timeGoalEnabled);
+    els.editTaskDurationReadout?.classList.toggle("isHidden", !timeGoalEnabled);
+    els.editTaskDurationRow?.classList.toggle("isDisabled", noTimeGoal);
+    els.editTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
+    if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.disabled = noTimeGoal;
+    if (timeGoalEnabled && els.editTaskDurationValueInput) {
+      const parsedValue = Math.max(0, Math.floor(parseFloat(els.editTaskDurationValueInput.value || "0") || 0));
+      const maxDay = getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), "day");
+      const canUseDay = Number(parsedValue) <= maxDay;
+      if (String(parsedValue || "") !== String(els.editTaskDurationValueInput.value || "")) {
+        els.editTaskDurationValueInput.value = String(parsedValue || 0);
+      }
+      ctx.setEditTaskDurationPeriod(canUseDay && ctx.getEditTaskDurationPeriod() === "day" ? "day" : "week");
+    }
+    const canUseDay = Number(els.editTaskDurationValueInput?.value || 0) <= getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), "day");
+    const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
+      if (!btn) return;
+      btn.classList.toggle("isOn", isOn);
+      btn.classList.toggle("isHidden", hidden);
+      btn.disabled = noTimeGoal || hidden;
+      btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+      btn.setAttribute("aria-hidden", hidden ? "true" : "false");
+    };
+    syncPill(els.editTaskDurationUnitMinute, ctx.getEditTaskDurationUnit() === "minute");
+    syncPill(els.editTaskDurationUnitHour, ctx.getEditTaskDurationUnit() === "hour");
+    syncPill(els.editTaskDurationPeriodDay, ctx.getEditTaskDurationPeriod() === "day", !canUseDay);
+    syncPill(els.editTaskDurationPeriodWeek, ctx.getEditTaskDurationPeriod() === "week");
+    els.editTaskDurationValueInput?.classList.remove("isInvalid");
+    syncEditTaskDurationReadout(currentTask);
+    const checkpointControlsDisabled = !hasActiveTimeGoal;
+    els.msArea?.classList.toggle("isHidden", checkpointControlsDisabled);
+    if (checkpointControlsDisabled && els.msArea && "open" in (els.msArea as HTMLDetailsElement)) {
+      (els.msArea as HTMLDetailsElement).open = false;
+    }
+    els.msArea?.classList.toggle("isDisabled", checkpointControlsDisabled || !currentTask?.milestonesEnabled);
+    if (els.msToggle) {
+      els.msToggle.toggleAttribute("disabled", checkpointControlsDisabled);
+      els.msToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
+    }
+    [els.msUnitDay, els.msUnitHour, els.msUnitMinute].forEach((btn) => {
+      if (!btn) return;
+      btn.toggleAttribute("disabled", checkpointControlsDisabled);
+      btn.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
+    });
+    if (els.editPresetIntervalsToggle) {
+      els.editPresetIntervalsToggle.toggleAttribute("disabled", checkpointControlsDisabled);
+      els.editPresetIntervalsToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
+    }
+    els.editPresetIntervalsToggleRow?.classList.toggle("isDisabled", checkpointControlsDisabled);
+    if (els.editPresetIntervalInput) {
+      els.editPresetIntervalInput.disabled =
+        checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.presetIntervalsEnabled;
+    }
+    if (els.addMsBtn) {
+      els.addMsBtn.disabled = checkpointControlsDisabled;
+      els.addMsBtn.title = checkpointControlsDisabled ? "Set a time goal to add checkpoints" : "";
+    }
+    if (els.editFinalCheckpointActionSelect) {
+      els.editFinalCheckpointActionSelect.disabled = checkpointControlsDisabled;
+    }
+    if (els.editCheckpointSoundToggle) {
+      els.editCheckpointSoundToggle.toggleAttribute("disabled", checkpointControlsDisabled);
+      els.editCheckpointSoundToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
+    }
+    if (els.editCheckpointToastToggle) {
+      els.editCheckpointToastToggle.toggleAttribute("disabled", checkpointControlsDisabled);
+      els.editCheckpointToastToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
+    }
+    if (els.editCheckpointSoundModeSelect) {
+      els.editCheckpointSoundModeSelect.disabled =
+        checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointSoundEnabled;
+    }
+    if (els.editCheckpointToastModeSelect) {
+      els.editCheckpointToastModeSelect.disabled =
+        checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointToastEnabled;
+    }
+    els.editCheckpointSoundToggleRow?.classList.toggle(
+      "isDisabled",
+      checkpointControlsDisabled || !currentTask?.milestonesEnabled || !ctx.getCheckpointAlertSoundEnabled()
+    );
+    els.editCheckpointToastToggleRow?.classList.toggle(
+      "isDisabled",
+      checkpointControlsDisabled || !currentTask?.milestonesEnabled || !ctx.getCheckpointAlertToastEnabled()
+    );
+    if (currentTask) {
+      syncEditCheckpointAlertUi(currentTask);
+    } else {
+      els.editTimerSettingsGroup?.classList.add("isHidden");
+      els.editCheckpointAlertsGroup?.classList.add("isHidden");
+    }
+  }
+
+  function validateEditTimeGoal() {
+    if (!isEditTimeGoalEnabled()) return true;
+    const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
+    if (!(value > 0)) {
+      els.editTaskDurationValueInput?.classList.add("isInvalid");
+      return false;
+    }
+    const max = getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), ctx.getEditTaskDurationPeriod());
+    if (value > max) {
+      els.editTaskDurationValueInput?.classList.add("isInvalid");
+      return false;
+    }
+    return true;
+  }
+
+  function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
+    if (!task) return;
+    const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
+    const effectiveTimeGoalMinutes = task === getCurrentEditTask() ? getEditTaskTimeGoalMinutes() : Number(task.timeGoalMinutes || 0);
+    const invalidCheckpointTimes =
+      !!task.milestonesEnabled &&
+      (sharedTasks.hasNonPositiveCheckpoint(task.milestones) ||
+        sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, sharedTasks.milestoneUnitSec(task), effectiveTimeGoalMinutes));
+    const invalidPresetInterval = !!task.milestonesEnabled && !!task.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(task);
+
+    els.msArea?.classList.toggle("isInvalid", noCheckpoints || invalidCheckpointTimes);
+    els.editPresetIntervalField?.classList.toggle("isInvalid", invalidPresetInterval);
+
+    const msRows = Array.from(els.msList?.querySelectorAll?.(".msRow") || []);
+    const msSorted = Array.isArray(task.milestones) ? task.milestones.slice() : [];
+    msRows.forEach((row, idx) => {
+      const m = msSorted[idx];
+      const invalid =
+        !!task.milestonesEnabled &&
+        !!m &&
+        (!(Number(+m.hours) > 0) ||
+          sharedTasks.isCheckpointAtOrAboveTimeGoal(m.hours, sharedTasks.milestoneUnitSec(task), effectiveTimeGoalMinutes));
+      row.classList.toggle("isInvalid", invalid);
+    });
+  }
+
+  function showEditValidationError(task: Task | null | undefined, msg: string) {
+    if (!task) return;
+    applyEditCheckpointValidationHighlights(task);
+    if (els.editValidationError) {
+      els.editValidationError.textContent = msg;
+      els.editValidationError.classList.add("isOn");
+    }
+  }
+
+  function setMilestoneUnitUi(unit: "day" | "hour" | "minute") {
+    els.msUnitDay?.classList.toggle("isOn", unit === "day");
+    els.msUnitHour?.classList.toggle("isOn", unit === "hour");
+    els.msUnitMinute?.classList.toggle("isOn", unit === "minute");
+  }
+
+  function isEditMilestoneUnitDay(): boolean {
+    return !!ctx.getEditTaskDraft() && ctx.getEditTaskDraft()?.milestoneTimeUnit === "day";
+  }
+
+  function cloneTaskForEdit(task: Task): Task {
+    return {
+      ...task,
+      milestones: Array.isArray(task.milestones)
+        ? task.milestones.map((milestone) => ({
+            ...milestone,
+            id: String((milestone as { id?: string }).id || ""),
+            createdSeq: Number.isFinite(Number((milestone as { createdSeq?: number }).createdSeq))
+              ? Math.floor(Number((milestone as { createdSeq?: number }).createdSeq))
+              : 0,
+            description: String(milestone?.description || ""),
+          }))
+        : [],
+      presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
+    };
+  }
+
+  function renderMilestoneEditor(t: Task) {
+    if (!els.msList) return;
+    els.msList.innerHTML = "";
+
+    const ms = (t.milestones || []).slice();
+
+    ms.forEach((m, idx) => {
+      const row = document.createElement("div");
+      row.className = "msRow";
+      (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
+
+      row.innerHTML = `
+        <div class="pill msSkewField">${ctx.escapeHtmlUI(String(+m.hours || 0))}${sharedTasks.milestoneUnitSuffix(t)}</div>
+        <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
+        <button type="button" title="Remove" data-action="rmMs">&times;</button>
+      `;
+
+      const pill = row.querySelector(".pill") as HTMLElement | null;
+      ctx.on(pill, "click", () => {
+        openElapsedPadForMilestone(t, m as { hours: number; description: string }, ms);
+      });
+
+      const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
+      ctx.on(desc, "input", (e: Event) => {
+        m.description = (e.target as HTMLInputElement | null)?.value || "";
+        t.milestones = ms;
+        syncEditSaveAvailability(t);
+      });
+
+      const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
+      ctx.on(rm, "click", () => {
+        ms.splice(idx, 1);
+        t.milestones = ms;
+        renderMilestoneEditor(t);
+      });
+
+      els.msList?.appendChild(row);
+    });
+
+    t.milestones = ms;
+    syncEditSaveAvailability(t);
+  }
+
+  function syncEditCheckpointAlertUi(t: Task) {
+    sharedTasks.ensureMilestoneIdentity(t);
+    const timeGoalEnabled = isEditTimeGoalEnabled();
+    const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
+    const checkpointingEnabled = !!t.milestonesEnabled && hasActiveTimeGoal;
+    els.editCheckpointAlertsGroup?.classList.toggle("isHidden", !timeGoalEnabled || !checkpointingEnabled);
+    if (els.editPresetIntervalsToggle) {
+      ctx.toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, checkpointingEnabled && !!t.presetIntervalsEnabled);
+    }
+    if (els.editPresetIntervalInput) {
+      const nextValue = sharedTasks.getPresetIntervalValueNum(t);
+      if (els.editPresetIntervalInput.value !== String(nextValue)) els.editPresetIntervalInput.value = String(nextValue);
+      els.editPresetIntervalInput.disabled = !checkpointingEnabled || !t.presetIntervalsEnabled;
+    }
+    els.editPresetIntervalsToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled);
+    els.editPresetIntervalField?.classList.toggle("isHidden", !checkpointingEnabled || !t.presetIntervalsEnabled);
+    if (els.editPresetIntervalNote) {
+      const intervalInvalid = checkpointingEnabled && !!t.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(t);
+      if (intervalInvalid) {
+        (els.editPresetIntervalNote as HTMLElement).style.display = "block";
+        els.editPresetIntervalNote.textContent = "Enter a preset interval greater than 0 to add checkpoints.";
+      } else {
+        (els.editPresetIntervalNote as HTMLElement).style.display = "none";
+        els.editPresetIntervalNote.textContent = "";
+      }
+    }
+    ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, checkpointingEnabled && !!t.checkpointSoundEnabled);
+    ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, checkpointingEnabled && !!t.checkpointToastEnabled);
+    els.editCheckpointSoundToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled());
+    els.editCheckpointToastToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled());
+    if (els.editCheckpointSoundModeSelect) {
+      els.editCheckpointSoundModeSelect.value = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
+    }
+    if (els.editCheckpointToastModeSelect) {
+      els.editCheckpointToastModeSelect.value = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
+    }
+    els.editCheckpointSoundModeField?.classList.toggle(
+      "isHidden",
+      !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled
+    );
+    els.editCheckpointToastModeField?.classList.toggle(
+      "isHidden",
+      !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled
+    );
+    els.editTimerSettingsGroup?.classList.toggle("isHidden", !timeGoalEnabled || !hasActiveTimeGoal);
+    if (els.editFinalCheckpointActionSelect) {
+      els.editFinalCheckpointActionSelect.value =
+        t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
+          ? t.timeGoalAction
+          : t.finalCheckpointAction === "resetLog" ||
+              t.finalCheckpointAction === "resetNoLog" ||
+              t.finalCheckpointAction === "confirmModal"
+            ? t.finalCheckpointAction
+            : "continue";
+    }
+    const notes: string[] = [];
+    if (!timeGoalEnabled || !hasActiveTimeGoal) notes.push("set a time goal to enable checkpoints");
+    if (!ctx.getCheckpointAlertSoundEnabled()) notes.push("sound alerts are disabled globally");
+    if (!ctx.getCheckpointAlertToastEnabled()) notes.push("toast alerts are disabled globally");
+    if (els.editCheckpointAlertsNote) {
+      if (notes.length) {
+        (els.editCheckpointAlertsNote as HTMLElement).style.display = "block";
+        els.editCheckpointAlertsNote.textContent = !timeGoalEnabled || !hasActiveTimeGoal
+          ? "Set a time goal to enable Time Checkpoints and related alerts."
+          : "Sound and toast notifications can be enabled via Settings > Notifications";
+      } else {
+        (els.editCheckpointAlertsNote as HTMLElement).style.display = "none";
+        els.editCheckpointAlertsNote.textContent = "";
+      }
+    }
+  }
+
+  function syncEditMilestoneSectionUi(t: Task) {
+    const timeGoalEnabled = isEditTimeGoalEnabled();
+    const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
+    const enabled = !!t.milestonesEnabled && hasActiveTimeGoal;
+    els.msToggle?.classList.toggle("on", enabled);
+    els.msToggle?.setAttribute("aria-checked", String(enabled));
+    els.msArea?.classList.toggle("on", enabled);
+    els.msArea?.classList.toggle("isHidden", !timeGoalEnabled);
+    els.msArea?.classList.toggle("isDisabled", !enabled);
+    if (els.msArea && "open" in (els.msArea as HTMLDetailsElement)) {
+      (els.msArea as HTMLDetailsElement).open = enabled;
+    }
+    const summary = els.msArea?.querySelector?.("summary") as HTMLElement | null;
+    if (summary) {
+      summary.classList.toggle("isDisabled", !enabled);
+      summary.setAttribute("aria-disabled", !enabled ? "true" : "false");
+      summary.tabIndex = enabled ? 0 : -1;
+    }
+    els.editPresetIntervalsToggleRow?.classList.toggle("isHidden", !enabled);
+    els.editPresetIntervalField?.classList.toggle("isHidden", !enabled || !t.presetIntervalsEnabled);
+    els.editPresetIntervalNote?.classList.toggle("isHidden", !enabled);
+    els.msList?.parentElement?.classList.toggle("isHidden", !enabled);
+  }
+
+  function buildEditDraftSnapshot(task: Task | null | undefined) {
+    if (!task) return "";
+    const milestones = ctx.sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((m) => ({
+      id: String((m as { id?: string }).id || ""),
+      createdSeq: Number.isFinite(+(m as { createdSeq?: number }).createdSeq!) ? Math.floor(+(m as { createdSeq?: number }).createdSeq!) : 0,
+      hours: Number.isFinite(+m.hours) ? +m.hours : 0,
+      description: String(m.description || ""),
+    }));
+    const elapsedDraft = isEditElapsedOverrideEnabled()
+      ? {
+          d: String(els.editD?.value || "0"),
+          h: String(els.editH?.value || "0"),
+          m: String(els.editM?.value || "0"),
+          s: String(els.editS?.value || "0"),
+        }
+      : null;
+    return JSON.stringify({
+      name: String(els.editName?.value || task.name || "").trim(),
+      mode: ctx.getEditMoveTargetMode() || sharedTasks.taskModeOf(task),
+      timeGoalEnabled: isEditTimeGoalEnabled(),
+      timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
+      timeGoalUnit: ctx.getEditTaskDurationUnit(),
+      timeGoalPeriod: ctx.getEditTaskDurationPeriod(),
+      timeGoalMinutes: getEditTaskTimeGoalMinutes(),
+      milestoneTimeUnit: task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+      milestonesEnabled: !!task.milestonesEnabled,
+      milestones,
+      overrideElapsedEnabled: !!elapsedDraft,
+      elapsedDraft,
+      checkpointSoundEnabled: !!ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null),
+      checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
+      checkpointToastEnabled: !!ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null),
+      checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
+      timeGoalAction:
+        els.editFinalCheckpointActionSelect?.value === "resetLog"
+          ? "resetLog"
+          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
+            ? "resetNoLog"
+            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
+              ? "confirmModal"
+              : "continue",
+      presetIntervalsEnabled: !!ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null),
+      presetIntervalValue: Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0),
+      presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
+      presetIntervalNextSeq: sharedTasks.getPresetIntervalNextSeqNum(task),
+    });
+  }
+
+  function syncEditSaveAvailability(t?: Task | null) {
+    const task = t || getCurrentEditTask();
+    if (!els.saveEditBtn) return;
+    clearEditValidationState();
+    if (!task) {
+      els.saveEditBtn.disabled = false;
+      els.saveEditBtn.title = "";
+      return;
+    }
+    const invalidTimeGoal = !validateEditTimeGoal();
+    const checkpointingActive = !!task.milestonesEnabled && editTaskHasActiveTimeGoal();
+    const noCheckpoints = checkpointingActive && (!Array.isArray(task.milestones) || task.milestones.length === 0);
+    const invalidCheckpointTimes =
+      checkpointingActive &&
+      (sharedTasks.hasNonPositiveCheckpoint(task.milestones) ||
+        sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, sharedTasks.milestoneUnitSec(task), getEditTaskTimeGoalMinutes()));
+    const invalidPresetInterval = checkpointingActive && !!task.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(task);
+    const blocked = invalidTimeGoal || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
+    els.saveEditBtn.disabled = blocked;
+    els.saveEditBtn.title = blocked ? "Resolve validation issues before saving" : "Save Changes";
+    if (!blocked) return;
+    applyEditCheckpointValidationHighlights(task);
+  }
+
+  function maybeToggleEditPresetIntervals(nextEnabled: boolean) {
+    const t = getCurrentEditTask();
+    if (!t) return;
+    if (!t.milestonesEnabled) {
+      t.presetIntervalsEnabled = false;
+      syncEditCheckpointAlertUi(t);
+      return;
+    }
+    if (!nextEnabled) {
+      t.presetIntervalsEnabled = false;
+      syncEditCheckpointAlertUi(t);
+      return;
+    }
+    t.presetIntervalsEnabled = true;
+    syncEditCheckpointAlertUi(t);
   }
 
   function confirmEnableElapsedOverride() {
@@ -688,6 +1184,26 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     openElapsedPadForMilestone,
     closeElapsedPad,
     getCurrentEditTask,
+    clearEditValidationState,
+    syncEditTaskDurationReadout,
+    syncEditTaskTimeGoalUi,
+    validateEditTimeGoal,
+    getEditTaskTimeGoalMinutes,
+    getEditTaskTimeGoalMinutesFor,
+    isEditTimeGoalEnabled,
+    setEditTimeGoalEnabled,
+    editTaskHasActiveTimeGoal,
+    applyEditCheckpointValidationHighlights,
+    showEditValidationError,
+    setMilestoneUnitUi,
+    cloneTaskForEdit,
+    renderMilestoneEditor,
+    syncEditCheckpointAlertUi,
+    syncEditMilestoneSectionUi,
+    buildEditDraftSnapshot,
+    syncEditSaveAvailability,
+    maybeToggleEditPresetIntervals,
+    isEditMilestoneUnitDay,
     registerEditTaskEvents,
   };
 }

@@ -372,6 +372,7 @@ export type TaskTimerEditTaskContext = {
   on: TaskTimerRuntime["on"];
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
+  getCurrentMode: () => MainMode;
   getEditIndex: () => number | null;
   setEditIndex: (value: number | null) => void;
   getEditTaskDraft: () => Task | null;
@@ -417,6 +418,7 @@ export type TaskTimerEditTaskContext = {
   cloneTaskForEdit: (task: Task) => Task;
   getModeLabel: (mode: MainMode) => string;
   isModeEnabled: (mode: MainMode) => boolean;
+  escapeHtmlUI: (value: unknown) => string;
   setEditTimeGoalEnabled: (enabled: boolean) => void;
   isEditTimeGoalEnabled: () => boolean;
   editTaskHasActiveTimeGoal: () => boolean;
@@ -449,6 +451,7 @@ export type TaskTimerAddTaskContext = {
   on: TaskTimerRuntime["on"];
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
+  getCurrentMode: () => MainMode;
   setTasks: (value: Task[]) => void;
   getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
   getCheckpointAlertSoundEnabled: () => boolean;
@@ -496,15 +499,12 @@ export type TaskTimerAddTaskContext = {
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   jumpToTaskAndHighlight: (taskId: string) => void;
-  clearAddTaskValidationState: () => void;
-  showAddTaskValidationError: (
-    message: string,
-    opts?: { name?: boolean; duration?: boolean; checkpoints?: boolean; checkpointRows?: boolean; presetInterval?: boolean }
+  openElapsedPadForMilestone: (
+    task: Task,
+    milestone: { hours: number; description: string },
+    ms: Task["milestones"],
+    onApplied?: () => void
   ) => void;
-  syncAddTaskCheckpointAlertUi: () => void;
-  syncAddTaskDurationReadout: () => void;
-  setAddTaskMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
-  renderAddTaskMilestoneEditor: () => void;
 };
 
 export type TaskTimerSessionContext = {

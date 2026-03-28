@@ -9,24 +9,41 @@ import { ensureUserProfileIndex } from "../lib/cloudStore";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import RankThumbnail from "./RankThumbnail";
 import {
+  buildRewardProgressForRankSelection,
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
+  RANK_OVERRIDE_ADMIN_UID,
 } from "../lib/rewards";
-import { STORAGE_KEY, subscribeCachedPreferences } from "../lib/storage";
+import {
+  buildDefaultCloudPreferences,
+  loadCachedPreferences,
+  saveCloudPreferences,
+  STORAGE_KEY,
+  subscribeCachedPreferences,
+} from "../lib/storage";
 
 type SignedInHeaderBadgeProps = {
   href?: string;
 };
 
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
-const RANK_INSIGNIA_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 
 function readStoredRankThumbnailSrc(uid: string): string {
   if (typeof window === "undefined" || !uid) return "";
   return String(window.localStorage.getItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`) || "").trim();
+}
+
+function writeStoredRankThumbnailSrc(uid: string, src: string): void {
+  if (typeof window === "undefined" || !uid) return;
+  const nextSrc = String(src || "").trim();
+  if (!nextSrc) {
+    window.localStorage.removeItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`);
+    return;
+  }
+  window.localStorage.setItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`, nextSrc);
 }
 
 export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=general" }: SignedInHeaderBadgeProps) {
@@ -111,7 +128,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
 
   const rewardsHeader = buildRewardsHeaderViewModel(rewardProgress);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
-  const canSelectRankInsignia = signedInUserUid === RANK_INSIGNIA_ADMIN_UID;
+  const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
   const displayedRankLabel = rewardsHeader.rankLabel;
   const headerBadgeLabel =
     headerView === "xp"
@@ -129,19 +146,23 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
   };
 
   const handleSelectRankThumbnail = async (rankId: string) => {
-    if (!signedInUserUid || signedInUserUid !== RANK_INSIGNIA_ADMIN_UID) return;
+    if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+    const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
     const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
-    if (!nextSrc) return;
+    const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();
+    setRewardProgress(nextRewards);
     setRankThumbnailSrc(nextSrc);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${signedInUserUid}`, nextSrc);
-    }
+    writeStoredRankThumbnailSrc(signedInUserUid, nextSrc);
+    saveCloudPreferences({
+      ...currentPrefs,
+      rewards: nextRewards,
+    });
     try {
       const db = getFirebaseFirestoreClient();
       if (db) {
         await setDoc(
           doc(db, "users", signedInUserUid),
-          { schemaVersion: 1, updatedAt: serverTimestamp(), rankThumbnailSrc: nextSrc },
+          { schemaVersion: 1, updatedAt: serverTimestamp(), rankThumbnailSrc: nextSrc || null },
           { merge: true }
         );
       }
@@ -149,7 +170,10 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
       // Keep local selection even if cloud sync fails.
     }
     try {
-      await syncOwnFriendshipProfile(signedInUserUid, { rankThumbnailSrc: nextSrc });
+      await syncOwnFriendshipProfile(signedInUserUid, {
+        rankThumbnailSrc: nextSrc || null,
+        currentRankId: nextRewards.currentRankId,
+      });
     } catch {
       // Ignore header-only friendship profile sync failures.
     }
@@ -201,16 +225,6 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
                 {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
               </span>
             </span>
-            <span className="signedInHeaderBadgeTrack rewardSegmentedBar" aria-hidden="true">
-              <span className="signedInHeaderBadgeFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-              <span className="rewardSegmentedBarTrack">
-                <span className="rewardSegmentedBarSegment" />
-                <span className="rewardSegmentedBarSegment" />
-                <span className="rewardSegmentedBarSegment" />
-                <span className="rewardSegmentedBarSegment" />
-                <span className="rewardSegmentedBarSegment" />
-              </span>
-            </span>
           </span>
         </span>
       </a>
@@ -221,16 +235,13 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
             <p className="modalSubtext">
               {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP. {rankLadderSummary}
             </p>
-            {canSelectRankInsignia ? (
-              <p className="modalSubtext">Click an insignia thumbnail to use it as your profile rank badge.</p>
-            ) : null}
             <div className="rankLadderList" role="list" aria-label="Available ranks">
               {RANK_LADDER.map((rank, index) => {
                 const isCurrent = rank.id === rewardProgress.currentRankId;
                 const isUnlocked = index <= currentRankIndex;
                 const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
                 const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-                const isSelectable = canSelectRankInsignia && !!rankThumbnail;
+                const isSelectable = canSelectRankInsignia;
                 const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
                 const content = (
                   <>
@@ -253,10 +264,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
                         {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
                         {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
                       </div>
-                      <div className="rankLadderItemMeta">
-                        Unlocks at {thresholdLabel}
-                        {isSelectable ? " Click to select this insignia." : ""}
-                      </div>
+                      <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
                     </div>
                   </>
                 );
@@ -266,6 +274,7 @@ export default function SignedInHeaderBadge({ href = "/tasktimer/settings?pane=g
                       key={rank.id}
                       type="button"
                       className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                      role="listitem"
                       onClick={() => void handleSelectRankThumbnail(rank.id)}
                     >
                       {content}
