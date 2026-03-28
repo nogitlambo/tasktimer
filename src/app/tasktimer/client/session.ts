@@ -1215,6 +1215,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalModalWithTaskState,
     maybeRestorePendingTimeGoalFlow,
     flushPendingFocusSessionNoteSave,
+    captureSessionNoteSnapshot,
     captureResetActionSessionNote,
     clearFocusSessionDraft,
     setFocusSessionDraft,

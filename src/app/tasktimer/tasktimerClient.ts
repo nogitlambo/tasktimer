@@ -1217,7 +1217,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const t = tasks.find((x) => String(x.id || "") === targetId);
     if (!t) return;
     if (focusModeTaskId || ((els.focusModeScreen as HTMLElement | null)?.style.display !== "none" && (els.focusModeScreen as HTMLElement | null)?.getAttribute("aria-hidden") !== "true")) {
-      closeFocusMode();
+      sessionApi?.closeFocusMode();
     }
     const mode = taskModeOf(t);
     if (currentMode !== mode) applyMainMode(mode);
@@ -1247,27 +1247,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function setFocusSessionDraft(taskId: string, noteRaw: string) {
-    persistenceApi?.setFocusSessionDraft(taskId, noteRaw);
+    sessionApi?.setFocusSessionDraft(taskId, noteRaw);
   }
 
   function clearFocusSessionDraft(taskId: string) {
-    persistenceApi?.clearFocusSessionDraft(taskId);
+    sessionApi?.clearFocusSessionDraft(taskId);
   }
 
   function syncFocusSessionNotesInput(taskId: string | null) {
-    persistenceApi?.syncFocusSessionNotesInput(taskId);
+    sessionApi?.syncFocusSessionNotesInput(taskId);
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    persistenceApi?.syncFocusSessionNotesAccordion(taskId);
-  }
-
-  function flushPendingFocusSessionNoteSave(taskId?: string | null) {
-    persistenceApi?.flushPendingFocusSessionNoteSave(taskId);
+    sessionApi?.syncFocusSessionNotesAccordion(taskId);
   }
 
   function captureSessionNoteSnapshot(taskId?: string | null): string {
-    return persistenceApi?.captureSessionNoteSnapshot(taskId) ?? "";
+    return sessionApi?.captureSessionNoteSnapshot(taskId) ?? "";
   }
 
   function getHistoryEntryNote(entry: any) {
@@ -1383,98 +1379,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return rows;
   }
   function getElapsedMs(t: Task) {
-    if (String(timeGoalModalTaskId || "") === String(t?.id || "")) {
-      return Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0));
-    }
-    if (t.running && t.startMs) return (t.accumulatedMs || 0) + (nowMs() - t.startMs);
-    return t.accumulatedMs || 0;
+    return sessionApi?.getElapsedMs(t) ?? 0;
   }
 
   function getTaskElapsedMs(t: Task) {
-    if (String(timeGoalModalTaskId || "") === String(t?.id || "")) {
-      return Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0));
-    }
-    const runMs = t.running && typeof t.startMs === "number" ? Math.max(0, nowMs() - t.startMs) : 0;
-    return Math.max(0, (t.accumulatedMs || 0) + runMs);
-  }
-
-  function persistPendingTimeGoalFlow(task: Task, step: "main" | "saveNote" | "note", opts?: { reminder?: boolean }) {
-    const taskId = String(task?.id || "").trim();
-    if (!taskId || typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        TIME_GOAL_PENDING_FLOW_KEY,
-        JSON.stringify({
-          taskId,
-          step,
-          frozenElapsedMs: Math.max(0, Math.floor(Number(timeGoalModalFrozenElapsedMs || 0) || 0)),
-          reminder: !!opts?.reminder,
-        })
-      );
-    } catch {
-      // ignore localStorage failures
-    }
-  }
-
-  function setUnitButtonActive(btn: HTMLButtonElement | null, active: boolean) {
-    if (!btn) return;
-    btn.classList.toggle("isOn", active);
-    btn.setAttribute("aria-pressed", active ? "true" : "false");
-  }
-
-  function syncTimeGoalCompleteDurationUnitUi() {
-    const minuteOn = timeGoalCompleteDurationUnit === "minute";
-    setUnitButtonActive(els.timeGoalCompleteDurationUnitMinute, minuteOn);
-    setUnitButtonActive(els.timeGoalCompleteDurationUnitHour, !minuteOn);
-    const dayOn = timeGoalCompleteDurationPeriod === "day";
-    setUnitButtonActive(els.timeGoalCompleteDurationPeriodDay, dayOn);
-    setUnitButtonActive(els.timeGoalCompleteDurationPeriodWeek, !dayOn);
-    const value = Math.max(0, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "0") || 0));
-    const unitLabel = timeGoalCompleteDurationUnit === "minute" ? (value === 1 ? "minute" : "minutes") : value === 1 ? "hour" : "hours";
-    const periodLabel = timeGoalCompleteDurationPeriod === "day" ? "day" : "week";
-    if (els.timeGoalCompleteDurationReadout) {
-      els.timeGoalCompleteDurationReadout.textContent = `${value} ${unitLabel} per ${periodLabel}`;
-    }
-  }
-
-  function setTimeGoalCompleteEditorVisible(visible: boolean) {
-    if (els.timeGoalCompleteGoalEditor) {
-      (els.timeGoalCompleteGoalEditor as HTMLElement).style.display = visible ? "block" : "none";
-    }
-  }
-
-  function populateTimeGoalCompleteEditor(task: Task) {
-    const durationValue = Math.max(1, Math.floor(Number(task.timeGoalValue || 1) || 1));
-    timeGoalCompleteDurationUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
-    timeGoalCompleteDurationPeriod = task.timeGoalPeriod === "week" ? "week" : "day";
-    if (els.timeGoalCompleteDurationValueInput) {
-      els.timeGoalCompleteDurationValueInput.value = String(durationValue);
-    }
-    syncTimeGoalCompleteDurationUnitUi();
-  }
-
-  function openTimeGoalCompleteModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId) return;
-    timeGoalModalTaskId = taskId;
-    timeGoalModalFrozenElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
-    delete timeGoalReminderAtMsByTaskId[taskId];
-    if (els.timeGoalCompleteTitle) {
-      els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete`;
-    }
-    const elapsedLabel = formatCheckpointTimeGoalText(task);
-    if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = opts?.reminder
-        ? `This task is still running beyond its current time goal of ${elapsedLabel}. Please choose how you want to proceed.`
-        : `This task has reached its current time goal of ${elapsedLabel}. Please choose how you want to proceed.`;
-    }
-    if (els.timeGoalCompleteMeta) {
-      els.timeGoalCompleteMeta.textContent = "";
-    }
-    populateTimeGoalCompleteEditor(task);
-    setTimeGoalCompleteEditorVisible(false);
-    persistPendingTimeGoalFlow(task, "main", opts);
-    openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+    return sessionApi?.getTaskElapsedMs(t) ?? 0;
   }
 
   function addRangeMsToLocalDayMap(dayMap: Map<string, number>, startMs: number, endMs: number) {
@@ -2165,61 +2074,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return 1;
   }
 
-  function syncFocusRunButtons(t?: Task | null) {
-    const dial = els.focusDial as HTMLButtonElement | null;
-    const hint = els.focusDialHint as HTMLElement | null;
-    const resetBtn = els.focusResetBtn as HTMLButtonElement | null;
-    if (!dial) return;
-    if (!t) {
-      dial.classList.remove("isRunning", "isStopped");
-      dial.setAttribute("aria-pressed", "false");
-      dial.setAttribute("aria-label", "Focus dial. Tap to launch timer");
-      if (hint) hint.textContent = "Tap to Launch";
-      if (resetBtn) {
-        resetBtn.disabled = false;
-        resetBtn.title = "Reset";
-        resetBtn.setAttribute("aria-label", "Reset");
-      }
-      return;
-    }
-    const isRunning = !!t.running;
-    dial.classList.toggle("isRunning", isRunning);
-    dial.classList.toggle("isStopped", !isRunning);
-    dial.setAttribute("aria-pressed", String(isRunning));
-    dial.setAttribute("aria-label", isRunning ? "Focus dial. Tap to stop timer" : "Focus dial. Tap to launch timer");
-    if (hint) hint.textContent = isRunning ? "Tap to Stop" : "Tap to Launch";
-    if (resetBtn) {
-      resetBtn.disabled = isRunning;
-      resetBtn.title = isRunning ? "Stop task to reset" : "Reset";
-      resetBtn.setAttribute("aria-label", isRunning ? "Stop task to reset" : "Reset");
-    }
-  }
-
-  function formatSignedDelta(ms: number): string {
-    if (!Number.isFinite(ms)) return "--";
-    const sign = ms > 0 ? "+" : ms < 0 ? "-" : "";
-    return `${sign}${formatTime(Math.abs(ms))}`;
-  }
-
-  function setFocusInsightDeltaValue(el: HTMLElement | null, ms: number) {
-    if (!el) return;
-    el.textContent = formatSignedDelta(ms);
-    el.classList.remove("is-positive", "is-negative", "is-neutral", "is-empty");
-    if (!Number.isFinite(ms)) {
-      el.classList.add("is-empty");
-      return;
-    }
-    if (ms > 0) {
-      el.classList.add("is-positive");
-      return;
-    }
-    if (ms < 0) {
-      el.classList.add("is-negative");
-      return;
-    }
-    el.classList.add("is-neutral");
-  }
-
   function resetAllOpenHistoryChartSelections() {
     historyInlineApi?.resetAllOpenHistoryChartSelections();
   }
@@ -2289,283 +2143,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
   }
-
-
-  function closeFocusMode() {
-    const focusScreenEl = els.focusModeScreen as HTMLElement | null;
-    const activeEl = document.activeElement as HTMLElement | null;
-    if (focusScreenEl && activeEl && focusScreenEl.contains(activeEl)) {
-      if (els.footerTasksBtn && typeof els.footerTasksBtn.focus === "function") {
-        els.footerTasksBtn.focus();
-      } else if (els.mode1Btn && typeof els.mode1Btn.focus === "function") {
-        els.mode1Btn.focus();
-      } else if (typeof activeEl.blur === "function") {
-        activeEl.blur();
-      }
-    }
-    const closingFocusTaskId = String(focusModeTaskId || "").trim();
-    flushPendingFocusSessionNoteSave(closingFocusTaskId);
-    if (closingFocusTaskId && els.focusSessionNotesInput) {
-      setFocusSessionDraft(closingFocusTaskId, String(els.focusSessionNotesInput.value || ""));
-    }
-    focusModeTaskId = null;
-    focusModeTaskName = "";
-    focusShowCheckpoints = true;
-    if (focusSessionNoteSaveTimer != null) {
-      window.clearTimeout(focusSessionNoteSaveTimer);
-      focusSessionNoteSaveTimer = null;
-    }
-    if (els.focusModeScreen) {
-      (els.focusModeScreen as HTMLElement).style.display = "none";
-      (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "true");
-    }
-    if (els.focusTaskName) els.focusTaskName.textContent = "Task";
-    if (els.focusTimerDays) els.focusTimerDays.textContent = "00d";
-    syncFocusSessionNotesInput(null);
-    syncFocusSessionNotesAccordion(null);
-    if (els.focusTimerClock) els.focusTimerClock.textContent = "00:00:00";
-    if (els.focusDialHint) els.focusDialHint.textContent = "Tap to Launch";
-    if (els.focusDial) {
-      (els.focusDial as HTMLElement).style.setProperty("--focus-progress", "0%");
-      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", fillBackgroundForPct(0));
-    }
-    if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).innerHTML = "";
-    if (els.focusCheckpointRing) (els.focusCheckpointRing as HTMLElement).style.display = "block";
-    renderFocusCheckpointCompletionLog(null);
-    focusCheckpointSig = "";
-    syncFocusRunButtons(null);
-    if (els.focusInsightBest) els.focusInsightBest.textContent = "--";
-    if (els.focusInsightWeekday) {
-      els.focusInsightWeekday.textContent = "No logged sessions yet";
-      els.focusInsightWeekday.classList.add("is-empty");
-    }
-    setFocusInsightDeltaValue(els.focusInsightTodayDelta as HTMLElement | null, Number.NaN);
-    setFocusInsightDeltaValue(els.focusInsightWeekDelta as HTMLElement | null, Number.NaN);
-    render();
-    openDeferredFocusModeTimeGoalModal();
-  }
-
-  function openDeferredFocusModeTimeGoalModal() {
-    if (!deferredFocusModeTimeGoalModals.length) return;
-    const nextPending = deferredFocusModeTimeGoalModals.shift() || null;
-    if (!nextPending) return;
-    const task = tasks.find((row) => String(row.id || "").trim() === nextPending.taskId);
-    if (!task || !task.timeGoalEnabled || !(Number(task.timeGoalMinutes || 0) > 0)) {
-      openDeferredFocusModeTimeGoalModal();
-      return;
-    }
-    openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
-  }
-
-  function renderFocusCheckpointCompletionLog(t: Task | null) {
-    const listEl = els.focusCheckpointLogList as HTMLElement | null;
-    const emptyEl = els.focusCheckpointLogEmpty as HTMLElement | null;
-    if (!listEl || !emptyEl) return;
-
-    if (!t || !t.milestonesEnabled || !Array.isArray(t.milestones) || t.milestones.length === 0) {
-      listEl.innerHTML = "";
-      emptyEl.style.display = "block";
-      return;
-    }
-
-    const taskId = String(t.id || "");
-    if (!taskId) {
-      listEl.innerHTML = "";
-      emptyEl.style.display = "block";
-      return;
-    }
-
-    const fired = getCheckpointFiredSet(taskId);
-    const allMilestones = sortMilestones((t.milestones || []).slice()).filter((m) => (+m.hours || 0) > 0);
-    const byKey = new Map<string, { hours: number; description: string }>();
-    allMilestones.forEach((m) => {
-      byKey.set(checkpointKeyForTask(m, t), { hours: +m.hours || 0, description: String(m.description || "") });
-    });
-
-    const completedRows = Array.from(fired)
-      .map((key) => ({ key, item: byKey.get(key) }))
-      .filter((row): row is { key: string; item: { hours: number; description: string } } => !!row.item)
-      .reverse();
-
-    if (!completedRows.length) {
-      listEl.innerHTML = "";
-      emptyEl.style.display = "block";
-      return;
-    }
-
-    listEl.innerHTML = completedRows
-      .map((row, idx) => {
-        const timeText = `${row.item.hours}${milestoneUnitSuffix(t)}`;
-        const desc = String(row.item.description || "").trim();
-        return `
-          <div class="focusCheckpointLogItem${idx === 0 ? " isLatest" : ""}">
-            <div class="focusCheckpointLogItemLine">
-              <span class="focusCheckpointLogItemTime">${escapeHtmlUI(timeText)}</span>${desc ? `<span class="focusCheckpointLogItemSep"> - </span><span class="focusCheckpointLogItemDesc">${escapeHtmlUI(desc)}</span>` : ""}
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-    emptyEl.style.display = "none";
-  }
-
-  function checkpointKeyForTask(m: { hours: number; description: string }, t: Task) {
-    const unitSeconds = milestoneUnitSec(t);
-    const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
-    const label = String(m.description || "").trim();
-    return `${targetSec}|${label}`;
-  }
-
-  function getCheckpointFiredSet(taskId: string) {
-    if (!checkpointFiredKeysByTaskId[taskId]) checkpointFiredKeysByTaskId[taskId] = new Set<string>();
-    return checkpointFiredKeysByTaskId[taskId];
-  }
-
-  function stopCheckpointRepeatAlert() {
-    checkpointRepeatStopAtMs = 0;
-    checkpointRepeatActiveTaskId = null;
-    if (checkpointRepeatCycleTimer != null) {
-      window.clearTimeout(checkpointRepeatCycleTimer);
-      checkpointRepeatCycleTimer = null;
-    }
-    if (checkpointBeepQueueTimer != null) {
-      window.clearTimeout(checkpointBeepQueueTimer);
-      checkpointBeepQueueTimer = null;
-    }
-    checkpointBeepQueueCount = 0;
-    if (checkpointBeepAudio) {
-      try {
-        checkpointBeepAudio.pause();
-        checkpointBeepAudio.currentTime = 0;
-      } catch {
-        // ignore playback stop failures
-      }
-    }
-    if (!runtime.destroyed) render();
-  }
-
-  function renderCheckpointToast() {
-    const host = els.checkpointToastHost as HTMLElement | null;
-    if (!host) return;
-    host.classList.toggle("isActive", !!activeCheckpointToast);
-    if (!activeCheckpointToast) {
-      host.innerHTML = "";
-      return;
-    }
-    const showMuteBellIcon = !!activeCheckpointToast.muteRepeatOnManualDismiss;
-    const dismissBtnLabel = showMuteBellIcon ? "Dismiss alert and mute sound" : "Dismiss alert";
-    const toastSecsLeft =
-      Number.isFinite(activeCheckpointToast.autoCloseAtMs as number) && (activeCheckpointToast.autoCloseAtMs || 0) > 0
-        ? Math.max(0, Math.ceil(((activeCheckpointToast.autoCloseAtMs as number) - Date.now()) / 1000))
-        : 0;
-    const soundSecsLeft =
-      showMuteBellIcon &&
-      activeCheckpointToast.taskId &&
-      checkpointRepeatActiveTaskId &&
-      String(activeCheckpointToast.taskId) === String(checkpointRepeatActiveTaskId) &&
-      checkpointRepeatStopAtMs > 0
-        ? Math.max(0, Math.ceil((checkpointRepeatStopAtMs - Date.now()) / 1000))
-        : 0;
-    const dismissCountdownText =
-      toastSecsLeft > 0 && soundSecsLeft > 0
-        ? ` [T:${toastSecsLeft}s S:${soundSecsLeft}s]`
-        : toastSecsLeft > 0
-          ? ` [${toastSecsLeft}s]`
-          : soundSecsLeft > 0
-            ? ` [${soundSecsLeft}s]`
-            : "";
-    const dismissBtnText = `${showMuteBellIcon ? "&#128276; " : ""}Dismiss${dismissCountdownText}`;
-    const jumpBtnText = `${showMuteBellIcon ? "&#128276; " : ""}Dismiss and Jump to Task`;
-    const toastTaskName = String(activeCheckpointToast.taskName || "").trim();
-    const checkpointTimeText = String(activeCheckpointToast.checkpointTimeText || activeCheckpointToast.text || "").trim();
-    const checkpointDescText = String(activeCheckpointToast.checkpointDescText || "").trim();
-    host.innerHTML = `
-      <div class="checkpointToast" data-toast-id="${escapeHtmlUI(activeCheckpointToast.id)}" role="status">
-        ${toastTaskName ? `<p class="checkpointToastTaskName">${escapeHtmlUI(toastTaskName)}</p>` : ""}
-        <p class="checkpointToastTitle">${escapeHtmlUI(String(activeCheckpointToast.title || "CHECKPOINT REACHED!").toUpperCase())}</p>
-        <div class="checkpointToastSummary">
-          <p class="checkpointToastText">${escapeHtmlUI(checkpointTimeText)}</p>
-          ${checkpointDescText ? `<p class="checkpointToastDesc">${escapeHtmlUI(checkpointDescText)}</p>` : ""}
-        </div>
-        <div class="checkpointToastActions">
-          <button class="btn btn-ghost small checkpointToastClose" type="button" data-action="closeCheckpointToast" aria-label="${escapeHtmlUI(
-            dismissBtnLabel
-          )}" title="${escapeHtmlUI(dismissBtnLabel)}">${dismissBtnText}</button>
-          <button class="btn btn-ghost small checkpointToastJump" type="button" data-action="jumpToCheckpointTask" aria-label="Dismiss and jump to task" title="Dismiss and Jump to Task">${jumpBtnText}</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function scheduleCheckpointToastCountdownRefresh() {
-    if (checkpointToastCountdownRefreshTimer != null) {
-      window.clearTimeout(checkpointToastCountdownRefreshTimer);
-      checkpointToastCountdownRefreshTimer = null;
-    }
-    if (!activeCheckpointToast) return;
-    const hasToastCountdown = (activeCheckpointToast.autoCloseAtMs || 0) > 0;
-    const hasSoundCountdown =
-      !!activeCheckpointToast.muteRepeatOnManualDismiss &&
-      !!activeCheckpointToast.taskId &&
-      !!checkpointRepeatActiveTaskId &&
-      String(activeCheckpointToast.taskId) === String(checkpointRepeatActiveTaskId) &&
-      checkpointRepeatStopAtMs > 0;
-    if (!hasToastCountdown && !hasSoundCountdown) return;
-    checkpointToastCountdownRefreshTimer = window.setTimeout(() => {
-      checkpointToastCountdownRefreshTimer = null;
-      if (!activeCheckpointToast) return;
-      renderCheckpointToast();
-      scheduleCheckpointToastCountdownRefresh();
-    }, 250);
-  }
-
-  function showNextCheckpointToast() {
-    if (activeCheckpointToast || checkpointToastQueue.length === 0) return;
-    activeCheckpointToast = checkpointToastQueue.shift() || null;
-    if (activeCheckpointToast) {
-      activeCheckpointToast.autoCloseAtMs =
-        (activeCheckpointToast.autoCloseMs || 0) > 0 ? Date.now() + (activeCheckpointToast.autoCloseMs as number) : null;
-    }
-    renderCheckpointToast();
-    scheduleCheckpointToastCountdownRefresh();
-    if (!runtime.destroyed) render();
-    if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
-    if ((activeCheckpointToast?.autoCloseMs || 0) > 0) {
-      checkpointToastAutoCloseTimer = window.setTimeout(() => {
-      dismissCheckpointToast({ manual: false });
-    }, activeCheckpointToast!.autoCloseMs as number);
-    } else {
-      checkpointToastAutoCloseTimer = null;
-    }
-  }
-
-  function dismissCheckpointToast(opts?: { manual?: boolean }) {
-    const manual = !!opts?.manual;
-    if (
-      manual &&
-      activeCheckpointToast?.muteRepeatOnManualDismiss &&
-      activeCheckpointToast.taskId &&
-      checkpointRepeatActiveTaskId &&
-      String(activeCheckpointToast.taskId) === String(checkpointRepeatActiveTaskId)
-    ) {
-      stopCheckpointRepeatAlert();
-    }
-    if (checkpointToastAutoCloseTimer != null) {
-      window.clearTimeout(checkpointToastAutoCloseTimer);
-      checkpointToastAutoCloseTimer = null;
-    }
-    if (checkpointToastCountdownRefreshTimer != null) {
-      window.clearTimeout(checkpointToastCountdownRefreshTimer);
-      checkpointToastCountdownRefreshTimer = null;
-    }
-    activeCheckpointToast = null;
-    renderCheckpointToast();
-    if (!runtime.destroyed) render();
-    if (checkpointToastQueue.length) {
-      window.setTimeout(showNextCheckpointToast, 50);
-    }
-  }
-
   function syncEditCheckpointAlertUi(t: Task) {
     ensureMilestoneIdentity(t);
     const timeGoalEnabled = isEditTimeGoalEnabled();
@@ -3016,6 +2593,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
   historyInlineApi = historyInline;
   const { registerHistoryInlineEvents } = historyInline;
+
+  const stopCheckpointRepeatAlert = () => {
+    sessionApi?.stopCheckpointRepeatAlert();
+  };
 
   const preferences = createTaskTimerPreferences({
     els,
