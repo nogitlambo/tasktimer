@@ -329,13 +329,13 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                             </div>
                           </div>
                           <div className="dashboardHeatWeekdays" id="dashboardHeatWeekdays" aria-hidden="true">
-                            <span>Sun</span>
                             <span>Mon</span>
                             <span>Tue</span>
                             <span>Wed</span>
                             <span>Thu</span>
                             <span>Fri</span>
                             <span>Sat</span>
+                            <span>Sun</span>
                           </div>
                           <div className="dashboardHeatCalendarGrid" id="dashboardHeatCalendarGrid" role="grid" aria-label="Monthly focus heatmap calendar">
                             {Array.from({ length: 42 }).map((_, idx) => (

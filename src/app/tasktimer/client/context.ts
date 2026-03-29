@@ -4,6 +4,7 @@ import type { TaskTimerSharedTaskApi } from "./task-shared";
 import type { AppPage, DashboardAvgRange, DashboardCardSize, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
+import type { DashboardWeekStart } from "../lib/historyChart";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -25,6 +26,7 @@ export type TaskTimerCachedPreferences = {
   theme?: unknown;
   menuButtonStyle?: unknown;
   defaultTaskTimerFormat?: unknown;
+  weekStarting?: unknown;
   taskView?: unknown;
   autoFocusOnTaskLaunchEnabled?: unknown;
   dynamicColorsEnabled?: unknown;
@@ -641,6 +643,7 @@ export type TaskTimerDashboardRenderContext = {
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
   getDeletedTaskMeta: () => DeletedTaskMeta;
+  getWeekStarting: () => DashboardWeekStart;
   getDashboardIncludedModes: () => Record<MainMode, boolean>;
   getDashboardAvgRange: () => DashboardAvgRange;
   setDashboardAvgRange: (value: DashboardAvgRange) => void;
@@ -678,6 +681,7 @@ export type TaskTimerPreferencesContext = {
     MENU_BUTTON_STYLE_KEY: string;
     MODE_SETTINGS_KEY: string;
     DEFAULT_TASK_TIMER_FORMAT_KEY: string;
+    WEEK_STARTING_KEY: string;
   };
   defaultModeLabels: Record<MainMode, string>;
   defaultModeEnabled: Record<MainMode, boolean>;
@@ -690,6 +694,8 @@ export type TaskTimerPreferencesContext = {
   setMenuButtonStyleState: (value: "parallelogram" | "square") => void;
   getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
   setDefaultTaskTimerFormatState: (value: "day" | "hour" | "minute") => void;
+  getWeekStarting: () => DashboardWeekStart;
+  setWeekStartingState: (value: DashboardWeekStart) => void;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
   getDynamicColorsEnabled: () => boolean;

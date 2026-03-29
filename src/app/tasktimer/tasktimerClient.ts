@@ -6,8 +6,7 @@ import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
 import { normalizeHistoryTimestampMs, localDayKey } from "./lib/history";
-import {
-} from "./lib/historyChart";
+import type { DashboardWeekStart } from "./lib/historyChart";
 import { formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import {
@@ -84,6 +83,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       THEME_KEY,
       MENU_BUTTON_STYLE_KEY,
       DEFAULT_TASK_TIMER_FORMAT_KEY,
+      WEEK_STARTING_KEY,
       TASK_VIEW_KEY,
       MODE_SETTINGS_KEY,
       NAV_STACK_KEY,
@@ -141,6 +141,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let menuButtonStyle = initialState.menuButtonStyle;
   let addTaskCustomNames = initialState.addTaskCustomNames;
   let defaultTaskTimerFormat = initialState.defaultTaskTimerFormat;
+  let weekStarting = initialState.weekStarting;
   let taskView = initialState.taskView;
   let dynamicColorsEnabled = initialState.dynamicColorsEnabled;
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
@@ -609,6 +610,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTasks: () => tasks,
     getHistoryByTaskId: () => historyByTaskId,
     getDeletedTaskMeta: () => deletedTaskMeta,
+    getWeekStarting: () => weekStarting,
     getDashboardIncludedModes: () => dashboardIncludedModes,
     getDashboardAvgRange: () => dashboardAvgRange,
     setDashboardAvgRange: (value) => {
@@ -1820,6 +1822,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       MENU_BUTTON_STYLE_KEY,
       MODE_SETTINGS_KEY,
       DEFAULT_TASK_TIMER_FORMAT_KEY,
+      WEEK_STARTING_KEY,
     },
     defaultModeLabels: DEFAULT_MODE_LABELS,
     defaultModeEnabled: DEFAULT_MODE_ENABLED,
@@ -1839,6 +1842,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getDefaultTaskTimerFormat: () => defaultTaskTimerFormat,
     setDefaultTaskTimerFormatState: (value) => {
       defaultTaskTimerFormat = value;
+    },
+    getWeekStarting: () => weekStarting,
+    setWeekStartingState: (value: DashboardWeekStart) => {
+      weekStarting = value;
     },
     getAutoFocusOnTaskLaunchEnabled: () => autoFocusOnTaskLaunchEnabled,
     setAutoFocusOnTaskLaunchEnabledState: (value) => {
@@ -1919,6 +1926,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadThemePreference,
     loadMenuButtonStylePreference,
     loadDefaultTaskTimerFormat,
+    loadWeekStartingPreference,
     loadTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
     toggleSwitchElement,
@@ -2087,6 +2095,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadFocusSessionNotes: () => loadFocusSessionNotesApi(),
     loadAddTaskCustomNames: () => loadAddTaskCustomNamesApi(),
     loadDefaultTaskTimerFormat,
+    loadWeekStartingPreference,
     loadTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting,

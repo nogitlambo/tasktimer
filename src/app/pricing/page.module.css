@@ -1,0 +1,42 @@
+.pricingRoot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(44, 246, 255, 0.12) 0, rgba(44, 246, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(44, 246, 255, 0.08) 0, rgba(44, 246, 255, 0.08) 1px, transparent 1px);
+  background-size: 176px 176px;
+  opacity: 0.12;
+}
+
+.pricingCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    transparent 28%,
+    transparent 72%,
+    rgba(255, 255, 255, 0.03)
+  );
+  opacity: 0.6;
+}
+
+.pricingCard:hover {
+  transform: translateY(-4px);
+}
+
+@media (min-width: 1024px) {
+  .featuredCard:hover {
+    transform: translateY(-16px) scale(1.02);
+  }
+}
+
+@media (max-width: 1023px) {
+  .featuredCard {
+    transform: none;
+  }
+}

@@ -100,7 +100,7 @@ function LandingIntroSequence({
             <span>{preHeroText}</span>
           </p>
         ) : null}
-        <h1 className="landingV2Title mt-8 mb-8 displayFont font-black uppercase tracking-[0.08em] text-[#f5f4fc]">
+        <h1 className="displayFont mt-8 mb-8 max-w-[11ch] text-[clamp(2.8rem,7vw,5.8rem)] font-black uppercase leading-[0.92] tracking-[-0.04em] text-[#f5f4fc]">
           <span>{typedHero}</span>
           {isTypingHero ? (
             <span

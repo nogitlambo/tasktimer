@@ -1,5 +1,6 @@
 import type { HistoryByTaskId, DeletedTaskMeta, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
+import type { DashboardWeekStart } from "../lib/historyChart";
 
 export type AppPage = "tasks" | "dashboard" | "test1" | "test2";
 
@@ -69,6 +70,7 @@ export type TaskTimerMutableState = {
   menuButtonStyle: "parallelogram" | "square";
   addTaskCustomNames: string[];
   defaultTaskTimerFormat: "day" | "hour" | "minute";
+  weekStarting: DashboardWeekStart;
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;

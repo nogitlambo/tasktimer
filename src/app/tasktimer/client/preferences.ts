@@ -1,5 +1,6 @@
 import type { TaskTimerCachedModeSettings, TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
+import { normalizeDashboardWeekStart } from "../lib/historyChart";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -101,6 +102,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       theme: ctx.getThemeMode(),
       menuButtonStyle: ctx.getMenuButtonStyle(),
       defaultTaskTimerFormat: ctx.getDefaultTaskTimerFormat(),
+      weekStarting: ctx.getWeekStarting(),
       taskView: ctx.getTaskView(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
@@ -129,6 +131,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         ctx.storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
         String(snapshot.defaultTaskTimerFormat || "hour")
       );
+      localStorage.setItem(ctx.storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
       localStorage.setItem(ctx.storageKeys.MODE_SETTINGS_KEY, JSON.stringify(snapshot.modeSettings || null));
     } catch {
       // ignore localStorage write failures
@@ -261,6 +264,37 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setDefaultTaskTimerFormatState(next);
   }
 
+  function applyWeekStartingPreference(next: "mon" | "sun") {
+    ctx.setWeekStartingState(normalizeDashboardWeekStart(next));
+    const isMonday = ctx.getWeekStarting() === "mon";
+    els.taskWeekStartingMon?.classList.toggle("isOn", isMonday);
+    els.taskWeekStartingSun?.classList.toggle("isOn", !isMonday);
+    els.taskWeekStartingMon?.setAttribute("aria-pressed", isMonday ? "true" : "false");
+    els.taskWeekStartingSun?.setAttribute("aria-pressed", !isMonday ? "true" : "false");
+  }
+
+  function loadWeekStartingPreference() {
+    let localRaw = "";
+    try {
+      localRaw = String(localStorage.getItem(ctx.storageKeys.WEEK_STARTING_KEY) || "").trim().toLowerCase();
+    } catch {
+      // ignore localStorage read failures
+    }
+    const cloudRaw = String((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.weekStarting || "")
+      .trim()
+      .toLowerCase();
+    applyWeekStartingPreference(normalizeDashboardWeekStart(cloudRaw || localRaw));
+  }
+
+  function saveWeekStartingPreference() {
+    try {
+      localStorage.setItem(ctx.storageKeys.WEEK_STARTING_KEY, ctx.getWeekStarting());
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function loadTaskViewPreference() {
     let localRaw = "";
     try {
@@ -340,6 +374,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function syncTaskSettingsUi() {
     const defaultTaskTimerFormat = ctx.getDefaultTaskTimerFormat();
+    const weekStarting = ctx.getWeekStarting();
     const taskView = ctx.getTaskView();
     toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
@@ -348,6 +383,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
     els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
+    els.taskWeekStartingMon?.classList.toggle("isOn", weekStarting === "mon");
+    els.taskWeekStartingSun?.classList.toggle("isOn", weekStarting === "sun");
+    els.taskWeekStartingMon?.setAttribute("aria-pressed", weekStarting === "mon" ? "true" : "false");
+    els.taskWeekStartingSun?.setAttribute("aria-pressed", weekStarting === "sun" ? "true" : "false");
     els.taskViewList?.classList.toggle("isOn", taskView === "list");
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
@@ -386,6 +425,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function persistInlineTaskSettingsImmediate() {
     saveDefaultTaskTimerFormat();
+    saveWeekStartingPreference();
     saveTaskViewPreference();
     saveAutoFocusOnTaskLaunchSetting();
     saveDynamicColorsSetting();
@@ -468,6 +508,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
       ctx.setDefaultTaskTimerFormatState("hour");
+      applyWeekStartingPreference("mon");
       ctx.setAutoFocusOnTaskLaunchEnabledState(false);
       ctx.setTaskViewState("tile");
       ctx.setDynamicColorsEnabledState(true);
@@ -490,6 +531,16 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskDefaultFormatMinute, "click", () => {
       ctx.setDefaultTaskTimerFormatState("minute");
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+    ctx.on(els.taskWeekStartingMon, "click", () => {
+      applyWeekStartingPreference("mon");
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+    ctx.on(els.taskWeekStartingSun, "click", () => {
+      applyWeekStartingPreference("sun");
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
@@ -557,6 +608,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveDefaultTaskTimerFormat();
+      saveWeekStartingPreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveCheckpointAlertSettings();
@@ -631,6 +683,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadThemePreference,
     loadMenuButtonStylePreference,
     loadDefaultTaskTimerFormat,
+    applyWeekStartingPreference,
+    loadWeekStartingPreference,
+    saveWeekStartingPreference,
     loadTaskViewPreference,
     saveDefaultTaskTimerFormat,
     saveTaskViewPreference,

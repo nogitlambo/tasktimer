@@ -1,10 +1,34 @@
-export function startOfCurrentWeekMondayMs(nowValue: number) {
+export type DashboardWeekStart = "mon" | "sun";
+
+export function normalizeDashboardWeekStart(value: unknown): DashboardWeekStart {
+  return String(value || "").trim().toLowerCase() === "sun" ? "sun" : "mon";
+}
+
+export function weekdayIndexForWeekStart(dayOfWeek: number, weekStart: DashboardWeekStart) {
+  const safeDayOfWeek = Math.max(0, Math.min(6, Math.floor(dayOfWeek)));
+  if (weekStart === "sun") return safeDayOfWeek;
+  return (safeDayOfWeek + 6) % 7;
+}
+
+export function getDashboardWeekdayLabels(weekStart: DashboardWeekStart, format: "narrow" | "short" = "short") {
+  const labels =
+    format === "narrow"
+      ? ["S", "M", "T", "W", "T", "F", "S"]
+      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  if (weekStart === "sun") return labels;
+  return labels.slice(1).concat(labels[0]!);
+}
+
+export function startOfCurrentWeekMs(nowValue: number, weekStart: DashboardWeekStart) {
   const d = new Date(nowValue);
-  const dow = d.getDay();
-  const delta = dow === 0 ? 6 : dow - 1;
+  const delta = weekdayIndexForWeekStart(d.getDay(), weekStart);
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - delta);
   return d.getTime();
+}
+
+export function startOfCurrentWeekMondayMs(nowValue: number) {
+  return startOfCurrentWeekMs(nowValue, "mon");
 }
 
 export function startOfCurrentMonthMs(nowValue: number) {

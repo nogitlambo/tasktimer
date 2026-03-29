@@ -21,6 +21,7 @@
 
 ### App Routes
 - `/`
+- `/pricing`
 - `/privacy`
 - `/signed-out`
 - `/tasktimer`

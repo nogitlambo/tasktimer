@@ -123,7 +123,7 @@ canvas {
 .landingV2 .landingV2ArrowStage {
   position: absolute;
   left: var(--landing-beam-x);
-  top: var(--landing-beam-y);
+  top: calc(var(--landing-beam-y) - var(--landing-arrow-width));
   width: var(--landing-arrow-width);
   transform: translate(-50%, -50%);
 }

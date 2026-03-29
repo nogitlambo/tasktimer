@@ -122,8 +122,8 @@ export default function LandingClassic({
           }`}
           aria-hidden={!showTitlePhase}
         >
-          <h1 className="displayFont max-w-[26ch] text-center text-[15px] font-extrabold uppercase tracking-[0.16em] text-white sm:text-[18px]">
-            Build better habits with smarter time tracking.
+          <h1 className="displayFont max-w-[11ch] text-center text-[clamp(2.8rem,7vw,5.8rem)] font-black uppercase leading-[0.92] tracking-[-0.04em] text-[#f5f4fc]">
+            Your daily productivity engine.
           </h1>
         </div>
 

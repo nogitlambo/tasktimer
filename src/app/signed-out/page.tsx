@@ -121,45 +121,15 @@ export default function SignedOutPage() {
               <Link
                 href="/web-sign-in"
                 className="flex min-h-[56px] items-center justify-center border border-[#58e7ff]/70 bg-gradient-to-r from-[#2ea7ff] via-[#35e8ff] to-[#00cfc8] px-8 text-sm font-extrabold uppercase tracking-[0.14em] text-[#04131c] transition hover:brightness-110"
-                style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
               >
                 Sign In Again
               </Link>
               <Link
                 href="/"
                 className="flex min-h-[56px] items-center justify-center border border-white/15 bg-white/[0.04] px-8 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:border-white/30 hover:bg-white/[0.08]"
-                style={{ clipPath: "polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%)" }}
               >
                 Back Home
               </Link>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-[-8%] bg-[radial-gradient(circle,rgba(82,233,255,0.16),transparent_58%)] blur-3xl" aria-hidden="true" />
-            <div
-              className="relative overflow-hidden border border-white/12 bg-white/[0.04] p-4 backdrop-blur-xl"
-              style={{ clipPath: "polygon(18px 0, 100% 0, calc(100% - 18px) 100%, 0 100%)" }}
-            >
-              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#58e7ff]/70 to-transparent" />
-              <div className="grid gap-4 sm:grid-cols-[1.1fr_0.9fr]">
-                <div className="space-y-4 border border-white/10 bg-[#0b1020]/70 p-5">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#8ff6ff]">Account status</p>
-                  <p className="text-3xl font-black uppercase tracking-[-0.03em] text-white">Offline</p>
-                  <p className="text-sm leading-7 text-white/72">
-                    We cleared your active session and paused access to protected TaskLaunch routes until you sign in
-                    again.
-                  </p>
-                </div>
-                <div className="space-y-3 border border-white/10 bg-[#12081d]/85 p-5">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#f2a4ef]">Next steps</p>
-                  <div className="space-y-2 text-sm uppercase tracking-[0.14em] text-white/78">
-                    <p>1. Return to the landing page</p>
-                    <p>2. Start a new secure session</p>
-                    <p>3. Continue where you left off</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>

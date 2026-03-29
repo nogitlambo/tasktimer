@@ -4,8 +4,10 @@ import {
   formatDashboardDurationShort,
   formatDashboardDurationWithMinutes,
   formatDashboardHeatMonthLabel,
+  getDashboardWeekdayLabels,
   getDashboardAvgRangeWindow,
-  startOfCurrentWeekMondayMs,
+  startOfCurrentWeekMs,
+  weekdayIndexForWeekStart,
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
@@ -101,11 +103,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const nowValue = nowMs();
     const historyByTaskId = ctx.getHistoryByTaskId();
     const includedTaskIds = getDashboardIncludedTaskIds();
-    const today = new Date(nowValue);
-    today.setHours(0, 0, 0, 0);
+    const weekStarting = ctx.getWeekStarting();
+    const currentWeekStartMs = startOfCurrentWeekMs(nowValue, weekStarting);
+    const startDate = new Date(currentWeekStartMs);
     const days = Array.from({ length: 7 }, (_, idx) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() - (6 - idx));
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + idx);
       date.setHours(0, 0, 0, 0);
       return {
         startMs: date.getTime(),
@@ -117,10 +120,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       };
     });
 
-    const currentWeekStartMs = days[0]?.startMs || today.getTime();
-    const currentWeekEndMs = (days[days.length - 1]?.endMs || today.getTime() + 86400000) - 1;
+    const currentWeekEndMs = nowValue;
     const previousWeekStartMs = currentWeekStartMs - 7 * 86400000;
-    const previousWeekEndMs = currentWeekStartMs - 1;
+    const previousWeekEndMs = previousWeekStartMs + (nowValue - currentWeekStartMs);
     let currentWeekTotalMs = 0;
     let currentWeekSessions = 0;
     let previousWeekTotalMs = 0;
@@ -358,7 +360,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const historyByTaskId = ctx.getHistoryByTaskId();
 
     const nowValue = nowMs();
-    const weekStartMs = startOfCurrentWeekMondayMs(nowValue);
+    const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task) return false;
       if (!task.timeGoalEnabled) return false;
@@ -519,7 +521,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = valueEl?.closest(".dashboardTasksCompletedCard") as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
     const nowValue = nowMs();
-    const weekStartMs = startOfCurrentWeekMondayMs(nowValue);
+    const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task) return false;
       if (!task.timeGoalEnabled) return false;
@@ -1376,6 +1378,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderDashboardHeatCalendar() {
     const monthLabelEl = els.dashboardHeatMonthLabel as HTMLElement | null;
+    const weekdaysEl = els.dashboardHeatWeekdays as HTMLElement | null;
     const gridEl = els.dashboardHeatCalendarGrid as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
     if (!gridEl) return;
@@ -1386,11 +1389,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const monthIndex = nowDate.getMonth();
     const monthStart = new Date(year, monthIndex, 1);
     const monthEnd = new Date(year, monthIndex + 1, 1);
-    const firstDow = monthStart.getDay();
+    const weekStarting = ctx.getWeekStarting();
+    const firstDow = weekdayIndexForWeekStart(monthStart.getDay(), weekStarting);
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
     if (monthLabelEl) {
       monthLabelEl.textContent = formatDashboardHeatMonthLabel(year, monthIndex);
+    }
+    if (weekdaysEl) {
+      weekdaysEl.innerHTML = getDashboardWeekdayLabels(weekStarting).map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("");
     }
 
     const byDayMs = new Map<string, number>();

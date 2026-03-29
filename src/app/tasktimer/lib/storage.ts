@@ -984,16 +984,11 @@ export function saveDeletedMeta(meta: DeletedTaskMeta): void {
 }
 
 export function cleanupHistory(historyByTaskId: HistoryByTaskId): HistoryByTaskId {
-  const cutoff = nowMs() - 120 * 24 * 60 * 60 * 1000;
   const next: HistoryByTaskId = { ...(historyByTaskId || {}) };
 
   Object.keys(next).forEach((taskId) => {
     const arr = Array.isArray(next[taskId]) ? next[taskId] : [];
-    const filtered = arr.filter((x) => {
-      const ts = x && typeof x.ts === "number" ? x.ts : 0;
-      return ts >= cutoff;
-    });
-    next[taskId] = filtered;
+    next[taskId] = arr.filter((x) => !!x && typeof x === "object");
   });
 
   return next;

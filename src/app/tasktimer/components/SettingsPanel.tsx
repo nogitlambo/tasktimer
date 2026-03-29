@@ -1522,6 +1522,17 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                     </button>
                   </div>
                 </div>
+                <div className="unitRow" id="taskWeekStartingRow">
+                  <span>Week Starting</span>
+                  <div className="unitButtons" role="group" aria-label="Week starting">
+                    <button className="btn btn-ghost small unitBtn isOn" id="taskWeekStartingMon" type="button" aria-pressed="true">
+                      MON
+                    </button>
+                    <button className="btn btn-ghost small unitBtn" id="taskWeekStartingSun" type="button" aria-pressed="false">
+                      SUN
+                    </button>
+                  </div>
+                </div>
               </section>
 
               <section className="settingsInlineSection">
