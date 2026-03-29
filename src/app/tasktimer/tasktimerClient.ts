@@ -61,6 +61,7 @@ import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
 import { createTaskTimerPopupMenu } from "./client/popup-menu";
 import { createTaskTimerImportExport } from "./client/import-export";
 import { createTaskTimerTaskListUi } from "./client/task-list-ui";
+import { createTaskTimerTaskUiPersistence } from "./client/task-ui-persistence";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
@@ -509,6 +510,50 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     jumpToTaskAndHighlight,
     registerTaskListUiEvents,
   } = taskListUi;
+  const taskUiPersistence = createTaskTimerTaskUiPersistence({
+    els,
+    getCurrentUid: () => currentUid(),
+    getHistoryRangeDaysByTaskId: () => historyRangeDaysByTaskId,
+    getHistoryRangeModeByTaskId: () => historyRangeModeByTaskId,
+    getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
+    setPinnedHistoryTaskIds: (value) => {
+      pinnedHistoryTaskIds = value;
+    },
+    getAddTaskCustomNames: () => addTaskCustomNames,
+    getCloudTaskUiCache: () => cloudTaskUiCache,
+    setCloudTaskUiCache: (value) => {
+      cloudTaskUiCache = value as typeof cloudTaskUiCache;
+    },
+    loadCachedTaskUi,
+    saveCloudTaskUi: (value) => {
+      saveCloudTaskUi(value as Parameters<typeof saveCloudTaskUi>[0]);
+    },
+    getTasks: () => tasks,
+    getHistoryByTaskId: () => historyByTaskId,
+    saveHistory,
+    getWorkingIndicatorStack: () => workingIndicatorStack,
+    getWorkingIndicatorKeySeq: () => workingIndicatorKeySeq,
+    setWorkingIndicatorKeySeq: (value) => {
+      workingIndicatorKeySeq = value;
+    },
+    getWorkingIndicatorOverlayActive: () => workingIndicatorOverlayActive,
+    setWorkingIndicatorOverlayActive: (value) => {
+      workingIndicatorOverlayActive = value;
+    },
+    getWorkingIndicatorRestoreFocusEl: () => workingIndicatorRestoreFocusEl,
+    setWorkingIndicatorRestoreFocusEl: (value) => {
+      workingIndicatorRestoreFocusEl = value;
+    },
+    sessionColorForTaskMs,
+  });
+  const {
+    loadPinnedHistoryTaskIds,
+    savePinnedHistoryTaskIds,
+    persistTaskUiToCloud,
+    backfillHistoryColorsFromSessionLogic,
+    showWorkingIndicator,
+    hideWorkingIndicator,
+  } = taskUiPersistence;
 
   const groupsApi = createTaskTimerGroups({
     els,
@@ -1281,18 +1326,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
   }
 
-  function persistTaskUiToCloud() {
-    const uid = currentUid();
-    if (!uid) return;
-    cloudTaskUiCache = {
-      historyRangeDaysByTaskId,
-      historyRangeModeByTaskId,
-      pinnedHistoryTaskIds: Array.from(pinnedHistoryTaskIds),
-      customTaskNames: addTaskCustomNames.slice(0, 5),
-    };
-    saveCloudTaskUi(cloudTaskUiCache);
-  }
-
   function downloadCsvFile(filename: string, text: string) {
     const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -1478,30 +1511,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     persistPreferencesToCloud();
   }
 
-  function backfillHistoryColorsFromSessionLogic() {
-    if (!historyByTaskId || typeof historyByTaskId !== "object") return;
-    let changed = false;
-
-    Object.keys(historyByTaskId).forEach((taskId) => {
-      const entries = historyByTaskId[taskId];
-      if (!Array.isArray(entries) || entries.length === 0) return;
-      const task = (tasks || []).find((t) => String(t.id || "") === String(taskId));
-      if (!task) return;
-
-      entries.forEach((entry: any) => {
-        if (!entry) return;
-        const ms = Number.isFinite(+entry.ms) ? Math.max(0, +entry.ms) : 0;
-        const nextColor = sessionColorForTaskMs(task, ms);
-        if (entry.color !== nextColor) {
-          entry.color = nextColor;
-          changed = true;
-        }
-      });
-    });
-
-    if (changed) saveHistory(historyByTaskId, { showIndicator: false });
-  }
-
   function render() {
     renderTasksPage();
   }
@@ -1568,109 +1577,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
     });
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
-  }
-  function loadPinnedHistoryTaskIds() {
-    const parsed = (cloudTaskUiCache || loadCachedTaskUi())?.pinnedHistoryTaskIds;
-    if (!Array.isArray(parsed)) {
-      pinnedHistoryTaskIds = new Set<string>();
-      return;
-    }
-    pinnedHistoryTaskIds = new Set<string>(parsed.map((v) => String(v || "").trim()).filter(Boolean));
-  }
-
-  function savePinnedHistoryTaskIds() {
-    persistTaskUiToCloud();
-  }
-
-  function setWorkingIndicatorVisible(isOn: boolean, message?: string) {
-    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
-    const textEl = els.historySaveWorkingText as HTMLElement | null;
-    if (textEl && typeof message === "string" && message.trim()) {
-      textEl.textContent = message.trim();
-    } else if (textEl && !isOn) {
-      textEl.textContent = "";
-    }
-    if (!indicatorEl) return;
-    indicatorEl.classList.toggle("isOn", !!isOn);
-    indicatorEl.setAttribute("aria-hidden", isOn ? "false" : "true");
-  }
-
-  function getWorkingIndicatorBusyTargets() {
-    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
-    const seen = new Set<HTMLElement>();
-    return [
-      els.appRoot as HTMLElement | null,
-      els.friendRequestModal as HTMLElement | null,
-      els.friendProfileModal as HTMLElement | null,
-      els.confirmOverlay as HTMLElement | null,
-    ].filter((node): node is HTMLElement => {
-      if (!node || node === indicatorEl || seen.has(node)) return false;
-      seen.add(node);
-      return true;
-    });
-  }
-
-  function activateWorkingIndicatorOverlay() {
-    if (workingIndicatorOverlayActive) return;
-    workingIndicatorOverlayActive = true;
-    workingIndicatorRestoreFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    getWorkingIndicatorBusyTargets().forEach((node) => {
-      node.setAttribute("data-groups-busy-prev-inert", node.hasAttribute("inert") ? "true" : "false");
-      node.setAttribute("data-groups-busy-prev-aria-hidden", node.getAttribute("aria-hidden") ?? "");
-      node.setAttribute("inert", "");
-      node.setAttribute("aria-hidden", "true");
-    });
-    const indicatorEl = els.historySaveWorkingIndicator as HTMLElement | null;
-    try {
-      indicatorEl?.focus({ preventScroll: true });
-    } catch {
-      indicatorEl?.focus();
-    }
-  }
-
-  function deactivateWorkingIndicatorOverlay() {
-    if (!workingIndicatorOverlayActive) return;
-    workingIndicatorOverlayActive = false;
-    getWorkingIndicatorBusyTargets().forEach((node) => {
-      const prevInert = node.getAttribute("data-groups-busy-prev-inert");
-      const prevAriaHidden = node.getAttribute("data-groups-busy-prev-aria-hidden");
-      node.removeAttribute("data-groups-busy-prev-inert");
-      node.removeAttribute("data-groups-busy-prev-aria-hidden");
-      if (prevInert === "true") node.setAttribute("inert", "");
-      else node.removeAttribute("inert");
-      if (prevAriaHidden) node.setAttribute("aria-hidden", prevAriaHidden);
-      else node.removeAttribute("aria-hidden");
-    });
-    const restoreEl = workingIndicatorRestoreFocusEl;
-    workingIndicatorRestoreFocusEl = null;
-    if (restoreEl && restoreEl.isConnected) {
-      try {
-        restoreEl.focus({ preventScroll: true });
-      } catch {
-        restoreEl.focus();
-      }
-    }
-  }
-
-  function showWorkingIndicator(message: string) {
-    const normalizedMessage = String(message || "").trim() || "Working...";
-    const key = ++workingIndicatorKeySeq;
-    workingIndicatorStack.push({ key, message: normalizedMessage });
-    if (workingIndicatorStack.length === 1) activateWorkingIndicatorOverlay();
-    setWorkingIndicatorVisible(true, normalizedMessage);
-    return key;
-  }
-
-  function hideWorkingIndicator(key?: number) {
-    if (typeof key === "number") {
-      const index = workingIndicatorStack.findIndex((entry) => entry.key === key);
-      if (index >= 0) workingIndicatorStack.splice(index, 1);
-    } else {
-      workingIndicatorStack.pop();
-    }
-    const current = workingIndicatorStack[workingIndicatorStack.length - 1] || null;
-    if (!current) deactivateWorkingIndicatorOverlay();
-    setWorkingIndicatorVisible(!!current, current?.message);
   }
 
   function isTaskSharedByOwner(taskId: string): boolean {

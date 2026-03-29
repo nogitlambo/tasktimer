@@ -84,6 +84,7 @@
 - [`src/app/tasktimer/client/state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/state.ts)
 - [`src/app/tasktimer/client/task-list-ui.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-list-ui.ts)
 - [`src/app/tasktimer/client/task-shared.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-shared.ts)
+- [`src/app/tasktimer/client/task-ui-persistence.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-ui-persistence.ts)
 - [`src/app/tasktimer/client/tasks.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/tasks.ts)
 - [`src/app/tasktimer/client/types.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/types.ts)
 

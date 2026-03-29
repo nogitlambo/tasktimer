@@ -78,6 +78,31 @@ export type TaskTimerPopupMenuContext = {
   clearHistoryEntryNoteOverlayPosition: () => void;
 };
 
+export type TaskTimerTaskUiPersistenceContext = {
+  els: TaskTimerElements;
+  getCurrentUid: () => string;
+  getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;
+  getHistoryRangeModeByTaskId: () => Record<string, "entries" | "day">;
+  getPinnedHistoryTaskIds: () => Set<string>;
+  setPinnedHistoryTaskIds: (value: Set<string>) => void;
+  getAddTaskCustomNames: () => string[];
+  getCloudTaskUiCache: () => unknown;
+  setCloudTaskUiCache: (value: unknown) => void;
+  loadCachedTaskUi: () => unknown;
+  saveCloudTaskUi: (value: unknown) => void;
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  saveHistory: (history: HistoryByTaskId, opts?: { showIndicator?: boolean }) => void;
+  getWorkingIndicatorStack: () => Array<{ key: number; message: string }>;
+  getWorkingIndicatorKeySeq: () => number;
+  setWorkingIndicatorKeySeq: (value: number) => void;
+  getWorkingIndicatorOverlayActive: () => boolean;
+  setWorkingIndicatorOverlayActive: (value: boolean) => void;
+  getWorkingIndicatorRestoreFocusEl: () => HTMLElement | null;
+  setWorkingIndicatorRestoreFocusEl: (value: HTMLElement | null) => void;
+  sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+};
+
 export type TaskTimerImportExportContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
