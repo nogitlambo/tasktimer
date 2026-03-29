@@ -21,6 +21,7 @@ export type TaskTimerCachedModeSettings =
   | null;
 
 export type TaskTimerCachedPreferences = {
+  schemaVersion?: unknown;
   theme?: unknown;
   menuButtonStyle?: unknown;
   defaultTaskTimerFormat?: unknown;
@@ -30,6 +31,8 @@ export type TaskTimerCachedPreferences = {
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   modeSettings?: TaskTimerCachedModeSettings;
+  rewards?: unknown;
+  updatedAtMs?: unknown;
 };
 
 export type TaskTimerConfirmOptions = {
@@ -700,19 +703,29 @@ export type TaskTimerPreferencesContext = {
   getModeEnabled: () => Record<MainMode, boolean>;
   setModeEnabledState: (value: Record<MainMode, boolean>) => void;
   getCurrentMode: () => MainMode;
+  setCurrentModeState: (value: MainMode) => void;
   getEditMoveTargetMode: () => MainMode;
   setEditMoveTargetModeState: (value: MainMode) => void;
-  persistPreferencesToCloud: () => void;
+  getRewardProgress: () => unknown;
+  normalizeRewardProgress: (value: unknown) => unknown;
+  currentUid: () => string | null;
   loadCachedPreferences: () => TaskTimerCachedPreferences | null | undefined;
   loadCachedTaskUi: () => unknown;
   getCloudPreferencesCache: () => TaskTimerCachedPreferences | null | undefined;
+  setCloudPreferencesCache: (value: TaskTimerCachedPreferences | null | undefined) => void;
+  buildDefaultCloudPreferences: () => NonNullable<TaskTimerCachedPreferences>;
+  saveCloudPreferences: (prefs: NonNullable<TaskTimerCachedPreferences>) => void;
+  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined }) => Promise<unknown>;
   saveDashboardWidgetState: (partialWidgets: Record<string, unknown>) => void;
   getDashboardCardSizeMapForStorage: () => Record<string, unknown>;
   getDashboardAvgRange: () => string;
+  getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
   getCurrentEditTask: () => Task | null;
   syncEditCheckpointAlertUi: (task: Task) => void;
-  applyMainMode: (mode: MainMode) => void;
   clearTaskFlipStates: () => void;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
   render: () => void;
   renderDashboardPanelMenu: () => void;
   renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
@@ -720,7 +733,6 @@ export type TaskTimerPreferencesContext = {
   closeOverlay: (overlay: HTMLElement | null) => void;
   closeConfirm: () => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
-  deleteTasksInMode: (mode: MainMode) => void;
   escapeHtmlUI: (value: unknown) => string;
   stopCheckpointRepeatAlert: () => void;
   getCurrentAppPage: () => AppPage;
@@ -774,6 +786,7 @@ export type TaskTimerHistoryManagerContext = {
   load: () => void;
   render: () => void;
   navigateToAppRoute: (path: string) => void;
+  openOverlay: (overlay: HTMLElement | null) => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;
   escapeHtmlUI: (value: unknown) => string;

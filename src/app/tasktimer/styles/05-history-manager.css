@@ -148,6 +148,7 @@
   width:100%;
   border-collapse: collapse;
   font-size:12px;
+  table-layout: fixed;
 }
 
 .hmTable th, .hmTable td{
@@ -195,6 +196,46 @@
 
 .hmSortBtn:hover{
   text-decoration: underline;
+}
+
+.hmNotesHead{
+  width: min(34vw, 320px);
+}
+
+.hmNotesCell{
+  width: min(34vw, 320px);
+}
+
+.hmNoteBtn{
+  display:block;
+  width:100%;
+  border:1px solid rgba(160,232,255,.16);
+  background: rgba(255,255,255,.03);
+  color: rgba(236,249,255,.92);
+  font:inherit;
+  text-align:left;
+  padding:7px 9px;
+  cursor:pointer;
+  transition: border-color .16s ease, background .16s ease, color .16s ease;
+}
+
+.hmNoteBtn:hover,
+.hmNoteBtn:focus-visible{
+  border-color: rgba(160,232,255,.38);
+  background: rgba(160,232,255,.08);
+  outline: none;
+}
+
+.hmNoteBtnText{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.hmNoteEmpty{
+  display:inline-block;
+  color: rgba(255,255,255,.4);
 }
 
 .hmBulkCheckbox{
@@ -268,6 +309,27 @@
 }
 
 .hmDelBtn:hover{ background: rgba(255,77,77,.16); }
+
+@media (max-width: 780px){
+  .hmTable{
+    table-layout: auto;
+  }
+
+  .hmTable th,
+  .hmTable td{
+    padding:9px 8px;
+  }
+
+  .hmNotesHead,
+  .hmNotesCell{
+    width: 38%;
+    min-width: 140px;
+  }
+
+  .hmNoteBtn{
+    padding:6px 8px;
+  }
+}
 
 /* Keep history-manager surface flat in both themes.
    A broader purple-theme rule in overlays.css styles .hmGroup globally. */

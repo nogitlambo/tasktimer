@@ -3238,57 +3238,39 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   line-height: 1;
 }
 
-/* Final Appearance select option shading: match the soft dropdown hover treatment used in Edit Task. */
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect optgroup,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect optgroup{
-  background: #0c131a;
-  color: #eafcff;
+#app[aria-label="TaskLaunch Settings"] #themeToggleRow,
+#app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow{
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:hover,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:focus,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:hover,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:focus{
-  background: #183846;
-  color: #eaf7ff;
+#app[aria-label="TaskLaunch Settings"] #themeToggleRow .unitButtons,
+#app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow .unitButtons{
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:hover,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:focus,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:hover,
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:focus{
-  background: #122a35;
-  color: #f0fcff;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+#app[aria-label="TaskLaunch Settings"] #themePurpleBtn,
+#app[aria-label="TaskLaunch Settings"] #themeCyanBtn{
+  min-width: 110px;
+  justify-content: center;
 }
 
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect optgroup,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect optgroup{
-  background: #140c19;
-  color: #fff8ff;
+#app[aria-label="TaskLaunch Settings"] #menuButtonStyleParallelogramBtn,
+#app[aria-label="TaskLaunch Settings"] #menuButtonStyleSquareBtn{
+  min-width: 156px;
+  justify-content: center;
 }
 
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:focus,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:focus{
-  background: #3f234f;
-  color: #fff8ff;
-}
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"] #themeToggleRow,
+  #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow{
+    align-items: stretch;
+  }
 
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #themeSelect option:checked:focus,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect option:checked:focus{
-  background: #2b1737;
-  color: #f7eeff;
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08);
+  #app[aria-label="TaskLaunch Settings"] #themeToggleRow .unitButtons,
+  #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow .unitButtons{
+    justify-content: flex-start;
+  }
 }

@@ -1587,22 +1587,40 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
                   <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Appearance</div>
-                </div>
-                <div className="field" id="themeToggleRow">
-                  <label htmlFor="themeSelect">Theme</label>
-                  <select id="themeSelect" defaultValue="purple" aria-label="Theme mode">
-                    <option value="purple">Purple (default)</option>
-                    <option value="cyan">Cyan</option>
-                  </select>
-                </div>
-                <div className="field" id="menuButtonStyleRow">
-                  <label htmlFor="menuButtonStyleSelect">Menu and button style</label>
-                  <select id="menuButtonStyleSelect" defaultValue="square" aria-label="Menu and button style">
-                    <option value="parallelogram">Parallelogram</option>
-                    <option value="square">Square (default)</option>
-                  </select>
-                </div>
+                  <div className="settingsInlineSectionTitle">Appearance</div>
+                </div>
+                <div className="unitRow" id="themeToggleRow">
+                  <span>Theme</span>
+                  <div className="unitButtons" role="group" aria-label="Theme mode">
+                    <button className="btn btn-ghost small unitBtn" id="themePurpleBtn" type="button" aria-pressed="false">
+                      Purple
+                    </button>
+                    <button className="btn btn-ghost small unitBtn" id="themeCyanBtn" type="button" aria-pressed="false">
+                      Cyan
+                    </button>
+                  </div>
+                </div>
+                <div className="unitRow" id="menuButtonStyleRow">
+                  <span>Menu and button style</span>
+                  <div className="unitButtons" role="group" aria-label="Menu and button style">
+                    <button
+                      className="btn btn-ghost small unitBtn"
+                      id="menuButtonStyleParallelogramBtn"
+                      type="button"
+                      aria-pressed="false"
+                    >
+                      Parallelogram
+                    </button>
+                    <button
+                      className="btn btn-ghost small unitBtn"
+                      id="menuButtonStyleSquareBtn"
+                      type="button"
+                      aria-pressed="false"
+                    >
+                      Square
+                    </button>
+                  </div>
+                </div>
                 <div className="toggleRow" id="taskDynamicColorsToggleRow">
                   <span>Use dynamic colors on progress bar and charts</span>
                   <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />

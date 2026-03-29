@@ -253,8 +253,10 @@ const els = {
   categorySaveBtn: documentRef.getElementById("categorySaveBtn"),
   categoryResetBtn: documentRef.getElementById("categoryResetBtn"),
   themeToggleRow: documentRef.getElementById("themeToggleRow"),
-  themeSelect: documentRef.getElementById("themeSelect") as HTMLSelectElement | null,
-  menuButtonStyleSelect: documentRef.getElementById("menuButtonStyleSelect") as HTMLSelectElement | null,
+  themePurpleBtn: documentRef.getElementById("themePurpleBtn") as HTMLButtonElement | null,
+  themeCyanBtn: documentRef.getElementById("themeCyanBtn") as HTMLButtonElement | null,
+  menuButtonStyleParallelogramBtn: documentRef.getElementById("menuButtonStyleParallelogramBtn") as HTMLButtonElement | null,
+  menuButtonStyleSquareBtn: documentRef.getElementById("menuButtonStyleSquareBtn") as HTMLButtonElement | null,
   contactOverlay: documentRef.getElementById("contactOverlay"),
 
   exportBtn: documentRef.getElementById("exportBtn"),

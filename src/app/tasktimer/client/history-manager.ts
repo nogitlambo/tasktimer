@@ -30,6 +30,13 @@ function formatHistoryManagerElapsed(msRaw: unknown, formatTwo: (value: number) 
   return `${formatTwo(days)}d ${formatTwo(hours)}h ${formatTwo(minutes)}m ${formatTwo(seconds)}s`;
 }
 
+function buildHistoryManagerRowKey(entry: { ts: unknown; ms: unknown; name: unknown }) {
+  const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
+  const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
+  const name = String(entry?.name || "");
+  return `${ts}|${ms}|${name}`;
+}
+
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
 
@@ -106,6 +113,20 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const ss = ctx.formatTwo(d.getSeconds());
     const filename = `tasktimer-history-${y}${mo}${da}-${hh}${mi}${ss}.csv`;
     ctx.downloadCsvFile(filename, rows.join("\n"));
+  }
+
+  function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown }) {
+    const note = ctx.getHistoryEntryNote(entry);
+    if (!note) return;
+    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Session Note";
+    if (els.historyEntryNoteMeta) {
+      els.historyEntryNoteMeta.textContent = ctx.formatDateTime(Number(entry?.ts) || 0);
+      (els.historyEntryNoteMeta as HTMLElement).style.display = "";
+    }
+    if (els.historyEntryNoteBody) {
+      els.historyEntryNoteBody.textContent = note;
+    }
+    ctx.openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
   }
 
   function importHistoryManagerCsvFromFile(file: File | null) {
@@ -634,8 +655,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               .map((e: any) => {
                 const dt = ctx.formatDateTime(e.ts);
                 const tm = formatHistoryManagerElapsed(e.ms || 0, ctx.formatTwo);
-                const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
+                const rowKey = buildHistoryManagerRowKey(e);
                 const rowId = `${taskId}|${rowKey}`;
+                const note = ctx.getHistoryEntryNote(e);
+                const noteCell = note
+                  ? `<button class="hmNoteBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
+                      rowKey
+                    )}" title="${escapeHtmlHM(note)}"><span class="hmNoteBtnText">${escapeHtmlHM(note)}</span></button>`
+                  : `<span class="hmNoteEmpty">-</span>`;
                 const rowCheckbox = hmBulkEditMode
                   ? `<input class="hmBulkCheckbox hmBulkRowChk" type="checkbox" data-task="${taskId}" data-key="${escapeHtmlHM(
                       rowKey
@@ -646,6 +673,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
                     <td class="hmSelectCell">${rowCheckbox}</td>
                     <td>${dt}</td>
                     <td>${tm}</td>
+                    <td class="hmNotesCell">${noteCell}</td>
                     <td style="text-align:right;">
                       <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
                   rowKey
@@ -672,6 +700,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
                       <th class="hmSelectHead"></th>
                       <th><button class="hmSortBtn" type="button" data-hm-sort="ts">Date/Time${dateSortArrow}</button></th>
                       <th><button class="hmSortBtn" type="button" data-hm-sort="ms">Elapsed${elapsedSortArrow}</button></th>
+                      <th class="hmNotesHead">Notes</th>
                       <th style="text-align:right;">Delete</th>
                     </tr>
                   </thead>
@@ -899,6 +928,23 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
           }
           renderHistoryManager();
         }
+        return;
+      }
+
+      const noteBtn = ev.target?.closest?.(".hmNoteBtn");
+      if (noteBtn) {
+        const taskId = noteBtn.getAttribute("data-task");
+        const key = noteBtn.getAttribute("data-key");
+        if (!taskId || !key) return;
+        const parts = key.split("|");
+        const ts = parseInt(parts[0], 10);
+        const ms = parseInt(parts[1], 10);
+        const name = parts.slice(2).join("|");
+        const entry =
+          (ctx.getHistoryByTaskId()?.[taskId] || []).find(
+            (e: any) => Number(e?.ts) === ts && Number(e?.ms) === ms && String(e?.name || "") === String(name || "")
+          ) || null;
+        if (entry) openHistoryManagerNoteOverlay(entry);
         return;
       }
 

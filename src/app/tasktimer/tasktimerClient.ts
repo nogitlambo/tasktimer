@@ -85,9 +85,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       MENU_BUTTON_STYLE_KEY,
       DEFAULT_TASK_TIMER_FORMAT_KEY,
       TASK_VIEW_KEY,
-      DYNAMIC_COLORS_KEY,
-      CHECKPOINT_ALERT_SOUND_KEY,
-      CHECKPOINT_ALERT_TOAST_KEY,
       MODE_SETTINGS_KEY,
       NAV_STACK_KEY,
       FOCUS_SESSION_NOTES_KEY,
@@ -250,6 +247,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let historyInlineApi: ReturnType<typeof createTaskTimerHistoryInline> | null = null;
   let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
   let addTaskApi: ReturnType<typeof createTaskTimerAddTask> | null = null;
+  let preferencesApi: ReturnType<typeof createTaskTimerPreferences> | null = null;
   let editTaskApi: ReturnType<typeof createTaskTimerEditTask> | null = null;
   let persistenceApi: ReturnType<typeof createTaskTimerPersistence> | null = null;
   let cloudSyncApi: ReturnType<typeof createTaskTimerCloudSync> | null = null;
@@ -1435,57 +1433,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     void syncSharedTaskSummariesForTask(taskId).catch(() => {});
   }
 
-  function buildCloudPreferencesSnapshot() {
-    const base = cloudPreferencesCache || buildDefaultCloudPreferences();
-    return {
-      ...base,
-      schemaVersion: 1 as const,
-      theme: themeMode,
-      menuButtonStyle,
-      defaultTaskTimerFormat,
-      taskView,
-      autoFocusOnTaskLaunchEnabled,
-      dynamicColorsEnabled,
-      checkpointAlertSoundEnabled,
-      checkpointAlertToastEnabled,
-      modeSettings: {
-        mode1: { label: modeLabels.mode1, enabled: true },
-        mode2: { label: modeLabels.mode2, enabled: !!modeEnabled.mode2 },
-        mode3: { label: modeLabels.mode3, enabled: !!modeEnabled.mode3 },
-      },
-      rewards: normalizeRewardProgress(rewardProgress),
-      updatedAtMs: Date.now(),
-    };
-  }
-
-  function persistPreferencesToLocalStorage(snapshot: ReturnType<typeof buildCloudPreferencesSnapshot>) {
-    try {
-      localStorage.setItem(THEME_KEY, snapshot.theme);
-      localStorage.setItem(MENU_BUTTON_STYLE_KEY, snapshot.menuButtonStyle);
-      localStorage.setItem(TASK_VIEW_KEY, snapshot.taskView);
-      localStorage.setItem(AUTO_FOCUS_ON_TASK_LAUNCH_KEY, snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false");
-      localStorage.setItem(DEFAULT_TASK_TIMER_FORMAT_KEY, snapshot.defaultTaskTimerFormat);
-      localStorage.setItem(DYNAMIC_COLORS_KEY, snapshot.dynamicColorsEnabled ? "true" : "false");
-      localStorage.setItem(CHECKPOINT_ALERT_SOUND_KEY, snapshot.checkpointAlertSoundEnabled ? "true" : "false");
-      localStorage.setItem(CHECKPOINT_ALERT_TOAST_KEY, snapshot.checkpointAlertToastEnabled ? "true" : "false");
-      localStorage.setItem(MODE_SETTINGS_KEY, JSON.stringify(snapshot.modeSettings || null));
-    } catch {
-      // ignore localStorage write failures
-    }
-  }
-
   function persistPreferencesToCloud() {
-    const snapshot = buildCloudPreferencesSnapshot();
-    persistPreferencesToLocalStorage(snapshot);
-    cloudPreferencesCache = snapshot;
-    saveCloudPreferences(snapshot);
-    const uid = currentUid();
-    if (!uid) return;
-    void syncOwnFriendshipProfile(uid, {
-      currentRankId: normalizeRewardProgress(rewardProgress).currentRankId,
-    }).catch(() => {
-      // Keep local/cloud preference persistence even if friendship profile sync fails.
-    });
+    preferencesApi?.persistPreferencesToCloud();
   }
 
   function getCurrentSessionNoteForTask(taskId: string): string {
@@ -1729,34 +1678,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function applyMainMode(mode: MainMode) {
-    if (!isModeEnabled(mode)) mode = "mode1";
-    currentMode = mode;
-    applyModeAccent(mode);
-    document.body.setAttribute("data-main-mode", mode);
-    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(mode);
-    els.mode1Btn?.classList.toggle("isOn", mode === "mode1");
-    els.mode2Btn?.classList.toggle("isOn", mode === "mode2");
-    els.mode3Btn?.classList.toggle("isOn", mode === "mode3");
-    els.mode1Btn?.setAttribute("aria-checked", String(mode === "mode1"));
-    els.mode2Btn?.setAttribute("aria-checked", String(mode === "mode2"));
-    els.mode3Btn?.setAttribute("aria-checked", String(mode === "mode3"));
-    if (els.modeSwitch && "open" in (els.modeSwitch as HTMLDetailsElement)) {
-      (els.modeSwitch as HTMLDetailsElement).open = false;
-    }
-    els.mode1View?.classList.toggle("modeViewOn", true);
-    els.mode2View?.classList.toggle("modeViewOn", mode === "mode2");
-    els.mode3View?.classList.toggle("modeViewOn", mode === "mode3");
-    render();
-  }
-
-  function deleteTasksInMode(mode: MainMode) {
-    const deletedTaskIds = (tasks || [])
-      .filter((t) => taskModeOf(t) === mode)
-      .map((t) => String(t.id || ""))
-      .filter(Boolean);
-    tasks = (tasks || []).filter((t) => taskModeOf(t) !== mode);
-    save({ deletedTaskIds });
-    render();
+    preferencesApi?.applyMainMode(mode);
   }
 
   const historyManager = createTaskTimerHistoryManager({
@@ -1826,6 +1748,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     load,
     render,
     navigateToAppRoute,
+    openOverlay,
     confirm,
     closeConfirm,
     escapeHtmlUI,
@@ -1942,21 +1865,39 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       modeEnabled = value;
     },
     getCurrentMode: () => currentMode,
+    setCurrentModeState: (value) => {
+      currentMode = value;
+    },
     getEditMoveTargetMode: () => editMoveTargetMode,
     setEditMoveTargetModeState: (value) => {
       editMoveTargetMode = value;
     },
-    persistPreferencesToCloud,
+    getRewardProgress: () => rewardProgress,
+    normalizeRewardProgress,
+    currentUid: () => currentUid(),
     loadCachedPreferences,
     loadCachedTaskUi,
     getCloudPreferencesCache: () => cloudPreferencesCache,
+    setCloudPreferencesCache: (value) => {
+      cloudPreferencesCache = (value ?? null) as typeof cloudPreferencesCache;
+    },
+    buildDefaultCloudPreferences: () => buildDefaultCloudPreferences() as NonNullable<typeof cloudPreferencesCache>,
+    saveCloudPreferences: (prefs) => {
+      saveCloudPreferences(prefs as Parameters<typeof saveCloudPreferences>[0]);
+    },
+    syncOwnFriendshipProfile,
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
     getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
     getDashboardAvgRange: getDashboardAvgRangeApi,
+    getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
     getCurrentEditTask: () => editTaskApi?.getCurrentEditTask() ?? null,
     syncEditCheckpointAlertUi: (task) => editTaskApi?.syncEditCheckpointAlertUi(task),
-    applyMainMode,
     clearTaskFlipStates,
+    taskModeOf,
+    save,
     render,
     renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
     renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
@@ -1964,35 +1905,27 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeOverlay,
     closeConfirm,
     confirm,
-    deleteTasksInMode,
     escapeHtmlUI,
     stopCheckpointRepeatAlert,
     getCurrentAppPage: () => currentAppPage,
   });
+  preferencesApi = preferences;
   const {
-    sanitizeModeLabel,
     getModeLabel,
     getModeColor,
-    applyModeAccent,
     isModeEnabled,
     syncModeLabelsUi,
-    saveModeSettings,
     loadModeLabels,
     loadThemePreference,
     loadMenuButtonStylePreference,
     loadDefaultTaskTimerFormat,
     loadTaskViewPreference,
-    saveDefaultTaskTimerFormat,
-    saveTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
-    saveAutoFocusOnTaskLaunchSetting,
     toggleSwitchElement,
     isSwitchOn,
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
-    saveDynamicColorsSetting,
     loadCheckpointAlertSettings,
-    saveCheckpointAlertSettings,
     registerPreferenceEvents,
   } = preferences;
 
@@ -2229,32 +2162,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
 
   function wireEvents() {
-    const persistInlineTaskSettingsImmediate = () => {
-      saveDefaultTaskTimerFormat();
-      saveTaskViewPreference();
-      saveAutoFocusOnTaskLaunchSetting();
-      saveDynamicColorsSetting();
-      saveCheckpointAlertSettings();
-      render();
-    };
-    const applyAndPersistModeSettingsImmediate = (opts?: { closeOverlay?: boolean }) => {
-      modeLabels.mode1 = sanitizeModeLabel(els.categoryMode1Input?.value, DEFAULT_MODE_LABELS.mode1);
-      modeLabels.mode2 = sanitizeModeLabel(els.categoryMode2Input?.value, DEFAULT_MODE_LABELS.mode2);
-      modeLabels.mode3 = sanitizeModeLabel(els.categoryMode3Input?.value, DEFAULT_MODE_LABELS.mode3);
-      modeEnabled.mode1 = true;
-      saveModeSettings();
-      syncModeLabelsUi();
-      saveDashboardWidgetStateApi({
-        cardSizes: getDashboardCardSizeMapForStorageApi(),
-        avgSessionByTaskRange: getDashboardAvgRangeApi(),
-      });
-      if (!isModeEnabled(currentMode)) applyMainMode("mode1");
-      else applyModeAccent(currentMode);
-      if (!isModeEnabled(editMoveTargetMode)) editMoveTargetMode = "mode1";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
-      if (opts?.closeOverlay) closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
-      else render();
-    };
     const setEditPresetIntervalsInfoOpen = (open: boolean) => {
       const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
       dialog?.classList.toggle("isOpen", open);
@@ -2274,9 +2181,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (target?.closest?.("#editPresetIntervalsInfoDialog")) return;
       setEditPresetIntervalsInfoOpen(false);
     });
-    on(els.mode1Btn, "click", () => applyMainMode("mode1"));
-    on(els.mode2Btn, "click", () => applyMainMode("mode2"));
-    on(els.mode3Btn, "click", () => applyMainMode("mode3"));
     registerAppShellEvents();
     on(els.rewardsInfoOpenBtn, "click", (e: any) => {
       e?.preventDefault?.();
@@ -2320,8 +2224,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         }
         return handleAppBackNavigation();
       },
-      persistInlineTaskSettingsImmediate,
-      applyAndPersistModeSettingsImmediate,
     });
     registerHistoryInlineEvents();
     registerHistoryManagerEvents();

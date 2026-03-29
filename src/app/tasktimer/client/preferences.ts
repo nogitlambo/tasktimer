@@ -3,8 +3,6 @@ import type { MainMode } from "./types";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
-  persistInlineTaskSettingsImmediate: () => void;
-  applyAndPersistModeSettingsImmediate: (opts?: { closeOverlay?: boolean }) => void;
 };
 
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
@@ -95,8 +93,65 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
   }
 
+  function buildCloudPreferencesSnapshot() {
+    const base = ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences();
+    return {
+      ...base,
+      schemaVersion: 1 as const,
+      theme: ctx.getThemeMode(),
+      menuButtonStyle: ctx.getMenuButtonStyle(),
+      defaultTaskTimerFormat: ctx.getDefaultTaskTimerFormat(),
+      taskView: ctx.getTaskView(),
+      autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
+      dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
+      checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
+      checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
+      modeSettings: {
+        mode1: { label: ctx.getModeLabels().mode1, enabled: true },
+        mode2: { label: ctx.getModeLabels().mode2, enabled: !!ctx.getModeEnabled().mode2 },
+        mode3: { label: ctx.getModeLabels().mode3, enabled: !!ctx.getModeEnabled().mode3 },
+      },
+      rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()),
+      updatedAtMs: Date.now(),
+    };
+  }
+
+  function persistPreferencesToLocalStorage(snapshot: ReturnType<typeof buildCloudPreferencesSnapshot>) {
+    try {
+      localStorage.setItem(ctx.storageKeys.THEME_KEY, String(snapshot.theme || "purple"));
+      localStorage.setItem(ctx.storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
+      localStorage.setItem(ctx.storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
+      localStorage.setItem(
+        ctx.storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+        snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false"
+      );
+      localStorage.setItem(
+        ctx.storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
+        String(snapshot.defaultTaskTimerFormat || "hour")
+      );
+      localStorage.setItem(ctx.storageKeys.MODE_SETTINGS_KEY, JSON.stringify(snapshot.modeSettings || null));
+    } catch {
+      // ignore localStorage write failures
+    }
+  }
+
+  function persistPreferencesToCloud() {
+    const snapshot = buildCloudPreferencesSnapshot();
+    persistPreferencesToLocalStorage(snapshot);
+    ctx.setCloudPreferencesCache(snapshot);
+    ctx.saveCloudPreferences(snapshot);
+    const uid = ctx.currentUid();
+    if (!uid) return;
+    const rewards = ctx.normalizeRewardProgress(ctx.getRewardProgress()) as { currentRankId?: string | null };
+    void ctx.syncOwnFriendshipProfile(uid, {
+      currentRankId: rewards.currentRankId,
+    }).catch(() => {
+      // Keep local/cloud preference persistence even if friendship profile sync fails.
+    });
+  }
+
   function saveModeSettings() {
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function loadModeLabels() {
@@ -132,9 +187,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setThemeModeState(mode);
     const body = document.body;
     body.setAttribute("data-theme", mode);
-    if (els.themeSelect && els.themeSelect.value !== mode) {
-      els.themeSelect.value = mode;
-    }
+    els.themePurpleBtn?.classList.toggle("isOn", mode === "purple");
+    els.themeCyanBtn?.classList.toggle("isOn", mode === "cyan");
+    els.themePurpleBtn?.setAttribute("aria-pressed", mode === "purple" ? "true" : "false");
+    els.themeCyanBtn?.setAttribute("aria-pressed", mode === "cyan" ? "true" : "false");
   }
 
   function applyTaskViewPreference(next: "list" | "tile") {
@@ -152,9 +208,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setMenuButtonStyleState(menuButtonStyle);
     const body = document.body;
     body.setAttribute("data-control-style", menuButtonStyle);
-    if (els.menuButtonStyleSelect && els.menuButtonStyleSelect.value !== menuButtonStyle) {
-      els.menuButtonStyleSelect.value = menuButtonStyle;
-    }
+    els.menuButtonStyleParallelogramBtn?.classList.toggle("isOn", menuButtonStyle === "parallelogram");
+    els.menuButtonStyleSquareBtn?.classList.toggle("isOn", menuButtonStyle === "square");
+    els.menuButtonStyleParallelogramBtn?.setAttribute(
+      "aria-pressed",
+      menuButtonStyle === "parallelogram" ? "true" : "false"
+    );
+    els.menuButtonStyleSquareBtn?.setAttribute("aria-pressed", menuButtonStyle === "square" ? "true" : "false");
   }
 
   function loadThemePreference() {
@@ -223,7 +283,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveDefaultTaskTimerFormat() {
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function saveTaskViewPreference() {
@@ -232,7 +292,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     } catch {
       // ignore localStorage write failures
     }
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function loadAutoFocusOnTaskLaunchSetting() {
@@ -266,7 +326,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     } catch {
       // ignore localStorage write failures
     }
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function toggleSwitchElement(el: HTMLElement | null | undefined, enabled: boolean) {
@@ -301,7 +361,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveDynamicColorsSetting() {
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function loadCheckpointAlertSettings() {
@@ -311,34 +371,100 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveCheckpointAlertSettings() {
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function setThemeMode(next: "purple" | "cyan") {
     applyTheme(next);
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
   }
 
   function setMenuButtonStyle(next: "parallelogram" | "square") {
     applyMenuButtonStyle(next);
-    ctx.persistPreferencesToCloud();
+    persistPreferencesToCloud();
+  }
+
+  function persistInlineTaskSettingsImmediate() {
+    saveDefaultTaskTimerFormat();
+    saveTaskViewPreference();
+    saveAutoFocusOnTaskLaunchSetting();
+    saveDynamicColorsSetting();
+    saveCheckpointAlertSettings();
+    ctx.render();
+  }
+
+  function applyAndPersistModeSettingsImmediate(opts?: { closeOverlay?: boolean }) {
+    ctx.setModeLabelsState({
+      mode1: sanitizeModeLabel(els.categoryMode1Input?.value, ctx.defaultModeLabels.mode1),
+      mode2: sanitizeModeLabel(els.categoryMode2Input?.value, ctx.defaultModeLabels.mode2),
+      mode3: sanitizeModeLabel(els.categoryMode3Input?.value, ctx.defaultModeLabels.mode3),
+    });
+    ctx.setModeEnabledState({ ...ctx.getModeEnabled(), mode1: true });
+    saveModeSettings();
+    syncModeLabelsUi();
+    ctx.saveDashboardWidgetState({
+      cardSizes: ctx.getDashboardCardSizeMapForStorage(),
+      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
+    });
+    if (!isModeEnabled(ctx.getCurrentMode())) applyMainMode("mode1");
+    else applyModeAccent(ctx.getCurrentMode());
+    if (!isModeEnabled(ctx.getEditMoveTargetMode())) ctx.setEditMoveTargetModeState("mode1");
+    if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(ctx.getEditMoveTargetMode());
+    if (opts?.closeOverlay) ctx.closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
+    else ctx.render();
+  }
+
+  function applyMainMode(mode: MainMode) {
+    const nextMode = isModeEnabled(mode) ? mode : "mode1";
+    ctx.setCurrentModeState(nextMode);
+    applyModeAccent(nextMode);
+    document.body.setAttribute("data-main-mode", nextMode);
+    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(nextMode);
+    els.mode1Btn?.classList.toggle("isOn", nextMode === "mode1");
+    els.mode2Btn?.classList.toggle("isOn", nextMode === "mode2");
+    els.mode3Btn?.classList.toggle("isOn", nextMode === "mode3");
+    els.mode1Btn?.setAttribute("aria-checked", String(nextMode === "mode1"));
+    els.mode2Btn?.setAttribute("aria-checked", String(nextMode === "mode2"));
+    els.mode3Btn?.setAttribute("aria-checked", String(nextMode === "mode3"));
+    if (els.modeSwitch && "open" in (els.modeSwitch as HTMLDetailsElement)) {
+      (els.modeSwitch as HTMLDetailsElement).open = false;
+    }
+    els.mode1View?.classList.toggle("modeViewOn", true);
+    els.mode2View?.classList.toggle("modeViewOn", nextMode === "mode2");
+    els.mode3View?.classList.toggle("modeViewOn", nextMode === "mode3");
+    ctx.render();
+  }
+
+  function deleteTasksInMode(mode: MainMode) {
+    const deletedTaskIds = (ctx.getTasks() || [])
+      .filter((task) => ctx.taskModeOf(task) === mode)
+      .map((task) => String(task.id || ""))
+      .filter(Boolean);
+    ctx.setTasks((ctx.getTasks() || []).filter((task) => ctx.taskModeOf(task) !== mode));
+    ctx.save({ deletedTaskIds });
+    ctx.render();
   }
 
   function registerPreferenceEvents(deps: PreferenceEventDeps) {
-    const { handleAppBackNavigation, persistInlineTaskSettingsImmediate, applyAndPersistModeSettingsImmediate } = deps;
+    const { handleAppBackNavigation } = deps;
 
+    ctx.on(els.mode1Btn, "click", () => applyMainMode("mode1"));
+    ctx.on(els.mode2Btn, "click", () => applyMainMode("mode2"));
+    ctx.on(els.mode3Btn, "click", () => applyMainMode("mode3"));
     ctx.on(els.closeMenuBtn, "click", () => {
       handleAppBackNavigation();
     });
-    ctx.on(els.themeSelect, "change", () => {
-      const raw = String(els.themeSelect?.value || "").trim().toLowerCase();
-      const next = normalizeThemeMode(raw);
-      setThemeMode(next);
+    ctx.on(els.themePurpleBtn, "click", () => {
+      setThemeMode("purple");
     });
-    ctx.on(els.menuButtonStyleSelect, "change", () => {
-      const raw = String(els.menuButtonStyleSelect?.value || "").trim().toLowerCase();
-      const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
-      setMenuButtonStyle(next);
+    ctx.on(els.themeCyanBtn, "click", () => {
+      setThemeMode("cyan");
+    });
+    ctx.on(els.menuButtonStyleParallelogramBtn, "click", () => {
+      setMenuButtonStyle("parallelogram");
+    });
+    ctx.on(els.menuButtonStyleSquareBtn, "click", () => {
+      setMenuButtonStyle("square");
     });
     ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
       ctx.setDefaultTaskTimerFormatState("hour");
@@ -439,8 +565,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
 
     const toggleCategoryEnabled = (mode: "mode2" | "mode3") => {
-      const nextModeEnabled = { ...ctx.getModeEnabled(), [mode]: !ctx.getModeEnabled()[mode] };
-      ctx.setModeEnabledState(nextModeEnabled);
+      ctx.setModeEnabledState({ ...ctx.getModeEnabled(), [mode]: !ctx.getModeEnabled()[mode] });
       syncModeLabelsUi();
       applyAndPersistModeSettingsImmediate();
     };
@@ -478,7 +603,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         okLabel: "Delete",
         textHtml: `<span class="confirmDanger">All tasks under the ${safeLabel} category will be deleted. Proceed?</span>`,
         onOk: () => {
-          ctx.deleteTasksInMode(mode);
+          deleteTasksInMode(mode);
           ctx.closeConfirm();
         },
       });
@@ -496,6 +621,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     isModeEnabled,
     syncModeLabelsUi,
     saveModeSettings,
+    buildCloudPreferencesSnapshot,
+    persistPreferencesToLocalStorage,
+    persistPreferencesToCloud,
     loadModeLabels,
     applyTheme,
     applyTaskViewPreference,
@@ -517,6 +645,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveCheckpointAlertSettings,
     setThemeMode,
     setMenuButtonStyle,
+    applyMainMode,
+    deleteTasksInMode,
     registerPreferenceEvents,
   };
 }
