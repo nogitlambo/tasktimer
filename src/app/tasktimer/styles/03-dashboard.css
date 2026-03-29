@@ -587,29 +587,12 @@
   display:grid;
   gap:14px;
 }
-.dashboardTimelineTrack{
-  position: relative;
-  min-height: 84px;
-  padding: 32px 0 20px;
-}
-.dashboardTimelineTrack::before{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  top:44px;
-  height:10px;
-  border:1px solid var(--dashboard-timeline-track-border);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)),
-    var(--dashboard-timeline-track-fill);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
 .dashboardTimelineTrackHours{
   display:grid;
-  grid-template-columns:repeat(7,minmax(0,1fr));
-  gap:0;
-  margin-bottom:8px;
+  grid-template-columns:minmax(112px, 148px) repeat(7,minmax(0,1fr));
+  gap:12px;
+  align-items:end;
+  margin-bottom:2px;
   color: var(--dashboard-timeline-time-color);
   font-family:var(--font-tight);
   font-size:10px;
@@ -617,22 +600,78 @@
   letter-spacing:.08em;
   text-transform:uppercase;
 }
+.dashboardTimelineTrackHoursSpacer{
+  display:block;
+  min-width:0;
+}
 .dashboardTimelineTrackHours > span:last-child{
   text-align:right;
 }
+.dashboardTimelineRows{
+  display:grid;
+  gap:10px;
+}
+.dashboardTimelineLane{
+  display:grid;
+  grid-template-columns:minmax(112px, 148px) minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+}
+.dashboardTimelineLaneInfo{
+  display:grid;
+  gap:4px;
+  align-content:center;
+  min-width:0;
+}
+.dashboardTimelineLaneTrack{
+  position:relative;
+  min-height:38px;
+  border-radius:999px;
+  isolation:isolate;
+}
+.dashboardTimelineLaneTrack::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  border:1px solid var(--dashboard-timeline-track-border);
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(117,231,255,.08) 0,
+      rgba(117,231,255,.08) 1px,
+      transparent 1px,
+      transparent calc(100% / 6)
+    ),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+    var(--dashboard-timeline-track-fill);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  pointer-events:none;
+  z-index:0;
+}
+.dashboardTimelineLane.isSelected .dashboardTimelineLaneTrack::before{
+  border-color: rgba(117,231,255,.34);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 0 0 1px rgba(117,231,255,.12),
+    0 0 18px rgba(53,232,255,.08);
+}
 .dashboardTimelineSegment{
   position:absolute;
-  top:45px;
+  top:50%;
   height:8px;
   min-width:10px;
   transform: translateY(-50%);
   border:1px solid rgba(255,255,255,.12);
   box-shadow: 0 0 14px rgba(0,0,0,.18);
+  z-index:1;
+  pointer-events:none;
 }
 .dashboardTimelineSegmentGoal{
-  top:45px;
-  height:12px;
-  transform: translateY(-50%);
+  height:14px;
   border-color: rgba(255,255,255,.08);
   box-shadow: none;
   opacity: .42;
@@ -651,7 +690,7 @@
 .dashboardTimelineSegmentGoalColor-5{ background: linear-gradient(90deg, rgba(123,241,255,.28), rgba(185,150,255,.28)); }
 .dashboardTimelineMarkerBtn{
   position:absolute;
-  top:48px;
+  top:50%;
   width:24px;
   height:24px;
   padding:0;
@@ -662,6 +701,7 @@
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  z-index:3;
 }
 .dashboardTimelineMarkerBtn.isSelected .dashboardTimelineMarker{
   background: rgba(255,255,255,.98);
@@ -679,38 +719,14 @@
   background: var(--dashboard-timeline-marker-color);
   box-shadow: 0 0 0 2px var(--dashboard-timeline-marker-shadow);
 }
-.dashboardTimelineItem{
-  position:absolute;
-  top:14px;
-  width:min(120px, 22vw);
-  min-width:84px;
-  display:grid;
-  grid-template-rows:auto auto;
-  gap:28px;
-  transform: translateX(-50%);
-}
-.dashboardTimelineTime{
-  font-size:10px;
-  color: var(--dashboard-timeline-time-color);
-  font-family:var(--font-tight);
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  text-align:center;
-  white-space:nowrap;
-}
-.dashboardTimelineMeta{
-  display:grid;
-  gap:4px;
-  text-align:center;
-  min-height:34px;
-}
 .dashboardTimelineLabel{
   margin:0;
   font-size:12px;
   line-height:1.2;
   color: var(--dashboard-timeline-copy-color);
-  word-break:break-word;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .dashboardTimelineDuration{
   font-size:10px;
@@ -1210,8 +1226,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimeline{
   gap: 12px;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineTrack{
-  min-height: 146px;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineRows{
+  gap: 12px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCalendarGrid{
   gap: 4px;
@@ -1486,8 +1502,24 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
   padding: 8px;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineTrack::before{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineLaneTrack::before{
   border-color: rgba(255,255,255,.08);
+}
+@media (max-width: 720px){
+  .dashboardTimelineTrackHours{
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:8px;
+  }
+  .dashboardTimelineTrackHoursSpacer{
+    display:none;
+  }
+  .dashboardTimelineLane{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  .dashboardTimelineLaneTrack{
+    min-height:34px;
+  }
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell{
   border-color: rgba(255,255,255,.08);

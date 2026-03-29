@@ -42,28 +42,12 @@ export default function FocusModeScreen() {
               </div>
             </div>
           </button>
-          <button
-            className="iconBtn"
-            id="focusResetBtn"
-            type="button"
-            title="Reset"
-            aria-label="Reset"
-          >
-            &#10227;
-          </button>
         </div>
       </div>
       <div className="focusCheckpointToggleTop">
         <div className="focusCheckpointToggleRow">
           <span>Show Checkpoint Markers</span>
           <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
-        </div>
-        <div className="focusCheckpointLog" id="focusCheckpointLog" aria-live="polite">
-          <div className="focusCheckpointLogTitle">Completed Checkpoints</div>
-          <div className="focusCheckpointLogEmpty" id="focusCheckpointLogEmpty">
-            No checkpoints completed yet
-          </div>
-          <div className="focusCheckpointLogList" id="focusCheckpointLogList" />
         </div>
         <details className="focusSessionNotes" id="focusSessionNotesSection">
           <summary className="focusSessionNotesSummary">

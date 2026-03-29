@@ -440,6 +440,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const running = !!task?.running;
     if (els.focusDialHint) els.focusDialHint.textContent = running ? "Tap to Stop" : "Tap to Launch";
     if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running;
+    if (els.focusDial) {
+      els.focusDial.classList.toggle("isRunning", running);
+      els.focusDial.classList.toggle("isStopped", !!task && !running);
+      els.focusDial.setAttribute("aria-pressed", running ? "true" : "false");
+    }
+  }
+
+  function syncFocusCheckpointToggleUi() {
+    if (!els.focusCheckpointToggle) return;
+    const on = !!ctx.getFocusShowCheckpoints();
+    els.focusCheckpointToggle.classList.toggle("on", on);
+    els.focusCheckpointToggle.setAttribute("aria-checked", on ? "true" : "false");
   }
 
   function formatSignedDelta(msRaw: number) {
@@ -565,6 +577,67 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     emptyEl.style.display = "none";
   }
 
+  function renderFocusCheckpointRing(task: Task, elapsedSec: number) {
+    const ringEl = els.focusCheckpointRing as HTMLElement | null;
+    if (!ringEl) return;
+    const showCheckpoints = !!ctx.getFocusShowCheckpoints();
+    const hasMilestones = !!task.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.length > 0;
+    if (!showCheckpoints || !hasMilestones) {
+      ringEl.innerHTML = "";
+      ctx.setFocusCheckpointSig("");
+      return;
+    }
+    const sortedMilestones = ctx.sortMilestones((task.milestones || []).slice()).filter((m) => (+m.hours || 0) > 0);
+    if (!sortedMilestones.length) {
+      ringEl.innerHTML = "";
+      ctx.setFocusCheckpointSig("");
+      return;
+    }
+
+    const milestoneUnitSec = sharedTasks.milestoneUnitSec(task);
+    const milestoneTargetsSec = sortedMilestones
+      .map((m) => Math.max(0, Math.round((+m.hours || 0) * milestoneUnitSec)))
+      .filter((value) => value > 0);
+    if (!milestoneTargetsSec.length) {
+      ringEl.innerHTML = "";
+      ctx.setFocusCheckpointSig("");
+      return;
+    }
+
+    const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Number(task.timeGoalMinutes || 0) * 60 : 0;
+    const maxTargetSec = Math.max(timeGoalSec, milestoneTargetsSec[milestoneTargetsSec.length - 1] || 0, 1);
+    const signature = [
+      String(task.id || ""),
+      showCheckpoints ? "on" : "off",
+      String(maxTargetSec),
+      ...sortedMilestones.map((m, idx) => {
+        const targetSec = milestoneTargetsSec[idx] || 0;
+        const reached = elapsedSec >= targetSec;
+        return `${targetSec}:${reached ? 1 : 0}:${String(m.description || "").trim()}`;
+      }),
+    ].join("|");
+    if (ctx.getFocusCheckpointSig() === signature) return;
+    ctx.setFocusCheckpointSig(signature);
+
+    const dialRadiusPx = Math.max(0, Math.min(220, ringEl.clientWidth / 2));
+    const markerRadiusPx = Math.max(0, dialRadiusPx - 4);
+    ringEl.innerHTML = sortedMilestones
+      .map((m, idx) => {
+        const targetSec = milestoneTargetsSec[idx] || 0;
+        const ratio = Math.max(0, Math.min(1, targetSec / maxTargetSec));
+        const angleDeg = -90 + ratio * 360;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const mx = Math.cos(angleRad) * markerRadiusPx;
+        const my = Math.sin(angleRad) * markerRadiusPx;
+        const reached = elapsedSec >= targetSec;
+        const title = formatCheckpointAlertText(task, m);
+        return `<span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
+          1
+        )}px;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>`;
+      })
+      .join("");
+  }
+
   function updateFocusDial(task: Task) {
     const elapsedMs = getElapsedMs(task);
     const elapsedSec = elapsedMs / 1000;
@@ -584,9 +657,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress", `${pct}%`);
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", ctx.fillBackgroundForPct(pct));
     }
-    if (els.focusCheckpointRing) {
-      (els.focusCheckpointRing as HTMLElement).innerHTML = "";
-    }
+    renderFocusCheckpointRing(task, elapsedSec);
     renderFocusCheckpointCompletionLog(task);
   }
 
@@ -600,13 +671,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.setFocusModeTaskName((task.name || "").trim());
     if (els.focusTaskName) els.focusTaskName.textContent = ctx.getFocusModeTaskName() || "Task";
     ctx.setFocusCheckpointSig("");
-    updateFocusDial(task);
-    syncFocusSessionNotesInput(String(task.id || ""));
-    syncFocusSessionNotesAccordion(String(task.id || ""));
+    syncFocusCheckpointToggleUi();
     if (els.focusModeScreen) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
+    updateFocusDial(task);
+    window.requestAnimationFrame(() => {
+      const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
+      if (!activeTaskId || activeTaskId !== String(task.id || "").trim()) return;
+      updateFocusDial(task);
+    });
+    syncFocusSessionNotesInput(String(task.id || ""));
+    syncFocusSessionNotesAccordion(String(task.id || ""));
   }
 
   function closeFocusMode() {
@@ -625,6 +702,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.setFocusModeTaskId(null);
     ctx.setFocusModeTaskName("");
     ctx.setFocusShowCheckpoints(true);
+    syncFocusCheckpointToggleUi();
     const timer = ctx.getFocusSessionNoteSaveTimer();
     if (timer != null) {
       window.clearTimeout(timer);
@@ -1081,6 +1159,21 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function registerSessionEvents() {
     ctx.on(els.focusModeBackBtn, "click", closeFocusMode);
+    ctx.on(els.focusCheckpointToggle, "click", () => {
+      const nextValue = !ctx.getFocusShowCheckpoints();
+      ctx.setFocusShowCheckpoints(nextValue);
+      if (els.focusCheckpointToggle) {
+        els.focusCheckpointToggle.classList.toggle("on", nextValue);
+        els.focusCheckpointToggle.setAttribute("aria-checked", nextValue ? "true" : "false");
+      }
+      const taskId = String(ctx.getFocusModeTaskId() || "").trim();
+      const task = taskId ? ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null : null;
+      if (task) updateFocusDial(task);
+      else if (els.focusCheckpointRing) {
+        (els.focusCheckpointRing as HTMLElement).innerHTML = "";
+        ctx.setFocusCheckpointSig("");
+      }
+    });
     ctx.on(els.focusDial, "click", () => {
       const taskId = String(ctx.getFocusModeTaskId() || "").trim();
       if (!taskId) return;

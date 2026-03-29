@@ -1039,12 +1039,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (qualifyingActivityDayCount < minimumActivityDays) {
       listEl.innerHTML = "";
       if (summaryEl) summaryEl.innerHTML = "";
-      if (noteEl) {
-        noteEl.textContent =
-          qualifyingActivityDayCount > 0
-            ? `Add activity on ${minimumActivityDays}+ days to unlock routine suggestions`
-            : `Log activity on ${minimumActivityDays}+ days to unlock routine suggestions`;
-      }
+      if (noteEl) noteEl.textContent = "";
       if (cardEl) {
         cardEl.setAttribute(
           "aria-description",
@@ -1060,12 +1055,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!items.length) {
       listEl.innerHTML = "";
       if (summaryEl) summaryEl.innerHTML = "";
-      if (noteEl) {
-        noteEl.textContent =
-          preferredBranchActivityDayCount > 0
-            ? `Recent ${showWeekendRoutine ? "weekend" : "weekday"} activity is too scattered to suggest a routine yet`
-            : `No recent ${showWeekendRoutine ? "weekend" : "weekday"} routine yet. Broader history is still too scattered to suggest a time window`;
-      }
+      if (noteEl) noteEl.textContent = "";
       if (cardEl) {
         cardEl.setAttribute(
           "aria-description",
@@ -1083,27 +1073,28 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (shouldHoldDashboardWidget("timeline", true)) return;
 
     const timelineHourLabels = ["12a", "4a", "8a", "12p", "4p", "8p", "12a"];
-    listEl.innerHTML = `
-      <div class="dashboardTimelineTrackHours" aria-hidden="true">
-        ${timelineHourLabels.map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("")}
-      </div>
-      <div class="dashboardTimelineTrack">
-        ${items
-          .map((item) => {
-            const timeText = getTimelineSegmentRangeLabel(item.segmentStartMinute, item.segmentEndMinute);
-            const durationText = item.displayDurationText;
-            const markerLeftPct = Math.max(0, Math.min(100, (item.suggestedMinute / 1440) * 100));
-            const segmentStartPct = Math.max(0, Math.min(100, (item.segmentStartMinute / 1440) * 100));
-            const segmentEndPct = Math.max(segmentStartPct, Math.min(100, (item.segmentEndMinute / 1440) * 100));
-            const goalStartPct =
-              item.goalStartMinute == null ? null : Math.max(0, Math.min(100, (item.goalStartMinute / 1440) * 100));
-            const goalEndPct =
-              item.goalEndMinute == null ? null : Math.max(goalStartPct || 0, Math.min(100, (item.goalEndMinute / 1440) * 100));
-            const summaryText = `${item.taskName} around ${timeText}. Typical duration ${durationText}. Seen in this time window on ${
-              item.windowDistinctDays
-            } day${item.windowDistinctDays === 1 ? "" : "s"} in the last 30 days.`;
-            const isSelected = item.selectionKey === selectedTimelineSuggestionKey;
-            return `
+    const laneHtml = items
+      .map((item) => {
+        const timeText = getTimelineSegmentRangeLabel(item.segmentStartMinute, item.segmentEndMinute);
+        const durationText = item.displayDurationText;
+        const markerLeftPct = Math.max(0, Math.min(100, (item.suggestedMinute / 1440) * 100));
+        const segmentStartPct = Math.max(0, Math.min(100, (item.segmentStartMinute / 1440) * 100));
+        const segmentEndPct = Math.max(segmentStartPct, Math.min(100, (item.segmentEndMinute / 1440) * 100));
+        const goalStartPct =
+          item.goalStartMinute == null ? null : Math.max(0, Math.min(100, (item.goalStartMinute / 1440) * 100));
+        const goalEndPct =
+          item.goalEndMinute == null ? null : Math.max(goalStartPct || 0, Math.min(100, (item.goalEndMinute / 1440) * 100));
+        const summaryText = `${item.taskName} around ${timeText}. Typical duration ${durationText}. Seen in this time window on ${
+          item.windowDistinctDays
+        } day${item.windowDistinctDays === 1 ? "" : "s"} in the last 30 days.`;
+        const isSelected = item.selectionKey === selectedTimelineSuggestionKey;
+        return `
+          <div class="dashboardTimelineLane${isSelected ? " isSelected" : ""}">
+            <div class="dashboardTimelineLaneInfo">
+              <p class="dashboardTimelineLabel">${ctx.escapeHtmlUI(item.taskName)}</p>
+              <span class="dashboardTimelineDuration">${ctx.escapeHtmlUI(durationText)}</span>
+            </div>
+            <div class="dashboardTimelineLaneTrack">
               ${
                 goalStartPct != null && goalEndPct != null
                   ? `<span class="dashboardTimelineSegment dashboardTimelineSegmentGoal dashboardTimelineSegmentGoalColor-${item.colorIndex}" style="left:${goalStartPct.toFixed(
@@ -1121,21 +1112,22 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
                 style="left:${markerLeftPct.toFixed(2)}%;"
                 aria-label="${ctx.escapeHtmlUI(summaryText)}"
                 aria-pressed="${isSelected ? "true" : "false"}"
+                title="${ctx.escapeHtmlUI(summaryText)}"
               >
                 <span class="dashboardTimelineMarker" aria-hidden="true"></span>
               </button>
-              <div class="dashboardTimelineItem" style="left:${markerLeftPct.toFixed(
-                2
-              )}%;" aria-label="${ctx.escapeHtmlUI(summaryText)}">
-                <span class="dashboardTimelineTime">${ctx.escapeHtmlUI(timeText)}</span>
-                <div class="dashboardTimelineMeta">
-                  <p class="dashboardTimelineLabel">${ctx.escapeHtmlUI(item.taskName)}</p>
-                  <span class="dashboardTimelineDuration">${ctx.escapeHtmlUI(durationText)}</span>
-                </div>
-              </div>
-            `;
-          })
-          .join("")}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+    listEl.innerHTML = `
+      <div class="dashboardTimelineTrackHours" aria-hidden="true">
+        <span class="dashboardTimelineTrackHoursSpacer"></span>
+        ${timelineHourLabels.map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("")}
+      </div>
+      <div class="dashboardTimelineRows" role="list" aria-label="Suggested task timeline lanes">
+        ${laneHtml}
       </div>
     `;
     if (summaryEl) {
@@ -1156,11 +1148,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         `;
       }
     }
-    if (noteEl) {
-      noteEl.textContent = usingFallbackItems
-        ? `${items.length} task marker${items.length === 1 ? "" : "s"} arranged from your last 30 days of activity`
-        : `${items.length} ${showWeekendRoutine ? "weekend" : "weekday"} task marker${items.length === 1 ? "" : "s"} across your day`;
-    }
+    if (noteEl) noteEl.textContent = "";
     if (cardEl) {
       cardEl.setAttribute(
         "aria-description",

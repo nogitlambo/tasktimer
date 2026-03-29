@@ -452,8 +452,15 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .unitBtn.small{
-  padding:6px 9px;
+  width:34px;
+  min-width:34px;
+  height:34px;
+  padding:0;
   font-size:11px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  aspect-ratio:1 / 1;
 }
 
 #editOverlay .row3{
@@ -1155,10 +1162,11 @@ body[data-theme="purple"] .rankLadderItemFlag{
   z-index: 1;
 }
 
-#addTaskOverlay .addTaskDurationPills .unitBtn.small,
 #editOverlay .addTaskDurationPills .unitBtn.small{
-  min-width: 86px;
-  padding: 6px 10px;
+  min-width: 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   text-align:center;
   position: relative;
   z-index: 1;
