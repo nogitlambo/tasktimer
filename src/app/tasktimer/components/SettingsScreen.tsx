@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import AppImg from "@/components/AppImg";
 import SettingsPanel, { type SettingsPaneKey } from "./SettingsPanel";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
@@ -9,7 +10,7 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
     <div className="wrap" id="app" aria-label="TaskLaunch Settings">
       <div className="topbar" aria-label="TaskLaunch header">
         <div className="brand">
-          <img className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
+          <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
         <SignedInHeaderBadge />
       </div>

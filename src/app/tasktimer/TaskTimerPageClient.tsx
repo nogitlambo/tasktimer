@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import AppImg from "@/components/AppImg";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
@@ -29,7 +30,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
       <div className="wrap" id="app" aria-label="TaskLaunch App">
         <div className="topbar">
           <div className="brand">
-            <img className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
+            <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
           </div>
 
           <SignedInHeaderBadge />
@@ -515,16 +516,16 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
             </button>
           </div>
           <div className="chkRow" id="friendProfileIdentityRow">
-            <img id="friendProfileAvatar" src="/avatars/initials/initials-AN.svg" alt="" aria-hidden="true" />
+            <AppImg id="friendProfileAvatar" src="/avatars/initials/initials-AN.svg" alt="" aria-hidden="true" />
             <div className="friendProfileIdentityText">
               <div id="friendProfileName">Friend</div>
               <div id="friendProfileMemberSince">Member since --</div>
             </div>
           </div>
           <div className="modalSubtext">
-            <img
+            <AppImg
               id="friendProfileRankImage"
-              src={undefined}
+              src=""
               alt="Rank insignia"
               style={{ display: "none", width: 72, height: 72, objectFit: "contain", borderRadius: 10, marginBottom: 10 }}
             />

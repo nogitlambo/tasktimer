@@ -1,12 +1,14 @@
 ﻿import React from "react";
 
+import AppImg from "@/components/AppImg";
+
 export default function InfoOverlays() {
   return (
     <>
       <div className="overlay" id="aboutOverlay">
         <div className="modal" role="dialog" aria-modal="true" aria-label="About">
           <div className="aboutHead">
-            <img className="aboutLogo" alt="Timebase logo" src="/timebase-logo.svg" />
+            <AppImg className="aboutLogo" alt="Timebase logo" src="/timebase-logo.svg" />
             <div>
               <h2 className="aboutTitle">Timebase</h2>
               <div className="aboutKicker">Focused time tracking with progress and history</div>

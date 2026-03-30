@@ -113,6 +113,8 @@
 - If editing UI labels in JSX, avoid raw `<` or `>` characters in text nodes.
 - Keep TypeScript/React code compatible with Next.js 16 App Router conventions.
 - For route generation in Next.js dev/web, do not force `/index.html` URLs; only use exported `index.html` pathing for true file/native export runtime.
+- For UI images, prefer `src/components/AppImg.tsx` by default. TaskTimer has several CSS- and ID-driven image hooks, so `AppImg` preserves native `img` behavior while keeping lint clean.
+- Only use raw `<img>` when there is a deliberate reason, and include a local lint suppression with a short justification at that exact site.
 
 ## Validation
 - After edits, check for:

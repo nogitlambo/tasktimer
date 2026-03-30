@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
@@ -69,14 +70,14 @@ function isSettingsPaneKey(value: string): value is SettingsPaneKey {
   return SETTINGS_PANE_KEYS.includes(value as SettingsPaneKey);
 }
 
-function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
-  return (
-    <>
-      <img className="settingsMenuItemIcon" src={icon} alt="" aria-hidden="true" />
-      <span className="settingsMenuItemText">{label}</span>
-    </>
-  );
-}
+function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
+  return (
+    <>
+      <AppImg className="settingsMenuItemIcon" src={icon} alt="" aria-hidden="true" />
+      <span className="settingsMenuItemText">{label}</span>
+    </>
+  );
+}
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
@@ -184,7 +185,7 @@ function SettingsNavTile({
       aria-pressed={active}
       onClick={onClick}
     >
-      <img className="settingsMenuItemIcon settingsNavItemIcon" src={icon} alt="" aria-hidden="true" />
+      <AppImg className="settingsMenuItemIcon settingsNavItemIcon" src={icon} alt="" aria-hidden="true" />
       <span className="settingsNavRowText">{label}</span>
     </button>
   );
@@ -246,6 +247,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const [showAvatarPickerModal, setShowAvatarPickerModal] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const hasInitializedPaneRef = useRef(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>(() => AVATAR_CATALOG.slice());
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(AVATAR_CATALOG[0]?.id || "");
   const [avatarSyncNotice, setAvatarSyncNotice] = useState("");
@@ -330,7 +332,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   }, [avatarOptions]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || hasInitializedPaneRef.current) return;
+    hasInitializedPaneRef.current = true;
     const queryPaneRaw = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
     const requestedPane = isSettingsPaneKey(queryPaneRaw) ? queryPaneRaw : initialPane;
     if (requestedPane) {
@@ -338,11 +341,11 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       setMobileDetailOpen(true);
       return;
     }
-    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
-    if (!isMobileViewport) {
-      setActivePane((prev) => prev ?? "general");
-    }
-  }, []);
+    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
+    if (!isMobileViewport) {
+      setActivePane((prev) => prev ?? "general");
+    }
+  }, [initialPane]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -1094,11 +1097,11 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                         >
                           <div className="accountAvatarPlaceholder">
                             {selectedAvatar ? (
-                              <img
-                                className="accountAvatarImage"
-                                src={selectedAvatar.src}
-                                alt={`${selectedAvatar.label} avatar`}
-                              />
+                              <AppImg
+                                className="accountAvatarImage"
+                                src={selectedAvatar.src}
+                                alt={`${selectedAvatar.label} avatar`}
+                              />
                             ) : (
                               <div className="accountAvatarPlaceholderInner" />
                             )}
@@ -1444,7 +1447,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                               aria-pressed={selectedAvatarId === avatar.id}
                               title={avatar.label}
                             >
-                              <img src={avatar.src} alt={avatar.label} className="settingsAvatarOptionImg" />
+                              <AppImg src={avatar.src} alt={avatar.label} className="settingsAvatarOptionImg" />
                               <span className="settingsAvatarOptionLabel">{avatar.label}</span>
                               {selectedAvatarId === avatar.id ? (
                                 <span className="settingsAvatarOptionSelected" aria-hidden="true">
@@ -1490,7 +1493,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Task Settings</div>
                 </div>
                 <div className="unitRow">
@@ -1537,7 +1540,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
 
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Configure Categories</div>
                 </div>
                 <div className="field categoryFieldRow">
@@ -1597,7 +1600,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Appearance</div>
                 </div>
                 <div className="unitRow" id="themeToggleRow">
@@ -1654,7 +1657,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Checkpoint Alerts</div>
                 </div>
                 <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
@@ -1759,7 +1762,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Feedback.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Feedback.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Feedback Form</div>
                 </div>
 
@@ -1840,7 +1843,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             <div className="settingsInlineStack settingsDataListStack">
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/History_Manager.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/History_Manager.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">History</div>
                 </div>
                 <button className="menuItem settingsNavTile settingsDataListItem" data-menu="historyManager" id="historyManagerBtn" type="button">
@@ -1849,7 +1852,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
               </section>
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Export.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Export.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Import/Export</div>
                 </div>
                 <button className="menuItem settingsNavTile settingsDataListItem" id="exportBtn" type="button">
@@ -1861,7 +1864,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
               </section>
               <section className="settingsInlineSection">
                 <div className="settingsInlineSectionHead">
-                  <img className="settingsInlineSectionIcon" src="/Reset.svg" alt="" aria-hidden="true" />
+                  <AppImg className="settingsInlineSectionIcon" src="/Reset.svg" alt="" aria-hidden="true" />
                   <div className="settingsInlineSectionTitle">Reset</div>
                 </div>
                 <button className="menuItem settingsNavTile settingsDataListItem settingsDataListItemDanger" id="resetAllBtn" type="button">

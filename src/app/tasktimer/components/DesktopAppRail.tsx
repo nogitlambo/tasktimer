@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
@@ -198,7 +199,7 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   if (useClientNavButtons && item.page !== "settings") {
     return (
       <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button">
-        <img
+        <AppImg
           className="dashboardRailMenuIconImage"
           src={item.iconSrc}
           alt=""
@@ -211,7 +212,7 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
 
   return (
     <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href}>
-      <img
+      <AppImg
         className="dashboardRailMenuIconImage"
         src={item.iconSrc}
         alt=""
@@ -231,7 +232,7 @@ function renderDesktopLinkItem(item: DesktopLinkItem) {
       href={item.href}
       aria-label={item.ariaLabel}
     >
-      <img className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
+      <AppImg className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
       <span className="dashboardRailMenuLabel">{item.label}</span>
     </a>
   );
@@ -255,7 +256,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   if (useClientNavButtons && item.page !== "settings") {
     return (
       <button key={item.mobileId} {...commonProps} id={item.mobileId} type="button">
-        <img
+        <AppImg
           className="appFooterIconImage"
           src={item.iconSrc}
           alt=""
@@ -277,7 +278,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
 
   return (
     <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href}>
-      <img
+      <AppImg
         className="appFooterIconImage"
         src={item.iconSrc}
         alt=""
@@ -472,7 +473,7 @@ export default function DesktopAppRail({
           >
             <div className="dashboardProfileHead dashboardRailProfileHead">
               {profileAvatarSrc ? (
-                <img className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
               ) : (
                 <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
               )}

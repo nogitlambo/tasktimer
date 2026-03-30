@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import AppImg from "@/components/AppImg";
 import PrivacyBackButton from "./PrivacyBackButton";
 
 const EFFECTIVE_DATE = "March 20, 2026";
@@ -64,7 +65,7 @@ export default function PrivacyPolicyPage() {
               <p className="mt-1 text-[0.76rem] leading-5 text-white/72 sm:text-[0.82rem]">Effective date: {EFFECTIVE_DATE}</p>
             </div>
             <div className="pointer-events-none absolute right-0 top-0 flex h-[22px] w-[120px] items-start justify-end sm:h-[26px] sm:w-[140px]">
-              <img className="block h-full w-full object-contain object-right opacity-90" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
+              <AppImg className="block h-full w-full object-contain object-right opacity-90" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
             </div>
           </div>
 
