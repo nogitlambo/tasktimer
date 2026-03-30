@@ -225,6 +225,8 @@ Allowed fields (`isTaskDoc`):
 - `presetIntervalLastCheckpointId: string | null`
 - `presetIntervalLastMilestoneId: string | null`
 - `presetIntervalNextSeq: int`
+- `plannedStartTime: string | null`
+- `plannedStartOpenEnded: bool`
 - `mode: "mode1" | "mode2" | "mode3"`
 - `createdAt: timestamp`
 - `updatedAt: timestamp`

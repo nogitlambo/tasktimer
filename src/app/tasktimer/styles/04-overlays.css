@@ -1090,6 +1090,43 @@ body[data-theme="purple"] .rankLadderItemFlag{
   color: rgba(226,246,255,.9);
 }
 
+#addTaskOverlay .addTaskPlannedStartSection{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+#addTaskOverlay #addTaskPlannedStartInput{
+  width: 100%;
+}
+
+#addTaskOverlay #addTaskPlannedStartInput.isDisabled,
+#addTaskOverlay #addTaskPlannedStartInput:disabled{
+  opacity: .48;
+  color: rgba(168,184,196,.72);
+  background: rgba(36,44,54,.58);
+  border-color: rgba(118,132,148,.24);
+}
+
+#addTaskOverlay .addTaskPlannedStartCheckboxRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color: rgba(221,236,246,.92);
+  font-size: 13px;
+}
+
+#addTaskOverlay .addTaskPlannedStartCheckboxRow input[type="checkbox"]{
+  margin:0;
+}
+
+#addTaskOverlay .addTaskPlannedStartHelp{
+  margin:0;
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(188,214,230,.76);
+}
+
 #addTaskOverlay .addTaskWizardFooter{
   margin-top: 6px;
   gap: 8px;
@@ -1114,6 +1151,14 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #addTaskOverlay .addTaskNameCombo > input{
   width: 100%;
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: rgba(226,246,255,.9);
+}
+
+#addTaskOverlay .addTaskNameCombo > input::placeholder{
+  color: rgba(226,246,255,.9);
+  opacity: 1;
 }
 
 #addTaskOverlay .addTaskNameToggle{

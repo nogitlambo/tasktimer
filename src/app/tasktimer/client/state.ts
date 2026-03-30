@@ -110,6 +110,8 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     timeGoalModalFrozenElapsedMs: 0,
     timeGoalReminderAtMsByTaskId: {},
     addTaskWizardStep: 1,
+    addTaskPlannedStartTime: "09:00",
+    addTaskPlannedStartOpenEnded: false,
     addTaskDurationValue: 5,
     addTaskDurationUnit: "hour",
     addTaskDurationPeriod: "week",

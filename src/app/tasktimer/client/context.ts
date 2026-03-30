@@ -47,6 +47,9 @@ export type TaskTimerConfirmOptions = {
   checkboxNote?: string;
   checkbox2Label?: string | null;
   checkbox2Checked?: boolean;
+  dangerInputLabel?: string;
+  dangerInputMatch?: string | null;
+  dangerInputPlaceholder?: string;
   textHtml?: string;
   onOk?: (() => void) | null;
   onAlt?: (() => void) | null;
@@ -486,8 +489,12 @@ export type TaskTimerAddTaskContext = {
   getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
-  getAddTaskWizardStep: () => 1 | 2 | 3;
-  setAddTaskWizardStepState: (value: 1 | 2 | 3) => void;
+  getAddTaskWizardStep: () => 1 | 2 | 3 | 4;
+  setAddTaskWizardStepState: (value: 1 | 2 | 3 | 4) => void;
+  getAddTaskPlannedStartTime: () => string;
+  setAddTaskPlannedStartTimeState: (value: string) => void;
+  getAddTaskPlannedStartOpenEnded: () => boolean;
+  setAddTaskPlannedStartOpenEndedState: (value: boolean) => void;
   getAddTaskDurationValue: () => number;
   setAddTaskDurationValueState: (value: number) => void;
   getAddTaskDurationUnit: () => "minute" | "hour";
@@ -777,6 +784,7 @@ export type TaskTimerHistoryManagerContext = {
   on: TaskTimerRuntime["on"];
   runtime: TaskTimerRuntime;
   getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
@@ -808,6 +816,7 @@ export type TaskTimerHistoryManagerContext = {
   formatDateTime: (value: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  save: (opts?: { deletedTaskIds?: string[] }) => void;
   saveHistory: (history: HistoryByTaskId) => void;
   saveHistoryAndWait: (history: HistoryByTaskId) => Promise<void>;
   loadHistory: () => HistoryByTaskId;

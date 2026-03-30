@@ -6,16 +6,9 @@ export default function HistoryManagerScreen() {
       <div className="hmHead">
         <div className="hmTitle">History Manager</div>
         <div className="hmHeadActions">
-          <button className="btn btn-ghost small" id="historyManagerExportBtn" type="button">
-            Export CSV
-          </button>
-          <button className="btn btn-ghost small" id="historyManagerImportBtn" type="button">
-            Import CSV
-          </button>
           <button className="btn btn-ghost small" id="historyManagerGenerateBtn" type="button">
             Generate Test Data
           </button>
-          <input id="historyManagerImportFile" type="file" accept=".csv,text/csv" style={{ display: "none" }} />
           <button className="btn btn-ghost small" id="historyManagerBulkBtn" type="button">
             Bulk Edit
           </button>

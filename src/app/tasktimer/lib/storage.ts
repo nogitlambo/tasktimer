@@ -886,25 +886,36 @@ type SaveHistoryOptions = {
   showIndicator?: boolean;
 };
 
-export function saveHistoryLocally(historyByTaskId: HistoryByTaskId): void {
+function getTouchedHistoryTaskIds(
+  prevHistory: HistoryByTaskId | null | undefined,
+  nextHistory: HistoryByTaskId | null | undefined
+): string[] {
+  const prev = prevHistory || {};
+  const next = nextHistory || {};
+  return Array.from(new Set([...Object.keys(prev), ...Object.keys(next)].filter(Boolean))).filter((taskId) => {
+    return historyRowsSignature(prev[taskId] || []) !== historyRowsSignature(next[taskId] || []);
+  });
+}
+
+export function saveHistoryLocally(historyByTaskId: HistoryByTaskId): string[] {
   const prevHistory = cachedHistory || {};
-  cachedHistory = historyByTaskId || {};
+  const nextHistory = historyByTaskId || {};
+  const touchedTaskIds = getTouchedHistoryTaskIds(prevHistory, nextHistory);
+  cachedHistory = nextHistory;
   saveShadowHistory(cachedHistory);
-  const touchedTaskIds = Array.from(
-    new Set([...Object.keys(prevHistory || {}), ...Object.keys(cachedHistory || {})].filter(Boolean))
-  );
   markPendingHistorySync(touchedTaskIds);
+  return touchedTaskIds;
 }
 
 export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): void {
-  saveHistoryLocally(historyByTaskId);
+  const touchedTaskIds = saveHistoryLocally(historyByTaskId);
   const uid = currentUid();
   if (!uid) return;
-  const entries = Object.entries(cachedHistory || {});
+  if (!touchedTaskIds.length) return;
   void runHistorySave(() =>
     Promise.all(
-      entries.map(([taskId, rows]) =>
-        replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
+      touchedTaskIds.map((taskId) =>
+        replaceTaskHistory(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [])
           .catch(() => {
             // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
           })
@@ -934,14 +945,14 @@ export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
 }
 
 export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?: SaveHistoryOptions): Promise<void> {
-  saveHistoryLocally(historyByTaskId);
+  const touchedTaskIds = saveHistoryLocally(historyByTaskId);
   const uid = currentUid();
   if (!uid) return;
-  const entries = Object.entries(cachedHistory || {});
+  if (!touchedTaskIds.length) return;
   await runHistorySave(() =>
     Promise.all(
-      entries.map(([taskId, rows]) =>
-        replaceTaskHistory(uid, taskId, Array.isArray(rows) ? rows : [])
+      touchedTaskIds.map((taskId) =>
+        replaceTaskHistory(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [])
           .catch(() => {
             // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
           })

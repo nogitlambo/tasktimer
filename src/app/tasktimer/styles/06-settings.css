@@ -2501,10 +2501,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsInlineSection{
   gap:8px;
+  align-items:flex-start;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem{
   min-height:46px;
-  width:100%;
+  width:min(100%, 252px);
+  max-width:252px;
   min-width:0;
   display:flex;
   align-items:center;
@@ -2516,7 +2518,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
   box-shadow:none !important;
   border-radius:0 !important;
   clip-path:none !important;
-  padding:10px 0 !important;
+  padding:10px 14px !important;
+  margin:0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem .settingsMenuItemIcon{
   display:none !important;
@@ -2528,9 +2531,13 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
   letter-spacing:.04em;
   text-transform:none;
   color: rgba(228,248,255,.94);
+  display:flex;
+  align-items:center;
   min-width:0;
   width:100%;
+  min-height:24px;
   text-align:left;
+  transform:translateY(-1px);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:focus-visible{
@@ -2580,6 +2587,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataLi
   background-image: none !important;
   box-shadow: none !important;
 }
+@media (max-width: 900px){
+  #app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsInlineSection{
+    align-items:stretch;
+  }
+  #app[aria-label="TaskLaunch Settings"] .settingsDataListItem{
+    width:100%;
+    max-width:none;
+  }
+}
 /* Final Settings nav hover override: use border accent only, no glass fill. */
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
@@ -2605,6 +2621,13 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
   border-color: rgba(255,120,134,.72) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+/* Final Settings menu hover cleanup: keep hover border-only in all themes. */
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem:focus-visible{
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;

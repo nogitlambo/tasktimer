@@ -23,6 +23,19 @@ export default function ConfirmOverlay() {
           </label>
         </div>
 
+        <div className="confirmDangerInputRow" id="confirmDangerInputRow" style={{ display: "none" }}>
+          <label className="confirmDangerInputLabel" htmlFor="confirmDangerInput" id="confirmDangerInputLabel" />
+          <input
+            className="confirmDangerInput"
+            id="confirmDangerInput"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            placeholder="DELETE"
+          />
+        </div>
+
         <div className="confirmBtns">
           <button className="btn btn-ghost" id="confirmCancelBtn" type="button">
             Cancel

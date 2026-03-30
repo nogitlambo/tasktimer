@@ -366,69 +366,64 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function resetAll() {
     const tasks = ctx.getTasks();
-    const eligibleTasks = tasks.filter((t) => ctx.canLogSession(t));
-    ctx.confirm("Reset All", "Reset all timers?", {
-      okLabel: "Reset",
-      checkboxLabel: "Also delete all tasks",
-      checkboxChecked: false,
-      checkbox2Label: eligibleTasks.length ? "Log eligible sessions to History" : null,
-      checkbox2Checked: eligibleTasks.length ? true : false,
-      onOk: () => {
-        const alsoDelete = !!els.confirmDeleteAll?.checked;
-        const doLog = eligibleTasks.length ? !!(els as any).confirmLogChk?.checked : false;
-        const affectedTaskIds = tasks.map((row) => String(row.id || "")).filter(Boolean);
-        const uid = String(ctx.currentUid() || "");
-        const deletedTaskCount = alsoDelete ? tasks.length : 0;
-        if (doLog) {
-          eligibleTasks.forEach((t) => {
-            const ms = ctx.getTaskElapsedMs(t);
-            if (ms > 0) ctx.appendCompletedSessionHistory(t, Date.now(), ms, ctx.captureResetActionSessionNote(String(t.id || "")));
-          });
-        }
-        if (alsoDelete) {
+    ctx.confirm(
+      "Delete Data",
+      "This will permanently delete all task history and tasks (if selected below) from your account.",
+      {
+        okLabel: "Delete",
+        checkboxLabel: "Also Delete All Tasks",
+        checkboxChecked: false,
+        dangerInputLabel: "",
+        dangerInputMatch: "DELETE",
+        dangerInputPlaceholder: "Enter 'DELETE' to proceed.",
+        onOk: () => {
+          const alsoDelete = !!els.confirmDeleteAll?.checked;
+          const affectedTaskIds = tasks.map((row) => String(row.id || "")).filter(Boolean);
+          const uid = String(ctx.currentUid() || "");
           const historyByTaskId = ctx.getHistoryByTaskId();
           const deletedHistoryEntryCount = Object.values(historyByTaskId || {}).reduce(
             (sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0),
             0
           );
-          ctx.setTasks([]);
-          const nextHistory = {};
-          ctx.setHistoryByTaskId(nextHistory as any);
-          ctx.saveHistory(nextHistory as any);
+          const deletedTaskCount = alsoDelete ? tasks.length : 0;
+          const nextHistory = {} as any;
           const nextDeletedTaskMeta = {} as DeletedTaskMeta;
+          ctx.setHistoryByTaskId(nextHistory);
+          ctx.saveHistory(nextHistory);
           ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
           ctx.saveDeletedMeta(nextDeletedTaskMeta);
-          ctx.save();
-          if (uid && affectedTaskIds.length) {
-            void Promise.all(affectedTaskIds.map((taskId) => ctx.deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
-              .then(() => ctx.refreshOwnSharedSummaries())
-              .catch(() => {});
+          if (alsoDelete) {
+            ctx.setTasks([]);
+            ctx.save();
+            if (uid && affectedTaskIds.length) {
+              void Promise.all(affectedTaskIds.map((taskId) => ctx.deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
+                .then(() => ctx.refreshOwnSharedSummaries())
+                .catch(() => {});
+            }
+            ctx.render();
+            ctx.closeConfirm();
+            ctx.confirm(
+              "Delete Complete",
+              `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
+                deletedHistoryEntryCount === 1 ? "y" : "ies"
+              } deleted.`,
+              { okLabel: "Close", cancelLabel: "Done", onOk: () => ctx.closeConfirm(), onCancel: () => ctx.closeConfirm() }
+            );
+            return;
           }
+          ctx.save();
+          if (affectedTaskIds.length) void ctx.syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
           ctx.render();
           ctx.closeConfirm();
           ctx.confirm(
-            "Reset Complete",
-            `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
-              deletedHistoryEntryCount === 1 ? "y" : "ies"
-            } deleted.`,
+            "Delete Complete",
+            `${deletedHistoryEntryCount} history entr${deletedHistoryEntryCount === 1 ? "y" : "ies"} deleted.`,
             { okLabel: "Close", cancelLabel: "Done", onOk: () => ctx.closeConfirm(), onCancel: () => ctx.closeConfirm() }
           );
-          return;
-        }
-        tasks.forEach((t) => {
-          t.accumulatedMs = 0;
-          t.running = false;
-          t.startMs = null;
-          t.hasStarted = false;
-          t.xpDisqualifiedUntilReset = false;
-          ctx.resetCheckpointAlertTracking(t.id);
-        });
-        ctx.save();
-        if (affectedTaskIds.length) void ctx.syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
-        ctx.render();
-        ctx.closeConfirm();
-      },
-    });
+        },
+      }
+    );
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetAllDeleteConfirm");
   }
 
   function nextDuplicateName(originalName: string) {

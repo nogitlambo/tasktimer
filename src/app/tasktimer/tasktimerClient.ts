@@ -183,6 +183,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let timeGoalCompleteDurationUnit: "minute" | "hour" = "hour";
   let timeGoalCompleteDurationPeriod: "day" | "week" = "day";
   let addTaskWizardStep = initialState.addTaskWizardStep;
+  let addTaskPlannedStartTime = initialState.addTaskPlannedStartTime;
+  let addTaskPlannedStartOpenEnded = initialState.addTaskPlannedStartOpenEnded;
   let addTaskDurationValue = initialState.addTaskDurationValue;
   let addTaskDurationUnit = initialState.addTaskDurationUnit;
   let addTaskDurationPeriod = initialState.addTaskDurationPeriod;
@@ -944,6 +946,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setAddTaskWizardStepState: (value) => {
       addTaskWizardStep = value;
     },
+    getAddTaskPlannedStartTime: () => addTaskPlannedStartTime,
+    setAddTaskPlannedStartTimeState: (value) => {
+      addTaskPlannedStartTime = value;
+    },
+    getAddTaskPlannedStartOpenEnded: () => addTaskPlannedStartOpenEnded,
+    setAddTaskPlannedStartOpenEndedState: (value) => {
+      addTaskPlannedStartOpenEnded = value;
+    },
     getAddTaskDurationValue: () => addTaskDurationValue,
     setAddTaskDurationValueState: (value) => {
       addTaskDurationValue = value;
@@ -1547,26 +1557,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       onOk: () => {
         clearDeleteTaskConfirmState();
         const deleteHistory = !!els.confirmDeleteAll?.checked;
+        const taskId = String(t.id || "");
+        const hasTaskHistory = !!(
+          taskId &&
+          historyByTaskId &&
+          Array.isArray(historyByTaskId[taskId]) &&
+          historyByTaskId[taskId].length > 0
+        );
+        const hasDeletedTaskMeta = !!(taskId && deletedTaskMeta && (deletedTaskMeta as any)[taskId]);
 
         tasks.splice(i, 1);
 
         if (deleteHistory) {
-          if (historyByTaskId && historyByTaskId[t.id]) delete historyByTaskId[t.id];
-          if (deletedTaskMeta && (deletedTaskMeta as any)[t.id]) delete (deletedTaskMeta as any)[t.id];
-          saveHistory(historyByTaskId);
+          if (taskId && historyByTaskId && taskId in historyByTaskId) delete historyByTaskId[taskId];
+          if (hasTaskHistory) saveHistory(historyByTaskId);
 
-          if (deletedTaskMeta && (deletedTaskMeta as any)[t.id]) delete (deletedTaskMeta as any)[t.id];
-          saveDeletedMeta(deletedTaskMeta);
+          if (hasDeletedTaskMeta) {
+            delete (deletedTaskMeta as any)[taskId];
+            saveDeletedMeta(deletedTaskMeta);
+          }
         } else {
           deletedTaskMeta = deletedTaskMeta || ({} as DeletedTaskMeta);
-          (deletedTaskMeta as any)[t.id] = { name: t.name, color: t.color || null, deletedAt: nowMs() };
+          (deletedTaskMeta as any)[taskId] = { name: t.name, color: t.color || null, deletedAt: nowMs() };
           saveDeletedMeta(deletedTaskMeta);
-          saveHistory(historyByTaskId);
         }
 
-        const deletedTaskId = String(t.id || "");
-        save({ deletedTaskIds: deletedTaskId ? [deletedTaskId] : [] });
-        void deleteSharedTaskSummariesForTask(String(currentUid() || ""), deletedTaskId).catch(() => {});
+        save({ deletedTaskIds: taskId ? [taskId] : [] });
+        void deleteSharedTaskSummariesForTask(String(currentUid() || ""), taskId).catch(() => {});
         void refreshOwnSharedSummaries().catch(() => {});
         render();
         closeConfirm();
@@ -1594,6 +1611,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on,
     runtime,
     getTasks: () => tasks,
+    setTasks: (value) => {
+      tasks = value;
+    },
     getHistoryByTaskId: () => historyByTaskId,
     setHistoryByTaskId: (value) => {
       historyByTaskId = value;
@@ -1647,6 +1667,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     formatDateTime,
     sortMilestones,
     sessionColorForTaskMs,
+    save,
     saveHistory,
     saveHistoryAndWait,
     loadHistory,

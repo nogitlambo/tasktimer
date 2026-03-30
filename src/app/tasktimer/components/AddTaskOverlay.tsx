@@ -5,15 +5,11 @@ export default function AddTaskOverlay() {
     <div className="overlay" id="addTaskOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Add Task">
         <h2>Add Task</h2>
-        <div className="addTaskWizardProgress" id="addTaskWizardProgress" aria-live="polite">
-          Step 1 of 3
-        </div>
         <div className="addTaskValidationError" id="addTaskError" aria-live="polite" />
         <form id="addTaskForm" autoComplete="off" style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}>
           <section className="addTaskWizardStep isActive" id="addTaskStep1">
-            <div className="addTaskStepPrompt">Enter a name for this task</div>
             <div className="addTaskNameCombo" id="addTaskNameCombo">
-              <input id="addTaskName" type="text" placeholder="Enter a task name or select from preset values" />
+              <input id="addTaskName" type="text" placeholder="Enter a name for this task or select from list" />
               <button className="btn btn-ghost small addTaskNameToggle" id="addTaskNameToggle" type="button" aria-label="Show task name options">
                 &#9662;
               </button>
@@ -32,6 +28,20 @@ export default function AddTaskOverlay() {
           </section>
 
           <section className="addTaskWizardStep" id="addTaskStep2">
+            <div className="addTaskStepPrompt" id="addTaskPlannedStartPrompt">
+              What time of the day do you plan to start this task?
+            </div>
+            <div className="addTaskPlannedStartSection">
+              <input id="addTaskPlannedStartInput" type="time" defaultValue="09:00" />
+              <label className="addTaskPlannedStartCheckboxRow" htmlFor="addTaskPlannedStartOpenEnded">
+                <input id="addTaskPlannedStartOpenEnded" type="checkbox" />
+                <span>Set to open-ended</span>
+              </label>
+              <p className="addTaskPlannedStartHelp">Times will be used as only a rough guide and can be adjusted later</p>
+            </div>
+          </section>
+
+          <section className="addTaskWizardStep" id="addTaskStep3">
             <div className="addTaskStepPrompt">How much time do you want to spend on this task?</div>
             <div className="addTaskDurationRow" id="addTaskDurationRow">
               <input id="addTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
@@ -62,7 +72,7 @@ export default function AddTaskOverlay() {
             </label>
           </section>
 
-          <section className="addTaskWizardStep" id="addTaskStep3">
+          <section className="addTaskWizardStep" id="addTaskStep4">
             <div className="addTaskStepPrompt addTaskStepPromptWithInfo">
               <span>Set Time Checkpoints? (you can add these in later)</span>
               <button
@@ -185,10 +195,16 @@ export default function AddTaskOverlay() {
             <button className="btn btn-ghost addTaskWizardBackBtn isHidden" id="addTaskStep3BackBtn" type="button">
               Back
             </button>
+            <button className="btn btn-ghost addTaskWizardBackBtn isHidden" id="addTaskStep4BackBtn" type="button">
+              Back
+            </button>
             <button className="btn btn-accent addTaskWizardNextBtn" id="addTaskStep1NextBtn" type="button">
               Next
             </button>
             <button className="btn btn-accent addTaskWizardNextBtn isHidden" id="addTaskStep2NextBtn" type="button">
+              Next
+            </button>
+            <button className="btn btn-accent addTaskWizardNextBtn isHidden" id="addTaskStep3NextBtn" type="button">
               Next
             </button>
             <button className="btn btn-accent isHidden" id="addTaskConfirmBtn" type="submit">

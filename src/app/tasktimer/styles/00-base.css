@@ -1284,6 +1284,7 @@ body[data-theme="cyan"] .addTaskNameItem:focus{
   --focus-ring-gap-color: rgba(5,10,20,.9);
   --focus-ring-highlight-color: rgba(235,252,255,.2);
   --focus-marker-radius: 42%;
+  overflow: visible;
 }
 .focusDial:focus-visible{
   outline: 2px solid rgba(117,231,255,.92);
@@ -1369,6 +1370,7 @@ body[data-theme="cyan"] .addTaskNameItem:focus{
   border-radius:50%;
   pointer-events:none;
   z-index:3;
+  overflow: visible;
 }
 .focusCheckpointMark{
   position:absolute;
@@ -1422,10 +1424,11 @@ body[data-theme="cyan"] .addTaskNameItem:focus{
   position:absolute;
   top:50%;
   left:50%;
-  transform: translate(calc(var(--lxpx, 0px) + clamp(4px, 1.4cqw, 10px)), var(--lypx, 0px)) translateY(-50%);
+  transform: translate(calc(var(--lxpx, 0px) + clamp(8px, 2cqw, 14px)), var(--lypx, 0px)) translateY(-50%);
   white-space:nowrap;
   display:block;
   min-width:0;
+  max-width: clamp(84px, 26cqw, 150px);
   color: rgba(132,146,166,.9);
   text-shadow: 0 0 2px rgba(85,100,124,.3);
   font-family:var(--font-tight);
@@ -1436,7 +1439,7 @@ body[data-theme="cyan"] .addTaskNameItem:focus{
   text-align:left;
 }
 .focusCheckpointLabel.left{
-  transform: translate(calc(var(--lxpx, 0px) - clamp(4px, 1.4cqw, 10px)), var(--lypx, 0px)) translate(-100%, -50%);
+  transform: translate(calc(var(--lxpx, 0px) - clamp(8px, 2cqw, 14px)), var(--lypx, 0px)) translate(-100%, -50%);
   text-align:right;
 }
 .focusCheckpointLabel.reached{

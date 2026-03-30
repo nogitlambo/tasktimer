@@ -186,6 +186,8 @@ service cloud.firestore {
         "timeGoalUnit",
         "timeGoalPeriod",
         "timeGoalMinutes",
+        "plannedStartTime",
+        "plannedStartOpenEnded",
         "bgTimeGoalPushEligible",
         "bgTimeGoalPushDueAtMs",
         "bgTimeGoalPushSentAtMs",
@@ -227,6 +229,8 @@ service cloud.firestore {
       && (!("timeGoalUnit" in request.resource.data) || request.resource.data.timeGoalUnit in ["minute", "hour"])
       && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod in ["day", "week"])
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
+      && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
+      && (!("plannedStartOpenEnded" in request.resource.data) || request.resource.data.plannedStartOpenEnded is bool)
       && (!("bgTimeGoalPushEligible" in request.resource.data) || request.resource.data.bgTimeGoalPushEligible is bool)
       && (!("bgTimeGoalPushDueAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushDueAtMs == null || request.resource.data.bgTimeGoalPushDueAtMs is int)
       && (!("bgTimeGoalPushSentAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushSentAtMs == null || request.resource.data.bgTimeGoalPushSentAtMs is int)

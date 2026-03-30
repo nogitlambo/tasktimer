@@ -619,8 +619,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getFocusCheckpointSig() === signature) return;
     ctx.setFocusCheckpointSig(signature);
 
-    const dialRadiusPx = Math.max(0, Math.min(220, ringEl.clientWidth / 2));
+    const ringWidthPx = Math.max(0, ringEl.clientWidth);
+    const ringHeightPx = Math.max(0, ringEl.clientHeight);
+    const dialRadiusPx = Math.max(0, Math.min(ringWidthPx, ringHeightPx) / 2);
     const markerRadiusPx = Math.max(0, dialRadiusPx - 4);
+    const labelRadiusPx = Math.max(0, dialRadiusPx + Math.max(18, Math.round(dialRadiusPx * 0.12)));
     ringEl.innerHTML = sortedMilestones
       .map((m, idx) => {
         const targetSec = milestoneTargetsSec[idx] || 0;
@@ -629,11 +632,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const angleRad = (angleDeg * Math.PI) / 180;
         const mx = Math.cos(angleRad) * markerRadiusPx;
         const my = Math.sin(angleRad) * markerRadiusPx;
+        const lx = Math.cos(angleRad) * labelRadiusPx;
+        const ly = Math.sin(angleRad) * labelRadiusPx;
         const reached = elapsedSec >= targetSec;
         const title = formatCheckpointAlertText(task, m);
-        return `<span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
-          1
-        )}px;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>`;
+        const description = String(m.description || "").trim();
+        const labelText = description || title;
+        return `
+          <span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
+            1
+          )}px;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>
+          <span
+            class="focusCheckpointLabel isActive${lx < 0 ? " left" : ""}${reached ? " reached" : ""}"
+            style="--lxpx:${lx.toFixed(1)}px;--lypx:${ly.toFixed(1)}px;"
+            aria-hidden="true"
+          >
+            <span class="focusCheckpointLabelTitle">${ctx.escapeHtmlUI(labelText)}</span>
+          </span>
+        `;
       })
       .join("");
   }

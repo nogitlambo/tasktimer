@@ -34,6 +34,8 @@ export type Task = {
   timeGoalUnit?: "minute" | "hour";
   timeGoalPeriod?: "day" | "week";
   timeGoalMinutes?: number;
+  plannedStartTime?: string | null;
+  plannedStartOpenEnded?: boolean;
 };
 
 export type HistoryEntry = {

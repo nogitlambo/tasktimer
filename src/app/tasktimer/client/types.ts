@@ -105,7 +105,9 @@ export type TaskTimerMutableState = {
   timeGoalModalTaskId: string | null;
   timeGoalModalFrozenElapsedMs: number;
   timeGoalReminderAtMsByTaskId: Record<string, number>;
-  addTaskWizardStep: 1 | 2 | 3;
+  addTaskWizardStep: 1 | 2 | 3 | 4;
+  addTaskPlannedStartTime: string;
+  addTaskPlannedStartOpenEnded: boolean;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";
   addTaskDurationPeriod: "day" | "week";

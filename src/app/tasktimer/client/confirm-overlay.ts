@@ -2,6 +2,7 @@ import type { TaskTimerConfirmOptions, TaskTimerConfirmOverlayContext } from "./
 
 export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContext) {
   const { els } = ctx;
+  let confirmDangerMatchValue = "";
 
   function openOverlay(overlay: HTMLElement | null) {
     if (!overlay) return;
@@ -22,13 +23,24 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     const toggle = document.getElementById("confirmDeleteAllSwitch");
     if (!(toggle instanceof HTMLElement)) return;
     const isOn = !!els.confirmDeleteAll?.checked;
+    if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", isOn);
     toggle.classList.toggle("on", isOn);
     toggle.setAttribute("aria-checked", isOn ? "true" : "false");
+  }
+
+  function syncConfirmDangerInputUi() {
+    if (!els.confirmOkBtn) return;
+    const requiresMatch = !!confirmDangerMatchValue;
+    const value = String(els.confirmDangerInput?.value || "").trim();
+    const matches = !requiresMatch || value === confirmDangerMatchValue;
+    (els.confirmOkBtn as HTMLButtonElement).disabled = !matches;
+    (els.confirmOkBtn as HTMLElement).style.display = requiresMatch && !matches ? "none" : "inline-flex";
   }
 
   function confirm(title: string, text: string, opts?: TaskTimerConfirmOptions) {
     ctx.setConfirmAction(opts?.onOk || null);
     ctx.setConfirmActionAlt(opts?.onAlt || null);
+    confirmDangerMatchValue = String(opts?.dangerInputMatch || "").trim();
 
     const okLabel = opts?.okLabel || "OK";
     const altLabel = opts?.altLabel || null;
@@ -81,11 +93,28 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (showChk2 && els.confirmChkLabel2) els.confirmChkLabel2.textContent = String(opts?.checkbox2Label || "");
     if (els.confirmLogChk) els.confirmLogChk.checked = showChk2 ? !!opts?.checkbox2Checked : false;
 
+    const showDangerInput = !!confirmDangerMatchValue;
+    if (els.confirmDangerInputRow) (els.confirmDangerInputRow as HTMLElement).style.display = showDangerInput ? "grid" : "none";
+    if (els.confirmDangerInputLabel) {
+      const dangerInputLabel =
+        opts && Object.prototype.hasOwnProperty.call(opts, "dangerInputLabel")
+          ? String(opts.dangerInputLabel ?? "")
+          : `Enter ${confirmDangerMatchValue}`;
+      els.confirmDangerInputLabel.textContent = showDangerInput ? dangerInputLabel : "";
+    }
+    if (els.confirmDangerInput) {
+      els.confirmDangerInput.value = "";
+      els.confirmDangerInput.placeholder = String(opts?.dangerInputPlaceholder || confirmDangerMatchValue || "");
+      els.confirmDangerInput.disabled = false;
+    }
+
     if (els.confirmTitle) els.confirmTitle.textContent = title || "Confirm";
     if (els.confirmText) {
       if (opts?.textHtml) els.confirmText.innerHTML = String(opts.textHtml || "");
       else els.confirmText.textContent = text || "";
     }
+
+    syncConfirmDangerInputUi();
 
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "flex";
   }
@@ -95,8 +124,10 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetAllDeleteConfirm");
     ctx.setConfirmAction(null);
     ctx.setConfirmActionAlt(null);
+    confirmDangerMatchValue = "";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
     if (els.confirmOkBtn) {
@@ -112,6 +143,14 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmChkNote) {
       (els.confirmChkNote as HTMLElement).style.display = "none";
       (els.confirmChkNote as HTMLElement).textContent = "";
+    }
+    if (els.confirmChkRow2) (els.confirmChkRow2 as HTMLElement).style.display = "none";
+    if (els.confirmDangerInputRow) (els.confirmDangerInputRow as HTMLElement).style.display = "none";
+    if (els.confirmDangerInputLabel) els.confirmDangerInputLabel.textContent = "";
+    if (els.confirmDangerInput) {
+      els.confirmDangerInput.value = "";
+      els.confirmDangerInput.placeholder = "";
+      els.confirmDangerInput.disabled = false;
     }
   }
 
@@ -163,6 +202,8 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
 
   function registerConfirmOverlayEvents() {
     ctx.on(els.confirmCancelBtn, "click", closeConfirm);
+    ctx.on(els.confirmDeleteAll, "change", syncConfirmPrimaryToggleUi);
+    ctx.on(els.confirmDangerInput, "input", syncConfirmDangerInputUi);
     ctx.on(els.confirmAltBtn, "click", () => {
       const action = ctx.getConfirmActionAlt();
       if (typeof action === "function") action();

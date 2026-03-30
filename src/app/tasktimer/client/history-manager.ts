@@ -12,6 +12,16 @@ type HistoryGenParams = {
   windowStartMinute: number;
   windowEndMinute: number;
   replaceExisting: boolean;
+  generateRandomTimeGoals: boolean;
+};
+
+type HistoryGenTaskGoal = {
+  timeGoalEnabled: boolean;
+  timeGoalValue: number;
+  timeGoalUnit: "minute" | "hour";
+  timeGoalPeriod: "day" | "week";
+  timeGoalMinutes: number;
+  dailyBudgetMinutes: number;
 };
 
 type HistoryGenPreview = {
@@ -19,6 +29,9 @@ type HistoryGenPreview = {
   perTaskCount: Record<string, number>;
   totalGenerated: number;
   nextHistory: HistoryByTaskId;
+  generatedGoalsByTaskId: Record<string, HistoryGenTaskGoal>;
+  existingGoalsByTaskId: Record<string, HistoryGenTaskGoal>;
+  limitedTaskIds: string[];
 };
 
 function formatHistoryManagerElapsed(msRaw: unknown, formatTwo: (value: number) => string) {
@@ -251,6 +264,54 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
   }
 
+  function allocateHistoryGenDailyBudgets(taskCount: number, availableWindowMinutes: number): number[] | null {
+    const unitMinutes = 15;
+    const totalUnits = Math.floor(availableWindowMinutes / unitMinutes);
+    if (taskCount <= 0) return [];
+    if (totalUnits < taskCount) return null;
+    const budgets = Array.from({ length: taskCount }, () => 1);
+    let remainingUnits = totalUnits - taskCount;
+    while (remainingUnits > 0) {
+      budgets[Math.floor(Math.random() * budgets.length)] += 1;
+      remainingUnits -= 1;
+    }
+    return budgets.map((units) => units * unitMinutes);
+  }
+
+  function buildHistoryGenTaskGoal(dailyBudgetMinutes: number): HistoryGenTaskGoal {
+    const timeGoalPeriod: "day" | "week" = Math.random() < 0.5 ? "day" : "week";
+    const periodMinutes = timeGoalPeriod === "week" ? dailyBudgetMinutes * 7 : dailyBudgetMinutes;
+    const timeGoalUnit: "minute" | "hour" = periodMinutes >= 60 && Math.random() < 0.5 ? "hour" : "minute";
+    const timeGoalValue =
+      timeGoalUnit === "hour" ? Math.round((periodMinutes / 60) * 100) / 100 : periodMinutes;
+    const timeGoalMinutes =
+      timeGoalUnit === "hour" ? Math.round(timeGoalValue * 60) : Math.round(timeGoalValue);
+    return {
+      timeGoalEnabled: true,
+      timeGoalValue,
+      timeGoalUnit,
+      timeGoalPeriod,
+      timeGoalMinutes,
+      dailyBudgetMinutes,
+    };
+  }
+
+  function formatHistoryGenGoalValue(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
+  }
+
+  function getHistoryGenWeekKey(date: Date): string {
+    const local = new Date(date);
+    local.setHours(0, 0, 0, 0);
+    const day = local.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    local.setDate(local.getDate() + diffToMonday);
+    const y = local.getFullYear();
+    const m = String(local.getMonth() + 1).padStart(2, "0");
+    const d = String(local.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
   function readHistoryManagerGenerateParamsFromConfirm(): HistoryGenParams | null {
     const host = els.confirmText as HTMLElement | null;
     if (!host) return null;
@@ -279,10 +340,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     if (
       !Number.isFinite(entriesPerDayMin) ||
       !Number.isFinite(entriesPerDayMax) ||
-      entriesPerDayMin <= 0 ||
+      entriesPerDayMin < 0 ||
       entriesPerDayMax <= 0
     ) {
-      alert("Entries per day must be positive numbers.");
+      alert("Entries/day min must be 0 or greater, and max must be greater than 0.");
       return null;
     }
     if (entriesPerDayMin > entriesPerDayMax) {
@@ -306,11 +367,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       entriesPerDayMax,
       windowStartMinute,
       windowEndMinute,
-      replaceExisting: !!els.confirmDeleteAll?.checked,
+      replaceExisting: !!(host.querySelector("#historyGenReplaceExisting") as HTMLInputElement | null)?.checked,
+      generateRandomTimeGoals: !!(host.querySelector("#historyGenRandomGoals") as HTMLInputElement | null)?.checked,
     };
   }
 
-  function buildHistoryManagerTestDataPreview(params: HistoryGenParams): HistoryGenPreview {
+  function buildHistoryManagerTestDataPreview(params: HistoryGenParams): HistoryGenPreview | null {
     const historyByTaskId = ctx.getHistoryByTaskId();
     const tasks = ctx.getTasks();
     const cloneHistory: HistoryByTaskId = {};
@@ -336,6 +398,39 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
     });
 
+    const generatedGoalsByTaskId: Record<string, HistoryGenTaskGoal> = {};
+    const existingGoalsByTaskId: Record<string, HistoryGenTaskGoal> = {};
+    if (params.generateRandomTimeGoals) {
+      const availableWindowMinutes = Math.max(0, params.windowEndMinute - params.windowStartMinute);
+      const budgets = allocateHistoryGenDailyBudgets(selectedTasks.length, availableWindowMinutes);
+      if (!budgets) {
+        alert("The selected time window is too small to assign at least 15 minutes/day to every selected task.");
+        return null;
+      }
+      selectedTasks.forEach((task, index) => {
+        const taskId = String(task.id || "").trim();
+        generatedGoalsByTaskId[taskId] = buildHistoryGenTaskGoal(budgets[index] || 15);
+      });
+    } else {
+      selectedTasks.forEach((task) => {
+        const taskId = String(task.id || "").trim();
+        const timeGoalEnabled = task.timeGoalEnabled !== false;
+        const timeGoalMinutes = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) || 0));
+        if (!timeGoalEnabled || timeGoalMinutes <= 0) return;
+        const timeGoalPeriod: "day" | "week" = task.timeGoalPeriod === "day" ? "day" : "week";
+        const dailyBudgetMinutes =
+          timeGoalPeriod === "week" ? Math.max(0, Math.floor(timeGoalMinutes / 7)) : timeGoalMinutes;
+        existingGoalsByTaskId[taskId] = {
+          timeGoalEnabled: true,
+          timeGoalValue: Math.max(0, Number(task.timeGoalValue || 0) || 0),
+          timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
+          timeGoalPeriod,
+          timeGoalMinutes,
+          dailyBudgetMinutes,
+        };
+      });
+    }
+
     const unitToMinute = (task: Task) => {
       if (task.milestoneTimeUnit === "day") return 24 * 60;
       if (task.milestoneTimeUnit === "minute") return 1;
@@ -345,16 +440,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const now = new Date();
     const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let totalGenerated = 0;
+    const generatedMinutesByTaskDay: Record<string, number> = {};
+    const generatedMinutesByTaskWeek: Record<string, number> = {};
+    const limitedTaskIds = new Set<string>();
 
     for (let dayOffset = params.daysBack - 1; dayOffset >= 0; dayOffset -= 1) {
       const day = new Date(todayLocal);
       day.setDate(todayLocal.getDate() - dayOffset);
+      const dayKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+      const weekKey = getHistoryGenWeekKey(day);
 
       selectedTasks.forEach((task) => {
         const taskId = String(task.id || "").trim();
         if (!taskId) return;
         const taskIdx = taskOrderById.get(taskId) || 0;
         const sessions = randInt(params.entriesPerDayMin, params.entriesPerDayMax);
+        const existingGoal = params.generateRandomTimeGoals ? null : existingGoalsByTaskId[taskId] || null;
         const milestonesMinutes = ctx
           .sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : [])
           .map((m) => Math.floor(Math.max(0, Number(m.hours || 0)) * unitToMinute(task)))
@@ -375,6 +476,30 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
             const baseMinutes = 18 + ((taskIdx * 7) % 35);
             const varianceMinutes = Math.floor(Math.random() * 55);
             durationMinutes = Math.max(5, baseMinutes + varianceMinutes);
+          }
+
+          if (existingGoal) {
+            const dayBudgetKey = `${taskId}|${dayKey}`;
+            const weekBudgetKey = `${taskId}|${weekKey}`;
+            const usedMinutes =
+              existingGoal.timeGoalPeriod === "day"
+                ? generatedMinutesByTaskDay[dayBudgetKey] || 0
+                : generatedMinutesByTaskWeek[weekBudgetKey] || 0;
+            const remainingMinutes = Math.max(0, existingGoal.timeGoalMinutes - usedMinutes);
+            if (remainingMinutes <= 0) {
+              limitedTaskIds.add(taskId);
+              continue;
+            }
+            if (durationMinutes > remainingMinutes) {
+              durationMinutes = remainingMinutes;
+              limitedTaskIds.add(taskId);
+            }
+            if (durationMinutes <= 0) continue;
+            if (existingGoal.timeGoalPeriod === "day") {
+              generatedMinutesByTaskDay[dayBudgetKey] = usedMinutes + durationMinutes;
+            } else {
+              generatedMinutesByTaskWeek[weekBudgetKey] = usedMinutes + durationMinutes;
+            }
           }
 
           const ms = durationMinutes * 60 * 1000;
@@ -401,10 +526,30 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       perTaskCount,
       totalGenerated,
       nextHistory,
+      generatedGoalsByTaskId,
+      existingGoalsByTaskId,
+      limitedTaskIds: Array.from(limitedTaskIds),
     };
   }
 
   async function applyHistoryManagerTestData(preview: HistoryGenPreview): Promise<void> {
+    if (preview.params.generateRandomTimeGoals) {
+      const nextTasks = ctx.getTasks().map((task) => {
+        const taskId = String(task.id || "").trim();
+        const generatedGoal = preview.generatedGoalsByTaskId[taskId];
+        if (!generatedGoal) return task;
+        return {
+          ...task,
+          timeGoalEnabled: generatedGoal.timeGoalEnabled,
+          timeGoalValue: generatedGoal.timeGoalValue,
+          timeGoalUnit: generatedGoal.timeGoalUnit,
+          timeGoalPeriod: generatedGoal.timeGoalPeriod,
+          timeGoalMinutes: generatedGoal.timeGoalMinutes,
+        };
+      });
+      ctx.setTasks(nextTasks);
+      ctx.save();
+    }
     ctx.setHistoryByTaskId(preview.nextHistory);
     await ctx.saveHistoryAndWait(preview.nextHistory);
     ctx.render();
@@ -417,7 +562,19 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const perTaskRows = Object.entries(preview.perTaskCount)
       .map(([taskId, count]) => {
         const taskName = String(tasks.find((task) => String(task.id || "") === String(taskId))?.name || taskId || "Task").trim();
-        return `<li><b>${ctx.escapeHtmlUI(taskName)}</b>: ${count}</li>`;
+        const generatedGoal = preview.generatedGoalsByTaskId[String(taskId || "").trim()];
+        const existingGoal = preview.existingGoalsByTaskId[String(taskId || "").trim()];
+        const goalSummary = generatedGoal
+          ? ` | Goal: ${ctx.escapeHtmlUI(formatHistoryGenGoalValue(generatedGoal.timeGoalValue))} ${ctx.escapeHtmlUI(
+              generatedGoal.timeGoalUnit
+            )}/${ctx.escapeHtmlUI(generatedGoal.timeGoalPeriod)} (${generatedGoal.dailyBudgetMinutes} min/day)`
+          : existingGoal
+          ? ` | Existing goal cap: ${ctx.escapeHtmlUI(formatHistoryGenGoalValue(existingGoal.timeGoalValue))} ${ctx.escapeHtmlUI(
+              existingGoal.timeGoalUnit
+            )}/${ctx.escapeHtmlUI(existingGoal.timeGoalPeriod)}`
+          : "";
+        const limitedNote = preview.limitedTaskIds.includes(String(taskId || "").trim()) ? ` | Limited by goal` : "";
+        return `<li><b>${ctx.escapeHtmlUI(taskName)}</b>: ${count}${goalSummary}${limitedNote}</li>`;
       })
       .join("");
     const startDate = new Date();
@@ -440,6 +597,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
           <p style="margin:0 0 8px;">Entry window: <b>${formatHistoryGenMinute(preview.params.windowStartMinute)}</b> to <b>${formatHistoryGenMinute(
             preview.params.windowEndMinute
           )}</b></p>
+          <p style="margin:0 0 8px;">Random goals: <b>${preview.params.generateRandomTimeGoals ? "Yes" : "No"}</b></p>
+          <p style="margin:0 0 8px;">Existing goals enforced: <b>${
+            !preview.params.generateRandomTimeGoals && Object.keys(preview.existingGoalsByTaskId).length ? "Yes" : "No"
+          }</b></p>
           <p style="margin:0 0 8px;">Replace existing: <b>${preview.params.replaceExisting ? "Yes" : "No"}</b></p>
           <p style="margin:0 0 8px;">Total generated: <b>${preview.totalGenerated}</b></p>
           <ul style="margin:0; padding-left:20px;">${perTaskRows || "<li>No tasks</li>"}</ul>
@@ -474,34 +635,44 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.confirm("Generate Test Data", "", {
       okLabel: "Preview",
       cancelLabel: "Cancel",
-      checkboxLabel: "Replace existing history",
-      checkboxChecked: true,
       textHtml: `
         <div class="hmGenConfirm">
           <div style="margin:0 0 8px;"><b>Select tasks</b></div>
           <div id="historyGenTaskList" style="max-height:180px; overflow:auto; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:10px; padding:8px;">
             ${taskOptions}
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
-            <label style="display:flex; flex-direction:column; gap:4px;">
+          <div style="display:grid; gap:8px; margin-top:10px;">
+            <div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, .9fr) minmax(0, .9fr); gap:8px; align-items:end;">
+              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <span>Days back</span>
-              <input id="historyGenDaysBack" type="number" min="1" max="3650" value="90" />
-            </label>
-            <label style="display:flex; flex-direction:column; gap:4px;">
+              <input id="historyGenDaysBack" type="number" min="1" max="3650" value="90" style="width:100%; min-width:0;" />
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <span>Entries/day min</span>
-              <input id="historyGenEntriesMin" type="number" min="1" max="1000" value="1" />
-            </label>
-            <label style="display:flex; flex-direction:column; gap:4px;">
+              <input id="historyGenEntriesMin" type="number" min="0" max="1000" value="1" style="width:100%; min-width:0;" />
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <span>Entries/day max</span>
-              <input id="historyGenEntriesMax" type="number" min="1" max="1000" value="3" />
-            </label>
-            <label style="display:flex; flex-direction:column; gap:4px;">
+              <input id="historyGenEntriesMax" type="number" min="1" max="1000" value="3" style="width:100%; min-width:0;" />
+              </label>
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px; align-items:end;">
+              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <span>Start time</span>
-              <input id="historyGenStartTime" type="time" value="06:00" />
-            </label>
-            <label style="display:flex; flex-direction:column; gap:4px;">
+              <input id="historyGenStartTime" type="time" value="06:00" style="width:100%; min-width:0;" />
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <span>End time</span>
-              <input id="historyGenEndTime" type="time" value="20:00" />
+              <input id="historyGenEndTime" type="time" value="20:00" style="width:100%; min-width:0;" />
+              </label>
+            </div>
+            <label style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+              <input id="historyGenRandomGoals" type="checkbox" />
+              <span>Generate Random Time Goal(s)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+              <input id="historyGenReplaceExisting" type="checkbox" checked />
+              <span>Replace existing history</span>
             </label>
           </div>
         </div>
@@ -510,6 +681,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         const params = readHistoryManagerGenerateParamsFromConfirm();
         if (!params) return;
         const preview = buildHistoryManagerTestDataPreview(params);
+        if (!preview) return;
         openHistoryManagerGeneratePreviewDialog(preview);
       },
       onCancel: () => ctx.closeConfirm(),

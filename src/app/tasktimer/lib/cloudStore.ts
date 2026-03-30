@@ -425,6 +425,9 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
   row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
   row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
+  row.plannedStartTime =
+    row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
+  row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
 
   return row as Task;
 }
@@ -474,6 +477,9 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    plannedStartTime:
+      task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     bgTimeGoalPushEligible: bgTimeGoalPushDueAtMs != null,
     bgTimeGoalPushDueAtMs,
     mode,
