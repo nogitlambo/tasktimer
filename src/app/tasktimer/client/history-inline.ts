@@ -33,6 +33,7 @@ type HistoryUI = {
 
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
+  const HISTORY_LOOKBACK_DAYS = 30;
   const { sharedTasks } = ctx;
 
   function historyLocalDateKey(tsRaw: unknown) {
@@ -50,10 +51,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return note || "";
   }
 
+  function historyTsMs(entry: any) {
+    return ctx.normalizeHistoryTimestampMs(entry?.ts);
+  }
+
   function getHistoryForTask(taskId: string) {
     const historyByTaskId = ctx.getHistoryByTaskId();
     const arr = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-    return arr.slice().sort((a: any, b: any) => (a.ts || 0) - (b.ts || 0));
+    return arr.slice().sort((a: any, b: any) => historyTsMs(a) - historyTsMs(b));
   }
 
   function formatHistoryChartElapsedLabel(ms: number) {
@@ -483,15 +488,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function getHistoryDisplayForTask(taskId: string, state: HistoryViewState) {
     const allRaw = getHistoryForTask(taskId);
-    const rangeDays = state.rangeDays || 7;
-    const cutoffMs = ctx.nowMs() - rangeDays * 24 * 60 * 60 * 1000;
-    const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
+    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+    const all = allRaw.filter((e: any) => historyTsMs(e) >= cutoffMs);
     if (state.rangeMode !== "day") return all;
 
     const groupedByDay: Array<any> = [];
     const historyTask = ctx.getTasks().find((task) => String(task.id || "") === String(taskId));
     all.forEach((e: any) => {
-      const ts = +e.ts || 0;
+      const ts = historyTsMs(e);
       const ms = Math.max(0, +e.ms || 0);
       const key = historyLocalDateKey(ts);
       const last = groupedByDay[groupedByDay.length - 1];
@@ -548,6 +552,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const wrap = ui.canvasWrap;
     if (!canvas || !wrap) return;
     const state = ensureHistoryViewState(taskId);
+    wrap.style.touchAction = "pan-y";
+    canvas.style.touchAction = "pan-y";
 
     const rect = wrap.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -793,8 +799,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     const allRaw = getHistoryForTask(taskId);
     const rangeDays = state.rangeDays || 7;
-    const cutoffMs = ctx.nowMs() - rangeDays * 24 * 60 * 60 * 1000;
-    const all = allRaw.filter((e: any) => (+e.ts || 0) >= cutoffMs);
+    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+    const all = allRaw.filter((e: any) => historyTsMs(e) >= cutoffMs);
     const distinctDayCount = new Set(all.map((e: any) => historyLocalDateKey(e?.ts))).size;
     const pageSize = historyPageSize(taskId);
     const isDayMode = state.rangeMode === "day";
@@ -810,8 +816,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
-      else if (isDayMode) ui.rangeText.textContent = `Showing ${slice.length} of ${total} days (${all.length} entries)`;
-      else ui.rangeText.textContent = `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${distinctDayCount === 1 ? "day" : "days"})`;
+      else {
+        const summary = isDayMode
+          ? `Showing ${slice.length} of ${total} days (${all.length} entries)`
+          : `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${distinctDayCount === 1 ? "day" : "days"})`;
+        ui.rangeText.textContent = total > slice.length ? `${summary} - swipe to browse` : summary;
+      }
     }
 
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
@@ -1096,6 +1106,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
 
     let swipeSuppressClickTaskId = "";
+    let swipeSuppressDoubleClickTaskId = "";
 
     ctx.on(els.taskList, "click", (ev: any) => {
       const chartTarget = getHistoryChartTarget(ev.target);
@@ -1180,6 +1191,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const chartTarget = getHistoryChartTarget(ev.target);
       if (!chartTarget) return;
       const { taskId, wrap } = chartTarget;
+      if (swipeSuppressDoubleClickTaskId && swipeSuppressDoubleClickTaskId === taskId) {
+        swipeSuppressDoubleClickTaskId = "";
+        ev.preventDefault?.();
+        ev.stopPropagation?.();
+        return;
+      }
       const state = ensureHistoryViewState(taskId);
       const rect = wrap.getBoundingClientRect();
       const x = ev.clientX - rect.left;
@@ -1218,29 +1235,26 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     let swipeLastX: number | null = null;
     let swipeLastY: number | null = null;
     let swipeWrap: HTMLElement | null = null;
-    let swipePointerId: number | null = null;
     let swipeTaskId = "";
     let swipeGestureActive = false;
     let swipeConsumed = false;
-    const swipeThresholdPx = 28;
-    const swipeVerticalTolerancePx = 64;
+    const swipeThresholdPx = 24;
+    const swipeVerticalTolerancePx = 96;
     const clearHistorySwipeState = () => {
       swipeStartX = null;
       swipeStartY = null;
       swipeLastX = null;
       swipeLastY = null;
       swipeWrap = null;
-      swipePointerId = null;
       swipeTaskId = "";
       swipeGestureActive = false;
       swipeConsumed = false;
     };
 
-    const beginHistorySwipe = (wrap: HTMLElement | null, startX: number, startY: number, pointerId?: number | null) => {
+    const beginHistorySwipe = (wrap: HTMLElement | null, startX: number, startY: number) => {
       if (!wrap) return;
       swipeWrap = wrap;
       swipeTaskId = wrap.closest(".task")?.getAttribute("data-task-id") || "";
-      swipePointerId = typeof pointerId === "number" ? pointerId : null;
       swipeStartX = startX;
       swipeStartY = startY;
       swipeLastX = startX;
@@ -1256,7 +1270,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const pageSize = historyPageSize(taskId);
       const maxPage = Math.max(0, Math.ceil(display.length / pageSize) - 1);
 
-      if (dx < 0) {
+      if (dx > 0) {
         if (state.page >= maxPage) return false;
         state.slideDir = "left";
         state.page += 1;
@@ -1278,14 +1292,18 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (swipeConsumed) return;
       const dx = nextX - swipeStartX;
       const dy = nextY - swipeStartY;
-      if (Math.abs(dy) > swipeVerticalTolerancePx) return;
       if (Math.abs(dx) < swipeThresholdPx) return;
+      if (Math.abs(dx) <= Math.abs(dy)) return;
+      if (Math.abs(dy) > swipeVerticalTolerancePx) return;
 
       swipeConsumed = true;
-      ev?.preventDefault?.();
       const taskId = swipeTaskId || swipeWrap?.closest(".task")?.getAttribute("data-task-id") || "";
+      if (taskId) {
+        swipeSuppressClickTaskId = taskId;
+        swipeSuppressDoubleClickTaskId = taskId;
+      }
+      ev?.preventDefault?.();
       if (applyHistorySwipe(taskId, dx)) return;
-      swipeSuppressClickTaskId = taskId;
     };
 
     const runHistorySwipe = (endX?: number | null, endY?: number | null) => {
@@ -1305,88 +1323,68 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
       const dx = resolvedEndX - startX;
       const dy = resolvedEndY - startY;
-      const isHorizontalSwipe = Math.abs(dx) >= swipeThresholdPx && Math.abs(dy) <= swipeVerticalTolerancePx;
+      const isHorizontalSwipe =
+        Math.abs(dx) >= swipeThresholdPx && Math.abs(dx) > Math.abs(dy) && Math.abs(dy) <= swipeVerticalTolerancePx;
       if (!isHorizontalSwipe) return;
+      swipeSuppressClickTaskId = taskId;
+      swipeSuppressDoubleClickTaskId = taskId;
       applyHistorySwipe(taskId, dx);
     };
 
-    if ("PointerEvent" in window) {
-      ctx.on(els.taskList, "pointerdown", (e: any) => {
+    ctx.on(els.taskList, "mousedown", (e: any) => {
+      const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
+      if (!wrap) return;
+      if (e.button !== 0) return;
+      beginHistorySwipe(wrap, e.clientX, e.clientY);
+    });
+    ctx.on(window, "mousemove", (e: any) => {
+      if (!swipeGestureActive) return;
+      updateHistorySwipe(e.clientX, e.clientY, e);
+    });
+    ctx.on(window, "mouseup", (e: any) => {
+      if (!swipeGestureActive) return;
+      runHistorySwipe(e.clientX, e.clientY);
+    });
+
+    ctx.on(
+      els.taskList,
+      "touchstart",
+      (e: any) => {
         const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
         if (!wrap) return;
-        if (e.pointerType === "mouse" && e.button !== 0) return;
-        if (typeof e.pointerId === "number" && typeof e.target?.setPointerCapture === "function") {
-          try {
-            e.target.setPointerCapture(e.pointerId);
-          } catch {
-            // Ignore capture failures; delegated handlers still run.
-          }
+        if (!e.touches || !e.touches.length) return;
+        beginHistorySwipe(wrap, e.touches[0].clientX, e.touches[0].clientY);
+      },
+      { passive: true }
+    );
+    ctx.on(
+      window,
+      "touchmove",
+      (e: any) => {
+        if (!swipeGestureActive) return;
+        const t = e.touches && e.touches[0] ? e.touches[0] : null;
+        if (!t) return;
+        updateHistorySwipe(t.clientX, t.clientY, e);
+      },
+      { passive: false }
+    );
+    ctx.on(
+      window,
+      "touchend",
+      (e: any) => {
+        if (!swipeGestureActive) return;
+        const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
+        if (!t) {
+          clearHistorySwipeState();
+          return;
         }
-        beginHistorySwipe(wrap, e.clientX, e.clientY, e.pointerId);
-      });
-      ctx.on(els.taskList, "pointermove", (e: any) => {
-        if (!swipeGestureActive) return;
-        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
-        updateHistorySwipe(e.clientX, e.clientY, e);
-      });
-      ctx.on(els.taskList, "pointerup", (e: any) => {
-        if (!swipeGestureActive) return;
-        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
-        runHistorySwipe(e.clientX, e.clientY);
-      });
-      ctx.on(window, "pointerup", (e: any) => {
-        if (!swipeGestureActive) return;
-        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
-        runHistorySwipe(e.clientX, e.clientY);
-      });
-      ctx.on(window, "pointermove", (e: any) => {
-        if (!swipeGestureActive) return;
-        if (swipePointerId != null && e.pointerId !== swipePointerId) return;
-        updateHistorySwipe(e.clientX, e.clientY, e);
-      });
-      ctx.on(els.taskList, "pointercancel", () => {
-        clearHistorySwipeState();
-      });
-      ctx.on(window, "pointercancel", () => {
-        clearHistorySwipeState();
-      });
-    } else {
-      ctx.on(
-        els.taskList,
-        "touchstart",
-        (e: any) => {
-          const wrap = e.target?.closest?.(".historyCanvasWrap") || null;
-          if (!wrap) return;
-          if (!e.touches || !e.touches.length) return;
-          beginHistorySwipe(wrap, e.touches[0].clientX, e.touches[0].clientY, null);
-        },
-        { passive: true }
-      );
-      ctx.on(
-        els.taskList,
-        "touchmove",
-        (e: any) => {
-          if (!swipeGestureActive) return;
-          const t = e.touches && e.touches[0] ? e.touches[0] : null;
-          if (!t) return;
-          updateHistorySwipe(t.clientX, t.clientY, e);
-        },
-        { passive: false }
-      );
-      ctx.on(
-        els.taskList,
-        "touchend",
-        (e: any) => {
-          const t = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : null;
-          if (!t) return;
-          runHistorySwipe(t.clientX, t.clientY);
-        },
-        { passive: true }
-      );
-      ctx.on(els.taskList, "touchcancel", () => {
-        clearHistorySwipeState();
-      });
-    }
+        runHistorySwipe(t.clientX, t.clientY);
+      },
+      { passive: true }
+    );
+    ctx.on(window, "touchcancel", () => {
+      clearHistorySwipeState();
+    });
 
     ctx.on(window, "resize", () => {
       for (const taskId of ctx.getOpenHistoryTaskIds()) {
