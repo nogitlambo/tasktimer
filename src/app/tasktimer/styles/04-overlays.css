@@ -858,6 +858,126 @@ body[data-theme="purple"] .rankLadderItemFlag{
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
+/* Desktop rail subscription mock modal */
+
+#rewardsInfoOverlay .modal{
+  width: min(560px, 100%);
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(53,232,255,.24);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+#rewardsInfoOverlay h2{
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#rewardsInfoOverlay .modalSubtext{
+  margin: 0 0 12px;
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+
+.rewardsInfoDetailGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rewardsInfoDetailItem{
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(121,226,255,.16);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.rewardsInfoDetailLabel{
+  color: rgba(153,227,239,.72);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rewardsInfoDetailValue{
+  color: rgba(238,249,255,.94);
+  font-family: var(--font-tight);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  overflow-wrap: anywhere;
+}
+
+.rewardsInfoText{
+  margin-top: 12px;
+  border: 1px solid rgba(121,226,255,.16);
+  background: rgba(255,255,255,.02);
+  padding: 10px 12px;
+  color: rgba(188,214,230,.78);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.rewardsInfoActions{
+  margin-top: 12px;
+  gap: 8px;
+  justify-content: center;
+}
+
+.rewardsInfoActions .btn{
+  min-width: 160px;
+  justify-content: center;
+}
+
+body[data-theme="purple"] #rewardsInfoOverlay .modal{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+
+body[data-theme="purple"] #rewardsInfoOverlay .modalSubtext{
+  color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] .rewardsInfoDetailItem{
+  border-color: rgba(221,108,241,.18);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+}
+
+body[data-theme="purple"] .rewardsInfoDetailLabel{
+  color: rgba(241,198,247,.78);
+}
+
+body[data-theme="purple"] .rewardsInfoDetailValue{
+  color: rgba(252,241,255,.94);
+}
+
+body[data-theme="purple"] .rewardsInfoText{
+  border-color: rgba(214,96,229,.24);
+  color: rgba(235,218,247,.82);
+}
+
+@media (max-width: 640px){
+  .rewardsInfoDetailGrid{
+    grid-template-columns: 1fr;
+  }
+
+  .rewardsInfoActions .btn{
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 /* Add Task modal: parallelogram styling */
 
 #addTaskOverlay .modal{

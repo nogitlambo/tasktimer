@@ -36,6 +36,13 @@ import {
   saveCloudTaskUi,
 } from "./lib/storage";
 import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, normalizeRewardProgress } from "./lib/rewards";
+import {
+  hasTaskTimerEntitlement,
+  readTaskTimerPlanFromStorage,
+  TASKTIMER_PLAN_CHANGED_EVENT,
+  type TaskTimerEntitlement,
+  type TaskTimerPlan,
+} from "./lib/entitlements";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import type {
   AppPage,
@@ -111,6 +118,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   };
   const { on } = runtime;
 
+  function getCurrentPlan(): TaskTimerPlan {
+    return readTaskTimerPlanFromStorage();
+  }
+
+  function hasEntitlement(entitlement: TaskTimerEntitlement) {
+    return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
+  }
+
   const destroy = () => {
     sessionApi?.destroySessionRuntime();
     destroyTaskTimerRuntime({
@@ -123,6 +138,25 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       unsubscribeCachedPreferences,
     });
   };
+
+  function showUpgradePrompt(featureLabel: string, requiredPlan: TaskTimerPlan = "pro") {
+    const normalizedFeatureLabel = String(featureLabel || "This feature").trim() || "This feature";
+    const planLabel = requiredPlan === "pro" ? "Pro" : "Pro";
+    const bodyText = `${normalizedFeatureLabel} is available on the ${planLabel} plan.`;
+    confirm(
+      `${planLabel} Feature`,
+      bodyText,
+      {
+        okLabel: "Open Plans",
+        cancelLabel: "Close",
+        onOk: () => {
+          closeConfirm();
+          window.location.href = "/tasktimer/settings?pane=general";
+        },
+        onCancel: () => closeConfirm(),
+      }
+    );
+  }
 
   let deletedTaskMeta = initialState.deletedTaskMeta;
   let tasks = initialState.tasks;
@@ -469,6 +503,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getPresetIntervalValueNum: (task) => getPresetIntervalValueNum(task),
     getPresetIntervalNextSeqNum: (task) => getPresetIntervalNextSeqNum(task),
     cleanupHistory,
+    hasEntitlement,
+    getCurrentPlan,
+    showUpgradePrompt,
   });
   const {
     openTaskExportModal,
@@ -637,6 +674,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       shareTaskTaskId = value;
     },
     getOpenFriendSharedTaskUids: () => openFriendSharedTaskUids,
+    hasEntitlement,
+    getCurrentPlan,
+    showUpgradePrompt,
   });
   const {
     renderGroupsPage,
@@ -678,6 +718,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getModeLabel: (mode) => getModeLabel(mode),
     getModeColor: (mode) => getModeColor(mode),
     addRangeMsToLocalDayMap,
+    hasEntitlement,
+    getCurrentPlan,
   });
   const {
     renderDashboardTimelineCard: renderDashboardTimelineCardApi,
@@ -924,6 +966,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     clearSuppressedFocusModeAlert: (taskId) => sessionApi?.clearSuppressedFocusModeAlert(taskId),
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
     syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
+    hasEntitlement,
+    getCurrentPlan,
+    showUpgradePrompt,
   });
   const {
     renderTasksPage,
@@ -1035,6 +1080,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     jumpToTaskAndHighlight,
     openElapsedPadForMilestone: (task, milestone, ms, onApplied) =>
       openElapsedPadForMilestoneApi(task, milestone, ms, onApplied),
+    hasEntitlement,
+    showUpgradePrompt,
   });
   const {
     registerAddTaskEvents,
@@ -1222,6 +1269,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeTopOverlayIfOpen,
     closeMobileDetailPanelIfOpen,
     showExitAppConfirm,
+    hasEntitlement,
+    showUpgradePrompt,
   });
 
   const {
@@ -1683,6 +1732,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     escapeHtmlUI,
     syncSharedTaskSummariesForTasks,
     syncSharedTaskSummariesForTask,
+    hasEntitlement,
+    getCurrentPlan,
+    showUpgradePrompt,
   });
   const {
     openHistoryManager,
@@ -1731,6 +1783,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     sessionColorForTaskMs,
     getModeColor: (mode) => DEFAULT_MODE_COLORS[mode] || DEFAULT_MODE_COLORS.mode1,
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    hasEntitlement,
+    showUpgradePrompt,
   });
   historyInlineApi = historyInline;
   const { registerHistoryInlineEvents } = historyInline;
@@ -1842,6 +1896,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     escapeHtmlUI,
     stopCheckpointRepeatAlert,
     getCurrentAppPage: () => currentAppPage,
+    hasEntitlement,
+    getCurrentPlan,
+    showUpgradePrompt,
   });
   preferencesApi = preferences;
   const {
@@ -1874,6 +1931,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncModeLabelsUi,
     syncTaskSettingsUi,
     clearHistoryEntryNoteOverlayPosition,
+    hasEntitlement,
+    showUpgradePrompt,
   });
   const { registerPopupMenuEvents } = popupMenu;
 
@@ -1958,6 +2017,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     resetCheckpointAlertTracking: (taskId) => sessionApi?.resetCheckpointAlertTracking(taskId),
     clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
     syncSharedTaskSummariesForTask,
+    hasEntitlement,
+    showUpgradePrompt,
   });
   {
     const { closeEdit, openElapsedPadForMilestone, closeElapsedPad, registerEditTaskEvents: registerEditTaskEventsLocal } =
@@ -2126,6 +2187,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (taskView !== "tile" || !els.taskList) return;
       const nextCount = getTileColumnCount();
       if (nextCount !== currentTileColumnCount) render();
+    });
+    on(window, TASKTIMER_PLAN_CHANGED_EVENT as any, () => {
+      if (runtime.destroyed) return;
+      render();
+      if (currentAppPage === "dashboard") renderDashboardWidgetsApi();
+      if (currentAppPage === "test2") renderGroupsPage();
+      if (!els.taskList && els.historyManagerScreen) openHistoryManager();
     });
     registerGroupsEvents();
     on(els.editMoveMode1, "click", () => {

@@ -34,6 +34,37 @@ function asBool(value) {
   return value === true;
 }
 
+function normalizePlan(value) {
+  return String(value || "").trim().toLowerCase() === "pro" ? "pro" : "free";
+}
+
+function planAdminUids() {
+  return String(process.env.TASKTIMER_PLAN_ADMIN_UIDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+async function upsertUserPlan(uid, plan) {
+  const normalizedUid = asString(uid);
+  if (!normalizedUid) {
+    throw new HttpsError("invalid-argument", "A valid user id is required.");
+  }
+  const normalizedPlan = normalizePlan(plan);
+  const userRef = db.collection("users").doc(normalizedUid);
+  const existingSnap = await userRef.get();
+  const currentPlan = existingSnap.exists ? normalizePlan(existingSnap.get("plan")) : "free";
+  const nextPlan = normalizedPlan || currentPlan || "free";
+  await userRef.set({
+    schemaVersion: 1,
+    plan: nextPlan,
+    planUpdatedAt: FieldValue.serverTimestamp(),
+    createdAt: existingSnap.exists ? existingSnap.get("createdAt") || FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  return nextPlan;
+}
+
 function asStringMap(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const entries = Object.entries(value)
@@ -151,6 +182,74 @@ export const sendPushTest = onCall({region}, async (request) => {
       error,
     });
     throw new HttpsError("internal", `Push test failed: ${message}`, {
+      databaseId,
+      region,
+    });
+  }
+});
+
+export const syncCurrentUserPlan = onCall({region}, async (request) => {
+  const uid = asString(request.auth?.uid);
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to load your plan.");
+  }
+  try {
+    const userRef = db.collection("users").doc(uid);
+    const snap = await userRef.get();
+    const existingPlan = snap.exists ? asString(snap.get("plan")).toLowerCase() : "";
+    if (existingPlan === "free" || existingPlan === "pro") {
+      return {ok: true, plan: existingPlan};
+    }
+    const plan = await upsertUserPlan(uid, "free");
+    return {ok: true, plan};
+  } catch (error) {
+    const message = error instanceof Error && error.message
+      ? error.message
+      : "Unexpected plan sync failure.";
+    logger.error("syncCurrentUserPlan failed", {
+      uid,
+      databaseId,
+      region,
+      message,
+      error,
+    });
+    throw new HttpsError("internal", `Plan sync failed: ${message}`, {
+      databaseId,
+      region,
+    });
+  }
+});
+
+export const setUserPlanAdmin = onCall({region}, async (request) => {
+  const callerUid = asString(request.auth?.uid);
+  if (!callerUid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to update a plan.");
+  }
+  const adminUids = planAdminUids();
+  if (!adminUids.includes(callerUid)) {
+    throw new HttpsError("permission-denied", "You do not have permission to update plans.");
+  }
+  const rawData = request.data && typeof request.data === "object" ? request.data : {};
+  const targetUid = asString(rawData.uid);
+  const targetPlan = normalizePlan(rawData.plan);
+  try {
+    const plan = await upsertUserPlan(targetUid, targetPlan);
+    return {ok: true, uid: targetUid, plan};
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    const message = error instanceof Error && error.message
+      ? error.message
+      : "Unexpected admin plan update failure.";
+    logger.error("setUserPlanAdmin failed", {
+      callerUid,
+      targetUid,
+      targetPlan,
+      databaseId,
+      region,
+      message,
+      error,
+    });
+    throw new HttpsError("internal", `Plan update failed: ${message}`, {
       databaseId,
       region,
     });

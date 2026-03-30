@@ -17,6 +17,11 @@ import {
   saveTask,
   subscribeToTaskCollection,
 } from "./cloudStore";
+import {
+  clearTaskTimerPlanStorage,
+  writeTaskTimerPlanToStorage,
+} from "./entitlements";
+import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./rewards";
 
@@ -602,7 +607,13 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
   await ensureUserProfileIndex(uid);
+  try {
+    await syncCurrentUserPlanCache(uid);
+  } catch {
+    writeTaskTimerPlanToStorage("free", { uid });
+  }
   const snapshot = await loadUserWorkspace(uid);
+  writeTaskTimerPlanToStorage(snapshot.plan, { uid });
   const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
   const nextHistory = snapshot.historyByTaskId || {};
   const nextDeletedMeta = snapshot.deletedTaskMeta || {};
@@ -720,6 +731,7 @@ export function clearScopedStorageState(): void {
       // ignore localStorage failures
     }
   }
+  clearTaskTimerPlanStorage();
   emitPreferenceChange();
 }
 

@@ -9,6 +9,16 @@ type PreferenceEventDeps = {
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
 
+  function canUseAdvancedTaskConfig() {
+    return ctx.hasEntitlement("advancedTaskConfig");
+  }
+
+  function requireAdvancedTaskConfig(featureLabel: string) {
+    if (canUseAdvancedTaskConfig()) return true;
+    ctx.showUpgradePrompt(featureLabel, "pro");
+    return false;
+  }
+
   function eventTargetClosest(target: EventTarget | null, selector: string) {
     return target instanceof Element ? target.closest(selector) : null;
   }
@@ -391,6 +401,27 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
     els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
+    const lockAdvancedTaskConfig = !canUseAdvancedTaskConfig();
+    if (els.taskDynamicColorsToggle) {
+      (els.taskDynamicColorsToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
+      els.taskDynamicColorsToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
+      els.taskDynamicColorsToggle.title = lockAdvancedTaskConfig ? "Pro feature: Dynamic colors" : "";
+    }
+    if (els.taskCheckpointSoundToggle) {
+      (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
+      els.taskCheckpointSoundToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
+      els.taskCheckpointSoundToggle.title = lockAdvancedTaskConfig ? "Pro feature: Checkpoint alerts" : "";
+    }
+    if (els.taskCheckpointToastToggle) {
+      (els.taskCheckpointToastToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
+      els.taskCheckpointToastToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
+      els.taskCheckpointToastToggle.title = lockAdvancedTaskConfig ? "Pro feature: Checkpoint alerts" : "";
+    }
+    if (els.categoryMode1Input) els.categoryMode1Input.disabled = lockAdvancedTaskConfig;
+    if (els.categoryMode2Input) els.categoryMode2Input.disabled = lockAdvancedTaskConfig;
+    if (els.categoryMode3Input) els.categoryMode3Input.disabled = lockAdvancedTaskConfig;
+    if (els.categoryMode2Toggle) (els.categoryMode2Toggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
+    if (els.categoryMode3Toggle) (els.categoryMode3Toggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
     const currentEditTask = ctx.getCurrentEditTask();
     if (currentEditTask) ctx.syncEditCheckpointAlertUi(currentEditTask);
   }
@@ -570,17 +601,20 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskDynamicColorsToggle, "click", () => {
+      if (!requireAdvancedTaskConfig("Dynamic colors")) return;
       ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskDynamicColorsToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskDynamicColorsToggle")) return;
+      if (!requireAdvancedTaskConfig("Dynamic colors")) return;
       ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskCheckpointSoundToggle, "click", () => {
+      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       const nextValue = !ctx.getCheckpointAlertSoundEnabled();
       ctx.setCheckpointAlertSoundEnabledState(nextValue);
       if (!nextValue) ctx.stopCheckpointRepeatAlert();
@@ -589,6 +623,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskCheckpointSoundToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskCheckpointSoundToggle")) return;
+      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       const nextValue = !ctx.getCheckpointAlertSoundEnabled();
       ctx.setCheckpointAlertSoundEnabledState(nextValue);
       if (!nextValue) ctx.stopCheckpointRepeatAlert();
@@ -596,12 +631,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskCheckpointToastToggle, "click", () => {
+      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskCheckpointToastToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskCheckpointToastToggle")) return;
+      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
@@ -617,6 +654,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
 
     const toggleCategoryEnabled = (mode: "mode2" | "mode3") => {
+      if (!requireAdvancedTaskConfig("Category customization")) return;
       ctx.setModeEnabledState({ ...ctx.getModeEnabled(), [mode]: !ctx.getModeEnabled()[mode] });
       syncModeLabelsUi();
       applyAndPersistModeSettingsImmediate();
@@ -631,12 +669,30 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       if (eventTargetClosest(e.target, "#categoryMode3Toggle")) return;
       toggleCategoryEnabled("mode3");
     });
-    ctx.on(els.categoryMode1Input, "change", () => applyAndPersistModeSettingsImmediate());
-    ctx.on(els.categoryMode2Input, "change", () => applyAndPersistModeSettingsImmediate());
-    ctx.on(els.categoryMode3Input, "change", () => applyAndPersistModeSettingsImmediate());
-    ctx.on(els.categoryMode1Input, "blur", () => applyAndPersistModeSettingsImmediate());
-    ctx.on(els.categoryMode2Input, "blur", () => applyAndPersistModeSettingsImmediate());
-    ctx.on(els.categoryMode3Input, "blur", () => applyAndPersistModeSettingsImmediate());
+    ctx.on(els.categoryMode1Input, "change", () => {
+      if (!requireAdvancedTaskConfig("Category customization")) return;
+      applyAndPersistModeSettingsImmediate();
+    });
+    ctx.on(els.categoryMode2Input, "change", () => {
+      if (!requireAdvancedTaskConfig("Category customization")) return;
+      applyAndPersistModeSettingsImmediate();
+    });
+    ctx.on(els.categoryMode3Input, "change", () => {
+      if (!requireAdvancedTaskConfig("Category customization")) return;
+      applyAndPersistModeSettingsImmediate();
+    });
+    ctx.on(els.categoryMode1Input, "blur", () => {
+      if (!canUseAdvancedTaskConfig()) return;
+      applyAndPersistModeSettingsImmediate();
+    });
+    ctx.on(els.categoryMode2Input, "blur", () => {
+      if (!canUseAdvancedTaskConfig()) return;
+      applyAndPersistModeSettingsImmediate();
+    });
+    ctx.on(els.categoryMode3Input, "blur", () => {
+      if (!canUseAdvancedTaskConfig()) return;
+      applyAndPersistModeSettingsImmediate();
+    });
     ctx.on(els.categorySaveBtn, "click", () => {
       applyAndPersistModeSettingsImmediate({ closeOverlay: true });
     });

@@ -53,6 +53,14 @@ function buildHistoryManagerRowKey(entry: { ts: unknown; ms: unknown; name: unkn
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
 
+  function canUseAdvancedHistory() {
+    return ctx.hasEntitlement("advancedHistory");
+  }
+
+  function canUseAdvancedBackup() {
+    return ctx.hasEntitlement("advancedBackup");
+  }
+
   function getTaskMetaForHistoryId(taskId: string) {
     const tasks = ctx.getTasks();
     const historyByTaskId = ctx.getHistoryByTaskId();
@@ -924,6 +932,21 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function openHistoryManager() {
+    if (!canUseAdvancedHistory()) {
+      if (els.historyManagerScreen) {
+        (els.historyManagerScreen as HTMLElement).style.display = "block";
+        (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
+      }
+      if (els.hmList) {
+        els.hmList.innerHTML =
+          '<div class="hmEmpty">History Manager is available on Pro. Basic inline history remains available on the Tasks page.</div>';
+      }
+      if (els.historyManagerBulkBtn) els.historyManagerBulkBtn.disabled = true;
+      if (els.historyManagerBulkDeleteBtn) els.historyManagerBulkDeleteBtn.style.display = "none";
+      if (els.historyManagerExportBtn) els.historyManagerExportBtn.disabled = true;
+      if (els.historyManagerImportBtn) els.historyManagerImportBtn.disabled = true;
+      return;
+    }
     if (els.historyManagerGenerateBtn) {
       els.historyManagerGenerateBtn.style.display = ctx.isArchitectUser() ? "" : "none";
     }
@@ -991,12 +1014,24 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
 
   function registerHistoryManagerEvents() {
     ctx.on(els.historyManagerBtn, "click", () => {
+      if (!canUseAdvancedHistory()) {
+        ctx.showUpgradePrompt("History Manager", "pro");
+        return;
+      }
       ctx.navigateToAppRoute("/tasktimer/history-manager");
     });
     ctx.on(els.historyManagerExportBtn, "click", () => {
+      if (!canUseAdvancedBackup()) {
+        ctx.showUpgradePrompt("History Manager CSV export", "pro");
+        return;
+      }
       exportHistoryManagerCsv();
     });
     ctx.on(els.historyManagerImportBtn, "click", () => {
+      if (!canUseAdvancedBackup()) {
+        ctx.showUpgradePrompt("History Manager CSV import", "pro");
+        return;
+      }
       els.historyManagerImportFile?.click();
     });
     ctx.on(els.historyManagerImportFile, "change", (e: any) => {
@@ -1012,12 +1047,20 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       openHistoryManagerGenerateConfigDialog();
     });
     ctx.on(els.historyManagerBulkBtn, "click", () => {
+      if (!canUseAdvancedHistory()) {
+        ctx.showUpgradePrompt("History bulk editing", "pro");
+        return;
+      }
       const nextBulkEditMode = !ctx.getHmBulkEditMode();
       ctx.setHmBulkEditMode(nextBulkEditMode);
       if (!nextBulkEditMode) ctx.setHmBulkSelectedRows(new Set<string>());
       renderHistoryManager();
     });
     ctx.on(els.historyManagerBulkDeleteBtn, "click", () => {
+      if (!canUseAdvancedHistory()) {
+        ctx.showUpgradePrompt("History bulk deletion", "pro");
+        return;
+      }
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const selected = Array.from(hmBulkSelectedRows);
       if (!selected.length) return;

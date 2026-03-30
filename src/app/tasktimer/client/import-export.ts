@@ -32,6 +32,10 @@ function safeJsonParse(input: string) {
 export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   const { els } = ctx;
 
+  function canUseAdvancedBackup() {
+    return ctx.hasEntitlement("advancedBackup");
+  }
+
   function buildExportTaskSnapshot(task: Task) {
     return {
       ...task,
@@ -70,11 +74,14 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   }
 
   function makeBackupPayload() {
+    const includeHistory = canUseAdvancedBackup();
     return {
       schema: "taskticka_backup_v1",
       exportedAt: new Date().toISOString(),
+      planAtExport: ctx.getCurrentPlan(),
       tasks: (ctx.getTasks() || []).map((task) => buildExportTaskSnapshot(task)),
-      history: ctx.getHistoryByTaskId() || {},
+      history: includeHistory ? ctx.getHistoryByTaskId() || {} : {},
+      historyExcludedReason: includeHistory ? null : "Upgrade to Pro to export history with backups.",
     };
   }
 
@@ -239,6 +246,22 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       };
 
       if (hasExistingTasks && hasIncomingTasks) {
+        if (!canUseAdvancedBackup()) {
+          ctx.confirm(
+            "Import Backup",
+            "Free restores backups by replacing current local data. Upgrade to Pro to merge imported tasks into existing data.",
+            {
+              okLabel: "Replace Current Data",
+              cancelLabel: "Cancel",
+              onOk: () => {
+                runImport(true);
+                ctx.closeConfirm();
+              },
+              onCancel: () => ctx.closeConfirm(),
+            }
+          );
+          return;
+        }
         ctx.confirm(
           "Import Backup",
           "Existing tasks were found. Do you want to add imported tasks to existing tasks, or overwrite existing data?",
@@ -281,15 +304,17 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     }
     if (els.exportTaskIncludeHistory) {
       els.exportTaskIncludeHistory.checked = false;
-      els.exportTaskIncludeHistory.disabled = !hasHistoryEntries;
+      els.exportTaskIncludeHistory.disabled = !hasHistoryEntries || !canUseAdvancedBackup();
     }
     if (els.exportTaskIncludeHistoryLabel) {
-      els.exportTaskIncludeHistoryLabel.textContent = hasHistoryEntries
+      els.exportTaskIncludeHistoryLabel.textContent = !canUseAdvancedBackup()
+        ? "Task history export is available on Pro"
+        : hasHistoryEntries
         ? "Include history entries"
         : "No history entries to export";
     }
     if (els.exportTaskIncludeHistoryRow) {
-      els.exportTaskIncludeHistoryRow.classList.toggle("is-disabled", !hasHistoryEntries);
+      els.exportTaskIncludeHistoryRow.classList.toggle("is-disabled", !hasHistoryEntries || !canUseAdvancedBackup());
     }
     ctx.openOverlay(els.exportTaskOverlay as HTMLElement | null);
   }
@@ -313,7 +338,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   function submitTaskExportModal() {
     const exportTaskIndex = ctx.getExportTaskIndex();
     if (exportTaskIndex == null) return;
-    const includeHistory = !!els.exportTaskIncludeHistory?.checked;
+    const includeHistory = canUseAdvancedBackup() && !!els.exportTaskIncludeHistory?.checked;
     exportTask(exportTaskIndex, { includeHistory });
     closeTaskExportModal();
   }

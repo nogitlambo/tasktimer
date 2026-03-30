@@ -870,10 +870,26 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }
     const analyseBtn = ui.root.querySelector('[data-history-action="analyse"]') as HTMLButtonElement | null;
     if (analyseBtn) {
-      const canAnalyse = state.lockedAbsIndexes.size >= 2;
+      const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
+      const canAnalyse = hasHistoryEntitlement && state.lockedAbsIndexes.size >= 2;
       analyseBtn.classList.toggle("isDisabled", !canAnalyse);
+      analyseBtn.disabled = !hasHistoryEntitlement;
       analyseBtn.setAttribute("aria-disabled", String(!canAnalyse));
-      analyseBtn.title = canAnalyse ? "Analysis" : "Lock at least 2 columns to analyse";
+      analyseBtn.title = !hasHistoryEntitlement ? "Pro feature: Analysis" : canAnalyse ? "Analysis" : "Lock at least 2 columns to analyse";
+    }
+    const manageBtn = ui.root.querySelector('[data-history-action="manage"]') as HTMLButtonElement | null;
+    if (manageBtn) {
+      const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
+      manageBtn.disabled = !hasHistoryEntitlement;
+      manageBtn.setAttribute("aria-disabled", String(!hasHistoryEntitlement));
+      manageBtn.title = hasHistoryEntitlement ? "Manage" : "Pro feature: History Manager";
+    }
+    const pinBtn = ui.root.querySelector('[data-history-action="pin"]') as HTMLButtonElement | null;
+    if (pinBtn) {
+      const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
+      pinBtn.disabled = !hasHistoryEntitlement;
+      pinBtn.setAttribute("aria-disabled", String(!hasHistoryEntitlement));
+      pinBtn.title = hasHistoryEntitlement ? pinBtn.title : "Pro feature: Pin chart";
     }
   }
 
@@ -1016,6 +1032,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const state = ensureHistoryViewState(taskId);
 
       if (action === "pin") {
+        if (!ctx.hasEntitlement("advancedHistory")) {
+          ctx.showUpgradePrompt("Pinned history charts", "pro");
+          return;
+        }
         const nextPinned = new Set(ctx.getPinnedHistoryTaskIds());
         if (nextPinned.has(taskId)) nextPinned.delete(taskId);
         else nextPinned.add(taskId);
@@ -1048,10 +1068,18 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         return;
       }
       if (action === "manage") {
+        if (!ctx.hasEntitlement("advancedHistory")) {
+          ctx.showUpgradePrompt("History Manager", "pro");
+          return;
+        }
         ctx.navigateToAppRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
         return;
       }
       if (action === "analyse") {
+        if (!ctx.hasEntitlement("advancedHistory")) {
+          ctx.showUpgradePrompt("Inline history analysis", "pro");
+          return;
+        }
         if (state.lockedAbsIndexes.size < 2) return;
         openHistoryAnalysisModal(taskId);
         return;

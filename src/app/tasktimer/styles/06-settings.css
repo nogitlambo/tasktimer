@@ -3297,3 +3297,90 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     justify-content: flex-start;
   }
 }
+
+/* Final Account plan selector */
+#app[aria-label="TaskLaunch Settings"] .settingsPlanSelectorRow{
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanSelectorRow .unitButtons{
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#app[aria-label="TaskLaunch Settings"] #taskTimerPlanFreeBtn,
+#app[aria-label="TaskLaunch Settings"] #taskTimerPlanProBtn{
+  min-width: 110px;
+  justify-content: center;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanNotice{
+  margin-top: 2px;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanFeatureList strong{
+  color: rgba(228,248,255,.96);
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityItem{
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(121,226,255,.16);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityLabel{
+  color: rgba(153,227,239,.72);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityValue{
+  color: rgba(238,249,255,.94);
+  font-family: var(--font-tight);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityItem{
+  border-color: rgba(221,108,241,.18);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityLabel{
+  color: rgba(241,198,247,.78);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityValue{
+  color: rgba(252,241,255,.94);
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"] .settingsPlanSelectorRow{
+    align-items: stretch;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsPlanSelectorRow .unitButtons{
+    justify-content: flex-start;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityGrid{
+    grid-template-columns: 1fr;
+  }
+}

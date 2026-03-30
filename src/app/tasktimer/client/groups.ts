@@ -27,6 +27,27 @@ type GroupsBusyResult<T> =
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
 
+  function canUseSocialFeatures() {
+    return ctx.hasEntitlement("socialFeatures");
+  }
+
+  function renderGroupsLockedState() {
+    setGroupsStatus("Friends and shared tasks are available on Pro.");
+    if (els.groupsFriendsList) {
+      els.groupsFriendsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Upgrade to Pro to unlock friends, sharing, and social progress.</div>';
+    }
+    if (els.groupsSharedByYouList) {
+      els.groupsSharedByYouList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Shared tasks are available on Pro.</div>';
+    }
+    if (els.groupsIncomingRequestsList) {
+      els.groupsIncomingRequestsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Friend requests are available on Pro.</div>';
+    }
+    if (els.groupsOutgoingRequestsList) {
+      els.groupsOutgoingRequestsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Outgoing requests are available on Pro.</div>';
+    }
+    if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = true;
+  }
+
   function setGroupsStatus(message: string, tone: "error" | "success" | "info" = "info") {
     const host = els.groupsFriendRequestStatus as HTMLElement | null;
     if (!host) return;
@@ -47,6 +68,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function openFriendRequestModal() {
+    if (!canUseSocialFeatures()) {
+      ctx.showUpgradePrompt("Friends and sharing", "pro");
+      return;
+    }
     if (!els.friendRequestModal) return;
     (els.friendRequestModal as HTMLElement).style.display = "flex";
     if (els.friendRequestEmailInput) els.friendRequestEmailInput.value = "";
@@ -411,6 +436,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function openShareTaskModal(taskIndex: number) {
+    if (!canUseSocialFeatures()) {
+      ctx.showUpgradePrompt("Task sharing", "pro");
+      return;
+    }
     const task = ctx.getTasks()[taskIndex];
     if (!task) return;
     ctx.setShareTaskIndex(taskIndex);
@@ -434,6 +463,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function openUnshareTaskModal(taskId: string) {
+    if (!canUseSocialFeatures()) {
+      ctx.showUpgradePrompt("Task sharing", "pro");
+      return;
+    }
     const normalizedTaskId = String(taskId || "").trim();
     if (!normalizedTaskId) return;
     const taskName =
@@ -982,6 +1015,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function renderFriendsFooterAlertBadge() {
     const badgeEl = els.footerTest2AlertBadge as HTMLElement | null;
     if (!badgeEl) return;
+    if (!canUseSocialFeatures()) {
+      badgeEl.style.display = "none";
+      badgeEl.textContent = "";
+      return;
+    }
     const uid = ctx.getCurrentUid();
     const count = uid ? Math.max(0, Number(ctx.getGroupsIncomingRequests().length) || 0) : 0;
     if (count <= 0) {
@@ -997,6 +1035,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function renderGroupsPage() {
+    if (!canUseSocialFeatures()) {
+      renderFriendsFooterAlertBadge();
+      renderGroupsLockedState();
+      return;
+    }
     renderFriendsFooterAlertBadge();
     renderGroupsRequestsList(els.groupsIncomingRequestsList as HTMLElement | null, ctx.getGroupsIncomingRequests(), { incoming: true });
     renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, ctx.getGroupsOutgoingRequests(), { incoming: false });
@@ -1008,6 +1051,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   async function refreshGroupsData(opts?: { preserveStatus?: boolean }) {
+    if (!canUseSocialFeatures()) {
+      renderGroupsPage();
+      return;
+    }
     const uid = ctx.getCurrentUid();
     if (!uid) {
       ctx.setGroupsIncomingRequests([]);

@@ -17,6 +17,14 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return ctx.getTasks().findIndex((task, index) => index !== targetIndex && !!task?.running);
   }
 
+  function canUseAdvancedHistory() {
+    return ctx.hasEntitlement("advancedHistory");
+  }
+
+  function canUseSocialFeatures() {
+    return ctx.hasEntitlement("socialFeatures");
+  }
+
   function getTileColumnCount() {
     if (typeof window === "undefined") return 1;
     if (window.matchMedia("(min-width: 1200px)").matches) return 3;
@@ -135,10 +143,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
             <div class="historyTop">
               <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
               <div class="historyMeta historyTopActions">
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="analyse" title="Analysis" aria-label="Analysis">&#128269;</button>
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="manage" title="Manage" aria-label="Manage">&#9881;</button>
+                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="analyse" title="${canUseAdvancedHistory() ? "Analysis" : "Pro feature: Analysis"}" aria-label="${canUseAdvancedHistory() ? "Analysis" : "Pro feature: Analysis"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128269;</button>
+                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="manage" title="${canUseAdvancedHistory() ? "Manage" : "Pro feature: History Manager"}" aria-label="${canUseAdvancedHistory() ? "Manage" : "Pro feature: History Manager"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#9881;</button>
                 <button class="historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">X</button>
-                <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${isHistoryPinned ? "Unpin chart" : "Pin chart"}" aria-label="${isHistoryPinned ? "Unpin chart" : "Pin chart"}">&#128204;</button>
+                <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" aria-label="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128204;</button>
               </div>
             </div>
             <div class="historyCanvasWrap"><canvas class="historyChartInline"></canvas></div>
@@ -203,7 +211,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
                 <button class="taskMenuItem" data-action="collapse" title="${ctx.escapeHtmlUI(collapseLabel)}" type="button">${ctx.escapeHtmlUI(collapseLabel)}</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
-                <button class="taskMenuItem" data-action="${ctx.isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}" type="button">${ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share"}</button>
+                <button class="taskMenuItem" data-action="${ctx.isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Pro feature: Sharing"}" type="button" ${canUseSocialFeatures() ? "" : 'data-plan-locked="socialFeatures"'}>${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Share (Pro)"}</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
             </div>
@@ -480,6 +488,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       return;
     }
     const action = btn.getAttribute("data-action");
+    if ((action === "shareTask" || action === "unshareTask") && !canUseSocialFeatures()) {
+      ctx.showUpgradePrompt("Task sharing and friends", "pro");
+      return;
+    }
     if (action === "start") startTask(i);
     else if (action === "stop") stopTask(i);
     else if (action === "reset") resetTask(i);

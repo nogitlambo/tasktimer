@@ -12,6 +12,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
 
+  function canUseAdvancedTaskConfig() {
+    return ctx.hasEntitlement("advancedTaskConfig");
+  }
+
   function toggleSwitchElement(el: HTMLElement | null, on: boolean) {
     if (!el) return;
     el.classList.toggle("on", !!on);
@@ -310,14 +314,30 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function syncAddTaskMilestonesUi() {
+    const advancedLocked = !canUseAdvancedTaskConfig();
     els.addTaskMsToggle?.classList.toggle("on", ctx.getAddTaskMilestonesEnabled());
     els.addTaskMsToggle?.setAttribute("aria-checked", String(ctx.getAddTaskMilestonesEnabled()));
+    if (els.addTaskMsToggle) {
+      (els.addTaskMsToggle as HTMLButtonElement).disabled = advancedLocked;
+      els.addTaskMsToggle.setAttribute("aria-disabled", String(advancedLocked));
+    }
     els.addTaskMsArea?.classList.toggle("on", ctx.getAddTaskMilestonesEnabled());
+    els.addTaskMsArea?.classList.toggle("isDisabled", advancedLocked);
     setAddTaskMilestoneUnitUi(ctx.getAddTaskMilestoneTimeUnit());
     syncAddTaskCheckpointAlertUi();
   }
 
   function syncAddTaskDurationUi() {
+    const advancedLocked = !canUseAdvancedTaskConfig();
+    if (advancedLocked) {
+      ctx.setAddTaskNoTimeGoalState(true);
+      if (els.addTaskNoGoalCheckbox) {
+        els.addTaskNoGoalCheckbox.checked = true;
+        els.addTaskNoGoalCheckbox.disabled = true;
+      }
+    } else if (els.addTaskNoGoalCheckbox) {
+      els.addTaskNoGoalCheckbox.disabled = false;
+    }
     const noTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
     ctx.setAddTaskNoTimeGoalState(noTimeGoal);
     if (els.addTaskStep2NextBtn) {
@@ -615,26 +635,47 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationUnitMinute, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time goal configuration", "pro");
+        return;
+      }
       clearAddTaskValidationState();
       ctx.setAddTaskDurationUnitState("minute");
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationUnitHour, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time goal configuration", "pro");
+        return;
+      }
       clearAddTaskValidationState();
       ctx.setAddTaskDurationUnitState("hour");
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationPeriodDay, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time goal configuration", "pro");
+        return;
+      }
       clearAddTaskValidationState();
       ctx.setAddTaskDurationPeriodState("day");
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationPeriodWeek, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time goal configuration", "pro");
+        return;
+      }
       clearAddTaskValidationState();
       ctx.setAddTaskDurationPeriodState("week");
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskNoGoalCheckbox, "change", () => {
+      if (!canUseAdvancedTaskConfig() && !els.addTaskNoGoalCheckbox?.checked) {
+        if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = true;
+        ctx.showUpgradePrompt("Time goal configuration", "pro");
+        return;
+      }
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
     });
@@ -663,6 +704,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskMsToggle, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time checkpoints", "pro");
+        return;
+      }
       if (getAddTaskTimeGoalMinutes() <= 0) {
         syncAddTaskCheckpointAlertUi();
         return;
@@ -680,18 +725,30 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskMilestonesUi();
     });
     ctx.on(els.addTaskMsUnitDay, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time checkpoints", "pro");
+        return;
+      }
       ctx.setAddTaskMilestoneTimeUnitState("day");
       setAddTaskMilestoneUnitUi("day");
       renderAddTaskMilestoneEditor();
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskMsUnitHour, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time checkpoints", "pro");
+        return;
+      }
       ctx.setAddTaskMilestoneTimeUnitState("hour");
       setAddTaskMilestoneUnitUi("hour");
       renderAddTaskMilestoneEditor();
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskMsUnitMinute, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time checkpoints", "pro");
+        return;
+      }
       ctx.setAddTaskMilestoneTimeUnitState("minute");
       setAddTaskMilestoneUnitUi("minute");
       renderAddTaskMilestoneEditor();
@@ -737,12 +794,20 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
     ctx.on(els.addTaskPresetIntervalsToggle, "click", (e: Event) => {
       e?.preventDefault?.();
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
+        return;
+      }
       if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0) return;
       ctx.setAddTaskPresetIntervalsEnabledState(!ctx.getAddTaskPresetIntervalsEnabled());
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskPresetIntervalsToggleRow, "click", (e: Event) => {
       const target = e.target as HTMLElement | null;
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
+        return;
+      }
       if (
         !ctx.getAddTaskMilestonesEnabled() ||
         getAddTaskTimeGoalMinutes() <= 0 ||
@@ -767,6 +832,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskFinalCheckpointActionSelect, "change", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time goal completion actions", "pro");
+        return;
+      }
       ctx.setAddTaskTimeGoalActionState(
         els.addTaskFinalCheckpointActionSelect?.value === "resetLog"
           ? "resetLog"
@@ -780,12 +849,20 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
     ctx.on(els.addTaskCheckpointSoundToggle, "click", (e: Event) => {
       e?.preventDefault?.();
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
+        return;
+      }
       if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertSoundEnabled()) return;
       ctx.setAddTaskCheckpointSoundEnabledState(!ctx.getAddTaskCheckpointSoundEnabled());
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskCheckpointSoundToggleRow, "click", (e: Event) => {
       const target = e.target as HTMLElement | null;
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
+        return;
+      }
       if (
         !ctx.getAddTaskMilestonesEnabled() ||
         getAddTaskTimeGoalMinutes() <= 0 ||
@@ -803,12 +880,20 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
     ctx.on(els.addTaskCheckpointToastToggle, "click", (e: Event) => {
       e?.preventDefault?.();
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
+        return;
+      }
       if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertToastEnabled()) return;
       ctx.setAddTaskCheckpointToastEnabledState(!ctx.getAddTaskCheckpointToastEnabled());
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskCheckpointToastToggleRow, "click", (e: Event) => {
       const target = e.target as HTMLElement | null;
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
+        return;
+      }
       if (
         !ctx.getAddTaskMilestonesEnabled() ||
         getAddTaskTimeGoalMinutes() <= 0 ||
@@ -825,6 +910,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskAddMsBtn, "click", () => {
+      if (!canUseAdvancedTaskConfig()) {
+        ctx.showUpgradePrompt("Time checkpoints", "pro");
+        return;
+      }
       if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0) {
         syncAddTaskCheckpointAlertUi();
         return;

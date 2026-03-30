@@ -5,6 +5,7 @@ import type { AppPage, DashboardAvgRange, DashboardCardSize, DashboardTimelineDe
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
+import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -79,6 +80,8 @@ export type TaskTimerPopupMenuContext = {
   syncModeLabelsUi: () => void;
   syncTaskSettingsUi: () => void;
   clearHistoryEntryNoteOverlayPosition: () => void;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerTaskUiPersistenceContext = {
@@ -129,6 +132,9 @@ export type TaskTimerImportExportContext = {
   getPresetIntervalValueNum: (task: Task) => number;
   getPresetIntervalNextSeqNum: (task: Task) => number;
   cleanupHistory: (history: HistoryByTaskId) => HistoryByTaskId;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerTaskListUiContext = {
@@ -184,6 +190,8 @@ export type TaskTimerAppShellContext = {
   closeTopOverlayIfOpen: () => boolean;
   closeMobileDetailPanelIfOpen: () => boolean;
   showExitAppConfirm: () => void;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerGroupsContext = {
@@ -238,6 +246,9 @@ export type TaskTimerGroupsContext = {
   getShareTaskTaskId: () => string | null;
   setShareTaskTaskId: (value: string | null) => void;
   getOpenFriendSharedTaskUids: () => Set<string>;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerTasksContext = {
@@ -398,6 +409,9 @@ export type TaskTimerTasksContext = {
   clearSuppressedFocusModeAlert: (taskId: string) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerEditTaskContext = {
@@ -477,6 +491,8 @@ export type TaskTimerEditTaskContext = {
   resetCheckpointAlertTracking: (taskId: string | null | undefined) => void;
   clearCheckpointBaseline: (taskId: string | null | undefined) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerAddTaskContext = {
@@ -542,6 +558,8 @@ export type TaskTimerAddTaskContext = {
     ms: Task["milestones"],
     onApplied?: () => void
   ) => void;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerSessionContext = {
@@ -701,6 +719,8 @@ export type TaskTimerDashboardRenderContext = {
   getModeLabel: (mode: MainMode) => string;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
 };
 
 export type TaskTimerPreferencesContext = {
@@ -774,6 +794,9 @@ export type TaskTimerPreferencesContext = {
   escapeHtmlUI: (value: unknown) => string;
   stopCheckpointRepeatAlert: () => void;
   getCurrentAppPage: () => AppPage;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerHistoryManagerSortKey = "ts" | "ms";
@@ -832,6 +855,9 @@ export type TaskTimerHistoryManagerContext = {
   escapeHtmlUI: (value: unknown) => string;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  getCurrentPlan: () => TaskTimerPlan;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
 export type TaskTimerHistoryInlineContext = {
@@ -870,4 +896,6 @@ export type TaskTimerHistoryInlineContext = {
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   getModeColor: (mode: MainMode) => string;
   getDynamicColorsEnabled: () => boolean;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };

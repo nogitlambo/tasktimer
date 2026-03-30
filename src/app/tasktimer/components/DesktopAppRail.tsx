@@ -25,6 +25,12 @@ import {
   STORAGE_KEY,
   subscribeCachedPreferences,
 } from "../lib/storage";
+import {
+  readTaskTimerPlanFromStorage,
+  TASKTIMER_PLAN_CHANGED_EVENT,
+  type TaskTimerPlan,
+} from "../lib/entitlements";
+import { syncCurrentUserPlanCache } from "../lib/planFunctions";
 
 type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
 
@@ -310,6 +316,7 @@ export default function DesktopAppRail({
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -321,9 +328,13 @@ export default function DesktopAppRail({
       setProfileLabel(fallbackLabel);
       setProfileAvatarSrc(googlePhotoUrl);
       setRankThumbnailSrc("");
+      setCurrentPlan("free");
       return;
     }
     setSignedInUserUid(uid);
+    void syncCurrentUserPlanCache(uid).catch(() => {
+      // Keep rendering from the cached/default plan if the plan sync is temporarily unavailable.
+    });
 
     const storedAvatarId = readStoredAvatarId(uid);
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
@@ -342,6 +353,7 @@ export default function DesktopAppRail({
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteRankThumbnailSrc = String(snap.get("rankThumbnailSrc") || storedRankThumbnailSrc).trim();
       const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
+      const remotePlan = snap.exists() ? String(snap.get("plan") || "").trim().toLowerCase() : "";
       if (googlePhotoUrl && remoteGooglePhotoUrl !== googlePhotoUrl) {
         void setDoc(
           doc(db, "users", uid),
@@ -358,6 +370,9 @@ export default function DesktopAppRail({
       setProfileLabel(alias || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       setRankThumbnailSrc(remoteRankThumbnailSrc);
+      if (remotePlan === "free" || remotePlan === "pro") {
+        setCurrentPlan(remotePlan);
+      }
     } catch {
       // Keep local/auth profile state if user-doc enrichment fails.
     }
@@ -368,6 +383,16 @@ export default function DesktopAppRail({
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncStoredPlan = () => setCurrentPlan(readTaskTimerPlanFromStorage());
+    syncStoredPlan();
+    window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncStoredPlan as EventListener);
+    return () => {
+      window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncStoredPlan as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -396,6 +421,7 @@ export default function DesktopAppRail({
   }, [showRankLadderModal]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
+  const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
   const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
@@ -403,6 +429,16 @@ export default function DesktopAppRail({
     rewardsHeader.xpToNext != null
       ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
       : "You have reached the highest configured rank.";
+  const mockNextPaymentDateLabel = useMemo(() => {
+    if (currentPlan !== "pro") return "No upcoming charge while on Free.";
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 14);
+    return nextDate.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }, [currentPlan]);
 
   const handleSelectRankThumbnail = async (rankId: string) => {
     if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
@@ -483,8 +519,14 @@ export default function DesktopAppRail({
                   <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
                     View Profile
                   </a>
-                  <button className="dashboardTag dashboardRailProfileTagLink" id="rewardsInfoOpenBtn" type="button">
-                    Rewards
+                  <button
+                    className="dashboardTag dashboardRailProfileTagLink"
+                    id="rewardsInfoOpenBtn"
+                    type="button"
+                    aria-label={`Open ${currentPlanLabel} subscription details`}
+                    title={`${currentPlanLabel} subscription details`}
+                  >
+                    {currentPlanLabel}
                   </button>
                 </div>
               </div>
@@ -542,9 +584,42 @@ export default function DesktopAppRail({
         </div>
       ) : null}
       <div className="overlay" id="rewardsInfoOverlay">
-        <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Rewards">
-          <div className="settingsDetailEmpty rewardsInfoText">You have no active rewards</div>
+        <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Subscription details">
+          <h2>{currentPlanLabel} Subscription</h2>
+          <p className="modalSubtext">
+            This is a mock subscription summary for the current plan. Billing actions are not connected yet.
+          </p>
+          <div className="rewardsInfoDetailGrid" aria-label="Subscription summary">
+            <div className="rewardsInfoDetailItem">
+              <span className="rewardsInfoDetailLabel">Plan</span>
+              <strong className="rewardsInfoDetailValue">{currentPlanLabel}</strong>
+            </div>
+            <div className="rewardsInfoDetailItem">
+              <span className="rewardsInfoDetailLabel">Status</span>
+              <strong className="rewardsInfoDetailValue">
+                {currentPlan === "pro" ? "Active" : "Available"}
+              </strong>
+            </div>
+            <div className="rewardsInfoDetailItem">
+              <span className="rewardsInfoDetailLabel">Billing Cycle</span>
+              <strong className="rewardsInfoDetailValue">
+                {currentPlan === "pro" ? "Monthly (Mock)" : "No billing on Free"}
+              </strong>
+            </div>
+            <div className="rewardsInfoDetailItem">
+              <span className="rewardsInfoDetailLabel">Next Payment Date</span>
+              <strong className="rewardsInfoDetailValue">{mockNextPaymentDateLabel}</strong>
+            </div>
+          </div>
+          <div className="rewardsInfoText">
+            {currentPlan === "pro"
+              ? "Your mock Pro subscription includes advanced history, analytics, task setup, and backup tools."
+              : "Free keeps the core solo workflow unlocked. Upgrade messaging and billing flows can be wired later."}
+          </div>
           <div className="confirmBtns rewardsInfoActions">
+            <button className="btn btn-warn" type="button" disabled aria-disabled="true">
+              Cancel Subscription
+            </button>
             <button className="btn btn-ghost closePopup" id="rewardsInfoCloseBtn" type="button">
               Close
             </button>

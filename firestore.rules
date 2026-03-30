@@ -9,6 +9,22 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(allowed);
     }
 
+    function isValidUserPlanValue(value) {
+      return value in ["free", "pro"];
+    }
+
+    function userPlanIsClientSafe() {
+      return !("plan" in request.resource.data)
+      || (
+        resource == null
+          ? request.resource.data.plan == "free"
+          : (
+            ("plan" in resource.data && request.resource.data.plan == resource.data.plan)
+            || (!("plan" in resource.data) && request.resource.data.plan == "free")
+          )
+      );
+    }
+
     function isUserDoc() {
       return onlyKeys([
         "email",
@@ -21,6 +37,8 @@ service cloud.firestore {
         "rankThumbnailSrc",
         "rewardCurrentRankId",
         "rewardTotalXp",
+        "plan",
+        "planUpdatedAt",
         "createdAt",
         "updatedAt",
         "schemaVersion"
@@ -35,9 +53,12 @@ service cloud.firestore {
       && (!("rankThumbnailSrc" in request.resource.data) || request.resource.data.rankThumbnailSrc == null || request.resource.data.rankThumbnailSrc is string)
       && (!("rewardCurrentRankId" in request.resource.data) || request.resource.data.rewardCurrentRankId == null || request.resource.data.rewardCurrentRankId is string)
       && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
+      && (!("plan" in request.resource.data) || isValidUserPlanValue(request.resource.data.plan))
+      && (!("planUpdatedAt" in request.resource.data) || request.resource.data.planUpdatedAt is timestamp)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
-      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int);
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
+      && userPlanIsClientSafe();
     }
 
     function isFriendshipProfileValue(value) {

@@ -39,6 +39,7 @@ import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { getTaskTimerPushDiagnostics, type PushDiagnostics } from "@/app/tasktimer/lib/pushNotifications";
 import { sendPushTestNotification } from "@/app/tasktimer/lib/pushFunctions";
+import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
 import RankThumbnail from "./RankThumbnail";
 
 export type SettingsPaneKey =
@@ -346,7 +347,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       setActivePane((prev) => prev ?? "general");
     }
   }, [initialPane]);
-
+
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
@@ -368,6 +369,9 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       setAuthHasGoogleProvider(hasGoogleProvider);
       setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
       if (user?.uid) {
+        void syncCurrentUserPlanCache(user.uid).catch(() => {
+          // Keep rendering from the cached/default plan if plan sync is temporarily unavailable.
+        });
         void saveUserDocPatch(user.uid, {
           email: user.email || "",
           displayName: user.displayName || null,
@@ -808,6 +812,11 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     }
   };
 
+  const handleOpenPricingPage = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.open("/pricing", "_blank", "noopener,noreferrer");
+  }, []);
+
   const handlePushTest = async () => {
     if (!authUserUid) {
       setPushTestStatus("Sign in first to send a test push.");
@@ -1052,8 +1061,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             title="Account"
             subtitle=""
           >
-            <div className="settingsInlineStack">
-              <section className="settingsInlineSection">
+            <div className="settingsInlineStack">
+              <section className="settingsInlineSection">
                 {authUserEmail ? (
                   <div className="settingsAvatarPicker" aria-label="Avatar selection">
                     <div className="settingsAccountIdCard" aria-label="Account profile card">
@@ -1386,15 +1395,43 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                     </div>
                   </>
                 ) : null}
-                {!authUserEmail ? (
-                  <div className="settingsDetailNote">
-                    Account details are available after signing in from the landing page.
-                    {" "}
-                    <a href="/privacy">Privacy Policy</a>
-                  </div>
-                ) : null}
-              </section>
-            </div>
+                {!authUserEmail ? (
+                  <div className="settingsDetailNote">
+                    Account details are available after signing in from the landing page.
+                    {" "}
+                    <a href="/privacy">Privacy Policy</a>
+                  </div>
+                ) : null}
+              </section>
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Plan</div>
+                </div>
+                <button
+                  className="btn btn-accent"
+                  id="taskTimerUpgradeToProBtn"
+                  type="button"
+                  onClick={handleOpenPricingPage}
+                >
+                  Upgrade to Pro
+                </button>
+              </section>
+              <section className="settingsInlineSection">
+                <div className="settingsInlineSectionHead">
+                  <AppImg className="settingsInlineSectionIcon" src="/Reset.svg" alt="" aria-hidden="true" />
+                  <div className="settingsInlineSectionTitle">Delete Account</div>
+                </div>
+                <div className="settingsDetailNote">
+                  Permanently remove your sign-in account for this app. This action cannot be undone.
+                </div>
+                <div className="settingsInlineFooter">
+                  <button className="btn btn-warn" type="button" onClick={() => setShowDeleteAccountConfirm(true)} disabled={authBusy}>
+                    Delete Account
+                  </button>
+                </div>
+              </section>
+            </div>
             {showDeleteAccountConfirm ? (
               <div className="overlay settingsInlineConfirmOverlay" onClick={() => setShowDeleteAccountConfirm(false)}>
                 <div

@@ -14,6 +14,7 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { validateUsername } from "@/lib/username";
 import { claimUsernameClient } from "./usernameClaim";
+import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
@@ -46,6 +47,7 @@ export type TaskUiConfig = {
 };
 
 export type WorkspaceSnapshot = {
+  plan: TaskTimerPlan;
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
@@ -591,6 +593,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const db = dbOrNull();
   if (!db || !uid) {
     return {
+      plan: "free",
       tasks: [],
       historyByTaskId: {},
       deletedTaskMeta: {},
@@ -600,6 +603,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     };
   }
 
+  const userRootRef = usersDoc(uid);
   const tasksSnap = await getDocs(collection(db, "users", uid, "tasks"));
   const tasks: Task[] = [];
   const historyByTaskId: HistoryByTaskId = {};
@@ -613,12 +617,13 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     return { task, taskId: d.id, history };
   });
 
-  const [historyRows, deletedSnap, prefSnap, dashboardSnap, taskUiSnap] = await Promise.all([
+  const [historyRows, deletedSnap, prefSnap, dashboardSnap, taskUiSnap, userRootSnap] = await Promise.all([
     Promise.all(historyLoads),
     getDocs(collection(db, "users", uid, "deletedTasks")),
     getDoc(preferencesDoc(uid)!),
     getDoc(dashboardDoc(uid)!),
     getDoc(taskUiDoc(uid)!),
+    userRootRef ? getDoc(userRootRef) : Promise.resolve(null),
   ]);
 
   historyRows.forEach((row) => {
@@ -670,8 +675,9 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     : null;
 
   const taskUi = taskUiSnap.exists() ? asTaskUi(taskUiSnap.data()) : null;
+  const plan = normalizeTaskTimerPlan(userRootSnap?.exists() ? userRootSnap.get("plan") : "free");
 
-  return { tasks, historyByTaskId, deletedTaskMeta, preferences, dashboard, taskUi };
+  return { plan, tasks, historyByTaskId, deletedTaskMeta, preferences, dashboard, taskUi };
 }
 
 export async function saveTask(uid: string, task: Task): Promise<void> {

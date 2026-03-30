@@ -21,6 +21,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
 
+  function hasAdvancedInsights() {
+    return ctx.hasEntitlement("advancedInsights");
+  }
+
   function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
     const raw = String(value || "").trim();
     if (raw === "past30" || raw === "currentMonth") return "past30";
@@ -732,6 +736,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardTimelineCard() {
+    if (!hasAdvancedInsights()) {
+      if (els.dashboardTimelineNote) {
+        els.dashboardTimelineNote.textContent = "Timeline suggestions are available on Pro.";
+      }
+      if (els.dashboardTimelineList) {
+        els.dashboardTimelineList.innerHTML = '<div class="settingsDetailNote">Upgrade to Pro to unlock timeline planning and suggestion density controls.</div>';
+      }
+      if (els.dashboardTimelineSummary) els.dashboardTimelineSummary.textContent = "";
+      return;
+    }
     const listEl = els.dashboardTimelineList as HTMLElement | null;
     const noteEl = els.dashboardTimelineNote as HTMLElement | null;
     const summaryEl = els.dashboardTimelineSummary as HTMLElement | null;
@@ -1160,6 +1174,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardFocusTrend() {
+    if (!hasAdvancedInsights()) {
+      if (els.dashboardFocusTrendBars) {
+        els.dashboardFocusTrendBars.innerHTML = '<div class="settingsDetailNote">Focus Trend is available on Pro.</div>';
+      }
+      if (els.dashboardFocusTrendAxis) els.dashboardFocusTrendAxis.innerHTML = "";
+      return;
+    }
     const cardEl = els.dashboardFocusTrendCard as HTMLElement | null;
     const barsEl = els.dashboardFocusTrendBars as HTMLElement | null;
     const axisEl = els.dashboardFocusTrendAxis as HTMLElement | null;
@@ -1370,6 +1391,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const gridEl = els.dashboardHeatCalendarGrid as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
     if (!gridEl) return;
+    if (!hasAdvancedInsights()) {
+      if (monthLabelEl) monthLabelEl.textContent = "Pro Feature";
+      if (weekdaysEl) weekdaysEl.innerHTML = "";
+      gridEl.innerHTML = '<div class="settingsDetailNote">Upgrade to Pro to unlock the focus heatmap and daily breakdowns.</div>';
+      return;
+    }
 
     const nowValue = nowMs();
     const nowDate = new Date(nowValue);
@@ -1597,6 +1624,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!canvas) return;
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
     if (!wrap) return;
+    if (!hasAdvancedInsights()) {
+      if (titleEl) titleEl.textContent = "Avg Session by Task (Pro)";
+      if (emptyEl) {
+        emptyEl.style.display = "block";
+        emptyEl.textContent = "Upgrade to Pro to compare average session lengths by task.";
+      }
+      return;
+    }
     const rows = getDashboardAvgSessionRows(range, nowMs());
     if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;
 
