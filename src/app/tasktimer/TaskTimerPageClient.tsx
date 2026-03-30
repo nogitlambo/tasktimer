@@ -525,7 +525,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
           <div className="modalSubtext">
             <AppImg
               id="friendProfileRankImage"
-              src=""
+              src={undefined}
               alt="Rank insignia"
               style={{ display: "none", width: 72, height: 72, objectFit: "contain", borderRadius: 10, marginBottom: 10 }}
             />
