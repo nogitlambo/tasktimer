@@ -25,6 +25,24 @@ service cloud.firestore {
       );
     }
 
+    function userPlanUpdatedAtIsClientSafe() {
+      return !("planUpdatedAt" in request.resource.data)
+      || (
+        resource == null
+          ? !("plan" in request.resource.data) || request.resource.data.plan == "free"
+          : (
+            ("planUpdatedAt" in resource.data && request.resource.data.planUpdatedAt == resource.data.planUpdatedAt)
+            || (!("planUpdatedAt" in resource.data) && (
+              !("plan" in request.resource.data)
+              || (
+                ("plan" in resource.data && request.resource.data.plan == resource.data.plan)
+                || (!("plan" in resource.data) && request.resource.data.plan == "free")
+              )
+            ))
+          )
+      );
+    }
+
     function isUserDoc() {
       return onlyKeys([
         "email",
@@ -58,7 +76,8 @@ service cloud.firestore {
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
-      && userPlanIsClientSafe();
+      && userPlanIsClientSafe()
+      && userPlanUpdatedAtIsClientSafe();
     }
 
     function isFriendshipProfileValue(value) {

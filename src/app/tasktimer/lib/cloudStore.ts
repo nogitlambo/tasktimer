@@ -532,6 +532,7 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
   const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
   const existing = await getDoc(root);
   const prevEmail = normalizeEmail(existing.exists() ? existing.get("email") : "");
+  const existingPlan = existing.exists() ? normalizeTaskTimerPlan(existing.get("plan")) : "free";
 
   if (prevEmail && authEmail && prevEmail !== authEmail) {
     try {
@@ -546,6 +547,7 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
       root,
       {
         schemaVersion: 1,
+        plan: existingPlan,
         ...(authEmail ? { email: authEmail } : {}),
         displayName: authDisplayName,
         createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
