@@ -10,7 +10,7 @@ import {
   signInWithEmailLink,
   signInWithPopup,
 } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
@@ -30,7 +30,7 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
-export default function WebSignInPage() {
+function WebSignInPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [authEmail, setAuthEmail] = useState("");
@@ -80,6 +80,7 @@ export default function WebSignInPage() {
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser;
     const uid = String(user?.uid || authUserUid || "").trim();
+    const email = String(user?.email || authUserEmail || "").trim();
     if (!uid) return;
 
     let cancelled = false;
@@ -93,7 +94,7 @@ export default function WebSignInPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             uid,
-            email: user.email || "",
+            email,
           }),
         });
         const data = (await res.json()) as { url?: string; error?: string };
@@ -114,7 +115,7 @@ export default function WebSignInPage() {
     return () => {
       cancelled = true;
     };
-  }, [authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout]);
+  }, [authUserEmail, authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -351,5 +352,13 @@ export default function WebSignInPage() {
         setAuthError("");
       }}
     />
+  );
+}
+
+export default function WebSignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <WebSignInPageContent />
+    </Suspense>
   );
 }
