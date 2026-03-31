@@ -30,14 +30,6 @@ export async function POST(req: Request) {
     const userSnap = await userRef.get();
     const existingCustomerId = userSnap.exists ? asString(userSnap.get("stripeCustomerId")) : "";
 
-    console.log("STRIPE DEBUG create-checkout-session", {
-      priceId,
-      secretKeyPrefix: String(process.env.STRIPE_SECRET_KEY || "").trim().slice(0, 12),
-      appBaseUrl,
-      hasExistingCustomerId: !!existingCustomerId,
-      uid,
-    });
-
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],

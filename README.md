@@ -34,6 +34,46 @@ npm run hooks:install
 - `docs:check` fails when generated docs are stale.
 - `hooks:install` configures Git to use the repo-managed `.githooks/pre-commit` hook so docs update automatically before commits.
 
+## Stripe Environments
+
+Local development should stay on Stripe test mode.
+
+- `.env.example` uses test placeholders for local setup:
+  - `STRIPE_SECRET_KEY=sk_test_...`
+  - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`
+  - `STRIPE_WEBHOOK_SECRET=whsec_...`
+  - `STRIPE_PRICE_ID_PRO_MONTHLY=price_...`
+- Production must use live values for:
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_PRICE_ID_PRO_MONTHLY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `NEXT_PUBLIC_APP_URL`
+- The deployed Stripe webhook endpoint must include the trailing slash:
+  - `/api/stripe/webhook/`
+
+### Production Live Stripe Checklist
+
+1. Verify the correct live Stripe account/workspace is selected.
+2. Confirm the live recurring Pro monthly `price_...` exists.
+3. Confirm the Stripe Billing Portal is enabled in the live account.
+4. Set production env vars to live values only. Do not replace local test values unless you intentionally want local live testing.
+5. Register the live webhook endpoint as `https://<your-domain>/api/stripe/webhook/`.
+6. Subscribe the webhook to:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+7. Deploy the latest Firestore rules so `users/{uid}` allows the Stripe billing fields written by the webhook.
+8. Run a live purchase validation and confirm Firestore updates:
+   - `plan`
+   - `stripeCustomerId`
+   - `stripeSubscriptionId`
+   - `stripePriceId`
+   - `stripeSubscriptionStatus`
+   - `stripeSyncedAt`
+9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
+10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
