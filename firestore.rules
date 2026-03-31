@@ -57,6 +57,11 @@ service cloud.firestore {
         "rewardTotalXp",
         "plan",
         "planUpdatedAt",
+        "stripeCustomerId",
+        "stripeSubscriptionId",
+        "stripePriceId",
+        "stripeSubscriptionStatus",
+        "stripeSyncedAt",
         "createdAt",
         "updatedAt",
         "schemaVersion"
@@ -73,6 +78,11 @@ service cloud.firestore {
       && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
       && (!("plan" in request.resource.data) || isValidUserPlanValue(request.resource.data.plan))
       && (!("planUpdatedAt" in request.resource.data) || request.resource.data.planUpdatedAt is timestamp)
+      && (!("stripeCustomerId" in request.resource.data) || request.resource.data.stripeCustomerId is string)
+      && (!("stripeSubscriptionId" in request.resource.data) || request.resource.data.stripeSubscriptionId is string)
+      && (!("stripePriceId" in request.resource.data) || request.resource.data.stripePriceId is string)
+      && (!("stripeSubscriptionStatus" in request.resource.data) || request.resource.data.stripeSubscriptionStatus is string)
+      && (!("stripeSyncedAt" in request.resource.data) || request.resource.data.stripeSyncedAt is timestamp)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)

@@ -52,6 +52,13 @@ Allowed fields (`isUserDoc`):
 - `rankThumbnailSrc: string | null`
 - `rewardCurrentRankId: string | null`
 - `rewardTotalXp: int`
+- `plan: "free" | "pro"`
+- `planUpdatedAt: timestamp`
+- `stripeCustomerId: string`
+- `stripeSubscriptionId: string`
+- `stripePriceId: string`
+- `stripeSubscriptionStatus: string`
+- `stripeSyncedAt: timestamp`
 - `createdAt: timestamp`
 - `updatedAt: timestamp`
 - `schemaVersion: int`

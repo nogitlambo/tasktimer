@@ -317,6 +317,8 @@ export default function DesktopAppRail({
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
+  const [billingBusy, setBillingBusy] = useState(false);
+  const [billingError, setBillingError] = useState("");
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -439,6 +441,38 @@ export default function DesktopAppRail({
       day: "numeric",
     });
   }, [currentPlan]);
+
+  const handleOpenPricingPage = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.open("/pricing", "_blank", "noopener,noreferrer");
+  }, []);
+
+  const handleOpenBillingPortal = useCallback(async () => {
+    const auth = getFirebaseAuthClient();
+    const uid = String(auth?.currentUser?.uid || "").trim();
+    if (!uid || billingBusy) return;
+
+    setBillingBusy(true);
+    setBillingError("");
+    try {
+      const res = await fetch("/api/stripe/create-billing-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid,
+          returnPath: "/tasktimer/settings?pane=general",
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Could not open billing management.");
+      }
+      window.location.assign(data.url);
+    } catch (error: unknown) {
+      setBillingError(error instanceof Error && error.message ? error.message : "Could not open billing management.");
+      setBillingBusy(false);
+    }
+  }, [billingBusy]);
 
   const handleSelectRankThumbnail = async (rankId: string) => {
     if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
@@ -587,7 +621,9 @@ export default function DesktopAppRail({
         <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Subscription details">
           <h2>{currentPlanLabel} Subscription</h2>
           <p className="modalSubtext">
-            This is a mock subscription summary for the current plan. Billing actions are not connected yet.
+            {currentPlan === "pro"
+              ? "Manage billing, payment methods, invoices, and cancellation in Stripe's secure customer portal."
+              : "Upgrade to Pro to unlock advanced history, analytics, task setup, backup tools, and social features."}
           </p>
           <div className="rewardsInfoDetailGrid" aria-label="Subscription summary">
             <div className="rewardsInfoDetailItem">
@@ -603,7 +639,7 @@ export default function DesktopAppRail({
             <div className="rewardsInfoDetailItem">
               <span className="rewardsInfoDetailLabel">Billing Cycle</span>
               <strong className="rewardsInfoDetailValue">
-                {currentPlan === "pro" ? "Monthly (Mock)" : "No billing on Free"}
+                {currentPlan === "pro" ? "Monthly" : "No billing on Free"}
               </strong>
             </div>
             <div className="rewardsInfoDetailItem">
@@ -613,13 +649,24 @@ export default function DesktopAppRail({
           </div>
           <div className="rewardsInfoText">
             {currentPlan === "pro"
-              ? "Your mock Pro subscription includes advanced history, analytics, task setup, and backup tools."
-              : "Free keeps the core solo workflow unlocked. Upgrade messaging and billing flows can be wired later."}
+              ? "Your Pro subscription includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
+              : "Free keeps the core solo workflow unlocked. Upgrade whenever you want the advanced workflow and billing-backed account features."}
           </div>
+          {billingError ? (
+            <div className="settingsDetailNote" role="alert" aria-live="polite">
+              {billingError}
+            </div>
+          ) : null}
           <div className="confirmBtns rewardsInfoActions">
-            <button className="btn btn-warn" type="button" disabled aria-disabled="true">
-              Cancel Subscription
-            </button>
+            {currentPlan === "pro" ? (
+              <button className="btn btn-accent" type="button" onClick={() => void handleOpenBillingPortal()} disabled={billingBusy}>
+                {billingBusy ? "Opening Billing..." : "Manage Billing"}
+              </button>
+            ) : (
+              <button className="btn btn-accent" type="button" onClick={handleOpenPricingPage}>
+                Upgrade to Pro
+              </button>
+            )}
             <button className="btn btn-ghost closePopup" id="rewardsInfoCloseBtn" type="button">
               Close
             </button>

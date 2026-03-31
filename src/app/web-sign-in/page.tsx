@@ -11,7 +11,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
@@ -32,15 +32,20 @@ function shouldUseRedirectAuth() {
 
 export default function WebSignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [authEmail, setAuthEmail] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
+  const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [googlePopupPending, setGooglePopupPending] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const checkoutIntent = searchParams.get("checkout");
+  const shouldStartProCheckout = checkoutIntent === "pro";
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
   useEffect(() => {
@@ -57,16 +62,59 @@ export default function WebSignInPage() {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
+      const uid = user?.uid || null;
       setAuthUserEmail(email);
+      setAuthUserUid(uid);
       if (email) setGooglePopupPending(false);
       if (user?.uid) void ensureUserProfileIndex(user.uid);
-      if (email && !hasRedirected) {
+      if (email && !hasRedirected && !shouldStartProCheckout) {
         setHasRedirected(true);
         router.replace("/tasktimer/dashboard");
       }
     });
     return () => unsub();
-  }, [router, hasRedirected]);
+  }, [router, hasRedirected, shouldStartProCheckout]);
+
+  useEffect(() => {
+    if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;
+    const auth = getFirebaseAuthClient();
+    const user = auth?.currentUser;
+    const uid = String(user?.uid || authUserUid || "").trim();
+    if (!uid) return;
+
+    let cancelled = false;
+    const startCheckout = async () => {
+      setCheckoutBusy(true);
+      setAuthError("");
+      setAuthStatus("Redirecting to secure checkout...");
+      try {
+        const res = await fetch("/api/stripe/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid,
+            email: user.email || "",
+          }),
+        });
+        const data = (await res.json()) as { url?: string; error?: string };
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || "Could not start checkout.");
+        }
+        if (cancelled) return;
+        setHasRedirected(true);
+        window.location.assign(data.url);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setAuthError(getErrorMessage(err, "Could not start checkout."));
+        setAuthStatus("");
+        setCheckoutBusy(false);
+      }
+    };
+    void startCheckout();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

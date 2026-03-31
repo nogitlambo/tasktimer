@@ -26,13 +26,20 @@
 }
 
 .pricingCard:hover {
-  transform: translateY(-4px);
+  border-color: var(--pricing-card-hover-border);
+  box-shadow: var(--pricing-card-hover-shadow);
+  transform: translateY(-8px) scale(1.02);
 }
 
-@media (min-width: 1024px) {
-  .featuredCard:hover {
-    transform: translateY(-16px) scale(1.02);
-  }
+.featureList {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-geist-sans), sans-serif;
+  list-style: disc;
+}
+
+.featureList li::marker {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 @media (max-width: 1023px) {

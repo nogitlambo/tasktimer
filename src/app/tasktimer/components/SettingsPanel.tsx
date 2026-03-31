@@ -812,11 +812,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     }
   };
 
-  const handleOpenPricingPage = useCallback(() => {
-    if (typeof window === "undefined") return;
-    window.open("/pricing", "_blank", "noopener,noreferrer");
-  }, []);
-
   const handlePushTest = async () => {
     if (!authUserUid) {
       setPushTestStatus("Sign in first to send a test push.");
@@ -1402,34 +1397,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                     <a href="/privacy">Privacy Policy</a>
                   </div>
                 ) : null}
-              </section>
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Plan</div>
-                </div>
-                <button
-                  className="btn btn-accent"
-                  id="taskTimerUpgradeToProBtn"
-                  type="button"
-                  onClick={handleOpenPricingPage}
-                >
-                  Upgrade to Pro
-                </button>
-              </section>
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <AppImg className="settingsInlineSectionIcon" src="/Reset.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Delete Account</div>
-                </div>
-                <div className="settingsDetailNote">
-                  Permanently remove your sign-in account for this app. This action cannot be undone.
-                </div>
-                <div className="settingsInlineFooter">
-                  <button className="btn btn-warn" type="button" onClick={() => setShowDeleteAccountConfirm(true)} disabled={authBusy}>
-                    Delete Account
-                  </button>
-                </div>
               </section>
             </div>
             {showDeleteAccountConfirm ? (

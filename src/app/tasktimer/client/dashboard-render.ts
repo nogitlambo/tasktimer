@@ -21,6 +21,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
 
+  function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
+    if (!cardEl) return;
+    cardEl.classList.toggle("isPlanLocked", isLocked);
+    if (isLocked) cardEl.setAttribute("aria-disabled", "true");
+    else cardEl.removeAttribute("aria-disabled");
+  }
+
   function hasAdvancedInsights() {
     return ctx.hasEntitlement("advancedInsights");
   }
@@ -736,20 +743,22 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardTimelineCard() {
-    if (!hasAdvancedInsights()) {
-      if (els.dashboardTimelineNote) {
-        els.dashboardTimelineNote.textContent = "Timeline suggestions are available on Pro.";
-      }
-      if (els.dashboardTimelineList) {
-        els.dashboardTimelineList.innerHTML = '<div class="settingsDetailNote">Upgrade to Pro to unlock timeline planning and suggestion density controls.</div>';
-      }
-      if (els.dashboardTimelineSummary) els.dashboardTimelineSummary.textContent = "";
-      return;
-    }
     const listEl = els.dashboardTimelineList as HTMLElement | null;
     const noteEl = els.dashboardTimelineNote as HTMLElement | null;
     const summaryEl = els.dashboardTimelineSummary as HTMLElement | null;
     const cardEl = listEl?.closest(".dashboardTimelineCard") as HTMLElement | null;
+    if (!hasAdvancedInsights()) {
+      setDashboardPlanLockedState(cardEl, true);
+      if (els.dashboardTimelineNote) {
+        els.dashboardTimelineNote.textContent = "";
+      }
+      if (els.dashboardTimelineList) {
+        els.dashboardTimelineList.innerHTML = "";
+      }
+      if (els.dashboardTimelineSummary) els.dashboardTimelineSummary.textContent = "";
+      return;
+    }
+    setDashboardPlanLockedState(cardEl, false);
     const historyByTaskId = ctx.getHistoryByTaskId();
     if (!listEl) return;
 
@@ -1389,14 +1398,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const monthLabelEl = els.dashboardHeatMonthLabel as HTMLElement | null;
     const weekdaysEl = els.dashboardHeatWeekdays as HTMLElement | null;
     const gridEl = els.dashboardHeatCalendarGrid as HTMLElement | null;
+    const cardEl = els.dashboardHeatCard as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
     if (!gridEl) return;
     if (!hasAdvancedInsights()) {
-      if (monthLabelEl) monthLabelEl.textContent = "Pro Feature";
+      setDashboardPlanLockedState(cardEl, true);
+      setDashboardHeatFlipState(false);
+      if (monthLabelEl) monthLabelEl.textContent = "";
       if (weekdaysEl) weekdaysEl.innerHTML = "";
-      gridEl.innerHTML = '<div class="settingsDetailNote">Upgrade to Pro to unlock the focus heatmap and daily breakdowns.</div>';
+      gridEl.innerHTML = "";
       return;
     }
+    setDashboardPlanLockedState(cardEl, false);
 
     const nowValue = nowMs();
     const nowDate = new Date(nowValue);
@@ -1615,6 +1628,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
     const canvas = els.dashboardAvgSessionChart;
     const rangeLabelEl = document.getElementById("dashboardAvgRangeMenuLabel") as HTMLElement | null;
+    const cardEl = canvas?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
     const range = sanitizeDashboardAvgRange(ctx.getDashboardAvgRange());
     ctx.setDashboardAvgRange(range);
 
@@ -1625,13 +1639,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
     if (!wrap) return;
     if (!hasAdvancedInsights()) {
+      setDashboardPlanLockedState(cardEl, true);
       if (titleEl) titleEl.textContent = "Avg Session by Task (Pro)";
       if (emptyEl) {
-        emptyEl.style.display = "block";
-        emptyEl.textContent = "Upgrade to Pro to compare average session lengths by task.";
+        emptyEl.style.display = "none";
       }
       return;
     }
+    setDashboardPlanLockedState(cardEl, false);
     const rows = getDashboardAvgSessionRows(range, nowMs());
     if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;
 
