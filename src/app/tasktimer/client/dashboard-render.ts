@@ -18,6 +18,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const { els } = ctx;
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
+  let lastMomentumRenderSignature = "";
 
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
@@ -480,13 +481,23 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       dialEl.style.setProperty("--momentum-locked", "1");
       dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
       needleEl.style.setProperty("--momentum-needle-deg", "-90deg");
-      scoreValueEl.textContent = "--";
-      scoreStatusEl.textContent = "Locked";
-      driversEl.innerHTML = [
+      const lockedDrivers = [
         "Momentum score formula: recent activity 40%, consistency 25%, weekly progress 25%, active-session bonus 10%.",
         "Upgrade to Pro to see which of those factors are currently pushing your score up or down.",
         "Momentum drops when recent logging slows, streaks break, weekly goals are missed, or no active session bonus applies.",
-      ]
+      ];
+      const lockedSignature = JSON.stringify({
+        locked: true,
+        score: "--",
+        status: "Locked",
+        needle: "-90deg",
+        drivers: lockedDrivers,
+      });
+      if (lastMomentumRenderSignature === lockedSignature) return;
+      lastMomentumRenderSignature = lockedSignature;
+      scoreValueEl.textContent = "--";
+      scoreStatusEl.textContent = "Locked";
+      driversEl.innerHTML = lockedDrivers
         .map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`)
         .join("");
       return;
@@ -603,18 +614,25 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     drivers.push(`Current score ${score}/100 (${bandLabel}) is coming from ${currentBreakdown}.`);
     drivers.push(downsideSummary);
 
-    driversEl.innerHTML = drivers
-      .slice(0, 3)
-      .map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`)
-      .join("");
+    const momentumNeedleStartDeg = -170;
+    const momentumNeedleEndDeg = -10;
+    const momentumNeedleDeg = momentumNeedleStartDeg + (score / 100) * (momentumNeedleEndDeg - momentumNeedleStartDeg);
+    const nextDrivers = drivers.slice(0, 3);
+    const nextSignature = JSON.stringify({
+      locked: false,
+      score,
+      status: bandLabel,
+      needle: `${momentumNeedleDeg}deg`,
+      drivers: nextDrivers,
+    });
+    if (lastMomentumRenderSignature === nextSignature) return;
+    lastMomentumRenderSignature = nextSignature;
 
+    driversEl.innerHTML = nextDrivers.map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`).join("");
     dialEl.style.setProperty("--momentum-score", String(score));
     dialEl.setAttribute("aria-label", `Momentum score ${score} out of 100, ${bandLabel}`);
     scoreValueEl.textContent = String(score);
     scoreStatusEl.textContent = bandLabel;
-    const momentumNeedleStartDeg = -170;
-    const momentumNeedleEndDeg = -10;
-    const momentumNeedleDeg = momentumNeedleStartDeg + (score / 100) * (momentumNeedleEndDeg - momentumNeedleStartDeg);
     needleEl.style.setProperty("--momentum-needle-deg", `${momentumNeedleDeg}deg`);
   }
 
@@ -1903,7 +1921,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
     renderDashboardStreakCard();
     renderDashboardOverviewChart();
-    renderDashboardMomentumCard();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -1912,6 +1929,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardModeDistribution();
     if (opts?.includeAvgSession !== false) renderDashboardAvgSessionChart();
     renderDashboardHeatCalendar();
+    try {
+      renderDashboardMomentumCard();
+    } catch {
+      // Keep the rest of the dashboard stable if Momentum rendering fails.
+    }
   }
 
   return {
