@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const isAndroidExportBuild = process.env.NEXT_OUTPUT === "export";
+const isAndroidExportBuild = process.env.NEXT_ANDROID_EXPORT === "1";
 
 const nextConfig: NextConfig = {
   output: isAndroidExportBuild ? "export" : "standalone",

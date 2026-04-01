@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { LandingExperimentalProps } from "./landing.types";
-import PricingSection from "./pricing/PricingSection";
 
 type LandingIntroSequenceProps = {
   showActions: boolean;
@@ -309,15 +308,6 @@ export default function Landing({
               <div className="space-y-8 transition-all duration-700 translate-y-2 opacity-0" aria-hidden="true" />
             </>
           )}
-        </section>
-
-        <section
-          className={`mt-28 w-full transition-all duration-700 sm:mt-32 ${
-            showActions ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-          }`}
-          aria-hidden={!showActions}
-        >
-          <PricingSection />
         </section>
 
       </div>

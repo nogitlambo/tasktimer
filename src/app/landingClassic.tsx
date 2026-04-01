@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { LandingClassicProps } from "./landing.types";
-import PricingSection from "./pricing/PricingSection";
 
 export default function LandingClassic({
   showLogo,
@@ -243,14 +242,6 @@ export default function LandingClassic({
           )}
         </div>
 
-        <div
-          className={`mt-48 w-full max-w-[1180px] transition-all duration-500 ${
-            showActions ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-          }`}
-          aria-hidden={!showActions}
-        >
-          <PricingSection />
-        </div>
       </div>
     </main>
   );

@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "npm run clean:next && next build",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
-    "build:android": "npm run clean:next && set NEXT_OUTPUT=export&& npx next build",
+    "build:android": "npm run clean:next && set NEXT_ANDROID_EXPORT=1&& npx next build",
     "start": "next start",
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "fonts:check": "node scripts/check-font-contract.mjs",
