@@ -698,6 +698,7 @@ export type TaskTimerDashboardRenderContext = {
     streak: boolean;
     tasksCompleted: boolean;
     overview: boolean;
+    momentum: boolean;
     focusTrend: boolean;
     heatCalendar: boolean;
     modeDistribution: boolean;
