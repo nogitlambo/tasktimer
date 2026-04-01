@@ -78,7 +78,11 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         if (options.runtime.destroyed) return;
         options.hydrateUiStateFromCaches();
         options.syncTimeGoalModalWithTaskState();
-        options.render();
+        const activeDashboardPage =
+          typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
+        if (!activeDashboardPage) {
+          options.render();
+        }
         options.maybeHandlePendingTaskJump();
         options.maybeRestorePendingTimeGoalFlow();
         options.lastCloudRefreshAtMs.set(options.nowMs());

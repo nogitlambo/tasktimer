@@ -3714,31 +3714,38 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle{
   position: absolute !important;
   left: 50% !important;
-  top: 75.409836% !important;
-  width: 29.411765% !important;
+  top: calc(64.754098% - 2px) !important;
+  width: 29% !important;
   height: 4px !important;
+  overflow: hidden !important;
+  clip-path: none !important;
   transform-origin: 0% 50% !important;
   transform: rotate(var(--momentum-needle-deg)) !important;
   border-radius: 999px !important;
-  background: linear-gradient(90deg, rgba(205,223,255,.96) 0 18%, rgba(147,181,255,.98) 18% 72%, rgba(62,100,224,.98) 72% 100%) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.18),
-    0 0 8px rgba(110,153,255,.24) !important;
+  background: transparent !important;
+  box-shadow: none !important;
   opacity: calc(1 - (var(--momentum-locked) * 0.42)) !important;
   z-index: 2 !important;
+  pointer-events: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
-  content: "" !important;
-  position: absolute !important;
-  left: 2px !important;
-  top: 1px !important;
-  width: 8px !important;
-  height: 2px !important;
-  border-radius: 999px !important;
-  background: rgba(241,247,255,.96) !important;
+  content: none !important;
+  display: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::after{
-  content: none !important;
+  content: "" !important;
+  position: absolute !important;
+  right: 0 !important;
+  left: auto !important;
+  top: 0 !important;
+  width: 50% !important;
+  height: 100% !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, rgba(133,173,255,.92) 0%, rgba(106,154,255,.98) 46%, rgba(62,100,224,.98) 100%) !important;
+  box-shadow:
+    0 0 8px rgba(110,153,255,.22),
+    0 0 2px rgba(200,228,255,.24) !important;
+  pointer-events: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard.isPlanLocked .dashboardMomentumDial{
   filter: saturate(.72) brightness(.88) !important;
@@ -3936,6 +3943,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background: transparent !important;
   box-shadow: none !important;
   border-color: rgba(121,226,255,.08) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel::after,

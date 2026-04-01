@@ -166,6 +166,7 @@ const els = {
   dashboardWeeklyGoalsProgressText: documentRef.getElementById("dashboardWeeklyGoalsProgressText"),
   dashboardMomentumCard: documentRef.querySelector('.dashboardCard[data-dashboard-id="momentum"]') as HTMLElement | null,
   dashboardMomentumDial: documentRef.getElementById("dashboardMomentumDial"),
+  dashboardMomentumArcActive: documentRef.getElementById("dashboardMomentumArcActive"),
   dashboardMomentumNeedle: documentRef.getElementById("dashboardMomentumNeedle"),
   dashboardMomentumScoreValue: documentRef.getElementById("dashboardMomentumScoreValue"),
   dashboardMomentumScoreStatus: documentRef.getElementById("dashboardMomentumScoreStatus"),

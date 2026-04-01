@@ -299,10 +299,20 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                             <path
                               d="M22 79 A72 72 0 0 1 165 79"
                               fill="none"
+                              stroke="rgba(82, 95, 125, 0.22)"
+                              strokeWidth="17"
+                              strokeLinecap="butt"
+                            />
+                            <path
+                              d="M22 79 A72 72 0 0 1 165 79"
+                              id="dashboardMomentumArcActive"
+                              fill="none"
                               stroke="url(#momentumGaugeGradient)"
                               strokeWidth="17"
                               strokeLinecap="butt"
                               filter="url(#momentumGaugeGlow)"
+                              pathLength="100"
+                              strokeDasharray="0 100"
                             />
                             <path
                               d="M22 79 A72 72 0 0 1 165 79"
@@ -345,9 +355,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                                 </g>
                               );
                             })()}
-                            <circle cx="93.5" cy="92" r="7.2" fill="#4c7380" />
-                            <circle cx="93.5" cy="92" r="4.2" fill="#c9df62" />
-                            <circle cx="93.5" cy="92" r="1.7" fill="#8eb1b8" />
                           </svg>
                           <div className="dashboardMomentumNeedle" id="dashboardMomentumNeedle" aria-hidden="true" />
                         </div>

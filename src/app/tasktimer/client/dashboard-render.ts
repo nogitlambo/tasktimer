@@ -469,17 +469,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   function renderDashboardMomentumCard() {
     const cardEl = els.dashboardMomentumCard as HTMLElement | null;
     const dialEl = els.dashboardMomentumDial as HTMLElement | null;
+    const arcActiveEl = els.dashboardMomentumArcActive as SVGPathElement | null;
     const needleEl = els.dashboardMomentumNeedle as HTMLElement | null;
     const scoreValueEl = els.dashboardMomentumScoreValue as HTMLElement | null;
     const scoreStatusEl = els.dashboardMomentumScoreStatus as HTMLElement | null;
     const driversEl = els.dashboardMomentumDrivers as HTMLElement | null;
-    if (!cardEl || !dialEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driversEl) return;
+    if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driversEl) return;
 
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
       dialEl.style.setProperty("--momentum-score", "0");
       dialEl.style.setProperty("--momentum-locked", "1");
       dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
+      arcActiveEl.setAttribute("stroke-dasharray", "0 100");
       needleEl.style.setProperty("--momentum-needle-deg", "-90deg");
       const lockedDrivers = [
         "Momentum score formula: recent activity 40%, consistency 25%, weekly progress 25%, active-session bonus 10%.",
@@ -633,6 +635,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     dialEl.setAttribute("aria-label", `Momentum score ${score} out of 100, ${bandLabel}`);
     scoreValueEl.textContent = String(score);
     scoreStatusEl.textContent = bandLabel;
+    arcActiveEl.setAttribute("stroke-dasharray", `${score} 100`);
     needleEl.style.setProperty("--momentum-needle-deg", `${momentumNeedleDeg}deg`);
   }
 
