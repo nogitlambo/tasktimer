@@ -400,13 +400,10 @@ export type TaskTimerTasksContext = {
   refreshOwnSharedSummaries: () => Promise<void>;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
   deleteTask: (index: number) => void;
-  isFocusModeFilteringAlerts: () => boolean;
-  getSuppressedFocusModeAlert: (taskId: string) => unknown;
   checkpointRepeatActiveTaskId: () => string | null;
   activeCheckpointToastTaskId: () => string | null;
   stopCheckpointRepeatAlert: () => void;
   enqueueCheckpointToast: (title: string, text: string, opts: unknown) => void;
-  clearSuppressedFocusModeAlert: (taskId: string) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
@@ -583,8 +580,6 @@ export type TaskTimerSessionContext = {
   setFocusShowCheckpoints: (value: boolean) => void;
   getFocusCheckpointSig: () => string;
   setFocusCheckpointSig: (value: string) => void;
-  getSuppressedFocusModeCheckpointAlertsByTaskId: () => Record<string, unknown>;
-  setSuppressedFocusModeCheckpointAlertsByTaskId: (value: Record<string, unknown>) => void;
   getDeferredFocusModeTimeGoalModals: () => Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>;
   setDeferredFocusModeTimeGoalModals: (
     value: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>

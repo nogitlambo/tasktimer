@@ -105,17 +105,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 
   const runtime = createTaskTimerRuntime();
-  type SuppressedCheckpointToast = {
-    title: string;
-    text: string;
-    autoCloseMs: number | null;
-    taskId: string;
-    taskName: string | null;
-    counterText: string | null;
-    checkpointTimeText: string | null;
-    checkpointDescText: string | null;
-    muteRepeatOnManualDismiss: boolean;
-  };
   const { on } = runtime;
 
   function getCurrentPlan(): TaskTimerPlan {
@@ -182,7 +171,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
-  let suppressedFocusModeCheckpointAlertsByTaskId: Record<string, SuppressedCheckpointToast> = {};
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
 
@@ -957,13 +945,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     refreshOwnSharedSummaries,
     refreshGroupsData,
     deleteTask: (index) => deleteTask(index),
-    isFocusModeFilteringAlerts: () => sessionApi?.isFocusModeFilteringAlerts() || false,
-    getSuppressedFocusModeAlert: (taskId) => sessionApi?.getSuppressedFocusModeAlert(taskId) || null,
     checkpointRepeatActiveTaskId: () => sessionApi?.checkpointRepeatActiveTaskId() || null,
     activeCheckpointToastTaskId: () => sessionApi?.activeCheckpointToastTaskId() || null,
     stopCheckpointRepeatAlert: () => sessionApi?.stopCheckpointRepeatAlert(),
     enqueueCheckpointToast: (title, text, opts) => sessionApi?.enqueueCheckpointToast(title, text, opts as any),
-    clearSuppressedFocusModeAlert: (taskId) => sessionApi?.clearSuppressedFocusModeAlert(taskId),
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
     syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
     hasEntitlement,
@@ -1116,10 +1101,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getFocusCheckpointSig: () => focusCheckpointSig,
     setFocusCheckpointSig: (value) => {
       focusCheckpointSig = value;
-    },
-    getSuppressedFocusModeCheckpointAlertsByTaskId: () => suppressedFocusModeCheckpointAlertsByTaskId,
-    setSuppressedFocusModeCheckpointAlertsByTaskId: (value) => {
-      suppressedFocusModeCheckpointAlertsByTaskId = value as typeof suppressedFocusModeCheckpointAlertsByTaskId;
     },
     getDeferredFocusModeTimeGoalModals: () => deferredFocusModeTimeGoalModals,
     setDeferredFocusModeTimeGoalModals: (value) => {

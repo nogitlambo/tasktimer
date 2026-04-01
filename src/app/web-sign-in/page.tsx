@@ -6,6 +6,7 @@ import {
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
+  signOut,
   signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
@@ -17,6 +18,7 @@ import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
+const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -44,6 +46,7 @@ function WebSignInPageContent() {
   const [hasRedirected, setHasRedirected] = useState(false);
   const [googlePopupPending, setGooglePopupPending] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
   const checkoutIntent = searchParams.get("checkout");
   const shouldStartProCheckout = checkoutIntent === "pro";
 
@@ -58,6 +61,32 @@ function WebSignInPageContent() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    let shouldBypass = false;
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      shouldBypass = params.get("signedOut") === "1";
+    } catch {
+      shouldBypass = false;
+    }
+    if (!shouldBypass) {
+      try {
+        shouldBypass = sessionStorage.getItem(SIGN_OUT_LANDING_BYPASS_KEY) === "1";
+      } catch {
+        shouldBypass = false;
+      }
+    }
+    if (!shouldBypass) return;
+    setBypassAutoRedirect(true);
+    const auth = getFirebaseAuthClient();
+    if (auth) {
+      void signOut(auth).catch(() => {
+        // ignore; auth state listener will settle the final UI state
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -67,13 +96,32 @@ function WebSignInPageContent() {
       setAuthUserUid(uid);
       if (email) setGooglePopupPending(false);
       if (user?.uid) void ensureUserProfileIndex(user.uid);
-      if (email && !hasRedirected && !shouldStartProCheckout) {
+      if (!email && bypassAutoRedirect) {
+        setBypassAutoRedirect(false);
+        try {
+          sessionStorage.removeItem(SIGN_OUT_LANDING_BYPASS_KEY);
+        } catch {
+          // ignore
+        }
+        try {
+          const params = new URLSearchParams(window.location.search || "");
+          if (params.get("signedOut") === "1") {
+            params.delete("signedOut");
+            const qs = params.toString();
+            const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash || ""}`;
+            window.history.replaceState({}, "", cleanUrl);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (email && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect) {
         setHasRedirected(true);
         router.replace("/tasktimer/dashboard");
       }
     });
     return () => unsub();
-  }, [router, hasRedirected, shouldStartProCheckout]);
+  }, [router, hasRedirected, shouldStartProCheckout, bypassAutoRedirect]);
 
   useEffect(() => {
     if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;

@@ -6,18 +6,6 @@ import type { TaskTimerSessionContext } from "./context";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type SuppressedCheckpointToast = {
-  title: string;
-  text: string;
-  autoCloseMs: number | null;
-  taskId: string;
-  taskName: string | null;
-  counterText: string | null;
-  checkpointTimeText: string | null;
-  checkpointDescText: string | null;
-  muteRepeatOnManualDismiss: boolean;
-};
-
 type CheckpointToast = {
   id: string;
   title: string;
@@ -35,10 +23,6 @@ type CheckpointToast = {
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const { els, runtime } = ctx;
   const { sharedTasks } = ctx;
-
-  const getSuppressedMap = () => ctx.getSuppressedFocusModeCheckpointAlertsByTaskId() as Record<string, SuppressedCheckpointToast>;
-  const setSuppressedMap = (value: Record<string, SuppressedCheckpointToast>) =>
-    ctx.setSuppressedFocusModeCheckpointAlertsByTaskId(value as Record<string, unknown>);
   const getDeferredQueue = () => ctx.getDeferredFocusModeTimeGoalModals();
   const getToastQueue = () => ctx.getCheckpointToastQueue() as CheckpointToast[];
   const getActiveToast = () => ctx.getActiveCheckpointToast() as CheckpointToast | null;
@@ -424,6 +408,21 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     openDeferredFocusModeTimeGoalModal();
   }
 
+  function continueTaskAfterTimeGoalModal(task: Task) {
+    const taskId = String(task.id || "").trim();
+    if (!taskId) return;
+    const currentElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
+    resumeTaskAfterTimeGoalModal(task);
+    ctx.getTimeGoalReminderAtMsByTaskId()[taskId] = nowMs() + getTimeGoalReminderDelayMs();
+    ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(currentElapsedMs / 1000);
+    ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+    clearPendingTimeGoalFlow();
+    ctx.save();
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    ctx.render();
+    openDeferredFocusModeTimeGoalModal();
+  }
+
   function resumeTaskAfterTimeGoalModal(task: Task) {
     const taskId = String(task.id || "").trim();
     if (!taskId || ctx.getTimeGoalModalTaskId() !== taskId) return;
@@ -681,7 +680,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const task = ctx.getTasks()[index];
     if (!task) return;
     ctx.setFocusModeTaskId(String(task.id || ""));
-    setSuppressedMap({});
     ctx.setDeferredFocusModeTimeGoalModals([]);
     dismissNonFocusTaskAlertsForFocusTask(String(task.id || ""));
     ctx.setFocusModeTaskName((task.name || "").trim());
@@ -746,34 +744,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     openDeferredFocusModeTimeGoalModal();
   }
 
-  function isFocusModeFilteringAlerts() {
-    return String(ctx.getFocusModeTaskId() || "").trim().length > 0;
-  }
-
-  function shouldSuppressTaskAlertsInFocusMode(taskIdRaw: string | null | undefined) {
+  function shouldDeferTimeGoalModalInFocusMode(taskIdRaw: string | null | undefined) {
     const activeFocusTaskId = String(ctx.getFocusModeTaskId() || "").trim();
     const taskId = String(taskIdRaw || "").trim();
     return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
-  }
-
-  function noteSuppressedFocusModeAlert(toast: SuppressedCheckpointToast) {
-    const taskId = String(toast.taskId || "").trim();
-    if (!taskId) return;
-    setSuppressedMap({ ...getSuppressedMap(), [taskId]: { ...toast, taskId } });
-  }
-
-  function getSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return null;
-    return getSuppressedMap()[taskId] || null;
-  }
-
-  function clearSuppressedFocusModeAlert(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId || !getSuppressedMap()[taskId]) return;
-    const next = { ...getSuppressedMap() };
-    delete next[taskId];
-    setSuppressedMap(next);
   }
 
   function queueDeferredFocusModeTimeGoalModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
@@ -1046,8 +1020,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const checkpointIndex = Math.max(1, validMilestones.findIndex((vm) => checkpointKeyForTask(vm, task) === key) + 1);
       const checkpointTimeText = ctx.formatTime(targetSec * 1000);
       const checkpointDescText = String(m.description || "").trim();
-      const suppressForFocusMode = shouldSuppressTaskAlertsInFocusMode(taskId);
-      if (ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled && !suppressForFocusMode) {
+      if (ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled) {
         const toastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
         enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
           autoCloseMs: toastMode === "manual" ? null : 5000,
@@ -1060,26 +1033,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
             ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && (task.checkpointSoundMode || "once") === "repeat",
         });
       }
-      if (
-        suppressForFocusMode &&
-        ((ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled) ||
-          (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled))
-      ) {
-        const toastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
-        noteSuppressedFocusModeAlert({
-          title: `Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`,
-          text,
-          autoCloseMs: ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled ? (toastMode === "manual" ? null : 5000) : 5000,
-          taskId,
-          taskName: task.name || "",
-          counterText: ctx.formatMainTaskElapsed(getElapsedMs(task)),
-          checkpointTimeText,
-          checkpointDescText,
-          muteRepeatOnManualDismiss:
-            ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && (task.checkpointSoundMode || "once") === "repeat",
-        });
-      }
-      if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled && !suppressForFocusMode) beepCount += 1;
+      if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
     });
     const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Math.round(Number(task.timeGoalMinutes || 0) * 60) : 0;
     const taskTimeGoalAction = getTaskTimeGoalAction(task);
@@ -1118,7 +1072,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       else enqueueCheckpointBeeps(beepCount);
     }
     if (shouldOpenTimeGoalModal) {
-      if (shouldSuppressTaskAlertsInFocusMode(taskId)) {
+      if (shouldDeferTimeGoalModalInFocusMode(taskId)) {
         queueDeferredFocusModeTimeGoalModal(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder });
         return;
       }
@@ -1216,6 +1170,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       populateTimeGoalCompleteEditor(task);
       setTimeGoalCompleteEditorVisible(true);
     });
+    ctx.on(els.timeGoalCompleteContinueNowBtn, "click", () => {
+      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      if (!task) return;
+      continueTaskAfterTimeGoalModal(task);
+    });
     ctx.on(els.timeGoalCompleteContinueCancelBtn, "click", () => setTimeGoalCompleteEditorVisible(false));
     ctx.on(els.timeGoalCompleteDurationValueInput, "input", syncTimeGoalCompleteDurationUnitUi);
     ctx.on(els.timeGoalCompleteDurationUnitMinute, "click", () => {
@@ -1277,16 +1236,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       task.timeGoalPeriod = ctx.getTimeGoalCompleteDurationPeriod();
       task.timeGoalMinutes = nextGoalMinutes;
       resumeTaskAfterTimeGoalModal(task);
+      const taskId = String(task.id || "").trim();
       if (!(nextGoalMinutes > 0) || nextGoalMinutes * 60 <= Math.floor(currentElapsedMs / 1000)) {
-        ctx.getTimeGoalReminderAtMsByTaskId()[String(task.id || "")] = nowMs() + getTimeGoalReminderDelayMs();
+        ctx.getTimeGoalReminderAtMsByTaskId()[taskId] = nowMs() + getTimeGoalReminderDelayMs();
       } else {
-        delete ctx.getTimeGoalReminderAtMsByTaskId()[String(task.id || "")];
+        delete ctx.getTimeGoalReminderAtMsByTaskId()[taskId];
       }
-      ctx.getCheckpointBaselineSecByTaskId()[String(task.id || "")] = Math.floor(currentElapsedMs / 1000);
+      ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(currentElapsedMs / 1000);
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       clearPendingTimeGoalFlow();
       ctx.save();
-      void ctx.syncSharedTaskSummariesForTask(String(task.id || "")).catch(() => {});
+      void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
       ctx.render();
       openDeferredFocusModeTimeGoalModal();
     });
@@ -1332,9 +1292,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncFocusSessionNotesAccordion,
     resetCheckpointAlertTracking,
     clearCheckpointBaseline,
-    isFocusModeFilteringAlerts,
-    getSuppressedFocusModeAlert,
-    clearSuppressedFocusModeAlert,
     checkpointRepeatActiveTaskId: () => ctx.getCheckpointRepeatActiveTaskId(),
     activeCheckpointToastTaskId: () => String(getActiveToast()?.taskId || "").trim() || null,
     stopCheckpointRepeatAlert,

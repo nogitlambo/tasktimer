@@ -180,6 +180,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
       streak: false,
       tasksCompleted: false,
       overview: false,
+      momentum: false,
       focusTrend: false,
       heatCalendar: false,
       modeDistribution: false,

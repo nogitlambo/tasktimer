@@ -23,6 +23,7 @@ const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const NATIVE_WEB_SIGN_IN_ROUTE = "/web-sign-in";
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -88,6 +89,7 @@ function logFirebaseAuthError(stage: string, err: unknown) {
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isNativeRuntime = isNativeOrFileRuntime();
   const [showLogo, setShowLogo] = useState(false);
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -103,6 +105,7 @@ function HomeContent() {
   const [hasRedirected, setHasRedirected] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
+  const [checkedSignedOutBypass, setCheckedSignedOutBypass] = useState(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
   const landingDialProgress = Math.max(0, Math.min(1, (100 - landingRingOffset) / 100));
@@ -172,7 +175,16 @@ function HomeContent() {
         });
       }
     }
+    setCheckedSignedOutBypass(true);
   }, []);
+
+  useEffect(() => {
+    if (!checkedSignedOutBypass || !isNativeRuntime || hasRedirected || typeof window === "undefined") return;
+    const qs = window.location.search || "";
+    const hash = window.location.hash || "";
+    setHasRedirected(true);
+    router.replace(`${NATIVE_WEB_SIGN_IN_ROUTE}${qs}${hash}`);
+  }, [checkedSignedOutBypass, hasRedirected, isNativeRuntime, router]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -452,6 +464,8 @@ function HomeContent() {
       setAuthError("");
     },
   };
+
+  if (isNativeRuntime) return null;
 
   return isExperimentalLanding ? (
     <LandingExperimental

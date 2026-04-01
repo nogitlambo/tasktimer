@@ -11,13 +11,16 @@ export default function TimeGoalCompleteOverlay() {
         <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
         <div className="confirmBtns timeGoalCompleteActionGrid">
           <button className="btn btn-accent" id="timeGoalCompleteSaveBtn" type="button">
-            Save Session and Reset
-          </button>
-          <button className="btn btn-ghost" id="timeGoalCompleteDiscardBtn" type="button">
-            Discard Session and Reset
+            Save session at time goal and reset
           </button>
           <button className="btn btn-ghost" id="timeGoalCompleteUpdateGoalBtn" type="button">
             Update Time Goal and Continue
+          </button>
+          <button className="btn btn-ghost" id="timeGoalCompleteContinueNowBtn" type="button">
+            Continue timing for now
+          </button>
+          <button className="btn btn-ghost timeGoalCompleteDiscardBtn" id="timeGoalCompleteDiscardBtn" type="button">
+            Discard Session and Reset
           </button>
         </div>
         <div className="timeGoalCompleteGoalEditor" id="timeGoalCompleteGoalEditor" style={{ display: "none" }}>

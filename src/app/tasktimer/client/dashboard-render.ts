@@ -3,11 +3,9 @@ import {
   dashboardAvgRangeLabel,
   formatDashboardDurationShort,
   formatDashboardDurationWithMinutes,
-  formatDashboardHeatMonthLabel,
   getDashboardWeekdayLabels,
   getDashboardAvgRangeWindow,
   startOfCurrentWeekMs,
-  weekdayIndexForWeekStart,
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
@@ -98,6 +96,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const mode = ctx.taskModeOf(task);
       return ctx.isModeEnabled(mode) && isDashboardModeIncluded(mode);
     });
+  }
+
+  function clampMomentumScore(value: number) {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  function getMomentumBandLabel(score: number) {
+    if (score >= 75) return "Surging";
+    if (score >= 50) return "Strong";
+    if (score >= 25) return "Building";
+    return "Low";
   }
 
   function renderDashboardOverviewChart() {
@@ -453,6 +463,159 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (progressTextEl) {
       progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
     }
+  }
+
+  function renderDashboardMomentumCard() {
+    const cardEl = els.dashboardMomentumCard as HTMLElement | null;
+    const dialEl = els.dashboardMomentumDial as HTMLElement | null;
+    const needleEl = els.dashboardMomentumNeedle as HTMLElement | null;
+    const scoreValueEl = els.dashboardMomentumScoreValue as HTMLElement | null;
+    const scoreStatusEl = els.dashboardMomentumScoreStatus as HTMLElement | null;
+    const driversEl = els.dashboardMomentumDrivers as HTMLElement | null;
+    if (!cardEl || !dialEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driversEl) return;
+
+    if (!hasAdvancedInsights()) {
+      setDashboardPlanLockedState(cardEl, true);
+      dialEl.style.setProperty("--momentum-score", "0");
+      dialEl.style.setProperty("--momentum-locked", "1");
+      dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
+      needleEl.style.setProperty("--momentum-needle-deg", "-90deg");
+      scoreValueEl.textContent = "--";
+      scoreStatusEl.textContent = "Locked";
+      driversEl.innerHTML = [
+        "Momentum score formula: recent activity 40%, consistency 25%, weekly progress 25%, active-session bonus 10%.",
+        "Upgrade to Pro to see which of those factors are currently pushing your score up or down.",
+        "Momentum drops when recent logging slows, streaks break, weekly goals are missed, or no active session bonus applies.",
+      ]
+        .map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`)
+        .join("");
+      return;
+    }
+
+    setDashboardPlanLockedState(cardEl, false);
+    dialEl.style.setProperty("--momentum-locked", "0");
+
+    const nowValue = nowMs();
+    const includedTasks = getDashboardFilteredTasks();
+    const includedTaskIds = new Set<string>();
+    includedTasks.forEach((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (taskId) includedTaskIds.add(taskId);
+    });
+
+    const historyByTaskId = ctx.getHistoryByTaskId();
+    const recentDaysMs = [0, 0, 0];
+    const activeDayKeys = new Set<string>();
+    let currentWeekLoggedMs = 0;
+    let currentWeekGoalMs = 0;
+    let runningTaskCount = 0;
+    const currentWeekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
+    const dayLengthMs = 86400000;
+    const todayStartMs = new Date(localDayKey(nowValue) + "T00:00:00").getTime();
+
+    includedTasks.forEach((task) => {
+      if (task?.running) runningTaskCount += 1;
+      const goalMinutes = Math.max(0, Number(task?.timeGoalMinutes || 0));
+      if (task?.timeGoalEnabled && goalMinutes > 0) {
+        const multiplier = task.timeGoalPeriod === "day" ? 7 : task.timeGoalPeriod === "week" ? 1 : 0;
+        currentWeekGoalMs += goalMinutes * 60000 * multiplier;
+      }
+    });
+
+    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId || !includedTaskIds.has(taskId)) return;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      entries.forEach((entry: any) => {
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
+
+        if (ts >= currentWeekStartMs && ts <= nowValue) currentWeekLoggedMs += ms;
+
+        const dayOffset = Math.floor((todayStartMs - new Date(localDayKey(ts) + "T00:00:00").getTime()) / dayLengthMs);
+        if (dayOffset >= 0 && dayOffset < 3) recentDaysMs[dayOffset] += ms;
+
+        if (ts >= todayStartMs - 6 * dayLengthMs && ts <= nowValue) activeDayKeys.add(localDayKey(ts));
+      });
+    });
+
+    includedTasks.forEach((task) => {
+      if (!task?.running || typeof task.startMs !== "number") return;
+      const runStart = Math.max(Number(task.startMs) || 0, currentWeekStartMs);
+      if (runStart < nowValue) currentWeekLoggedMs += nowValue - runStart;
+      recentDaysMs[0] += Math.max(0, nowValue - Math.max(Number(task.startMs) || 0, todayStartMs));
+      activeDayKeys.add(localDayKey(nowValue));
+    });
+
+    const recentWeightedMs = recentDaysMs[0] * 1 + recentDaysMs[1] * 0.65 + recentDaysMs[2] * 0.35;
+    const recentActivityScore = Math.max(0, Math.min(40, (recentWeightedMs / (120 * 60000)) * 40));
+
+    const qualifyingDayKeys = Array.from(activeDayKeys).sort();
+    let trailingStreak = 0;
+    let probeTime = todayStartMs;
+    const qualifyingDaySet = new Set(qualifyingDayKeys);
+    while (qualifyingDaySet.has(localDayKey(probeTime))) {
+      trailingStreak += 1;
+      probeTime -= dayLengthMs;
+    }
+    const activeDaysScore = Math.max(0, Math.min(15, (activeDayKeys.size / 5) * 15));
+    const streakScore = Math.max(0, Math.min(10, (trailingStreak / 4) * 10));
+    const consistencyScore = activeDaysScore + streakScore;
+
+    const weeklyProgressRatio = currentWeekGoalMs > 0 ? currentWeekLoggedMs / currentWeekGoalMs : 0;
+    const weeklyProgressScore = Math.max(0, Math.min(25, weeklyProgressRatio * 25));
+    const activeSessionBonus = Math.min(10, runningTaskCount > 0 ? 6 + Math.min(4, runningTaskCount - 1) : 0);
+
+    const score = clampMomentumScore(recentActivityScore + consistencyScore + weeklyProgressScore + activeSessionBonus);
+    const hasSignal =
+      recentWeightedMs > 0 || activeDayKeys.size > 0 || currentWeekLoggedMs > 0 || currentWeekGoalMs > 0 || runningTaskCount > 0;
+    if (shouldHoldDashboardWidget("momentum", hasSignal)) return;
+
+    const bandLabel = getMomentumBandLabel(score);
+    const recent3DayMs = recentDaysMs[0] + recentDaysMs[1] + recentDaysMs[2];
+    const drivers: string[] = [];
+    const factorSummary = `Momentum combines recent activity 40%, consistency 25%, weekly progress 25%, and an active-session bonus 10%.`;
+    const currentBreakdown = [
+      `Recent activity ${Math.round(recentActivityScore)}/40`,
+      `consistency ${Math.round(consistencyScore)}/25`,
+      `weekly progress ${Math.round(weeklyProgressScore)}/25`,
+      `live bonus ${Math.round(activeSessionBonus)}/10`,
+    ].join(", ");
+    const negativeFactors: string[] = [];
+
+    if (recent3DayMs <= 0) negativeFactors.push("quiet recent activity");
+    else if (recentDaysMs[0] <= 0) negativeFactors.push("no time logged today");
+
+    if (trailingStreak <= 0 && activeDayKeys.size <= 1) negativeFactors.push("a weak recent consistency pattern");
+    else if (trailingStreak <= 0) negativeFactors.push("a broken streak");
+
+    if (currentWeekGoalMs > 0 && weeklyProgressRatio < 0.6) negativeFactors.push("weekly goals running behind");
+    else if (currentWeekGoalMs <= 0) negativeFactors.push("no weekly goals to build progress from");
+
+    if (runningTaskCount <= 0) negativeFactors.push("no active-session bonus");
+
+    const downsideSummary = negativeFactors.length
+      ? `Momentum falls when there is ${negativeFactors.slice(0, 3).join(", ")}.`
+      : "Momentum is being protected by steady recent activity, consistency, weekly progress, and a live-session bonus.";
+
+    drivers.push(factorSummary);
+    drivers.push(`Current score ${score}/100 (${bandLabel}) is coming from ${currentBreakdown}.`);
+    drivers.push(downsideSummary);
+
+    driversEl.innerHTML = drivers
+      .slice(0, 3)
+      .map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`)
+      .join("");
+
+    dialEl.style.setProperty("--momentum-score", String(score));
+    dialEl.setAttribute("aria-label", `Momentum score ${score} out of 100, ${bandLabel}`);
+    scoreValueEl.textContent = String(score);
+    scoreStatusEl.textContent = bandLabel;
+    const momentumNeedleStartDeg = -170;
+    const momentumNeedleEndDeg = -10;
+    const momentumNeedleDeg = momentumNeedleStartDeg + (score / 100) * (momentumNeedleEndDeg - momentumNeedleStartDeg);
+    needleEl.style.setProperty("--momentum-needle-deg", `${momentumNeedleDeg}deg`);
   }
 
   function applyDashboardGoalProgressUi(opts: {
@@ -1412,17 +1575,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     setDashboardPlanLockedState(cardEl, false);
 
     const nowValue = nowMs();
-    const nowDate = new Date(nowValue);
-    const year = nowDate.getFullYear();
-    const monthIndex = nowDate.getMonth();
-    const monthStart = new Date(year, monthIndex, 1);
-    const monthEnd = new Date(year, monthIndex + 1, 1);
     const weekStarting = ctx.getWeekStarting();
-    const firstDow = weekdayIndexForWeekStart(monthStart.getDay(), weekStarting);
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const dayLengthMs = 86400000;
+    const totalSlots = 28;
+    const currentWeekStartMs = startOfCurrentWeekMs(nowValue, weekStarting);
+    const rangeStartMs = currentWeekStartMs - 21 * dayLengthMs;
+    const rangeEndMs = currentWeekStartMs + 7 * dayLengthMs;
+    const todayDate = new Date(nowValue);
+    todayDate.setHours(0, 0, 0, 0);
+    const todayStartMs = todayDate.getTime();
 
     if (monthLabelEl) {
-      monthLabelEl.textContent = formatDashboardHeatMonthLabel(year, monthIndex);
+      monthLabelEl.textContent = "Past 4 Weeks";
     }
     if (weekdaysEl) {
       weekdaysEl.innerHTML = getDashboardWeekdayLabels(weekStarting).map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("");
@@ -1440,7 +1604,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
         const ms = Number(entry?.ms);
         if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
-        if (ts < monthStart.getTime() || ts >= monthEnd.getTime()) return;
+        if (ts < rangeStartMs || ts >= rangeEndMs) return;
         const key = localDayKey(ts);
         byDayMs.set(key, (byDayMs.get(key) || 0) + ms);
         historyByDayMs.set(key, (historyByDayMs.get(key) || 0) + ms);
@@ -1449,8 +1613,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     getDashboardFilteredTasks().forEach((task) => {
       if (!task?.running || typeof task.startMs !== "number") return;
-      const runStartMs = Math.max(monthStart.getTime(), Math.floor(task.startMs));
-      const runEndMs = Math.min(monthEnd.getTime(), nowValue);
+      const runStartMs = Math.max(rangeStartMs, Math.floor(task.startMs));
+      const runEndMs = Math.min(rangeEndMs, nowValue);
       ctx.addRangeMsToLocalDayMap(byDayMs, runStartMs, runEndMs);
     });
 
@@ -1460,16 +1624,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
     if (shouldHoldDashboardWidget("heatCalendar", maxDayMs > 0)) return;
 
-    const totalSlots = 42;
-    const trailingFillers = Math.max(0, totalSlots - firstDow - daysInMonth);
     const html: string[] = [];
 
-    for (let i = 0; i < firstDow; i += 1) {
-      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
-    }
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const dayDate = new Date(year, monthIndex, day);
+    for (let idx = 0; idx < totalSlots; idx += 1) {
+      const dayDate = new Date(rangeStartMs + idx * dayLengthMs);
+      dayDate.setHours(0, 0, 0, 0);
+      if (dayDate.getTime() > todayStartMs) {
+        html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
+        continue;
+      }
       const key = localDayKey(dayDate.getTime());
       const dayMs = Math.max(0, byDayMs.get(key) || 0);
       const ratio = maxDayMs > 0 ? Math.max(0, Math.min(1, dayMs / maxDayMs)) : 0;
@@ -1502,19 +1665,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
               key
             )}" data-heat-date-label="${ctx.escapeHtmlUI(dateText)}" role="gridcell" aria-label="${ctx.escapeHtmlUI(aria)}" title="${ctx.escapeHtmlUI(
               aria
-            )}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></button>`
+            )}"${styleAttr}><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></button>`
           : `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${ctx.escapeHtmlUI(
               aria
-            )}" title="${ctx.escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></span>`
+            )}" title="${ctx.escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></span>`
       );
-    }
-
-    for (let i = 0; i < trailingFillers; i += 1) {
-      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
-    }
-
-    while (html.length < totalSlots) {
-      html.push('<span class="dashboardHeatDayCell isFiller" aria-hidden="true"></span>');
     }
 
     gridEl.innerHTML = html.join("");
@@ -1748,6 +1903,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
     renderDashboardStreakCard();
     renderDashboardOverviewChart();
+    renderDashboardMomentumCard();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -1760,6 +1916,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   return {
     renderDashboardOverviewChart,
+    renderDashboardMomentumCard,
     renderDashboardStreakCard,
     renderDashboardWeeklyGoalsCard,
     renderDashboardTasksCompletedCard,

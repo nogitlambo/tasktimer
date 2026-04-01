@@ -36,7 +36,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function isFixedFullWidthDashboardCard(cardId: string) {
-    return cardId === "timeline";
+    return cardId === "timeline" || cardId === "momentum";
   }
 
   function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {

@@ -177,7 +177,6 @@
 - `data-action="muteCheckpointAlert"`
 - `data-action="reset"`
 - `data-action="rmMs"`
-- `data-action="showSuppressedCheckpointAlert"`
 - `data-action="start"`
 - `data-action="stop"`
 - `data-history-action="analyse"`

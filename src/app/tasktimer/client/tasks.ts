@@ -79,7 +79,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       const taskId = String(t.id || "");
       const hasActiveToastForTask =
         !!ctx.activeCheckpointToastTaskId() && String(ctx.activeCheckpointToastTaskId()) === taskId;
-      const suppressedCheckpointAlert = !ctx.isFocusModeFilteringAlerts() ? (ctx.getSuppressedFocusModeAlert(taskId) as any) : null;
       taskEl.className =
         "task" +
         (t.collapsed ? " collapsed" : "") +
@@ -172,11 +171,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
             ${
               ctx.checkpointRepeatActiveTaskId() && ctx.checkpointRepeatActiveTaskId() === taskId
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
-                : ""
-            }
-            ${
-              suppressedCheckpointAlert
-                ? '<button class="iconBtn checkpointMissedAlertBtn" data-action="showSuppressedCheckpointAlert" title="Show missed checkpoint alert" aria-label="Show missed checkpoint alert">&#9888;</button>'
                 : ""
             }
             <div class="row">
@@ -527,21 +521,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       });
     } else if (action === "muteCheckpointAlert") {
       ctx.stopCheckpointRepeatAlert();
-      return;
-    } else if (action === "showSuppressedCheckpointAlert") {
-      const suppressedAlert = ctx.getSuppressedFocusModeAlert(taskId) as any;
-      if (!suppressedAlert) return;
-      ctx.enqueueCheckpointToast(suppressedAlert.title, suppressedAlert.text, {
-        autoCloseMs: suppressedAlert.autoCloseMs,
-        taskId: suppressedAlert.taskId,
-        taskName: suppressedAlert.taskName,
-        counterText: suppressedAlert.counterText,
-        checkpointTimeText: suppressedAlert.checkpointTimeText,
-        checkpointDescText: suppressedAlert.checkpointDescText,
-        muteRepeatOnManualDismiss: suppressedAlert.muteRepeatOnManualDismiss,
-      });
-      ctx.clearSuppressedFocusModeAlert(taskId);
-      ctx.render();
       return;
     }
     if (taskId) ctx.setTaskFlipped(taskId, false, taskEl as HTMLElement);
