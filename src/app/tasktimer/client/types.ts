@@ -51,6 +51,11 @@ export type DashboardCardSize = "full" | "half" | "quarter" | "eighth";
 
 export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
+export type DashboardRenderOptions = {
+  includeAvgSession?: boolean;
+  showBusy?: boolean;
+  busyMessage?: string;
+};
 
 export type TaskTimerMutableState = {
   deletedTaskMeta: DeletedTaskMeta;
@@ -196,6 +201,12 @@ export type TaskTimerMutableState = {
   workingIndicatorKeySeq: number;
   workingIndicatorOverlayActive: boolean;
   workingIndicatorRestoreFocusEl: HTMLElement | null;
+  dashboardBusyStack: Array<{ key: number; message: string }>;
+  dashboardBusyKeySeq: number;
+  dashboardBusyOverlayActive: boolean;
+  dashboardBusyRestoreFocusEl: HTMLElement | null;
+  dashboardBusyShownAtMs: number;
+  dashboardBusyHideTimer: number | null;
   friendProfileCacheByUid: Record<string, FriendProfile>;
   cloudRefreshInFlight: Promise<void> | null;
   lastCloudRefreshAtMs: number;

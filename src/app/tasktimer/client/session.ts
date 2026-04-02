@@ -431,6 +431,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     task.startMs = nowMs();
     task.running = true;
     task.hasStarted = true;
+    ctx.syncRewardSessionTrackerForTask(task, task.startMs);
     ctx.setTimeGoalModalTaskId(null);
     ctx.setTimeGoalModalFrozenElapsedMs(0);
   }
@@ -1101,6 +1102,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
+        if (task.running) ctx.syncRewardSessionTrackerForTask(task, nowMs());
         processCheckpointAlertsForTask(task, elapsedMs / 1000);
         processedCheckpointTaskIds.add(String(task.id || ""));
       });
@@ -1108,6 +1110,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     tasks.forEach((task) => {
       const taskId = String(task.id || "");
       if (!taskId || processedCheckpointTaskIds.has(taskId)) return;
+      if (task.running) ctx.syncRewardSessionTrackerForTask(task, nowMs());
       processCheckpointAlertsForTask(task, getElapsedMs(task) / 1000);
     });
     if (ctx.getCheckpointAutoResetDirty()) {
@@ -1121,7 +1124,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       else if (els.focusTaskName && ctx.getFocusModeTaskName()) els.focusTaskName.textContent = ctx.getFocusModeTaskName();
     }
     if (getActiveToast()) renderCheckpointToast();
-    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets({ includeAvgSession: false });
+    // Live dashboard updates should be limited to time-sensitive widgets while a task is running.
+    if (ctx.getCurrentAppPage() === "dashboard" && tasks.some((task) => !!task.running)) {
+      ctx.renderDashboardLiveWidgets();
+    }
     runtime.tickRaf = window.requestAnimationFrame(() => {
       runtime.tickTimeout = window.setTimeout(tick, 200);
     });

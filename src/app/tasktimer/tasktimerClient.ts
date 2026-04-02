@@ -35,7 +35,13 @@ import {
   saveCloudPreferences,
   saveCloudTaskUi,
 } from "./lib/storage";
-import { DEFAULT_REWARD_PROGRESS, awardTaskLaunchXp, normalizeRewardProgress } from "./lib/rewards";
+import {
+  DEFAULT_REWARD_PROGRESS,
+  type RewardSessionSegment,
+  awardCompletedSessionXp,
+  normalizeRewardProgress,
+} from "./lib/rewards";
+import { computeMomentumSnapshot } from "./lib/momentum";
 import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
@@ -46,6 +52,7 @@ import {
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import type {
   AppPage,
+  DashboardRenderOptions,
   MainMode,
   TaskTimerClientHandle,
 } from "./client/types";
@@ -79,6 +86,15 @@ import {
 
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
+const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
+
+type RewardSessionTracker = {
+  taskId: string;
+  untrackedMs: number;
+  segments: RewardSessionSegment[];
+  activeSegmentStartMs: number | null;
+  activeMultiplier: number | null;
+};
 
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -102,6 +118,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   } = createTaskTimerRootBootstrap(initialAppPage, STORAGE_KEY);
   const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
   const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
+  const REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers`;
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 
   const runtime = createTaskTimerRuntime();
@@ -116,7 +133,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   const destroy = () => {
+    if (dashboardBusyHideTimer != null) window.clearTimeout(dashboardBusyHideTimer);
     sessionApi?.destroySessionRuntime();
+    dashboardBusyHideTimer = null;
+    dashboardBusyStack.length = 0;
+    setDashboardBusyIndicatorVisible(false);
+    deactivateDashboardBusyOverlay();
     destroyTaskTimerRuntime({
       runtime,
       deferredCloudRefreshTimer,
@@ -173,6 +195,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
+  let rewardSessionTrackersByTaskId: Record<string, RewardSessionTracker> = {};
 
   let historyByTaskId = initialState.historyByTaskId;
   let historyRangeDaysByTaskId = initialState.historyRangeDaysByTaskId;
@@ -291,6 +314,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
   let workingIndicatorOverlayActive = initialState.workingIndicatorOverlayActive;
   let workingIndicatorRestoreFocusEl = initialState.workingIndicatorRestoreFocusEl;
+  const dashboardBusyStack = initialState.dashboardBusyStack;
+  let dashboardBusyKeySeq = initialState.dashboardBusyKeySeq;
+  let dashboardBusyOverlayActive = initialState.dashboardBusyOverlayActive;
+  let dashboardBusyRestoreFocusEl = initialState.dashboardBusyRestoreFocusEl;
+  let dashboardBusyShownAtMs = initialState.dashboardBusyShownAtMs;
+  let dashboardBusyHideTimer = initialState.dashboardBusyHideTimer;
   let friendProfileCacheByUid = initialState.friendProfileCacheByUid;
   let cloudRefreshInFlight = initialState.cloudRefreshInFlight;
   let lastCloudRefreshAtMs = initialState.lastCloudRefreshAtMs;
@@ -582,6 +611,126 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     hideWorkingIndicator,
   } = taskUiPersistence;
 
+  function setDashboardBusyIndicatorVisible(isOn: boolean, message?: string) {
+    const overlayEl = els.dashboardRefreshBusyOverlay as HTMLElement | null;
+    const textEl = els.dashboardRefreshBusyText as HTMLElement | null;
+    const shellContentEl = els.dashboardShellContent as HTMLElement | null;
+    if (textEl && typeof message === "string" && message.trim()) {
+      textEl.textContent = message.trim();
+    } else if (textEl && !isOn) {
+      textEl.textContent = "Refreshing dashboard...";
+    }
+    shellContentEl?.classList.toggle("isDashboardBusy", !!isOn);
+    if (!overlayEl) return;
+    overlayEl.classList.toggle("isOn", !!isOn);
+    overlayEl.setAttribute("aria-hidden", isOn ? "false" : "true");
+  }
+
+  function getDashboardBusyTargets() {
+    return [] as HTMLElement[];
+  }
+
+  function activateDashboardBusyOverlay() {
+    if (dashboardBusyOverlayActive) return;
+    dashboardBusyOverlayActive = true;
+    dashboardBusyShownAtMs = nowMs();
+    dashboardBusyRestoreFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    getDashboardBusyTargets().forEach((node) => {
+      node.setAttribute("data-dashboard-busy-prev-inert", node.hasAttribute("inert") ? "true" : "false");
+      node.setAttribute("data-dashboard-busy-prev-aria-hidden", node.getAttribute("aria-hidden") ?? "");
+      node.setAttribute("inert", "");
+      node.setAttribute("aria-hidden", "true");
+    });
+    const overlayEl = els.dashboardRefreshBusyOverlay as HTMLElement | null;
+    try {
+      overlayEl?.focus({ preventScroll: true });
+    } catch {
+      overlayEl?.focus();
+    }
+  }
+
+  function deactivateDashboardBusyOverlay() {
+    if (!dashboardBusyOverlayActive) return;
+    dashboardBusyOverlayActive = false;
+    getDashboardBusyTargets().forEach((node) => {
+      const prevInert = node.getAttribute("data-dashboard-busy-prev-inert");
+      const prevAriaHidden = node.getAttribute("data-dashboard-busy-prev-aria-hidden");
+      node.removeAttribute("data-dashboard-busy-prev-inert");
+      node.removeAttribute("data-dashboard-busy-prev-aria-hidden");
+      if (prevInert === "true") node.setAttribute("inert", "");
+      else node.removeAttribute("inert");
+      if (prevAriaHidden) node.setAttribute("aria-hidden", prevAriaHidden);
+      else node.removeAttribute("aria-hidden");
+    });
+    const restoreEl = dashboardBusyRestoreFocusEl;
+    dashboardBusyRestoreFocusEl = null;
+    if (restoreEl && restoreEl.isConnected) {
+      try {
+        restoreEl.focus({ preventScroll: true });
+      } catch {
+        restoreEl.focus();
+      }
+    }
+  }
+
+  function showDashboardBusyIndicator(message = "Refreshing dashboard...") {
+    if (dashboardBusyHideTimer != null) {
+      window.clearTimeout(dashboardBusyHideTimer);
+      dashboardBusyHideTimer = null;
+    }
+    const normalizedMessage = String(message || "").trim() || "Refreshing dashboard...";
+    const key = dashboardBusyKeySeq + 1;
+    dashboardBusyKeySeq = key;
+    dashboardBusyStack.push({ key, message: normalizedMessage });
+    if (dashboardBusyStack.length === 1) activateDashboardBusyOverlay();
+    setDashboardBusyIndicatorVisible(true, normalizedMessage);
+    return key;
+  }
+
+  function hideDashboardBusyIndicator(key?: number) {
+    if (dashboardBusyHideTimer != null) {
+      window.clearTimeout(dashboardBusyHideTimer);
+      dashboardBusyHideTimer = null;
+    }
+    if (typeof key === "number") {
+      const index = dashboardBusyStack.findIndex((entry) => entry.key === key);
+      if (index >= 0) dashboardBusyStack.splice(index, 1);
+    } else {
+      dashboardBusyStack.length = 0;
+    }
+    const current = dashboardBusyStack[dashboardBusyStack.length - 1] || null;
+    if (current) {
+      setDashboardBusyIndicatorVisible(true, current.message);
+      return;
+    }
+    const remainingMs = Math.max(0, DASHBOARD_BUSY_MIN_VISIBLE_MS - Math.max(0, nowMs() - dashboardBusyShownAtMs));
+    dashboardBusyHideTimer = window.setTimeout(() => {
+      dashboardBusyHideTimer = null;
+      if (dashboardBusyStack.length) {
+        const latest = dashboardBusyStack[dashboardBusyStack.length - 1] || null;
+        if (latest) setDashboardBusyIndicatorVisible(true, latest.message);
+        return;
+      }
+      setDashboardBusyIndicatorVisible(false);
+      deactivateDashboardBusyOverlay();
+    }, remainingMs);
+  }
+
+  function renderDashboardWidgetsWithBusy(opts?: DashboardRenderOptions) {
+    const renderOpts = opts ? { includeAvgSession: opts.includeAvgSession } : undefined;
+    const shouldShowBusy = currentAppPage === "dashboard" && opts?.showBusy !== false;
+    if (!shouldShowBusy) {
+      renderDashboardWidgetsFromRenderApi(renderOpts);
+      return;
+    }
+    const busyKey = showDashboardBusyIndicator(opts?.busyMessage || "Refreshing dashboard...");
+    try {
+      renderDashboardWidgetsFromRenderApi(renderOpts);
+    } finally {
+      hideDashboardBusyIndicator(busyKey);
+    }
+  }
+
   const groupsApi = createTaskTimerGroups({
     els,
     on,
@@ -696,6 +845,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       dashboardTimelineDensity = value;
     },
     getDashboardWidgetHasRenderedData: () => dashboardWidgetHasRenderedData,
+    getDashboardRefreshHoldActive: () => dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null,
     getCloudRefreshInFlight: () => cloudRefreshInFlight,
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
     getElapsedMs,
@@ -711,6 +861,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
   const {
     renderDashboardTimelineCard: renderDashboardTimelineCardApi,
+    renderDashboardLiveWidgets: renderDashboardLiveWidgetsApi,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
     selectDashboardTimelineSuggestion: selectDashboardTimelineSuggestionApi,
     openDashboardHeatSummaryCard: openDashboardHeatSummaryCardApi,
@@ -767,7 +918,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     getModeLabel: (mode) => getModeLabel(mode),
     isModeEnabled: (mode) => isModeEnabled(mode),
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsFromRenderApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     renderDashboardTimelineCard: () => renderDashboardTimelineCardApi(),
     selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestionApi(key),
     openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCardApi(dayKey, dateLabel),
@@ -775,7 +926,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
   const {
     renderDashboardPanelMenu: renderDashboardPanelMenuApi,
-    renderDashboardWidgets: renderDashboardWidgetsApi,
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
     getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
     getDashboardAvgRange: getDashboardAvgRangeApi,
@@ -820,6 +970,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
+    getRewardProgress: () => rewardProgress,
     getEditIndex: () => editIndex,
     setEditIndex: (value: typeof editIndex) => {
       editIndex = value;
@@ -866,7 +1017,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     render,
     renderHistory,
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     syncTimeGoalModalWithTaskState: () => sessionApi?.syncTimeGoalModalWithTaskState(),
     maybeRestorePendingTimeGoalFlow: () => sessionApi?.maybeRestorePendingTimeGoalFlow(),
     getElapsedMs: (task) => sessionApi?.getElapsedMs(task) ?? 0,
@@ -885,8 +1036,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     openEdit: (index) => editTaskApi?.openEdit(index),
     clearTaskTimeGoalFlow: (taskId) => sessionApi?.clearTaskTimeGoalFlow(taskId),
     flushPendingFocusSessionNoteSave: (taskId) => sessionApi?.flushPendingFocusSessionNoteSave(taskId),
-    awardLaunchXpForTask,
     clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
+    openRewardSessionSegment,
+    closeRewardSessionSegment,
+    clearRewardSessionTracker,
     openFocusMode: (index) => sessionApi?.openFocusMode(index),
     closeFocusMode: () => sessionApi?.closeFocusMode(),
     canLogSession,
@@ -1178,7 +1331,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     render,
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
+    renderDashboardLiveWidgets: () => renderDashboardLiveWidgetsApi(),
     save,
     openOverlay: (overlay) => openOverlay(overlay),
     closeOverlay: (overlay) => closeOverlay(overlay),
@@ -1196,12 +1350,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     normalizeHistoryTimestampMs,
     getHistoryEntryNote: (entry) => historyInlineApi?.getHistoryEntryNote(entry) || "",
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
+    syncRewardSessionTrackerForTask: (task, nowValue) => syncRewardSessionTrackerForRunningTask(task, nowValue),
     startTask: (index) => startTaskApi(index),
     stopTask: (index) => stopTaskApi(index),
     resetTask: (index) => resetTaskApi(index),
     resetTaskStateImmediate: (task, opts) => resetTaskStateImmediateApi(task, opts),
   });
-
+  bootstrapRewardSessionTrackers();
   const {
     loadFocusSessionNotes: loadFocusSessionNotesApi,
     tick: tickApi,
@@ -1243,7 +1398,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     closeFriendRequestModal,
     render,
     renderHistory,
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     renderGroupsPage,
     refreshGroupsData,
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
@@ -1356,6 +1511,210 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function currentEmail() {
     return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
+  }
+
+  function rewardSessionTrackerStorageKey() {
+    const uid = currentUid();
+    return uid ? `${REWARD_SESSION_TRACKERS_KEY}:${uid}` : REWARD_SESSION_TRACKERS_KEY;
+  }
+
+  function normalizeRewardSessionTracker(rawTaskId: string, input: unknown): RewardSessionTracker | null {
+    if (!input || typeof input !== "object") return null;
+    const obj = input as Record<string, unknown>;
+    const taskId = String(obj.taskId || rawTaskId || "").trim();
+    if (!taskId) return null;
+    const untrackedMs = Math.max(0, Math.floor(Number(obj.untrackedMs || 0) || 0));
+    const activeSegmentStartMsRaw = Number(obj.activeSegmentStartMs || 0);
+    const activeSegmentStartMs =
+      Number.isFinite(activeSegmentStartMsRaw) && activeSegmentStartMsRaw > 0 ? Math.floor(activeSegmentStartMsRaw) : null;
+    const activeMultiplierRaw = Number(obj.activeMultiplier || 0);
+    const activeMultiplier = Number.isFinite(activeMultiplierRaw) && activeMultiplierRaw > 0 ? activeMultiplierRaw : null;
+    const segments = Array.isArray(obj.segments)
+      ? obj.segments
+          .map((segment) => {
+            if (!segment || typeof segment !== "object") return null;
+            const seg = segment as Record<string, unknown>;
+            const startMs = Math.max(0, Math.floor(Number(seg.startMs || 0) || 0));
+            const endMs = Math.max(startMs, Math.floor(Number(seg.endMs || 0) || 0));
+            const multiplier = Number.isFinite(Number(seg.multiplier)) ? Math.max(0, Number(seg.multiplier)) : 1;
+            if (!(endMs > startMs)) return null;
+            return { startMs, endMs, multiplier: multiplier > 0 ? multiplier : 1 };
+          })
+          .filter((segment): segment is RewardSessionSegment => !!segment)
+      : [];
+    return {
+      taskId,
+      untrackedMs,
+      segments,
+      activeSegmentStartMs,
+      activeMultiplier,
+    };
+  }
+
+  function loadRewardSessionTrackersFromStorage() {
+    if (typeof window === "undefined") return {} as Record<string, RewardSessionTracker>;
+    try {
+      const raw = window.localStorage.getItem(rewardSessionTrackerStorageKey());
+      if (!raw) return {} as Record<string, RewardSessionTracker>;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== "object") return {} as Record<string, RewardSessionTracker>;
+      const next: Record<string, RewardSessionTracker> = {};
+      Object.keys(parsed).forEach((taskId) => {
+        const normalized = normalizeRewardSessionTracker(taskId, parsed[taskId]);
+        if (normalized) next[normalized.taskId] = normalized;
+      });
+      return next;
+    } catch {
+      return {} as Record<string, RewardSessionTracker>;
+    }
+  }
+
+  function persistRewardSessionTrackers() {
+    if (typeof window === "undefined") return;
+    try {
+      const key = rewardSessionTrackerStorageKey();
+      const trackerIds = Object.keys(rewardSessionTrackersByTaskId).filter(Boolean);
+      if (!trackerIds.length) {
+        window.localStorage.removeItem(key);
+        return;
+      }
+      const payload: Record<string, RewardSessionTracker> = {};
+      trackerIds.forEach((taskId) => {
+        payload[taskId] = rewardSessionTrackersByTaskId[taskId]!;
+      });
+      window.localStorage.setItem(key, JSON.stringify(payload));
+    } catch {
+      // ignore localStorage failures
+    }
+  }
+
+  function getMomentumMultiplierNow(nowValue = nowMs()) {
+    if (!hasEntitlement("advancedInsights")) return 1;
+    try {
+      return computeMomentumSnapshot({
+        tasks,
+        historyByTaskId,
+        weekStarting,
+        includedModes: dashboardIncludedModes,
+        isModeEnabled,
+        taskModeOf: sharedTaskApi.taskModeOf,
+        nowValue,
+      }).multiplier;
+    } catch {
+      return 1;
+    }
+  }
+
+  function getOrCreateRewardSessionTracker(task: Task | null | undefined) {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId) return null;
+    let tracker = rewardSessionTrackersByTaskId[taskId] || null;
+    if (!tracker) {
+      tracker = {
+        taskId,
+        untrackedMs: 0,
+        segments: [],
+        activeSegmentStartMs: null,
+        activeMultiplier: null,
+      };
+      rewardSessionTrackersByTaskId[taskId] = tracker;
+    }
+    return tracker;
+  }
+
+  function openRewardSessionSegment(task: Task | null | undefined, startMsRaw?: number | null) {
+    const tracker = getOrCreateRewardSessionTracker(task);
+    if (!tracker) return;
+    const startMs = Math.max(0, Math.floor(Number(startMsRaw ?? nowMs()) || 0));
+    if (tracker.activeSegmentStartMs != null) return;
+    tracker.activeSegmentStartMs = startMs;
+    tracker.activeMultiplier = getMomentumMultiplierNow(startMs);
+    persistRewardSessionTrackers();
+  }
+
+  function closeRewardSessionSegment(task: Task | null | undefined, endMsRaw?: number | null) {
+    const tracker = getOrCreateRewardSessionTracker(task);
+    if (!tracker || tracker.activeSegmentStartMs == null) return;
+    const endMs = Math.max(tracker.activeSegmentStartMs, Math.floor(Number(endMsRaw ?? nowMs()) || 0));
+    if (endMs > tracker.activeSegmentStartMs) {
+      tracker.segments.push({
+        startMs: tracker.activeSegmentStartMs,
+        endMs,
+        multiplier: tracker.activeMultiplier && tracker.activeMultiplier > 0 ? tracker.activeMultiplier : 1,
+      });
+    }
+    tracker.activeSegmentStartMs = null;
+    tracker.activeMultiplier = null;
+    persistRewardSessionTrackers();
+  }
+
+  function syncRewardSessionTrackerForRunningTask(task: Task | null | undefined, nowValue = nowMs()) {
+    const tracker = getOrCreateRewardSessionTracker(task);
+    if (!tracker || !task?.running) return;
+    if (tracker.activeSegmentStartMs == null) {
+      openRewardSessionSegment(task, nowValue);
+      return;
+    }
+    const nextMultiplier = getMomentumMultiplierNow(nowValue);
+    if ((tracker.activeMultiplier || 1) === nextMultiplier) return;
+    closeRewardSessionSegment(task, nowValue);
+    openRewardSessionSegment(task, nowValue);
+  }
+
+  function clearRewardSessionTracker(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || !rewardSessionTrackersByTaskId[taskId]) return;
+    delete rewardSessionTrackersByTaskId[taskId];
+    persistRewardSessionTrackers();
+  }
+
+  function getRewardSessionSegmentsForTask(task: Task | null | undefined, completedAtMs: number, elapsedMs: number): RewardSessionSegment[] {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId) return [];
+    const tracker = getOrCreateRewardSessionTracker(task);
+    if (!tracker) return [];
+    if (task?.running && tracker.activeSegmentStartMs != null) {
+      closeRewardSessionSegment(task, completedAtMs);
+    }
+    const closedSegments = tracker.segments
+      .map((segment) => ({
+        startMs: Math.max(0, Math.floor(Number(segment.startMs || 0) || 0)),
+        endMs: Math.max(0, Math.floor(Number(segment.endMs || 0) || 0)),
+        multiplier: Number.isFinite(Number(segment.multiplier)) ? Math.max(0, Number(segment.multiplier)) : 1,
+      }))
+      .filter((segment) => segment.endMs > segment.startMs)
+      .sort((a, b) => a.startMs - b.startMs);
+    const trackedMs = closedSegments.reduce((sum, segment) => sum + Math.max(0, segment.endMs - segment.startMs), 0);
+    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    const inferredUntrackedMs = Math.max(0, safeElapsedMs - trackedMs);
+    const segments: RewardSessionSegment[] = [];
+    if (inferredUntrackedMs > 0) {
+      segments.push({
+        startMs: Math.max(0, completedAtMs - safeElapsedMs),
+        endMs: Math.max(0, completedAtMs - safeElapsedMs + inferredUntrackedMs),
+        multiplier: 1,
+      });
+    }
+    closedSegments.forEach((segment) => segments.push(segment));
+    return segments.sort((a, b) => a.startMs - b.startMs);
+  }
+
+  function bootstrapRewardSessionTrackers() {
+    rewardSessionTrackersByTaskId = loadRewardSessionTrackersFromStorage();
+    tasks.forEach((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId || !task?.hasStarted) return;
+      const tracker = getOrCreateRewardSessionTracker(task);
+      if (!tracker) return;
+      if (task.running) {
+        tracker.untrackedMs = Math.max(tracker.untrackedMs, Math.max(0, getTaskElapsedMs(task)));
+        tracker.activeSegmentStartMs = nowMs();
+        tracker.activeMultiplier = getMomentumMultiplierNow();
+      } else {
+        tracker.untrackedMs = Math.max(tracker.untrackedMs, Math.max(0, Number(task.accumulatedMs || 0) || 0));
+      }
+    });
+    persistRewardSessionTrackers();
   }
 
   function isArchitectUser() {
@@ -1508,9 +1867,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     void syncSharedTaskSummariesForTask(taskId).catch(() => {});
   }
 
-  function persistPreferencesToCloud() {
-    preferencesApi?.persistPreferencesToCloud();
-  }
 
   function getCurrentSessionNoteForTask(taskId: string): string {
     const taskKey = String(taskId || "");
@@ -1538,17 +1894,32 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncFocusSessionNotesInput(taskId);
       syncFocusSessionNotesAccordion(taskId);
     }
-  }
-
-  function awardLaunchXpForTask(t: Task | null | undefined) {
-    if (!t?.id) return;
-    if (t.xpDisqualifiedUntilReset) return;
-    const nextAward = awardTaskLaunchXp(rewardProgress, {
-      taskId: String(t.id || ""),
-      awardedAt: nowMs(),
+    const nextAward = awardCompletedSessionXp(rewardProgress, {
+      taskId,
+      awardedAt: completedAtMs,
+      elapsedMs: safeElapsedMs,
+      xpDisqualifiedUntilReset: !!t.xpDisqualifiedUntilReset,
+      historyByTaskId,
+      tasks,
+      weekStarting,
+      dashboardIncludedModes,
+      isModeEnabled,
+      taskModeOf: sharedTaskApi.taskModeOf,
+      momentumEntitled: hasEntitlement("advancedInsights"),
+      sessionSegments: getRewardSessionSegmentsForTask(t, completedAtMs, safeElapsedMs),
     });
     rewardProgress = nextAward.next;
-    persistPreferencesToCloud();
+    clearRewardSessionTracker(taskId);
+    const nextPrefs = {
+      ...(cloudPreferencesCache || buildDefaultCloudPreferences()),
+      rewards: rewardProgress,
+    };
+    cloudPreferencesCache = nextPrefs;
+    saveCloudPreferences(nextPrefs);
+    const authUid = currentUid();
+    if (authUid) {
+      void syncOwnFriendshipProfile(authUid, { currentRankId: rewardProgress.currentRankId }).catch(() => {});
+    }
   }
 
   function render() {
@@ -1753,7 +2124,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     openOverlay,
     closeOverlay,
     render,
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     nowMs,
     normalizeHistoryTimestampMs,
     formatTime,
@@ -1869,7 +2240,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     save,
     render,
     renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
-    renderDashboardWidgets: (opts) => renderDashboardWidgetsApi(opts),
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     ensureDashboardIncludedModesValid: () => ensureDashboardIncludedModesValidApi(),
     closeOverlay,
     closeConfirm,
@@ -2084,7 +2455,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
     applyDashboardCardVisibility: () => applyDashboardCardVisibilityApi(),
     applyDashboardEditMode: () => applyDashboardEditModeApi(),
-    renderDashboardWidgets: () => renderDashboardWidgetsApi(),
+    renderDashboardWidgets: () => renderDashboardWidgetsWithBusy(),
     maybeRepairHistoryNotesInCloudAfterHydrate: () => {
       if (historyNoteCloudRepairAttempted) return;
       historyNoteCloudRepairAttempted = true;
@@ -2172,7 +2543,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(window, TASKTIMER_PLAN_CHANGED_EVENT as any, () => {
       if (runtime.destroyed) return;
       render();
-      if (currentAppPage === "dashboard") renderDashboardWidgetsApi();
+      if (currentAppPage === "dashboard") renderDashboardWidgetsWithBusy();
       if (currentAppPage === "test2") renderGroupsPage();
       if (!els.taskList && els.historyManagerScreen) openHistoryManager();
     });

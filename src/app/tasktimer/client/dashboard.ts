@@ -1,5 +1,5 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardCardSize, DashboardTimelineDensity, MainMode } from "./types";
+import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity, MainMode } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -512,7 +512,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
   }
 
-  function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
+  function renderDashboardWidgets(opts?: DashboardRenderOptions) {
     ctx.renderDashboardWidgets(opts);
   }
 

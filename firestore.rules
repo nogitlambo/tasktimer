@@ -627,6 +627,127 @@ service cloud.firestore {
       && scheduleDocId == (request.resource.data.ownerUid + "__" + request.resource.data.taskId);
     }
 
+    function isFeedbackType(value) {
+      return value in ["bug", "general", "feature"];
+    }
+
+    function isFeedbackStatus(value) {
+      return value in ["open", "planned", "in_progress", "shipped", "closed"];
+    }
+
+    function feedbackVotePath(feedbackId, uid) {
+      return /databases/$(database)/documents/feedback_items/$(feedbackId)/votes/$(uid);
+    }
+
+    function isFeedbackItemDocShape() {
+      return onlyKeys([
+        "feedbackId",
+        "ownerUid",
+        "authorDisplayName",
+        "authorEmail",
+        "authorRankThumbnailSrc",
+        "authorCurrentRankId",
+        "isAnonymous",
+        "type",
+        "title",
+        "details",
+        "status",
+        "upvoteCount",
+        "commentCount",
+        "createdAt",
+        "updatedAt",
+        "lastActivityAt",
+        "schemaVersion"
+      ])
+      && request.resource.data.feedbackId is string
+      && request.resource.data.ownerUid is string
+      && (!("authorDisplayName" in request.resource.data) || request.resource.data.authorDisplayName == null || request.resource.data.authorDisplayName is string)
+      && (!("authorEmail" in request.resource.data) || request.resource.data.authorEmail == null || request.resource.data.authorEmail is string)
+      && (!("authorRankThumbnailSrc" in request.resource.data) || request.resource.data.authorRankThumbnailSrc == null || request.resource.data.authorRankThumbnailSrc is string)
+      && (!("authorCurrentRankId" in request.resource.data) || request.resource.data.authorCurrentRankId == null || request.resource.data.authorCurrentRankId is string)
+      && request.resource.data.isAnonymous is bool
+      && isFeedbackType(request.resource.data.type)
+      && request.resource.data.title is string
+      && request.resource.data.details is string
+      && isFeedbackStatus(request.resource.data.status)
+      && request.resource.data.upvoteCount is int
+      && request.resource.data.commentCount is int
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp
+      && request.resource.data.lastActivityAt is timestamp
+      && request.resource.data.schemaVersion is int;
+    }
+
+    function isFeedbackItemCreate(feedbackId) {
+      return isFeedbackItemDocShape()
+      && request.auth != null
+      && request.resource.data.feedbackId == feedbackId
+      && request.resource.data.ownerUid == request.auth.uid
+      && request.resource.data.title.size() > 0
+      && request.resource.data.details.size() > 0
+      && request.resource.data.status == "open"
+      && request.resource.data.upvoteCount == 0
+      && request.resource.data.commentCount == 0
+      && request.resource.data.schemaVersion == 1;
+    }
+
+    function isFeedbackVoteMutation(feedbackId) {
+      return request.auth != null
+      && isFeedbackItemDocShape()
+      && request.resource.data.feedbackId == resource.data.feedbackId
+      && request.resource.data.ownerUid == resource.data.ownerUid
+      && request.resource.data.authorDisplayName == resource.data.authorDisplayName
+      && request.resource.data.authorEmail == resource.data.authorEmail
+      && request.resource.data.authorRankThumbnailSrc == resource.data.authorRankThumbnailSrc
+      && request.resource.data.authorCurrentRankId == resource.data.authorCurrentRankId
+      && request.resource.data.isAnonymous == resource.data.isAnonymous
+      && request.resource.data.type == resource.data.type
+      && request.resource.data.title == resource.data.title
+      && request.resource.data.details == resource.data.details
+      && request.resource.data.status == resource.data.status
+      && request.resource.data.commentCount == resource.data.commentCount
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.schemaVersion == resource.data.schemaVersion
+      && (
+        (
+          !exists(feedbackVotePath(feedbackId, request.auth.uid))
+          && existsAfter(feedbackVotePath(feedbackId, request.auth.uid))
+          && request.resource.data.upvoteCount == resource.data.upvoteCount + 1
+        )
+        || (
+          exists(feedbackVotePath(feedbackId, request.auth.uid))
+          && !existsAfter(feedbackVotePath(feedbackId, request.auth.uid))
+          && resource.data.upvoteCount > 0
+          && request.resource.data.upvoteCount == resource.data.upvoteCount - 1
+        )
+      );
+    }
+
+    function isFeedbackVoteDoc() {
+      return onlyKeys(["uid", "createdAt"])
+      && request.resource.data.uid is string
+      && request.resource.data.createdAt is timestamp;
+    }
+
+    function isFeedbackVoteCreate(feedbackId, uid) {
+      return request.auth != null
+      && request.auth.uid == uid
+      && isFeedbackVoteDoc()
+      && request.resource.data.uid == uid
+      && exists(/databases/$(database)/documents/feedback_items/$(feedbackId))
+      && getAfter(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount
+        == get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount + 1;
+    }
+
+    function canDeleteFeedbackVote(feedbackId, uid) {
+      return request.auth != null
+      && request.auth.uid == uid
+      && exists(/databases/$(database)/documents/feedback_items/$(feedbackId))
+      && get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount > 0
+      && getAfter(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount
+        == get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount - 1;
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
@@ -768,6 +889,22 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource != null
         && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /feedback_items/{feedbackId} {
+      allow read: if request.auth != null;
+      allow create: if isFeedbackItemCreate(feedbackId);
+      allow update: if resource != null && isFeedbackVoteMutation(feedbackId);
+      allow delete: if request.auth != null
+        && resource != null
+        && resource.data.ownerUid == request.auth.uid;
+
+      match /votes/{uid} {
+        allow read: if request.auth != null;
+        allow create: if isFeedbackVoteCreate(feedbackId, uid);
+        allow update: if false;
+        allow delete: if canDeleteFeedbackVote(feedbackId, uid);
+      }
     }
   }
 }

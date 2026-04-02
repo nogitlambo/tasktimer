@@ -1,4 +1,5 @@
 import { escapeRegExp, newTaskId } from "../lib/ids";
+import type { RewardLedgerEntry } from "../lib/rewards";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import type { TaskTimerTasksContext } from "./context";
 
@@ -7,6 +8,18 @@ import type { TaskTimerTasksContext } from "./context";
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+
+  function getTaskXpAwarded(taskIdRaw: string): number {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return 0;
+    const awardLedger = Array.isArray(ctx.getRewardProgress()?.awardLedger) ? ctx.getRewardProgress().awardLedger : [];
+    const awardedXp = awardLedger.reduce((sum: number, entry: RewardLedgerEntry) => {
+      if (!entry || entry.reason !== "session") return sum;
+      if (String(entry.taskId || "").trim() !== taskId) return sum;
+      return sum + Math.max(0, Number(entry.xp || 0) || 0);
+    }, 0);
+    return Math.max(0, Math.floor(awardedXp));
+  }
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
@@ -136,6 +149,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
       const showHistory = openHistoryTaskIds.has(taskId);
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
+      const xpAwardedHTML = `<div class="taskXpAwarded">${getTaskXpAwarded(taskId)} XP awarded</div>`;
       const historyHTML = showHistory
         ? `
           <section class="historyInline" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
@@ -191,6 +205,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
               </div>
             </div>
             ${progressHTML}
+            ${xpAwardedHTML}
             ${historyHTML}
             </div>
           </div>
@@ -256,10 +271,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     }
     ctx.clearTaskTimeGoalFlow(String(t.id || ""));
     ctx.flushPendingFocusSessionNoteSave(String(t.id || ""));
-    ctx.awardLaunchXpForTask(t);
     t.running = true;
     t.startMs = Date.now();
     t.hasStarted = true;
+    ctx.openRewardSessionSegment(t, t.startMs);
     ctx.clearCheckpointBaseline(t.id);
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
@@ -274,6 +289,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!t || !t.running) return;
     ctx.clearTaskTimeGoalFlow(String(t.id || ""));
     ctx.flushPendingFocusSessionNoteSave(String(t.id || ""));
+    ctx.closeRewardSessionSegment(t, Date.now());
     t.accumulatedMs = ctx.getElapsedMs(t);
     t.running = false;
     t.startMs = null;
@@ -298,6 +314,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     t.hasStarted = false;
     t.xpDisqualifiedUntilReset = false;
     ctx.clearTaskTimeGoalFlow(taskId);
+    ctx.clearRewardSessionTracker(taskId);
     ctx.resetCheckpointAlertTracking(t.id);
     ctx.setCheckpointAutoResetDirty(true);
     ctx.clearFocusSessionDraft(taskId);

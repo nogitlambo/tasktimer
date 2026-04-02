@@ -1,11 +1,20 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
-import type { AppPage, DashboardAvgRange, DashboardCardSize, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
+import type {
+  AppPage,
+  DashboardAvgRange,
+  DashboardCardSize,
+  DashboardRenderOptions,
+  DashboardTimelineDensity,
+  HistoryViewState,
+  MainMode,
+} from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
+import type { RewardProgressV1 } from "../lib/rewards";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -183,7 +192,7 @@ export type TaskTimerAppShellContext = {
   closeFriendRequestModal: () => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderGroupsPage: () => void;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
   getOpenHistoryTaskIds: () => Iterable<string>;
@@ -276,6 +285,7 @@ export type TaskTimerTasksContext = {
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
   getDynamicColorsEnabled: () => boolean;
+  getRewardProgress: () => RewardProgressV1;
   getEditIndex: () => number | null;
   setEditIndex: (value: number | null) => void;
   getEditTaskDraft: () => Task | null;
@@ -316,7 +326,7 @@ export type TaskTimerTasksContext = {
   setCheckpointAutoResetDirty: (value: boolean) => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   syncTimeGoalModalWithTaskState: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   getElapsedMs: (task: Task) => number;
@@ -335,8 +345,10 @@ export type TaskTimerTasksContext = {
   openEdit: (index: number) => void;
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;
-  awardLaunchXpForTask: (task: Task) => void;
   clearCheckpointBaseline: (taskId: string | null | undefined) => void;
+  openRewardSessionSegment: (task: Task | null | undefined, startMs?: number | null) => void;
+  closeRewardSessionSegment: (task: Task | null | undefined, endMs?: number | null) => void;
+  clearRewardSessionTracker: (taskId: string | null | undefined) => void;
   openFocusMode: (index: number) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
@@ -624,7 +636,8 @@ export type TaskTimerSessionContext = {
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
   render: () => void;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
+  renderDashboardLiveWidgets: () => void;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
@@ -642,6 +655,7 @@ export type TaskTimerSessionContext = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getHistoryEntryNote: (entry: unknown) => string;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   resetTask: (index: number) => void;
@@ -676,7 +690,7 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   getModeLabel: (mode: MainMode) => string;
   isModeEnabled: (mode: MainMode) => boolean;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
@@ -705,6 +719,7 @@ export type TaskTimerDashboardRenderContext = {
     avgSession: boolean;
     timeline: boolean;
   };
+  getDashboardRefreshHoldActive: () => boolean;
   getCloudRefreshInFlight: () => Promise<void> | null;
   getDynamicColorsEnabled: () => boolean;
   getElapsedMs: (task: Task) => number;
@@ -782,7 +797,7 @@ export type TaskTimerPreferencesContext = {
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   render: () => void;
   renderDashboardPanelMenu: () => void;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   ensureDashboardIncludedModesValid: () => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   closeConfirm: () => void;
@@ -881,7 +896,7 @@ export type TaskTimerHistoryInlineContext = {
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   render: () => void;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   nowMs: () => number;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   formatTime: (value: number) => string;

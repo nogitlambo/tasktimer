@@ -157,6 +157,45 @@ function normalizeEmail(raw: unknown): string {
   return String(raw || "").trim().toLowerCase();
 }
 
+const USER_ROOT_ALLOWED_KEYS = new Set([
+  "email",
+  "displayName",
+  "username",
+  "usernameKey",
+  "avatarId",
+  "avatarCustomSrc",
+  "googlePhotoUrl",
+  "rankThumbnailSrc",
+  "rewardCurrentRankId",
+  "rewardTotalXp",
+  "plan",
+  "planUpdatedAt",
+  "stripeCustomerId",
+  "stripeSubscriptionId",
+  "stripePriceId",
+  "stripeSubscriptionStatus",
+  "stripeSyncedAt",
+  "createdAt",
+  "updatedAt",
+  "schemaVersion",
+]);
+
+function pickSupportedUserRootFields(data: Record<string, unknown> | null): Record<string, unknown> {
+  if (!data) return {};
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (USER_ROOT_ALLOWED_KEYS.has(key)) {
+      next[key] = value;
+    }
+  }
+  return next;
+}
+
+function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): string[] {
+  if (!data) return [];
+  return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
+}
+
 function emailLookupDocKey(email: string): string {
   return encodeURIComponent(normalizeEmail(email));
 }
@@ -531,8 +570,10 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
   const authEmail = normalizeEmail(currentUser?.email);
   const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
   const existing = await getDoc(root);
-  const prevEmail = normalizeEmail(existing.exists() ? existing.get("email") : "");
-  const existingPlan = existing.exists() ? normalizeTaskTimerPlan(existing.get("plan")) : "free";
+  const existingData = existing.exists() ? (existing.data() as Record<string, unknown>) : null;
+  const prevEmail = normalizeEmail(existingData?.email);
+  const existingPlan = normalizeTaskTimerPlan(existingData?.plan);
+  const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
 
   if (prevEmail && authEmail && prevEmail !== authEmail) {
     try {
@@ -543,19 +584,27 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
   }
 
   try {
-    await setDoc(
-      root,
-      {
-        schemaVersion: 1,
-        plan: existingPlan,
-        ...(authEmail ? { email: authEmail } : {}),
-        displayName: authDisplayName,
-        createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        ...(patch || {}),
-      },
-      { merge: true }
-    );
+    const payload = {
+      ...pickSupportedUserRootFields(existingData),
+      schemaVersion: 1,
+      plan: existingPlan,
+      ...(authEmail ? { email: authEmail } : {}),
+      displayName: authDisplayName,
+      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      ...(patch || {}),
+    };
+    if (unsupportedKeys.length && process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Sanitizing legacy user root fields before write", {
+        uid,
+        unsupportedKeys,
+      });
+    }
+    if (unsupportedKeys.length) {
+      await setDoc(root, payload);
+    } else {
+      await setDoc(root, payload, { merge: true });
+    }
 
     await upsertUserEmailLookup(uid);
   } catch (error) {

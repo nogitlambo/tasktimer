@@ -1,5 +1,13 @@
+import { localDayKey } from "./history";
+import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
+import { computeMomentumSnapshot, type MomentumMode } from "./momentum";
+import type { HistoryByTaskId, HistoryEntry, Task } from "./types";
+
+export type RewardReason = "launch" | "session" | "dailyConsistency" | "streakBonus" | "weeklyGoal60" | "weeklyGoal100";
+
 export type RewardProgressV1 = {
   totalXp: number;
+  totalXpPrecise: number;
   currentRankId: string;
   lastAwardedAt: number | null;
   completedSessions: number;
@@ -11,8 +19,11 @@ export type RewardLedgerEntry = {
   dayKey: string;
   taskId: string | null;
   xp: number;
+  baseXp: number;
+  multiplier: number;
   eligibleMs: number;
-  reason: "launch" | "session" | "dailyConsistency";
+  reason: RewardReason;
+  sourceKey: string;
 };
 
 export type RankDefinition = {
@@ -37,6 +48,45 @@ export type LaunchXpContext = {
   awardedAt: number;
 };
 
+export type CompletedSessionXpContext = {
+  taskId: string | null;
+  awardedAt: number;
+  elapsedMs: number;
+  xpDisqualifiedUntilReset?: boolean;
+  historyByTaskId: HistoryByTaskId;
+  tasks: Task[];
+  weekStarting: DashboardWeekStart;
+  dashboardIncludedModes?: Record<MomentumMode, boolean>;
+  isModeEnabled?: (mode: MomentumMode) => boolean;
+  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
+  momentumEntitled?: boolean;
+  sessionSegments?: RewardSessionSegment[];
+};
+
+export type RewardSessionSegment = {
+  startMs: number;
+  endMs: number;
+  multiplier: number;
+};
+
+export type RewardQualifiedDayState = {
+  dayKey: string;
+  totalEligibleMs: number;
+  eligibleSessionCount: number;
+  firstEligibleTs: number | null;
+  lastEligibleTs: number | null;
+  qualified: boolean;
+};
+
+export type RewardWeekProgress = {
+  weekKey: string;
+  targetMs: number;
+  loggedMs: number;
+  progressRatio: number;
+  reached60: boolean;
+  reached100: boolean;
+};
+
 export type RewardsHeaderViewModel = {
   rankLabel: string;
   totalXp: number;
@@ -48,10 +98,28 @@ export type RewardsHeaderViewModel = {
 };
 
 export const XP_PER_TASK_LAUNCH = 5;
+export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
+export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
+export const SESSION_XP_INTERVAL_MS = 10 * 60 * 1000;
+export const DAILY_BASE_SESSION_XP_CAP = 12;
+export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;
+export const QUALIFIED_DAY_MIN_SESSION_COUNT = 2;
+export const QUALIFIED_DAY_MIN_SPAN_MS = 2 * 60 * 60 * 1000;
+export const DAILY_CONSISTENCY_XP = 3;
+export const MID_STREAK_BONUS_XP = 2;
+export const HIGH_STREAK_BONUS_XP = 4;
+export const WEEKLY_GOAL_60_XP = 4;
+export const WEEKLY_GOAL_100_XP = 8;
+
+const WEEKLY_DAILY_GOAL_MIN_MINUTES = 20;
+const WEEKLY_WEEKLY_GOAL_MIN_MINUTES = 120;
 const LEDGER_RETENTION_DAYS = 35;
+const CLOCK_SKEW_ALLOWANCE_MS = 5 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
   totalXp: 0,
+  totalXpPrecise: 0,
   currentRankId: "unranked",
   lastAwardedAt: null,
   completedSessions: 0,
@@ -66,7 +134,6 @@ export const RANK_LADDER: RankDefinition[] = [
   { id: "engineer", label: "Engineer", minXp: 600 },
   { id: "analyst", label: "Analyst", minXp: 1000 },
   { id: "specialist", label: "Specialist", minXp: 1600 },
-  { id: "integrator", label: "Integrator", minXp: 2200 },
   { id: "strategist", label: "Strategist", minXp: 2900 },
   { id: "director", label: "Director", minXp: 3900 },
   { id: "ascendent", label: "Ascendent", minXp: 4800 },
@@ -76,23 +143,21 @@ export const RANK_LADDER: RankDefinition[] = [
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   specialist: "/insignias/specialist.png",
-  integrator: "/insignias/integrator.png",
   strategist: "/insignias/strategist.svg",
   director: "/insignias/director.svg",
-  ascendent: "/insignias/ascendent.svg",
-  commander: "/insignias/commander.svg",
-  architect: "/insignias/architect.svg",
+  ascendent: "/insignias/ascendent.png",
+  commander: "/insignias/11_commander_512x512.png",
+  architect: "/insignias/architect.png",
 };
 
 export const RANK_OVERRIDE_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
   specialist: "/insignias/specialist.png",
-  integrator: "/insignias/integrator.png",
   strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",
   ascendent: "/insignias/ascendent.png",
-  commander: "/insignias/commander.png",
+  commander: "/insignias/11_commander_512x512.png",
   architect: "/insignias/architect.png",
 };
 
@@ -104,7 +169,9 @@ const RANK_ID_BY_MODAL_THUMBNAIL = new Map(
 export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   if (!input || typeof input !== "object") return { ...DEFAULT_REWARD_PROGRESS };
   const obj = input as Record<string, unknown>;
-  const totalXp = Math.max(0, Math.floor(Number(obj.totalXp || 0) || 0));
+  const totalXpPreciseRaw = Number(obj.totalXpPrecise ?? obj.totalXp ?? 0);
+  const totalXpPrecise = Number.isFinite(totalXpPreciseRaw) ? Math.max(0, totalXpPreciseRaw) : 0;
+  const totalXp = Math.max(0, Math.floor(totalXpPrecise));
   const completedSessions = Math.max(0, Math.floor(Number(obj.completedSessions || 0) || 0));
   const lastAwardedAtRaw = Number(obj.lastAwardedAt || 0);
   const lastAwardedAt = Number.isFinite(lastAwardedAtRaw) && lastAwardedAtRaw > 0 ? Math.floor(lastAwardedAtRaw) : null;
@@ -113,6 +180,7 @@ export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   const rawRankId = String(obj.currentRankId || "").trim();
   return {
     totalXp,
+    totalXpPrecise,
     completedSessions,
     lastAwardedAt,
     awardLedger,
@@ -120,40 +188,484 @@ export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   };
 }
 
-function localDayKey(ts: number): string {
-  const date = new Date(Math.max(0, Math.floor(Number(ts || 0) || 0)) || Date.now());
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function normalizeAwardLedger(input: unknown): RewardLedgerEntry[] {
   if (!Array.isArray(input)) return [];
-  const minTs = Date.now() - LEDGER_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const minTs = Date.now() - LEDGER_RETENTION_DAYS * DAY_MS;
   return input
-    .map((entry) => {
+    .map((entry, index) => {
       if (!entry || typeof entry !== "object") return null;
       const obj = entry as Record<string, unknown>;
       const ts = Math.max(0, Math.floor(Number(obj.ts || 0) || 0));
-      const xp = Math.max(0, Math.floor(Number(obj.xp || 0) || 0));
+      const xp = Number.isFinite(Number(obj.xp)) ? Math.max(0, Number(obj.xp)) : 0;
+      const baseXp = Number.isFinite(Number(obj.baseXp)) ? Math.max(0, Number(obj.baseXp)) : xp;
+      const multiplier = Number.isFinite(Number(obj.multiplier)) ? Math.max(0, Number(obj.multiplier)) : baseXp > 0 ? xp / baseXp : 1;
       const eligibleMs = Math.max(0, Math.floor(Number(obj.eligibleMs || 0) || 0));
-      const reason: RewardLedgerEntry["reason"] =
-        obj.reason === "dailyConsistency" ? "dailyConsistency" : obj.reason === "launch" ? "launch" : "session";
+      const reason = normalizeRewardReason(obj.reason);
       const rawTaskId = String(obj.taskId || "").trim();
-      if (!ts || (xp <= 0 && eligibleMs <= 0)) return null;
+      if (!ts || (xp <= 0 && eligibleMs <= 0 && baseXp <= 0)) return null;
       if (ts < minTs) return null;
+      const dayKey = String(obj.dayKey || "").trim() || localDayKey(ts);
+      const sourceKeyRaw = String(obj.sourceKey || "").trim();
+      const sourceKey = sourceKeyRaw || buildLegacySourceKey(reason, rawTaskId || null, ts, eligibleMs, xp, dayKey, index);
       return {
         ts,
         xp,
+        baseXp,
+        multiplier,
         eligibleMs,
         reason,
         taskId: rawTaskId || null,
-        dayKey: String(obj.dayKey || "").trim() || localDayKey(ts),
+        dayKey,
+        sourceKey,
       } satisfies RewardLedgerEntry;
     })
     .filter((entry): entry is RewardLedgerEntry => !!entry)
     .sort((a, b) => a.ts - b.ts);
+}
+
+function normalizeRewardReason(value: unknown): RewardReason {
+  if (value === "dailyConsistency") return "dailyConsistency";
+  if (value === "streakBonus") return "streakBonus";
+  if (value === "weeklyGoal60") return "weeklyGoal60";
+  if (value === "weeklyGoal100") return "weeklyGoal100";
+  if (value === "launch") return "launch";
+  return "session";
+}
+
+function buildLegacySourceKey(
+  reason: RewardReason,
+  taskId: string | null,
+  ts: number,
+  eligibleMs: number,
+  xp: number,
+  dayKey: string,
+  index: number
+): string {
+  if (reason === "dailyConsistency") return `legacy:daily:${dayKey}:${ts}:${xp}:${index}`;
+  if (reason === "launch") return `legacy:launch:${taskId || "none"}:${ts}:${xp}:${index}`;
+  return `legacy:${reason}:${taskId || "none"}:${ts}:${eligibleMs}:${xp}:${index}`;
+}
+
+function clampAwardTimestamp(previous: RewardProgressV1, awardedAtRaw: number): number | null {
+  const awardedAt = Math.max(0, Math.floor(Number(awardedAtRaw || 0) || 0)) || Date.now();
+  const latestLedgerTs = previous.awardLedger.reduce((maxTs, entry) => Math.max(maxTs, entry.ts), 0);
+  if (awardedAt > Date.now() + CLOCK_SKEW_ALLOWANCE_MS) return null;
+  if (latestLedgerTs > 0 && awardedAt + CLOCK_SKEW_ALLOWANCE_MS < latestLedgerTs) return null;
+  return awardedAt;
+}
+
+function getExistingSourceKeys(progress: RewardProgressV1): Set<string> {
+  return new Set(progress.awardLedger.map((entry) => entry.sourceKey));
+}
+
+function getSessionEligibleMs(elapsedMs: number, xpDisqualifiedUntilReset?: boolean): number {
+  if (xpDisqualifiedUntilReset) return 0;
+  const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+  if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
+  return Math.min(safeElapsedMs, MAX_REWARD_ELIGIBLE_SESSION_MS);
+}
+
+function sumDailySessionXp(ledger: RewardLedgerEntry[], dayKey: string): number {
+  return ledger.reduce((sum, entry) => {
+    if (entry.reason !== "session" || entry.dayKey !== dayKey) return sum;
+    return sum + Math.max(0, entry.baseXp);
+  }, 0);
+}
+
+function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], completedSessionsDelta: number): RewardAwardResult {
+  const normalizedEntries = normalizeAwardLedger(entries);
+  const amount = normalizedEntries.reduce((sum, entry) => sum + Math.max(0, entry.xp), 0);
+  const nextLedger = normalizeAwardLedger(previous.awardLedger.concat(normalizedEntries));
+  const nextTotalXpPrecise = previous.totalXpPrecise + amount;
+  const nextTotalXp = Math.max(0, Math.floor(nextTotalXpPrecise));
+  const nextRank = getRankForXp(nextTotalXp);
+  const lastAwardedAt =
+    normalizedEntries.reduce<number | null>((latest, entry) => (latest == null || entry.ts > latest ? entry.ts : latest), previous.lastAwardedAt) ??
+    previous.lastAwardedAt;
+  const next: RewardProgressV1 = {
+    totalXp: nextTotalXp,
+    totalXpPrecise: nextTotalXpPrecise,
+    currentRankId: nextRank.id,
+    lastAwardedAt,
+    completedSessions: Math.max(0, previous.completedSessions + completedSessionsDelta),
+    awardLedger: nextLedger,
+  };
+
+  return {
+    amount,
+    previous,
+    next,
+    rankChanged: previous.currentRankId !== next.currentRankId,
+  };
+}
+
+function buildSessionLedgerEntry(
+  taskId: string | null,
+  awardedAt: number,
+  eligibleMs: number,
+  baseXp: number,
+  multiplier: number,
+  sourceKey: string
+): RewardLedgerEntry {
+  return {
+    ts: awardedAt,
+    dayKey: localDayKey(awardedAt),
+    taskId,
+    xp: baseXp * multiplier,
+    baseXp,
+    multiplier,
+    eligibleMs,
+    reason: "session",
+    sourceKey,
+  };
+}
+
+function buildBonusLedgerEntry(
+  reason: Exclude<RewardReason, "launch" | "session">,
+  awardedAt: number,
+  baseXp: number,
+  multiplier: number,
+  sourceKey: string
+): RewardLedgerEntry {
+  return {
+    ts: awardedAt,
+    dayKey: localDayKey(awardedAt),
+    taskId: null,
+    xp: baseXp * multiplier,
+    baseXp,
+    multiplier,
+    eligibleMs: 0,
+    reason,
+    sourceKey,
+  };
+}
+
+function getRewardQualifiedDayStates(historyByTaskId: HistoryByTaskId): Map<string, RewardQualifiedDayState> {
+  const byDay = new Map<
+    string,
+    {
+      totalEligibleMs: number;
+      eligibleSessionCount: number;
+      firstEligibleTs: number | null;
+      lastEligibleTs: number | null;
+    }
+  >();
+
+  Object.values(historyByTaskId || {}).forEach((entries) => {
+    if (!Array.isArray(entries)) return;
+    entries.forEach((entry) => {
+      const normalized = normalizeHistoryEntryForRewards(entry);
+      if (!normalized || normalized.eligibleMs <= 0) return;
+      const dayKey = localDayKey(normalized.ts);
+      const current =
+        byDay.get(dayKey) || {
+          totalEligibleMs: 0,
+          eligibleSessionCount: 0,
+          firstEligibleTs: null,
+          lastEligibleTs: null,
+        };
+      current.totalEligibleMs += normalized.eligibleMs;
+      current.eligibleSessionCount += 1;
+      current.firstEligibleTs = current.firstEligibleTs == null ? normalized.ts : Math.min(current.firstEligibleTs, normalized.ts);
+      current.lastEligibleTs = current.lastEligibleTs == null ? normalized.ts : Math.max(current.lastEligibleTs, normalized.ts);
+      byDay.set(dayKey, current);
+    });
+  });
+
+  const result = new Map<string, RewardQualifiedDayState>();
+  byDay.forEach((value, dayKey) => {
+    const spanMs =
+      value.firstEligibleTs != null && value.lastEligibleTs != null ? Math.max(0, value.lastEligibleTs - value.firstEligibleTs) : 0;
+    result.set(dayKey, {
+      dayKey,
+      totalEligibleMs: value.totalEligibleMs,
+      eligibleSessionCount: value.eligibleSessionCount,
+      firstEligibleTs: value.firstEligibleTs,
+      lastEligibleTs: value.lastEligibleTs,
+      qualified:
+        value.totalEligibleMs >= QUALIFIED_DAY_MIN_TOTAL_MS &&
+        value.eligibleSessionCount >= QUALIFIED_DAY_MIN_SESSION_COUNT &&
+        spanMs >= QUALIFIED_DAY_MIN_SPAN_MS,
+    });
+  });
+  return result;
+}
+
+function normalizeHistoryEntryForRewards(entry: HistoryEntry | null | undefined): { ts: number; eligibleMs: number } | null {
+  const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
+  if (!ts) return null;
+  const eligibleMs = getSessionEligibleMs(Number(entry?.ms || 0), !!entry?.xpDisqualifiedUntilReset);
+  return { ts, eligibleMs };
+}
+
+function getQualifiedDayKeys(historyByTaskId: HistoryByTaskId): string[] {
+  return Array.from(getRewardQualifiedDayStates(historyByTaskId).values())
+    .filter((state) => state.qualified)
+    .map((state) => state.dayKey)
+    .sort();
+}
+
+function localDayKeyToStartMs(dayKey: string): number {
+  return new Date(`${dayKey}T00:00:00`).getTime();
+}
+
+export function getRewardQualifiedDayState(historyByTaskId: HistoryByTaskId, dayKey: string): RewardQualifiedDayState {
+  return (
+    getRewardQualifiedDayStates(historyByTaskId).get(String(dayKey || "").trim()) || {
+      dayKey: String(dayKey || "").trim(),
+      totalEligibleMs: 0,
+      eligibleSessionCount: 0,
+      firstEligibleTs: null,
+      lastEligibleTs: null,
+      qualified: false,
+    }
+  );
+}
+
+export function getRewardStreakLength(historyByTaskId: HistoryByTaskId, referenceDayKey?: string): number {
+  const targetDayKey = String(referenceDayKey || "").trim() || localDayKey(Date.now());
+  const qualifiedDayKeys = getQualifiedDayKeys(historyByTaskId);
+  const qualifiedDaySet = new Set(qualifiedDayKeys);
+  let streak = 0;
+  let probeTime = localDayKeyToStartMs(targetDayKey);
+  while (qualifiedDaySet.has(localDayKey(probeTime))) {
+    streak += 1;
+    probeTime -= DAY_MS;
+  }
+  return streak;
+}
+
+export function getStreakBonusXp(streakLength: number): number {
+  if (streakLength >= 7) return HIGH_STREAK_BONUS_XP;
+  if (streakLength >= 3) return MID_STREAK_BONUS_XP;
+  return 0;
+}
+
+export function getRewardWeekProgress(
+  historyByTaskId: HistoryByTaskId,
+  tasks: Task[],
+  weekStarting: DashboardWeekStart,
+  nowValue: number
+): RewardWeekProgress {
+  const safeNow = Math.max(0, Math.floor(Number(nowValue || 0) || 0)) || Date.now();
+  const weekStartMs = startOfCurrentWeekMs(safeNow, weekStarting);
+  const weekKey = localDayKey(weekStartMs);
+  const eligibleGoalTasks = (Array.isArray(tasks) ? tasks : []).filter((task) => {
+    if (!task?.timeGoalEnabled) return false;
+    const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+    if (task.timeGoalPeriod === "day") return goalMinutes >= WEEKLY_DAILY_GOAL_MIN_MINUTES;
+    if (task.timeGoalPeriod === "week") return goalMinutes >= WEEKLY_WEEKLY_GOAL_MIN_MINUTES;
+    return false;
+  });
+
+  const targetMs = eligibleGoalTasks.reduce((sum, task) => {
+    const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+    const multiplier = task.timeGoalPeriod === "day" ? 7 : 1;
+    return sum + goalMinutes * multiplier * 60000;
+  }, 0);
+
+  const loggedMs = eligibleGoalTasks.reduce((sum, task) => {
+    const taskId = String(task.id || "").trim();
+    if (!taskId) return sum;
+    const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+    const taskLoggedMs = entries.reduce((entrySum, entry) => {
+      const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
+      const ms = Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
+      if (!ts || ms <= 0) return entrySum;
+      if (ts < weekStartMs || ts > safeNow) return entrySum;
+      return entrySum + ms;
+    }, 0);
+    return sum + taskLoggedMs;
+  }, 0);
+
+  const progressRatio = targetMs > 0 ? Math.max(0, Math.min(1, loggedMs / targetMs)) : 0;
+  return {
+    weekKey,
+    targetMs,
+    loggedMs,
+    progressRatio,
+    reached60: targetMs > 0 && progressRatio >= 0.6,
+    reached100: targetMs > 0 && progressRatio >= 1,
+  };
+}
+
+function getCompletionMultiplier(context: CompletedSessionXpContext, awardedAt: number): number {
+  if (!context.momentumEntitled) return 1;
+  if (!context.dashboardIncludedModes || !context.isModeEnabled || !context.taskModeOf) return 1;
+  return computeMomentumSnapshot({
+    tasks: context.tasks,
+    historyByTaskId: context.historyByTaskId,
+    weekStarting: context.weekStarting,
+    includedModes: context.dashboardIncludedModes,
+    isModeEnabled: context.isModeEnabled,
+    taskModeOf: context.taskModeOf,
+    nowValue: awardedAt,
+  }).multiplier;
+}
+
+function normalizeSessionSegments(
+  context: CompletedSessionXpContext,
+  awardedAt: number,
+  multiplierFallback: number
+): Array<{ startMs: number; endMs: number; multiplier: number }> {
+  const source = Array.isArray(context.sessionSegments) ? context.sessionSegments : [];
+  const normalized = source
+    .map((segment) => {
+      const startMs = Math.max(0, Math.floor(Number(segment?.startMs || 0) || 0));
+      const endMs = Math.max(startMs, Math.floor(Number(segment?.endMs || 0) || 0));
+      const multiplier = Number.isFinite(Number(segment?.multiplier)) ? Math.max(0, Number(segment.multiplier)) : multiplierFallback;
+      if (!(endMs > startMs)) return null;
+      return { startMs, endMs, multiplier: multiplier > 0 ? multiplier : 1 };
+    })
+    .filter((segment): segment is { startMs: number; endMs: number; multiplier: number } => !!segment)
+    .sort((a, b) => a.startMs - b.startMs);
+  if (normalized.length) return normalized;
+  const safeElapsedMs = Math.max(0, Math.floor(Number(context.elapsedMs || 0) || 0));
+  if (!(safeElapsedMs > 0)) return [];
+  return [{ startMs: Math.max(0, awardedAt - safeElapsedMs), endMs: awardedAt, multiplier: multiplierFallback }];
+}
+
+function buildScaledSessionLedgerEntries(
+  taskId: string | null,
+  awardedAt: number,
+  eligibleMs: number,
+  remainingDailyXp: number,
+  segments: Array<{ startMs: number; endMs: number; multiplier: number }>
+): RewardLedgerEntry[] {
+  if (!(eligibleMs > 0) || !(remainingDailyXp > 0) || !segments.length) return [];
+  const maxAwardableMs = Math.min(eligibleMs, remainingDailyXp * SESSION_XP_INTERVAL_MS);
+  if (!(maxAwardableMs > 0)) return [];
+
+  let remainingMs = maxAwardableMs;
+  let consumedSessionMs = 0;
+  const entries: RewardLedgerEntry[] = [];
+
+  for (let index = 0; index < segments.length && remainingMs > 0; index += 1) {
+    const segment = segments[index]!;
+    const segmentDurationMs = Math.max(0, segment.endMs - segment.startMs);
+    if (!(segmentDurationMs > 0)) continue;
+    const eligibleRemainingMs = Math.max(0, eligibleMs - consumedSessionMs);
+    if (!(eligibleRemainingMs > 0)) break;
+    const allocatableMs = Math.min(segmentDurationMs, eligibleRemainingMs, remainingMs);
+    if (!(allocatableMs > 0)) {
+      consumedSessionMs += segmentDurationMs;
+      continue;
+    }
+    const baseXp = allocatableMs / SESSION_XP_INTERVAL_MS;
+    const sourceKey = `session:${taskId || "none"}:${awardedAt}:${index}:${segment.startMs}:${segment.endMs}:${allocatableMs}:${segment.multiplier}`;
+    entries.push(buildSessionLedgerEntry(taskId, awardedAt, allocatableMs, baseXp, segment.multiplier, sourceKey));
+    remainingMs -= allocatableMs;
+    consumedSessionMs += segmentDurationMs;
+  }
+
+  return entries;
+}
+
+export function awardDailyConsistencyBonus(
+  progress: RewardProgressV1,
+  historyByTaskId: HistoryByTaskId,
+  dayKey: string,
+  awardedAt: number
+): RewardAwardResult {
+  const previous = normalizeRewardProgress(progress);
+  const normalizedDayKey = String(dayKey || "").trim() || localDayKey(awardedAt);
+  const awardedTs = clampAwardTimestamp(previous, awardedAt);
+  if (!awardedTs) return awardEntries(previous, [], 0);
+  const existingSources = getExistingSourceKeys(previous);
+  const state = getRewardQualifiedDayState(historyByTaskId, normalizedDayKey);
+  if (!state.qualified) return awardEntries(previous, [], 0);
+  const sourceKey = `daily:${normalizedDayKey}`;
+  if (existingSources.has(sourceKey)) return awardEntries(previous, [], 0);
+  return awardEntries(previous, [buildBonusLedgerEntry("dailyConsistency", awardedTs, DAILY_CONSISTENCY_XP, 1, sourceKey)], 0);
+}
+
+export function awardWeeklyGoalBonuses(
+  progress: RewardProgressV1,
+  historyByTaskId: HistoryByTaskId,
+  tasks: Task[],
+  weekStarting: DashboardWeekStart,
+  awardedAt: number
+): RewardAwardResult {
+  const previous = normalizeRewardProgress(progress);
+  const awardedTs = clampAwardTimestamp(previous, awardedAt);
+  if (!awardedTs) return awardEntries(previous, [], 0);
+  const existingSources = getExistingSourceKeys(previous);
+  const weekProgress = getRewardWeekProgress(historyByTaskId, tasks, weekStarting, awardedTs);
+  const entries: RewardLedgerEntry[] = [];
+  if (weekProgress.reached60) {
+    const sourceKey = `weekly60:${weekProgress.weekKey}`;
+    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal60", awardedTs, WEEKLY_GOAL_60_XP, 1, sourceKey));
+  }
+  if (weekProgress.reached100) {
+    const sourceKey = `weekly100:${weekProgress.weekKey}`;
+    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal100", awardedTs, WEEKLY_GOAL_100_XP, 1, sourceKey));
+  }
+  return awardEntries(previous, entries, 0);
+}
+
+export function awardCompletedSessionXp(progress: RewardProgressV1, context: CompletedSessionXpContext): RewardAwardResult {
+  const previous = normalizeRewardProgress(progress);
+  const awardedAt = clampAwardTimestamp(previous, context.awardedAt);
+  const completedSessionsDelta = 1;
+  if (!awardedAt) return awardEntries(previous, [], completedSessionsDelta);
+
+  const rawTaskId = context.taskId == null ? "" : String(context.taskId || "").trim();
+  const taskId = rawTaskId || null;
+  const eligibleMs = getSessionEligibleMs(context.elapsedMs, !!context.xpDisqualifiedUntilReset);
+  const existingSources = getExistingSourceKeys(previous);
+  const entries: RewardLedgerEntry[] = [];
+  const completionMultiplier = getCompletionMultiplier(context, awardedAt);
+  const normalizedSegments = normalizeSessionSegments(context, awardedAt, completionMultiplier);
+
+  if (eligibleMs > 0) {
+    const dayKey = localDayKey(awardedAt);
+    const awardedToday = sumDailySessionXp(previous.awardLedger, dayKey);
+    const remainingDailyXp = Math.max(0, DAILY_BASE_SESSION_XP_CAP - awardedToday);
+    const sessionEntries = buildScaledSessionLedgerEntries(taskId, awardedAt, eligibleMs, remainingDailyXp, normalizedSegments).filter(
+      (entry) => !existingSources.has(entry.sourceKey)
+    );
+    sessionEntries.forEach((entry) => existingSources.add(entry.sourceKey));
+    entries.push(...sessionEntries);
+  }
+
+  const mergedHistory = context.historyByTaskId || {};
+  const dayKey = localDayKey(awardedAt);
+  const qualifiedDay = getRewardQualifiedDayState(mergedHistory, dayKey);
+  const nextSources = new Set([...existingSources, ...entries.map((entry) => entry.sourceKey)]);
+  if (qualifiedDay.qualified) {
+    const dailySourceKey = `daily:${dayKey}`;
+    if (!nextSources.has(dailySourceKey)) {
+      entries.push(buildBonusLedgerEntry("dailyConsistency", awardedAt, DAILY_CONSISTENCY_XP, completionMultiplier, dailySourceKey));
+      nextSources.add(dailySourceKey);
+      const streakLength = getRewardStreakLength(mergedHistory, dayKey);
+      const streakXp = getStreakBonusXp(streakLength);
+      if (streakXp > 0) {
+        const streakSourceKey = `streak:${dayKey}`;
+        if (!nextSources.has(streakSourceKey)) {
+          entries.push(buildBonusLedgerEntry("streakBonus", awardedAt, streakXp, completionMultiplier, streakSourceKey));
+          nextSources.add(streakSourceKey);
+        }
+      }
+    }
+  }
+
+  const weekProgress = getRewardWeekProgress(mergedHistory, context.tasks, context.weekStarting, awardedAt);
+  if (weekProgress.reached60) {
+    const weekly60SourceKey = `weekly60:${weekProgress.weekKey}`;
+    if (!nextSources.has(weekly60SourceKey)) {
+      entries.push(buildBonusLedgerEntry("weeklyGoal60", awardedAt, WEEKLY_GOAL_60_XP, completionMultiplier, weekly60SourceKey));
+      nextSources.add(weekly60SourceKey);
+    }
+  }
+  if (weekProgress.reached100) {
+    const weekly100SourceKey = `weekly100:${weekProgress.weekKey}`;
+    if (!nextSources.has(weekly100SourceKey)) {
+      entries.push(buildBonusLedgerEntry("weeklyGoal100", awardedAt, WEEKLY_GOAL_100_XP, completionMultiplier, weekly100SourceKey));
+      nextSources.add(weekly100SourceKey);
+    }
+  }
+
+  return awardEntries(previous, entries, completedSessionsDelta);
 }
 
 export function getRankForXp(totalXp: number): RankDefinition {
@@ -235,51 +747,23 @@ export function buildRewardProgressForRankSelection(progress: RewardProgressV1, 
   return {
     ...base,
     totalXp: rank.minXp,
+    totalXpPrecise: rank.minXp,
     currentRankId: rank.id,
   };
 }
 
-export function awardSessionCompletionXp(progress: RewardProgressV1, awardedAt: number): RewardAwardResult {
-  return awardTaskLaunchXp(progress, {
-    taskId: null,
-    awardedAt,
-  });
+export function awardSessionCompletionXp(progress: RewardProgressV1, _awardedAt: number): RewardAwardResult {
+  void _awardedAt;
+  return awardEntries(normalizeRewardProgress(progress), [], 1);
 }
 
 export function awardTaskLaunchXp(
   progress: RewardProgressV1,
-  context: LaunchXpContext | { taskId: string | null; awardedAt: number }
+  _context: LaunchXpContext | { taskId: string | null; awardedAt: number }
 ): RewardAwardResult {
+  void _context;
   const previous = normalizeRewardProgress(progress);
-  const awardedAt = Math.max(0, Math.floor(Number(context.awardedAt || 0) || 0)) || Date.now();
-  const rawTaskId = context.taskId == null ? "" : String(context.taskId || "").trim();
-  const launchAwardXp = XP_PER_TASK_LAUNCH;
-  const nextLedger = normalizeAwardLedger(previous.awardLedger);
-  nextLedger.push({
-    ts: awardedAt,
-    dayKey: localDayKey(awardedAt),
-    taskId: rawTaskId || null,
-    xp: launchAwardXp,
-    eligibleMs: 0,
-    reason: "launch",
-  });
-
-  const nextTotalXp = previous.totalXp + launchAwardXp;
-  const nextRank = getRankForXp(nextTotalXp);
-  const next: RewardProgressV1 = {
-    totalXp: nextTotalXp,
-    currentRankId: nextRank.id,
-    lastAwardedAt: awardedAt,
-    completedSessions: previous.completedSessions,
-    awardLedger: normalizeAwardLedger(nextLedger),
-  };
-
-  return {
-    amount: launchAwardXp,
-    previous,
-    next,
-    rankChanged: previous.currentRankId !== next.currentRankId,
-  };
+  return awardEntries(previous, [], 0);
 }
 
 export function buildRewardsHeaderViewModel(progress: RewardProgressV1): RewardsHeaderViewModel {

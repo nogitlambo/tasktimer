@@ -179,6 +179,108 @@ body[data-app-page="test2"] .appPages{
   opacity: 1;
   pointer-events: auto;
 }
+.dashboardRefreshBusyOverlay{
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 14px;
+  background:
+    linear-gradient(180deg, rgba(7,12,20,.12), rgba(7,12,20,.24));
+  backdrop-filter: blur(2px) saturate(.98);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .26s ease, visibility .26s ease;
+}
+.dashboardRefreshBusyOverlay.isOn{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.dashboardRefreshBusyPanel{
+  width: min(360px, calc(100% - 8px));
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(53,232,255,.24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)),
+    rgba(13,15,19,.9);
+  box-shadow: 0 20px 46px rgba(0,0,0,.42), inset 0 0 0 1px rgba(126,243,255,.06);
+  text-align: center;
+}
+.dashboardRefreshBusyPanel h2{
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.dashboardRefreshBusyPanel .modalSubtext{
+  margin: 0;
+  color: rgba(226,246,255,.9);
+  line-height: 1.45;
+}
+.dashboardRefreshBusyDots{
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.dashboardRefreshBusyDots i{
+  width: 8px;
+  height: 8px;
+  display: block;
+  border-radius: 999px;
+  background: rgba(117,231,255,.92);
+  box-shadow: 0 0 12px rgba(53,232,255,.34);
+  animation: dashboardRefreshBusyPulse 1.05s ease-in-out infinite;
+}
+.dashboardRefreshBusyDots i:nth-child(2){
+  animation-delay: .14s;
+}
+.dashboardRefreshBusyDots i:nth-child(3){
+  animation-delay: .28s;
+}
+@keyframes dashboardRefreshBusyPulse{
+  0%, 80%, 100%{
+    opacity: .35;
+    transform: scale(.82);
+  }
+  40%{
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
+  position: relative;
+  overflow: hidden;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent{
+  transition: opacity .26s ease, filter .26s ease, transform .26s ease;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent.isDashboardBusy{
+  opacity: .52;
+  filter: blur(.7px) saturate(.9);
+  transform: scale(.995);
+}
+body[data-theme="purple"] .dashboardRefreshBusyOverlay{
+  background:
+    linear-gradient(180deg, rgba(20,10,24,.14), rgba(20,10,24,.26));
+}
+body[data-theme="purple"] .dashboardRefreshBusyPanel{
+  border-color: rgba(214,96,229,.42);
+  box-shadow: 0 20px 46px rgba(0,0,0,.46), inset 0 0 0 1px rgba(239,134,245,.06);
+}
+body[data-theme="purple"] .dashboardRefreshBusyPanel .modalSubtext{
+  color: rgba(247,232,255,.92);
+}
+body[data-theme="purple"] .dashboardRefreshBusyDots i{
+  background: rgba(233,134,245,.92);
+  box-shadow: 0 0 12px rgba(211,86,230,.32);
+}
 /* Final Tasks-page override: make + Add Task span full panel width. */
 #app[aria-label="TaskLaunch App"] #appPageTasks .controls{
   width:100% !important;

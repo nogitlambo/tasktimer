@@ -494,6 +494,275 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
   margin-bottom: 0;
 }
 
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout {
+  width: min(1180px, calc(100% - 24px));
+  margin: 0 auto;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell {
+  width: 100%;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow {
+  align-items: center;
+  gap: 12px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormIcon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormHeadCopy {
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormTitle {
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(238, 249, 255, .98);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext {
+  margin: 4px 0 0;
+  color: rgba(214, 230, 240, .78);
+  font-size: .92rem;
+  line-height: 1.45;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions {
+  width: 100%;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow {
+  margin-top: -2px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardList {
+  display: grid;
+  gap: 12px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem {
+  padding: 14px 15px;
+  border-radius: 0;
+  border: 1px solid rgba(114, 212, 232, .14);
+  background:
+    linear-gradient(180deg, rgba(18, 21, 27, .98), rgba(13, 15, 19, .99));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .02),
+    0 12px 26px rgba(0, 0, 0, .22);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 27px;
+  padding: 0 10px;
+  border-radius: 0;
+  border: 1px solid rgba(126, 215, 234, .16);
+  background: rgba(255, 255, 255, .03);
+  color: rgba(230, 245, 252, .92);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-bug {
+  border-color: rgba(255, 128, 128, .24);
+  color: rgba(255, 214, 214, .96);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-feature {
+  border-color: rgba(126, 231, 185, .24);
+  color: rgba(219, 255, 237, .96);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-general {
+  border-color: rgba(126, 215, 234, .22);
+  color: rgba(230, 245, 252, .92);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-open {
+  border-color: rgba(117, 231, 255, .28);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-planned,
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-in_progress {
+  border-color: rgba(255, 209, 102, .26);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-shipped {
+  border-color: rgba(126, 231, 185, .24);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-closed {
+  border-color: rgba(255, 255, 255, .12);
+  color: rgba(208, 222, 232, .74);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn {
+  flex: 0 0 auto;
+  min-width: 104px;
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn.isOn {
+  background: linear-gradient(180deg, rgba(53, 232, 255, .14), rgba(0, 207, 200, .08)) !important;
+  border-color: rgba(117, 231, 255, .34) !important;
+  color: rgba(229, 251, 255, .98);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardTitle {
+  margin: 14px 0 8px;
+  font-size: .96rem;
+  line-height: 1.35;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: rgba(241, 250, 255, .98);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardDetails {
+  margin: 0;
+  color: rgba(214, 230, 240, .84);
+  font-size: .95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+  color: rgba(192, 213, 224, .72);
+  font-size: .82rem;
+  letter-spacing: .01em;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormTitle {
+  color: rgba(250, 234, 255, .98);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext {
+  color: rgba(232, 212, 244, .82);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem {
+  border-color: rgba(221, 108, 241, .16);
+  background:
+    linear-gradient(180deg, rgba(20, 12, 28, .98), rgba(13, 8, 19, .99));
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge {
+  border-color: rgba(221, 108, 241, .16);
+  color: rgba(248, 234, 255, .94);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-bug {
+  border-color: rgba(255, 140, 168, .28);
+  color: rgba(255, 222, 230, .96);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-feature {
+  border-color: rgba(175, 236, 178, .24);
+  color: rgba(226, 255, 233, .96);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-open {
+  border-color: rgba(233, 134, 245, .34);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-planned,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-in_progress {
+  border-color: rgba(255, 209, 102, .26);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-shipped {
+  border-color: rgba(175, 236, 178, .24);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-closed {
+  border-color: rgba(255, 255, 255, .12);
+  color: rgba(228, 214, 240, .72);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn.isOn {
+  background: linear-gradient(180deg, rgba(223, 85, 223, .14), rgba(173, 53, 193, .08)) !important;
+  border-color: rgba(233, 134, 245, .36) !important;
+  color: rgba(252, 236, 255, .98);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardTitle {
+  color: rgba(250, 236, 255, .98);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardDetails {
+  color: rgba(233, 219, 243, .84);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardMeta {
+  color: rgba(218, 198, 232, .74);
+}
+
+@media (max-width: 720px) {
+  #app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout {
+    width: min(100%, calc(100% - 16px));
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItemTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn {
+    width: 100%;
+  }
+}
+
 .dashboardHeatDetailCopy .modalSubtext {
   margin: 3px 0 0;
 }
@@ -563,4 +832,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 .dashboardHeatSummaryEmpty {
   padding: 10px 0 2px;
   color: rgba(211, 229, 240, 0.78);
+}
+.taskXpAwarded {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: rgba(232, 238, 255, 0.72);
 }

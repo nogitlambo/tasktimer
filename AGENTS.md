@@ -157,6 +157,7 @@
 - `MODE_SETTINGS_KEY = `${storageKey}:modeSettings``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
 - `PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId``
+- `REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers``
 - `STORAGE_KEY = "taskticker_tasks_v1"`
 - `TASK_VIEW_KEY = `${storageKey}:taskView``
 - `THEME_KEY = `${storageKey}:theme``

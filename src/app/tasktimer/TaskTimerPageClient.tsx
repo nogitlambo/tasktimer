@@ -89,6 +89,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
             <div className="dashboardNeonLayout">
               <div className="dashboardMain">
                 <div className="dashboardShell">
+                  <div className="dashboardShellContent" id="dashboardShellContent">
                   <div className="dashboardTopRow">
                     <div className="dashboardTitleWrap">
                       <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
@@ -162,7 +163,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         <div className="dashboardCardTitle">Streak</div>
                       </div>
                       <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
-                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">XP Reward Rate: X1</div>
+                      <div className="dashboardStreakMeta" id="dashboardStreakMeta">Complete a daily goal to start a streak</div>
                     </section>
 
                     <section
@@ -324,32 +325,51 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                             {(() => {
                               const centerX = 93.5;
                               const centerY = 79;
-                              const innerRadius = 54.5;
-                              const outerRadius = 61.5;
-                              const markerValues = Array.from({ length: 11 }, (_, idx) => idx * 10);
+                              const markerInnerRadius = 55.5;
+                              const markerOuterRadius = 72.5;
+                              const markerValues = [0, 25, 50, 75, 100];
+                              const labelRadius = 46;
                               return (
                                 <g className="dashboardMomentumMarkers" aria-hidden="true">
                                   {markerValues.map((value, idx) => {
                                     const ratio = idx / (markerValues.length - 1);
                                     const angleDeg = 180 - ratio * 180;
                                     const angleRad = (angleDeg * Math.PI) / 180;
-                                    const x1 = centerX + Math.cos(angleRad) * innerRadius;
-                                    const y1 = centerY - Math.sin(angleRad) * innerRadius;
-                                    const x2 = centerX + Math.cos(angleRad) * outerRadius;
-                                    const y2 = centerY - Math.sin(angleRad) * outerRadius;
+                                    const x1 = centerX + Math.cos(angleRad) * markerInnerRadius;
+                                    const y1 = centerY - Math.sin(angleRad) * markerInnerRadius;
+                                    const x2 = centerX + Math.cos(angleRad) * markerOuterRadius;
+                                    const y2 = centerY - Math.sin(angleRad) * markerOuterRadius;
+                                    const tierLabel = value === 25 ? "x1.2" : value === 50 ? "x1.5" : value === 75 ? "x2.0" : "";
+                                    const labelX = centerX + Math.cos(angleRad) * labelRadius;
+                                    const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 50 ? 4 : 2);
                                     return (
-                                      <line
-                                        key={`momentum-marker-${value}`}
-                                        x1={x1}
-                                        y1={y1}
-                                        x2={x2}
-                                        y2={y2}
-                                        stroke="rgba(241, 247, 255, 0.82)"
-                                        strokeWidth="1.35"
-                                        strokeLinecap="round"
-                                        vectorEffect="non-scaling-stroke"
-                                        opacity="0.92"
-                                      />
+                                      <g key={`momentum-marker-${value}`}>
+                                        <line
+                                          x1={x1}
+                                          y1={y1}
+                                          x2={x2}
+                                          y2={y2}
+                                          stroke="rgba(241, 247, 255, 0.82)"
+                                          strokeWidth="1.35"
+                                          strokeLinecap="round"
+                                          vectorEffect="non-scaling-stroke"
+                                          opacity="0.92"
+                                        />
+                                        {tierLabel ? (
+                                          <text
+                                            x={labelX}
+                                            y={labelY}
+                                            fill="rgba(241, 247, 255, 0.92)"
+                                            fontSize="7.5"
+                                            fontWeight="700"
+                                            letterSpacing="0.08em"
+                                            textAnchor="middle"
+                                            dominantBaseline="alphabetic"
+                                          >
+                                            {tierLabel}
+                                          </text>
+                                        ) : null}
+                                      </g>
                                     );
                                   })}
                                 </g>
@@ -479,6 +499,20 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         </div>
                       </div>
                     </section>
+                  </div>
+                  </div>
+                  <div className="dashboardRefreshBusyOverlay" id="dashboardRefreshBusyOverlay" aria-hidden="true" tabIndex={-1}>
+                    <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
+                      <h2>Refreshing Dashboard</h2>
+                      <p className="modalSubtext confirmText" id="dashboardRefreshBusyText">
+                        Refreshing dashboard...
+                      </p>
+                      <div className="dashboardRefreshBusyDots" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
