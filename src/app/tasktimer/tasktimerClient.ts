@@ -718,7 +718,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function renderDashboardWidgetsWithBusy(opts?: DashboardRenderOptions) {
     const renderOpts = opts ? { includeAvgSession: opts.includeAvgSession } : undefined;
-    const shouldShowBusy = currentAppPage === "dashboard" && opts?.showBusy !== false;
+    const shouldShowBusy = currentAppPage === "dashboard" && opts?.showBusy === true;
     if (!shouldShowBusy) {
       renderDashboardWidgetsFromRenderApi(renderOpts);
       return;

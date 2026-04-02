@@ -28,6 +28,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const MOMENTUM_GAUGE_END_DEG = 0;
   const MOMENTUM_ANIMATION_DURATION_MS = 1050;
   const MOMENTUM_MEANINGFUL_DELTA = 3;
+  const MOMENTUM_DRIVER_DEFS = [
+    { label: "Recent activity", max: 40 },
+    { label: "Consistency", max: 25 },
+    { label: "Weekly Progress", max: 25 },
+    { label: "Live Bonus", max: 10 },
+  ] as const;
 
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
@@ -123,6 +129,47 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return MOMENTUM_GAUGE_START_DEG + (boundedScore / 100) * (MOMENTUM_GAUGE_END_DEG - MOMENTUM_GAUGE_START_DEG);
   }
 
+  function buildMomentumDriverRows(scores: number[]) {
+    return MOMENTUM_DRIVER_DEFS.map((driver, index) => {
+      const rawScore = Math.max(0, Math.min(driver.max, Number(scores[index] || 0)));
+      const roundedScore = Math.round(rawScore);
+      const fillPct = driver.max > 0 ? Math.max(0, Math.min(100, (rawScore / driver.max) * 100)) : 0;
+      return {
+        label: driver.label,
+        roundedScore,
+        max: driver.max,
+        fillPct,
+      };
+    });
+  }
+
+  function renderMomentumDriverRows(driverTextsEl: HTMLElement, driverMetersEl: HTMLElement, scores: number[]) {
+    const rows = buildMomentumDriverRows(scores);
+    driverTextsEl.innerHTML = rows
+      .map(
+        (row) => `<li class="dashboardMomentumDriver">
+          <span class="dashboardMomentumDriverText">${ctx.escapeHtmlUI(`${row.label}: ${row.roundedScore}/${row.max}`)}</span>
+        </li>`
+      )
+      .join("");
+    driverMetersEl.innerHTML = rows
+      .map(
+        (row) => `<li class="dashboardMomentumDriver">
+          <span class="dashboardMomentumDriverMeter" aria-hidden="true">
+            <span class="dashboardMomentumDriverMeterFill" style="--momentum-driver-fill:${row.fillPct.toFixed(2)}%"></span>
+            <span class="dashboardMomentumDriverMeterTrack" aria-hidden="true">
+              <span class="dashboardMomentumDriverMeterSegment"></span>
+              <span class="dashboardMomentumDriverMeterSegment"></span>
+              <span class="dashboardMomentumDriverMeterSegment"></span>
+              <span class="dashboardMomentumDriverMeterSegment"></span>
+              <span class="dashboardMomentumDriverMeterSegment"></span>
+            </span>
+          </span>
+        </li>`
+      )
+      .join("");
+  }
+
   function applyMomentumVisualState(opts: {
     dialEl: HTMLElement;
     arcActiveEl: SVGPathElement;
@@ -152,10 +199,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     scoreStatusEl: HTMLElement;
     targetScore: number;
     targetBandLabel: string;
+    driverTextsEl: HTMLElement;
+    driverMetersEl: HTMLElement;
+    targetDriverScores: number[];
   }) {
     cancelMomentumAnimation();
     momentumAnimationStartTimerId = window.setTimeout(() => {
       momentumAnimationStartTimerId = null;
+      renderMomentumDriverRows(opts.driverTextsEl, opts.driverMetersEl, [0, 0, 0, 0]);
       applyMomentumVisualState({
         dialEl: opts.dialEl,
         arcActiveEl: opts.arcActiveEl,
@@ -172,6 +223,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           const progress = Math.max(0, Math.min(1, elapsed / MOMENTUM_ANIMATION_DURATION_MS));
           const eased = 1 - Math.pow(1 - progress, 3);
           const displayedScore = opts.targetScore * eased;
+          const displayedDriverScores = opts.targetDriverScores.map((score) => score * eased);
+          renderMomentumDriverRows(
+            opts.driverTextsEl,
+            opts.driverMetersEl,
+            progress >= 1 ? opts.targetDriverScores : displayedDriverScores
+          );
           applyMomentumVisualState({
             dialEl: opts.dialEl,
             arcActiveEl: opts.arcActiveEl,
@@ -550,8 +607,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const needleEl = els.dashboardMomentumNeedle as HTMLElement | null;
     const scoreValueEl = els.dashboardMomentumScoreValue as HTMLElement | null;
     const scoreStatusEl = els.dashboardMomentumScoreStatus as HTMLElement | null;
-    const driversEl = els.dashboardMomentumDrivers as HTMLElement | null;
-    if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driversEl) return;
+    const driverTextsEl = els.dashboardMomentumDrivers as HTMLElement | null;
+    const driverMetersEl = els.dashboardMomentumDriverMeters as HTMLElement | null;
+    if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driverTextsEl || !driverMetersEl) return;
 
     if (!hasAdvancedInsights()) {
       cancelMomentumAnimation();
@@ -563,26 +621,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
       arcActiveEl.setAttribute("stroke-dasharray", "0 100");
       needleEl.style.setProperty("--momentum-needle-deg", `${MOMENTUM_GAUGE_START_DEG}deg`);
-      const lockedDrivers = [
-        "Recent activity 0/40",
-        "Consistency: 0/25",
-        "Weekly Progress: 0/25",
-        "Live Bonus: 0/10",
-      ];
+      const lockedDriverScores = [0, 0, 0, 0];
       const lockedSignature = JSON.stringify({
         locked: true,
         score: "--",
         status: "Locked",
         needle: `${MOMENTUM_GAUGE_START_DEG}deg`,
-        drivers: lockedDrivers,
+        drivers: lockedDriverScores,
       });
       if (lastMomentumRenderSignature === lockedSignature) return;
       lastMomentumRenderSignature = lockedSignature;
       scoreValueEl.textContent = "--";
       scoreStatusEl.textContent = "Locked";
-      driversEl.innerHTML = lockedDrivers
-        .map((line) => `<li class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</li>`)
-        .join("");
+      renderMomentumDriverRows(driverTextsEl, driverMetersEl, lockedDriverScores);
       return;
     }
 
@@ -604,22 +655,22 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (shouldHoldDashboardWidget("momentum", hasSignal)) return;
 
     const bandLabel = getMomentumBandLabel(score);
-    const nextDrivers = [
-      `Recent activity ${Math.round(momentum.recentActivityScore)}/40`,
-      `Consistency: ${Math.round(momentum.consistencyScore)}/25`,
-      `Weekly Progress: ${Math.round(momentum.weeklyProgressScore)}/25`,
-      `Live Bonus: ${Math.round(momentum.activeSessionBonus)}/10`,
+    const nextDriverScores = [
+      momentum.recentActivityScore,
+      momentum.consistencyScore,
+      momentum.weeklyProgressScore,
+      momentum.activeSessionBonus,
     ];
     const nextSignature = JSON.stringify({
       locked: false,
       score,
       status: bandLabel,
       needle: `${getMomentumNeedleDeg(score)}deg`,
-      drivers: nextDrivers,
+      drivers: nextDriverScores.map((value) => Math.round(value)),
     });
     const isSameTarget = lastMomentumRenderSignature === nextSignature;
     if (!isSameTarget) {
-      driversEl.innerHTML = nextDrivers.map((line) => `<li class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</li>`).join("");
+      renderMomentumDriverRows(driverTextsEl, driverMetersEl, nextDriverScores);
     }
 
     const hasAnimatedBefore = lastMomentumAnimatedTargetScore != null;
@@ -645,11 +696,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         scoreStatusEl,
         targetScore: score,
         targetBandLabel: bandLabel,
+        driverTextsEl,
+        driverMetersEl,
+        targetDriverScores: nextDriverScores,
       });
       return;
     }
 
     cancelMomentumAnimation();
+    renderMomentumDriverRows(driverTextsEl, driverMetersEl, nextDriverScores);
     applyMomentumVisualState({
       dialEl,
       arcActiveEl,

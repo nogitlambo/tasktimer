@@ -2372,3 +2372,26 @@
     right: 10%;
   }
 }
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascot,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascot{
+    margin-top: auto;
+    padding: 18px 0 28px 18px;
+    align-self: flex-start;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotImage,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotImage{
+    display: block;
+    width: clamp(92px, 22vw, 136px);
+    height: auto;
+    object-fit: contain;
+    object-position: left bottom;
+    filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.34));
+    transform: translateY(-18px);
+    user-select: none;
+  }
+}

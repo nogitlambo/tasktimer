@@ -379,13 +379,74 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                           <div className="dashboardMomentumNeedle" id="dashboardMomentumNeedle" aria-hidden="true" />
                         </div>
                       </div>
-                      <section className="dashboardMomentumDriversSection" aria-label="Momentum Drivers">
+                      <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
                         <div className="dashboardCardTitle dashboardMomentumDriversTitle">Momentum Drivers</div>
-                        <ul className="dashboardMomentumDrivers" id="dashboardMomentumDrivers" aria-live="polite">
-                          <li className="dashboardMomentumDriver">Recent activity 0/40</li>
-                          <li className="dashboardMomentumDriver">Consistency: 0/25</li>
-                          <li className="dashboardMomentumDriver">Weekly Progress: 0/25</li>
-                          <li className="dashboardMomentumDriver">Live Bonus: 0/10</li>
+                        <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverText">Recent activity: 0/40</span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverText">Consistency: 0/25</span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverText">Weekly Progress: 0/25</span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverText">Live Bonus: 0/10</span>
+                          </li>
+                        </ul>
+                      </section>
+                      <section className="dashboardMomentumDriversSection dashboardMomentumDriversMeterSection" aria-hidden="true">
+                        <div className="dashboardCardTitle dashboardMomentumDriversTitle dashboardMomentumDriversTitleSpacer">Visual</div>
+                        <ul className="dashboardMomentumDrivers dashboardMomentumDriverMeterList" id="dashboardMomentumDriverMeters">
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverMeter">
+                              <span className="dashboardMomentumDriverMeterFill" style={{ ["--momentum-driver-fill" as string]: "0%" }} />
+                              <span className="dashboardMomentumDriverMeterTrack" aria-hidden="true">
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                              </span>
+                            </span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverMeter">
+                              <span className="dashboardMomentumDriverMeterFill" style={{ ["--momentum-driver-fill" as string]: "0%" }} />
+                              <span className="dashboardMomentumDriverMeterTrack" aria-hidden="true">
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                              </span>
+                            </span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverMeter">
+                              <span className="dashboardMomentumDriverMeterFill" style={{ ["--momentum-driver-fill" as string]: "0%" }} />
+                              <span className="dashboardMomentumDriverMeterTrack" aria-hidden="true">
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                              </span>
+                            </span>
+                          </li>
+                          <li className="dashboardMomentumDriver">
+                            <span className="dashboardMomentumDriverMeter">
+                              <span className="dashboardMomentumDriverMeterFill" style={{ ["--momentum-driver-fill" as string]: "0%" }} />
+                              <span className="dashboardMomentumDriverMeterTrack" aria-hidden="true">
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                                <span className="dashboardMomentumDriverMeterSegment" />
+                              </span>
+                            </span>
+                          </li>
                         </ul>
                       </section>
                     </section>

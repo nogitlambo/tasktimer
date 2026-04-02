@@ -255,7 +255,9 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       ctx.setDashboardCardVisibility(nextVisibility);
     }
     meta.forEach(({ panel, panelId }) => {
-      panel.style.display = nextVisibility[panelId] !== false ? "" : "none";
+      const isVisible = nextVisibility[panelId] !== false;
+      panel.hidden = !isVisible;
+      panel.setAttribute("aria-hidden", isVisible ? "false" : "true");
     });
     syncDashboardPanelMenuState();
   }

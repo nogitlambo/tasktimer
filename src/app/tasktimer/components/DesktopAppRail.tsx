@@ -609,6 +609,10 @@ export default function DesktopAppRail({
             </div>
           </section>
 
+          <div className="desktopRailMascot" aria-hidden="true">
+            <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+          </div>
+
         </aside>
       ) : null}
 
