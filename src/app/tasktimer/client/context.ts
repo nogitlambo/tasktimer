@@ -203,6 +203,12 @@ export type TaskTimerAppShellContext = {
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
+export type TaskTimerAppPageOptions = {
+  pushNavStack?: boolean;
+  syncUrl?: TaskTimerAppPageSyncUrlMode;
+  skipDashboardRender?: boolean;
+};
+
 export type TaskTimerGroupsContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
@@ -212,7 +218,7 @@ export type TaskTimerGroupsContext = {
   getCurrentAppPage: () => AppPage;
   getCurrentMode: () => MainMode;
   applyMainMode: (mode: MainMode) => void;
-  applyAppPage: (page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: TaskTimerAppPageSyncUrlMode }) => void;
+  applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   render: () => void;
   closeConfirm: () => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;

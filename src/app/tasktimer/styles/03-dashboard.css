@@ -33,6 +33,24 @@
   margin-left:auto;
   position:relative;
 }
+.dashboardRefreshBtn{
+  position:relative;
+}
+.dashboardRefreshBtn.isPending{
+  border-color: rgba(53,232,255,.5);
+  box-shadow: 0 0 10px rgba(53,232,255,.16);
+}
+.dashboardRefreshBtn.isPending::after{
+  content:"";
+  position:absolute;
+  top:6px;
+  right:6px;
+  width:7px;
+  height:7px;
+  border-radius:999px;
+  background: rgba(117,231,255,.96);
+  box-shadow: 0 0 10px rgba(53,232,255,.32);
+}
 .dashboardPanelMenu{
   position:relative;
   flex:0 0 auto;

@@ -1,6 +1,7 @@
 import type { HistoryByTaskId, HistoryEntry, Task, DeletedTaskMeta } from "../lib/types";
 import { cleanupHistory, loadHistory, loadTasks, saveHistory, saveTasks } from "../lib/storage";
-import type { AppPage, DashboardAvgRange, DashboardTimelineDensity } from "./types";
+import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
+import type { TaskTimerAppPageOptions } from "./context";
 
 type PersistOptions = { deletedTaskIds?: string[] };
 
@@ -57,13 +58,13 @@ type CreateTaskTimerPersistenceOptions = {
   backfillHistoryColorsFromSessionLogic: () => void;
   syncModeLabelsUi: () => void;
   applyMainMode: (mode: "mode1" | "mode2" | "mode3") => void;
-  applyAppPage: (page: AppPage, opts?: { syncUrl?: "replace" | "push"; pushNavStack?: boolean }) => void;
+  applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   applyDashboardOrderFromStorage: () => void;
   applyDashboardCardSizes: () => void;
   renderDashboardPanelMenu: () => void;
   applyDashboardCardVisibility: () => void;
   applyDashboardEditMode: () => void;
-  renderDashboardWidgets: () => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   maybeRepairHistoryNotesInCloudAfterHydrate?: () => void;
   taskModeOf: (task: Task) => "mode1" | "mode2" | "mode3";
   jumpToTaskById: (taskId: string) => void;
@@ -293,7 +294,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.setHistoryRangeModeByTaskId(nextMode);
   }
 
-  function hydrateUiStateFromCaches() {
+  function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
     options.primeDashboardCacheFromShadow();
     options.setDeletedTaskMeta(options.loadDeletedMeta());
     loadHistoryIntoMemory();
@@ -317,13 +318,16 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.backfillHistoryColorsFromSessionLogic();
     options.syncModeLabelsUi();
     options.applyMainMode("mode1");
-    options.applyAppPage(options.getInitialAppPageFromLocation(options.initialAppPage), { syncUrl: "replace" });
+    options.applyAppPage(options.getInitialAppPageFromLocation(options.initialAppPage), {
+      syncUrl: "replace",
+      skipDashboardRender: true,
+    });
     options.applyDashboardOrderFromStorage();
     options.applyDashboardCardSizes();
     options.renderDashboardPanelMenu();
     options.applyDashboardCardVisibility();
     options.applyDashboardEditMode();
-    if (options.getCurrentAppPage() === "dashboard") {
+    if (!opts?.skipDashboardWidgetsRender && options.getCurrentAppPage() === "dashboard") {
       options.renderDashboardWidgets();
     }
   }

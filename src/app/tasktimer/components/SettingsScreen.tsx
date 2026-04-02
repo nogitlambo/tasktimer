@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import AppImg from "@/components/AppImg";
 import SettingsPanel, { type SettingsPaneKey } from "./SettingsPanel";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";

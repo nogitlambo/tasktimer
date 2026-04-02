@@ -320,6 +320,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardBusyRestoreFocusEl = initialState.dashboardBusyRestoreFocusEl;
   let dashboardBusyShownAtMs = initialState.dashboardBusyShownAtMs;
   let dashboardBusyHideTimer = initialState.dashboardBusyHideTimer;
+  let dashboardRefreshPending = false;
   let friendProfileCacheByUid = initialState.friendProfileCacheByUid;
   let cloudRefreshInFlight = initialState.cloudRefreshInFlight;
   let lastCloudRefreshAtMs = initialState.lastCloudRefreshAtMs;
@@ -624,6 +625,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!overlayEl) return;
     overlayEl.classList.toggle("isOn", !!isOn);
     overlayEl.setAttribute("aria-hidden", isOn ? "false" : "true");
+    syncDashboardRefreshButtonUi();
+  }
+
+  function syncDashboardRefreshButtonUi() {
+    const buttonEl = els.dashboardRefreshBtn as HTMLButtonElement | null;
+    if (!buttonEl) return;
+    const isBusy = dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null;
+    buttonEl.disabled = isBusy;
+    buttonEl.classList.toggle("isPending", dashboardRefreshPending && !isBusy);
+    buttonEl.textContent = isBusy ? "Refreshing..." : "Refresh";
+    buttonEl.setAttribute(
+      "aria-label",
+      isBusy
+        ? "Refreshing dashboard"
+        : dashboardRefreshPending
+          ? "Refresh dashboard, new data available"
+          : "Refresh dashboard"
+    );
+  }
+
+  function setDashboardRefreshPending(nextPending: boolean) {
+    dashboardRefreshPending = !!nextPending;
+    syncDashboardRefreshButtonUi();
   }
 
   function getDashboardBusyTargets() {
@@ -2505,9 +2529,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     hydrateUiStateFromCaches,
     syncTimeGoalModalWithTaskState: () => syncTimeGoalModalWithTaskStateApi(),
     render,
+    renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     maybeHandlePendingTaskJump,
     maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
     currentUid: () => currentUid(),
+    showDashboardBusyIndicator,
+    hideDashboardBusyIndicator,
+    setDashboardRefreshPending,
   });
 
   function wireEvents() {
@@ -2589,14 +2617,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerPopupMenuEvents();
     registerImportExportEvents();
 
+    on(els.dashboardRefreshBtn, "click", () => {
+      if (dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null) return;
+      setDashboardRefreshPending(false);
+      void rehydrateFromCloudAndRender({ force: true });
+    });
     on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       closeDashboardHeatSummaryCardApi({ restoreFocus: true });
     });
     registerConfirmOverlayEvents();
   }
 
-  function hydrateUiStateFromCaches() {
-    persistenceApi?.hydrateUiStateFromCaches();
+  function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
+    persistenceApi?.hydrateUiStateFromCaches(opts);
   }
 
   // Init
@@ -2641,10 +2674,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       tickApi();
       runtime.tickStarted = true;
     }
+    syncDashboardRefreshButtonUi();
   };
 
   bootstrap();
-  void rehydrateFromCloudAndRender();
+  if (currentAppPage === "dashboard") {
+    setDashboardRefreshPending(true);
+  } else {
+    void rehydrateFromCloudAndRender();
+  }
 
   return { destroy };
 }

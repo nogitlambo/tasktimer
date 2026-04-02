@@ -1,5 +1,4 @@
-﻿import React from "react";
-
+﻿
 export default function ConfirmOverlay() {
   return (
     <div className="overlay" id="confirmOverlay">

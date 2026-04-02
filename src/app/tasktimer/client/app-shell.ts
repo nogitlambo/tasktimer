@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { TaskTimerAppPageSyncUrlMode, TaskTimerAppShellContext } from "./context";
+import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
 
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
@@ -77,7 +77,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
   function appPathForPage(page: AppPage) {
     if (page === "dashboard") return appRoute("/tasktimer/dashboard");
-    if (page === "test1") return `${appRoute("/tasktimer")}?page=test1`;
     if (page === "test2") return appRoute("/tasktimer/friends");
     return appRoute("/tasktimer");
   }
@@ -98,7 +97,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       const params = new URLSearchParams(window.location.search || "");
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
-      if (page === "test1") return "test1";
       if (page === "test2") return "test2";
     } catch {
       // ignore
@@ -141,10 +139,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
-    const m = String(token || "").match(/\|page=(tasks|dashboard|test1|test2)$/);
+    const m = String(token || "").match(/\|page=(tasks|dashboard|test2)$/);
     if (!m) return null;
     const p = m[1];
-    if (p === "tasks" || p === "dashboard" || p === "test1" || p === "test2") return p;
+    if (p === "tasks" || p === "dashboard" || p === "test2") return p;
     return null;
   }
 
@@ -281,7 +279,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return null;
   }
 
-  function applyAppPage(page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: TaskTimerAppPageSyncUrlMode }) {
+  function applyAppPage(page: AppPage, opts?: TaskTimerAppPageOptions) {
     if (ctx.getCurrentAppPage() === "tasks" && page !== "tasks") ctx.resetAllOpenHistoryChartSelections();
     if (page !== "tasks") ctx.clearTaskFlipStates();
     ctx.setCurrentAppPage(page);
@@ -289,12 +287,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     document.body.setAttribute("data-app-page", page);
     ctx.els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
-    ctx.els.appPageTest1?.classList.toggle("appPageOn", page === "test1");
     ctx.els.appPageTest2?.classList.toggle("appPageOn", page === "test2");
     if (ctx.els.modeSwitch) (ctx.els.modeSwitch as HTMLElement).style.display = page === "tasks" ? "flex" : "none";
     ctx.els.footerTasksBtn?.classList.toggle("isOn", page === "tasks");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
-    ctx.els.footerTest1Btn?.classList.toggle("isOn", page === "test1");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
     ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", page === "tasks");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", page === "dashboard");
@@ -339,7 +335,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       });
       return;
     }
-    if (page === "dashboard") {
+    if (page === "dashboard" && !opts?.skipDashboardRender) {
       ctx.renderDashboardWidgets();
     }
   }
@@ -449,7 +445,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.footerDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
     );
-    ctx.on(ctx.els.footerTest1Btn, "click", () => applyAppPage("test1", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.footerTest2Btn, "click", (e: any) => {
       e?.preventDefault?.();
       applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });

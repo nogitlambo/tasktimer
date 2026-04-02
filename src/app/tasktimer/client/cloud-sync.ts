@@ -4,6 +4,8 @@ import { hasPendingTaskOrHistorySync, hydrateStorageFromCloud, subscribeCloudTas
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerStateAccessor } from "./root-state";
 
+import type { DashboardRenderOptions } from "./types";
+
 type CreateTaskTimerCloudSyncOptions = {
   runtime: TaskTimerRuntime;
   on: (target: EventTarget | null | undefined, type: string, handler: EventListenerOrEventListenerObject) => void;
@@ -19,12 +21,16 @@ type CreateTaskTimerCloudSyncOptions = {
   pendingDeferredCloudRefresh: TaskTimerStateAccessor<boolean>;
   deferredCloudRefreshTimer: TaskTimerStateAccessor<number | null>;
   lastUiInteractionAtMs: TaskTimerStateAccessor<number>;
-  hydrateUiStateFromCaches: () => void;
+  hydrateUiStateFromCaches: (opts?: { skipDashboardWidgetsRender?: boolean }) => void;
   syncTimeGoalModalWithTaskState: () => void;
   render: () => void;
+  renderDashboardWidgets?: (opts?: DashboardRenderOptions) => void;
   maybeHandlePendingTaskJump: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   currentUid: () => string;
+  showDashboardBusyIndicator?: (message?: string) => number;
+  hideDashboardBusyIndicator?: (key?: number) => void;
+  setDashboardRefreshPending?: (pending: boolean) => void;
 };
 
 type CapListenerHandle = {
@@ -40,6 +46,10 @@ function hasRemoveHandle(value: unknown): value is CapListenerHandle {
 }
 
 export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOptions) {
+  function isDashboardPageActive() {
+    return typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
+  }
+
   function hasActiveFormInteraction() {
     const active = document.activeElement as HTMLElement | null;
     if (!active || active === document.body) return false;
@@ -73,15 +83,21 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     if (options.runtime.destroyed) return Promise.resolve();
     const currentInFlight = options.cloudRefreshInFlight.get();
     if (currentInFlight) return currentInFlight;
+    const activeDashboardPage = isDashboardPageActive();
+    options.setDashboardRefreshPending?.(false);
+    const dashboardBusyKey = activeDashboardPage
+      ? options.showDashboardBusyIndicator?.("Refreshing dashboard...")
+      : undefined;
     const nextInFlight = hydrateStorageFromCloud(opts)
       .then(() => {
         if (options.runtime.destroyed) return;
-        options.hydrateUiStateFromCaches();
+        options.hydrateUiStateFromCaches({ skipDashboardWidgetsRender: activeDashboardPage });
         options.syncTimeGoalModalWithTaskState();
-        const activeDashboardPage =
-          typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
         if (!activeDashboardPage) {
           options.render();
+        }
+        if (activeDashboardPage) {
+          options.renderDashboardWidgets?.();
         }
         options.maybeHandlePendingTaskJump();
         options.maybeRestorePendingTimeGoalFlow();
@@ -91,6 +107,9 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         // Keep current in-memory state when cloud refresh is unavailable.
       })
       .finally(() => {
+        if (typeof dashboardBusyKey === "number") {
+          options.hideDashboardBusyIndicator?.(dashboardBusyKey);
+        }
         options.cloudRefreshInFlight.set(null);
       });
     options.cloudRefreshInFlight.set(nextInFlight);
@@ -114,6 +133,10 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
   }
 
   function refreshCloudStateIfStale(minIntervalMs = 3000) {
+    if (isDashboardPageActive()) {
+      options.setDashboardRefreshPending?.(true);
+      return;
+    }
     if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
       scheduleDeferredCloudRefresh(minIntervalMs);
       return;

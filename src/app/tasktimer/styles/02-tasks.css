@@ -1,6 +1,5 @@
 /* Generated from tasktimer.css split. */
 body[data-app-page="dashboard"] #openAddTaskBtn,
-body[data-app-page="test1"] #openAddTaskBtn,
 body[data-app-page="test2"] #openAddTaskBtn{
   display:none !important;
 }

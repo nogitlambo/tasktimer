@@ -676,9 +676,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const hasAnimatedBefore = lastMomentumAnimatedTargetScore != null;
     const scoreDelta = hasAnimatedBefore ? Math.abs(score - (lastMomentumAnimatedTargetScore || 0)) : score;
     const bandChanged = hasAnimatedBefore ? bandLabel !== lastMomentumAnimatedTargetBand : score > 0;
+    const shouldSuppressAnimation = ctx.getDashboardRefreshHoldActive() || !!ctx.getCloudRefreshInFlight();
     const shouldAnimate =
       score > 0 &&
       (!hasAnimatedBefore || scoreDelta >= MOMENTUM_MEANINGFUL_DELTA || bandChanged) &&
+      !shouldSuppressAnimation &&
       !isSameTarget;
 
     if (!shouldAnimate && isSameTarget) return;

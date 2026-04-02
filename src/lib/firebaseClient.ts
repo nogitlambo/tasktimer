@@ -64,7 +64,7 @@ function warnInvalidFirebaseClientConfig(config: ReturnType<typeof getFirebaseCl
   });
 }
 
-function verifyFirebaseAuthSetup(auth: Auth, config: ReturnType<typeof getFirebaseClientConfig>) {
+function verifyFirebaseAuthSetup(_auth: Auth, config: ReturnType<typeof getFirebaseClientConfig>) {
   if (process.env.NODE_ENV === "production") return;
   console.info("[firebase-auth] Auth setup verified", {
     authDomain: config.authDomain || null,

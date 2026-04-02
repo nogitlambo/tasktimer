@@ -95,7 +95,6 @@
   display:none;
 }
 body[data-app-page="dashboard"] .modeSwitchWrap,
-body[data-app-page="test1"] .modeSwitchWrap,
 body[data-app-page="test2"] .modeSwitchWrap{
   display:none !important;
 }
@@ -121,26 +120,6 @@ body[data-app-page="test2"] .appPages{
 }
 .appPage.appPageOn{
   display:block;
-}
-.appPagePlaceholder{
-  margin:18px;
-  padding:24px;
-  border:1px solid rgba(121,226,255,.2);
-  background:
-              linear-gradient(150deg, rgba(46,232,255,.08), rgba(0,0,0,0) 28%),
-              linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-              rgba(14,23,42,.82);
-  box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
-}
-.appPagePlaceholder h2{
-  margin:0 0 8px;
-  font-family:var(--font-tight);
-  color: rgba(142,242,255,.96);
-  letter-spacing:.04em;
-}
-.appPagePlaceholder p{
-  margin:0;
-  color: rgba(210,230,246,.8);
 }
 /* Use more available width on the Tasks page without affecting route screens that reuse `.list`. */
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
@@ -358,9 +337,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-}
-.appPagePlaceholder h2{
-  font-size:1.125rem;
 }
 #app[aria-label="TaskLaunch App"] .appPages{
   flex: 1 1 auto;

@@ -1,4 +1,3 @@
-import React from "react";
 import ConfirmOverlay from "./ConfirmOverlay";
 import TimeGoalCompleteOverlay from "./TimeGoalCompleteOverlay";
 import TimeGoalCompleteSaveNoteOverlay from "./TimeGoalCompleteSaveNoteOverlay";

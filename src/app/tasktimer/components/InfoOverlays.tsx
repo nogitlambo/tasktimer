@@ -1,5 +1,4 @@
-﻿import React from "react";
-
+﻿
 import AppImg from "@/components/AppImg";
 
 export default function InfoOverlays() {

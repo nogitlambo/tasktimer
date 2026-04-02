@@ -17,7 +17,7 @@ import DesktopAppRail from "./components/DesktopAppRail";
 import { initTaskTimerClient } from "./tasktimerClient";
 import "./tasktimer.css";
 
-type AppPage = "tasks" | "dashboard" | "test1" | "test2";
+type AppPage = "tasks" | "dashboard" | "test2";
 
 export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { initialAppPage?: AppPage }) {
   useEffect(() => {
@@ -96,6 +96,9 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       <h2 className="dashboardTitle">DASHBOARD</h2>
                     </div>
                     <div className="dashboardEditActions">
+                      <button className="btn btn-ghost small dashboardRefreshBtn" id="dashboardRefreshBtn" type="button">
+                        Refresh
+                      </button>
                       <details className="dashboardPanelMenu" id="dashboardPanelMenu">
                         <summary className="btn btn-ghost small dashboardPanelMenuBtn" id="dashboardPanelMenuBtn" role="button" aria-label="Customize dashboard categories and panels">
                           <span className="dashboardPanelMenuIcon" aria-hidden="true" />
@@ -580,13 +583,6 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <section className={`appPage${initialAppPage === "test1" ? " appPageOn" : ""}`} id="appPageTest1" aria-label="Test page 1">
-            <div className="appPagePlaceholder">
-              <h2>Test Page 1</h2>
-              <p>Placeholder test content and sample data.</p>
             </div>
           </section>
 
