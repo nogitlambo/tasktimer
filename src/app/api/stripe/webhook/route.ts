@@ -4,8 +4,6 @@ import Stripe from "stripe";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getStripeServer } from "@/lib/stripeServer";
 
-export const dynamic = "force-dynamic";
-
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
