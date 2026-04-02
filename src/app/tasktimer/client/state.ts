@@ -132,6 +132,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardIncludedModes: { mode1: true, mode2: true, mode3: true },
     dashboardAvgRange: "past7",
     dashboardTimelineDensity: "medium",
+    dashboardMenuFlipped: false,
     currentAppPage: initialAppPage,
     currentTileColumnCount: 1,
     suppressNavStackPush: false,
@@ -185,7 +186,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardWidgetHasRenderedData: {
       streak: false,
       tasksCompleted: false,
-      overview: false,
       momentum: false,
       focusTrend: false,
       heatCalendar: false,

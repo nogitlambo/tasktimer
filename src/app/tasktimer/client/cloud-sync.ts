@@ -86,7 +86,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     const activeDashboardPage = isDashboardPageActive();
     options.setDashboardRefreshPending?.(false);
     const dashboardBusyKey = activeDashboardPage
-      ? options.showDashboardBusyIndicator?.("Refreshing dashboard...")
+      ? options.showDashboardBusyIndicator?.("Refreshing...")
       : undefined;
     const nextInFlight = hydrateStorageFromCloud(opts)
       .then(() => {

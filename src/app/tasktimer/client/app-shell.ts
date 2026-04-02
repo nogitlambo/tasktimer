@@ -282,6 +282,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   function applyAppPage(page: AppPage, opts?: TaskTimerAppPageOptions) {
     if (ctx.getCurrentAppPage() === "tasks" && page !== "tasks") ctx.resetAllOpenHistoryChartSelections();
     if (page !== "tasks") ctx.clearTaskFlipStates();
+    if (page !== "dashboard" && ctx.getDashboardMenuFlipped()) {
+      ctx.setDashboardMenuFlipped(false);
+      ctx.syncDashboardMenuFlipUi();
+    }
     ctx.setCurrentAppPage(page);
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
     document.body.setAttribute("data-app-page", page);

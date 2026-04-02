@@ -138,6 +138,7 @@ export type TaskTimerMutableState = {
   dashboardIncludedModes: Record<MainMode, boolean>;
   dashboardAvgRange: DashboardAvgRange;
   dashboardTimelineDensity: DashboardTimelineDensity;
+  dashboardMenuFlipped: boolean;
   currentAppPage: AppPage;
   currentTileColumnCount: number;
   suppressNavStackPush: boolean;
@@ -215,7 +216,6 @@ export type TaskTimerMutableState = {
   dashboardWidgetHasRenderedData: {
     streak: boolean;
     tasksCompleted: boolean;
-    overview: boolean;
     momentum: boolean;
     focusTrend: boolean;
     heatCalendar: boolean;

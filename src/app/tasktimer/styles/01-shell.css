@@ -190,7 +190,7 @@ body[data-app-page="test2"] .appPages{
   text-align: center;
 }
 .dashboardRefreshBusyPanel h2{
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 17px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -201,44 +201,82 @@ body[data-app-page="test2"] .appPages{
   color: rgba(226,246,255,.9);
   line-height: 1.45;
 }
-.dashboardRefreshBusyDots{
+.dashboardRefreshBusyArrowStage{
   margin-top: 12px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
 }
-.dashboardRefreshBusyDots i{
-  width: 8px;
-  height: 8px;
+.dashboardRefreshBusyArrowShell{
+  position: relative;
+  width: 56px;
+  transform-style: preserve-3d;
+  transform-origin: 50% 60%;
+  animation: dashboardRefreshBusyArrowSpin 8.6s linear infinite;
+  will-change: transform;
+}
+.dashboardRefreshBusyArrowBeamBlend{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .82;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(157, 241, 255, 0) 0%,
+      rgba(157, 241, 255, 0.08) 22%,
+      rgba(194, 249, 255, 0.2) 42%,
+      rgba(208, 252, 255, 0.5) 68%,
+      rgba(218, 254, 255, 0.78) 84%,
+      rgba(231, 255, 255, 0.96) 100%
+    ),
+    radial-gradient(
+      22% 88% at 50% 74%,
+      rgba(236, 255, 255, 0.78) 0%,
+      rgba(173, 244, 255, 0.48) 38%,
+      rgba(130, 223, 255, 0.16) 68%,
+      rgba(130, 223, 255, 0) 100%
+    );
+  mix-blend-mode: screen;
+  -webkit-mask-image: url("/logo/launch-icon.png");
+  mask-image: url("/logo/launch-icon.png");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.dashboardRefreshBusyArrowGraphic{
   display: block;
-  border-radius: 999px;
-  background: rgba(117,231,255,.92);
-  box-shadow: 0 0 12px rgba(53,232,255,.34);
-  animation: dashboardRefreshBusyPulse 1.05s ease-in-out infinite;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 0 10px rgba(158, 242, 255, 0.2))
+    drop-shadow(0 0 22px rgba(137, 226, 255, 0.14))
+    drop-shadow(0 0 40px rgba(126, 186, 255, 0.08));
 }
-.dashboardRefreshBusyDots i:nth-child(2){
-  animation-delay: .14s;
-}
-.dashboardRefreshBusyDots i:nth-child(3){
-  animation-delay: .28s;
-}
-@keyframes dashboardRefreshBusyPulse{
-  0%, 80%, 100%{
-    opacity: .35;
-    transform: scale(.82);
+@keyframes dashboardRefreshBusyArrowSpin{
+  0%{
+    transform: perspective(1600px) rotateY(0deg);
   }
-  40%{
-    opacity: 1;
-    transform: scale(1);
+  100%{
+    transform: perspective(1600px) rotateY(360deg);
   }
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellScene{
+  overflow: visible;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent{
+  overflow: visible;
   transition: opacity .26s ease, filter .26s ease, transform .26s ease;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent.isBackfaceHidden{
+  pointer-events: none;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent.isDashboardBusy{
   opacity: .52;
@@ -256,9 +294,36 @@ body[data-theme="purple"] .dashboardRefreshBusyPanel{
 body[data-theme="purple"] .dashboardRefreshBusyPanel .modalSubtext{
   color: rgba(247,232,255,.92);
 }
-body[data-theme="purple"] .dashboardRefreshBusyDots i{
-  background: rgba(233,134,245,.92);
-  box-shadow: 0 0 12px rgba(211,86,230,.32);
+body[data-theme="purple"] .dashboardRefreshBusyArrowBeamBlend{
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244, 180, 255, 0) 0%,
+      rgba(244, 180, 255, 0.08) 22%,
+      rgba(241, 174, 255, 0.18) 42%,
+      rgba(231, 151, 255, 0.44) 68%,
+      rgba(240, 190, 255, 0.74) 84%,
+      rgba(250, 228, 255, 0.94) 100%
+    ),
+    radial-gradient(
+      22% 88% at 50% 74%,
+      rgba(255, 232, 255, 0.76) 0%,
+      rgba(233, 134, 245, 0.44) 38%,
+      rgba(194, 111, 235, 0.16) 68%,
+      rgba(194, 111, 235, 0) 100%
+    );
+}
+body[data-theme="purple"] .dashboardRefreshBusyArrowGraphic{
+  filter:
+    drop-shadow(0 0 10px rgba(238, 170, 255, 0.22))
+    drop-shadow(0 0 22px rgba(214, 96, 229, 0.16))
+    drop-shadow(0 0 40px rgba(182, 90, 229, 0.08));
+}
+@media (prefers-reduced-motion: reduce){
+  .dashboardRefreshBusyArrowShell{
+    animation: none;
+    transform: none;
+  }
 }
 /* Final Tasks-page override: make + Add Task span full panel width. */
 #app[aria-label="TaskLaunch App"] #appPageTasks .controls{
@@ -330,6 +395,15 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
    dashboard-only rail + hero composition, preserving existing dashboard IDs and interactions. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
   padding-bottom: 28px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
 }
 .desktopAppMain{
   display: flex;

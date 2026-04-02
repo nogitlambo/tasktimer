@@ -249,163 +249,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }, 0);
   }
 
-  function renderDashboardOverviewChart() {
-    const valueEl = els.dashboardOverviewValue as HTMLElement | null;
-    const subtextEl = els.dashboardOverviewSubtext as HTMLElement | null;
-    const sessionsEl = els.dashboardOverviewSessionsValue as HTMLElement | null;
-    const bestDayEl = els.dashboardOverviewBestDayValue as HTMLElement | null;
-    const deltaEl = els.dashboardOverviewDeltaValue as HTMLElement | null;
-    const axisEl = els.dashboardOverviewAxis as HTMLElement | null;
-    const emptyEl = els.dashboardOverviewChartEmpty as HTMLElement | null;
-    const canvas = els.dashboardOverviewChart;
-    if (!canvas) return;
-
-    const nowValue = nowMs();
-    const historyByTaskId = ctx.getHistoryByTaskId();
-    const includedTaskIds = getDashboardIncludedTaskIds();
-    const weekStarting = ctx.getWeekStarting();
-    const currentWeekStartMs = startOfCurrentWeekMs(nowValue, weekStarting);
-    const startDate = new Date(currentWeekStartMs);
-    const days = Array.from({ length: 7 }, (_, idx) => {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + idx);
-      date.setHours(0, 0, 0, 0);
-      return {
-        startMs: date.getTime(),
-        endMs: date.getTime() + 86400000,
-        label: date.toLocaleDateString(undefined, { weekday: "narrow" }),
-        longLabel: date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
-        totalMs: 0,
-        sessions: 0,
-      };
-    });
-
-    const currentWeekEndMs = nowValue;
-    const previousWeekStartMs = currentWeekStartMs - 7 * 86400000;
-    const previousWeekEndMs = previousWeekStartMs + (nowValue - currentWeekStartMs);
-    let currentWeekTotalMs = 0;
-    let currentWeekSessions = 0;
-    let previousWeekTotalMs = 0;
-
-    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
-      const taskId = String(taskIdRaw || "").trim();
-      if (!taskId) return;
-      if (!isDashboardTaskIncluded(taskId, includedTaskIds)) return;
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      entries.forEach((entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
-        if (ts >= previousWeekStartMs && ts <= previousWeekEndMs) previousWeekTotalMs += ms;
-        if (ts < currentWeekStartMs || ts > currentWeekEndMs) return;
-        currentWeekTotalMs += ms;
-        currentWeekSessions += 1;
-        for (const day of days) {
-          if (ts >= day.startMs && ts < day.endMs) {
-            day.totalMs += ms;
-            day.sessions += 1;
-            break;
-          }
-        }
-      });
-    });
-
-    const bestDay = days.reduce((best, day) => (day.totalMs > best.totalMs ? day : best), days[0]!);
-    const deltaPct =
-      previousWeekTotalMs > 0 ? Math.round(((currentWeekTotalMs - previousWeekTotalMs) / previousWeekTotalMs) * 100) : null;
-    const hasData = currentWeekTotalMs > 0;
-    if (shouldHoldDashboardWidget("overview", hasData)) return;
-
-    if (valueEl) valueEl.textContent = formatDashboardDurationShort(currentWeekTotalMs);
-    if (subtextEl) {
-      subtextEl.textContent =
-        deltaPct == null
-          ? "Logged this week from history"
-          : `Logged this week from history, ${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs last week`;
-    }
-    if (sessionsEl) sessionsEl.textContent = String(currentWeekSessions);
-    if (bestDayEl) {
-      bestDayEl.textContent = bestDay && bestDay.totalMs > 0 ? `${bestDay.label} ${formatDashboardDurationShort(bestDay.totalMs)}` : "-";
-    }
-    if (deltaEl) deltaEl.textContent = deltaPct == null ? "0%" : `${deltaPct >= 0 ? "+" : ""}${deltaPct}%`;
-    if (axisEl) axisEl.innerHTML = days.map((day) => `<span>${ctx.escapeHtmlUI(day.label)}</span>`).join("");
-
-    const wrap = canvas.closest(".dashboardOverviewChartWrap") as HTMLElement | null;
-    if (!wrap) return;
-    const rect = wrap.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const width = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
-    const height = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
-    if (width <= 0 || height <= 0) return;
-
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
-
-    const maxMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
-    if (maxMs <= 0) {
-      if (emptyEl) emptyEl.style.display = "grid";
-      canvas.setAttribute("aria-label", "Weekly history overview chart with no completed history this week");
-      return;
-    }
-    if (emptyEl) emptyEl.style.display = "none";
-
-    const chartLeft = 12;
-    const chartRight = width - 12;
-    const chartTop = 14;
-    const chartBottom = height - 18;
-    const chartWidth = Math.max(120, chartRight - chartLeft);
-    const chartHeight = Math.max(80, chartBottom - chartTop);
-    const points = days.map((day, idx) => ({
-      x: chartLeft + (chartWidth * idx) / Math.max(1, days.length - 1),
-      y: chartBottom - (day.totalMs / maxMs) * chartHeight,
-      day,
-    }));
-
-    context.strokeStyle = "rgba(140, 184, 201, 0.22)";
-    context.lineWidth = 1;
-    for (let i = 0; i < 4; i += 1) {
-      const pct = i / 3;
-      const y = Math.round(chartBottom - chartHeight * pct) + 0.5;
-      context.beginPath();
-      context.moveTo(chartLeft, y);
-      context.lineTo(chartRight, y);
-      context.stroke();
-    }
-
-    context.beginPath();
-    context.moveTo(points[0]!.x, chartBottom);
-    points.forEach((point) => context.lineTo(point.x, point.y));
-    context.lineTo(points[points.length - 1]!.x, chartBottom);
-    context.closePath();
-    context.fillStyle = "rgba(0, 207, 200, 0.12)";
-    context.fill();
-
-    context.beginPath();
-    points.forEach((point, idx) => {
-      if (idx === 0) context.moveTo(point.x, point.y);
-      else context.lineTo(point.x, point.y);
-    });
-    context.strokeStyle = "rgba(0, 207, 200, 0.95)";
-    context.lineWidth = 2;
-    context.stroke();
-
-    context.fillStyle = "rgba(0, 207, 200, 1)";
-    points.forEach((point) => {
-      context.beginPath();
-      context.arc(point.x, point.y, 3, 0, Math.PI * 2);
-      context.fill();
-    });
-
-    canvas.setAttribute(
-      "aria-label",
-      `Weekly history overview chart. ${formatDashboardDurationShort(currentWeekTotalMs)} logged across ${currentWeekSessions} completed sessions.`
-    );
-  }
-
   function renderDashboardStreakCard() {
     const valueEl = els.dashboardStreakValue as HTMLElement | null;
     const metaEl = els.dashboardStreakMeta as HTMLElement | null;
@@ -2000,7 +1843,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
     renderDashboardStreakCard();
-    renderDashboardOverviewChart();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -2028,7 +1870,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   return {
-    renderDashboardOverviewChart,
     renderDashboardMomentumCard,
     renderDashboardStreakCard,
     renderDashboardWeeklyGoalsCard,

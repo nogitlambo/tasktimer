@@ -24,7 +24,7 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedInsights: false,
     advancedTaskConfig: false,
     advancedBackup: false,
-    socialFeatures: false,
+    socialFeatures: true,
   },
   pro: {
     advancedHistory: true,

@@ -177,6 +177,9 @@ export type TaskTimerAppShellContext = {
   nativeBackDebounceMs: number;
   getCurrentAppPage: () => AppPage;
   setCurrentAppPage: (page: AppPage) => void;
+  getDashboardMenuFlipped: () => boolean;
+  setDashboardMenuFlipped: (value: boolean) => void;
+  syncDashboardMenuFlipUi: () => void;
   getSuppressNavStackPush: () => boolean;
   setSuppressNavStackPush: (value: boolean) => void;
   getNavStackMemory: () => string[];
@@ -671,7 +674,11 @@ export type TaskTimerSessionContext = {
 export type TaskTimerDashboardContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  syncDashboardRefreshButtonUi: () => void;
   getCurrentAppPage: () => AppPage;
+  getDashboardMenuFlipped: () => boolean;
+  setDashboardMenuFlipped: (value: boolean) => void;
+  syncDashboardMenuFlipUi: () => void;
   getDashboardEditMode: () => boolean;
   setDashboardEditMode: (value: boolean) => void;
   getDashboardDragEl: () => HTMLElement | null;
@@ -717,7 +724,6 @@ export type TaskTimerDashboardRenderContext = {
   getDashboardWidgetHasRenderedData: () => {
     streak: boolean;
     tasksCompleted: boolean;
-    overview: boolean;
     momentum: boolean;
     focusTrend: boolean;
     heatCalendar: boolean;

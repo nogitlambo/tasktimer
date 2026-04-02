@@ -89,76 +89,37 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
             <div className="dashboardNeonLayout">
               <div className="dashboardMain">
                 <div className="dashboardShell">
-                  <div className="dashboardShellContent" id="dashboardShellContent">
-                  <div className="dashboardTopRow">
-                    <div className="dashboardTitleWrap">
-                      <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
-                      <h2 className="dashboardTitle">DASHBOARD</h2>
-                    </div>
-                    <div className="dashboardEditActions">
-                      <button className="btn btn-ghost small dashboardRefreshBtn" id="dashboardRefreshBtn" type="button">
-                        Refresh
-                      </button>
-                      <details className="dashboardPanelMenu" id="dashboardPanelMenu">
-                        <summary className="btn btn-ghost small dashboardPanelMenuBtn" id="dashboardPanelMenuBtn" role="button" aria-label="Customize dashboard categories and panels">
+                  <div className="dashboardShellScene" id="dashboardShellScene">
+                    <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
+                    <div className="dashboardTopRow">
+                      <div className="dashboardTitleWrap">
+                        <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
+                        <h2 className="dashboardTitle">DASHBOARD</h2>
+                      </div>
+                      <div className="dashboardEditActions">
+                        <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
+                          <span className="dashboardRefreshIcon" aria-hidden="true" />
+                        </button>
+                        <button
+                          className="btn btn-ghost small dashboardPanelMenuBtn"
+                          id="dashboardPanelMenuBtn"
+                          type="button"
+                          aria-label="Customize dashboard categories and panels"
+                          aria-expanded="false"
+                        >
                           <span className="dashboardPanelMenuIcon" aria-hidden="true" />
-                        </summary>
-                        <div className="dashboardPanelMenuList" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard categories and panels" />
-                      </details>
-                      <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
-                        &#9998;
-                      </button>
-                      <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
-                        Cancel
-                      </button>
-                      <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
-                        Done
-                      </button>
-                    </div>
-                  </div>
-
-                  <section className="dashboardHeroPanel" data-dashboard-panel-id="overview" aria-label="Overview highlights">
-                    <div className="dashboardHeroCopy dashboardHeroCopyFull">
-                      <h3 className="dashboardHeroTitle">Overview</h3>
-                      <div className="dashboardHeroValue" id="dashboardOverviewValue">
-                        0m
-                      </div>
-                      <p className="dashboardHeroSubtext" id="dashboardOverviewSubtext">
-                        Logged this week from history
-                      </p>
-                      <div className="dashboardHeroStats dashboardOverviewStats" aria-label="Overview summary">
-                        <div className="dashboardHeroStat">
-                          <strong id="dashboardOverviewSessionsValue">0</strong>
-                          <span className="dashboardHeroStatLabel">completed sessions</span>
-                        </div>
-                        <div className="dashboardHeroStat">
-                          <strong id="dashboardOverviewBestDayValue">-</strong>
-                          <span className="dashboardHeroStatLabel">best day</span>
-                        </div>
-                        <div className="dashboardHeroStat">
-                          <strong id="dashboardOverviewDeltaValue">0%</strong>
-                          <span className="dashboardHeroStatLabel">vs previous week</span>
-                        </div>
+                        </button>
+                        <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
+                          &#9998;
+                        </button>
+                        <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
+                          Cancel
+                        </button>
+                        <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
+                          Done
+                        </button>
                       </div>
                     </div>
-                    <div className="dashboardHeroChartPanel dashboardOverviewChartPanel" aria-label="Weekly history overview chart">
-                      <div className="dashboardHeroChartWrap dashboardOverviewChartWrap">
-                        <canvas className="dashboardHeroChart dashboardOverviewChart" id="dashboardOverviewChart" role="img" aria-label="Weekly history overview chart" />
-                        <div className="dashboardOverviewChartEmpty" id="dashboardOverviewChartEmpty" style={{ display: "none" }}>
-                          No completed history in the current week.
-                        </div>
-                        <div className="dashboardOverviewAxis" id="dashboardOverviewAxis" aria-hidden="true">
-                          <span>M</span>
-                          <span>T</span>
-                          <span>W</span>
-                          <span>T</span>
-                          <span>F</span>
-                          <span>S</span>
-                          <span>S</span>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
 
                   <div className="dashboardGrid">
                     <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
@@ -567,17 +528,57 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       </div>
                     </section>
                   </div>
+                    </div>
+                    <div
+                      className="dashboardShellFace dashboardShellFaceBack"
+                      id="dashboardShellBack"
+                      aria-hidden="true"
+                      inert={true}
+                    >
+                      <div className="dashboardBackPanel">
+                        <div className="dashboardTopRow dashboardBackTopRow">
+                          <div className="dashboardTitleWrap">
+                            <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
+                            <h2 className="dashboardTitle">DASHBOARD</h2>
+                          </div>
+                          <div className="dashboardBackActions">
+                            <button
+                              className="iconBtn dashboardFlipBackBtn"
+                              id="dashboardPanelMenuBackBtn"
+                              type="button"
+                              aria-label="Back to dashboard"
+                              title="Back to dashboard"
+                              aria-expanded="true"
+                            >
+                              &#8594;
+                            </button>
+                          </div>
+                        </div>
+                        <section className="dashboardBackMenuCard" aria-label="Dashboard customization">
+                          <div className="dashboardBackMenuHead">
+                            <div className="dashboardCardTitle">Customize Dashboard</div>
+                            <p className="modalSubtext">Choose which categories and panels appear on your dashboard.</p>
+                          </div>
+                          <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard categories and panels" />
+                        </section>
+                      </div>
+                    </div>
                   </div>
                   <div className="dashboardRefreshBusyOverlay" id="dashboardRefreshBusyOverlay" aria-hidden="true" tabIndex={-1}>
                     <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
-                      <h2>Refreshing Dashboard</h2>
+                      <h2 className="sr-only">Refreshing</h2>
                       <p className="modalSubtext confirmText" id="dashboardRefreshBusyText">
-                        Refreshing dashboard...
+                        Refreshing...
                       </p>
-                      <div className="dashboardRefreshBusyDots" aria-hidden="true">
-                        <i />
-                        <i />
-                        <i />
+                      <div className="dashboardRefreshBusyArrowStage" aria-hidden="true">
+                        <div className="dashboardRefreshBusyArrowShell">
+                          <div className="dashboardRefreshBusyArrowBeamBlend" />
+                          <AppImg
+                            className="dashboardRefreshBusyArrowGraphic"
+                            src="/logo/launch-icon.png"
+                            alt=""
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

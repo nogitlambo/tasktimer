@@ -254,6 +254,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardIncludedModes = initialState.dashboardIncludedModes;
   let dashboardAvgRange = initialState.dashboardAvgRange;
   let dashboardTimelineDensity = initialState.dashboardTimelineDensity;
+  let dashboardMenuFlipped = initialState.dashboardMenuFlipped;
   let currentAppPage = initialState.currentAppPage;
   let currentTileColumnCount = initialState.currentTileColumnCount;
   let suppressNavStackPush = initialState.suppressNavStackPush;
@@ -619,7 +620,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (textEl && typeof message === "string" && message.trim()) {
       textEl.textContent = message.trim();
     } else if (textEl && !isOn) {
-      textEl.textContent = "Refreshing dashboard...";
+      textEl.textContent = "Refreshing...";
     }
     shellContentEl?.classList.toggle("isDashboardBusy", !!isOn);
     if (!overlayEl) return;
@@ -631,22 +632,71 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function syncDashboardRefreshButtonUi() {
     const buttonEl = els.dashboardRefreshBtn as HTMLButtonElement | null;
     if (!buttonEl) return;
-    const isBusy = dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null;
-    buttonEl.disabled = isBusy;
+    const isBusy = dashboardBusyOverlayActive || dashboardBusyStack.length > 0;
+    const hasVisiblePanels =
+      Array.from(
+        document.querySelectorAll(
+          '#appPageDashboard .dashboardHeroPanel[data-dashboard-panel-id], #appPageDashboard .dashboardCard[data-dashboard-id]'
+        )
+      ).some((node) => !(node as HTMLElement).hidden);
+    const isDisabled = isBusy || !hasVisiblePanels || dashboardMenuFlipped;
+    buttonEl.disabled = isDisabled;
     buttonEl.classList.toggle("isPending", dashboardRefreshPending && !isBusy);
-    buttonEl.textContent = isBusy ? "Refreshing..." : "Refresh";
+    buttonEl.classList.toggle("isBusy", isBusy);
     buttonEl.setAttribute(
       "aria-label",
       isBusy
         ? "Refreshing dashboard"
+        : dashboardMenuFlipped
+          ? "Refresh unavailable while dashboard settings are open"
+        : !hasVisiblePanels
+          ? "Refresh unavailable while all dashboard panels are hidden"
         : dashboardRefreshPending
           ? "Refresh dashboard, new data available"
+          : "Refresh dashboard"
+    );
+    buttonEl.setAttribute(
+      "title",
+      isBusy
+        ? "Refreshing dashboard"
+        : dashboardMenuFlipped
+          ? "Refresh unavailable"
+        : !hasVisiblePanels
+          ? "Refresh unavailable"
+        : dashboardRefreshPending
+          ? "Refresh available"
           : "Refresh dashboard"
     );
   }
 
   function setDashboardRefreshPending(nextPending: boolean) {
     dashboardRefreshPending = !!nextPending;
+    syncDashboardRefreshButtonUi();
+  }
+
+  function syncDashboardMenuFlipUi() {
+    const flipped = !!dashboardMenuFlipped;
+    const sceneEl = els.dashboardShellScene as HTMLElement | null;
+    const frontEl = els.dashboardShellContent as HTMLElement | null;
+    const backEl = els.dashboardShellBack as HTMLElement | null;
+    const menuBtn = els.dashboardPanelMenuBtn as HTMLButtonElement | null;
+    const backBtn = els.dashboardPanelMenuBackBtn as HTMLButtonElement | null;
+    const editActionsEl = menuBtn?.closest(".dashboardEditActions") as HTMLElement | null;
+    sceneEl?.classList.toggle("isFlipped", flipped);
+    if (frontEl) {
+      frontEl.setAttribute("aria-hidden", flipped ? "true" : "false");
+      if (flipped) frontEl.setAttribute("inert", "");
+      else frontEl.removeAttribute("inert");
+      frontEl.classList.toggle("isBackfaceHidden", flipped);
+    }
+    if (backEl) {
+      backEl.setAttribute("aria-hidden", flipped ? "false" : "true");
+      if (!flipped) backEl.setAttribute("inert", "");
+      else backEl.removeAttribute("inert");
+    }
+    if (menuBtn) menuBtn.setAttribute("aria-expanded", flipped ? "true" : "false");
+    if (backBtn) backBtn.setAttribute("aria-expanded", flipped ? "true" : "false");
+    if (editActionsEl) editActionsEl.classList.toggle("isMenuFlipped", flipped);
     syncDashboardRefreshButtonUi();
   }
 
@@ -697,12 +747,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
-  function showDashboardBusyIndicator(message = "Refreshing dashboard...") {
+  function showDashboardBusyIndicator(message = "Refreshing...") {
     if (dashboardBusyHideTimer != null) {
       window.clearTimeout(dashboardBusyHideTimer);
       dashboardBusyHideTimer = null;
     }
-    const normalizedMessage = String(message || "").trim() || "Refreshing dashboard...";
+    const normalizedMessage = String(message || "").trim() || "Refreshing...";
     const key = dashboardBusyKeySeq + 1;
     dashboardBusyKeySeq = key;
     dashboardBusyStack.push({ key, message: normalizedMessage });
@@ -747,7 +797,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderDashboardWidgetsFromRenderApi(renderOpts);
       return;
     }
-    const busyKey = showDashboardBusyIndicator(opts?.busyMessage || "Refreshing dashboard...");
+    const busyKey = showDashboardBusyIndicator(opts?.busyMessage || "Refreshing...");
     try {
       renderDashboardWidgetsFromRenderApi(renderOpts);
     } finally {
@@ -894,7 +944,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const dashboardApi = createTaskTimerDashboard({
     els,
     on,
+    syncDashboardRefreshButtonUi,
     getCurrentAppPage: () => currentAppPage,
+    getDashboardMenuFlipped: () => dashboardMenuFlipped,
+    setDashboardMenuFlipped: (value: boolean) => {
+      dashboardMenuFlipped = value;
+    },
+    syncDashboardMenuFlipUi,
     getDashboardEditMode: () => dashboardEditMode,
     setDashboardEditMode: (value: typeof dashboardEditMode) => {
       dashboardEditMode = value;
@@ -1401,6 +1457,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setCurrentAppPage: (page) => {
       currentAppPage = page;
     },
+    getDashboardMenuFlipped: () => dashboardMenuFlipped,
+    setDashboardMenuFlipped: (value) => {
+      dashboardMenuFlipped = value;
+    },
+    syncDashboardMenuFlipUi,
     getSuppressNavStackPush: () => suppressNavStackPush,
     setSuppressNavStackPush: (value) => {
       suppressNavStackPush = value;
@@ -2618,7 +2679,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerImportExportEvents();
 
     on(els.dashboardRefreshBtn, "click", () => {
-      if (dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null) return;
+      if (dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null || dashboardMenuFlipped) return;
       setDashboardRefreshPending(false);
       void rehydrateFromCloudAndRender({ force: true });
     });
@@ -2674,6 +2735,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       tickApi();
       runtime.tickStarted = true;
     }
+    syncDashboardMenuFlipUi();
     syncDashboardRefreshButtonUi();
   };
 

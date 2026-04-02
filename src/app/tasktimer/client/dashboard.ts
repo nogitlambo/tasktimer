@@ -144,8 +144,15 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const panelId = String(checkbox.getAttribute("data-dashboard-panel-id") || "");
       const isVisible = isDashboardCardVisible(panelId);
       checkbox.checked = isVisible;
-      checkbox.disabled = isVisible && visibleCount <= 1;
+      checkbox.disabled = false;
     });
+    const bulkToggleBtn = menuList.querySelector("[data-dashboard-panel-bulk-toggle]") as HTMLButtonElement | null;
+    if (bulkToggleBtn) {
+      const allSelected = meta.length > 0 && visibleCount === meta.length;
+      bulkToggleBtn.textContent = allSelected ? "Clear" : "Select All";
+      bulkToggleBtn.setAttribute("aria-label", allSelected ? "Clear all dashboard panels" : "Select all dashboard panels");
+      bulkToggleBtn.hidden = !meta.length;
+    }
     const categoryMeta = getDashboardCategoryMeta();
     const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
     Array.from(menuList.querySelectorAll("input[data-dashboard-category-id]")).forEach((node) => {
@@ -156,6 +163,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       checkbox.checked = isIncluded;
       checkbox.disabled = isIncluded && includedCount <= 1;
     });
+    ctx.syncDashboardRefreshButtonUi();
   }
 
   function renderDashboardPanelMenu() {
@@ -165,14 +173,31 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const categories = getDashboardCategoryMeta();
     menuList.innerHTML = "";
     if (!categories.length && !meta.length) return;
-    const appendSectionTitle = (title: string) => {
+    const appendSectionBody = (className?: string) => {
+      const body = document.createElement("div");
+      body.className = className ? `dashboardPanelMenuSectionBody ${className}` : "dashboardPanelMenuSectionBody";
+      menuList.appendChild(body);
+      return body;
+    };
+    const appendSectionTitle = (title: string, opts?: { bulkToggle?: boolean }) => {
       const heading = document.createElement("div");
       heading.className = "dashboardPanelMenuSectionTitle";
-      heading.textContent = title;
+      const titleText = document.createElement("span");
+      titleText.textContent = title;
+      heading.appendChild(titleText);
+      if (opts?.bulkToggle) {
+        const actionBtn = document.createElement("button");
+        actionBtn.type = "button";
+        actionBtn.className = "dashboardPanelMenuSectionAction";
+        actionBtn.setAttribute("data-dashboard-panel-bulk-toggle", "true");
+        actionBtn.textContent = "Select All";
+        heading.appendChild(actionBtn);
+      }
       menuList.appendChild(heading);
     };
     if (categories.length) {
       appendSectionTitle("Categories");
+      const categoryBody = appendSectionBody("dashboardPanelMenuCategoryList");
       categories.forEach(({ mode, label }) => {
         const row = document.createElement("label");
         row.className = "dashboardPanelMenuItem";
@@ -183,7 +208,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         text.textContent = label;
         row.appendChild(input);
         row.appendChild(text);
-        menuList.appendChild(row);
+        categoryBody.appendChild(row);
       });
     }
     if (meta.length) {
@@ -193,10 +218,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         divider.setAttribute("aria-hidden", "true");
         menuList.appendChild(divider);
       }
-      appendSectionTitle("Panels");
+      appendSectionTitle("Panels", { bulkToggle: true });
+      const panelBody = appendSectionBody("dashboardPanelMenuPanelGrid");
       meta.forEach(({ panelId, label }) => {
         const row = document.createElement("label");
-        row.className = "dashboardPanelMenuItem";
+        row.className = "dashboardPanelMenuItem dashboardPanelMenuTile";
         const input = document.createElement("input");
         input.type = "checkbox";
         input.setAttribute("data-dashboard-panel-id", panelId);
@@ -204,14 +230,31 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         text.textContent = label;
         row.appendChild(input);
         row.appendChild(text);
-        menuList.appendChild(row);
+        panelBody.appendChild(row);
       });
     }
     syncDashboardPanelMenuState();
   }
 
+  function syncDashboardMenuFlipState() {
+    ctx.syncDashboardMenuFlipUi();
+  }
+
+  function setDashboardMenuFlipped(nextFlipped: boolean) {
+    if (ctx.getDashboardMenuFlipped() === nextFlipped) {
+      syncDashboardMenuFlipState();
+      return;
+    }
+    ctx.setDashboardMenuFlipped(nextFlipped);
+    syncDashboardMenuFlipState();
+  }
+
+  function openDashboardPanelMenu() {
+    setDashboardMenuFlipped(true);
+  }
+
   function closeDashboardPanelMenu() {
-    if (els.dashboardPanelMenu) els.dashboardPanelMenu.open = false;
+    setDashboardMenuFlipped(false);
   }
 
   function getDashboardCardSizeMapForStorage() {
@@ -245,15 +288,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const meta = collectDashboardPanelMeta();
     if (!meta.length) return;
     const nextVisibility = { ...ctx.getDashboardCardVisibility() };
-    let visibleCount = 0;
-    meta.forEach(({ panelId }) => {
-      if (nextVisibility[panelId] !== false) visibleCount += 1;
-    });
-    if (visibleCount <= 0) {
-      const fallbackPanelId = meta[0].panelId;
-      nextVisibility[fallbackPanelId] = true;
-      ctx.setDashboardCardVisibility(nextVisibility);
-    }
+    ctx.setDashboardCardVisibility(nextVisibility);
     meta.forEach(({ panel, panelId }) => {
       const isVisible = nextVisibility[panelId] !== false;
       panel.hidden = !isVisible;
@@ -512,10 +547,28 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (els.dashboardEditDoneBtn) {
       (els.dashboardEditDoneBtn as HTMLElement).style.display = ctx.getDashboardEditMode() ? "inline-flex" : "none";
     }
+    if (ctx.getDashboardEditMode()) closeDashboardPanelMenu();
+    syncDashboardMenuFlipState();
   }
 
   function renderDashboardWidgets(opts?: DashboardRenderOptions) {
     ctx.renderDashboardWidgets(opts);
+  }
+
+  function applyDashboardBulkPanelVisibility(nextChecked: boolean) {
+    const meta = collectDashboardPanelMeta();
+    if (!meta.length) return;
+    const nextVisibility = { ...ctx.getDashboardCardVisibility() };
+    meta.forEach(({ panelId }) => {
+      nextVisibility[panelId] = nextChecked;
+    });
+    ctx.setDashboardCardVisibility(nextVisibility);
+    applyDashboardCardVisibility();
+    saveDashboardWidgetState({
+      cardSizes: getDashboardCardSizeMapForStorage(),
+      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
+    });
+    if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
   }
 
   function handleDashboardPanelMenuChange(e: Event) {
@@ -548,14 +601,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (!input) return;
     const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();
     if (!cardId) return;
-    const meta = collectDashboardPanelMeta();
-    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
     const nextChecked = !!input.checked;
-    if (!nextChecked && isDashboardCardVisible(cardId) && visibleCount <= 1) {
-      input.checked = true;
-      syncDashboardPanelMenuState();
-      return;
-    }
     ctx.setDashboardCardVisibility({ ...ctx.getDashboardCardVisibility(), [cardId]: nextChecked });
     applyDashboardCardVisibility();
     saveDashboardWidgetState({
@@ -626,14 +672,36 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     renderDashboardWidgets();
   }
 
+  function handleDashboardPanelMenuClick(e: Event) {
+    const openBtn = (e.target as HTMLElement | null)?.closest?.("#dashboardPanelMenuBtn") as HTMLButtonElement | null;
+    if (openBtn) {
+      if (ctx.getDashboardEditMode()) return;
+      openDashboardPanelMenu();
+      e.preventDefault();
+      return;
+    }
+    const closeBtn = (e.target as HTMLElement | null)?.closest?.("#dashboardPanelMenuBackBtn") as HTMLButtonElement | null;
+    if (closeBtn) {
+      closeDashboardPanelMenu();
+      e.preventDefault();
+      return;
+    }
+    const bulkToggleBtn = (e.target as HTMLElement | null)?.closest?.(
+      "[data-dashboard-panel-bulk-toggle]"
+    ) as HTMLButtonElement | null;
+    if (!bulkToggleBtn) return;
+    const meta = collectDashboardPanelMeta();
+    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
+    const allSelected = meta.length > 0 && visibleCount === meta.length;
+    applyDashboardBulkPanelVisibility(!allSelected);
+    e.preventDefault();
+  }
+
   function handleDocumentDashboardClick(e: any) {
     const target = e.target as HTMLElement | null;
     if (!target) return;
     if (ctx.getDashboardEditMode() && !target.closest(".dashboardSizeControl")) {
       closeDashboardCardSizeMenus();
-    }
-    if (!target.closest("#dashboardPanelMenu")) {
-      closeDashboardPanelMenu();
     }
   }
 
@@ -684,6 +752,9 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     ctx.on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
     ctx.on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
+    ctx.on(els.dashboardPanelMenuBtn, "click", handleDashboardPanelMenuClick);
+    ctx.on(els.dashboardPanelMenuBackBtn, "click", handleDashboardPanelMenuClick);
+    ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
     ctx.on(els.dashboardGrid, "click", handleDashboardGridClick);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
