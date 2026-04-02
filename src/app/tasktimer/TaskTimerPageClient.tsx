@@ -327,12 +327,12 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                               const centerY = 79;
                               const markerInnerRadius = 55.5;
                               const markerOuterRadius = 72.5;
-                              const markerValues = [0, 25, 50, 75, 100];
+                              const markerValues = [25, 50, 75];
                               const labelRadius = 46;
                               return (
                                 <g className="dashboardMomentumMarkers" aria-hidden="true">
-                                  {markerValues.map((value, idx) => {
-                                    const ratio = idx / (markerValues.length - 1);
+                                  {markerValues.map((value) => {
+                                    const ratio = value / 100;
                                     const angleDeg = 180 - ratio * 180;
                                     const angleRad = (angleDeg * Math.PI) / 180;
                                     const x1 = centerX + Math.cos(angleRad) * markerInnerRadius;
@@ -349,7 +349,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                                           y1={y1}
                                           x2={x2}
                                           y2={y2}
-                                          stroke="rgba(241, 247, 255, 0.82)"
+                                          stroke="rgba(0, 0, 0, 0.92)"
                                           strokeWidth="1.35"
                                           strokeLinecap="round"
                                           vectorEffect="non-scaling-stroke"
@@ -381,9 +381,12 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       </div>
                       <section className="dashboardMomentumDriversSection" aria-label="Momentum Drivers">
                         <div className="dashboardCardTitle dashboardMomentumDriversTitle">Momentum Drivers</div>
-                        <div className="dashboardMomentumDrivers" id="dashboardMomentumDrivers" aria-live="polite">
-                          <div className="dashboardMomentumDriver">No recent momentum signals yet.</div>
-                        </div>
+                        <ul className="dashboardMomentumDrivers" id="dashboardMomentumDrivers" aria-live="polite">
+                          <li className="dashboardMomentumDriver">Recent activity 0/40</li>
+                          <li className="dashboardMomentumDriver">Consistency: 0/25</li>
+                          <li className="dashboardMomentumDriver">Weekly Progress: 0/25</li>
+                          <li className="dashboardMomentumDriver">Live Bonus: 0/10</li>
+                        </ul>
                       </section>
                     </section>
 

@@ -20,8 +20,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
   let lastMomentumRenderSignature = "";
+  let lastMomentumAnimatedTargetScore: number | null = null;
+  let lastMomentumAnimatedTargetBand: string | null = null;
+  let momentumAnimationFrameId: number | null = null;
+  let momentumAnimationStartTimerId: number | null = null;
   const MOMENTUM_GAUGE_START_DEG = -180;
   const MOMENTUM_GAUGE_END_DEG = 0;
+  const MOMENTUM_ANIMATION_DURATION_MS = 1050;
+  const MOMENTUM_MEANINGFUL_DELTA = 3;
 
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
@@ -100,6 +106,90 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const mode = ctx.taskModeOf(task);
       return ctx.isModeEnabled(mode) && isDashboardModeIncluded(mode);
     });
+  }
+
+  function cancelMomentumAnimation() {
+    if (momentumAnimationStartTimerId != null) {
+      window.clearTimeout(momentumAnimationStartTimerId);
+      momentumAnimationStartTimerId = null;
+    }
+    if (momentumAnimationFrameId == null) return;
+    window.cancelAnimationFrame(momentumAnimationFrameId);
+    momentumAnimationFrameId = null;
+  }
+
+  function getMomentumNeedleDeg(score: number) {
+    const boundedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    return MOMENTUM_GAUGE_START_DEG + (boundedScore / 100) * (MOMENTUM_GAUGE_END_DEG - MOMENTUM_GAUGE_START_DEG);
+  }
+
+  function applyMomentumVisualState(opts: {
+    dialEl: HTMLElement;
+    arcActiveEl: SVGPathElement;
+    needleEl: HTMLElement;
+    scoreValueEl: HTMLElement;
+    scoreStatusEl: HTMLElement;
+    score: number;
+    ariaBandLabel?: string;
+  }) {
+    const boundedScore = Math.max(0, Math.min(100, Number(opts.score) || 0));
+    const roundedScore = Math.round(boundedScore);
+    const displayedBandLabel = getMomentumBandLabel(roundedScore);
+    const ariaBandLabel = String(opts.ariaBandLabel || displayedBandLabel).trim() || displayedBandLabel;
+    opts.dialEl.style.setProperty("--momentum-score", String(boundedScore));
+    opts.dialEl.setAttribute("aria-label", `Momentum score ${roundedScore} out of 100, ${ariaBandLabel}`);
+    opts.scoreValueEl.textContent = String(roundedScore);
+    opts.scoreStatusEl.textContent = displayedBandLabel;
+    opts.arcActiveEl.setAttribute("stroke-dasharray", `${boundedScore} 100`);
+    opts.needleEl.style.setProperty("--momentum-needle-deg", `${getMomentumNeedleDeg(boundedScore)}deg`);
+  }
+
+  function animateMomentumToScore(opts: {
+    dialEl: HTMLElement;
+    arcActiveEl: SVGPathElement;
+    needleEl: HTMLElement;
+    scoreValueEl: HTMLElement;
+    scoreStatusEl: HTMLElement;
+    targetScore: number;
+    targetBandLabel: string;
+  }) {
+    cancelMomentumAnimation();
+    momentumAnimationStartTimerId = window.setTimeout(() => {
+      momentumAnimationStartTimerId = null;
+      applyMomentumVisualState({
+        dialEl: opts.dialEl,
+        arcActiveEl: opts.arcActiveEl,
+        needleEl: opts.needleEl,
+        scoreValueEl: opts.scoreValueEl,
+        scoreStatusEl: opts.scoreStatusEl,
+        score: 0,
+        ariaBandLabel: opts.targetBandLabel,
+      });
+      momentumAnimationFrameId = window.requestAnimationFrame((firstFrameTime) => {
+        const startTime = firstFrameTime;
+        const tick = (frameTime: number) => {
+          const elapsed = Math.max(0, frameTime - startTime);
+          const progress = Math.max(0, Math.min(1, elapsed / MOMENTUM_ANIMATION_DURATION_MS));
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const displayedScore = opts.targetScore * eased;
+          applyMomentumVisualState({
+            dialEl: opts.dialEl,
+            arcActiveEl: opts.arcActiveEl,
+            needleEl: opts.needleEl,
+            scoreValueEl: opts.scoreValueEl,
+            scoreStatusEl: opts.scoreStatusEl,
+            score: progress >= 1 ? opts.targetScore : displayedScore,
+            ariaBandLabel: opts.targetBandLabel,
+          });
+          if (progress >= 1) {
+            momentumAnimationFrameId = null;
+            return;
+          }
+          momentumAnimationFrameId = window.requestAnimationFrame(tick);
+        };
+        tick(firstFrameTime);
+      });
+    }, 0);
   }
 
   function renderDashboardOverviewChart() {
@@ -464,6 +554,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driversEl) return;
 
     if (!hasAdvancedInsights()) {
+      cancelMomentumAnimation();
+      lastMomentumAnimatedTargetScore = null;
+      lastMomentumAnimatedTargetBand = null;
       setDashboardPlanLockedState(cardEl, true);
       dialEl.style.setProperty("--momentum-score", "0");
       dialEl.style.setProperty("--momentum-locked", "1");
@@ -471,9 +564,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       arcActiveEl.setAttribute("stroke-dasharray", "0 100");
       needleEl.style.setProperty("--momentum-needle-deg", `${MOMENTUM_GAUGE_START_DEG}deg`);
       const lockedDrivers = [
-        "Momentum score formula: recent activity 40%, consistency 25%, weekly progress 25%, active-session bonus 10%.",
-        "Upgrade to Pro to see which of those factors are currently pushing your score up or down.",
-        "Momentum drops when recent logging slows, streaks break, weekly goals are missed, or no active session bonus applies.",
+        "Recent activity 0/40",
+        "Consistency: 0/25",
+        "Weekly Progress: 0/25",
+        "Live Bonus: 0/10",
       ];
       const lockedSignature = JSON.stringify({
         locked: true,
@@ -487,7 +581,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       scoreValueEl.textContent = "--";
       scoreStatusEl.textContent = "Locked";
       driversEl.innerHTML = lockedDrivers
-        .map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`)
+        .map((line) => `<li class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</li>`)
         .join("");
       return;
     }
@@ -510,58 +604,61 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (shouldHoldDashboardWidget("momentum", hasSignal)) return;
 
     const bandLabel = getMomentumBandLabel(score);
-    const recent3DayMs = momentum.recentDaysMs[0] + momentum.recentDaysMs[1] + momentum.recentDaysMs[2];
-    const drivers: string[] = [];
-    const factorSummary = `Momentum combines recent activity 40%, consistency 25%, weekly progress 25%, and an active-session bonus 10%.`;
-    const currentBreakdown = [
+    const nextDrivers = [
       `Recent activity ${Math.round(momentum.recentActivityScore)}/40`,
-      `consistency ${Math.round(momentum.consistencyScore)}/25`,
-      `weekly progress ${Math.round(momentum.weeklyProgressScore)}/25`,
-      `live bonus ${Math.round(momentum.activeSessionBonus)}/10`,
-    ].join(", ");
-    const negativeFactors: string[] = [];
-
-    if (recent3DayMs <= 0) negativeFactors.push("quiet recent activity");
-    else if (momentum.recentDaysMs[0] <= 0) negativeFactors.push("no time logged today");
-
-    if (momentum.trailingStreak <= 0 && momentum.activeDayCount <= 1) negativeFactors.push("a weak recent consistency pattern");
-    else if (momentum.trailingStreak <= 0) negativeFactors.push("a broken streak");
-
-    if (momentum.currentWeekGoalMs > 0 && momentum.currentWeekLoggedMs / momentum.currentWeekGoalMs < 0.6) {
-      negativeFactors.push("weekly goals running behind");
-    } else if (momentum.currentWeekGoalMs <= 0) {
-      negativeFactors.push("no weekly goals to build progress from");
-    }
-
-    if (momentum.runningTaskCount <= 0) negativeFactors.push("no active-session bonus");
-
-    const downsideSummary = negativeFactors.length
-      ? `Momentum falls when there is ${negativeFactors.slice(0, 3).join(", ")}.`
-      : "Momentum is being protected by steady recent activity, consistency, weekly progress, and a live-session bonus.";
-
-    drivers.push(factorSummary);
-    drivers.push(`Current score ${score}/100 (${bandLabel}) is coming from ${currentBreakdown}.`);
-    drivers.push(downsideSummary);
-
-    const momentumNeedleDeg = MOMENTUM_GAUGE_START_DEG + (score / 100) * (MOMENTUM_GAUGE_END_DEG - MOMENTUM_GAUGE_START_DEG);
-    const nextDrivers = drivers.slice(0, 3);
+      `Consistency: ${Math.round(momentum.consistencyScore)}/25`,
+      `Weekly Progress: ${Math.round(momentum.weeklyProgressScore)}/25`,
+      `Live Bonus: ${Math.round(momentum.activeSessionBonus)}/10`,
+    ];
     const nextSignature = JSON.stringify({
       locked: false,
       score,
       status: bandLabel,
-      needle: `${momentumNeedleDeg}deg`,
+      needle: `${getMomentumNeedleDeg(score)}deg`,
       drivers: nextDrivers,
     });
-    if (lastMomentumRenderSignature === nextSignature) return;
-    lastMomentumRenderSignature = nextSignature;
+    const isSameTarget = lastMomentumRenderSignature === nextSignature;
+    if (!isSameTarget) {
+      driversEl.innerHTML = nextDrivers.map((line) => `<li class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</li>`).join("");
+    }
 
-    driversEl.innerHTML = nextDrivers.map((line) => `<div class="dashboardMomentumDriver">${ctx.escapeHtmlUI(line)}</div>`).join("");
-    dialEl.style.setProperty("--momentum-score", String(score));
-    dialEl.setAttribute("aria-label", `Momentum score ${score} out of 100, ${bandLabel}`);
-    scoreValueEl.textContent = String(score);
-    scoreStatusEl.textContent = bandLabel;
-    arcActiveEl.setAttribute("stroke-dasharray", `${score} 100`);
-    needleEl.style.setProperty("--momentum-needle-deg", `${momentumNeedleDeg}deg`);
+    const hasAnimatedBefore = lastMomentumAnimatedTargetScore != null;
+    const scoreDelta = hasAnimatedBefore ? Math.abs(score - (lastMomentumAnimatedTargetScore || 0)) : score;
+    const bandChanged = hasAnimatedBefore ? bandLabel !== lastMomentumAnimatedTargetBand : score > 0;
+    const shouldAnimate =
+      score > 0 &&
+      (!hasAnimatedBefore || scoreDelta >= MOMENTUM_MEANINGFUL_DELTA || bandChanged) &&
+      !isSameTarget;
+
+    if (!shouldAnimate && isSameTarget) return;
+
+    lastMomentumRenderSignature = nextSignature;
+    lastMomentumAnimatedTargetScore = score;
+    lastMomentumAnimatedTargetBand = bandLabel;
+
+    if (shouldAnimate) {
+      animateMomentumToScore({
+        dialEl,
+        arcActiveEl,
+        needleEl,
+        scoreValueEl,
+        scoreStatusEl,
+        targetScore: score,
+        targetBandLabel: bandLabel,
+      });
+      return;
+    }
+
+    cancelMomentumAnimation();
+    applyMomentumVisualState({
+      dialEl,
+      arcActiveEl,
+      needleEl,
+      scoreValueEl,
+      scoreStatusEl,
+      score,
+      ariaBandLabel: bandLabel,
+    });
   }
 
   function applyDashboardGoalProgressUi(opts: {

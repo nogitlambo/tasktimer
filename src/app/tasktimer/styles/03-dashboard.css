@@ -3714,7 +3714,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle{
   position: absolute !important;
   left: 50% !important;
-  top: calc(64.754098% - 2px) !important;
+  top: 64.754098% !important;
   width: 29% !important;
   height: 4px !important;
   overflow: hidden !important;
@@ -3838,9 +3838,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDrivers{
   display: grid !important;
   gap: 6px !important;
+  margin: 0 !important;
+  padding-left: 18px !important;
+  list-style: disc !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriver{
-  display: block !important;
+  display: list-item !important;
   padding: 0 !important;
   border-radius: 0 !important;
   border: 0 !important;

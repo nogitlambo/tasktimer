@@ -144,9 +144,9 @@ export const RANK_LADDER: RankDefinition[] = [
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   specialist: "/insignias/specialist.png",
   strategist: "/insignias/strategist.svg",
-  director: "/insignias/director.svg",
+  director: "/insignias/director.png",
   ascendent: "/insignias/ascendent.png",
-  commander: "/insignias/11_commander_512x512.png",
+  commander: "/insignias/commander.png",
   architect: "/insignias/architect.png",
 };
 
@@ -157,7 +157,7 @@ const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
   strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",
   ascendent: "/insignias/ascendent.png",
-  commander: "/insignias/11_commander_512x512.png",
+  commander: "/insignias/commander.png",
   architect: "/insignias/architect.png",
 };
 
