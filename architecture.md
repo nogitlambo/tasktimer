@@ -91,6 +91,7 @@
 ## TaskTimer Domain Libraries
 
 - [`src/app/tasktimer/lib/addTaskNames.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/addTaskNames.ts)
+- [`src/app/tasktimer/lib/archieAssistant.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieAssistant.ts)
 - [`src/app/tasktimer/lib/avatarCatalog.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/avatarCatalog.ts)
 - [`src/app/tasktimer/lib/cloudStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/cloudStore.ts)
 - [`src/app/tasktimer/lib/colors.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/colors.ts)

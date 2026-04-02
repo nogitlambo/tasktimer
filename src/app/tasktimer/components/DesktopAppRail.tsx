@@ -26,6 +26,10 @@ import {
   subscribeCachedPreferences,
 } from "../lib/storage";
 import {
+  resolveArchieAssistantResponse,
+  type ArchieSuggestedAction,
+} from "../lib/archieAssistant";
+import {
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
@@ -64,10 +68,10 @@ const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
-const ARCHIE_NAME_REPLY = "My name is Archie.";
-const ARCHIE_FALLBACK_REPLY = "I am still learning, but I am ready for more questions.";
 const ARCHIE_OUTLINE_DRAW_MS = 840;
 const ARCHIE_TYPE_MS = 840;
+const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
+const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const NAV_ITEMS: NavItem[] = [
   {
     page: "dashboard",
@@ -257,28 +261,6 @@ function isSecondaryDesktopNavItem(item: NavItem) {
   return item.page === "settings";
 }
 
-function normalizeArchieQuestion(value: string) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[?!.,]+$/g, "")
-    .replace(/\s+/g, " ");
-}
-
-function resolveArchieReply(question: string) {
-  const normalized = normalizeArchieQuestion(question);
-  if (!normalized) return "";
-  if (
-    normalized === "what is your name" ||
-    normalized === "whats your name" ||
-    normalized === "what's your name" ||
-    normalized.includes("your name")
-  ) {
-    return ARCHIE_NAME_REPLY;
-  }
-  return ARCHIE_FALLBACK_REPLY;
-}
-
 function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
   const isActive = activePage === item.page;
   const commonProps = {
@@ -354,6 +336,7 @@ export default function DesktopAppRail({
   const [archieOutlineAnimating, setArchieOutlineAnimating] = useState(false);
   const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
+  const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
   const archieInputRef = useRef<HTMLInputElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
 
@@ -577,6 +560,7 @@ export default function DesktopAppRail({
     setArchieOutlineAnimating(false);
     setArchieOutlineComplete(false);
     setArchieInputVisible(false);
+    setArchieSuggestedAction(null);
   }, [clearArchieTimers]);
 
   const startArchiePromptSequence = useCallback(() => {
@@ -585,6 +569,7 @@ export default function DesktopAppRail({
     setArchieQuestion("");
     setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieInputVisible(false);
+    setArchieSuggestedAction(null);
     setArchieOutlineAnimating(!reducedMotion);
     setArchieOutlineComplete(reducedMotion);
     setArchieTitleAnimation("none");
@@ -612,11 +597,12 @@ export default function DesktopAppRail({
     const nextQuestion = String(archieQuestion || "").trim();
     if (!nextQuestion) return;
     const reducedMotion = prefersReducedMotion();
-    const reply = resolveArchieReply(nextQuestion);
+    const reply = resolveArchieAssistantResponse(nextQuestion, activePage);
     clearArchieTimers();
     setArchieQuestion("");
-    setArchieDisplayMessage(reply);
+    setArchieDisplayMessage(reply.message);
     setArchieInputVisible(false);
+    setArchieSuggestedAction(reply.suggestedAction || null);
     setArchieOutlineAnimating(false);
     setArchieOutlineComplete(true);
     setArchieTitleAnimation(reducedMotion ? "none" : "response");
@@ -629,7 +615,32 @@ export default function DesktopAppRail({
       setArchieTitleAnimation("none");
       setArchieInputVisible(true);
     }, ARCHIE_TYPE_MS);
-  }, [archieQuestion, clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+  }, [activePage, archieQuestion, clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+
+  const handleArchieSuggestedAction = useCallback(() => {
+    if (!archieSuggestedAction || typeof window === "undefined") return;
+    if (archieSuggestedAction.kind === "navigate") {
+      window.location.assign(archieSuggestedAction.href);
+      return;
+    }
+    if (archieSuggestedAction.kind === "openSettingsPane") {
+      window.location.assign(`/tasktimer/settings?pane=${archieSuggestedAction.pane}`);
+      return;
+    }
+    try {
+      window.localStorage.setItem(ARCHIE_PENDING_PUSH_TASK_ID_KEY, archieSuggestedAction.taskId);
+    } catch {
+      // Ignore localStorage failures and still attempt event-based delivery.
+    }
+    try {
+      window.dispatchEvent(new CustomEvent(ARCHIE_PENDING_PUSH_TASK_EVENT, { detail: { taskId: archieSuggestedAction.taskId } }));
+    } catch {
+      // Ignore custom event failures.
+    }
+    const pathname = String(window.location.pathname || "");
+    const onTasksRoute = /\/tasktimer\/?$/i.test(pathname) || /\/tasktimer\/index\.html$/i.test(pathname);
+    if (!onTasksRoute) window.location.assign("/tasktimer");
+  }, [archieSuggestedAction]);
 
   const handleArchieToggle = useCallback(() => {
     if (isArchieBubbleOpen) {
@@ -776,6 +787,17 @@ export default function DesktopAppRail({
                   {archieDisplayMessage}
                 </span>
               </div>
+              {archieSuggestedAction ? (
+                <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
+                  <button
+                    className="btn btn-ghost small desktopRailMascotActionBtn"
+                    type="button"
+                    onClick={handleArchieSuggestedAction}
+                  >
+                    {archieSuggestedAction.label}
+                  </button>
+                </div>
+              ) : null}
               <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
                 <input
                   ref={archieInputRef}

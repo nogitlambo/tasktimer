@@ -2415,7 +2415,7 @@
     width: auto;
     max-width: none;
     min-height: 172px;
-    padding: 14px 14px 12px;
+    padding: 14px 24px 12px 14px;
     border: 0;
     background: transparent;
     color: #ecfbff;
@@ -2536,8 +2536,8 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitle,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitle{
     color: #f3fbff;
-    font-size: 17px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 400;
     letter-spacing: .03em;
     line-height: 1.05;
     text-wrap: balance;
@@ -2548,7 +2548,9 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText{
     display: inline-block;
     max-width: 100%;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     vertical-align: top;
     opacity: 0;
   }
@@ -2564,7 +2566,30 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingResponse{
     width: 0;
     overflow: hidden;
+    white-space: nowrap;
     opacity: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotActionRow,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotActionRow{
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotActionRow.isVisible,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotActionRow.isVisible{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotActionBtn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotActionBtn{
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotInputRow,
@@ -2591,7 +2616,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: #f4fbff;
+    color: rgba(207,233,243,.62);
     font-family: var(--font-tight);
     font-size: 12px;
     font-weight: 700;
@@ -2950,6 +2975,13 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotInputRow,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotInputRow{
+    opacity: 1;
+    animation: none;
+    pointer-events: auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotActionRow,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotActionRow{
     opacity: 1;
     animation: none;
     pointer-events: auto;
