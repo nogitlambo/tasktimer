@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -63,6 +63,11 @@ const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
 const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
+const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
+const ARCHIE_NAME_REPLY = "My name is Archie.";
+const ARCHIE_FALLBACK_REPLY = "I am still learning, but I am ready for more questions.";
+const ARCHIE_OUTLINE_DRAW_MS = 840;
+const ARCHIE_TYPE_MS = 840;
 const NAV_ITEMS: NavItem[] = [
   {
     page: "dashboard",
@@ -252,6 +257,28 @@ function isSecondaryDesktopNavItem(item: NavItem) {
   return item.page === "settings";
 }
 
+function normalizeArchieQuestion(value: string) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[?!.,]+$/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function resolveArchieReply(question: string) {
+  const normalized = normalizeArchieQuestion(question);
+  if (!normalized) return "";
+  if (
+    normalized === "what is your name" ||
+    normalized === "whats your name" ||
+    normalized === "what's your name" ||
+    normalized.includes("your name")
+  ) {
+    return ARCHIE_NAME_REPLY;
+  }
+  return ARCHIE_FALLBACK_REPLY;
+}
+
 function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
   const isActive = activePage === item.page;
   const commonProps = {
@@ -319,6 +346,16 @@ export default function DesktopAppRail({
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
+  const [isArchieBubbleOpen, setIsArchieBubbleOpen] = useState(false);
+  const [archieQuestion, setArchieQuestion] = useState("");
+  const [archieDisplayMessage, setArchieDisplayMessage] = useState(ARCHIE_DEFAULT_PROMPT);
+  const [archieTitleAnimation, setArchieTitleAnimation] = useState<"none" | "prompt" | "response">("none");
+  const [archieTitleAnimationKey, setArchieTitleAnimationKey] = useState(0);
+  const [archieOutlineAnimating, setArchieOutlineAnimating] = useState(false);
+  const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
+  const [archieInputVisible, setArchieInputVisible] = useState(false);
+  const archieInputRef = useRef<HTMLInputElement | null>(null);
+  const archieTimersRef = useRef<number[]>([]);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -513,6 +550,113 @@ export default function DesktopAppRail({
     setShowRankLadderModal(false);
   };
 
+  const clearArchieTimers = useCallback(() => {
+    archieTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    archieTimersRef.current = [];
+  }, []);
+
+  const prefersReducedMotion = useCallback(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
+
+  const queueArchieTimer = useCallback((callback: () => void, delayMs: number) => {
+    const timerId = window.setTimeout(() => {
+      archieTimersRef.current = archieTimersRef.current.filter((entry) => entry !== timerId);
+      callback();
+    }, delayMs);
+    archieTimersRef.current.push(timerId);
+  }, []);
+
+  const resetArchieBubble = useCallback(() => {
+    clearArchieTimers();
+    setArchieQuestion("");
+    setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
+    setArchieTitleAnimation("none");
+    setArchieTitleAnimationKey((value) => value + 1);
+    setArchieOutlineAnimating(false);
+    setArchieOutlineComplete(false);
+    setArchieInputVisible(false);
+  }, [clearArchieTimers]);
+
+  const startArchiePromptSequence = useCallback(() => {
+    const reducedMotion = prefersReducedMotion();
+    clearArchieTimers();
+    setArchieQuestion("");
+    setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
+    setArchieInputVisible(false);
+    setArchieOutlineAnimating(!reducedMotion);
+    setArchieOutlineComplete(reducedMotion);
+    setArchieTitleAnimation("none");
+    setArchieTitleAnimationKey((value) => value + 1);
+    if (reducedMotion) {
+      setArchieOutlineAnimating(false);
+      setArchieOutlineComplete(true);
+      setArchieTitleAnimation("none");
+      setArchieInputVisible(true);
+      return;
+    }
+    queueArchieTimer(() => {
+      setArchieOutlineAnimating(false);
+      setArchieOutlineComplete(true);
+      setArchieTitleAnimation("prompt");
+      setArchieTitleAnimationKey((value) => value + 1);
+    }, ARCHIE_OUTLINE_DRAW_MS);
+    queueArchieTimer(() => {
+      setArchieTitleAnimation("none");
+      setArchieInputVisible(true);
+    }, ARCHIE_OUTLINE_DRAW_MS + ARCHIE_TYPE_MS);
+  }, [clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+
+  const submitArchieQuestion = useCallback(() => {
+    const nextQuestion = String(archieQuestion || "").trim();
+    if (!nextQuestion) return;
+    const reducedMotion = prefersReducedMotion();
+    const reply = resolveArchieReply(nextQuestion);
+    clearArchieTimers();
+    setArchieQuestion("");
+    setArchieDisplayMessage(reply);
+    setArchieInputVisible(false);
+    setArchieOutlineAnimating(false);
+    setArchieOutlineComplete(true);
+    setArchieTitleAnimation(reducedMotion ? "none" : "response");
+    setArchieTitleAnimationKey((value) => value + 1);
+    if (reducedMotion) {
+      setArchieInputVisible(true);
+      return;
+    }
+    queueArchieTimer(() => {
+      setArchieTitleAnimation("none");
+      setArchieInputVisible(true);
+    }, ARCHIE_TYPE_MS);
+  }, [archieQuestion, clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+
+  const handleArchieToggle = useCallback(() => {
+    if (isArchieBubbleOpen) {
+      setIsArchieBubbleOpen(false);
+      resetArchieBubble();
+      return;
+    }
+    setIsArchieBubbleOpen(true);
+    startArchiePromptSequence();
+  }, [isArchieBubbleOpen, resetArchieBubble, startArchiePromptSequence]);
+
+  const handleArchieInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      submitArchieQuestion();
+    },
+    [submitArchieQuestion]
+  );
+
+  useEffect(() => {
+    if (!isArchieBubbleOpen || !archieInputVisible) return;
+    archieInputRef.current?.focus();
+  }, [archieInputVisible, isArchieBubbleOpen]);
+
+  useEffect(() => () => clearArchieTimers(), [clearArchieTimers]);
+
   return (
     <>
       {showDesktopRail ? (
@@ -609,13 +753,57 @@ export default function DesktopAppRail({
             </div>
           </section>
 
-          <div className="desktopRailMascot" aria-hidden="true">
-            <span className="desktopRailMascotFigure">
-              <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
-              <span className="desktopRailMascotBody" />
-              <span className="desktopRailMascotEyeSockets" />
-              <span className="desktopRailMascotEyes" />
-            </span>
+          <div className="desktopRailMascot">
+            <div
+              className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
+              aria-hidden={!isArchieBubbleOpen}
+            >
+              <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineRight" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomRight" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailRight" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailLeft" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
+                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
+              </span>
+              <div className="desktopRailMascotBubbleTitle">
+                <span
+                  key={archieTitleAnimationKey}
+                  className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
+                  style={{ ["--archie-title-width" as const]: `${Math.max(archieDisplayMessage.length, 1)}ch` }}
+                >
+                  {archieDisplayMessage}
+                </span>
+              </div>
+              <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
+                <input
+                  ref={archieInputRef}
+                  className="desktopRailMascotInput"
+                  type="text"
+                  value={archieQuestion}
+                  onChange={(event) => setArchieQuestion(event.target.value)}
+                  onKeyDown={handleArchieInputKeyDown}
+                  placeholder="Ask Archie a question..."
+                  aria-label="Ask Archie a question"
+                />
+                <span className="desktopRailMascotInputCaret" aria-hidden="true" />
+              </span>
+            </div>
+            <button
+              className={`desktopRailMascotTrigger${isArchieBubbleOpen ? " isOpen" : ""}`}
+              type="button"
+              aria-label="Ask Archie what he can help with"
+              aria-expanded={isArchieBubbleOpen}
+              onClick={handleArchieToggle}
+            >
+              <span className="desktopRailMascotFigure" aria-hidden="true">
+                <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+                <span className="desktopRailMascotBody" />
+                <span className="desktopRailMascotEyeSockets" />
+                <span className="desktopRailMascotEyes" />
+              </span>
+            </button>
           </div>
 
         </aside>
