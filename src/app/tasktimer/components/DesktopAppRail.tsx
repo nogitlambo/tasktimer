@@ -610,7 +610,12 @@ export default function DesktopAppRail({
           </section>
 
           <div className="desktopRailMascot" aria-hidden="true">
-            <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+            <span className="desktopRailMascotFigure">
+              <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+              <span className="desktopRailMascotBody" />
+              <span className="desktopRailMascotEyeSockets" />
+              <span className="desktopRailMascotEyes" />
+            </span>
           </div>
 
         </aside>
