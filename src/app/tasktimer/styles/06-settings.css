@@ -2355,6 +2355,25 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   display: none !important;
 }
 
+/* Final Feedback route cleanup: allow the standalone page to scroll instead of clipping long content. */
+#app[aria-label="TaskLaunch Feedback"]{
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  min-height: 100dvh;
+  height: auto !important;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
+#app[aria-label="TaskLaunch Feedback"] .desktopAppMain,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+}
+
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   border: 1px solid rgba(121,226,255,.24);
   background:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -782,7 +782,7 @@ export default function DesktopAppRail({
                 <span
                   key={archieTitleAnimationKey}
                   className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
-                  style={{ ["--archie-title-width" as const]: `${Math.max(archieDisplayMessage.length, 1)}ch` }}
+                  style={{ "--archie-title-width": `${Math.max(archieDisplayMessage.length, 1)}ch` } as CSSProperties}
                 >
                   {archieDisplayMessage}
                 </span>

@@ -212,7 +212,9 @@ function buildModeUsage(context: ArchieAssistantContext) {
   return totals;
 }
 
-function getMostHistoryTask(context: ArchieAssistantContext) {
+function getMostHistoryTask(
+  context: ArchieAssistantContext,
+): { task: ArchieTask; totalMs: number; sessionCount: number } | null {
   let best: { task: ArchieTask; totalMs: number; sessionCount: number } | null = null;
   context.tasks.forEach((task) => {
     const rows = Array.isArray(context.historyByTaskId[String(task.id || "")]) ? context.historyByTaskId[String(task.id || "")] : [];

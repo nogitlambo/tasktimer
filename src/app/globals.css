@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-geist-sans: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --font-geist-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-orbitron: Orbitron, "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-readable: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }

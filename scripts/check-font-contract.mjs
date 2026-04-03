@@ -23,27 +23,27 @@ function main() {
   const globals = read(globalsPath);
 
   assertMatch(
-    layout,
-    /import\s*\{[^}]*\bOrbitron\b[^}]*\}\s*from\s*"next\/font\/google";/m,
-    "Root layout must import Orbitron from next/font/google."
+    globals,
+    /--font-orbitron:\s*[^;]+;/m,
+    "globals.css must define --font-orbitron."
+  );
+
+  assertMatch(
+    globals,
+    /--font-geist-sans:\s*[^;]+;/m,
+    "globals.css must define --font-geist-sans."
+  );
+
+  assertMatch(
+    globals,
+    /--font-geist-mono:\s*[^;]+;/m,
+    "globals.css must define --font-geist-mono."
   );
 
   assertMatch(
     layout,
-    /const\s+orbitron\s*=\s*Orbitron\s*\(/m,
-    "Root layout must define the Orbitron font loader."
-  );
-
-  assertMatch(
-    layout,
-    /weight:\s*\[\s*"400"\s*,\s*"500"\s*,\s*"600"\s*,\s*"700"\s*,\s*"800"\s*,\s*"900"\s*\]/m,
-    "Orbitron must load weights 400, 500, 600, 700, 800, and 900 to avoid browser font fallback."
-  );
-
-  assertMatch(
-    layout,
-    /className=\{`[^`]*\$\{orbitron\.className\}[^`]*\$\{orbitron\.variable\}[^`]*`\}/m,
-    "Root body className must include both orbitron.className and orbitron.variable."
+    /<body[\s\S]*className=("|')antialiased\1|<body[\s\S]*className=\{("|')antialiased\2\}/m,
+    "Root body className must keep antialiased."
   );
 
   assertMatch(
