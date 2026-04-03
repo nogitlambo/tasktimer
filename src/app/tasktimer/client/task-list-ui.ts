@@ -14,7 +14,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
   function clearTaskFlipStates() {
     ctx.getFlippedTaskIds().clear();
-    ctx.setLastRenderedTaskFlipMode(ctx.getCurrentMode());
+    ctx.setLastRenderedTaskFlipMode("mode1");
     ctx.setLastRenderedTaskFlipView(ctx.getTaskView());
   }
 
@@ -23,9 +23,8 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
       clearTaskFlipStates();
       return;
     }
-    const currentMode = ctx.getCurrentMode();
     const currentView = ctx.getTaskView();
-    if (ctx.getLastRenderedTaskFlipMode() && ctx.getLastRenderedTaskFlipMode() !== currentMode) {
+    if (ctx.getLastRenderedTaskFlipMode() && ctx.getLastRenderedTaskFlipMode() !== "mode1") {
       ctx.getFlippedTaskIds().clear();
     }
     if (ctx.getLastRenderedTaskFlipView() && ctx.getLastRenderedTaskFlipView() !== currentView) {
@@ -35,7 +34,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     Array.from(ctx.getFlippedTaskIds()).forEach((taskId) => {
       if (!visibleIdSet.has(taskId)) ctx.getFlippedTaskIds().delete(taskId);
     });
-    ctx.setLastRenderedTaskFlipMode(currentMode);
+    ctx.setLastRenderedTaskFlipMode("mode1");
     ctx.setLastRenderedTaskFlipView(currentView);
   }
 
@@ -77,7 +76,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   function persistTaskOrderFromTaskListDom() {
     const list = els.taskList;
     if (!list) return;
-    const currentMode = ctx.getCurrentMode();
     const draggedModeTaskIds = Array.from(list.querySelectorAll(".task[data-task-id]"))
       .map((taskEl) => String((taskEl as HTMLElement).dataset.taskId || "").trim())
       .filter(Boolean);
@@ -91,8 +89,8 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
     const nextTasks = ctx.getTasks().slice();
     const modeIndexes: number[] = [];
-    nextTasks.forEach((task, index) => {
-      if (ctx.taskModeOf(task) === currentMode) modeIndexes.push(index);
+    nextTasks.forEach((_, index) => {
+      modeIndexes.push(index);
     });
     if (!modeIndexes.length) return;
 
@@ -152,8 +150,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
         (taskMenuEl as HTMLDetailsElement).open = false;
       });
     }
-    const insideEditMove = event.target?.closest?.(".editMoveMenu");
-    if (!insideEditMove && els.editMoveMenu) els.editMoveMenu.open = false;
   }
 
   function handleTaskMenuSummaryClick(event: any) {

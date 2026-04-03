@@ -49,7 +49,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.getEditTaskDurationPeriod() === "day" ? "day" : currentTask?.timeGoalPeriod === "day" ? "day" : "week";
     els.editTaskDurationReadout.textContent = formatAddTaskDurationReadout({
       name: String(els.editName?.value || currentTask?.name || "").trim(),
-      mode: currentTask ? sharedTasks.taskModeOf(currentTask) : ctx.getCurrentMode(),
       durationValue,
       durationUnit,
       durationPeriod,
@@ -458,7 +457,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       : null;
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
-      mode: ctx.getEditMoveTargetMode() || sharedTasks.taskModeOf(task),
       timeGoalEnabled: isEditTimeGoalEnabled(),
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       timeGoalUnit: ctx.getEditTaskDurationUnit(),
@@ -748,17 +746,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editAdvancedSection) els.editAdvancedSection.open = !!t.xpDisqualifiedUntilReset;
     ctx.syncEditCheckpointAlertUi(t);
     ctx.syncEditSaveAvailability(t);
-    const current = sharedTasks.taskModeOf(t);
-    ctx.setEditMoveTargetMode(current);
-    if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = ctx.getModeLabel(current);
-    [els.editMoveMode1, els.editMoveMode2, els.editMoveMode3].forEach((btn) => {
-      if (!btn) return;
-      const moveMode = btn.getAttribute("data-move-mode") as any;
-      const disabled = btn.getAttribute("data-move-mode") === current || !ctx.isModeEnabled(moveMode);
-      btn.disabled = disabled;
-      btn.classList.toggle("is-disabled", disabled);
-    });
-    if (els.editMoveMenu) els.editMoveMenu.open = false;
     if (els.msArea && "open" in (els.msArea as any)) (els.msArea as HTMLDetailsElement).open = false;
     ctx.syncEditMilestoneSectionUi(t);
     ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
@@ -838,10 +825,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
       sharedTasks.ensureMilestoneIdentity(t);
       t.milestones = ctx.sortMilestones(t.milestones);
-      const moveMode = ctx.getEditMoveTargetMode() || sharedTasks.taskModeOf(t);
-      if ((moveMode === "mode1" || moveMode === "mode2" || moveMode === "mode3") && ctx.isModeEnabled(moveMode)) {
-        (t as any).mode = moveMode;
-      }
+      delete (t as Task & { mode?: string }).mode;
       Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
       ctx.save();
       void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
@@ -851,7 +835,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.clearEditValidationState();
     closeElapsedPad(false);
     if (els.editAdvancedSection) els.editAdvancedSection.open = false;
-    if (els.editMoveMenu) els.editMoveMenu.open = false;
     ctx.setEditIndex(null);
     ctx.setEditTaskDraft(null);
     ctx.setEditDraftSnapshot("");

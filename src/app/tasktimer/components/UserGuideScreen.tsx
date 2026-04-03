@@ -22,7 +22,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         icon: "/Dashboard.svg",
         paragraphs: [
           "Timebase is a multi-task time tracking app designed for focused work sessions. You can run timers per task, define milestone checkpoints, review session history, and monitor consistency over time.",
-          "The app is organized around four core flows: tracking active tasks, reviewing history, configuring categories and appearance, and managing backups. Most actions happen on the Tasks page, with Settings used for global controls.",
+          "The app is organized around four core flows: tracking active tasks, reviewing history, configuring preferences and appearance, and managing backups. Most actions happen on the Tasks page, with Settings used for global controls.",
           "All key interactions are optimized for mobile and desktop: tap/click buttons for actions, swipe history charts to page entries, and use dedicated manager screens for bulk history operations.",
         ],
         shots: [{ label: "Screenshot placeholder: App Overview" }, { label: "Screenshot placeholder: Main Navigation Areas" }],
@@ -33,7 +33,6 @@ export default function UserGuideScreen({ onBack }: Props) {
         icon: "/Task_List.svg",
         paragraphs: [
           "Create your first task with Add Task, then press Start to begin timing. Use Stop to pause and Start again to resume. Press Reset when you want to clear the timer and optionally log the finished session to history.",
-          "If you track different activity types, switch modes to keep tasks grouped by category. Mode 1 is always available; Mode 2 and Mode 3 can be enabled and renamed in Configure Modes.",
           "Open Settings from the footer when you need advanced configuration, appearance controls, exports/imports, or full history management.",
         ],
         shots: [
@@ -48,8 +47,8 @@ export default function UserGuideScreen({ onBack }: Props) {
         icon: "/Dashboard.svg",
         paragraphs: [
           "Use the footer bar to move between Dashboard, Tasks, and additional pages. The Settings button opens the dedicated settings route.",
-          "The top bar contains mode switching and Add Task controls. Mode and Add Task are intended for task tracking context and are hidden on non-task pages.",
-          "Inside Settings, menu items open overlays for About, Appearance, Task Settings, and Category Manager. History Manager opens as its own route for larger data operations.",
+          "The top bar contains the Add Task control and page title. Task controls are intended for task tracking context and are hidden on non-task pages.",
+          "Inside Settings, menu items open overlays for About, Appearance, and task preferences. History Manager opens as its own route for larger data operations.",
         ],
         shots: [
           { label: "Navigation Footer (Example)", image: "/navigation.PNG" },
@@ -65,7 +64,7 @@ export default function UserGuideScreen({ onBack }: Props) {
           "Each task row provides Start/Stop, Reset, Edit, History, and a more-actions menu.",
           "Use Duplicate to clone setup quickly, Collapse to hide progress details, and Delete to remove a task.",
           "Task names can be edited directly by opening Edit, where you can also adjust accumulated time manually. Manual edits change the task timer value but do not create history until a reset is logged.",
-          "Task state is persisted locally, including elapsed time, milestones, and mode assignment. This allows continuity between sessions on the same device.",
+          "Task state is persisted locally, including elapsed time and milestone configuration. This allows continuity between sessions on the same device.",
         ],
         shots: [
           { label: "Screenshot placeholder: Task List View" },
@@ -95,7 +94,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         paragraphs: [
           "Inline History opens from each task and shows recent session entries as bars. You can toggle between 7-day and 14-day ranges, page through entries, and inspect values directly on the chart.",
           "Pin keeps a task history panel open for quick reference. Analyse and Manage actions are available from the inline panel footer.",
-          "History entry colors follow the same color logic as progress bars when dynamic colors are enabled. If dynamic colors are disabled in Task Settings, static mode color is used.",
+          "History entry colors follow the same color logic as progress bars when dynamic colors are enabled. If dynamic colors are disabled in Task Settings, a consistent default accent is used.",
         ],
         shots: [
           { label: "Screenshot placeholder: Inline History (7 Entries)" },
@@ -134,26 +133,11 @@ export default function UserGuideScreen({ onBack }: Props) {
         ],
       },
       {
-        id: "ug-modes",
-        title: "Modes",
-        icon: "/Modes.svg",
-        paragraphs: [
-          "Modes are category buckets used to organize tasks. Mode 1 is mandatory and always enabled. Mode 2 and Mode 3 can be enabled or disabled from Configure Modes.",
-          "Each mode supports a custom label and color. These colors can drive task visuals and static history/progress appearance when dynamic colors are turned off.",
-          "Deleting a mode category removes all tasks under that mode after confirmation. Use this carefully because it affects task organization and related history context.",
-        ],
-        shots: [
-          { label: "Screenshot placeholder: Mode Switch (Top Bar)" },
-          { label: "Screenshot placeholder: Configure Modes Overlay" },
-          { label: "Screenshot placeholder: Mode Color and Label Inputs" },
-        ],
-      },
-      {
         id: "ug-settings",
         title: "Settings",
         icon: "/Settings.svg",
         paragraphs: [
-          "Settings is the central control panel for app-wide behavior. It includes appearance, task defaults, category management, history manager access, and backup tools.",
+          "Settings is the central control panel for app-wide behavior. It includes appearance, task defaults, history manager access, and backup tools.",
           "Task Settings lets you set default milestone unit and enable or disable dynamic colors for progress/history visuals.",
           "Appearance controls theme mode, and support links provide About, User Guide, and Contact overlays.",
         ],
@@ -168,7 +152,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         title: "Backup and Reset",
         icon: "/Import.svg",
         paragraphs: [
-          "Export Backup creates a JSON file containing tasks, mode settings, and history. Keep exports as periodic snapshots for recovery and transfer.",
+          "Export Backup creates a JSON file containing tasks and history. Keep exports as periodic snapshots for recovery and transfer.",
           "Import Backup merges data into the current dataset. Imported tasks are normalized and re-keyed when ID collisions occur to avoid overwriting existing tasks.",
           "Reset All supports confirmation options, including session logging behavior. Use reset operations carefully because they affect active timer state and stored history.",
         ],
@@ -199,7 +183,7 @@ export default function UserGuideScreen({ onBack }: Props) {
         icon: "/About.svg",
         paragraphs: [
           "If buttons navigate to unexpected pages in packaged builds, verify route output files exist in the exported `out` directory and rebuild the Android package after syncing.",
-          "If chart colors look wrong, check whether Dynamic Colors is enabled in Task Settings. Disabled mode forces static mode color.",
+          "If chart colors look wrong, check whether Dynamic Colors is enabled in Task Settings. Disabling it falls back to the default accent.",
           "For data issues, export a backup first, then use History Manager to inspect entries or perform controlled cleanup.",
         ],
         shots: [

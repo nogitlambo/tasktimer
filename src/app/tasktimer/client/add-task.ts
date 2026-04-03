@@ -103,7 +103,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskDurationReadout) {
       els.addTaskDurationReadout.textContent = formatAddTaskDurationReadout({
         name: "",
-        mode: ctx.getCurrentMode(),
         durationValue: String(ctx.getAddTaskDurationValue()),
         durationUnit: ctx.getAddTaskDurationUnit(),
         durationPeriod: ctx.getAddTaskDurationPeriod(),

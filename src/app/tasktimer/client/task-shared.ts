@@ -48,9 +48,7 @@ function checkpointTimeGoalLimitSec(timeGoalMinutes: number | null | undefined):
 }
 
 export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): TaskTimerSharedTaskApi {
-  function taskModeOf(task: Task | null | undefined): MainMode {
-    const mode = String((task as { mode?: string } | null | undefined)?.mode || "mode1");
-    if (mode === "mode2" || mode === "mode3") return mode;
+  function taskModeOf(): MainMode {
     return "mode1";
   }
 
@@ -82,7 +80,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       timeGoalPeriod: "week",
       timeGoalMinutes: 0,
     };
-    (task as Task & { mode?: MainMode }).mode = ctx.getCurrentMode();
     return task;
   }
 
@@ -91,7 +88,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       mode?: MainMode;
       finalCheckpointAction?: Task["timeGoalAction"];
     };
-    if (!taskWithMode.mode) taskWithMode.mode = "mode1";
+    delete taskWithMode.mode;
     if (task.milestoneTimeUnit !== "day" && task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
       task.milestoneTimeUnit = "hour";
     }

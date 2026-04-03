@@ -104,12 +104,27 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       options.setTasks([]);
       return;
     }
-    loaded.forEach((task) => {
-      const taskWithMode = task as Task & { mode?: "mode1" | "mode2" | "mode3" };
-      if (!taskWithMode.mode) taskWithMode.mode = "mode1";
+    const deletedTaskIds: string[] = [];
+    const migratedTasks = loaded.filter((task) => {
+      const legacyMode = String((task as Task & { mode?: unknown }).mode || "mode1").trim();
+      const keepTask = legacyMode !== "mode2" && legacyMode !== "mode3";
+      if (!keepTask) {
+        const taskId = String(task?.id || "").trim();
+        if (taskId) deletedTaskIds.push(taskId);
+        return false;
+      }
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
+      return true;
     });
-    options.setTasks(loaded);
+    options.setTasks(migratedTasks);
+    if (!deletedTaskIds.length) return;
+    const cleanedHistory = cleanupHistory(loadHistory());
+    deletedTaskIds.forEach((taskId) => {
+      delete cleanedHistory[taskId];
+    });
+    options.setHistoryByTaskId(cleanedHistory);
+    saveHistory(cleanedHistory, { showIndicator: false });
+    saveTasks(migratedTasks, { deletedTaskIds });
   }
 
   function save(opts?: PersistOptions) {
@@ -314,9 +329,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadMenuButtonStylePreference();
     options.syncTaskSettingsUi();
     options.loadPinnedHistoryTaskIds();
-    options.loadModeLabels();
     options.backfillHistoryColorsFromSessionLogic();
-    options.syncModeLabelsUi();
     options.applyMainMode("mode1");
     options.applyAppPage(options.getInitialAppPageFromLocation(options.initialAppPage), {
       syncUrl: "replace",

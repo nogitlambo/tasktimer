@@ -83,16 +83,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return (ctx.getDashboardRefreshHoldActive() || !!ctx.getCloudRefreshInFlight()) && renderedData[widget];
   }
 
-  function isDashboardModeIncluded(mode: MainMode) {
-    return ctx.getDashboardIncludedModes()[mode] !== false;
-  }
-
   function getDashboardIncludedTaskIds() {
     const taskIds = new Set<string>();
     (ctx.getTasks() || []).forEach((task) => {
       if (!task) return;
-      const mode = ctx.taskModeOf(task);
-      if (!ctx.isModeEnabled(mode) || !isDashboardModeIncluded(mode)) return;
       const taskId = String(task.id || "").trim();
       if (taskId) taskIds.add(taskId);
     });
@@ -107,11 +101,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function getDashboardFilteredTasks() {
-    return (ctx.getTasks() || []).filter((task) => {
-      if (!task) return false;
-      const mode = ctx.taskModeOf(task);
-      return ctx.isModeEnabled(mode) && isDashboardModeIncluded(mode);
-    });
+    return (ctx.getTasks() || []).filter((task) => !!task);
   }
 
   function cancelMomentumAnimation() {
@@ -1821,7 +1811,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const barHeight = Math.max(2, Math.round(chartHeight * ratio));
       const y = chartBottom - barHeight;
       const rowTask = ctx.getTasks().find((task) => String(task.id || "") === String(row.taskId));
-      const rowStaticColor = rowTask ? ctx.getModeColor(ctx.taskModeOf(rowTask)) : "rgb(0,207,200)";
+      const rowStaticColor = rowTask ? ctx.getModeColor("mode1") : "rgb(0,207,200)";
       const rowDynamicColor = rowTask ? sessionColorForTaskMs(rowTask as any, row.avgMs) : rowStaticColor;
       context.fillStyle = ctx.getDynamicColorsEnabled() ? rowDynamicColor : rowStaticColor;
       context.globalAlpha = 0.92;
@@ -1848,7 +1838,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardTasksCompletedCard();
     renderDashboardTimelineCard();
     renderDashboardFocusTrend();
-    renderDashboardModeDistribution();
     if (opts?.includeAvgSession !== false) renderDashboardAvgSessionChart();
     renderDashboardHeatCalendar();
     try {
@@ -1861,7 +1850,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   function renderDashboardLiveWidgets() {
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
-    renderDashboardModeDistribution();
     try {
       renderDashboardMomentumCard();
     } catch {

@@ -58,12 +58,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
     else taskListEl.removeAttribute("data-tile-columns");
 
-    const currentMode = ctx.getCurrentMode();
     const openHistoryTaskIds = ctx.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = ctx.getPinnedHistoryTaskIds();
     const historyViewByTaskId = ctx.getHistoryViewByTaskId();
-    const modeTasks = tasks.filter((t) => sharedTasks.taskModeOf(t) === currentMode);
-    const activeTaskIds = new Set(modeTasks.map((t) => String(t.id || "")));
+    const activeTaskIds = new Set(tasks.map((t) => String(t.id || "")));
 
     ctx.syncTaskFlipStatesForVisibleTasks(activeTaskIds);
     for (const taskId of Array.from(pinnedHistoryTaskIds)) {
@@ -77,7 +75,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     }
 
     tasks.forEach((t, index) => {
-      if (sharedTasks.taskModeOf(t) !== currentMode) return;
       const elapsedMs = ctx.getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
@@ -140,7 +137,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           <div class="progressRow">
             <div class="progressWrap">
               <div class="progressTrack">
-                <div class="progressFill" style="width:${pct}%;background:${ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(pct) : ctx.getModeColor(sharedTasks.taskModeOf(t))}"></div>
+                <div class="progressFill" style="width:${pct}%;background:${ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(pct) : ctx.getModeColor("mode1")}"></div>
                 ${markers}
               </div>
             </div>

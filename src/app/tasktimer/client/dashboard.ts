@@ -1,5 +1,5 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity, MainMode } from "./types";
+import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -46,35 +46,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return null;
   }
 
-  function getVisibleDashboardModes(): MainMode[] {
-    return (["mode1", "mode2", "mode3"] as MainMode[]).filter((mode) => ctx.isModeEnabled(mode));
-  }
-
-  function isDashboardModeIncluded(mode: MainMode) {
-    return ctx.getDashboardIncludedModes()[mode] !== false;
-  }
-
   function ensureDashboardIncludedModesValid() {
-    const visibleModes = getVisibleDashboardModes();
-    const nextIncludedModes = { ...ctx.getDashboardIncludedModes() };
-    if (!visibleModes.length) {
-      nextIncludedModes.mode1 = true;
-      ctx.setDashboardIncludedModes(nextIncludedModes);
-      return;
-    }
-    const hasVisibleMode = visibleModes.some((mode) => nextIncludedModes[mode] !== false);
-    if (hasVisibleMode) return;
-    nextIncludedModes[visibleModes[0] || "mode1"] = true;
-    ctx.setDashboardIncludedModes(nextIncludedModes);
-  }
-
-  function getDashboardIncludedModesMapForStorage() {
-    const includedModes = ctx.getDashboardIncludedModes();
-    return {
-      mode1: includedModes.mode1 !== false,
-      mode2: includedModes.mode2 !== false,
-      mode3: includedModes.mode3 !== false,
-    } satisfies Record<MainMode, boolean>;
+    ctx.setDashboardIncludedModes({ mode1: true, mode2: false, mode3: false });
   }
 
   function collectDashboardPanelMeta() {
@@ -235,7 +208,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       ...existingWidgets,
       ...partialWidgets,
       cardVisibility: getDashboardCardVisibilityMapForStorage(),
-      includedModes: getDashboardIncludedModesMapForStorage(),
     };
     const nextDashboard = { order: existingOrder, widgets };
     ctx.setCloudDashboardCache(nextDashboard);
@@ -280,16 +252,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       });
     }
     ctx.setDashboardCardVisibility(nextVisibility);
-    const nextIncludedModes: Record<MainMode, boolean> = { mode1: true, mode2: true, mode3: true };
-    const rawIncludedModes = (widgets as any).includedModes;
-    if (rawIncludedModes && typeof rawIncludedModes === "object") {
-      (["mode1", "mode2", "mode3"] as MainMode[]).forEach((mode) => {
-        if (typeof (rawIncludedModes as Record<string, unknown>)[mode] === "boolean") {
-          nextIncludedModes[mode] = (rawIncludedModes as Record<string, boolean>)[mode];
-        }
-      });
-    }
-    ctx.setDashboardIncludedModes(nextIncludedModes);
     ensureDashboardIncludedModesValid();
   }
 
@@ -530,31 +492,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardPanelMenuChange(e: Event) {
-    const categoryInput = (e.target as HTMLElement | null)?.closest?.(
-      "input[data-dashboard-category-id]"
-    ) as HTMLInputElement | null;
-    if (categoryInput) {
-      const modeAttr = String(categoryInput.getAttribute("data-dashboard-category-id") || "").trim();
-      const mode: MainMode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
-      const categoryMeta = getDashboardCategoryMeta();
-      const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
-      const nextChecked = !!categoryInput.checked;
-      if (!nextChecked && isDashboardModeIncluded(mode) && includedCount <= 1) {
-        categoryInput.checked = true;
-        syncDashboardPanelMenuState();
-        return;
-      }
-      const nextIncludedModes = { ...ctx.getDashboardIncludedModes(), [mode]: nextChecked };
-      ctx.setDashboardIncludedModes(nextIncludedModes);
-      ensureDashboardIncludedModesValid();
-      syncDashboardPanelMenuState();
-      saveDashboardWidgetState({
-        cardSizes: getDashboardCardSizeMapForStorage(),
-        avgSessionByTaskRange: ctx.getDashboardAvgRange(),
-      });
-      if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
-      return;
-    }
     const input = (e.target as HTMLElement | null)?.closest?.("input[data-dashboard-panel-id]") as HTMLInputElement | null;
     if (!input) return;
     const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();

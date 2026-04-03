@@ -186,8 +186,10 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
         ? task.finalCheckpointAction
         : "continue";
+  const taskWithoutMode = { ...(task as Task & { mode?: unknown }) };
+  delete taskWithoutMode.mode;
   return {
-    ...task,
+    ...taskWithoutMode,
     timeGoalAction,
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     timeGoalEnabled: !!task.timeGoalEnabled,
@@ -462,7 +464,6 @@ function markPendingTaskDeletes(taskIds: string[]): void {
 
 function taskSignature(task: Task | null | undefined): string {
   if (!task) return "";
-  const sourceMode = (task as Task & { mode?: unknown }).mode;
   return JSON.stringify({
     id: String(task.id || ""),
     name: String(task.name || ""),
@@ -496,7 +497,6 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
-    mode: String(sourceMode || "mode1"),
   });
 }
 
@@ -769,7 +769,6 @@ export function buildDefaultCloudPreferences() {
     autoFocusOnTaskLaunchEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
-    modeSettings: null,
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Date.now(),
   };

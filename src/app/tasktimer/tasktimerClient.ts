@@ -2637,24 +2637,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (!els.taskList && els.historyManagerScreen) openHistoryManager();
     });
     registerGroupsEvents();
-    on(els.editMoveMode1, "click", () => {
-      if (els.editMoveMode1?.disabled) return;
-      editMoveTargetMode = "mode1";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode1");
-      if (els.editMoveMenu) els.editMoveMenu.open = false;
-    });
-    on(els.editMoveMode2, "click", () => {
-      if (els.editMoveMode2?.disabled) return;
-      editMoveTargetMode = "mode2";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode2");
-      if (els.editMoveMenu) els.editMoveMenu.open = false;
-    });
-    on(els.editMoveMode3, "click", () => {
-      if (els.editMoveMode3?.disabled) return;
-      editMoveTargetMode = "mode3";
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel("mode3");
-      if (els.editMoveMenu) els.editMoveMenu.open = false;
-    });
     registerAddTaskEvents();
 
     registerTaskEvents();

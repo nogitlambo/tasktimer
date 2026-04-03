@@ -16,12 +16,11 @@ export default function InfoOverlays() {
 
           <div className="aboutText aboutTextBody">
             <p className="aboutLead">
-              Timebase is built for tracking focused work across multiple tasks and modes, with a fast workflow for
+              Timebase is built for tracking focused work across multiple tasks, with a fast workflow for
               start/stop timing, reviewing progress, and managing your history.
             </p>
             <p>Key features include:</p>
             <ul className="aboutFeatureList">
-              <li>Multiple task categories (Mode 1, Mode 2, Mode 3) with configurable labels and colors</li>
               <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
               <li>Checkpoint milestones and progress tracking on each task</li>
               <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
@@ -101,9 +100,9 @@ export default function InfoOverlays() {
       </div>
 
       <div className="overlay" id="categoryManagerOverlay">
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Configure Modes">
-          <h2>Configure Modes</h2>
-          <p className="modalSubtext">Mode configuration is now available in Settings &gt; Preferences.</p>
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Categories removed">
+          <h2>Categories Removed</h2>
+          <p className="modalSubtext">TaskTimer now uses a single task list and categories are no longer available.</p>
           <div className="footerBtns">
             <button className="btn btn-accent closePopup" type="button">
               Close

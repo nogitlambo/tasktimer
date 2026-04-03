@@ -1,4 +1,4 @@
-import type { TaskTimerCachedModeSettings, TaskTimerPreferencesContext } from "./context";
+import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
 import { normalizeDashboardWeekStart } from "../lib/historyChart";
 
@@ -23,31 +23,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return target instanceof Element ? target.closest(selector) : null;
   }
 
-  type CachedModeEntry = {
-    label?: unknown;
-    enabled?: unknown;
-  };
-
-  function getCachedModeEntry(settings: TaskTimerCachedModeSettings, mode: MainMode) {
-    if (!settings || typeof settings !== "object") return null;
-    const entry = settings[mode];
-    return entry && typeof entry === "object" ? (entry as CachedModeEntry) : null;
-  }
-
   function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" {
     const value = String(raw || "").trim().toLowerCase();
     return value === "cyan" || value === "command" ? "cyan" : "purple";
   }
 
   function sanitizeModeLabel(value: unknown, fallback: string) {
-    const raw = String(value ?? "").trim().replace(/\s+/g, " ");
-    if (!raw) return fallback;
-    return raw.slice(0, 10);
+    return fallback;
   }
 
   function getModeLabel(mode: MainMode) {
-    const modeLabels = ctx.getModeLabels();
-    return modeLabels[mode] || ctx.defaultModeLabels[mode];
+    return ctx.defaultModeLabels[mode] || ctx.defaultModeLabels.mode1;
   }
 
   function getModeColor(mode: MainMode) {
@@ -55,53 +41,21 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function applyModeAccent(mode: MainMode) {
-    document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
+    const nextMode = mode === "mode2" || mode === "mode3" ? "mode1" : mode;
+    document.documentElement.style.setProperty("--mode-accent", getModeColor(nextMode));
     document.documentElement.style.setProperty("--mode1-accent", getModeColor("mode1"));
     document.documentElement.style.setProperty("--mode2-accent", getModeColor("mode2"));
     document.documentElement.style.setProperty("--mode3-accent", getModeColor("mode3"));
   }
 
   function isModeEnabled(mode: MainMode) {
-    if (mode === "mode1") return true;
-    return !!ctx.getModeEnabled()[mode];
+    return mode === "mode1";
   }
 
   function syncModeLabelsUi() {
-    const currentMode = ctx.getCurrentMode();
-    const editMoveTargetMode = ctx.getEditMoveTargetMode();
-    if (els.mode1Btn) els.mode1Btn.textContent = getModeLabel("mode1");
-    if (els.mode2Btn) els.mode2Btn.textContent = getModeLabel("mode2");
-    if (els.mode3Btn) els.mode3Btn.textContent = getModeLabel("mode3");
-    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(currentMode);
-    if (els.mode2Btn) els.mode2Btn.disabled = !isModeEnabled("mode2");
-    if (els.mode3Btn) els.mode3Btn.disabled = !isModeEnabled("mode3");
-    if (els.mode1Btn) els.mode1Btn.setAttribute("aria-checked", String(currentMode === "mode1"));
-    if (els.mode2Btn) els.mode2Btn.setAttribute("aria-checked", String(currentMode === "mode2"));
-    if (els.mode3Btn) els.mode3Btn.setAttribute("aria-checked", String(currentMode === "mode3"));
-    if (els.editMoveMode1) els.editMoveMode1.textContent = getModeLabel("mode1");
-    if (els.editMoveMode2) els.editMoveMode2.textContent = getModeLabel("mode2");
-    if (els.editMoveMode3) els.editMoveMode3.textContent = getModeLabel("mode3");
-    if (els.categoryMode1Input) els.categoryMode1Input.value = getModeLabel("mode1");
-    if (els.categoryMode2Input) els.categoryMode2Input.value = getModeLabel("mode2");
-    if (els.categoryMode3Input) els.categoryMode3Input.value = getModeLabel("mode3");
-    els.categoryMode2Toggle?.classList.toggle("on", isModeEnabled("mode2"));
-    els.categoryMode2Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode2")));
-    els.categoryMode3Toggle?.classList.toggle("on", isModeEnabled("mode3"));
-    els.categoryMode3Toggle?.setAttribute("aria-checked", String(isModeEnabled("mode3")));
-    if (els.categoryMode2ToggleLabel) {
-      els.categoryMode2ToggleLabel.textContent = isModeEnabled("mode2") ? "Disable Category 2" : "Enable Category 2";
-    }
-    if (els.categoryMode3ToggleLabel) {
-      els.categoryMode3ToggleLabel.textContent = isModeEnabled("mode3") ? "Disable Category 3" : "Enable Category 3";
-    }
-    if (els.categoryMode2Row) (els.categoryMode2Row as HTMLElement).style.display = isModeEnabled("mode2") ? "block" : "none";
-    if (els.categoryMode3Row) (els.categoryMode3Row as HTMLElement).style.display = isModeEnabled("mode3") ? "block" : "none";
-    if (els.editMoveMode2) els.editMoveMode2.classList.toggle("is-disabled", !isModeEnabled("mode2"));
-    if (els.editMoveMode3) els.editMoveMode3.classList.toggle("is-disabled", !isModeEnabled("mode3"));
-    ctx.ensureDashboardIncludedModesValid();
-    ctx.renderDashboardPanelMenu();
+    ctx.setModeLabelsState({ ...ctx.defaultModeLabels });
+    ctx.setModeEnabledState({ mode1: true, mode2: false, mode3: false });
     if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
-    if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(editMoveTargetMode);
   }
 
   function buildCloudPreferencesSnapshot() {
@@ -118,11 +72,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
-      modeSettings: {
-        mode1: { label: ctx.getModeLabels().mode1, enabled: true },
-        mode2: { label: ctx.getModeLabels().mode2, enabled: !!ctx.getModeEnabled().mode2 },
-        mode3: { label: ctx.getModeLabels().mode3, enabled: !!ctx.getModeEnabled().mode3 },
-      },
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()),
       updatedAtMs: Date.now(),
     };
@@ -142,7 +91,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         String(snapshot.defaultTaskTimerFormat || "hour")
       );
       localStorage.setItem(ctx.storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
-      localStorage.setItem(ctx.storageKeys.MODE_SETTINGS_KEY, JSON.stringify(snapshot.modeSettings || null));
+      localStorage.removeItem(ctx.storageKeys.MODE_SETTINGS_KEY);
     } catch {
       // ignore localStorage write failures
     }
@@ -164,36 +113,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveModeSettings() {
-    persistPreferencesToCloud();
+    syncModeLabelsUi();
   }
 
   function loadModeLabels() {
-    let nextModeLabels = { ...ctx.defaultModeLabels };
-    let nextModeEnabled = { ...ctx.defaultModeEnabled };
+    ctx.setModeLabelsState({ ...ctx.defaultModeLabels });
+    ctx.setModeEnabledState({ mode1: true, mode2: false, mode3: false });
     try {
-      const parsed = (ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.modeSettings as
-        | TaskTimerCachedModeSettings
-        | undefined;
-      if (parsed && typeof parsed === "object") {
-        const mode1 = getCachedModeEntry(parsed, "mode1");
-        const mode2 = getCachedModeEntry(parsed, "mode2");
-        const mode3 = getCachedModeEntry(parsed, "mode3");
-        nextModeLabels.mode1 = sanitizeModeLabel(mode1?.label, ctx.defaultModeLabels.mode1);
-        nextModeLabels.mode2 = sanitizeModeLabel(mode2?.label, ctx.defaultModeLabels.mode2);
-        nextModeLabels.mode3 = sanitizeModeLabel(mode3?.label, ctx.defaultModeLabels.mode3);
-        nextModeEnabled.mode2 = !!mode2?.enabled;
-        nextModeEnabled.mode3 = !!mode3?.enabled;
-        ctx.setModeLabelsState(nextModeLabels);
-        ctx.setModeEnabledState(nextModeEnabled);
-        return;
-      }
-      nextModeLabels = { ...ctx.defaultModeLabels };
-      nextModeEnabled = { ...ctx.defaultModeEnabled };
+      localStorage.removeItem(ctx.storageKeys.MODE_SETTINGS_KEY);
     } catch {
       // ignore
     }
-    ctx.setModeLabelsState(nextModeLabels);
-    ctx.setModeEnabledState(nextModeEnabled);
   }
 
   function applyTheme(mode: "purple" | "cyan") {
@@ -417,11 +347,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskCheckpointToastToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
       els.taskCheckpointToastToggle.title = lockAdvancedTaskConfig ? "Pro feature: Checkpoint alerts" : "";
     }
-    if (els.categoryMode1Input) els.categoryMode1Input.disabled = lockAdvancedTaskConfig;
-    if (els.categoryMode2Input) els.categoryMode2Input.disabled = lockAdvancedTaskConfig;
-    if (els.categoryMode3Input) els.categoryMode3Input.disabled = lockAdvancedTaskConfig;
-    if (els.categoryMode2Toggle) (els.categoryMode2Toggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
-    if (els.categoryMode3Toggle) (els.categoryMode3Toggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
     const currentEditTask = ctx.getCurrentEditTask();
     if (currentEditTask) ctx.syncEditCheckpointAlertUi(currentEditTask);
   }
@@ -464,64 +389,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.render();
   }
 
-  function applyAndPersistModeSettingsImmediate(opts?: { closeOverlay?: boolean }) {
-    ctx.setModeLabelsState({
-      mode1: sanitizeModeLabel(els.categoryMode1Input?.value, ctx.defaultModeLabels.mode1),
-      mode2: sanitizeModeLabel(els.categoryMode2Input?.value, ctx.defaultModeLabels.mode2),
-      mode3: sanitizeModeLabel(els.categoryMode3Input?.value, ctx.defaultModeLabels.mode3),
-    });
-    ctx.setModeEnabledState({ ...ctx.getModeEnabled(), mode1: true });
-    saveModeSettings();
-    syncModeLabelsUi();
-    ctx.saveDashboardWidgetState({
-      cardSizes: ctx.getDashboardCardSizeMapForStorage(),
-      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
-    });
-    if (!isModeEnabled(ctx.getCurrentMode())) applyMainMode("mode1");
-    else applyModeAccent(ctx.getCurrentMode());
-    if (!isModeEnabled(ctx.getEditMoveTargetMode())) ctx.setEditMoveTargetModeState("mode1");
-    if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(ctx.getEditMoveTargetMode());
-    if (opts?.closeOverlay) ctx.closeOverlay(els.categoryManagerOverlay as HTMLElement | null);
-    else ctx.render();
-  }
-
   function applyMainMode(mode: MainMode) {
-    const nextMode = isModeEnabled(mode) ? mode : "mode1";
+    const nextMode = mode === "mode2" || mode === "mode3" ? "mode1" : mode;
     ctx.setCurrentModeState(nextMode);
+    ctx.setEditMoveTargetModeState("mode1");
     applyModeAccent(nextMode);
-    document.body.setAttribute("data-main-mode", nextMode);
-    if (els.modeSwitchCurrentLabel) els.modeSwitchCurrentLabel.textContent = getModeLabel(nextMode);
-    els.mode1Btn?.classList.toggle("isOn", nextMode === "mode1");
-    els.mode2Btn?.classList.toggle("isOn", nextMode === "mode2");
-    els.mode3Btn?.classList.toggle("isOn", nextMode === "mode3");
-    els.mode1Btn?.setAttribute("aria-checked", String(nextMode === "mode1"));
-    els.mode2Btn?.setAttribute("aria-checked", String(nextMode === "mode2"));
-    els.mode3Btn?.setAttribute("aria-checked", String(nextMode === "mode3"));
-    if (els.modeSwitch && "open" in (els.modeSwitch as HTMLDetailsElement)) {
-      (els.modeSwitch as HTMLDetailsElement).open = false;
-    }
+    document.body.setAttribute("data-main-mode", "mode1");
     els.mode1View?.classList.toggle("modeViewOn", true);
-    els.mode2View?.classList.toggle("modeViewOn", nextMode === "mode2");
-    els.mode3View?.classList.toggle("modeViewOn", nextMode === "mode3");
-    ctx.render();
-  }
-
-  function deleteTasksInMode(mode: MainMode) {
-    const deletedTaskIds = (ctx.getTasks() || [])
-      .filter((task) => ctx.taskModeOf(task) === mode)
-      .map((task) => String(task.id || ""))
-      .filter(Boolean);
-    ctx.setTasks((ctx.getTasks() || []).filter((task) => ctx.taskModeOf(task) !== mode));
-    ctx.save({ deletedTaskIds });
     ctx.render();
   }
 
   function registerPreferenceEvents(deps: PreferenceEventDeps) {
     const { handleAppBackNavigation } = deps;
 
-    ctx.on(els.mode1Btn, "click", () => applyMainMode("mode1"));
-    ctx.on(els.mode2Btn, "click", () => applyMainMode("mode2"));
-    ctx.on(els.mode3Btn, "click", () => applyMainMode("mode3"));
     ctx.on(els.closeMenuBtn, "click", () => {
       handleAppBackNavigation();
     });
@@ -652,72 +532,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.render();
       ctx.closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
-
-    const toggleCategoryEnabled = (mode: "mode2" | "mode3") => {
-      if (!requireAdvancedTaskConfig("Category customization")) return;
-      ctx.setModeEnabledState({ ...ctx.getModeEnabled(), [mode]: !ctx.getModeEnabled()[mode] });
-      syncModeLabelsUi();
-      applyAndPersistModeSettingsImmediate();
-    };
-    ctx.on(els.categoryMode2Toggle, "click", () => toggleCategoryEnabled("mode2"));
-    ctx.on(els.categoryMode3Toggle, "click", () => toggleCategoryEnabled("mode3"));
-    ctx.on(els.categoryMode2ToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#categoryMode2Toggle")) return;
-      toggleCategoryEnabled("mode2");
-    });
-    ctx.on(els.categoryMode3ToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#categoryMode3Toggle")) return;
-      toggleCategoryEnabled("mode3");
-    });
-    ctx.on(els.categoryMode1Input, "change", () => {
-      if (!requireAdvancedTaskConfig("Category customization")) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categoryMode2Input, "change", () => {
-      if (!requireAdvancedTaskConfig("Category customization")) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categoryMode3Input, "change", () => {
-      if (!requireAdvancedTaskConfig("Category customization")) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categoryMode1Input, "blur", () => {
-      if (!canUseAdvancedTaskConfig()) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categoryMode2Input, "blur", () => {
-      if (!canUseAdvancedTaskConfig()) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categoryMode3Input, "blur", () => {
-      if (!canUseAdvancedTaskConfig()) return;
-      applyAndPersistModeSettingsImmediate();
-    });
-    ctx.on(els.categorySaveBtn, "click", () => {
-      applyAndPersistModeSettingsImmediate({ closeOverlay: true });
-    });
-    ctx.on(els.categoryResetBtn, "click", () => {
-      ctx.setModeLabelsState({ ...ctx.defaultModeLabels });
-      ctx.setModeEnabledState({ ...ctx.defaultModeEnabled });
-      saveModeSettings();
-      syncModeLabelsUi();
-      applyModeAccent(ctx.getCurrentMode());
-      if (els.editMoveCurrentLabel) els.editMoveCurrentLabel.textContent = getModeLabel(ctx.getEditMoveTargetMode());
-    });
-    const confirmDeleteCategory = (mode: MainMode) => {
-      const label = getModeLabel(mode);
-      const safeLabel = ctx.escapeHtmlUI(label);
-      ctx.confirm("Delete Category Tasks", "", {
-        okLabel: "Delete",
-        textHtml: `<span class="confirmDanger">All tasks under the ${safeLabel} category will be deleted. Proceed?</span>`,
-        onOk: () => {
-          deleteTasksInMode(mode);
-          ctx.closeConfirm();
-        },
-      });
-    };
-    ctx.on(els.categoryMode2TrashBtn, "click", () => confirmDeleteCategory("mode2"));
-    ctx.on(els.categoryMode3TrashBtn, "click", () => confirmDeleteCategory("mode3"));
   }
 
   return {
@@ -757,7 +571,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     setThemeMode,
     setMenuButtonStyle,
     applyMainMode,
-    deleteTasksInMode,
     registerPreferenceEvents,
   };
 }

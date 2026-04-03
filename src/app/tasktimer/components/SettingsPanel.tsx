@@ -1497,7 +1497,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             active={activePane === "preferences"}
             paneClassName="settingsDisplayTypographyPane"
             title="Preferences"
-            subtitle="Configure task behavior, dashboard options, and categories."
+            subtitle="Configure task behavior and dashboard options."
           >
             <div className="settingsInlineStack">
               <section className="settingsInlineSection">
@@ -1547,40 +1547,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                 </div>
               </section>
 
-              <section className="settingsInlineSection">
-                <div className="settingsInlineSectionHead">
-                  <AppImg className="settingsInlineSectionIcon" src="/Modes.svg" alt="" aria-hidden="true" />
-                  <div className="settingsInlineSectionTitle">Configure Categories</div>
-                </div>
-                <div className="field categoryFieldRow">
-                  <label htmlFor="categoryMode1Input">Default Category</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode1Input" type="text" maxLength={10} />
-                  </div>
-                </div>
-                <div className="modeSwitchesLabel">Categories</div>
-                <div className="toggleRow" id="categoryMode2ToggleRow">
-                  <span id="categoryMode2ToggleLabel">Disable Category 2</span>
-                  <button className="switch on" id="categoryMode2Toggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="field categoryFieldRow" id="categoryMode2Row">
-                  <label htmlFor="categoryMode2Input">Category 2</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode2Input" type="text" maxLength={10} />
-                  </div>
-                </div>
-                <div className="toggleRow" id="categoryMode3ToggleRow">
-                  <span id="categoryMode3ToggleLabel">Disable Category 3</span>
-                  <button className="switch on" id="categoryMode3Toggle" type="button" role="switch" aria-checked="true" />
-                </div>
-                <div className="field categoryFieldRow" id="categoryMode3Row">
-                  <label htmlFor="categoryMode3Input">Category 3</label>
-                  <div className="categoryFieldControl">
-                    <input id="categoryMode3Input" type="text" maxLength={10} />
-                  </div>
-                </div>
-              </section>
-
             </div>
             <div className="settingsInlineFooter">
               <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
@@ -1591,13 +1557,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
               <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
                 Save Task Settings
               </button>
-              <button className="btn btn-accent" id="categorySaveBtn" type="button" tabIndex={-1}>
-                Save Category
-              </button>
-              <button className="btn btn-ghost" id="categoryResetBtn" type="button" tabIndex={-1}>
-                Reset Defaults
-              </button>
-            </div>
+            </div>
           </SettingsDetailPane>
 
           <SettingsDetailPane
@@ -1753,7 +1713,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                 <li>Sound and toast checkpoint alerts, including repeat-until-dismiss behaviors</li>
                 <li>Dashboard insights, heatmaps, averages, and history views for reviewing progress</li>
                 <li>History management tools with export, cleanup, and analysis workflows</li>
-                <li>Mode customization so different categories of work can be organized visually</li>
                 <li>Optional sign-in, friend features, and shared task summaries for connected use cases</li>
               </ul>
 

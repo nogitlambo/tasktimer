@@ -292,7 +292,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
     ctx.els.appPageTest2?.classList.toggle("appPageOn", page === "test2");
-    if (ctx.els.modeSwitch) (ctx.els.modeSwitch as HTMLElement).style.display = page === "tasks" ? "flex" : "none";
     ctx.els.footerTasksBtn?.classList.toggle("isOn", page === "tasks");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
@@ -438,13 +437,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function registerAppShellEvents() {
-    ctx.on(document as any, "click", (e: any) => {
-      const target = e?.target as HTMLElement | null;
-      const modeSwitch = ctx.els.modeSwitch as HTMLDetailsElement | null;
-      if (!target || !modeSwitch) return;
-      if (!target.closest?.("#modeSwitch")) modeSwitch.open = false;
-    });
-
     ctx.on(ctx.els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.footerDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })

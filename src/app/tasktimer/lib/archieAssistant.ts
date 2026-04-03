@@ -1,4 +1,4 @@
-import { loadCachedPreferences, loadHistory, loadTasks } from "./storage";
+import { loadHistory, loadTasks } from "./storage";
 import type { HistoryByTaskId, Task } from "./types";
 
 export type ArchieAssistantMode = "app_help" | "data_explainer" | "navigation_hint" | "unknown";
@@ -52,12 +52,6 @@ const DEFAULT_MODE_LABELS: Record<ArchieModeKey, string> = {
   mode3: "Mode 3",
 };
 
-const DEFAULT_MODE_ENABLED: Record<ArchieModeKey, boolean> = {
-  mode1: true,
-  mode2: true,
-  mode3: true,
-};
-
 function normalizeQuestion(value: string) {
   return String(value || "")
     .trim()
@@ -107,21 +101,8 @@ function normalizeCurrentAppPage(activePage: string): ArchieAppPage {
 }
 
 function getModeSettings() {
-  const prefs = loadCachedPreferences();
-  const rawSettings = prefs && typeof prefs === "object" ? (prefs as { modeSettings?: unknown }).modeSettings : null;
   const labels = { ...DEFAULT_MODE_LABELS };
-  const enabled = { ...DEFAULT_MODE_ENABLED };
-  if (rawSettings && typeof rawSettings === "object") {
-    (["mode1", "mode2", "mode3"] as ArchieModeKey[]).forEach((mode) => {
-      const row = (rawSettings as Record<string, unknown>)[mode];
-      if (!row || typeof row !== "object") return;
-      const label = String((row as { label?: unknown }).label || "").trim();
-      const nextEnabled = (row as { enabled?: unknown }).enabled;
-      if (label) labels[mode] = label;
-      if (typeof nextEnabled === "boolean") enabled[mode] = nextEnabled;
-    });
-  }
-  enabled.mode1 = true;
+  const enabled = { mode1: true, mode2: false, mode3: false };
   return { labels, enabled };
 }
 
@@ -267,7 +248,7 @@ function fallbackResponse(): ArchieAssistantResponse {
   return {
     mode: "unknown",
     message:
-      "I can help with modes, history, dashboard cards, current work, top history, most-used mode, or recent progress. Try asking what you are working on or how to view history.",
+      "I can help with history, dashboard cards, current work, top history, or recent progress. Try asking what you are working on or how to view history.",
   };
 }
 
@@ -279,8 +260,8 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         .map((mode) => context.modeLabels[mode]);
       return {
         mode: "app_help",
-        message: `Use Categories on the Tasks page to switch between ${humanJoin(activeModes)}. You can rename Category 2 and Category 3, or disable them, in Settings under Preferences.`,
-        suggestedAction: { kind: "openSettingsPane", label: "Open Preferences", pane: "preferences" },
+        message: `TaskTimer now uses a single task list. ${humanJoin(activeModes)} has been flattened into one shared workspace.`,
+        suggestedAction: { kind: "navigate", label: "Open Tasks", href: "/tasktimer" },
       };
     }
     if (intent.topic === "history") {
@@ -409,13 +390,13 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
       if (!totalMs) {
         return {
           mode: "data_explainer",
-          message: "I do not have enough completed history to compare your categories yet.",
+          message: "I do not have enough completed history to compare usage patterns yet.",
         };
       }
       return {
         mode: "data_explainer",
-        message: `${context.modeLabels[winner]} is your most-used category so far with ${formatElapsedShort(totalMs)} of logged history.`,
-        suggestedAction: { kind: "openSettingsPane", label: "Review Categories", pane: "preferences" },
+        message: `Your older task history is concentrated most heavily in ${context.modeLabels[winner]}, with ${formatElapsedShort(totalMs)} logged there.`,
+        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
       };
     }
     if (intent.topic === "recent_progress") {
@@ -483,7 +464,7 @@ export function resolveArchieAssistantResponse(question: string, activePage: str
     return {
       mode: "app_help",
       message:
-        "I can explain modes, history, dashboard cards, settings, current work, top history, most-used mode, and recent progress.",
+        "I can explain history, dashboard cards, settings, current work, top history, and recent progress.",
       suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasktimer/user-guide" },
     };
   }
