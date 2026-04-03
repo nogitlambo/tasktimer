@@ -691,55 +691,6 @@ export default function DesktopAppRail({
             )}
           </nav>
 
-          <div className="dashboardRailSectionLabel">Profile</div>
-          <section
-            className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
-            aria-label="Profile summary"
-          >
-            <div className="dashboardProfileHead dashboardRailProfileHead">
-              {profileAvatarSrc ? (
-                <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
-              ) : (
-                <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
-              )}
-              <div className="dashboardRailProfileIdentity">
-                <div className="dashboardProfileName">{profileLabel}</div>
-                <div className="dashboardTagRow dashboardRailProfileTags">
-                  <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
-                    View Profile
-                  </a>
-                  <button
-                    className="dashboardTag dashboardRailProfileTagLink"
-                    id="rewardsInfoOpenBtn"
-                    type="button"
-                    aria-label={`Open ${currentPlanLabel} subscription details`}
-                    title={`${currentPlanLabel} subscription details`}
-                  >
-                    {currentPlanLabel}
-                  </button>
-                </div>
-              </div>
-              <button
-                className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
-                type="button"
-                aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                onClick={() => setShowRankLadderModal(true)}
-              >
-                <RankThumbnail
-                  rankId={rewardProgress.currentRankId}
-                  storedThumbnailSrc={rankThumbnailSrc}
-                  className="dashboardRailRankBadgeShell"
-                  imageClassName="dashboardRailRankBadge"
-                  placeholderClassName="dashboardRailRankBadgePlaceholder"
-                  alt=""
-                  size={44}
-                  aria-hidden
-                />
-                <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
-              </button>
-            </div>
-          </section>
-
           <div className="desktopRailMascot">
             <div
               className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
@@ -803,6 +754,55 @@ export default function DesktopAppRail({
               </span>
             </button>
           </div>
+
+          <div className="dashboardRailSectionLabel">Profile</div>
+          <section
+            className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
+            aria-label="Profile summary"
+          >
+            <div className="dashboardProfileHead dashboardRailProfileHead">
+              {profileAvatarSrc ? (
+                <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+              ) : (
+                <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+              )}
+              <div className="dashboardRailProfileIdentity">
+                <div className="dashboardProfileName">{profileLabel}</div>
+                <div className="dashboardTagRow dashboardRailProfileTags">
+                  <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
+                    View Profile
+                  </a>
+                  <button
+                    className="dashboardTag dashboardRailProfileTagLink"
+                    id="rewardsInfoOpenBtn"
+                    type="button"
+                    aria-label={`Open ${currentPlanLabel} subscription details`}
+                    title={`${currentPlanLabel} subscription details`}
+                  >
+                    {currentPlanLabel}
+                  </button>
+                </div>
+              </div>
+              <button
+                className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                type="button"
+                aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                onClick={() => setShowRankLadderModal(true)}
+              >
+                <RankThumbnail
+                  rankId={rewardProgress.currentRankId}
+                  storedThumbnailSrc={rankThumbnailSrc}
+                  className="dashboardRailRankBadgeShell"
+                  imageClassName="dashboardRailRankBadge"
+                  placeholderClassName="dashboardRailRankBadgePlaceholder"
+                  alt=""
+                  size={44}
+                  aria-hidden
+                />
+                <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
+              </button>
+            </div>
+          </section>
 
         </aside>
       ) : null}
