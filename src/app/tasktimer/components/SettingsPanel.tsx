@@ -167,12 +167,14 @@ function shouldUseRedirectAuth() {
 }
 
 function SettingsNavTile({
+  id,
   icon,
   label,
   active,
   danger,
   onClick,
 }: {
+  id?: string;
   icon: string;
   label: string;
   active: boolean;
@@ -181,7 +183,8 @@ function SettingsNavTile({
 }) {
   return (
     <button
-      type="button"
+      type="button"
+      id={id}
       className={`menuItem settingsNavTile${active ? " isActive" : ""}${danger ? " isDanger" : ""}`}
       aria-pressed={active}
       onClick={onClick}
@@ -303,6 +306,8 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       { key: "preferences" as const, label: "Preferences", icon: "/Task_Settings.svg" },
       { key: "appearance" as const, label: "Appearance", icon: "/Appearance.svg" },
       { key: "notifications" as const, label: "Notifications", icon: "/Settings.svg" },
+      { key: "userGuide" as const, label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
+      { key: "feedback" as const, label: "Feedback", icon: "/Feedback.svg", id: "commandCenterFeedbackBtn" },
       { key: "data" as const, label: "Data", icon: "/History_Manager.svg" },
       { key: "about" as const, label: "About", icon: "/About.svg" },
     ],
@@ -1020,6 +1025,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             {navItems.map((item) => (
               <SettingsNavTile
                 key={item.key}
+                id={item.id}
                 icon={item.icon}
                 label={item.label}
                 active={activePane === item.key}

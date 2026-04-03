@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -55,14 +55,6 @@ type NavItem = {
   href: string;
 };
 
-type DesktopLinkItem = {
-  label: string;
-  ariaLabel: string;
-  iconSrc: string;
-  id: string;
-  href: string;
-};
-
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
@@ -108,23 +100,6 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
     href: "/tasktimer/settings",
-  },
-];
-
-const DESKTOP_SECONDARY_LINKS: DesktopLinkItem[] = [
-  {
-    label: "Help Center",
-    ariaLabel: "Help Center",
-    iconSrc: "/About.svg",
-    id: "commandCenterHelpCenterBtn",
-    href: "/tasktimer/user-guide",
-  },
-  {
-    label: "Feedback",
-    ariaLabel: "Feedback",
-    iconSrc: "/Feedback.svg",
-    id: "commandCenterFeedbackBtn",
-    href: "/tasktimer/feedback",
   },
 ];
 
@@ -238,27 +213,8 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   );
 }
 
-function renderDesktopLinkItem(item: DesktopLinkItem) {
-  return (
-    <a
-      key={item.id}
-      className="btn btn-ghost small dashboardRailMenuBtn"
-      id={item.id}
-      href={item.href}
-      aria-label={item.ariaLabel}
-    >
-      <AppImg className="dashboardRailMenuIconImage" src={item.iconSrc} alt="" aria-hidden="true" />
-      <span className="dashboardRailMenuLabel">{item.label}</span>
-    </a>
-  );
-}
-
 function isPrimaryDesktopNavItem(item: NavItem) {
   return item.page !== "settings";
-}
-
-function isSecondaryDesktopNavItem(item: NavItem) {
-  return item.page === "settings";
 }
 
 function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
@@ -337,10 +293,8 @@ export default function DesktopAppRail({
   const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const archieInputRef = useRef<HTMLInputElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -443,27 +397,6 @@ export default function DesktopAppRail({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showRankLadderModal]);
-
-  useEffect(() => {
-    if (!isProfileMenuOpen) return;
-    const onPointerDown = (event: MouseEvent | PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (profileMenuRef.current?.contains(target)) return;
-      setIsProfileMenuOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsProfileMenuOpen(false);
-    };
-    window.addEventListener("mousedown", onPointerDown);
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("mousedown", onPointerDown);
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isProfileMenuOpen]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
@@ -691,13 +624,7 @@ export default function DesktopAppRail({
 
   useEffect(() => () => clearArchieTimers(), [clearArchieTimers]);
 
-  const handleToggleProfileMenu = useCallback(() => {
-    setIsProfileMenuOpen((value) => !value);
-  }, []);
-
-  const handleCloseProfileMenu = useCallback(() => {
-    setIsProfileMenuOpen(false);
-  }, []);
+  const desktopSettingsItem = NAV_ITEMS.find((item) => item.page === "settings") || null;
 
   return (
     <>
@@ -711,6 +638,89 @@ export default function DesktopAppRail({
           </nav>
 
           <div className="desktopRailLower">
+            <div className="desktopRailProfileDock">
+              {desktopSettingsItem ? (
+                <div className="dashboardRailProfileMenuShell">
+                  {useClientNavButtons ? (
+                    <button
+                      className="btn btn-ghost small dashboardRailProfileMenuToggle"
+                      id={desktopSettingsItem.desktopId}
+                      type="button"
+                      aria-label={desktopSettingsItem.ariaLabel}
+                    >
+                      <AppImg
+                        className="dashboardRailProfileMenuToggleIcon"
+                        src={desktopSettingsItem.iconSrc}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ) : (
+                    <a
+                      className="btn btn-ghost small dashboardRailProfileMenuToggle"
+                      id={desktopSettingsItem.desktopId}
+                      href={desktopSettingsItem.href}
+                      aria-label={desktopSettingsItem.ariaLabel}
+                    >
+                      <AppImg
+                        className="dashboardRailProfileMenuToggleIcon"
+                        src={desktopSettingsItem.iconSrc}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    </a>
+                  )}
+                </div>
+              ) : null}
+              <section
+                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
+                aria-label="Profile summary"
+              >
+                <div className="dashboardProfileHead dashboardRailProfileHead">
+                  {profileAvatarSrc ? (
+                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                  ) : (
+                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+                  )}
+                  <div className="dashboardRailProfileIdentity">
+                    <div className="dashboardProfileName">{profileLabel}</div>
+                    <div className="dashboardTagRow dashboardRailProfileTags">
+                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
+                        View Profile
+                      </a>
+                      <button
+                        className="dashboardTag dashboardRailProfileTagLink"
+                        id="rewardsInfoOpenBtn"
+                        type="button"
+                        aria-label={`Open ${currentPlanLabel} subscription details`}
+                        title={`${currentPlanLabel} subscription details`}
+                      >
+                        {currentPlanLabel}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                    type="button"
+                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                    onClick={() => setShowRankLadderModal(true)}
+                  >
+                    <RankThumbnail
+                      rankId={rewardProgress.currentRankId}
+                      storedThumbnailSrc={rankThumbnailSrc}
+                      className="dashboardRailRankBadgeShell"
+                      imageClassName="dashboardRailRankBadge"
+                      placeholderClassName="dashboardRailRankBadgePlaceholder"
+                      alt=""
+                      size={44}
+                      aria-hidden
+                    />
+                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
+                  </button>
+                </div>
+              </section>
+            </div>
+
             <div className="desktopRailMascot">
               <div
                 className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
@@ -773,87 +783,6 @@ export default function DesktopAppRail({
                   <span className="desktopRailMascotEyes" />
                 </span>
               </button>
-            </div>
-
-            <div className="desktopRailProfileDock">
-              <div className="dashboardRailSectionLabel">Profile</div>
-              <section
-                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
-                aria-label="Profile summary"
-              >
-                <div className="dashboardRailProfileMenuShell" ref={profileMenuRef}>
-                  <button
-                    className={`btn btn-ghost small dashboardRailProfileMenuToggle${isProfileMenuOpen ? " isOpen" : ""}`}
-                    type="button"
-                    aria-label={isProfileMenuOpen ? "Close profile menu" : "Open profile menu"}
-                    aria-controls="desktopRailProfileMenu"
-                    aria-expanded={isProfileMenuOpen}
-                    onClick={handleToggleProfileMenu}
-                  >
-                    <span className="dashboardRailProfileMenuToggleChevron" aria-hidden="true" />
-                  </button>
-                  <div
-                    className={`dashboardRailProfileMenuDropdown${isProfileMenuOpen ? " isOpen" : ""}`}
-                    id="desktopRailProfileMenu"
-                    aria-hidden={isProfileMenuOpen ? "false" : "true"}
-                  >
-                    <nav className="dashboardRailNav dashboardRailProfileMenuNav" aria-label="Profile menu">
-                      {DESKTOP_SECONDARY_LINKS.map((item) =>
-                        cloneElement(renderDesktopLinkItem(item), {
-                          onClick: handleCloseProfileMenu,
-                        })
-                      )}
-                      {NAV_ITEMS.filter(isSecondaryDesktopNavItem).map((item) =>
-                        cloneElement(renderDesktopNavItem(item, activePage, useClientNavButtons), {
-                          onClick: handleCloseProfileMenu,
-                        })
-                      )}
-                    </nav>
-                  </div>
-                </div>
-                <div className="dashboardProfileHead dashboardRailProfileHead">
-                  {profileAvatarSrc ? (
-                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
-                  ) : (
-                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
-                  )}
-                  <div className="dashboardRailProfileIdentity">
-                    <div className="dashboardProfileName">{profileLabel}</div>
-                    <div className="dashboardTagRow dashboardRailProfileTags">
-                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
-                        View Profile
-                      </a>
-                      <button
-                        className="dashboardTag dashboardRailProfileTagLink"
-                        id="rewardsInfoOpenBtn"
-                        type="button"
-                        aria-label={`Open ${currentPlanLabel} subscription details`}
-                        title={`${currentPlanLabel} subscription details`}
-                      >
-                        {currentPlanLabel}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
-                    type="button"
-                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                    onClick={() => setShowRankLadderModal(true)}
-                  >
-                    <RankThumbnail
-                      rankId={rewardProgress.currentRankId}
-                      storedThumbnailSrc={rankThumbnailSrc}
-                      className="dashboardRailRankBadgeShell"
-                      imageClassName="dashboardRailRankBadge"
-                      placeholderClassName="dashboardRailRankBadgePlaceholder"
-                      alt=""
-                      size={44}
-                      aria-hidden
-                    />
-                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
-                  </button>
-                </div>
-              </section>
             </div>
           </div>
 
