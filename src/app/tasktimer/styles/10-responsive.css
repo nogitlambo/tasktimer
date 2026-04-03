@@ -2843,8 +2843,16 @@
     --desktop-rail-bubble-pad-left: clamp(10px, .75vw + 7px, 12px);
     --desktop-rail-bubble-title-size: clamp(11px, .82vw, 13px);
     --desktop-rail-bubble-input-size: clamp(11px, .78vw, 12px);
-    min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--desktop-shell-margin) - var(--desktop-shell-margin));
+    --desktop-rail-available-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - (var(--desktop-shell-margin) * 2));
+    display: grid;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    row-gap: var(--desktop-rail-stack-gap);
+    box-sizing: border-box;
+    min-height: var(--desktop-rail-available-height);
+    max-height: var(--desktop-rail-available-height);
+    height: var(--desktop-rail-available-height);
     padding: var(--desktop-rail-pad-top) var(--desktop-rail-pad-x) var(--desktop-rail-pad-bottom);
+    position: relative;
     overflow: hidden;
   }
 
@@ -2852,37 +2860,69 @@
     min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--desktop-shell-margin) - var(--desktop-shell-margin));
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail > .dashboardRailSectionLabel,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail > .dashboardRailSectionLabel{
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailTopSection,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMiddleSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMiddleSection,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBottomSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailBottomSection{
+    min-height: 0;
+    width: 100%;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailTopSection{
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: clamp(4px, .5vh, 8px);
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMiddleSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMiddleSection,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBottomSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailBottomSection{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMiddleSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMiddleSection{
+    grid-row: 3;
+    justify-content: flex-end;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBottomSection,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailBottomSection{
+    grid-row: 4;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection > .dashboardRailSectionLabel,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailTopSection > .dashboardRailSectionLabel{
     margin: 0 0 2px;
     font-size: var(--desktop-rail-label-size);
     letter-spacing: var(--desktop-rail-label-spacing);
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail > .desktopRailLower,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail > .desktopRailLower{
-    margin-top: auto;
-    display: grid;
-    gap: clamp(6px, .8vh, 10px);
-    padding-bottom: clamp(10px, 1.1vh, 16px);
-    width: 100%;
-    min-width: 0;
-    align-self: stretch;
-    justify-self: stretch;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileDock,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileDock{
     display: grid;
     gap: 2px;
+    margin-top: 0;
     width: 100%;
     min-width: 0;
+    align-self: stretch;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail > .dashboardRailNav,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail > .dashboardRailNav{
-    margin: 0 0 var(--desktop-rail-stack-gap);
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection > .dashboardRailNav,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailTopSection > .dashboardRailNav{
+    margin: 0;
     gap: var(--desktop-rail-nav-gap);
+    min-height: 0;
+    align-content: start;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
@@ -2909,7 +2949,7 @@
     padding: var(--desktop-rail-profile-padding) var(--desktop-rail-profile-padding) calc(var(--desktop-rail-profile-padding) - 2px) calc(var(--desktop-rail-profile-padding) + 10px) !important;
     position: relative;
     overflow: visible;
-    margin-bottom: clamp(12px, 1.3vh, 20px);
+    margin-bottom: 0;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileMenuShell,
@@ -3093,7 +3133,10 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascot,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascot{
     margin-top: 0;
-    padding: clamp(10px, 1vh, 16px) 0 var(--desktop-rail-mascot-pad-bottom) var(--desktop-rail-mascot-pad-left);
+    padding: var(--desktop-rail-mascot-pad-top) 0 0 var(--desktop-rail-mascot-pad-left);
+    margin-bottom: 0;
+    transform: translateY(6px);
+    align-self: flex-start;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,

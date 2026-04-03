@@ -213,10 +213,6 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   );
 }
 
-function isPrimaryDesktopNavItem(item: NavItem) {
-  return item.page !== "settings";
-}
-
 function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
   const isActive = activePage === item.page;
   const commonProps = {
@@ -624,103 +620,20 @@ export default function DesktopAppRail({
 
   useEffect(() => () => clearArchieTimers(), [clearArchieTimers]);
 
-  const desktopSettingsItem = NAV_ITEMS.find((item) => item.page === "settings") || null;
-
   return (
     <>
       {showDesktopRail ? (
         <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
-          <div className="dashboardRailSectionLabel">Modules</div>
-          <nav className="dashboardRailNav">
-            {NAV_ITEMS.filter(isPrimaryDesktopNavItem).map((item) =>
-              renderDesktopNavItem(item, activePage, useClientNavButtons)
-            )}
-          </nav>
+          <div className="desktopRailTopSection">
+            <div className="dashboardRailSectionLabel">Modules</div>
+            <nav className="dashboardRailNav">
+              {NAV_ITEMS.map((item) =>
+                renderDesktopNavItem(item, activePage, useClientNavButtons)
+              )}
+            </nav>
+          </div>
 
-          <div className="desktopRailLower">
-            <div className="desktopRailProfileDock">
-              {desktopSettingsItem ? (
-                <div className="dashboardRailProfileMenuShell">
-                  {useClientNavButtons ? (
-                    <button
-                      className="btn btn-ghost small dashboardRailProfileMenuToggle"
-                      id={desktopSettingsItem.desktopId}
-                      type="button"
-                      aria-label={desktopSettingsItem.ariaLabel}
-                    >
-                      <AppImg
-                        className="dashboardRailProfileMenuToggleIcon"
-                        src={desktopSettingsItem.iconSrc}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    </button>
-                  ) : (
-                    <a
-                      className="btn btn-ghost small dashboardRailProfileMenuToggle"
-                      id={desktopSettingsItem.desktopId}
-                      href={desktopSettingsItem.href}
-                      aria-label={desktopSettingsItem.ariaLabel}
-                    >
-                      <AppImg
-                        className="dashboardRailProfileMenuToggleIcon"
-                        src={desktopSettingsItem.iconSrc}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    </a>
-                  )}
-                </div>
-              ) : null}
-              <section
-                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
-                aria-label="Profile summary"
-              >
-                <div className="dashboardProfileHead dashboardRailProfileHead">
-                  {profileAvatarSrc ? (
-                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
-                  ) : (
-                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
-                  )}
-                  <div className="dashboardRailProfileIdentity">
-                    <div className="dashboardProfileName">{profileLabel}</div>
-                    <div className="dashboardTagRow dashboardRailProfileTags">
-                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
-                        View Profile
-                      </a>
-                      <button
-                        className="dashboardTag dashboardRailProfileTagLink"
-                        id="rewardsInfoOpenBtn"
-                        type="button"
-                        aria-label={`Open ${currentPlanLabel} subscription details`}
-                        title={`${currentPlanLabel} subscription details`}
-                      >
-                        {currentPlanLabel}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
-                    type="button"
-                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                    onClick={() => setShowRankLadderModal(true)}
-                  >
-                    <RankThumbnail
-                      rankId={rewardProgress.currentRankId}
-                      storedThumbnailSrc={rankThumbnailSrc}
-                      className="dashboardRailRankBadgeShell"
-                      imageClassName="dashboardRailRankBadge"
-                      placeholderClassName="dashboardRailRankBadgePlaceholder"
-                      alt=""
-                      size={44}
-                      aria-hidden
-                    />
-                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
-                  </button>
-                </div>
-              </section>
-            </div>
-
+          <div className="desktopRailMiddleSection">
             <div className="desktopRailMascot">
               <div
                 className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
@@ -783,6 +696,58 @@ export default function DesktopAppRail({
                   <span className="desktopRailMascotEyes" />
                 </span>
               </button>
+            </div>
+          </div>
+
+          <div className="desktopRailBottomSection">
+            <div className="desktopRailProfileDock">
+              <section
+                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
+                aria-label="Profile summary"
+              >
+                <div className="dashboardProfileHead dashboardRailProfileHead">
+                  {profileAvatarSrc ? (
+                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                  ) : (
+                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+                  )}
+                  <div className="dashboardRailProfileIdentity">
+                    <div className="dashboardProfileName">{profileLabel}</div>
+                    <div className="dashboardTagRow dashboardRailProfileTags">
+                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
+                        View Profile
+                      </a>
+                      <button
+                        className="dashboardTag dashboardRailProfileTagLink"
+                        id="rewardsInfoOpenBtn"
+                        type="button"
+                        aria-label={`Open ${currentPlanLabel} subscription details`}
+                        title={`${currentPlanLabel} subscription details`}
+                      >
+                        {currentPlanLabel}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                    type="button"
+                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                    onClick={() => setShowRankLadderModal(true)}
+                  >
+                    <RankThumbnail
+                      rankId={rewardProgress.currentRankId}
+                      storedThumbnailSrc={rankThumbnailSrc}
+                      className="dashboardRailRankBadgeShell"
+                      imageClassName="dashboardRailRankBadge"
+                      placeholderClassName="dashboardRailRankBadgePlaceholder"
+                      alt=""
+                      size={44}
+                      aria-hidden
+                    />
+                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
+                  </button>
+                </div>
+              </section>
             </div>
           </div>
 
