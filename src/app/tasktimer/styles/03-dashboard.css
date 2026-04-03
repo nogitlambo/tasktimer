@@ -232,15 +232,11 @@
 .dashboardPanelMenuSectionBody{
   min-width:0;
 }
-.dashboardPanelMenuCategoryList{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
 .dashboardPanelMenuPanelGrid{
   display:grid;
-  grid-template-columns:repeat(4, minmax(0, 1fr));
-  gap:10px 12px;
+  grid-template-columns:repeat(auto-fit, minmax(112px, 112px));
+  justify-content:start;
+  gap:12px;
 }
 .dashboardPanelMenuSectionAction{
   border:0;
@@ -258,11 +254,6 @@
 .dashboardPanelMenuSectionAction:focus-visible{
   color:rgba(214,246,255,.98);
   text-decoration:underline;
-}
-.dashboardPanelMenuDivider{
-  height:1px;
-  margin:2px 4px;
-  background:rgba(121,226,255,.16);
 }
 .dashboardHeroPanel[hidden],
 .dashboardCard[hidden]{
@@ -303,10 +294,10 @@
   min-height:0;
   aspect-ratio:1 / 1;
   flex-direction:column;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  padding:10px 10px 12px;
   background:rgba(255,255,255,.04);
   box-shadow: inset 0 0 0 1px rgba(121,226,255,.16);
 }
@@ -315,35 +306,38 @@
   box-shadow: inset 0 0 0 1px rgba(121,226,255,.28);
 }
 .dashboardPanelMenuTile > input{
+  position:absolute;
+  top:10px;
+  right:10px;
   margin:0;
-  align-self:flex-start;
+  transform:scale(1);
+  transform-origin:top right;
 }
 .dashboardPanelMenuTile > span{
   flex:1 1 auto;
   display:flex;
-  align-items:flex-end;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
   width:100%;
   min-width:0;
-  font-size:10px;
-  line-height:1.25;
+  font-size:11px;
+  line-height:1.1;
+  text-align:center;
+  gap:8px;
+}
+.dashboardPanelMenuTile > span::before{
+  content:"";
+  width:36px;
+  height:36px;
+  flex:0 0 auto;
+  display:block;
+  background: center / contain no-repeat url("/Dashboard.svg");
+  filter: drop-shadow(0 0 6px rgba(53,232,255,.22));
+  opacity:.9;
 }
 .dashboardPanelMenuTile > input:checked + span{
   color:rgba(214,246,255,.98);
-}
-@media (max-width: 1100px){
-  .dashboardPanelMenuPanelGrid{
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 820px){
-  .dashboardPanelMenuPanelGrid{
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 560px){
-  .dashboardPanelMenuPanelGrid{
-    grid-template-columns:1fr;
-  }
 }
 .dashboardFlipBackBtn{
   width:36px;

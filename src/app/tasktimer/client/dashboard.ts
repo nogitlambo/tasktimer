@@ -127,13 +127,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return out;
   }
 
-  function getDashboardCategoryMeta() {
-    return getVisibleDashboardModes().map((mode) => ({
-      mode,
-      label: ctx.getModeLabel(mode),
-    }));
-  }
-
   function syncDashboardPanelMenuState() {
     const menuList = els.dashboardPanelMenuList;
     if (!menuList) return;
@@ -153,16 +146,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       bulkToggleBtn.setAttribute("aria-label", allSelected ? "Clear all dashboard panels" : "Select all dashboard panels");
       bulkToggleBtn.hidden = !meta.length;
     }
-    const categoryMeta = getDashboardCategoryMeta();
-    const includedCount = categoryMeta.reduce((count, row) => (isDashboardModeIncluded(row.mode) ? count + 1 : count), 0);
-    Array.from(menuList.querySelectorAll("input[data-dashboard-category-id]")).forEach((node) => {
-      const checkbox = node as HTMLInputElement;
-      const modeAttr = String(checkbox.getAttribute("data-dashboard-category-id") || "").trim();
-      const mode = modeAttr === "mode2" || modeAttr === "mode3" ? modeAttr : "mode1";
-      const isIncluded = isDashboardModeIncluded(mode);
-      checkbox.checked = isIncluded;
-      checkbox.disabled = isIncluded && includedCount <= 1;
-    });
     ctx.syncDashboardRefreshButtonUi();
   }
 
@@ -170,9 +153,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const menuList = els.dashboardPanelMenuList;
     if (!menuList) return;
     const meta = collectDashboardPanelMeta();
-    const categories = getDashboardCategoryMeta();
     menuList.innerHTML = "";
-    if (!categories.length && !meta.length) return;
+    if (!meta.length) return;
     const appendSectionBody = (className?: string) => {
       const body = document.createElement("div");
       body.className = className ? `dashboardPanelMenuSectionBody ${className}` : "dashboardPanelMenuSectionBody";
@@ -195,44 +177,20 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       }
       menuList.appendChild(heading);
     };
-    if (categories.length) {
-      appendSectionTitle("Categories");
-      const categoryBody = appendSectionBody("dashboardPanelMenuCategoryList");
-      categories.forEach(({ mode, label }) => {
-        const row = document.createElement("label");
-        row.className = "dashboardPanelMenuItem";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.setAttribute("data-dashboard-category-id", mode);
-        const text = document.createElement("span");
-        text.textContent = label;
-        row.appendChild(input);
-        row.appendChild(text);
-        categoryBody.appendChild(row);
-      });
-    }
-    if (meta.length) {
-      if (categories.length) {
-        const divider = document.createElement("div");
-        divider.className = "dashboardPanelMenuDivider";
-        divider.setAttribute("aria-hidden", "true");
-        menuList.appendChild(divider);
-      }
-      appendSectionTitle("Panels", { bulkToggle: true });
-      const panelBody = appendSectionBody("dashboardPanelMenuPanelGrid");
-      meta.forEach(({ panelId, label }) => {
-        const row = document.createElement("label");
-        row.className = "dashboardPanelMenuItem dashboardPanelMenuTile";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.setAttribute("data-dashboard-panel-id", panelId);
-        const text = document.createElement("span");
-        text.textContent = label;
-        row.appendChild(input);
-        row.appendChild(text);
-        panelBody.appendChild(row);
-      });
-    }
+    appendSectionTitle("Panels", { bulkToggle: true });
+    const panelBody = appendSectionBody("dashboardPanelMenuPanelGrid");
+    meta.forEach(({ panelId, label }) => {
+      const row = document.createElement("label");
+      row.className = "dashboardPanelMenuItem dashboardPanelMenuTile";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.setAttribute("data-dashboard-panel-id", panelId);
+      const text = document.createElement("span");
+      text.textContent = label;
+      row.appendChild(input);
+      row.appendChild(text);
+      panelBody.appendChild(row);
+    });
     syncDashboardPanelMenuState();
   }
 

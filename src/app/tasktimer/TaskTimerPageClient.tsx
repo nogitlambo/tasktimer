@@ -116,7 +116,7 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                           className="btn btn-ghost small dashboardPanelMenuBtn"
                           id="dashboardPanelMenuBtn"
                           type="button"
-                          aria-label="Customize dashboard categories and panels"
+                          aria-label="Customize dashboard panels"
                           aria-expanded="false"
                         >
                           <span className="dashboardPanelMenuIcon" aria-hidden="true" />
@@ -597,9 +597,8 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                         <section className="dashboardBackMenuCard" aria-label="Dashboard customization">
                           <div className="dashboardBackMenuHead">
                             <div className="dashboardCardTitle">Customize Dashboard</div>
-                            <p className="modalSubtext">Choose which categories and panels appear on your dashboard.</p>
                           </div>
-                          <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard categories and panels" />
+                          <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels" />
                         </section>
                       </div>
                     </div>

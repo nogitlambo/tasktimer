@@ -962,10 +962,12 @@
     width: min(360px, calc(100dvw - var(--safe-left) - var(--safe-right) - 16px));
     min-width: 220px;
     max-width: calc(100dvw - var(--safe-left) - var(--safe-right) - 16px);
-    max-height: min(65dvh, 360px);
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 84px);
     overflow-x: hidden;
     overflow-y: auto;
     box-sizing: border-box;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -2238,8 +2240,13 @@
     width: auto;
     min-width: 0;
     max-width: none;
-    max-height: min(50dvh, 280px);
+    bottom: calc(var(--mobile-footer-height, 72px) + var(--safe-bottom) + 12px);
+    max-height: none;
     z-index: 40;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChart{
     height: 196px;
@@ -2373,17 +2380,17 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: calc(100% - 2px);
+    bottom: calc(100% + 8px);
     z-index: 4;
     width: auto;
     max-width: none;
-    min-height: 172px;
+    min-height: 215px;
     padding: 14px 24px 12px 14px;
     border: 0;
     background: transparent;
     color: #ecfbff;
     font-family: var(--font-tight);
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: .04em;
     line-height: 1.35;
@@ -2499,7 +2506,7 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitle,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitle{
     color: #f3fbff;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 400;
     letter-spacing: .03em;
     line-height: 1.05;
@@ -2581,7 +2588,7 @@
     background: transparent;
     color: rgba(207,233,243,.62);
     font-family: var(--font-tight);
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: .03em;
     line-height: 1.2;
@@ -2836,13 +2843,13 @@
     --desktop-rail-mascot-pad-top: clamp(2px, .35vh, 8px);
     --desktop-rail-mascot-pad-bottom: clamp(4px, .9vh, 10px);
     --desktop-rail-mascot-pad-left: clamp(2px, .35vw, 4px);
-    --desktop-rail-bubble-min-height: clamp(96px, 16vh, 136px);
+    --desktop-rail-bubble-min-height: clamp(120px, 20vh, 170px);
     --desktop-rail-bubble-pad-top: clamp(8px, .7vh, 12px);
     --desktop-rail-bubble-pad-right: clamp(12px, 1vw + 8px, 18px);
     --desktop-rail-bubble-pad-bottom: clamp(8px, .65vh, 10px);
     --desktop-rail-bubble-pad-left: clamp(10px, .75vw + 7px, 12px);
-    --desktop-rail-bubble-title-size: clamp(11px, .82vw, 13px);
-    --desktop-rail-bubble-input-size: clamp(11px, .78vw, 12px);
+    --desktop-rail-bubble-title-size: clamp(14px, 1.03vw, 16px);
+    --desktop-rail-bubble-input-size: clamp(14px, .98vw, 15px);
     --desktop-rail-available-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - (var(--desktop-shell-margin) * 2));
     display: grid;
     grid-template-rows: repeat(4, minmax(0, 1fr));
@@ -3185,12 +3192,13 @@
     --desktop-rail-mascot-lift: clamp(-22px, -2.5vh, -12px);
     --desktop-rail-mascot-pad-top: 2px;
     --desktop-rail-mascot-pad-bottom: clamp(2px, .7vh, 8px);
-    --desktop-rail-bubble-min-height: clamp(88px, 14vh, 116px);
+    --desktop-rail-bubble-min-height: clamp(110px, 17.5vh, 145px);
     --desktop-rail-bubble-pad-top: 8px;
     --desktop-rail-bubble-pad-right: 14px;
     --desktop-rail-bubble-pad-bottom: 8px;
     --desktop-rail-bubble-pad-left: 10px;
-    --desktop-rail-bubble-title-size: 11px;
+    --desktop-rail-bubble-title-size: 14px;
+    --desktop-rail-bubble-input-size: 14px;
   }
 }
 
@@ -3228,13 +3236,13 @@
     --desktop-rail-mascot-lift: -14px;
     --desktop-rail-mascot-pad-top: 0;
     --desktop-rail-mascot-pad-bottom: 2px;
-    --desktop-rail-bubble-min-height: clamp(78px, 11.5vh, 98px);
+    --desktop-rail-bubble-min-height: clamp(98px, 14.4vh, 123px);
     --desktop-rail-bubble-pad-top: 7px;
     --desktop-rail-bubble-pad-right: 12px;
     --desktop-rail-bubble-pad-bottom: 7px;
     --desktop-rail-bubble-pad-left: 9px;
-    --desktop-rail-bubble-title-size: 10px;
-    --desktop-rail-bubble-input-size: 10px;
+    --desktop-rail-bubble-title-size: 13px;
+    --desktop-rail-bubble-input-size: 13px;
   }
 }
 

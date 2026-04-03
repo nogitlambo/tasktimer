@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
@@ -307,7 +307,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       { key: "appearance" as const, label: "Appearance", icon: "/Appearance.svg" },
       { key: "notifications" as const, label: "Notifications", icon: "/Settings.svg" },
       { key: "userGuide" as const, label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
-      { key: "feedback" as const, label: "Feedback", icon: "/Feedback.svg", id: "commandCenterFeedbackBtn" },
       { key: "data" as const, label: "Data", icon: "/History_Manager.svg" },
       { key: "about" as const, label: "About", icon: "/About.svg" },
     ],
@@ -1143,7 +1142,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                                     aria-label="Save username"
                                     title="Save username"
                                   >
-                                    ✓
+                                    âœ“
                                   </button>
                                   <button
                                     className="iconBtn settingsAccountAliasAction settingsAccountAliasActionCancel"
@@ -1153,7 +1152,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                                     aria-label="Cancel username edit"
                                     title="Cancel username edit"
                                   >
-                                    ✕
+                                    âœ•
                                   </button>
                                 </div>
                               </>
@@ -1169,7 +1168,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
                                   aria-label="Edit username"
                                   title="Edit username"
                                 >
-                                  ✎
+                                  âœŽ
                                 </button>
                               </>
                             )}
@@ -1705,10 +1704,20 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             title="Support"
             subtitle="Open the Timebase user guide and walkthrough content."
           >
-            <div className="settingsActionGrid settingsDataTileGrid">
-              <button className="menuItem settingsDataTile" data-menu="howto" type="button">
-                <MenuIconLabel icon="/User_Guide.svg" label="Open User Guide" />
-              </button>
+            <div className="settingsActionGrid settingsDataTileGrid">
+
+              <button className="menuItem settingsDataTile" data-menu="howto" type="button">
+
+                <MenuIconLabel icon="/User_Guide.svg" label="Open User Guide" />
+
+              </button>
+
+              <a className="menuItem settingsDataTile" id="commandCenterFeedbackBtn" href="/tasktimer/feedback" aria-label="Feedback">
+
+                <MenuIconLabel icon="/Feedback.svg" label="Feedback" />
+
+              </a>
+
             </div>
           </SettingsDetailPane>
 
@@ -1893,3 +1902,5 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     </div>
   );
 }
+
+
