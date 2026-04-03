@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppImg from "@/components/AppImg";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
@@ -14,16 +14,28 @@ import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import SignedInHeaderBadge from "./components/SignedInHeaderBadge";
 import DesktopAppRail from "./components/DesktopAppRail";
+import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
+import { subscribeCachedPreferences } from "./lib/storage";
 import { initTaskTimerClient } from "./tasktimerClient";
 import "./tasktimer.css";
 
 type AppPage = "tasks" | "dashboard" | "test2";
 
 export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { initialAppPage?: AppPage }) {
+  const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
+
   useEffect(() => {
     const { destroy } = initTaskTimerClient(initialAppPage);
     return () => destroy();
   }, [initialAppPage]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeCachedPreferences((prefs) => {
+      setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <>
@@ -128,6 +140,34 @@ export default function TaskTimerPageClient({ initialAppPage = "tasks" }: { init
                       </div>
                       <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
                       <div className="dashboardStreakMeta" id="dashboardStreakMeta">Complete a daily goal to start a streak</div>
+                    </section>
+
+                    <section className="dashboardCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
+                      <div className="dashboardCardTitle">XP Progress</div>
+                      <div className="dashboardXpProgressValue">
+                        <strong>{rewardsHeader.totalXp} XP</strong>
+                      </div>
+                      <div
+                        className="dashboardXpProgressTrack rewardSegmentedBar"
+                        role="progressbar"
+                        aria-label="XP progress toward the next rank"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                      >
+                        <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                        <span className="rewardSegmentedBarTrack" aria-hidden="true">
+                          <span className="rewardSegmentedBarSegment" />
+                          <span className="rewardSegmentedBarSegment" />
+                          <span className="rewardSegmentedBarSegment" />
+                          <span className="rewardSegmentedBarSegment" />
+                          <span className="rewardSegmentedBarSegment" />
+                        </span>
+                      </div>
+                      <div className="dashboardXpProgressMeta">
+                        <span>{rewardsHeader.progressLabel}</span>
+                        <span>{rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}</span>
+                      </div>
                     </section>
 
                     <section

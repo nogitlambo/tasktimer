@@ -738,30 +738,6 @@ export default function DesktopAppRail({
                 <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
               </button>
             </div>
-            <div className="dashboardProfileGrid dashboardRailProfileGrid">
-              <div className="dashboardProfileMetric dashboardRailProfileXpMetric" aria-label="XP progress">
-                <div className="dashboardRailProfileXpHead">
-                  <span>XP Progress</span>
-                  <strong>{rewardsHeader.totalXp} XP</strong>
-                </div>
-                <div className="dashboardRailProfileXpTrack rewardSegmentedBar" aria-hidden="true">
-                  <div className="dashboardRailProfileXpFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                  <span className="rewardSegmentedBarTrack">
-                    <span className="rewardSegmentedBarSegment" />
-                    <span className="rewardSegmentedBarSegment" />
-                    <span className="rewardSegmentedBarSegment" />
-                    <span className="rewardSegmentedBarSegment" />
-                    <span className="rewardSegmentedBarSegment" />
-                  </span>
-                </div>
-                <div className="dashboardRailProfileXpMeta">
-                  <span>{rewardsHeader.progressLabel}</span>
-                  <span>
-                    {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}
-                  </span>
-                </div>
-              </div>
-            </div>
           </section>
 
           <div className="desktopRailMascot">
