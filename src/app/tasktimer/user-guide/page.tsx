@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import UserGuideScreen from "../components/UserGuideScreen";
-import { initTaskTimerClient } from "../tasktimerClient";
+import { initTaskTimerUserGuideClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function UserGuidePage() {
@@ -41,7 +41,7 @@ export default function UserGuidePage() {
   };
 
   useEffect(() => {
-    const { destroy } = initTaskTimerClient();
+    const { destroy } = initTaskTimerUserGuideClient();
     return () => destroy();
   }, []);
 

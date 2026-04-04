@@ -78,6 +78,15 @@ function describeError(error: unknown): Record<string, unknown> {
   return { value: error };
 }
 
+function isPermissionDeniedError(error: unknown): boolean {
+  const described = describeError(error);
+  const code = String(described.code || "").trim().toLowerCase();
+  const message = String(described.message || "").trim().toLowerCase();
+  return code === "permission-denied" || message.includes("missing or insufficient permissions");
+}
+
+const userRootPermissionWarnedUids = new Set<string>();
+
 function dbOrNull() {
   return getFirebaseFirestoreClient();
 }
@@ -188,6 +197,45 @@ function pickSupportedUserRootFields(data: Record<string, unknown> | null): Reco
       next[key] = value;
     }
   }
+  return next;
+}
+
+function isTimestampLike(value: unknown): boolean {
+  return !!value && typeof value === "object" && typeof (value as { toMillis?: unknown }).toMillis === "function";
+}
+
+function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | null): Record<string, unknown> {
+  const source = pickSupportedUserRootFields(data);
+  const next: Record<string, unknown> = {};
+
+  if (typeof source.email === "string") next.email = source.email;
+  if (
+    source.displayName === null ||
+    typeof source.displayName === "string"
+  ) {
+    next.displayName = source.displayName;
+  }
+  if (source.username === null || typeof source.username === "string") next.username = source.username;
+  if (source.usernameKey === null || typeof source.usernameKey === "string") next.usernameKey = source.usernameKey;
+  if (typeof source.avatarId === "string") next.avatarId = source.avatarId;
+  if (source.avatarCustomSrc === null || typeof source.avatarCustomSrc === "string") next.avatarCustomSrc = source.avatarCustomSrc;
+  if (source.googlePhotoUrl === null || typeof source.googlePhotoUrl === "string") next.googlePhotoUrl = source.googlePhotoUrl;
+  if (source.rankThumbnailSrc === null || typeof source.rankThumbnailSrc === "string") next.rankThumbnailSrc = source.rankThumbnailSrc;
+  if (source.rewardCurrentRankId === null || typeof source.rewardCurrentRankId === "string") {
+    next.rewardCurrentRankId = source.rewardCurrentRankId;
+  }
+  if (Number.isInteger(source.rewardTotalXp)) next.rewardTotalXp = source.rewardTotalXp;
+  if (source.plan === "free" || source.plan === "pro") next.plan = source.plan;
+  if (isTimestampLike(source.planUpdatedAt)) next.planUpdatedAt = source.planUpdatedAt;
+  if (typeof source.stripeCustomerId === "string") next.stripeCustomerId = source.stripeCustomerId;
+  if (typeof source.stripeSubscriptionId === "string") next.stripeSubscriptionId = source.stripeSubscriptionId;
+  if (typeof source.stripePriceId === "string") next.stripePriceId = source.stripePriceId;
+  if (typeof source.stripeSubscriptionStatus === "string") next.stripeSubscriptionStatus = source.stripeSubscriptionStatus;
+  if (isTimestampLike(source.stripeSyncedAt)) next.stripeSyncedAt = source.stripeSyncedAt;
+  if (isTimestampLike(source.createdAt)) next.createdAt = source.createdAt;
+  if (isTimestampLike(source.updatedAt)) next.updatedAt = source.updatedAt;
+  if (Number.isInteger(source.schemaVersion)) next.schemaVersion = source.schemaVersion;
+
   return next;
 }
 
@@ -585,7 +633,7 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
 
   try {
     const payload = {
-      ...pickSupportedUserRootFields(existingData),
+      ...sanitizeUserRootFieldsForClientWrite(existingData),
       schemaVersion: 1,
       plan: existingPlan,
       ...(authEmail ? { email: authEmail } : {}),
@@ -608,6 +656,21 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
 
     await upsertUserEmailLookup(uid);
   } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      if (process.env.NODE_ENV !== "production") {
+        const warnKey = String(uid || "").trim();
+        if (!userRootPermissionWarnedUids.has(warnKey)) {
+          userRootPermissionWarnedUids.add(warnKey);
+          console.warn("[tasktimer-cloud] User root write denied by current rules; continuing without root upsert", {
+            uid,
+            hasEmail: !!authEmail,
+            patchKeys: Object.keys(patch || {}),
+            error: describeError(error),
+          });
+        }
+      }
+      return;
+    }
     if (process.env.NODE_ENV !== "production") {
       console.error("[tasktimer-cloud] Failed to upsert user root", {
         uid,
@@ -622,7 +685,11 @@ async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
 
 export async function ensureUserProfileIndex(uid: string): Promise<void> {
   if (!uid) return;
-  await upsertUserEmailLookup(uid);
+  try {
+    await upsertUserEmailLookup(uid);
+  } catch {
+    // Email lookup bootstrap is best-effort and should not block workspace hydration.
+  }
   try {
     await upsertUserRoot(uid);
   } catch {
@@ -977,7 +1044,18 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
   const ref = preferencesDoc(uid);
   if (!ref) return;
   const normalizedRewards = normalizeRewardProgress(prefs.rewards || DEFAULT_REWARD_PROGRESS);
-  await upsertUserRoot(uid);
+  try {
+    await upsertUserRoot(uid);
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[tasktimer-cloud] Proceeding with preferences save despite user root upsert failure", {
+          uid,
+          error: describeError(error),
+        });
+      }
+    }
+  }
   await setDoc(
     ref,
     {
@@ -989,15 +1067,27 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
     },
     { merge: true }
   );
-  await setDoc(
-    usersDoc(uid)!,
-    {
-      rewardCurrentRankId: normalizedRewards.currentRankId,
-      rewardTotalXp: normalizedRewards.totalXp,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  const rootRef = usersDoc(uid);
+  if (!rootRef) return;
+  try {
+    await setDoc(
+      rootRef,
+      {
+        rewardCurrentRankId: normalizedRewards.currentRankId,
+        rewardTotalXp: normalizedRewards.totalXp,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) throw error;
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping reward mirror update on user root due to current rules", {
+        uid,
+        error: describeError(error),
+      });
+    }
+  }
 }
 
 export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | null> {

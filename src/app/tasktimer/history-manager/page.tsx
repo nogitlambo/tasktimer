@@ -3,12 +3,12 @@
 import { useEffect } from "react";
 import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import HistoryManagerScreen from "../components/HistoryManagerScreen";
-import { initTaskTimerClient } from "../tasktimerClient";
+import { initTaskTimerHistoryManagerClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function HistoryManagerPage() {
   useEffect(() => {
-    const { destroy } = initTaskTimerClient();
+    const { destroy } = initTaskTimerHistoryManagerClient();
     return () => destroy();
   }, []);
 

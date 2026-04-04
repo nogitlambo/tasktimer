@@ -326,12 +326,13 @@ body[data-theme="purple"] .dashboardRefreshBusyArrowGraphic{
   }
 }
 /* Final Tasks-page override: make + Add Task span full panel width. */
-#app[aria-label="TaskLaunch App"] #appPageTasks .controls{
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{
   width:100% !important;
   display:grid !important;
   grid-template-columns:minmax(0, 1fr);
   justify-self:stretch !important;
   box-sizing:border-box;
+  margin-top: 12px;
 }
 /* Final Tasks-page override: make mode switches justify and span full width. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .topbar{

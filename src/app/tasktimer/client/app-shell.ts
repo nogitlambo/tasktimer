@@ -280,26 +280,45 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function applyAppPage(page: AppPage, opts?: TaskTimerAppPageOptions) {
-    if (ctx.getCurrentAppPage() === "tasks" && page !== "tasks") ctx.resetAllOpenHistoryChartSelections();
-    if (page !== "tasks") ctx.clearTaskFlipStates();
-    if (page !== "dashboard" && ctx.getDashboardMenuFlipped()) {
+    const hasTasksPage = !!ctx.els.appPageTasks;
+    const hasDashboardPage = !!ctx.els.appPageDashboard;
+    const hasFriendsPage = !!ctx.els.appPageTest2;
+
+    const targetPageMissing =
+      (page === "tasks" && !hasTasksPage) ||
+      (page === "dashboard" && !hasDashboardPage) ||
+      (page === "test2" && !hasFriendsPage);
+
+    if (targetPageMissing) {
+      if (isTaskTimerMainAppPath(normalizedPathname())) {
+        if (opts?.pushNavStack) pushCurrentScreenToNavStack();
+        window.location.href = appPathForPage(page);
+      }
+      return;
+    }
+
+    const nextPage: AppPage = page;
+
+    if (ctx.getCurrentAppPage() === "tasks" && nextPage !== "tasks") ctx.resetAllOpenHistoryChartSelections();
+    if (nextPage !== "tasks") ctx.clearTaskFlipStates();
+    if (nextPage !== "dashboard" && ctx.getDashboardMenuFlipped()) {
       ctx.setDashboardMenuFlipped(false);
       ctx.syncDashboardMenuFlipUi();
     }
-    ctx.setCurrentAppPage(page);
-    if (opts?.pushNavStack) pushCurrentScreenToNavStack(page);
-    document.body.setAttribute("data-app-page", page);
-    ctx.els.appPageTasks?.classList.toggle("appPageOn", page === "tasks");
-    ctx.els.appPageDashboard?.classList.toggle("appPageOn", page === "dashboard");
-    ctx.els.appPageTest2?.classList.toggle("appPageOn", page === "test2");
-    ctx.els.footerTasksBtn?.classList.toggle("isOn", page === "tasks");
-    ctx.els.footerDashboardBtn?.classList.toggle("isOn", page === "dashboard");
-    ctx.els.footerTest2Btn?.classList.toggle("isOn", page === "test2");
-    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", page === "tasks");
-    ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", page === "dashboard");
-    ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", page === "test2");
+    ctx.setCurrentAppPage(nextPage);
+    if (opts?.pushNavStack) pushCurrentScreenToNavStack(nextPage);
+    document.body.setAttribute("data-app-page", nextPage);
+    ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks");
+    ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
+    ctx.els.appPageTest2?.classList.toggle("appPageOn", nextPage === "test2");
+    ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
+    ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
+    ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "test2");
+    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
+    ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
+    ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "test2");
     if (ctx.els.commandCenterDashboardBtn) {
-      if (page === "dashboard") ctx.els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
+      if (nextPage === "dashboard") ctx.els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
       else ctx.els.commandCenterDashboardBtn.removeAttribute("aria-current");
     }
     if (ctx.els.signedInHeaderBadge) {
@@ -310,23 +329,23 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const canSyncMainPageUrl = isTaskTimerMainAppPath(normalizedPathname());
     if (syncUrlMode && canSyncMainPageUrl) {
       try {
-        const nextUrl = appPathForPage(page);
-        if (syncUrlMode === "replace") window.history.replaceState({ page }, "", nextUrl);
-        else window.history.pushState({ page }, "", nextUrl);
+        const nextUrl = appPathForPage(nextPage);
+        if (syncUrlMode === "replace") window.history.replaceState({ page: nextPage }, "", nextUrl);
+        else window.history.pushState({ page: nextPage }, "", nextUrl);
       } catch {
         // ignore history API failures
       }
     }
     ctx.closeTaskExportModal();
     ctx.closeShareTaskModal();
-    if (page === "test2") {
+    if (nextPage === "test2") {
       ctx.renderGroupsPage();
       void ctx.refreshGroupsData();
       return;
     }
     ctx.closeFriendProfileModal();
     ctx.closeFriendRequestModal();
-    if (page === "tasks") {
+    if (nextPage === "tasks") {
       ctx.render();
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
@@ -338,7 +357,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       });
       return;
     }
-    if (page === "dashboard" && !opts?.skipDashboardRender) {
+    if (nextPage === "dashboard" && !opts?.skipDashboardRender) {
       ctx.renderDashboardWidgets();
     }
   }

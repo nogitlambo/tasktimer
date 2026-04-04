@@ -700,8 +700,7 @@ export default function DesktopAppRail({
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineRight" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomRight" />
-                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailRight" />
-                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailLeft" />
+                  <span className="desktopRailMascotBubbleTailSvg" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
                 </span>

@@ -167,6 +167,14 @@ let cachedPreferences: Awaited<ReturnType<typeof loadPreferences>> = null;
 let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
 let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
+let inFlightPreferencesSync: Promise<void> | null = null;
+let queuedPreferencesSyncSnapshot: NonNullable<typeof cachedPreferences> | null = null;
+let lastSuccessfulPreferencesSyncSignature = "";
+let inFlightTaskQueueSync: Promise<void> | null = null;
+const queuedTaskUpsertsById = new Map<string, Task>();
+const queuedTaskDeletes = new Set<string>();
+let inFlightHistoryQueueSync: Promise<void> | null = null;
+const queuedHistoryReplacementsByTaskId = new Map<string, HistoryEntry[]>();
 const preferenceListeners = new Set<(prefs: Awaited<ReturnType<typeof loadPreferences>>) => void>();
 const inFlightTaskSyncs = new Set<Promise<void>>();
 
@@ -782,6 +790,167 @@ export function loadCachedTaskUi() {
   return cachedTaskUi;
 }
 
+function preferencesSyncSignature(prefs: NonNullable<typeof cachedPreferences>): string {
+  const { updatedAtMs, ...rest } = prefs as NonNullable<typeof cachedPreferences> & { updatedAtMs?: unknown };
+  void updatedAtMs;
+  try {
+    return JSON.stringify(rest);
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function debugLogCloudQueue(
+  channel: "preferences" | "tasks" | "history",
+  phase: "enqueue" | "start" | "drain" | "error" | "skip",
+  detail?: Record<string, unknown>
+): void {
+  if (process.env.NODE_ENV === "production") return;
+  try {
+    console.info(`[tasktimer-cloud-queue] ${channel}:${phase}`, {
+      preferencesInFlight: !!inFlightPreferencesSync,
+      preferencesQueued: !!queuedPreferencesSyncSnapshot,
+      taskInFlight: !!inFlightTaskQueueSync,
+      taskQueuedUpserts: queuedTaskUpsertsById.size,
+      taskQueuedDeletes: queuedTaskDeletes.size,
+      historyInFlight: !!inFlightHistoryQueueSync,
+      historyQueued: queuedHistoryReplacementsByTaskId.size,
+      ...(detail || {}),
+    });
+  } catch {
+    // ignore debug logging failures
+  }
+}
+
+function flushQueuedCloudPreferences(uid: string): void {
+  if (inFlightPreferencesSync) return;
+  const nextSnapshot = queuedPreferencesSyncSnapshot;
+  if (!nextSnapshot) return;
+  const nextSignature = preferencesSyncSignature(nextSnapshot);
+  if (nextSignature === lastSuccessfulPreferencesSyncSignature) {
+    debugLogCloudQueue("preferences", "skip", { reason: "duplicate-signature" });
+    queuedPreferencesSyncSnapshot = null;
+    return;
+  }
+  debugLogCloudQueue("preferences", "start", { uid });
+  queuedPreferencesSyncSnapshot = null;
+  const syncPromise = savePreferences(uid, nextSnapshot)
+    .then(() => {
+      lastSuccessfulPreferencesSyncSignature = nextSignature;
+      debugLogCloudQueue("preferences", "drain", { uid, status: "ok" });
+    })
+    .catch(() => {
+      savePendingPreferencesSync(nextSnapshot);
+      debugLogCloudQueue("preferences", "error", { uid, status: "save-pending" });
+    })
+    .finally(() => {
+      inFlightPreferencesSync = null;
+      flushQueuedCloudPreferences(uid);
+    });
+  inFlightPreferencesSync = syncPromise;
+}
+
+function flushQueuedTaskSync(uid: string): void {
+  if (inFlightTaskQueueSync) return;
+  if (!queuedTaskDeletes.size && !queuedTaskUpsertsById.size) return;
+  debugLogCloudQueue("tasks", "start", { uid });
+  const syncPromise = (async () => {
+    while (queuedTaskDeletes.size || queuedTaskUpsertsById.size) {
+      if (queuedTaskDeletes.size) {
+        const taskId = queuedTaskDeletes.values().next().value as string | undefined;
+        if (!taskId) break;
+        queuedTaskDeletes.delete(taskId);
+        queuedTaskUpsertsById.delete(taskId);
+        try {
+          await deleteTask(uid, taskId);
+          clearPendingTaskDelete(taskId);
+        } catch {
+          queuedTaskDeletes.add(taskId);
+          debugLogCloudQueue("tasks", "error", { uid, op: "delete", taskId });
+          break;
+        }
+        continue;
+      }
+      const nextEntry = queuedTaskUpsertsById.entries().next().value as [string, Task] | undefined;
+      if (!nextEntry) break;
+      const [taskId, taskRow] = nextEntry;
+      queuedTaskUpsertsById.delete(taskId);
+      try {
+        await saveTask(uid, taskRow);
+        clearPendingTaskSync(taskId);
+      } catch {
+        queuedTaskUpsertsById.set(taskId, taskRow);
+        debugLogCloudQueue("tasks", "error", { uid, op: "upsert", taskId });
+        break;
+      }
+    }
+  })().finally(() => {
+    debugLogCloudQueue("tasks", "drain", { uid });
+    inFlightTaskQueueSync = null;
+    if (queuedTaskDeletes.size || queuedTaskUpsertsById.size) {
+      const activeUid = currentUid();
+      if (activeUid) flushQueuedTaskSync(activeUid);
+    }
+  });
+  inFlightTaskQueueSync = syncPromise;
+  void trackInFlightTaskSync(syncPromise);
+}
+
+function enqueueTaskSync(uid: string, tasksById: Map<string, Task>, changedTaskIds: string[], removedTaskIds: string[]): void {
+  for (const taskId of removedTaskIds) {
+    queuedTaskDeletes.add(taskId);
+    queuedTaskUpsertsById.delete(taskId);
+  }
+  for (const taskId of changedTaskIds) {
+    if (!taskId || queuedTaskDeletes.has(taskId)) continue;
+    const taskRow = tasksById.get(taskId);
+    if (!taskRow) continue;
+    queuedTaskUpsertsById.set(taskId, taskRow);
+  }
+  debugLogCloudQueue("tasks", "enqueue", {
+    uid,
+    changedCount: changedTaskIds.length,
+    removedCount: removedTaskIds.length,
+  });
+  flushQueuedTaskSync(uid);
+}
+
+function flushQueuedHistorySync(uid: string): void {
+  if (inFlightHistoryQueueSync) return;
+  if (!queuedHistoryReplacementsByTaskId.size) return;
+  debugLogCloudQueue("history", "start", { uid });
+  const syncPromise = (async () => {
+    while (queuedHistoryReplacementsByTaskId.size) {
+      const nextEntry = queuedHistoryReplacementsByTaskId.entries().next().value as [string, HistoryEntry[]] | undefined;
+      if (!nextEntry) break;
+      const [taskId, rows] = nextEntry;
+      queuedHistoryReplacementsByTaskId.delete(taskId);
+      try {
+        await replaceTaskHistory(uid, taskId, rows);
+        clearPendingHistorySync(taskId);
+      } catch {
+        queuedHistoryReplacementsByTaskId.set(taskId, rows);
+        debugLogCloudQueue("history", "error", { uid, taskId });
+        break;
+      }
+    }
+  })().finally(() => {
+    debugLogCloudQueue("history", "drain", { uid });
+    inFlightHistoryQueueSync = null;
+    if (queuedHistoryReplacementsByTaskId.size) {
+      const activeUid = currentUid();
+      if (activeUid) flushQueuedHistorySync(activeUid);
+    }
+  });
+  inFlightHistoryQueueSync = syncPromise;
+}
+
+function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]): void {
+  queuedHistoryReplacementsByTaskId.set(taskId, rows);
+  debugLogCloudQueue("history", "enqueue", { uid, taskId, rows: rows.length });
+  flushQueuedHistorySync(uid);
+}
+
 export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences>) {
   cachedPreferences = {
     ...prefs,
@@ -796,10 +965,9 @@ export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences
   }
   emitPreferenceChange();
   if (!uid) return;
-  void savePreferences(uid, cachedPreferences).catch(() => {
-    savePendingPreferencesSync(cachedPreferences);
-    // Keep local cached preferences when cloud write is denied/unavailable.
-  });
+  queuedPreferencesSyncSnapshot = cachedPreferences;
+  debugLogCloudQueue("preferences", "enqueue", { uid });
+  flushQueuedCloudPreferences(uid);
 }
 
 export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard>) {
@@ -856,32 +1024,7 @@ export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
   const uid = currentUid();
   if (!uid) return;
   if (!changedTaskIds.length && !removedTaskIds.length) return;
-  const changedTaskIdSet = new Set(changedTaskIds);
-  void trackInFlightTaskSync(
-    Promise.all(
-      next
-        .filter((t) => {
-          const taskId = String(t.id || "");
-          return !!taskId && changedTaskIdSet.has(taskId);
-        })
-        .map((t) =>
-          saveTask(uid, t).then(() => {
-            clearPendingTaskSync(String(t.id || ""));
-          })
-        )
-    )
-  ).catch(() => {
-    // Keep local shadow tasks when cloud write is denied/unavailable.
-  });
-  for (const taskId of removedTaskIds) {
-    void trackInFlightTaskSync(
-      deleteTask(uid, taskId).then(() => {
-        clearPendingTaskDelete(taskId);
-      })
-    ).catch(() => {
-      // Keep pending marker so hydration does not resurrect stale cloud tasks.
-    });
-  }
+  enqueueTaskSync(uid, nextById, changedTaskIds, removedTaskIds);
 }
 
 export async function waitForPendingTaskSync(): Promise<void> {
@@ -923,17 +1066,12 @@ export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistory
   const uid = currentUid();
   if (!uid) return;
   if (!touchedTaskIds.length) return;
-  void runHistorySave(() =>
-    Promise.all(
-      touchedTaskIds.map((taskId) =>
-        replaceTaskHistory(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [])
-          .catch(() => {
-            // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
-          })
-      )
-    ),
-    opts
-  );
+  void runHistorySave(async () => {
+    touchedTaskIds.forEach((taskId) => {
+      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
+    });
+    if (inFlightHistoryQueueSync) await inFlightHistoryQueueSync;
+  }, opts);
 }
 
 export function hasPendingTaskOrHistorySync(): boolean {
@@ -960,17 +1098,15 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?
   const uid = currentUid();
   if (!uid) return;
   if (!touchedTaskIds.length) return;
-  await runHistorySave(() =>
-    Promise.all(
-      touchedTaskIds.map((taskId) =>
-        replaceTaskHistory(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [])
-          .catch(() => {
-            // Keep pending marker so hydration preserves local edits until a later cloud snapshot matches.
-          })
-      )
-    ),
-    opts
-  );
+  await runHistorySave(async () => {
+    touchedTaskIds.forEach((taskId) => {
+      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
+    });
+    while (inFlightHistoryQueueSync || touchedTaskIds.some((taskId) => queuedHistoryReplacementsByTaskId.has(taskId))) {
+      if (inFlightHistoryQueueSync) await inFlightHistoryQueueSync;
+      else break;
+    }
+  }, opts);
 }
 
 export function loadDeletedMeta(): DeletedTaskMeta {

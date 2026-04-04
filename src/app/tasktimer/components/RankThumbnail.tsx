@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import AppImg from "@/components/AppImg";
 import {
   getStoredRankThumbnailDescriptor,
   type RankThumbnailDescriptor,
@@ -35,7 +35,7 @@ export default function RankThumbnail({
   if (descriptor.kind === "image") {
     return (
       <span className={className || undefined} aria-hidden={ariaHidden ? "true" : undefined}>
-        <Image className={imageClassName || undefined} src={descriptor.src} alt={alt} width={size} height={size} unoptimized />
+        <AppImg className={imageClassName || undefined} src={descriptor.src} alt={alt} width={size} height={size} />
       </span>
     );
   }

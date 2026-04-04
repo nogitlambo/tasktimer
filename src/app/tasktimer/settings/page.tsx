@@ -4,12 +4,12 @@ import { useEffect } from "react";
 import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
 import InfoOverlays from "../components/InfoOverlays";
 import SettingsScreen from "../components/SettingsScreen";
-import { initTaskTimerClient } from "../tasktimerClient";
+import { initTaskTimerSettingsClient } from "../tasktimerClient";
 import "../tasktimer.css";
 
 export default function SettingsPage() {
   useEffect(() => {
-    const { destroy } = initTaskTimerClient();
+    const { destroy } = initTaskTimerSettingsClient();
     return () => destroy();
   }, []);
 

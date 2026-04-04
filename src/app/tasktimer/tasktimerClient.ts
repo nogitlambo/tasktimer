@@ -2730,3 +2730,31 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   return { destroy };
 }
+
+export function initTaskTimerTasksClient(): TaskTimerClientHandle {
+  return initTaskTimerClient("tasks");
+}
+
+export function initTaskTimerDashboardClient(): TaskTimerClientHandle {
+  return initTaskTimerClient("dashboard");
+}
+
+export function initTaskTimerFriendsClient(): TaskTimerClientHandle {
+  return initTaskTimerClient("test2");
+}
+
+export function initTaskTimerSettingsClient(): TaskTimerClientHandle {
+  return initTaskTimerClient();
+}
+
+export function initTaskTimerHistoryManagerClient(): TaskTimerClientHandle {
+  return initTaskTimerClient();
+}
+
+export function initTaskTimerFeedbackClient(): TaskTimerClientHandle {
+  return initTaskTimerClient();
+}
+
+export function initTaskTimerUserGuideClient(): TaskTimerClientHandle {
+  return initTaskTimerClient();
+}
