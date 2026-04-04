@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { cloneElement, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -337,8 +337,10 @@ export default function DesktopAppRail({
   const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const archieInputRef = useRef<HTMLInputElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -441,6 +443,27 @@ export default function DesktopAppRail({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showRankLadderModal]);
+
+  useEffect(() => {
+    if (!isProfileMenuOpen) return;
+    const onPointerDown = (event: MouseEvent | PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (profileMenuRef.current?.contains(target)) return;
+      setIsProfileMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsProfileMenuOpen(false);
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isProfileMenuOpen]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
@@ -668,6 +691,14 @@ export default function DesktopAppRail({
 
   useEffect(() => () => clearArchieTimers(), [clearArchieTimers]);
 
+  const handleToggleProfileMenu = useCallback(() => {
+    setIsProfileMenuOpen((value) => !value);
+  }, []);
+
+  const handleCloseProfileMenu = useCallback(() => {
+    setIsProfileMenuOpen(false);
+  }, []);
+
   return (
     <>
       {showDesktopRail ? (
@@ -679,130 +710,152 @@ export default function DesktopAppRail({
             )}
           </nav>
 
-          <div className="dashboardRailSectionLabel">Support</div>
-          <nav className="dashboardRailNav">
-            {DESKTOP_SECONDARY_LINKS.map((item) => renderDesktopLinkItem(item))}
-          </nav>
-
-          <div className="dashboardRailSectionLabel">Settings</div>
-          <nav className="dashboardRailNav">
-            {NAV_ITEMS.filter(isSecondaryDesktopNavItem).map((item) =>
-              renderDesktopNavItem(item, activePage, useClientNavButtons)
-            )}
-          </nav>
-
-          <div className="desktopRailMascot">
-            <div
-              className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
-              aria-hidden={!isArchieBubbleOpen}
-            >
-              <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineRight" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomRight" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailRight" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailLeft" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
-                <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
-              </span>
-              <div className="desktopRailMascotBubbleTitle">
-                <span
-                  key={archieTitleAnimationKey}
-                  className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
-                  style={{ "--archie-title-width": `${Math.max(archieDisplayMessage.length, 1)}ch` } as CSSProperties}
-                >
-                  {archieDisplayMessage}
+          <div className="desktopRailLower">
+            <div className="desktopRailMascot">
+              <div
+                className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
+                aria-hidden={!isArchieBubbleOpen}
+              >
+                <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineRight" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomRight" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailRight" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTailLeft" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
+                  <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
+                </span>
+                <div className="desktopRailMascotBubbleTitle">
+                  <span
+                    key={archieTitleAnimationKey}
+                    className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
+                    style={{ "--archie-title-width": `${Math.max(archieDisplayMessage.length, 1)}ch` } as CSSProperties}
+                  >
+                    {archieDisplayMessage}
+                  </span>
+                </div>
+                {archieSuggestedAction ? (
+                  <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
+                    <button
+                      className="btn btn-ghost small desktopRailMascotActionBtn"
+                      type="button"
+                      onClick={handleArchieSuggestedAction}
+                    >
+                      {archieSuggestedAction.label}
+                    </button>
+                  </div>
+                ) : null}
+                <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
+                  <input
+                    ref={archieInputRef}
+                    className="desktopRailMascotInput"
+                    type="text"
+                    value={archieQuestion}
+                    onChange={(event) => setArchieQuestion(event.target.value)}
+                    onKeyDown={handleArchieInputKeyDown}
+                    placeholder="Ask Archie a question..."
+                    aria-label="Ask Archie a question"
+                  />
+                  <span className="desktopRailMascotInputCaret" aria-hidden="true" />
                 </span>
               </div>
-              {archieSuggestedAction ? (
-                <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
-                  <button
-                    className="btn btn-ghost small desktopRailMascotActionBtn"
-                    type="button"
-                    onClick={handleArchieSuggestedAction}
-                  >
-                    {archieSuggestedAction.label}
-                  </button>
-                </div>
-              ) : null}
-              <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
-                <input
-                  ref={archieInputRef}
-                  className="desktopRailMascotInput"
-                  type="text"
-                  value={archieQuestion}
-                  onChange={(event) => setArchieQuestion(event.target.value)}
-                  onKeyDown={handleArchieInputKeyDown}
-                  placeholder="Ask Archie a question..."
-                  aria-label="Ask Archie a question"
-                />
-                <span className="desktopRailMascotInputCaret" aria-hidden="true" />
-              </span>
-            </div>
-            <button
-              className={`desktopRailMascotTrigger${isArchieBubbleOpen ? " isOpen" : ""}`}
-              type="button"
-              aria-label="Ask Archie what he can help with"
-              aria-expanded={isArchieBubbleOpen}
-              onClick={handleArchieToggle}
-            >
-              <span className="desktopRailMascotFigure" aria-hidden="true">
-                <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
-                <span className="desktopRailMascotBody" />
-                <span className="desktopRailMascotEyeSockets" />
-                <span className="desktopRailMascotEyes" />
-              </span>
-            </button>
-          </div>
-
-          <div className="dashboardRailSectionLabel">Profile</div>
-          <section
-            className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
-            aria-label="Profile summary"
-          >
-            <div className="dashboardProfileHead dashboardRailProfileHead">
-              {profileAvatarSrc ? (
-                <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
-              ) : (
-                <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
-              )}
-              <div className="dashboardRailProfileIdentity">
-                <div className="dashboardProfileName">{profileLabel}</div>
-                <div className="dashboardTagRow dashboardRailProfileTags">
-                  <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
-                    View Profile
-                  </a>
-                  <button
-                    className="dashboardTag dashboardRailProfileTagLink"
-                    id="rewardsInfoOpenBtn"
-                    type="button"
-                    aria-label={`Open ${currentPlanLabel} subscription details`}
-                    title={`${currentPlanLabel} subscription details`}
-                  >
-                    {currentPlanLabel}
-                  </button>
-                </div>
-              </div>
               <button
-                className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                className={`desktopRailMascotTrigger${isArchieBubbleOpen ? " isOpen" : ""}`}
                 type="button"
-                aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                onClick={() => setShowRankLadderModal(true)}
+                aria-label="Ask Archie what he can help with"
+                aria-expanded={isArchieBubbleOpen}
+                onClick={handleArchieToggle}
               >
-                <RankThumbnail
-                  rankId={rewardProgress.currentRankId}
-                  storedThumbnailSrc={rankThumbnailSrc}
-                  className="dashboardRailRankBadgeShell"
-                  imageClassName="dashboardRailRankBadge"
-                  placeholderClassName="dashboardRailRankBadgePlaceholder"
-                  alt=""
-                  size={44}
-                  aria-hidden
-                />
-                <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
+                <span className="desktopRailMascotFigure" aria-hidden="true">
+                  <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+                  <span className="desktopRailMascotBody" />
+                  <span className="desktopRailMascotEyeSockets" />
+                  <span className="desktopRailMascotEyes" />
+                </span>
               </button>
             </div>
-          </section>
+
+            <div className="desktopRailProfileDock">
+              <div className="dashboardRailSectionLabel">Profile</div>
+              <section
+                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
+                aria-label="Profile summary"
+              >
+                <div className="dashboardRailProfileMenuShell" ref={profileMenuRef}>
+                  <button
+                    className={`btn btn-ghost small dashboardRailProfileMenuToggle${isProfileMenuOpen ? " isOpen" : ""}`}
+                    type="button"
+                    aria-label={isProfileMenuOpen ? "Close profile menu" : "Open profile menu"}
+                    aria-controls="desktopRailProfileMenu"
+                    aria-expanded={isProfileMenuOpen}
+                    onClick={handleToggleProfileMenu}
+                  >
+                    <span className="dashboardRailProfileMenuToggleChevron" aria-hidden="true" />
+                  </button>
+                  <div
+                    className={`dashboardRailProfileMenuDropdown${isProfileMenuOpen ? " isOpen" : ""}`}
+                    id="desktopRailProfileMenu"
+                    aria-hidden={isProfileMenuOpen ? "false" : "true"}
+                  >
+                    <nav className="dashboardRailNav dashboardRailProfileMenuNav" aria-label="Profile menu">
+                      {DESKTOP_SECONDARY_LINKS.map((item) =>
+                        cloneElement(renderDesktopLinkItem(item), {
+                          onClick: handleCloseProfileMenu,
+                        })
+                      )}
+                      {NAV_ITEMS.filter(isSecondaryDesktopNavItem).map((item) =>
+                        cloneElement(renderDesktopNavItem(item, activePage, useClientNavButtons), {
+                          onClick: handleCloseProfileMenu,
+                        })
+                      )}
+                    </nav>
+                  </div>
+                </div>
+                <div className="dashboardProfileHead dashboardRailProfileHead">
+                  {profileAvatarSrc ? (
+                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                  ) : (
+                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+                  )}
+                  <div className="dashboardRailProfileIdentity">
+                    <div className="dashboardProfileName">{profileLabel}</div>
+                    <div className="dashboardTagRow dashboardRailProfileTags">
+                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasktimer/settings?pane=general">
+                        View Profile
+                      </a>
+                      <button
+                        className="dashboardTag dashboardRailProfileTagLink"
+                        id="rewardsInfoOpenBtn"
+                        type="button"
+                        aria-label={`Open ${currentPlanLabel} subscription details`}
+                        title={`${currentPlanLabel} subscription details`}
+                      >
+                        {currentPlanLabel}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
+                    type="button"
+                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                    onClick={() => setShowRankLadderModal(true)}
+                  >
+                    <RankThumbnail
+                      rankId={rewardProgress.currentRankId}
+                      storedThumbnailSrc={rankThumbnailSrc}
+                      className="dashboardRailRankBadgeShell"
+                      imageClassName="dashboardRailRankBadge"
+                      placeholderClassName="dashboardRailRankBadgePlaceholder"
+                      alt=""
+                      size={44}
+                      aria-hidden
+                    />
+                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
 
         </aside>
       ) : null}
