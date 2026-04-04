@@ -55,6 +55,8 @@ type NavItem = {
   href: string;
 };
 
+type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
+
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
 const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
@@ -62,6 +64,9 @@ const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
 const ARCHIE_OUTLINE_DRAW_MS = 840;
 const ARCHIE_TYPE_MS = 840;
+const ARCHIE_BLINK_DURATION_MS = 2000;
+const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
+const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const NAV_ITEMS: NavItem[] = [
@@ -289,8 +294,11 @@ export default function DesktopAppRail({
   const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
+  const [archieBlinkPattern, setArchieBlinkPattern] = useState<ArchieBlinkPattern>("idle");
   const archieInputRef = useRef<HTMLInputElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
+  const archieBlinkStartTimerRef = useRef<number | null>(null);
+  const archieBlinkStopTimerRef = useRef<number | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -503,6 +511,17 @@ export default function DesktopAppRail({
     archieTimersRef.current.push(timerId);
   }, []);
 
+  const clearArchieBlinkTimers = useCallback(() => {
+    if (archieBlinkStartTimerRef.current != null) {
+      window.clearTimeout(archieBlinkStartTimerRef.current);
+      archieBlinkStartTimerRef.current = null;
+    }
+    if (archieBlinkStopTimerRef.current != null) {
+      window.clearTimeout(archieBlinkStopTimerRef.current);
+      archieBlinkStopTimerRef.current = null;
+    }
+  }, []);
+
   const resetArchieBubble = useCallback(() => {
     clearArchieTimers();
     setArchieQuestion("");
@@ -618,7 +637,45 @@ export default function DesktopAppRail({
     archieInputRef.current?.focus();
   }, [archieInputVisible, isArchieBubbleOpen]);
 
-  useEffect(() => () => clearArchieTimers(), [clearArchieTimers]);
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      clearArchieBlinkTimers();
+      setArchieBlinkPattern("idle");
+      return;
+    }
+
+    const blinkPatterns: ArchieBlinkPattern[] = ["flicker", "slow", "double"];
+    const scheduleNextBlink = () => {
+      const nextDelay =
+        ARCHIE_BLINK_MIN_DELAY_MS +
+        Math.round(Math.random() * (ARCHIE_BLINK_MAX_DELAY_MS - ARCHIE_BLINK_MIN_DELAY_MS));
+      archieBlinkStartTimerRef.current = window.setTimeout(() => {
+        const nextPattern = blinkPatterns[Math.floor(Math.random() * blinkPatterns.length)] || "slow";
+        setArchieBlinkPattern(nextPattern);
+        archieBlinkStopTimerRef.current = window.setTimeout(() => {
+          setArchieBlinkPattern("idle");
+          scheduleNextBlink();
+        }, ARCHIE_BLINK_DURATION_MS);
+      }, nextDelay);
+    };
+
+    clearArchieBlinkTimers();
+    setArchieBlinkPattern("idle");
+    scheduleNextBlink();
+
+    return () => {
+      clearArchieBlinkTimers();
+      setArchieBlinkPattern("idle");
+    };
+  }, [clearArchieBlinkTimers, prefersReducedMotion]);
+
+  useEffect(
+    () => () => {
+      clearArchieTimers();
+      clearArchieBlinkTimers();
+    },
+    [clearArchieBlinkTimers, clearArchieTimers]
+  );
 
   return (
     <>
@@ -690,10 +747,11 @@ export default function DesktopAppRail({
                 onClick={handleArchieToggle}
               >
                 <span className="desktopRailMascotFigure" aria-hidden="true">
-                  <AppImg className="desktopRailMascotImage" src="/archie.png" alt="" />
+                  <AppImg className="desktopRailMascotImage" src="/archie/turned_in_left.png" alt="" />
                   <span className="desktopRailMascotBody" />
-                  <span className="desktopRailMascotEyeSockets" />
-                  <span className="desktopRailMascotEyes" />
+                  <span
+                    className={`desktopRailMascotBlinkOverlay${archieBlinkPattern !== "idle" ? ` is${archieBlinkPattern[0].toUpperCase()}${archieBlinkPattern.slice(1)}` : ""}`}
+                  />
                 </span>
               </button>
             </div>

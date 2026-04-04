@@ -2736,10 +2736,8 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBody,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBody,
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotEyeSockets,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotEyeSockets,
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotEyes,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotEyes{
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay{
     position: absolute;
     inset: 0;
     display: block;
@@ -2749,36 +2747,17 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBody,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBody{
     z-index: 0;
-    background: url("/archie.png") left bottom / contain no-repeat;
+    background: url("/archie/turned_in_left.png") left bottom / contain no-repeat;
     filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.34));
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotEyeSockets,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotEyeSockets{
-    z-index: 1;
-    background:
-      radial-gradient(circle at 38.8% 34.7%, rgba(6, 10, 16, 1) 0 4.5%, transparent 4.64%),
-      radial-gradient(circle at 57.8% 34.7%, rgba(6, 10, 16, 1) 0 4.5%, transparent 4.64%);
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotEyes,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotEyes{
-    z-index: 2;
-    background: url("/archie.png") left bottom / contain no-repeat;
-    filter:
-      brightness(1.18)
-      saturate(1.18)
-      drop-shadow(0 0 3px rgba(124, 246, 255, 0.78))
-      drop-shadow(0 0 7px rgba(34, 222, 255, 0.38));
-    mix-blend-mode: screen;
     opacity: 1;
-    -webkit-mask:
-      radial-gradient(circle at 38.8% 34.7%, #000 0 4.76%, transparent 5.04%),
-      radial-gradient(circle at 57.8% 34.7%, #000 0 4.76%, transparent 5.04%);
-    mask:
-      radial-gradient(circle at 38.8% 34.7%, #000 0 4.76%, transparent 5.04%),
-      radial-gradient(circle at 57.8% 34.7%, #000 0 4.76%, transparent 5.04%);
-    animation: desktopRailMascotEyeFlash 10s ease-in-out infinite;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay{
+    z-index: 1;
+    background: url("/archie/turned_in_left_blink.png") left bottom / contain no-repeat;
+    opacity: 0;
+    clip-path: polygon(27.9% 21%, 80.9% 21%, 88.9% 31%, 85.9% 49%, 71.9% 53%, 37.9% 53%, 23.9% 49%, 20.9% 31%);
   }
 
   body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
@@ -3318,30 +3297,57 @@
   }
 }
 
-@keyframes desktopRailMascotEyeFlash{
-  0%, 4%, 8%, 100%{
+#app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay.isFlicker,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay.isFlicker{
+  animation: desktopRailMascotBlinkFlicker 2s linear 1;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay.isSlow,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay.isSlow{
+  animation: desktopRailMascotBlinkSlow 2s linear 1;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay.isDouble,
+#app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay.isDouble{
+  animation: desktopRailMascotBlinkDouble 2s linear 1;
+}
+
+@keyframes desktopRailMascotBlinkFlicker{
+  0%, 12%, 24%, 36%, 48%, 100%{
+    opacity: 0;
+  }
+  6%, 18%, 30%, 42%{
     opacity: 1;
-    filter:
-      brightness(1.18)
-      saturate(1.18)
-      drop-shadow(0 0 3px rgba(124, 246, 255, 0.78))
-      drop-shadow(0 0 7px rgba(34, 222, 255, 0.38));
   }
-  5%, 9%{
-    opacity: .38;
-    filter: brightness(0.48) saturate(0.55);
+}
+
+@keyframes desktopRailMascotBlinkSlow{
+  0%, 18%, 100%{
+    opacity: 0;
   }
-  6%, 10%{
-    opacity: .78;
-    filter: brightness(0.9) saturate(0.92);
+  32%, 70%{
+    opacity: 1;
+  }
+}
+
+@keyframes desktopRailMascotBlinkDouble{
+  0%, 16%, 34%, 52%, 100%{
+    opacity: 0;
+  }
+  8%, 26%{
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce){
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotEyes,
-  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotEyes{
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay{
     animation: none;
-    opacity: 1;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBlinkOverlay,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBlinkOverlay{
+    opacity: 0;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,

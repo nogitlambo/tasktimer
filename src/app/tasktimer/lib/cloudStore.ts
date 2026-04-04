@@ -29,7 +29,7 @@ export type UserPreferencesV1 = {
   autoFocusOnTaskLaunchEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
-  modeSettings: Record<string, unknown> | null;
+  modeSettings?: Record<string, unknown> | null;
   rewards: RewardProgressV1;
   updatedAtMs: number;
 };
