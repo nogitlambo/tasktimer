@@ -436,7 +436,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
       taskName: String(task.name || "").trim() || "Task",
       dueAtMs,
       timeGoalMinutes: normalizeTimeGoalValue(task.timeGoalMinutes),
-      route: "/tasktimer",
+      route: "/tasklaunch",
       sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
       sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
       updatedAt: serverTimestamp(),

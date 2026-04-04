@@ -1072,7 +1072,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           ctx.showUpgradePrompt("History Manager", "pro");
           return;
         }
-        ctx.navigateToAppRoute(`/tasktimer/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
+        ctx.navigateToAppRoute(`/tasklaunch/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
         return;
       }
       if (action === "analyse") {

@@ -7,22 +7,22 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   function taskTimerRootPath() {
     const pathname = window.location.pathname || "";
     const normalized = pathname.replace(/\/+$/, "");
-    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-    if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
+    const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
+    if (taskLaunchMatch) return `${taskLaunchMatch[1] || ""}/tasklaunch`;
     const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends)$/, "");
-    return pageStyleRoot || normalized || "/tasktimer";
+    return pageStyleRoot || normalized || "/tasklaunch";
   }
 
   function taskTimerExportBasePath() {
     const pathname = window.location.pathname || "";
     const normalized = pathname.replace(/\/+$/, "");
-    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-    if (taskTimerMatch) return taskTimerMatch[1] || "";
+    const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
+    if (taskLaunchMatch) return taskLaunchMatch[1] || "";
     return "";
   }
 
   function appRoute(path: string) {
-    if (!path.startsWith("/tasktimer")) return path;
+    if (!path.startsWith("/tasklaunch")) return path;
     const hashIndex = path.indexOf("#");
     const queryIndex = path.indexOf("?");
     const cutIndex =
@@ -30,7 +30,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
     const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
     const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
-    const suffix = normalizedPath.replace(/^\/tasktimer/, "");
+    const suffix = normalizedPath.replace(/^\/tasklaunch/, "");
     const resolved = `${taskTimerRootPath()}${suffix}${trailing}`;
 
     const currentPath = window.location.pathname || "";
@@ -60,15 +60,15 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function isTaskTimerTasksPath(path: string) {
-    return /\/tasktimer$/i.test(path) || /\/tasktimer\/index\.html$/i.test(path);
+    return /\/tasklaunch$/i.test(path) || /\/tasklaunch\/index\.html$/i.test(path);
   }
 
   function isTaskTimerDashboardPath(path: string) {
-    return /\/tasktimer\/dashboard$/i.test(path) || /\/tasktimer\/dashboard\/index\.html$/i.test(path);
+    return /\/tasklaunch\/dashboard$/i.test(path) || /\/tasklaunch\/dashboard\/index\.html$/i.test(path);
   }
 
   function isTaskTimerFriendsPath(path: string) {
-    return /\/tasktimer\/friends$/i.test(path) || /\/tasktimer\/friends\/index\.html$/i.test(path);
+    return /\/tasklaunch\/friends$/i.test(path) || /\/tasklaunch\/friends\/index\.html$/i.test(path);
   }
 
   function isTaskTimerMainAppPath(path: string) {
@@ -76,9 +76,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function appPathForPage(page: AppPage) {
-    if (page === "dashboard") return appRoute("/tasktimer/dashboard");
-    if (page === "test2") return appRoute("/tasktimer/friends");
-    return appRoute("/tasktimer");
+    if (page === "dashboard") return appRoute("/tasklaunch/dashboard");
+    if (page === "test2") return appRoute("/tasklaunch/friends");
+    return appRoute("/tasklaunch");
   }
 
   function normalizedPathname() {
@@ -110,22 +110,22 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const withoutQuery = trimmed.split("#")[0]?.split("?")[0] || "";
     let normalized = withoutQuery.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
     normalized = normalized.replace(/\/index\.html$/i, "");
-    if (/\/tasktimer\/settings\.html$/i.test(normalized)) return "/tasktimer/settings";
-    if (/\/tasktimer\/history-manager\.html$/i.test(normalized)) return "/tasktimer/history-manager";
-    if (/\/tasktimer\/user-guide\.html$/i.test(normalized)) return "/tasktimer/user-guide";
-    if (/\/tasktimer\/feedback\.html$/i.test(normalized)) return "/tasktimer/feedback";
-    if (/\/tasktimer(?:\/index)?$/i.test(normalized)) return "/tasktimer";
+    if (/\/tasklaunch\/settings\.html$/i.test(normalized)) return "/tasklaunch/settings";
+    if (/\/tasklaunch\/history-manager\.html$/i.test(normalized)) return "/tasklaunch/history-manager";
+    if (/\/tasklaunch\/user-guide\.html$/i.test(normalized)) return "/tasklaunch/user-guide";
+    if (/\/tasklaunch\/feedback\.html$/i.test(normalized)) return "/tasklaunch/feedback";
+    if (/\/tasklaunch(?:\/index)?$/i.test(normalized)) return "/tasklaunch";
     return normalized;
   }
 
   function isValidTaskTimerBackRoute(pathRaw: string) {
     const path = normalizeTaskTimerRoutePath(pathRaw);
     return (
-      path === "/tasktimer" ||
-      path === "/tasktimer/settings" ||
-      path === "/tasktimer/history-manager" ||
-      path === "/tasktimer/user-guide" ||
-      path === "/tasktimer/feedback"
+      path === "/tasklaunch" ||
+      path === "/tasklaunch/settings" ||
+      path === "/tasklaunch/history-manager" ||
+      path === "/tasklaunch/user-guide" ||
+      path === "/tasklaunch/feedback"
     );
   }
 
@@ -466,7 +466,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
     ctx.on(ctx.els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings");
+      navigateToAppRoute("/tasklaunch/settings");
     });
 
     ctx.on(ctx.els.commandCenterTasksBtn, "click", () =>
@@ -481,18 +481,18 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
     ctx.on(ctx.els.commandCenterSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings");
+      navigateToAppRoute("/tasklaunch/settings");
     });
 
     ctx.on(document as any, "click", (e: any) => {
       const badge = e?.target?.closest?.("#signedInHeaderBadge");
       if (!badge) return;
       e?.preventDefault?.();
-      navigateToAppRoute("/tasktimer/settings?pane=general");
+      navigateToAppRoute("/tasklaunch/settings?pane=general");
     });
 
     ctx.on(ctx.els.menuIcon, "click", () => {
-      navigateToAppRoute("/tasktimer/settings");
+      navigateToAppRoute("/tasklaunch/settings");
     });
   }
 

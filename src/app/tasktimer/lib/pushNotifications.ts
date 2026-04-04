@@ -95,17 +95,17 @@ export function getTaskTimerPushDeviceId() {
 }
 
 function getTaskTimerRootPath() {
-  if (typeof window === "undefined") return "/tasktimer";
+  if (typeof window === "undefined") return "/tasklaunch";
   const pathname = window.location.pathname || "";
   const normalized = pathname.replace(/\/+$/, "");
-  const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-  if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
+  const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
+  if (taskLaunchMatch) return `${taskLaunchMatch[1] || ""}/tasklaunch`;
   const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends|index\.html)$/, "");
-  return pageStyleRoot || normalized || "/tasktimer";
+  return pageStyleRoot || normalized || "/tasklaunch";
 }
 
 function resolveTaskTimerTasksRoute() {
-  if (typeof window === "undefined") return "/tasktimer";
+  if (typeof window === "undefined") return "/tasklaunch";
   const rootPath = getTaskTimerRootPath();
   const cap = (window as CapacitorWindowShape).Capacitor;
   const isNativeCapacitorRuntime = !!(
@@ -256,7 +256,7 @@ export async function initTaskTimerPushNotifications(): Promise<() => void> {
         ? (event.notification.data as Record<string, unknown>)
         : {};
       const taskId = String(data.taskId || "").trim();
-      const route = String(data.route || "/tasktimer").trim();
+      const route = String(data.route || "/tasklaunch").trim();
       if (taskId) setPendingPushTaskId(taskId);
       try {
         window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId } }));
@@ -264,8 +264,8 @@ export async function initTaskTimerPushNotifications(): Promise<() => void> {
         // Ignore custom event failures.
       }
       if (
-        route.startsWith("/tasktimer") &&
-        !(/\/tasktimer\/?$/i.test(window.location.pathname || "") || /\/tasktimer\/index\.html$/i.test(window.location.pathname || ""))
+        route.startsWith("/tasklaunch") &&
+        !(/\/tasklaunch\/?$/i.test(window.location.pathname || "") || /\/tasklaunch\/index\.html$/i.test(window.location.pathname || ""))
       ) {
         window.location.href = resolveTaskTimerTasksRoute();
       }

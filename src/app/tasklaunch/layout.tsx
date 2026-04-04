@@ -8,7 +8,7 @@ import { initTaskTimerPushNotifications } from "@/app/tasktimer/lib/pushNotifica
 
 type GuardStatus = "checking" | "authed";
 
-export default function TaskTimerLayout({ children }: { children: ReactNode }) {
+export default function TaskLaunchLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>("checking");
 

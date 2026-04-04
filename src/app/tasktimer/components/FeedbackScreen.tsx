@@ -91,7 +91,7 @@ export default function FeedbackScreen() {
       window.history.back();
       return;
     }
-    window.location.assign("/tasktimer");
+    window.location.assign("/tasklaunch");
   }, []);
 
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());

@@ -16,6 +16,7 @@ import {
   saveDeletedTaskMeta,
   saveTask,
   subscribeToTaskCollection,
+  type UserPreferencesV1,
 } from "./cloudStore";
 import {
   clearTaskTimerPlanStorage,
@@ -163,19 +164,21 @@ function scopedUid(): string {
 let cachedTasks: Task[] = [];
 let cachedHistory: HistoryByTaskId = {};
 let cachedDeletedMeta: DeletedTaskMeta = {};
-let cachedPreferences: Awaited<ReturnType<typeof loadPreferences>> = null;
+type CachedPreferences = UserPreferencesV1 | null;
+
+let cachedPreferences: CachedPreferences = null;
 let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
 let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
 let inFlightPreferencesSync: Promise<void> | null = null;
-let queuedPreferencesSyncSnapshot: NonNullable<typeof cachedPreferences> | null = null;
+let queuedPreferencesSyncSnapshot: UserPreferencesV1 | null = null;
 let lastSuccessfulPreferencesSyncSignature = "";
 let inFlightTaskQueueSync: Promise<void> | null = null;
 const queuedTaskUpsertsById = new Map<string, Task>();
 const queuedTaskDeletes = new Set<string>();
 let inFlightHistoryQueueSync: Promise<void> | null = null;
 const queuedHistoryReplacementsByTaskId = new Map<string, HistoryEntry[]>();
-const preferenceListeners = new Set<(prefs: Awaited<ReturnType<typeof loadPreferences>>) => void>();
+const preferenceListeners = new Set<(prefs: CachedPreferences) => void>();
 const inFlightTaskSyncs = new Set<Promise<void>>();
 
 function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
@@ -282,10 +285,10 @@ function loadShadowDeletedMeta(uid = scopedUid()): DeletedTaskMeta {
   return parsed && typeof parsed === "object" ? parsed : {};
 }
 
-function loadShadowPreferences(uid?: string): Awaited<ReturnType<typeof loadPreferences>> {
+function loadShadowPreferences(uid?: string): CachedPreferences {
   if (typeof window === "undefined") return null;
   try {
-    const parsed = safeParseJson<{ uid?: string; preferences?: Awaited<ReturnType<typeof loadPreferences>> }>(
+    const parsed = safeParseJson<{ uid?: string; preferences?: CachedPreferences }>(
       window.localStorage.getItem(SHADOW_PREFERENCES_KEY)
     );
     if (!parsed || typeof parsed !== "object") return null;
@@ -338,7 +341,7 @@ function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
   saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, scopedUid(), meta || {});
 }
 
-function saveShadowPreferences(uid: string, prefs: Awaited<ReturnType<typeof loadPreferences>>): void {
+function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
   if (typeof window === "undefined") return;
   try {
     if (!uid || !prefs) {
@@ -753,7 +756,7 @@ export function loadCachedPreferences() {
 }
 
 export function subscribeCachedPreferences(
-  listener: (prefs: Awaited<ReturnType<typeof loadPreferences>>) => void
+  listener: (prefs: CachedPreferences) => void
 ): () => void {
   preferenceListeners.add(listener);
   try {
@@ -790,8 +793,8 @@ export function loadCachedTaskUi() {
   return cachedTaskUi;
 }
 
-function preferencesSyncSignature(prefs: NonNullable<typeof cachedPreferences>): string {
-  const { updatedAtMs, ...rest } = prefs as NonNullable<typeof cachedPreferences> & { updatedAtMs?: unknown };
+function preferencesSyncSignature(prefs: UserPreferencesV1): string {
+  const { updatedAtMs, ...rest } = prefs as UserPreferencesV1 & { updatedAtMs?: unknown };
   void updatedAtMs;
   try {
     return JSON.stringify(rest);
@@ -951,7 +954,7 @@ function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]
   flushQueuedHistorySync(uid);
 }
 
-export function saveCloudPreferences(prefs: NonNullable<typeof cachedPreferences>) {
+export function saveCloudPreferences(prefs: UserPreferencesV1) {
   cachedPreferences = {
     ...prefs,
     rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),

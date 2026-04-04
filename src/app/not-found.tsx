@@ -27,7 +27,7 @@ export default function NotFound() {
             Go Home
           </Link>
           <Link
-            href="/tasktimer/dashboard"
+            href="/tasklaunch/dashboard"
             className="min-w-[180px] border border-white/20 bg-black/30 px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:border-[#35e8ff]/35"
             style={{ clipPath: "polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%)" }}
           >

@@ -11,7 +11,7 @@ export function createTaskTimerPopupMenu(ctx: TaskTimerPopupMenuContext) {
       return;
     }
     if (which === "howto") {
-      ctx.navigateToAppRoute("/tasktimer/user-guide");
+      ctx.navigateToAppRoute("/tasklaunch/user-guide");
       return;
     }
     if (which === "categoryManager") {

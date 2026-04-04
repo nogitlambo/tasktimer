@@ -950,13 +950,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     dismissCheckpointToast({ manual: true });
     if (!taskId) return;
     const path = ctx.normalizedPathname();
-    const onMainTaskTimerRoute = /\/tasktimer$/.test(path) || /\/tasktimer\/index\.html$/i.test(path);
+    const onMainTaskTimerRoute = /\/tasklaunch$/.test(path) || /\/tasklaunch\/index\.html$/i.test(path);
     if (onMainTaskTimerRoute) {
       ctx.jumpToTaskById(taskId);
       return;
     }
     ctx.savePendingTaskJump(taskId);
-    ctx.navigateToAppRoute("/tasktimer");
+    ctx.navigateToAppRoute("/tasklaunch");
   }
 
   function enqueueCheckpointToast(title: string, text: string, opts?: Omit<CheckpointToast, "id" | "title" | "text" | "autoCloseAtMs">) {

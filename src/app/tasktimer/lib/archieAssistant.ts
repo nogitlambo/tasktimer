@@ -261,7 +261,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
       return {
         mode: "app_help",
         message: `TaskTimer now uses a single task list. ${humanJoin(activeModes)} has been flattened into one shared workspace.`,
-        suggestedAction: { kind: "navigate", label: "Open Tasks", href: "/tasktimer" },
+        suggestedAction: { kind: "navigate", label: "Open Tasks", href: "/tasklaunch" },
       };
     }
     if (intent.topic === "history") {
@@ -269,7 +269,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         mode: "app_help",
         message:
           "Open History on any task for quick session bars, or use History Manager in Settings for bulk review, sorting, and cleanup across all tasks.",
-        suggestedAction: { kind: "navigate", label: "Open History Manager", href: "/tasktimer/history-manager" },
+        suggestedAction: { kind: "navigate", label: "Open History Manager", href: "/tasklaunch/history-manager" },
       };
     }
     if (intent.topic === "dashboard") {
@@ -277,7 +277,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         mode: "app_help",
         message:
           "Dashboard cards summarize your progress over time. Streak tracks consistency, Momentum reflects recent logged activity, Heatmap shows busy days, and Timeline suggests how your day could be structured.",
-        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
       };
     }
     if (intent.topic === "appearance") {
@@ -309,7 +309,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         mode: "app_help",
         message:
           "The User Guide walks through core flows like tasks, timers, checkpoints, history, focus mode, settings, and backup tools.",
-        suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasktimer/user-guide" },
+        suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasklaunch/user-guide" },
       };
     }
     if (intent.topic === "settings") {
@@ -317,7 +317,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         mode: "app_help",
         message:
           "Settings is the control center for account, preferences, appearance, notifications, data tools, feedback, and support links.",
-        suggestedAction: { kind: "navigate", label: "Open Settings", href: "/tasktimer/settings" },
+        suggestedAction: { kind: "navigate", label: "Open Settings", href: "/tasklaunch/settings" },
       };
     }
   }
@@ -327,28 +327,28 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
       return {
         mode: "navigation_hint",
         message: "I can take you to History Manager for the full history view.",
-        suggestedAction: { kind: "navigate", label: "Open History Manager", href: "/tasktimer/history-manager" },
+        suggestedAction: { kind: "navigate", label: "Open History Manager", href: "/tasklaunch/history-manager" },
       };
     }
     if (intent.topic === "dashboard") {
       return {
         mode: "navigation_hint",
         message: "Dashboard is the best place to review streaks, momentum, heatmap activity, and timeline suggestions.",
-        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
       };
     }
     if (intent.topic === "settings") {
       return {
         mode: "navigation_hint",
         message: "Settings gives you access to account controls, preferences, appearance, and data tools.",
-        suggestedAction: { kind: "navigate", label: "Open Settings", href: "/tasktimer/settings" },
+        suggestedAction: { kind: "navigate", label: "Open Settings", href: "/tasklaunch/settings" },
       };
     }
     if (intent.topic === "userGuide") {
       return {
         mode: "navigation_hint",
         message: "The User Guide is a good place to browse feature walkthroughs without changing any settings.",
-        suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasktimer/user-guide" },
+        suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasklaunch/user-guide" },
       };
     }
   }
@@ -396,7 +396,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
       return {
         mode: "data_explainer",
         message: `Your older task history is concentrated most heavily in ${context.modeLabels[winner]}, with ${formatElapsedShort(totalMs)} logged there.`,
-        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
       };
     }
     if (intent.topic === "recent_progress") {
@@ -405,14 +405,14 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
         return {
           mode: "data_explainer",
           message: "I do not have enough completed sessions yet to summarize your recent progress.",
-          suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+          suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
         };
       }
       if (!previousWindowMs) {
         return {
           mode: "data_explainer",
           message: `You logged ${formatElapsedShort(currentWindowMs)} in the last 7 days. That gives us a clean starting point for your momentum trend.`,
-          suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+          suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
         };
       }
       const deltaMs = currentWindowMs - previousWindowMs;
@@ -420,7 +420,7 @@ export function respondToArchieIntent(intent: ArchieIntent, context: ArchieAssis
       return {
         mode: "data_explainer",
         message: `You logged ${formatElapsedShort(currentWindowMs)} in the last 7 days, which is ${direction} ${formatElapsedShort(Math.abs(deltaMs))} compared with the previous week.`,
-        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasktimer/dashboard" },
+        suggestedAction: { kind: "navigate", label: "Open Dashboard", href: "/tasklaunch/dashboard" },
       };
     }
     if (intent.topic === "check_next") {
@@ -465,7 +465,7 @@ export function resolveArchieAssistantResponse(question: string, activePage: str
       mode: "app_help",
       message:
         "I can explain history, dashboard cards, settings, current work, top history, and recent progress.",
-      suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasktimer/user-guide" },
+      suggestedAction: { kind: "navigate", label: "Open User Guide", href: "/tasklaunch/user-guide" },
     };
   }
   const context = buildArchieContext(activePage);

@@ -162,7 +162,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         cancelLabel: "Close",
         onOk: () => {
           closeConfirm();
-          window.location.href = "/tasktimer/settings?pane=general";
+          window.location.href = "/tasklaunch/settings?pane=general";
         },
         onCancel: () => closeConfirm(),
       }
@@ -348,7 +348,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const value = String(src || "").trim();
     if (!value) return "";
     if (/^(?:data:|blob:|https?:\/\/|file:)/i.test(value)) return value;
-    const normalizedValue = value.replace(/^\/tasktimer(?=\/avatars\/)/i, "");
+    const normalizedValue = value.replace(/^\/tasklaunch(?=\/avatars\/)/i, "");
     if (/^avatars\//i.test(normalizedValue)) return `/${normalizedValue}`;
     if (/^\/avatars\//i.test(normalizedValue)) {
       const capacitorApi = (window as any)?.Capacitor;
@@ -372,7 +372,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (knownSrc) return normalizeFriendAvatarSrc(knownSrc);
     if (
       /^(?:data:|blob:|https?:\/\/|file:)/i.test(avatarId) ||
-      /^\/(?:tasktimer\/)?avatars\//i.test(avatarId)
+      /^\/(?:tasklaunch\/)?avatars\//i.test(avatarId)
     ) {
       return normalizeFriendAvatarSrc(avatarId);
     }
@@ -2645,7 +2645,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerPreferenceEvents({
       handleAppBackNavigation: () => {
         const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
-        if (currentRoutePath === "/tasktimer/settings") {
+        if (currentRoutePath === "/tasklaunch/settings") {
           window.location.href = appPathForPage("dashboard");
           return true;
         }

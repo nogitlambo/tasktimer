@@ -6,13 +6,14 @@
 
 - Package name: `tasktimer`
 - Frameworks: `next@16.1.6`, `react@19.2.3`
-- Primary product surface: authenticated TaskTimer routes under `/tasktimer`
+- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`
 - Documentation automation is generated from current repo structure and scripts
 
 ## Top-Level Source Map
 
 - `src/app`
 - `src/lib`
+- `src/app/tasklaunch`
 - `src/app/tasktimer`
 - `scripts`
 - `.github/workflows`
@@ -24,97 +25,97 @@
 - `/pricing`
 - `/privacy`
 - `/signed-out`
-- `/tasktimer`
-- `/tasktimer/dashboard`
-- `/tasktimer/feedback`
-- `/tasktimer/friends`
-- `/tasktimer/history-manager`
-- `/tasktimer/settings`
-- `/tasktimer/user-guide`
+- `/tasklaunch`
+- `/tasklaunch/dashboard`
+- `/tasklaunch/feedback`
+- `/tasklaunch/friends`
+- `/tasklaunch/history-manager`
+- `/tasklaunch/settings`
+- `/tasklaunch/user-guide`
 - `/web-sign-in`
 
-### TaskTimer Routes
-- `/tasktimer`
-- `/tasktimer/dashboard`
-- `/tasktimer/feedback`
-- `/tasktimer/friends`
-- `/tasktimer/history-manager`
-- `/tasktimer/settings`
-- `/tasktimer/user-guide`
+### TaskLaunch Routes
+- `/tasklaunch`
+- `/tasklaunch/dashboard`
+- `/tasklaunch/feedback`
+- `/tasklaunch/friends`
+- `/tasklaunch/history-manager`
+- `/tasklaunch/settings`
+- `/tasklaunch/user-guide`
 
 ## Runtime Entry Points
 
-- Main app shell: [`src/app/tasktimer/TaskTimerPageClient.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/TaskTimerPageClient.tsx)
-- Legacy runtime bootstrap: [`src/app/tasktimer/tasktimerClient.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/tasktimerClient.ts)
-- TaskTimer auth layout: [`src/app/tasktimer/layout.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/layout.tsx)
-- Shared Firebase auth client: [`src/lib/firebaseClient.ts`](/S:/Apps/repo/tasktimer-app/src/lib/firebaseClient.ts)
-- Shared Firestore client: [`src/lib/firebaseFirestoreClient.ts`](/S:/Apps/repo/tasktimer-app/src/lib/firebaseFirestoreClient.ts)
+- Main app shell: [`src/app/tasktimer/TaskTimerPageClient.tsx`](/G:/Apps/tasklaunch/src/app/tasktimer/TaskTimerPageClient.tsx)
+- Legacy runtime bootstrap: [`src/app/tasktimer/tasktimerClient.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/tasktimerClient.ts)
+- TaskLaunch auth layout: [`src/app/tasklaunch/layout.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/layout.tsx)
+- Shared Firebase auth client: [`src/lib/firebaseClient.ts`](/G:/Apps/tasklaunch/src/lib/firebaseClient.ts)
+- Shared Firestore client: [`src/lib/firebaseFirestoreClient.ts`](/G:/Apps/tasklaunch/src/lib/firebaseFirestoreClient.ts)
 
-## TaskTimer Route Files
+## TaskLaunch Route Files
 
-- [`src/app/tasktimer/dashboard/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/dashboard/page.tsx)
-- [`src/app/tasktimer/feedback/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/feedback/page.tsx)
-- [`src/app/tasktimer/friends/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/friends/page.tsx)
-- [`src/app/tasktimer/history-manager/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/history-manager/page.tsx)
-- [`src/app/tasktimer/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/page.tsx)
-- [`src/app/tasktimer/settings/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/settings/page.tsx)
-- [`src/app/tasktimer/user-guide/page.tsx`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/user-guide/page.tsx)
+- [`src/app/tasklaunch/dashboard/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/dashboard/page.tsx)
+- [`src/app/tasklaunch/feedback/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/feedback/page.tsx)
+- [`src/app/tasklaunch/friends/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/friends/page.tsx)
+- [`src/app/tasklaunch/history-manager/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/history-manager/page.tsx)
+- [`src/app/tasklaunch/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/page.tsx)
+- [`src/app/tasklaunch/settings/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/settings/page.tsx)
+- [`src/app/tasklaunch/user-guide/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/user-guide/page.tsx)
 
 ## TaskTimer Client Support Modules
 
-- [`src/app/tasktimer/client/add-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/add-task.ts)
-- [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
-- [`src/app/tasktimer/client/cloud-sync.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/cloud-sync.ts)
-- [`src/app/tasktimer/client/confirm-overlay.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/confirm-overlay.ts)
-- [`src/app/tasktimer/client/context.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/context.ts)
-- [`src/app/tasktimer/client/dashboard-render.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard-render.ts)
-- [`src/app/tasktimer/client/dashboard.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/dashboard.ts)
-- [`src/app/tasktimer/client/edit-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/edit-task.ts)
-- [`src/app/tasktimer/client/elements.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/elements.ts)
-- [`src/app/tasktimer/client/groups.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/groups.ts)
-- [`src/app/tasktimer/client/history-inline.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-inline.ts)
-- [`src/app/tasktimer/client/history-manager.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-manager.ts)
-- [`src/app/tasktimer/client/import-export.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/import-export.ts)
-- [`src/app/tasktimer/client/persistence.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/persistence.ts)
-- [`src/app/tasktimer/client/popup-menu.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/popup-menu.ts)
-- [`src/app/tasktimer/client/preferences.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/preferences.ts)
-- [`src/app/tasktimer/client/root-state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/root-state.ts)
-- [`src/app/tasktimer/client/runtime.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/runtime.ts)
-- [`src/app/tasktimer/client/session.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/session.ts)
-- [`src/app/tasktimer/client/state.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/state.ts)
-- [`src/app/tasktimer/client/task-list-ui.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-list-ui.ts)
-- [`src/app/tasktimer/client/task-shared.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-shared.ts)
-- [`src/app/tasktimer/client/task-ui-persistence.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/task-ui-persistence.ts)
-- [`src/app/tasktimer/client/tasks.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/tasks.ts)
-- [`src/app/tasktimer/client/types.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/types.ts)
+- [`src/app/tasktimer/client/add-task.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/add-task.ts)
+- [`src/app/tasktimer/client/app-shell.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/app-shell.ts)
+- [`src/app/tasktimer/client/cloud-sync.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/cloud-sync.ts)
+- [`src/app/tasktimer/client/confirm-overlay.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/confirm-overlay.ts)
+- [`src/app/tasktimer/client/context.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/context.ts)
+- [`src/app/tasktimer/client/dashboard-render.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/dashboard-render.ts)
+- [`src/app/tasktimer/client/dashboard.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/dashboard.ts)
+- [`src/app/tasktimer/client/edit-task.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/edit-task.ts)
+- [`src/app/tasktimer/client/elements.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/elements.ts)
+- [`src/app/tasktimer/client/groups.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/groups.ts)
+- [`src/app/tasktimer/client/history-inline.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline.ts)
+- [`src/app/tasktimer/client/history-manager.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager.ts)
+- [`src/app/tasktimer/client/import-export.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/import-export.ts)
+- [`src/app/tasktimer/client/persistence.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/persistence.ts)
+- [`src/app/tasktimer/client/popup-menu.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/popup-menu.ts)
+- [`src/app/tasktimer/client/preferences.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/preferences.ts)
+- [`src/app/tasktimer/client/root-state.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/root-state.ts)
+- [`src/app/tasktimer/client/runtime.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/runtime.ts)
+- [`src/app/tasktimer/client/session.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/session.ts)
+- [`src/app/tasktimer/client/state.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/state.ts)
+- [`src/app/tasktimer/client/task-list-ui.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/task-list-ui.ts)
+- [`src/app/tasktimer/client/task-shared.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/task-shared.ts)
+- [`src/app/tasktimer/client/task-ui-persistence.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/task-ui-persistence.ts)
+- [`src/app/tasktimer/client/tasks.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/tasks.ts)
+- [`src/app/tasktimer/client/types.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/types.ts)
 
 ## TaskTimer Domain Libraries
 
-- [`src/app/tasktimer/lib/addTaskNames.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/addTaskNames.ts)
-- [`src/app/tasktimer/lib/archieAssistant.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieAssistant.ts)
-- [`src/app/tasktimer/lib/avatarCatalog.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/avatarCatalog.ts)
-- [`src/app/tasktimer/lib/cloudStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/cloudStore.ts)
-- [`src/app/tasktimer/lib/colors.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/colors.ts)
-- [`src/app/tasktimer/lib/entitlements.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/entitlements.ts)
-- [`src/app/tasktimer/lib/feedbackStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/feedbackStore.ts)
-- [`src/app/tasktimer/lib/focusInsights.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/focusInsights.ts)
-- [`src/app/tasktimer/lib/friendsStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/friendsStore.ts)
-- [`src/app/tasktimer/lib/history.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/history.ts)
-- [`src/app/tasktimer/lib/historyChart.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/historyChart.ts)
-- [`src/app/tasktimer/lib/historyManager.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/historyManager.ts)
-- [`src/app/tasktimer/lib/ids.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/ids.ts)
-- [`src/app/tasktimer/lib/milestones.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/milestones.ts)
-- [`src/app/tasktimer/lib/momentum.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/momentum.ts)
-- [`src/app/tasktimer/lib/planFunctions.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/planFunctions.ts)
-- [`src/app/tasktimer/lib/pushFunctions.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/pushFunctions.ts)
-- [`src/app/tasktimer/lib/pushNotifications.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/pushNotifications.ts)
-- [`src/app/tasktimer/lib/rewards.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/rewards.ts)
-- [`src/app/tasktimer/lib/storage.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/storage.ts)
-- [`src/app/tasktimer/lib/taskConfig.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/taskConfig.ts)
-- [`src/app/tasktimer/lib/tasks.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/tasks.ts)
-- [`src/app/tasktimer/lib/time.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/time.ts)
-- [`src/app/tasktimer/lib/types.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/types.ts)
-- [`src/app/tasktimer/lib/usernameClaim.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/usernameClaim.ts)
+- [`src/app/tasktimer/lib/addTaskNames.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/addTaskNames.ts)
+- [`src/app/tasktimer/lib/archieAssistant.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/archieAssistant.ts)
+- [`src/app/tasktimer/lib/avatarCatalog.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/avatarCatalog.ts)
+- [`src/app/tasktimer/lib/cloudStore.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/cloudStore.ts)
+- [`src/app/tasktimer/lib/colors.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/colors.ts)
+- [`src/app/tasktimer/lib/entitlements.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/entitlements.ts)
+- [`src/app/tasktimer/lib/feedbackStore.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/feedbackStore.ts)
+- [`src/app/tasktimer/lib/focusInsights.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/focusInsights.ts)
+- [`src/app/tasktimer/lib/friendsStore.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/friendsStore.ts)
+- [`src/app/tasktimer/lib/history.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/history.ts)
+- [`src/app/tasktimer/lib/historyChart.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/historyChart.ts)
+- [`src/app/tasktimer/lib/historyManager.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/historyManager.ts)
+- [`src/app/tasktimer/lib/ids.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/ids.ts)
+- [`src/app/tasktimer/lib/milestones.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/milestones.ts)
+- [`src/app/tasktimer/lib/momentum.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/momentum.ts)
+- [`src/app/tasktimer/lib/planFunctions.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/planFunctions.ts)
+- [`src/app/tasktimer/lib/pushFunctions.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/pushFunctions.ts)
+- [`src/app/tasktimer/lib/pushNotifications.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/pushNotifications.ts)
+- [`src/app/tasktimer/lib/rewards.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/rewards.ts)
+- [`src/app/tasktimer/lib/storage.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/storage.ts)
+- [`src/app/tasktimer/lib/taskConfig.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/taskConfig.ts)
+- [`src/app/tasktimer/lib/tasks.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/tasks.ts)
+- [`src/app/tasktimer/lib/time.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/time.ts)
+- [`src/app/tasktimer/lib/types.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/types.ts)
+- [`src/app/tasktimer/lib/usernameClaim.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/usernameClaim.ts)
 
 ## Secondary React Feature Module
 
@@ -123,8 +124,8 @@
 ## Documentation Automation
 
 ### Generated Docs
-- [`AGENTS.md`](/S:/Apps/repo/tasktimer-app/AGENTS.md) keeps manual guidance plus an auto-generated context block
-- [`architecture.md`](/S:/Apps/repo/tasktimer-app/architecture.md) is fully generated from repo inspection
+- [`AGENTS.md`](/G:/Apps/tasklaunch/AGENTS.md) keeps manual guidance plus an auto-generated context block
+- [`architecture.md`](/G:/Apps/tasklaunch/architecture.md) is fully generated from repo inspection
 
 ### Relevant Scripts
 - `agents:check`
@@ -134,8 +135,8 @@
 - `hooks:install`
 
 ### Workflow Files
-- [`.github/workflows/agents-check.yml`](/S:/Apps/repo/tasktimer-app/.github/workflows/agents-check.yml)
-- [`.github/workflows/static.yml`](/S:/Apps/repo/tasktimer-app/.github/workflows/static.yml)
+- [`.github/workflows/agents-check.yml`](/G:/Apps/tasklaunch/.github/workflows/agents-check.yml)
+- [`.github/workflows/static.yml`](/G:/Apps/tasklaunch/.github/workflows/static.yml)
 
 ## Notes
 

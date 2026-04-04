@@ -2,25 +2,25 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import GlobalTaskAlerts from "../components/GlobalTaskAlerts";
-import UserGuideScreen from "../components/UserGuideScreen";
-import { initTaskTimerUserGuideClient } from "../tasktimerClient";
-import "../tasktimer.css";
+import GlobalTaskAlerts from "../../tasktimer/components/GlobalTaskAlerts";
+import UserGuideScreen from "../../tasktimer/components/UserGuideScreen";
+import { initTaskTimerUserGuideClient } from "../../tasktimer/tasktimerClient";
+import "../../tasktimer/tasktimer.css";
 
 export default function UserGuidePage() {
   const router = useRouter();
 
-  const taskTimerRootPath = () => {
+  const taskLaunchRootPath = () => {
     const pathname = window.location.pathname || "";
     const normalized = pathname.replace(/\/+$/, "");
-    const taskTimerMatch = normalized.match(/^(.*?)(\/tasktimer)(?:\/|$)/);
-    if (taskTimerMatch) return `${taskTimerMatch[1] || ""}/tasktimer`;
+    const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
+    if (taskLaunchMatch) return `${taskLaunchMatch[1] || ""}/tasklaunch`;
     const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide)$/, "");
-    return pageStyleRoot || normalized || "/tasktimer";
+    return pageStyleRoot || normalized || "/tasklaunch";
   };
 
   const appRoute = (path: string) => {
-    if (!path.startsWith("/tasktimer")) return path;
+    if (!path.startsWith("/tasklaunch")) return path;
     const hashIndex = path.indexOf("#");
     const queryIndex = path.indexOf("?");
     const cutIndex =
@@ -28,8 +28,8 @@ export default function UserGuidePage() {
     const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
     const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
     const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
-    const suffix = normalizedPath.replace(/^\/tasktimer/, "");
-    return `${taskTimerRootPath()}${suffix}${trailing}`;
+    const suffix = normalizedPath.replace(/^\/tasklaunch/, "");
+    return `${taskLaunchRootPath()}${suffix}${trailing}`;
   };
 
   const handleBack = () => {
@@ -37,7 +37,7 @@ export default function UserGuidePage() {
       window.history.back();
       return;
     }
-    router.push(appRoute("/tasktimer/settings"));
+    router.push(appRoute("/tasklaunch/settings"));
   };
 
   useEffect(() => {

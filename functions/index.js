@@ -282,7 +282,7 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
   const dueAtMs = asInt(data.dueAtMs, null);
   const sentDueAtMs = asInt(data.sentDueAtMs, null);
   const timeGoalMinutes = Number(data.timeGoalMinutes || 0);
-  const route = asString(data.route, "/tasktimer") || "/tasktimer";
+  const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
 
   if (!uid || !taskId || !(timeGoalMinutes > 0) || dueAtMs == null || dueAtMs > nowMs) {
     return {status: "skipped"};

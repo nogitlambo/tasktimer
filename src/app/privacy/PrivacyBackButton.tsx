@@ -10,7 +10,7 @@ export default function PrivacyBackButton() {
       window.history.back();
       return;
     }
-    router.push("/tasktimer/settings");
+    router.push("/tasklaunch/settings");
   };
 
   return (

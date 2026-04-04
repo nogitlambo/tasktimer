@@ -56,8 +56,8 @@ function getPageRoutes(root) {
   );
 }
 
-function getTaskTimerRoutes(root) {
-  return getPageRoutes(root).filter((route) => route === "/tasktimer" || route.startsWith("/tasktimer/"));
+function getTaskLaunchRoutes(root) {
+  return getPageRoutes(root).filter((route) => route === "/tasklaunch" || route.startsWith("/tasklaunch/"));
 }
 
 function getStorageKeys(root) {
@@ -125,6 +125,7 @@ function getTopLevelSourceDirs(root) {
   const candidates = [
     "src/app",
     "src/lib",
+    "src/app/tasklaunch",
     "src/app/tasktimer",
     "src/features/tasktimer-react",
     "scripts",
@@ -164,8 +165,8 @@ function getTaskTimerClientSupportFiles(root) {
 }
 
 function getTaskTimerPageFiles(root) {
-  const tasktimerRoot = path.join(root, "src", "app", "tasktimer");
-  const files = walk(tasktimerRoot)
+  const tasklaunchRoot = path.join(root, "src", "app", "tasklaunch");
+  const files = walk(tasklaunchRoot)
     .filter((p) => p.endsWith(`${path.sep}page.tsx`) || p.endsWith(`${path.sep}page.ts`))
     .map((p) => rel(root, p));
   return uniqueSorted(files);
@@ -180,13 +181,13 @@ function textBulletLines(values) {
 }
 
 export function generateAgentsBlock(root) {
-  const routes = getTaskTimerRoutes(root);
+  const routes = getTaskLaunchRoutes(root);
   const keys = getStorageKeys(root);
   const hooks = getDataHooks(root);
   return [
     START_MARKER,
     "## Auto-Generated Context",
-    "### Routes (derived from `src/app/tasktimer/**/page.tsx`)",
+    "### Routes (derived from `src/app/tasklaunch/**/page.tsx`)",
     textBulletLines(routes) || "- (none)",
     "",
     "### Persistent keys (derived from storage/client modules)",
@@ -210,7 +211,7 @@ export function updateAgentsContent(root, content) {
 export function generateArchitectureContent(root) {
   const pkg = getPackageMetadata(root);
   const allRoutes = getPageRoutes(root);
-  const taskTimerRoutes = getTaskTimerRoutes(root);
+  const taskTimerRoutes = getTaskLaunchRoutes(root);
   const topLevelDirs = getTopLevelSourceDirs(root);
   const taskTimerPages = getTaskTimerPageFiles(root);
   const taskTimerClientFiles = getTaskTimerClientSupportFiles(root);
@@ -228,7 +229,7 @@ export function generateArchitectureContent(root) {
     "",
     `- Package name: \`${pkg.name}\``,
     `- Frameworks: \`next@${pkg.nextVersion}\`, \`react@${pkg.reactVersion}\``,
-    "- Primary product surface: authenticated TaskTimer routes under `/tasktimer`",
+    "- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`",
     "- Documentation automation is generated from current repo structure and scripts",
     "",
     "## Top-Level Source Map",
@@ -240,18 +241,18 @@ export function generateArchitectureContent(root) {
     "### App Routes",
     textBulletLines(allRoutes),
     "",
-    "### TaskTimer Routes",
+    "### TaskLaunch Routes",
     textBulletLines(taskTimerRoutes),
     "",
     "## Runtime Entry Points",
     "",
     `- Main app shell: ${fileLink(root, "src/app/tasktimer/TaskTimerPageClient.tsx")}`,
     `- Legacy runtime bootstrap: ${fileLink(root, "src/app/tasktimer/tasktimerClient.ts")}`,
-    `- TaskTimer auth layout: ${fileLink(root, "src/app/tasktimer/layout.tsx")}`,
+    `- TaskLaunch auth layout: ${fileLink(root, "src/app/tasklaunch/layout.tsx")}`,
     `- Shared Firebase auth client: ${fileLink(root, "src/lib/firebaseClient.ts")}`,
     `- Shared Firestore client: ${fileLink(root, "src/lib/firebaseFirestoreClient.ts")}`,
     "",
-    "## TaskTimer Route Files",
+    "## TaskLaunch Route Files",
     "",
     bulletLines(taskTimerPages, root),
     "",
