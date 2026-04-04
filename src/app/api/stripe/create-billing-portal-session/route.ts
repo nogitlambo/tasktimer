@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const uid = asString(body.uid);
-    const returnPath = asString(body.returnPath) || "/tasklaunch/settings?pane=general";
+    const returnPath = asString(body.returnPath) || "/settings?pane=general";
 
     if (!uid) {
       return NextResponse.json({ error: "A valid user id is required." }, { status: 400 });

@@ -95,13 +95,7 @@ export function getTaskTimerPushDeviceId() {
 }
 
 function getTaskTimerRootPath() {
-  if (typeof window === "undefined") return "/tasklaunch";
-  const pathname = window.location.pathname || "";
-  const normalized = pathname.replace(/\/+$/, "");
-  const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
-  if (taskLaunchMatch) return `${taskLaunchMatch[1] || ""}/tasklaunch`;
-  const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends|index\.html)$/, "");
-  return pageStyleRoot || normalized || "/tasklaunch";
+  return "/tasklaunch";
 }
 
 function resolveTaskTimerTasksRoute() {
@@ -264,7 +258,7 @@ export async function initTaskTimerPushNotifications(): Promise<() => void> {
         // Ignore custom event failures.
       }
       if (
-        route.startsWith("/tasklaunch") &&
+        route === "/tasklaunch" &&
         !(/\/tasklaunch\/?$/i.test(window.location.pathname || "") || /\/tasklaunch\/index\.html$/i.test(window.location.pathname || ""))
       ) {
         window.location.href = resolveTaskTimerTasksRoute();

@@ -6,7 +6,7 @@
 
 - Package name: `tasktimer`
 - Frameworks: `next@16.1.6`, `react@19.2.3`
-- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`
+- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, and `/feedback`
 - Documentation automation is generated from current repo structure and scripts
 
 ## Top-Level Source Map
@@ -22,44 +22,44 @@
 
 ### App Routes
 - `/`
+- `/dashboard`
+- `/feedback`
+- `/friends`
+- `/history-manager`
 - `/pricing`
 - `/privacy`
+- `/settings`
 - `/signed-out`
 - `/tasklaunch`
-- `/tasklaunch/dashboard`
-- `/tasklaunch/feedback`
-- `/tasklaunch/friends`
-- `/tasklaunch/history-manager`
-- `/tasklaunch/settings`
-- `/tasklaunch/user-guide`
+- `/user-guide`
 - `/web-sign-in`
 
 ### TaskLaunch Routes
+- `/dashboard`
+- `/feedback`
+- `/friends`
+- `/history-manager`
+- `/settings`
 - `/tasklaunch`
-- `/tasklaunch/dashboard`
-- `/tasklaunch/feedback`
-- `/tasklaunch/friends`
-- `/tasklaunch/history-manager`
-- `/tasklaunch/settings`
-- `/tasklaunch/user-guide`
+- `/user-guide`
 
 ## Runtime Entry Points
 
 - Main app shell: [`src/app/tasktimer/TaskTimerPageClient.tsx`](/G:/Apps/tasklaunch/src/app/tasktimer/TaskTimerPageClient.tsx)
 - Legacy runtime bootstrap: [`src/app/tasktimer/tasktimerClient.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/tasktimerClient.ts)
-- TaskLaunch auth layout: [`src/app/tasklaunch/layout.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/layout.tsx)
+- TaskLaunch auth layout: [`src/app/tasklaunch/layout.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/layout.tsx) plus root-level authenticated route layouts
 - Shared Firebase auth client: [`src/lib/firebaseClient.ts`](/G:/Apps/tasklaunch/src/lib/firebaseClient.ts)
 - Shared Firestore client: [`src/lib/firebaseFirestoreClient.ts`](/G:/Apps/tasklaunch/src/lib/firebaseFirestoreClient.ts)
 
 ## TaskLaunch Route Files
 
-- [`src/app/tasklaunch/dashboard/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/dashboard/page.tsx)
-- [`src/app/tasklaunch/feedback/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/feedback/page.tsx)
-- [`src/app/tasklaunch/friends/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/friends/page.tsx)
-- [`src/app/tasklaunch/history-manager/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/history-manager/page.tsx)
+- [`src/app/dashboard/page.tsx`](/G:/Apps/tasklaunch/src/app/dashboard/page.tsx)
+- [`src/app/feedback/page.tsx`](/G:/Apps/tasklaunch/src/app/feedback/page.tsx)
+- [`src/app/friends/page.tsx`](/G:/Apps/tasklaunch/src/app/friends/page.tsx)
+- [`src/app/history-manager/page.tsx`](/G:/Apps/tasklaunch/src/app/history-manager/page.tsx)
+- [`src/app/settings/page.tsx`](/G:/Apps/tasklaunch/src/app/settings/page.tsx)
 - [`src/app/tasklaunch/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/page.tsx)
-- [`src/app/tasklaunch/settings/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/settings/page.tsx)
-- [`src/app/tasklaunch/user-guide/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/user-guide/page.tsx)
+- [`src/app/user-guide/page.tsx`](/G:/Apps/tasklaunch/src/app/user-guide/page.tsx)
 
 ## TaskTimer Client Support Modules
 

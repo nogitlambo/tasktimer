@@ -162,7 +162,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         cancelLabel: "Close",
         onOk: () => {
           closeConfirm();
-          window.location.href = "/tasklaunch/settings?pane=general";
+          window.location.href = "/settings?pane=general";
         },
         onCancel: () => closeConfirm(),
       }
@@ -2645,7 +2645,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerPreferenceEvents({
       handleAppBackNavigation: () => {
         const currentRoutePath = normalizeTaskTimerRoutePath(normalizedPathname());
-        if (currentRoutePath === "/tasklaunch/settings") {
+        if (currentRoutePath === "/settings") {
           window.location.href = appPathForPage("dashboard");
           return true;
         }

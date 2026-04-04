@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import GlobalTaskAlerts from "../../tasktimer/components/GlobalTaskAlerts";
-import HistoryManagerScreen from "../../tasktimer/components/HistoryManagerScreen";
-import { initTaskTimerHistoryManagerClient } from "../../tasktimer/tasktimerClient";
-import "../../tasktimer/tasktimer.css";
+import GlobalTaskAlerts from "../tasktimer/components/GlobalTaskAlerts";
+import HistoryManagerScreen from "../tasktimer/components/HistoryManagerScreen";
+import { initTaskTimerHistoryManagerClient } from "../tasktimer/tasktimerClient";
+import "../tasktimer/tasktimer.css";
 
 export default function HistoryManagerPage() {
   useEffect(() => {

@@ -92,7 +92,7 @@ export default function SignedOutPage() {
               Privacy
             </Link>
             <Link
-              href="/tasklaunch/user-guide"
+              href="/user-guide"
               className="text-sm uppercase tracking-[0.18em] text-white/72 transition hover:text-white"
             >
               Features

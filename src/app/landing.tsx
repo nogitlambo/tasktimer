@@ -286,7 +286,7 @@ export default function Landing({
             <Link href="/privacy" className="landingV2NavLink displayFont">
               Privacy
             </Link>
-            <Link href="/tasklaunch/user-guide" className="landingV2NavLink displayFont">
+            <Link href="/user-guide" className="landingV2NavLink displayFont">
               Features
             </Link>
           </nav>

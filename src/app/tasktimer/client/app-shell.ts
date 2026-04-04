@@ -4,34 +4,38 @@ import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./contex
 import type { AppPage } from "./types";
 
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
+  function isKnownAppRoute(path: string) {
+    return (
+      path === "/tasklaunch" ||
+      path === "/dashboard" ||
+      path === "/friends" ||
+      path === "/settings" ||
+      path === "/history-manager" ||
+      path === "/user-guide" ||
+      path === "/feedback"
+    );
+  }
+
   function taskTimerRootPath() {
-    const pathname = window.location.pathname || "";
-    const normalized = pathname.replace(/\/+$/, "");
-    const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
-    if (taskLaunchMatch) return `${taskLaunchMatch[1] || ""}/tasklaunch`;
-    const pageStyleRoot = normalized.replace(/\/(settings|history-manager|user-guide|feedback|dashboard|friends)$/, "");
-    return pageStyleRoot || normalized || "/tasklaunch";
+    return "/tasklaunch";
   }
 
   function taskTimerExportBasePath() {
-    const pathname = window.location.pathname || "";
-    const normalized = pathname.replace(/\/+$/, "");
-    const taskLaunchMatch = normalized.match(/^(.*?)(\/tasklaunch)(?:\/|$)/);
-    if (taskLaunchMatch) return taskLaunchMatch[1] || "";
     return "";
   }
 
   function appRoute(path: string) {
-    if (!path.startsWith("/tasklaunch")) return path;
+    const input = String(path || "").trim();
+    if (!input) return "/tasklaunch";
     const hashIndex = path.indexOf("#");
     const queryIndex = path.indexOf("?");
     const cutIndex =
       queryIndex === -1 ? hashIndex : hashIndex === -1 ? queryIndex : Math.min(queryIndex, hashIndex);
     const rawPath = cutIndex >= 0 ? path.slice(0, cutIndex) : path;
     const trailing = cutIndex >= 0 ? path.slice(cutIndex) : "";
-    const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
-    const suffix = normalizedPath.replace(/^\/tasklaunch/, "");
-    const resolved = `${taskTimerRootPath()}${suffix}${trailing}`;
+    const normalizedPath = rawPath.replace(/\/+$/, "") || "/";
+    const resolvedPath = isKnownAppRoute(normalizedPath) ? normalizedPath : input.startsWith("/tasklaunch") ? "/tasklaunch" : input;
+    const resolved = `${resolvedPath}${trailing}`;
 
     const currentPath = window.location.pathname || "";
     const capacitorApi = (window as any).Capacitor;
@@ -64,11 +68,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function isTaskTimerDashboardPath(path: string) {
-    return /\/tasklaunch\/dashboard$/i.test(path) || /\/tasklaunch\/dashboard\/index\.html$/i.test(path);
+    return /\/dashboard$/i.test(path) || /\/dashboard\/index\.html$/i.test(path);
   }
 
   function isTaskTimerFriendsPath(path: string) {
-    return /\/tasklaunch\/friends$/i.test(path) || /\/tasklaunch\/friends\/index\.html$/i.test(path);
+    return /\/friends$/i.test(path) || /\/friends\/index\.html$/i.test(path);
   }
 
   function isTaskTimerMainAppPath(path: string) {
@@ -76,8 +80,8 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function appPathForPage(page: AppPage) {
-    if (page === "dashboard") return appRoute("/tasklaunch/dashboard");
-    if (page === "test2") return appRoute("/tasklaunch/friends");
+    if (page === "dashboard") return appRoute("/dashboard");
+    if (page === "test2") return appRoute("/friends");
     return appRoute("/tasklaunch");
   }
 
@@ -110,10 +114,12 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const withoutQuery = trimmed.split("#")[0]?.split("?")[0] || "";
     let normalized = withoutQuery.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
     normalized = normalized.replace(/\/index\.html$/i, "");
-    if (/\/tasklaunch\/settings\.html$/i.test(normalized)) return "/tasklaunch/settings";
-    if (/\/tasklaunch\/history-manager\.html$/i.test(normalized)) return "/tasklaunch/history-manager";
-    if (/\/tasklaunch\/user-guide\.html$/i.test(normalized)) return "/tasklaunch/user-guide";
-    if (/\/tasklaunch\/feedback\.html$/i.test(normalized)) return "/tasklaunch/feedback";
+    if (/\/settings(?:\/index)?$/i.test(normalized) || /\/settings\.html$/i.test(normalized)) return "/settings";
+    if (/\/history-manager(?:\/index)?$/i.test(normalized) || /\/history-manager\.html$/i.test(normalized)) return "/history-manager";
+    if (/\/user-guide(?:\/index)?$/i.test(normalized) || /\/user-guide\.html$/i.test(normalized)) return "/user-guide";
+    if (/\/feedback(?:\/index)?$/i.test(normalized) || /\/feedback\.html$/i.test(normalized)) return "/feedback";
+    if (/\/dashboard(?:\/index)?$/i.test(normalized)) return "/dashboard";
+    if (/\/friends(?:\/index)?$/i.test(normalized)) return "/friends";
     if (/\/tasklaunch(?:\/index)?$/i.test(normalized)) return "/tasklaunch";
     return normalized;
   }
@@ -122,10 +128,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const path = normalizeTaskTimerRoutePath(pathRaw);
     return (
       path === "/tasklaunch" ||
-      path === "/tasklaunch/settings" ||
-      path === "/tasklaunch/history-manager" ||
-      path === "/tasklaunch/user-guide" ||
-      path === "/tasklaunch/feedback"
+      path === "/settings" ||
+      path === "/history-manager" ||
+      path === "/user-guide" ||
+      path === "/feedback"
     );
   }
 
@@ -466,7 +472,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
     ctx.on(ctx.els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      navigateToAppRoute("/tasklaunch/settings");
+      navigateToAppRoute("/settings");
     });
 
     ctx.on(ctx.els.commandCenterTasksBtn, "click", () =>
@@ -481,18 +487,18 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
     ctx.on(ctx.els.commandCenterSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      navigateToAppRoute("/tasklaunch/settings");
+      navigateToAppRoute("/settings");
     });
 
     ctx.on(document as any, "click", (e: any) => {
       const badge = e?.target?.closest?.("#signedInHeaderBadge");
       if (!badge) return;
       e?.preventDefault?.();
-      navigateToAppRoute("/tasklaunch/settings?pane=general");
+      navigateToAppRoute("/settings?pane=general");
     });
 
     ctx.on(ctx.els.menuIcon, "click", () => {
-      navigateToAppRoute("/tasklaunch/settings");
+      navigateToAppRoute("/settings");
     });
   }
 

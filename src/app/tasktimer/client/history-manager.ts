@@ -966,11 +966,11 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const params = new URLSearchParams(window.location.search || "");
       const explicit = String(params.get("returnTo") || "").trim();
       if (explicit === "tasks") return "/tasklaunch";
-      if (explicit === "settings") return "/tasklaunch/settings";
+      if (explicit === "settings") return "/settings";
       const taskId = String(params.get("taskId") || "").trim();
-      return taskId ? "/tasklaunch" : "/tasklaunch/settings";
+      return taskId ? "/tasklaunch" : "/settings";
     } catch {
-      return "/tasklaunch/settings";
+      return "/settings";
     }
   }
 
@@ -1018,7 +1018,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         ctx.showUpgradePrompt("History Manager", "pro");
         return;
       }
-      ctx.navigateToAppRoute("/tasklaunch/history-manager");
+      ctx.navigateToAppRoute("/history-manager");
     });
     ctx.on(els.historyManagerExportBtn, "click", () => {
       if (!canUseAdvancedBackup()) {

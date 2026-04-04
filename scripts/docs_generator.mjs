@@ -57,7 +57,16 @@ function getPageRoutes(root) {
 }
 
 function getTaskLaunchRoutes(root) {
-  return getPageRoutes(root).filter((route) => route === "/tasklaunch" || route.startsWith("/tasklaunch/"));
+  const allowedRoutes = new Set([
+    "/tasklaunch",
+    "/dashboard",
+    "/friends",
+    "/settings",
+    "/history-manager",
+    "/user-guide",
+    "/feedback",
+  ]);
+  return getPageRoutes(root).filter((route) => allowedRoutes.has(route));
 }
 
 function getStorageKeys(root) {
@@ -165,11 +174,20 @@ function getTaskTimerClientSupportFiles(root) {
 }
 
 function getTaskTimerPageFiles(root) {
-  const tasklaunchRoot = path.join(root, "src", "app", "tasklaunch");
-  const files = walk(tasklaunchRoot)
+  const appRoot = path.join(root, "src", "app");
+  const allowedFiles = new Set([
+    "src/app/tasklaunch/page.tsx",
+    "src/app/dashboard/page.tsx",
+    "src/app/friends/page.tsx",
+    "src/app/settings/page.tsx",
+    "src/app/history-manager/page.tsx",
+    "src/app/user-guide/page.tsx",
+    "src/app/feedback/page.tsx",
+  ]);
+  const files = walk(appRoot)
     .filter((p) => p.endsWith(`${path.sep}page.tsx`) || p.endsWith(`${path.sep}page.ts`))
     .map((p) => rel(root, p));
-  return uniqueSorted(files);
+  return uniqueSorted(files.filter((p) => allowedFiles.has(p)));
 }
 
 function bulletLines(values, root) {
@@ -187,7 +205,7 @@ export function generateAgentsBlock(root) {
   return [
     START_MARKER,
     "## Auto-Generated Context",
-    "### Routes (derived from `src/app/tasklaunch/**/page.tsx`)",
+    "### Routes (derived from authenticated app page files)",
     textBulletLines(routes) || "- (none)",
     "",
     "### Persistent keys (derived from storage/client modules)",
@@ -229,7 +247,7 @@ export function generateArchitectureContent(root) {
     "",
     `- Package name: \`${pkg.name}\``,
     `- Frameworks: \`next@${pkg.nextVersion}\`, \`react@${pkg.reactVersion}\``,
-    "- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`",
+    "- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, and `/feedback`",
     "- Documentation automation is generated from current repo structure and scripts",
     "",
     "## Top-Level Source Map",
@@ -248,7 +266,7 @@ export function generateArchitectureContent(root) {
     "",
     `- Main app shell: ${fileLink(root, "src/app/tasktimer/TaskTimerPageClient.tsx")}`,
     `- Legacy runtime bootstrap: ${fileLink(root, "src/app/tasktimer/tasktimerClient.ts")}`,
-    `- TaskLaunch auth layout: ${fileLink(root, "src/app/tasklaunch/layout.tsx")}`,
+    `- TaskLaunch auth layout: ${fileLink(root, "src/app/tasklaunch/layout.tsx")} plus root-level authenticated route layouts`,
     `- Shared Firebase auth client: ${fileLink(root, "src/lib/firebaseClient.ts")}`,
     `- Shared Firestore client: ${fileLink(root, "src/lib/firebaseFirestoreClient.ts")}`,
     "",

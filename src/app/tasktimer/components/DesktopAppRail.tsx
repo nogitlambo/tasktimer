@@ -77,7 +77,7 @@ const NAV_ITEMS: NavItem[] = [
     iconSrc: "/Dashboard.svg",
     desktopId: "commandCenterDashboardBtn",
     mobileId: "footerDashboardBtn",
-    href: "/tasklaunch/dashboard",
+    href: "/dashboard",
   },
   {
     page: "tasks",
@@ -95,7 +95,7 @@ const NAV_ITEMS: NavItem[] = [
     iconSrc: "/Friends.svg",
     desktopId: "commandCenterGroupsBtn",
     mobileId: "footerTest2Btn",
-    href: "/tasklaunch/friends",
+    href: "/friends",
   },
   {
     page: "settings",
@@ -104,7 +104,7 @@ const NAV_ITEMS: NavItem[] = [
     iconSrc: "/Settings.svg",
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
-    href: "/tasklaunch/settings",
+    href: "/settings",
   },
 ];
 
@@ -440,7 +440,7 @@ export default function DesktopAppRail({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid,
-          returnPath: "/tasklaunch/settings?pane=general",
+          returnPath: "/settings?pane=general",
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -595,7 +595,7 @@ export default function DesktopAppRail({
       return;
     }
     if (archieSuggestedAction.kind === "openSettingsPane") {
-      window.location.assign(`/tasklaunch/settings?pane=${archieSuggestedAction.pane}`);
+      window.location.assign(`/settings?pane=${archieSuggestedAction.pane}`);
       return;
     }
     try {
@@ -771,7 +771,7 @@ export default function DesktopAppRail({
                   <div className="dashboardRailProfileIdentity">
                     <div className="dashboardProfileName">{profileLabel}</div>
                     <div className="dashboardTagRow dashboardRailProfileTags">
-                      <a className="dashboardTag dashboardRailProfileTagLink" href="/tasklaunch/settings?pane=general">
+                      <a className="dashboardTag dashboardRailProfileTagLink" href="/settings?pane=general">
                         View Profile
                       </a>
                       <button

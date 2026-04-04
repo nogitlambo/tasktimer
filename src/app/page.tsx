@@ -214,7 +214,7 @@ function HomeContent() {
       }
       if (email && !hasRedirected && !bypassAutoRedirect) {
         setHasRedirected(true);
-        router.replace("/tasklaunch/dashboard");
+        router.replace("/dashboard");
       }
     });
     return () => unsub();

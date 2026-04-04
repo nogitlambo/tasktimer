@@ -117,7 +117,7 @@ function WebSignInPageContent() {
       }
       if (email && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect) {
         setHasRedirected(true);
-        router.replace("/tasklaunch/dashboard");
+        router.replace("/dashboard");
       }
     });
     return () => unsub();

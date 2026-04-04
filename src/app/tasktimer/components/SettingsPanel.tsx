@@ -1672,7 +1672,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
 
               </button>
 
-              <a className="menuItem settingsDataTile" id="commandCenterFeedbackBtn" href="/tasklaunch/feedback" aria-label="Feedback">
+              <a className="menuItem settingsDataTile" id="commandCenterFeedbackBtn" href="/feedback" aria-label="Feedback">
 
                 <MenuIconLabel icon="/Feedback.svg" label="Feedback" />
 

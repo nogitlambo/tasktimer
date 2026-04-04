@@ -46,7 +46,7 @@ function writeStoredRankThumbnailSrc(uid: string, src: string): void {
   window.localStorage.setItem(`${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`, nextSrc);
 }
 
-export default function SignedInHeaderBadge({ href = "/tasklaunch/settings?pane=general" }: SignedInHeaderBadgeProps) {
+export default function SignedInHeaderBadge({ href = "/settings?pane=general" }: SignedInHeaderBadgeProps) {
   const [signedInUserLabel, setSignedInUserLabel] = useState<string | null>(null);
   const [signedInUserUid, setSignedInUserUid] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));

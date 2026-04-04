@@ -3,7 +3,7 @@
 ## Project
 - App: Next.js (App Router) TaskTimer app
 - Main route: `/tasklaunch`
-- Additional routes: `/tasklaunch/settings`, `/tasklaunch/history-manager`, `/tasklaunch/user-guide`
+- Additional routes: `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, `/feedback`
 - Key files: `src/app/tasklaunch/page.tsx`, `src/app/tasktimer/tasktimerClient.ts`, `src/app/tasktimer/lib/*`, `src/app/tasktimer/components/*`
 
 ## Current architecture context
@@ -24,8 +24,8 @@
 - Mode 1 is always enabled; Mode 2 and Mode 3 can be enabled/disabled in Category Manager.
 
 ## Settings and overlays
-- Settings UI is shared via `src/app/tasktimer/components/SettingsPanel.tsx` and used on `/tasklaunch/settings`.
-- On `/tasklaunch/settings`, auto-select `Account` (`general`) only on desktop/wide layouts where nav + detail panels are shown together.
+- Settings UI is shared via `src/app/tasktimer/components/SettingsPanel.tsx` and used on `/settings`.
+- On `/settings`, auto-select `Account` (`general`) only on desktop/wide layouts where nav + detail panels are shown together.
 - On mobile/narrow layouts (list-first view), do not auto-select a pane by default.
 - Keep Settings default-pane behavior as initial-render only; do not force-reset pane selection on viewport resize.
 - Category Manager is implemented as an overlay in `src/app/tasktimer/components/InfoOverlays.tsx` and opened via `data-menu="categoryManager"`.
@@ -47,11 +47,11 @@
 - Footer tabs control top-level app page switching; keep IDs stable (`footerDashboardBtn`, `footerTasksBtn`, `footerTest1Btn`, `footerTest2Btn`, `footerSettingsBtn`).
 - Mode switch and Add Task controls should only be visible on the Tasks page.
 - Inline task history is wired via `data-history-action` handlers and includes actions like `manage`, `close`, and `pin`.
-- History Manager back action is expected to return to `/tasklaunch/settings`.
+- History Manager back action is expected to return to `/settings`.
 - Settings exit button `#closeMenuBtn` label is `Close` and exits to dashboard fallback (`/tasklaunch?page=dashboard`) when no overlay/nav stack is active.
 - Settings mobile detail `Back` is pane navigation only (returns to module list), not route exit.
-- `/privacy` back behavior must be history-aware: use browser back when history exists, else fallback to `/tasklaunch/settings`.
-- All `/tasklaunch/*` routes are auth-protected via `src/app/tasklaunch/layout.tsx`; unauthenticated users must be redirected to `/`.
+- `/privacy` back behavior must be history-aware: use browser back when history exists, else fallback to `/settings`.
+- Authenticated routes are auth-protected via route-specific layouts; unauthenticated users must be redirected to `/`.
 - Landing page auth UX does not include guest entry or authenticated shortcut buttons (`Guest Sign In`, `Go to Dashboard`, `Go to Tasks`).
 - Logout must land on `/` and preserve the one-time signed-out handoff (`?signedOut=1` + `tasktimer:authSignedOutRedirectBypass`) to avoid immediate auth redirect races.
 - Preserve selector hooks used by delegated handlers (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
@@ -121,7 +121,7 @@
   - Type/build syntax issues in touched files.
   - ID/className regressions that can break client-side bindings.
   - `data-*` action hook regressions (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
-  - Page/route navigation regressions between `/tasklaunch`, `/tasklaunch/settings`, `/tasklaunch/history-manager`, `/tasklaunch/user-guide`.
+  - Page/route navigation regressions between `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, `/feedback`.
   - History Manager behavior regressions: bulk selection propagation (task -> date -> rows), sortable columns, and delete summary accuracy.
   - Pinned history behavior: pinned chart reopens on Tasks page and persists via `${STORAGE_KEY}:pinnedHistoryTaskIds`.
   - Theme parity regressions: new/changed controls readable and consistent in both purple and cyan themes.
@@ -137,14 +137,14 @@
 
 <!-- AUTO-CONTEXT:START -->
 ## Auto-Generated Context
-### Routes (derived from `src/app/tasklaunch/**/page.tsx`)
+### Routes (derived from authenticated app page files)
+- `/dashboard`
+- `/feedback`
+- `/friends`
+- `/history-manager`
+- `/settings`
 - `/tasklaunch`
-- `/tasklaunch/dashboard`
-- `/tasklaunch/feedback`
-- `/tasklaunch/friends`
-- `/tasklaunch/history-manager`
-- `/tasklaunch/settings`
-- `/tasklaunch/user-guide`
+- `/user-guide`
 
 ### Persistent keys (derived from storage/client modules)
 - `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``

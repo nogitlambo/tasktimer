@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000/tasklaunch](http://localhost:3000/tasklaunch) with your browser to see the result.
+Open [http://localhost:3000/tasklaunch](http://localhost:3000/tasklaunch) for Tasks, or [http://localhost:3000/dashboard](http://localhost:3000/dashboard) for Dashboard.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
