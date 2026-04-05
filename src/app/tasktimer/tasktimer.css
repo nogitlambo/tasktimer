@@ -580,6 +580,27 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
     0 12px 26px rgba(0, 0, 0, .22);
 }
 
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardCollapsedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardCollapsedMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardCollapsedActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItemTop {
   display: flex;
   align-items: flex-start;
@@ -657,7 +678,7 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardTitle {
-  margin: 14px 0 8px;
+  margin: 0;
   font-size: .96rem;
   line-height: 1.35;
   letter-spacing: .03em;
@@ -665,8 +686,14 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
   color: rgba(241, 250, 255, .98);
 }
 
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardExpandBtn {
+  min-width: 88px;
+  border-radius: 0 !important;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardDetails {
-  margin: 0;
+  margin: 14px 0 0;
   color: rgba(214, 230, 240, .84);
   font-size: .95rem;
   line-height: 1.55;
@@ -758,7 +785,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardM
     align-items: stretch;
   }
 
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardCollapsedRow,
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardCollapsedActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   #app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn {
+    width: 100%;
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardExpandBtn {
     width: 100%;
   }
 }

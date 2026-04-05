@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -19,6 +19,7 @@ import DesktopAppRail from "./DesktopAppRail";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
 export default function FeedbackScreen() {
+  const jiraBoardViewerUid = "mWN9rMhO4xMq410c4E4VYyThw0x2";
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackAnonymous, setFeedbackAnonymous] = useState(false);
   const [feedbackType, setFeedbackType] = useState<FeedbackType | "">("");
@@ -29,6 +30,8 @@ export default function FeedbackScreen() {
   const [feedbackError, setFeedbackError] = useState("");
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [voteBusyById, setVoteBusyById] = useState<Record<string, boolean>>({});
+  const [expandedFeedbackById, setExpandedFeedbackById] = useState<Record<string, boolean>>({});
+  const lastJiraSubmissionRef = useRef<{ signature: string; jiraIssueKey: string | null; jiraIssueBrowseUrl: string | null } | null>(null);
   const [viewerUid, setViewerUid] = useState("");
   const [viewerDisplayName, setViewerDisplayName] = useState("");
   const [viewerRankThumbnailSrc, setViewerRankThumbnailSrc] = useState<string | null>(null);
@@ -122,13 +125,69 @@ export default function FeedbackScreen() {
   }, [feedbackItems]);
 
   const feedbackLoading = feedbackItems === null;
+  const canViewJiraLinks = viewerUid === jiraBoardViewerUid;
 
   const handleSubmitFeedback = useCallback(async () => {
     if (!canSubmitFeedback) return;
     setFeedbackError("");
     setFeedbackStatus("");
     setFeedbackSubmitting(true);
-    const result = await createFeedbackItem({
+    const auth = getFirebaseAuthClient();
+    const currentUser = auth?.currentUser;
+    if (!currentUser || !viewerUid) {
+      setFeedbackSubmitting(false);
+      setFeedbackError("You must be signed in to submit feedback.");
+      return;
+    }
+    let idToken = "";
+    try {
+      idToken = await currentUser.getIdToken();
+    } catch {
+      setFeedbackSubmitting(false);
+      setFeedbackError("Could not verify your sign-in session. Please try again.");
+      return;
+    }
+    const submissionSignature = JSON.stringify({
+      ownerUid: viewerUid,
+      authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
+      isAnonymous: feedbackAnonymous,
+      type: feedbackType,
+      title: feedbackTitle.trim(),
+      details: feedbackDetails.trim(),
+    });
+    let jiraResult = lastJiraSubmissionRef.current?.signature === submissionSignature ? lastJiraSubmissionRef.current : null;
+    if (!jiraResult) {
+      const response = await fetch("/api/jira/feedback", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          authorDisplayName: viewerDisplayName || null,
+          authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
+          authorRankThumbnailSrc: viewerRankThumbnailSrc,
+          authorCurrentRankId: viewerCurrentRankId,
+          isAnonymous: feedbackAnonymous,
+          type: feedbackType as FeedbackType,
+          title: feedbackTitle,
+          details: feedbackDetails,
+        }),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string; jiraIssueKey?: string; jiraIssueBrowseUrl?: string } | null;
+      if (!response.ok) {
+        setFeedbackSubmitting(false);
+        setFeedbackError(result?.error || "Could not submit feedback.");
+        return;
+      }
+      jiraResult = {
+        signature: submissionSignature,
+        jiraIssueKey: result?.jiraIssueKey || null,
+        jiraIssueBrowseUrl: result?.jiraIssueBrowseUrl || null,
+      };
+      lastJiraSubmissionRef.current = jiraResult;
+    }
+    const saved = await createFeedbackItem({
       ownerUid: viewerUid,
       authorDisplayName: viewerDisplayName || null,
       authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
@@ -138,16 +197,22 @@ export default function FeedbackScreen() {
       type: feedbackType as FeedbackType,
       title: feedbackTitle,
       details: feedbackDetails,
+      jiraIssueBrowseUrl: jiraResult?.jiraIssueBrowseUrl || null,
     });
     setFeedbackSubmitting(false);
-    if (!result.ok) {
-      setFeedbackError(result.message);
+    if (!saved.ok) {
+      setFeedbackError(
+        jiraResult?.jiraIssueKey
+          ? `${saved.message} Jira issue ${jiraResult.jiraIssueKey} was already created, so retrying this same draft will reuse it.`
+          : saved.message
+      );
       return;
     }
+    lastJiraSubmissionRef.current = null;
     setFeedbackType("");
     setFeedbackTitle("");
     setFeedbackDetails("");
-    setFeedbackStatus("Feedback submitted successfully.");
+    setFeedbackStatus(jiraResult?.jiraIssueKey ? `Feedback submitted successfully. Jira issue ${jiraResult.jiraIssueKey} created.` : "Feedback submitted successfully.");
   }, [
     canSubmitFeedback,
     feedbackAnonymous,
@@ -176,6 +241,10 @@ export default function FeedbackScreen() {
     },
     [viewerUid, voteBusyById]
   );
+
+  const handleToggleExpanded = useCallback((feedbackId: string) => {
+    setExpandedFeedbackById((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }));
+  }, []);
 
   const getFeedbackTypeLabel = useCallback((type: FeedbackType) => {
     if (type === "bug") return "Bug";
@@ -338,33 +407,59 @@ export default function FeedbackScreen() {
                     <div className="feedbackBoardList" aria-live="polite">
                       {sortedFeedbackItems.map((item) => {
                         const voteBusy = !!voteBusyById[item.feedbackId];
+                        const isExpanded = !!expandedFeedbackById[item.feedbackId];
                         return (
                           <article key={item.feedbackId} className="feedbackBoardItem">
-                            <div className="feedbackBoardItemTop">
-                              <div className="feedbackBoardBadges">
-                                <span className={`feedbackBoardBadge feedbackBoardBadgeType feedbackBoardBadgeType-${item.type}`}>
-                                  {getFeedbackTypeLabel(item.type)}
-                                </span>
-                                <span className={`feedbackBoardBadge feedbackBoardBadgeStatus feedbackBoardBadgeStatus-${item.status}`}>
-                                  {getFeedbackStatusLabel(item.status)}
-                                </span>
+                            <div className="feedbackBoardCollapsedRow">
+                              <div className="feedbackBoardCollapsedMain">
+                                <div className="feedbackBoardBadges">
+                                  <span className={`feedbackBoardBadge feedbackBoardBadgeType feedbackBoardBadgeType-${item.type}`}>
+                                    {getFeedbackTypeLabel(item.type)}
+                                  </span>
+                                </div>
+                                <h3 className="dashboardCardTitle feedbackBoardTitle">{item.title}</h3>
                               </div>
-                              <button
-                                className={`btn btn-ghost small feedbackBoardVoteBtn${item.viewerHasUpvoted ? " isOn" : ""}`}
-                                type="button"
-                                disabled={voteBusy || !viewerUid}
-                                aria-pressed={item.viewerHasUpvoted ? "true" : "false"}
-                                onClick={() => handleToggleVote(item.feedbackId)}
-                              >
-                                {item.viewerHasUpvoted ? "Upvoted" : "Upvote"} ({item.upvoteCount})
-                              </button>
+                              <div className="feedbackBoardCollapsedActions">
+                                <button
+                                  className={`btn btn-ghost small feedbackBoardVoteBtn${item.viewerHasUpvoted ? " isOn" : ""}`}
+                                  type="button"
+                                  disabled={voteBusy || !viewerUid}
+                                  aria-pressed={item.viewerHasUpvoted ? "true" : "false"}
+                                  onClick={() => handleToggleVote(item.feedbackId)}
+                                >
+                                  {item.viewerHasUpvoted ? "Upvoted" : "Upvote"} ({item.upvoteCount})
+                                </button>
+                                <button
+                                  className="btn btn-ghost small feedbackBoardExpandBtn"
+                                  type="button"
+                                  aria-expanded={isExpanded ? "true" : "false"}
+                                  onClick={() => handleToggleExpanded(item.feedbackId)}
+                                >
+                                  {isExpanded ? "Hide" : "Details"}
+                                </button>
+                              </div>
                             </div>
-                            <h3 className="dashboardCardTitle feedbackBoardTitle">{item.title}</h3>
-                            <p className="settingsDetailText feedbackBoardDetails">{item.details}</p>
-                            <div className="feedbackBoardMeta">
-                              <span>{getFeedbackAuthorLabel(item)}</span>
-                              <span>{formatFeedbackDate(item)}</span>
-                            </div>
+                            {isExpanded ? (
+                              <>
+                                <div className="feedbackBoardItemTop">
+                                  <div className="feedbackBoardBadges">
+                                    <span className={`feedbackBoardBadge feedbackBoardBadgeStatus feedbackBoardBadgeStatus-${item.status}`}>
+                                      {getFeedbackStatusLabel(item.status)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="settingsDetailText feedbackBoardDetails">{item.details}</p>
+                                <div className="feedbackBoardMeta">
+                                  <span>{getFeedbackAuthorLabel(item)}</span>
+                                  <span>{formatFeedbackDate(item)}</span>
+                                  {canViewJiraLinks && item.jiraIssueBrowseUrl ? (
+                                    <a className="btn btn-ghost small" href={item.jiraIssueBrowseUrl} target="_blank" rel="noreferrer">
+                                      Open in Jira
+                                    </a>
+                                  ) : null}
+                                </div>
+                              </>
+                            ) : null}
                           </article>
                         );
                       })}

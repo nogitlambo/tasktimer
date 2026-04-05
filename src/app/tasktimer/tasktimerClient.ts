@@ -29,7 +29,6 @@ import {
   loadCachedDashboard,
   primeDashboardCacheFromShadow,
   loadCachedPreferences,
-  subscribeCachedPreferences,
   loadCachedTaskUi,
   saveCloudDashboard,
   saveCloudPreferences,
@@ -42,6 +41,8 @@ import {
   normalizeRewardProgress,
 } from "./lib/rewards";
 import { computeMomentumSnapshot } from "./lib/momentum";
+import { measureDashboardRender } from "./lib/dashboardPerformance";
+import { buildDashboardRenderSummary } from "./lib/dashboardViewModel";
 import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
@@ -83,6 +84,7 @@ import {
   DEFAULT_MODE_ENABLED,
   DEFAULT_MODE_LABELS,
 } from "./client/state";
+import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
@@ -122,6 +124,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 
   const runtime = createTaskTimerRuntime();
+  const workspaceRepository = createTaskTimerWorkspaceRepository();
   const { on } = runtime;
 
   function getCurrentPlan(): TaskTimerPlan {
@@ -273,10 +276,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let historyNoteCloudRepairAttempted = initialState.historyNoteCloudRepairAttempted;
   const checkpointFiredKeysByTaskId = initialState.checkpointFiredKeysByTaskId;
   const checkpointBaselineSecByTaskId = initialState.checkpointBaselineSecByTaskId;
-  let cloudPreferencesCache = loadCachedPreferences();
-  let cloudDashboardCache = loadCachedDashboard();
-  let cloudTaskUiCache = loadCachedTaskUi();
-  rewardProgress = normalizeRewardProgress((cloudPreferencesCache || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
+  let cloudPreferencesCache = workspaceRepository.loadCachedPreferences();
+  let cloudDashboardCache = workspaceRepository.loadCachedDashboard();
+  let cloudTaskUiCache = workspaceRepository.loadCachedTaskUi();
+  rewardProgress = normalizeRewardProgress((cloudPreferencesCache || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
   let navStackMemory = initialState.navStackMemory;
   let pendingTaskJumpMemory = initialState.pendingTaskJumpMemory;
   let groupsIncomingRequests = initialState.groupsIncomingRequests;
@@ -333,9 +336,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
   let historyManagerRefreshInFlight: Promise<void> | null = null;
   const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
-  const unsubscribeCachedPreferences = subscribeCachedPreferences((prefs) => {
+  let lastDashboardLiveSignature = "";
+  const unsubscribeCachedPreferences = workspaceRepository.subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
-    rewardProgress = normalizeRewardProgress((prefs || buildDefaultCloudPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
+    rewardProgress = normalizeRewardProgress((prefs || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
   });
   const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, item) => {
     const key = String(item.id || "").trim();
@@ -791,18 +795,49 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function renderDashboardWidgetsWithBusy(opts?: DashboardRenderOptions) {
+    const summary = buildDashboardRenderSummary({
+      tasks,
+      historyByTaskId,
+      deletedTaskMeta,
+      dynamicColorsEnabled,
+      currentDayKey: localDayKey(nowMs()),
+    });
     const renderOpts = opts ? { includeAvgSession: opts.includeAvgSession } : undefined;
     const shouldShowBusy = currentAppPage === "dashboard" && opts?.showBusy === true;
     if (!shouldShowBusy) {
-      renderDashboardWidgetsFromRenderApi(renderOpts);
+      measureDashboardRender("full", summary.fullSignature, false, () => {
+        renderDashboardWidgetsFromRenderApi(renderOpts);
+      });
+      lastDashboardLiveSignature = summary.liveSignature;
       return;
     }
     const busyKey = showDashboardBusyIndicator(opts?.busyMessage || "Refreshing...");
     try {
-      renderDashboardWidgetsFromRenderApi(renderOpts);
+      measureDashboardRender("full", summary.fullSignature, false, () => {
+        renderDashboardWidgetsFromRenderApi(renderOpts);
+      });
+      lastDashboardLiveSignature = summary.liveSignature;
     } finally {
       hideDashboardBusyIndicator(busyKey);
     }
+  }
+
+  function renderDashboardLiveWidgetsWithMemo() {
+    const summary = buildDashboardRenderSummary({
+      tasks,
+      historyByTaskId,
+      deletedTaskMeta,
+      dynamicColorsEnabled,
+      currentDayKey: localDayKey(nowMs()),
+    });
+    if (summary.runningTaskCount > 0 && summary.liveSignature === lastDashboardLiveSignature) {
+      measureDashboardRender("live", summary.liveSignature, true, () => undefined);
+      return;
+    }
+    measureDashboardRender("live", summary.liveSignature, false, () => {
+      renderDashboardLiveWidgetsApi();
+    });
+    lastDashboardLiveSignature = summary.liveSignature;
   }
 
   const groupsApi = createTaskTimerGroups({
@@ -1412,7 +1447,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     render,
     renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
-    renderDashboardLiveWidgets: () => renderDashboardLiveWidgetsApi(),
+    renderDashboardLiveWidgets: () => renderDashboardLiveWidgetsWithMemo(),
     save,
     openOverlay: (overlay) => openOverlay(overlay),
     closeOverlay: (overlay) => closeOverlay(overlay),
@@ -2600,6 +2635,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
 
   function wireEvents() {
+    const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
     const setEditPresetIntervalsInfoOpen = (open: boolean) => {
       const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
       dialog?.classList.toggle("isOpen", open);
@@ -2610,8 +2646,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on(els.editPresetIntervalsInfoBtn, "click", (e: any) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const isOpen = (els.editPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
-      setEditPresetIntervalsInfoOpen(!isOpen);
+      setEditPresetIntervalsInfoOpen(false);
+      window.dispatchEvent(
+        new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, {
+          detail: {
+            message: "Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.",
+          },
+        })
+      );
     });
     on(document as any, "click", (e: any) => {
       const target = e?.target as HTMLElement | null;

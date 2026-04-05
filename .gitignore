@@ -50,3 +50,4 @@ next-env.d.ts
 /workspace/package-lock.json
 /workspace/package.json
 /workspace/firebase-service-account.json
+/workspace/*firebase-adminsdk-*.json

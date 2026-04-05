@@ -35,6 +35,15 @@ import {
   type TaskTimerPlan,
 } from "../lib/entitlements";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
+import {
+  ACCOUNT_AVATAR_UPDATED_EVENT,
+  customAvatarIdForUid,
+  googleAvatarIdForUid,
+  readStoredAvatarId,
+  readStoredCustomAvatarSrc,
+  readStoredRankThumbnailSrc,
+  writeStoredRankThumbnailSrc,
+} from "../lib/accountProfileStorage";
 
 type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
 
@@ -57,16 +66,14 @@ type NavItem = {
 
 type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
 
-const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
-const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
-const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
-const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
 const ARCHIE_OUTLINE_DRAW_MS = 840;
-const ARCHIE_TYPE_MS = 840;
+const ARCHIE_TYPE_MS = 1050;
 const ARCHIE_BLINK_DURATION_MS = 2000;
 const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
 const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
+const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
+const ARCHIE_LINE_REVEAL_STEP_MS = 225;
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const NAV_ITEMS: NavItem[] = [
@@ -107,51 +114,6 @@ const NAV_ITEMS: NavItem[] = [
     href: "/settings",
   },
 ];
-
-function avatarStorageKeyForUid(uid: string) {
-  return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
-}
-
-function avatarCustomStorageKeyForUid(uid: string) {
-  return `${AVATAR_CUSTOM_STORAGE_PREFIX}${uid}`;
-}
-
-function rankThumbnailStorageKeyForUid(uid: string) {
-  return `${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`;
-}
-
-function customAvatarIdForUid(uid: string) {
-  return `custom-upload:${uid}`;
-}
-
-function googleAvatarIdForUid(uid: string) {
-  return `google/profile-photo:${uid}`;
-}
-
-function readStoredAvatarId(uid: string) {
-  if (typeof window === "undefined" || !uid) return "";
-  return String(window.localStorage.getItem(avatarStorageKeyForUid(uid)) || "").trim();
-}
-
-function readStoredCustomAvatarSrc(uid: string) {
-  if (typeof window === "undefined" || !uid) return "";
-  return String(window.localStorage.getItem(avatarCustomStorageKeyForUid(uid)) || "").trim();
-}
-
-function readStoredRankThumbnailSrc(uid: string) {
-  if (typeof window === "undefined" || !uid) return "";
-  return String(window.localStorage.getItem(rankThumbnailStorageKeyForUid(uid)) || "").trim();
-}
-
-function writeStoredRankThumbnailSrc(uid: string, src: string) {
-  if (typeof window === "undefined" || !uid) return;
-  const normalizedSrc = String(src || "").trim();
-  if (!normalizedSrc) {
-    window.localStorage.removeItem(rankThumbnailStorageKeyForUid(uid));
-    return;
-  }
-  window.localStorage.setItem(rankThumbnailStorageKeyForUid(uid), normalizedSrc);
-}
 
 function labelFromUser(user: User | null) {
   const displayName = String(user?.displayName || "").trim();
@@ -295,7 +257,9 @@ export default function DesktopAppRail({
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
   const [archieBlinkPattern, setArchieBlinkPattern] = useState<ArchieBlinkPattern>("idle");
+  const [archieDisplayLines, setArchieDisplayLines] = useState<string[]>([ARCHIE_DEFAULT_PROMPT]);
   const archieInputRef = useRef<HTMLInputElement | null>(null);
+  const archieTitleRef = useRef<HTMLDivElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
   const archieBlinkStartTimerRef = useRef<number | null>(null);
   const archieBlinkStopTimerRef = useRef<number | null>(null);
@@ -588,6 +552,51 @@ export default function DesktopAppRail({
     }, ARCHIE_TYPE_MS);
   }, [activePage, archieQuestion, clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
 
+  const showArchieHelpMessage = useCallback((message: string) => {
+    const nextMessage = String(message || "").trim();
+    if (!nextMessage) return;
+    const reducedMotion = prefersReducedMotion();
+    clearArchieTimers();
+    const shouldAnimateOpen = !isArchieBubbleOpen;
+    setIsArchieBubbleOpen(true);
+    setArchieQuestion("");
+    setArchieDisplayMessage(nextMessage);
+    setArchieInputVisible(false);
+    setArchieSuggestedAction(null);
+    setArchieOutlineAnimating(shouldAnimateOpen && !reducedMotion);
+    setArchieOutlineComplete(!shouldAnimateOpen || reducedMotion);
+    setArchieTitleAnimation("none");
+    setArchieTitleAnimationKey((value) => value + 1);
+    if (reducedMotion) {
+      setArchieOutlineAnimating(false);
+      setArchieOutlineComplete(true);
+      setArchieTitleAnimation("none");
+      setArchieInputVisible(true);
+      return;
+    }
+    if (shouldAnimateOpen) {
+      queueArchieTimer(() => {
+        setArchieOutlineAnimating(false);
+        setArchieOutlineComplete(true);
+        setArchieTitleAnimation("prompt");
+        setArchieTitleAnimationKey((value) => value + 1);
+      }, ARCHIE_OUTLINE_DRAW_MS);
+      queueArchieTimer(() => {
+        setArchieTitleAnimation("none");
+        setArchieInputVisible(true);
+      }, ARCHIE_OUTLINE_DRAW_MS + ARCHIE_TYPE_MS);
+      return;
+    }
+    setArchieOutlineAnimating(false);
+    setArchieOutlineComplete(true);
+    setArchieTitleAnimation("response");
+    setArchieTitleAnimationKey((value) => value + 1);
+    queueArchieTimer(() => {
+      setArchieTitleAnimation("none");
+      setArchieInputVisible(true);
+    }, ARCHIE_TYPE_MS);
+  }, [clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer]);
+
   const handleArchieSuggestedAction = useCallback(() => {
     if (!archieSuggestedAction || typeof window === "undefined") return;
     if (archieSuggestedAction.kind === "navigate") {
@@ -636,6 +645,102 @@ export default function DesktopAppRail({
     if (!isArchieBubbleOpen || !archieInputVisible) return;
     archieInputRef.current?.focus();
   }, [archieInputVisible, isArchieBubbleOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const computeArchieDisplayLines = () => {
+      const titleEl = archieTitleRef.current;
+      const message = String(archieDisplayMessage || "").trim() || ARCHIE_DEFAULT_PROMPT;
+      if (!titleEl) {
+        setArchieDisplayLines([message]);
+        return;
+      }
+      const maxWidth = Math.max(0, Math.floor(titleEl.clientWidth));
+      if (!(maxWidth > 0)) {
+        setArchieDisplayLines([message]);
+        return;
+      }
+
+      const computed = window.getComputedStyle(titleEl);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) {
+        setArchieDisplayLines([message]);
+        return;
+      }
+      context.font = computed.font;
+      const letterSpacingValue = Number.parseFloat(computed.letterSpacing || "0");
+      const letterSpacing = Number.isFinite(letterSpacingValue) ? letterSpacingValue : 0;
+
+      const measureLine = (value: string) => {
+        const text = String(value || "");
+        if (!text) return 0;
+        const glyphCount = Array.from(text).length;
+        return context.measureText(text).width + Math.max(0, glyphCount - 1) * letterSpacing;
+      };
+
+      const pushWrappedWord = (word: string, lines: string[]) => {
+        let remaining = word;
+        while (remaining) {
+          let slice = "";
+          for (const char of Array.from(remaining)) {
+            const nextSlice = `${slice}${char}`;
+            if (slice && measureLine(nextSlice) > maxWidth) break;
+            slice = nextSlice;
+          }
+          if (!slice) slice = Array.from(remaining)[0] || "";
+          lines.push(slice);
+          remaining = remaining.slice(slice.length);
+        }
+      };
+
+      const nextLines: string[] = [];
+      for (const rawParagraph of message.split(/\n+/)) {
+        const paragraph = rawParagraph.trim();
+        if (!paragraph) continue;
+        let currentLine = "";
+        for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+          const nextLine = currentLine ? `${currentLine} ${word}` : word;
+          if (measureLine(nextLine) <= maxWidth) {
+            currentLine = nextLine;
+            continue;
+          }
+          if (currentLine) nextLines.push(currentLine);
+          if (measureLine(word) <= maxWidth) {
+            currentLine = word;
+          } else {
+            pushWrappedWord(word, nextLines);
+            currentLine = "";
+          }
+        }
+        if (currentLine) nextLines.push(currentLine);
+      }
+
+      setArchieDisplayLines(nextLines.length ? nextLines : [message]);
+    };
+
+    computeArchieDisplayLines();
+    const titleEl = archieTitleRef.current;
+    if (!titleEl || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => computeArchieDisplayLines());
+    observer.observe(titleEl);
+    return () => observer.disconnect();
+  }, [archieDisplayMessage]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleArchieHelpRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      const message = String(detail?.message || "").trim();
+      if (!message) return;
+      showArchieHelpMessage(message);
+    };
+    window.addEventListener(ARCHIE_HELP_REQUEST_EVENT, handleArchieHelpRequest as EventListener);
+    return () => {
+      window.removeEventListener(ARCHIE_HELP_REQUEST_EVENT, handleArchieHelpRequest as EventListener);
+    };
+  }, [showArchieHelpMessage]);
 
   useEffect(() => {
     if (prefersReducedMotion()) {
@@ -704,13 +809,20 @@ export default function DesktopAppRail({
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
                 </span>
-                <div className="desktopRailMascotBubbleTitle">
+                <div className="desktopRailMascotBubbleTitle" ref={archieTitleRef}>
                   <span
                     key={archieTitleAnimationKey}
                     className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
-                    style={{ "--archie-title-width": `${Math.max(archieDisplayMessage.length, 1)}ch` } as CSSProperties}
                   >
-                    {archieDisplayMessage}
+                    {archieDisplayLines.map((line, index) => (
+                      <span
+                        key={`${archieTitleAnimationKey}-${index}-${line}`}
+                        className="desktopRailMascotBubbleTitleLine"
+                        style={{ "--archie-line-delay": `${index * ARCHIE_LINE_REVEAL_STEP_MS}ms` } as CSSProperties}
+                      >
+                        {line}
+                      </span>
+                    ))}
                   </span>
                 </div>
                 {archieSuggestedAction ? (

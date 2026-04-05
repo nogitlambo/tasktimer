@@ -657,7 +657,8 @@ service cloud.firestore {
         "createdAt",
         "updatedAt",
         "lastActivityAt",
-        "schemaVersion"
+        "schemaVersion",
+        "jiraIssueBrowseUrl"
       ])
       && request.resource.data.feedbackId is string
       && request.resource.data.ownerUid is string
@@ -665,6 +666,7 @@ service cloud.firestore {
       && (!("authorEmail" in request.resource.data) || request.resource.data.authorEmail == null || request.resource.data.authorEmail is string)
       && (!("authorRankThumbnailSrc" in request.resource.data) || request.resource.data.authorRankThumbnailSrc == null || request.resource.data.authorRankThumbnailSrc is string)
       && (!("authorCurrentRankId" in request.resource.data) || request.resource.data.authorCurrentRankId == null || request.resource.data.authorCurrentRankId is string)
+      && (!("jiraIssueBrowseUrl" in request.resource.data) || request.resource.data.jiraIssueBrowseUrl == null || request.resource.data.jiraIssueBrowseUrl is string)
       && request.resource.data.isAnonymous is bool
       && isFeedbackType(request.resource.data.type)
       && request.resource.data.title is string
@@ -700,6 +702,7 @@ service cloud.firestore {
       && request.resource.data.authorEmail == resource.data.authorEmail
       && request.resource.data.authorRankThumbnailSrc == resource.data.authorRankThumbnailSrc
       && request.resource.data.authorCurrentRankId == resource.data.authorCurrentRankId
+      && request.resource.data.jiraIssueBrowseUrl == resource.data.jiraIssueBrowseUrl
       && request.resource.data.isAnonymous == resource.data.isAnonymous
       && request.resource.data.type == resource.data.type
       && request.resource.data.title == resource.data.title

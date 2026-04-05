@@ -1,0 +1,193 @@
+import type { UserPreferencesV1 } from "./cloudStore";
+import type { RewardProgressV1 } from "./rewards";
+import type { TaskTimerWorkspaceRepository } from "./workspaceRepository";
+import { normalizeDashboardWeekStart } from "./historyChart";
+
+export type TaskTimerPreferenceStorageKeys = {
+  THEME_KEY: string;
+  MENU_BUTTON_STYLE_KEY: string;
+  DEFAULT_TASK_TIMER_FORMAT_KEY: string;
+  WEEK_STARTING_KEY: string;
+  TASK_VIEW_KEY: string;
+  AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+  MODE_SETTINGS_KEY: string;
+};
+
+type PreferencesStateSnapshot = {
+  theme: "purple" | "cyan";
+  menuButtonStyle: "parallelogram" | "square";
+  defaultTaskTimerFormat: "day" | "hour" | "minute";
+  weekStarting: "mon" | "sun";
+  taskView: "list" | "tile";
+  autoFocusOnTaskLaunchEnabled: boolean;
+  dynamicColorsEnabled: boolean;
+  checkpointAlertSoundEnabled: boolean;
+  checkpointAlertToastEnabled: boolean;
+  rewards: RewardProgressV1;
+};
+
+type StoredPreferences = UserPreferencesV1 & {
+  weekStarting?: "mon" | "sun";
+};
+
+export type TaskTimerStoredPreferences = StoredPreferences;
+
+type PreferencesServiceOptions = {
+  storageKeys: TaskTimerPreferenceStorageKeys;
+  repository: TaskTimerWorkspaceRepository;
+  getCloudPreferencesCache: () => StoredPreferences | null;
+  setCloudPreferencesCache: (prefs: StoredPreferences) => void;
+  currentUid: () => string;
+  syncOwnFriendshipProfile: (uid: string, patch: { currentRankId?: string | null }) => Promise<unknown>;
+};
+
+function safeReadLocalStorage(key: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return String(window.localStorage.getItem(key) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function safeWriteLocalStorage(key: string, value: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore localStorage write failures
+  }
+}
+
+function safeRemoveLocalStorage(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // ignore localStorage write failures
+  }
+}
+
+export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
+  const { storageKeys, repository } = options;
+
+  function getStoredOrCachedPreferences() {
+    return (options.getCloudPreferencesCache() ||
+      repository.loadCachedPreferences() ||
+      (repository.buildDefaultPreferences() as StoredPreferences)) as StoredPreferences;
+  }
+
+  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" {
+    const value = String(raw || "").trim().toLowerCase();
+    return value === "cyan" || value === "command" ? "cyan" : "purple";
+  }
+
+  function buildSnapshot(state: PreferencesStateSnapshot): StoredPreferences {
+    const base = getStoredOrCachedPreferences();
+    return {
+      ...base,
+      schemaVersion: 1,
+      theme: state.theme,
+      menuButtonStyle: state.menuButtonStyle,
+      defaultTaskTimerFormat: state.defaultTaskTimerFormat,
+      weekStarting: state.weekStarting,
+      taskView: state.taskView,
+      autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
+      dynamicColorsEnabled: state.dynamicColorsEnabled,
+      checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
+      checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
+      rewards: state.rewards,
+      updatedAtMs: Date.now(),
+    };
+  }
+
+  function persistSnapshot(snapshot: StoredPreferences): void {
+    safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "purple"));
+    safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
+    safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
+    safeWriteLocalStorage(
+      storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+      snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
+      String(snapshot.defaultTaskTimerFormat || "hour"),
+    );
+    safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
+    safeRemoveLocalStorage(storageKeys.MODE_SETTINGS_KEY);
+
+    options.setCloudPreferencesCache(snapshot);
+    repository.savePreferences(snapshot);
+
+    const uid = options.currentUid();
+    if (!uid) return;
+    void options
+      .syncOwnFriendshipProfile(uid, { currentRankId: snapshot.rewards?.currentRankId || null })
+      .catch(() => {});
+  }
+
+  function loadThemeMode(): "purple" | "cyan" {
+    const cached = getStoredOrCachedPreferences();
+    return normalizeThemeMode(cached.theme || safeReadLocalStorage(storageKeys.THEME_KEY));
+  }
+
+  function loadMenuButtonStyle(): "parallelogram" | "square" {
+    const cached = getStoredOrCachedPreferences();
+    const raw = String(cached.menuButtonStyle || safeReadLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY)).trim().toLowerCase();
+    return raw === "square" ? "square" : "parallelogram";
+  }
+
+  function loadDefaultTaskTimerFormat(): "day" | "hour" | "minute" {
+    const raw = getStoredOrCachedPreferences().defaultTaskTimerFormat;
+    return raw === "day" || raw === "minute" ? raw : "hour";
+  }
+
+  function loadWeekStarting(): "mon" | "sun" {
+    const cached = String(getStoredOrCachedPreferences().weekStarting || safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY))
+      .trim()
+      .toLowerCase();
+    return normalizeDashboardWeekStart(cached);
+  }
+
+  function loadTaskView(): "list" | "tile" {
+    const localRaw = safeReadLocalStorage(storageKeys.TASK_VIEW_KEY).toLowerCase();
+    if (localRaw === "tile" || localRaw === "list") return localRaw;
+    const cloudRaw = String(getStoredOrCachedPreferences().taskView || "").trim().toLowerCase();
+    return cloudRaw === "tile" ? "tile" : "list";
+  }
+
+  function loadAutoFocusOnTaskLaunchEnabled(): boolean {
+    const cloudValue = getStoredOrCachedPreferences().autoFocusOnTaskLaunchEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const raw = safeReadLocalStorage(storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY).toLowerCase();
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    return false;
+  }
+
+  function loadDynamicColorsEnabled(): boolean {
+    return getStoredOrCachedPreferences().dynamicColorsEnabled !== false;
+  }
+
+  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled"> {
+    const prefs = getStoredOrCachedPreferences();
+    return {
+      checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled !== false,
+      checkpointAlertToastEnabled: prefs.checkpointAlertToastEnabled !== false,
+    };
+  }
+
+  return {
+    buildSnapshot,
+    persistSnapshot,
+    loadThemeMode,
+    loadMenuButtonStyle,
+    loadDefaultTaskTimerFormat,
+    loadWeekStarting,
+    loadTaskView,
+    loadAutoFocusOnTaskLaunchEnabled,
+    loadDynamicColorsEnabled,
+    loadCheckpointAlerts,
+    normalizeThemeMode,
+  };
+}

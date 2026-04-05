@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import GlobalTaskAlerts from "../tasktimer/components/GlobalTaskAlerts";
 import UserGuideScreen from "../tasktimer/components/UserGuideScreen";
 import { initTaskTimerUserGuideClient } from "../tasktimer/tasktimerClient";
+import { useTaskTimerRouteClient } from "../tasktimer/useTaskTimerRouteClient";
 import "../tasktimer/tasktimer.css";
 
 export default function UserGuidePage() {
@@ -18,10 +19,8 @@ export default function UserGuidePage() {
     router.push("/settings");
   };
 
-  useEffect(() => {
-    const { destroy } = initTaskTimerUserGuideClient();
-    return () => destroy();
-  }, []);
+  const initClient = useCallback(() => initTaskTimerUserGuideClient(), []);
+  useTaskTimerRouteClient(initClient);
 
   return (
     <>

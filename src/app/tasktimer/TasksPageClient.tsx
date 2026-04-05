@@ -25,11 +25,16 @@ export default function TasksPageClient() {
     <>
       <TaskTimerAppFrame activePage="tasks">
         <div className="appPages">
-          <section className="appPage appPageOn" id="appPageTasks" aria-label="Tasks page">
+          <section className="appPage appPageTasks appPageOn" id="appPageTasks" aria-label="Tasks page">
             <div className="dashboardTopRow">
               <div className="dashboardTitleWrap">
                 <p className="dashboardKicker">Launchpad</p>
                 <h2 className="dashboardTitle">Tasks</h2>
+              </div>
+              <div className="taskPageHeaderActions">
+                <button className="btn btn-ghost small" id="openAddTaskBtn" type="button">
+                  + Add Task
+                </button>
               </div>
             </div>
             <section className="modeView modeViewOn" id="mode1View" aria-label="Tasks view">
@@ -37,11 +42,6 @@ export default function TasksPageClient() {
               <HistoryScreen />
               <FocusModeScreen />
             </section>
-            <div className="taskPageControls">
-              <button className="btn btn-ghost" id="openAddTaskBtn" type="button" style={{ width: "100%" }}>
-                + Add Task
-              </button>
-            </div>
           </section>
         </div>
       </TaskTimerAppFrame>

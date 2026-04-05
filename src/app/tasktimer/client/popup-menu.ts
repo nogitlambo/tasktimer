@@ -1,37 +1,15 @@
 import type { TaskTimerPopupMenuContext } from "./context";
+import { createTaskTimerOverlayController } from "./overlay-controller";
+import { createTaskTimerOverlayRegistry } from "./overlay-registry";
 
 export function createTaskTimerPopupMenu(ctx: TaskTimerPopupMenuContext) {
-  const { els } = ctx;
+  const overlayController = createTaskTimerOverlayController(createTaskTimerOverlayRegistry(ctx));
 
   function openPopup(whichRaw: string) {
     const which = String(whichRaw || "").trim();
     if (!which) return;
-    if (which === "historyManager") {
-      ctx.openHistoryManager();
-      return;
-    }
-    if (which === "howto") {
-      ctx.navigateToAppRoute("/user-guide");
-      return;
-    }
-    if (which === "categoryManager") {
-      ctx.syncModeLabelsUi();
-    }
-    if (which === "taskSettings") {
-      ctx.syncTaskSettingsUi();
-    }
-
-    const overlayMap: Record<string, HTMLElement | null> = {
-      about: els.aboutOverlay as HTMLElement | null,
-      howto: els.howtoOverlay as HTMLElement | null,
-      appearance: els.appearanceOverlay as HTMLElement | null,
-      taskSettings: els.taskSettingsOverlay as HTMLElement | null,
-      categoryManager: els.categoryManagerOverlay as HTMLElement | null,
-      contact: els.contactOverlay as HTMLElement | null,
-    };
-
-    const overlay = overlayMap[which];
-    if (overlay) ctx.openOverlay(overlay);
+    if (!overlayController.has(which)) return;
+    overlayController.open(which);
   }
 
   function registerPopupMenuEvents() {

@@ -11,6 +11,14 @@ import type { TaskTimerAddTaskContext } from "./context";
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+  const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
+
+  function requestArchieHelp(message: string) {
+    if (typeof window === "undefined") return;
+    const nextMessage = String(message || "").trim();
+    if (!nextMessage) return;
+    window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message: nextMessage } }));
+  }
 
   function canUseAdvancedTaskConfig() {
     return ctx.hasEntitlement("advancedTaskConfig");
@@ -681,14 +689,18 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskCheckpointInfoBtn, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const isOpen = (els.addTaskCheckpointInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
-      setAddTaskCheckpointInfoOpen(!isOpen);
+      setAddTaskCheckpointInfoOpen(false);
+      requestArchieHelp(
+        "Time checkpoints are optional milestone markers during a task timer run. Use them to track progress points and trigger checkpoint alerts while the task is active."
+      );
     });
     ctx.on(els.addTaskPresetIntervalsInfoBtn, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const isOpen = (els.addTaskPresetIntervalsInfoDialog as HTMLElement | null)?.classList.contains("isOpen") || false;
-      setAddTaskPresetIntervalsInfoOpen(!isOpen);
+      setAddTaskPresetIntervalsInfoOpen(false);
+      requestArchieHelp(
+        "Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint."
+      );
     });
     ctx.on(document, "click", (e: Event) => {
       const target = e.target as HTMLElement | null;

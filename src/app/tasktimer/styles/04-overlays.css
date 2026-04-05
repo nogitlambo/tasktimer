@@ -12,18 +12,42 @@
   align-items:center;
   justify-content:center;
   padding:18px 14px;
+  background: transparent;
+  z-index:80;
+}
+
+.overlay::before{
+  content:"";
+  position:absolute;
+  inset:0;
   background: rgba(0,0,0,.55);
   backdrop-filter: blur(6px);
-  z-index:50;
+  z-index:0;
 }
 
 .modal{
+  position:relative;
+  z-index:1;
   width: min(560px, 100%);
   background: rgba(18,24,42,.96);
   border:1px solid rgba(255,255,255,.14);
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding:18px 18px 16px;
+}
+
+@media (min-width: 981px){
+  body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail,
+  body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail,
+  body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail,
+  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail,
+  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail,
+  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail,
+  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
+    position: relative;
+    z-index: 81;
+  }
 }
 
 .modal h2{
@@ -1283,6 +1307,12 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .addTaskNameToggle{
   top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding-top: 0;
+  padding-bottom: 1px;
   transform: none;
 }
 

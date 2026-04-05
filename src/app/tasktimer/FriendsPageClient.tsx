@@ -26,7 +26,7 @@ export default function FriendsPageClient() {
                 </div>
                 <div className="dashboardEditActions">
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
-                    + Friend
+                    Add Friend
                   </button>
                 </div>
               </div>

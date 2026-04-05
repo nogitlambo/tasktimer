@@ -3,6 +3,16 @@ body[data-app-page="dashboard"] #openAddTaskBtn,
 body[data-app-page="test2"] #openAddTaskBtn{
   display:none !important;
 }
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{
+  display:grid !important;
+  width:100% !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+}
 .modeView{
   display:none;
 }
@@ -1066,6 +1076,17 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .das
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
   min-width:0;
   flex:1 1 auto;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex:0 0 auto;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions #openAddTaskBtn{
+  min-width:136px;
+  white-space:nowrap;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
   margin-left:auto;

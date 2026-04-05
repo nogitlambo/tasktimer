@@ -1,6 +1,8 @@
 import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
 import { normalizeDashboardWeekStart } from "../lib/historyChart";
+import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
+import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -8,6 +10,17 @@ type PreferenceEventDeps = {
 
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
+  const repository = createTaskTimerWorkspaceRepository();
+  const preferenceService = createTaskTimerPreferencesService({
+    storageKeys: ctx.storageKeys,
+    repository,
+    getCloudPreferencesCache: () => (ctx.getCloudPreferencesCache() || null) as TaskTimerStoredPreferences | null,
+    setCloudPreferencesCache: (prefs) => {
+      ctx.setCloudPreferencesCache(prefs);
+    },
+    currentUid: () => String(ctx.currentUid() || ""),
+    syncOwnFriendshipProfile: (uid, patch) => ctx.syncOwnFriendshipProfile(uid, patch),
+  });
 
   function canUseAdvancedTaskConfig() {
     return ctx.hasEntitlement("advancedTaskConfig");
@@ -58,11 +71,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
   }
 
-  function buildCloudPreferencesSnapshot() {
-    const base = ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences();
-    return {
-      ...base,
-      schemaVersion: 1 as const,
+  function buildCloudPreferencesSnapshot(): ReturnType<typeof preferenceService.buildSnapshot> {
+    return preferenceService.buildSnapshot({
       theme: ctx.getThemeMode(),
       menuButtonStyle: ctx.getMenuButtonStyle(),
       defaultTaskTimerFormat: ctx.getDefaultTaskTimerFormat(),
@@ -72,44 +82,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
-      rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()),
-      updatedAtMs: Date.now(),
-    };
+      rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
+    });
   }
 
   function persistPreferencesToLocalStorage(snapshot: ReturnType<typeof buildCloudPreferencesSnapshot>) {
-    try {
-      localStorage.setItem(ctx.storageKeys.THEME_KEY, String(snapshot.theme || "purple"));
-      localStorage.setItem(ctx.storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
-      localStorage.setItem(ctx.storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
-      localStorage.setItem(
-        ctx.storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
-        snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false"
-      );
-      localStorage.setItem(
-        ctx.storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
-        String(snapshot.defaultTaskTimerFormat || "hour")
-      );
-      localStorage.setItem(ctx.storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
-      localStorage.removeItem(ctx.storageKeys.MODE_SETTINGS_KEY);
-    } catch {
-      // ignore localStorage write failures
-    }
+    preferenceService.persistSnapshot(snapshot);
   }
 
   function persistPreferencesToCloud() {
     const snapshot = buildCloudPreferencesSnapshot();
     persistPreferencesToLocalStorage(snapshot);
-    ctx.setCloudPreferencesCache(snapshot);
-    ctx.saveCloudPreferences(snapshot);
-    const uid = ctx.currentUid();
-    if (!uid) return;
-    const rewards = ctx.normalizeRewardProgress(ctx.getRewardProgress()) as { currentRankId?: string | null };
-    void ctx.syncOwnFriendshipProfile(uid, {
-      currentRankId: rewards.currentRankId,
-    }).catch(() => {
-      // Keep local/cloud preference persistence even if friendship profile sync fails.
-    });
   }
 
   function saveModeSettings() {
@@ -161,47 +144,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadThemePreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(ctx.storageKeys.THEME_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    const cloudRaw = String((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.theme || "").trim().toLowerCase();
-    const raw = cloudRaw || localRaw;
-    const mode = normalizeThemeMode(raw);
-    applyTheme(mode);
-    try {
-      localStorage.setItem(ctx.storageKeys.THEME_KEY, mode);
-    } catch {
-      // ignore localStorage write failures
-    }
+    applyTheme(preferenceService.loadThemeMode());
   }
 
   function loadMenuButtonStylePreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(ctx.storageKeys.MENU_BUTTON_STYLE_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    const cloudRaw = String((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.menuButtonStyle || "")
-      .trim()
-      .toLowerCase();
-    const raw = cloudRaw || localRaw;
-    const next: "parallelogram" | "square" = raw === "square" ? "square" : "parallelogram";
-    applyMenuButtonStyle(next);
-    try {
-      localStorage.setItem(ctx.storageKeys.MENU_BUTTON_STYLE_KEY, next);
-    } catch {
-      // ignore localStorage write failures
-    }
+    applyMenuButtonStyle(preferenceService.loadMenuButtonStyle());
   }
 
   function loadDefaultTaskTimerFormat() {
-    const raw = (ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.defaultTaskTimerFormat;
-    const next: "day" | "hour" | "minute" = raw === "day" || raw === "minute" ? raw : "hour";
-    ctx.setDefaultTaskTimerFormatState(next);
+    ctx.setDefaultTaskTimerFormatState(preferenceService.loadDefaultTaskTimerFormat());
   }
 
   function applyWeekStartingPreference(next: "mon" | "sun") {
@@ -214,16 +165,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadWeekStartingPreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(ctx.storageKeys.WEEK_STARTING_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    const cloudRaw = String((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.weekStarting || "")
-      .trim()
-      .toLowerCase();
-    applyWeekStartingPreference(normalizeDashboardWeekStart(cloudRaw || localRaw));
+    applyWeekStartingPreference(preferenceService.loadWeekStarting());
   }
 
   function saveWeekStartingPreference() {
@@ -236,24 +178,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadTaskViewPreference() {
-    let localRaw = "";
-    try {
-      localRaw = String(localStorage.getItem(ctx.storageKeys.TASK_VIEW_KEY) || "").trim().toLowerCase();
-    } catch {
-      // ignore localStorage read failures
-    }
-    if (localRaw === "tile" || localRaw === "list") {
-      applyTaskViewPreference(localRaw);
-      return;
-    }
-    const cloudRaw = String((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.taskView || "")
-      .trim()
-      .toLowerCase();
-    if (cloudRaw === "tile" || cloudRaw === "list") {
-      applyTaskViewPreference(cloudRaw);
-      return;
-    }
-    applyTaskViewPreference("tile");
+    applyTaskViewPreference(preferenceService.loadTaskView());
   }
 
   function saveDefaultTaskTimerFormat() {
@@ -270,25 +195,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadAutoFocusOnTaskLaunchSetting() {
-    const cloudValue = (ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.autoFocusOnTaskLaunchEnabled;
-    if (typeof cloudValue === "boolean") {
-      ctx.setAutoFocusOnTaskLaunchEnabledState(cloudValue);
-      return;
-    }
-    try {
-      const raw = String(localStorage.getItem(ctx.storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY) || "").trim().toLowerCase();
-      if (raw === "false" || raw === "0" || raw === "off") {
-        ctx.setAutoFocusOnTaskLaunchEnabledState(false);
-        return;
-      }
-      if (raw === "true" || raw === "1" || raw === "on") {
-        ctx.setAutoFocusOnTaskLaunchEnabledState(true);
-        return;
-      }
-    } catch {
-      // ignore localStorage read failures
-    }
-    ctx.setAutoFocusOnTaskLaunchEnabledState(false);
+    ctx.setAutoFocusOnTaskLaunchEnabledState(preferenceService.loadAutoFocusOnTaskLaunchEnabled());
   }
 
   function saveAutoFocusOnTaskLaunchSetting() {
@@ -352,7 +259,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadDynamicColorsSetting() {
-    ctx.setDynamicColorsEnabledState((ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences())?.dynamicColorsEnabled !== false);
+    ctx.setDynamicColorsEnabledState(preferenceService.loadDynamicColorsEnabled());
   }
 
   function saveDynamicColorsSetting() {
@@ -360,9 +267,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadCheckpointAlertSettings() {
-    const prefs = ctx.getCloudPreferencesCache() || ctx.loadCachedPreferences();
-    ctx.setCheckpointAlertSoundEnabledState(prefs?.checkpointAlertSoundEnabled !== false);
-    ctx.setCheckpointAlertToastEnabledState(prefs?.checkpointAlertToastEnabled !== false);
+    const prefs = preferenceService.loadCheckpointAlerts();
+    ctx.setCheckpointAlertSoundEnabledState(prefs.checkpointAlertSoundEnabled !== false);
+    ctx.setCheckpointAlertToastEnabledState(prefs.checkpointAlertToastEnabled !== false);
   }
 
   function saveCheckpointAlertSettings() {

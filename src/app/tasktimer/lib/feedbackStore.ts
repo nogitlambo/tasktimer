@@ -43,6 +43,7 @@ export type FeedbackItem = {
   updatedAt: Timestamp | null;
   lastActivityAt: Timestamp | null;
   schemaVersion: number;
+  jiraIssueBrowseUrl: string | null;
   viewerHasUpvoted?: boolean;
 };
 
@@ -56,6 +57,7 @@ export type CreateFeedbackItemInput = {
   type: FeedbackType;
   title: string;
   details: string;
+  jiraIssueBrowseUrl?: string | null;
 };
 
 function dbOrNull() {
@@ -105,6 +107,7 @@ function asFeedbackItem(snapshot: QueryDocumentSnapshot): FeedbackItem {
     updatedAt: (row.updatedAt as Timestamp) || null,
     lastActivityAt: (row.lastActivityAt as Timestamp) || null,
     schemaVersion: Math.max(1, Math.floor(Number(row.schemaVersion || 1) || 1)),
+    jiraIssueBrowseUrl: normalizeNullableString(row.jiraIssueBrowseUrl, 2048),
   };
 }
 
@@ -154,6 +157,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       updatedAt: serverTimestamp(),
       lastActivityAt: serverTimestamp(),
       schemaVersion: 1,
+      jiraIssueBrowseUrl: normalizeNullableString(input.jiraIssueBrowseUrl, 2048),
     });
 
     const saved = await getDoc(ref);

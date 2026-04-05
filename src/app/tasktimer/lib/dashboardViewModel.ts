@@ -1,0 +1,64 @@
+import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
+
+export type DashboardRenderSummaryInput = {
+  tasks: Task[];
+  historyByTaskId: HistoryByTaskId;
+  deletedTaskMeta: DeletedTaskMeta;
+  dynamicColorsEnabled: boolean;
+  currentDayKey: string;
+};
+
+export type DashboardRenderSummary = {
+  taskCount: number;
+  runningTaskCount: number;
+  historyTaskCount: number;
+  deletedTaskCount: number;
+  currentDayKey: string;
+  dynamicColorsEnabled: boolean;
+  fullSignature: string;
+  liveSignature: string;
+};
+
+export function buildDashboardRenderSummary(input: DashboardRenderSummaryInput): DashboardRenderSummary {
+  const tasks = Array.isArray(input.tasks) ? input.tasks : [];
+  const historyKeys = Object.keys(input.historyByTaskId || {}).sort();
+  const deletedKeys = Object.keys(input.deletedTaskMeta || {}).sort();
+  const runningTaskIds = tasks
+    .filter((task) => !!task?.running)
+    .map((task) => String(task.id || "").trim())
+    .filter(Boolean)
+    .sort();
+  const taskIds = tasks
+    .map((task) => String(task?.id || "").trim())
+    .filter(Boolean)
+    .sort();
+  const taskTotals = tasks
+    .map((task) => `${String(task?.id || "").trim()}:${Math.max(0, Number(task?.accumulatedMs || 0))}:${task?.running ? 1 : 0}`)
+    .sort();
+
+  const fullSignature = JSON.stringify({
+    taskIds,
+    taskTotals,
+    historyKeys,
+    deletedKeys,
+    currentDayKey: input.currentDayKey,
+    dynamicColorsEnabled: !!input.dynamicColorsEnabled,
+  });
+
+  const liveSignature = JSON.stringify({
+    runningTaskIds,
+    taskTotals: taskTotals.filter((entry) => runningTaskIds.some((taskId) => entry.startsWith(`${taskId}:`))),
+    currentDayKey: input.currentDayKey,
+  });
+
+  return {
+    taskCount: taskIds.length,
+    runningTaskCount: runningTaskIds.length,
+    historyTaskCount: historyKeys.length,
+    deletedTaskCount: deletedKeys.length,
+    currentDayKey: input.currentDayKey,
+    dynamicColorsEnabled: !!input.dynamicColorsEnabled,
+    fullSignature,
+    liveSignature,
+  };
+}

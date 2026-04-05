@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback } from "react";
 import GlobalTaskAlerts from "../tasktimer/components/GlobalTaskAlerts";
 import HistoryManagerScreen from "../tasktimer/components/HistoryManagerScreen";
 import { initTaskTimerHistoryManagerClient } from "../tasktimer/tasktimerClient";
+import { useTaskTimerRouteClient } from "../tasktimer/useTaskTimerRouteClient";
 import "../tasktimer/tasktimer.css";
 
 export default function HistoryManagerPage() {
-  useEffect(() => {
-    const { destroy } = initTaskTimerHistoryManagerClient();
-    return () => destroy();
-  }, []);
+  const initClient = useCallback(() => initTaskTimerHistoryManagerClient(), []);
+  useTaskTimerRouteClient(initClient);
 
   return (
     <>
