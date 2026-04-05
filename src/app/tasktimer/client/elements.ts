@@ -268,6 +268,7 @@ const els = {
   themeToggleRow: documentRef.getElementById("themeToggleRow"),
   themePurpleBtn: documentRef.getElementById("themePurpleBtn") as HTMLButtonElement | null,
   themeCyanBtn: documentRef.getElementById("themeCyanBtn") as HTMLButtonElement | null,
+  themeLimeBtn: documentRef.getElementById("themeLimeBtn") as HTMLButtonElement | null,
   menuButtonStyleParallelogramBtn: documentRef.getElementById("menuButtonStyleParallelogramBtn") as HTMLButtonElement | null,
   menuButtonStyleSquareBtn: documentRef.getElementById("menuButtonStyleSquareBtn") as HTMLButtonElement | null,
   contactOverlay: documentRef.getElementById("contactOverlay"),

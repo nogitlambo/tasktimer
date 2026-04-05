@@ -36,8 +36,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return target instanceof Element ? target.closest(selector) : null;
   }
 
-  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" {
+  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
     const value = String(raw || "").trim().toLowerCase();
+    if (value === "lime") return "lime";
     return value === "cyan" || value === "command" ? "cyan" : "purple";
   }
 
@@ -109,14 +110,16 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
   }
 
-  function applyTheme(mode: "purple" | "cyan") {
+  function applyTheme(mode: "purple" | "cyan" | "lime") {
     ctx.setThemeModeState(mode);
     const body = document.body;
     body.setAttribute("data-theme", mode);
     els.themePurpleBtn?.classList.toggle("isOn", mode === "purple");
     els.themeCyanBtn?.classList.toggle("isOn", mode === "cyan");
+    els.themeLimeBtn?.classList.toggle("isOn", mode === "lime");
     els.themePurpleBtn?.setAttribute("aria-pressed", mode === "purple" ? "true" : "false");
     els.themeCyanBtn?.setAttribute("aria-pressed", mode === "cyan" ? "true" : "false");
+    els.themeLimeBtn?.setAttribute("aria-pressed", mode === "lime" ? "true" : "false");
   }
 
   function applyTaskViewPreference(next: "list" | "tile") {
@@ -276,7 +279,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
-  function setThemeMode(next: "purple" | "cyan") {
+  function setThemeMode(next: "purple" | "cyan" | "lime") {
     applyTheme(next);
     persistPreferencesToCloud();
   }
@@ -317,6 +320,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.themeCyanBtn, "click", () => {
       setThemeMode("cyan");
+    });
+    ctx.on(els.themeLimeBtn, "click", () => {
+      setThemeMode("lime");
     });
     ctx.on(els.menuButtonStyleParallelogramBtn, "click", () => {
       setMenuButtonStyle("parallelogram");

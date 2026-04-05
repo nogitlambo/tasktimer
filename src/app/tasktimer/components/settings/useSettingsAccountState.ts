@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
+import { readTaskTimerPlanCacheFromStorage, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "@/app/tasktimer/lib/entitlements";
 import {
   getErrorMessage,
   handleDeleteAccountFlow,
@@ -26,9 +27,13 @@ export function useSettingsAccountState(): {
   setAuthStatus: (value: string) => void;
   markSynced: (message?: string) => void;
 } {
+  const initialPlanCache = readTaskTimerPlanCacheFromStorage();
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [authPlan, setAuthPlan] = useState<SettingsAccountViewModel["authPlan"]>(() => readTaskTimerPlanFromStorage());
+  const [authPlanStatus, setAuthPlanStatus] = useState<SettingsAccountViewModel["authPlanStatus"]>("confirmed");
+  const [authPlanIsProvisional, setAuthPlanIsProvisional] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [authUserAlias, setAuthUserAlias] = useState("");
@@ -43,6 +48,44 @@ export function useSettingsAccountState(): {
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
+  const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
+  const pendingPlanRefreshRef = useRef(false);
+  const planRefreshIdRef = useRef(0);
+
+  const markPlanConfirmed = useCallback((plan: SettingsAccountViewModel["authPlan"], uid: string | null) => {
+    lastConfirmedPlanRef.current = plan;
+    lastConfirmedPlanUidRef.current = uid;
+    pendingPlanRefreshRef.current = false;
+    setAuthPlan(plan);
+    setAuthPlanStatus("confirmed");
+    setAuthPlanIsProvisional(false);
+  }, []);
+
+  const beginPlanRefresh = useCallback(
+    (uid: string, fallbackPlan: SettingsAccountViewModel["authPlan"], provisional: boolean) => {
+      pendingPlanRefreshRef.current = true;
+      setAuthPlan(fallbackPlan);
+      setAuthPlanStatus("refreshing");
+      setAuthPlanIsProvisional(provisional);
+      const refreshId = ++planRefreshIdRef.current;
+      void syncCurrentUserPlanCache(uid)
+        .then((nextPlan) => {
+          const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+          if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
+          markPlanConfirmed(nextPlan, uid);
+        })
+        .catch(() => {
+          const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+          if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
+          pendingPlanRefreshRef.current = false;
+          setAuthPlan(lastConfirmedPlanUidRef.current === uid ? lastConfirmedPlanRef.current : fallbackPlan);
+          setAuthPlanStatus("confirmed");
+          setAuthPlanIsProvisional(false);
+        });
+    },
+    [markPlanConfirmed]
+  );
 
   const markSynced = useCallback((message = "Cloud data connected.") => {
     setSyncState("synced");
@@ -51,9 +94,28 @@ export function useSettingsAccountState(): {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncPlanFromStorage = () => {
+      const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+      const cached = readTaskTimerPlanCacheFromStorage();
+      if (!activeUid) {
+        markPlanConfirmed("free", null);
+        return;
+      }
+      if (!cached.uid || cached.uid !== activeUid) return;
+      if (pendingPlanRefreshRef.current) return;
+      markPlanConfirmed(cached.plan, activeUid);
+    };
+    syncPlanFromStorage();
+    window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanFromStorage as EventListener);
+    return () => window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanFromStorage as EventListener);
+  }, [markPlanConfirmed]);
+
+  useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      planRefreshIdRef.current += 1;
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
       const nextAlias = (user?.displayName || "").trim();
@@ -72,7 +134,11 @@ export function useSettingsAccountState(): {
       setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
 
       if (user?.uid) {
-        void syncCurrentUserPlanCache(user.uid).catch(() => {});
+        const uid = String(user.uid || "").trim();
+        const cachedPlan = readTaskTimerPlanFromStorage();
+        const hasConfirmedPlanForUid = lastConfirmedPlanUidRef.current === uid;
+        const retainedPlan = hasConfirmedPlanForUid ? lastConfirmedPlanRef.current : cachedPlan;
+        beginPlanRefresh(uid, retainedPlan, !hasConfirmedPlanForUid);
         void saveUserDocPatch(user.uid, {
           email: user.email || "",
           displayName: user.displayName || null,
@@ -80,13 +146,15 @@ export function useSettingsAccountState(): {
         }).catch(() => {});
         markSynced();
       } else {
+        pendingPlanRefreshRef.current = false;
+        markPlanConfirmed("free", null);
         setSyncState("idle");
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
       }
     });
     return () => unsubscribe();
-  }, [markSynced]);
+  }, [beginPlanRefresh, markPlanConfirmed, markSynced]);
 
   useEffect(() => {
     if (!authUserUid) {
@@ -231,6 +299,9 @@ export function useSettingsAccountState(): {
       authStatus,
       authError,
       authBusy,
+      authPlan,
+      authPlanStatus,
+      authPlanIsProvisional,
       authUserEmail,
       authUserUid,
       authUserAlias,

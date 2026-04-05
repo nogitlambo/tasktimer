@@ -1,7 +1,6 @@
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
 
 function asString(value: string | undefined) {
   return String(value || "").trim();
@@ -38,7 +37,7 @@ export function getFirebaseAdminApp() {
 }
 
 export function getFirebaseAdminDb() {
-  return getFirestore(getFirebaseAdminApp(), FIREBASE_DATABASE_ID);
+  return getFirestore(getFirebaseAdminApp());
 }
 
 export function getFirebaseAdminAuth() {

@@ -21,7 +21,7 @@ import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "purple" | "cyan";
+  theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
   taskView: "list" | "tile";
@@ -239,6 +239,10 @@ function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | nu
   return next;
 }
 
+function normalizeUserRootPatchForClientWrite(patch: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  return sanitizeUserRootFieldsForClientWrite(patch || null);
+}
+
 function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): string[] {
   if (!data) return [];
   return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
@@ -357,6 +361,130 @@ async function upsertUserEmailLookup(uid: string): Promise<void> {
   }
 }
 
+type UserRootWriteOptions = {
+  patch?: Record<string, unknown>;
+  includeAuthIdentity?: boolean;
+  permissionDeniedIsNonFatal?: boolean;
+  permissionWarningKey?: string;
+  failureContext?: string;
+};
+
+type UserRootWriteResult = {
+  wrote: boolean;
+  rootReadable: boolean;
+};
+
+function warnUserRootPermissionDeniedOnce(
+  warningKey: string,
+  details: {
+    uid: string;
+    hasEmail: boolean;
+    patchKeys: string[];
+    error: Record<string, unknown>;
+    context: string;
+  }
+) {
+  if (process.env.NODE_ENV === "production") return;
+  const normalizedKey = String(warningKey || "").trim();
+  if (!normalizedKey || userRootPermissionWarnedUids.has(normalizedKey)) return;
+  userRootPermissionWarnedUids.add(normalizedKey);
+  console.warn(`[tasktimer-cloud] ${details.context} denied by current rules; continuing without write`, {
+    uid: details.uid,
+    hasEmail: details.hasEmail,
+    patchKeys: details.patchKeys,
+    error: details.error,
+  });
+}
+
+async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions): Promise<UserRootWriteResult> {
+  const root = usersDoc(uid);
+  if (!root) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping user root write because document ref is unavailable", {
+        uid,
+      });
+    }
+    return { wrote: false, rootReadable: false };
+  }
+  const db = dbOrNull();
+  if (!db) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping user root write because Firestore is unavailable", {
+        uid,
+      });
+    }
+    return { wrote: false, rootReadable: false };
+  }
+
+  const auth = getFirebaseAuthClient();
+  const currentUser = auth?.currentUser || null;
+  const authEmail = normalizeEmail(currentUser?.email);
+  const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
+  const existing = await getDoc(root);
+  const existingData = existing.exists() ? (existing.data() as Record<string, unknown>) : null;
+  const prevEmail = normalizeEmail(existingData?.email);
+  const existingPlan = normalizeTaskTimerPlan(existingData?.plan);
+  const existingCreatedAt = existingData?.createdAt;
+  const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
+  const sanitizedPatch = normalizeUserRootPatchForClientWrite(options?.patch);
+  const payload = {
+    ...sanitizeUserRootFieldsForClientWrite(existingData),
+    ...sanitizedPatch,
+    plan: existingPlan,
+    ...(options?.includeAuthIdentity && authEmail ? { email: authEmail } : {}),
+    ...(options?.includeAuthIdentity ? { displayName: authDisplayName } : {}),
+    createdAt: isTimestampLike(existingCreatedAt) ? existingCreatedAt : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    schemaVersion: 1,
+  };
+
+  if (prevEmail && authEmail && prevEmail !== authEmail) {
+    try {
+      await deleteDoc(doc(db, "userEmailLookup", emailLookupDocKey(prevEmail)));
+    } catch {
+      // Best-effort cleanup; stale lookup removal should not block profile updates.
+    }
+  }
+
+  try {
+    if (unsupportedKeys.length && process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Sanitizing legacy user root fields before write", {
+        uid,
+        unsupportedKeys,
+      });
+    }
+    if (unsupportedKeys.length) {
+      await setDoc(root, payload);
+    } else {
+      await setDoc(root, payload, { merge: true });
+    }
+    return { wrote: true, rootReadable: true };
+  } catch (error) {
+    const failureContext = String(options?.failureContext || "User root write").trim() || "User root write";
+    if (isPermissionDeniedError(error)) {
+      if (options?.permissionDeniedIsNonFatal) {
+        warnUserRootPermissionDeniedOnce(options?.permissionWarningKey || uid, {
+          uid,
+          hasEmail: !!authEmail,
+          patchKeys: Object.keys(sanitizedPatch),
+          error: describeError(error),
+          context: failureContext,
+        });
+        return { wrote: false, rootReadable: false };
+      }
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`[tasktimer-cloud] Failed to ${failureContext.toLowerCase()}`, {
+        uid,
+        hasEmail: !!authEmail,
+        patchKeys: Object.keys(sanitizedPatch),
+        error: describeError(error),
+      });
+    }
+    throw error;
+  }
+}
+
 function asBool(v: unknown, fallback: boolean) {
   return typeof v === "boolean" ? v : fallback;
 }
@@ -449,6 +577,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
 
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
   const value = String(raw || "").trim().toLowerCase();
+  if (value === "lime") return "lime";
   if (value === "cyan" || value === "command") return "cyan";
   return "purple";
 }
@@ -594,107 +723,51 @@ function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
   };
 }
 
-async function upsertUserRoot(uid: string, patch?: Record<string, unknown>) {
-  const root = usersDoc(uid);
-  if (!root) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Skipping user root write because document ref is unavailable", {
-        uid,
-      });
-    }
-    return;
-  }
-  const db = dbOrNull();
-  if (!db) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Skipping user root write because Firestore is unavailable", {
-        uid,
-      });
-    }
-    return;
-  }
-  const auth = getFirebaseAuthClient();
-  const currentUser = auth?.currentUser || null;
-  const authEmail = normalizeEmail(currentUser?.email);
-  const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
-  const existing = await getDoc(root);
-  const existingData = existing.exists() ? (existing.data() as Record<string, unknown>) : null;
-  const prevEmail = normalizeEmail(existingData?.email);
-  const existingPlan = normalizeTaskTimerPlan(existingData?.plan);
-  const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
+export async function saveUserRootPatch(uid: string, patch: Record<string, unknown>): Promise<void> {
+  await writeUserRootDocument(uid, {
+    patch,
+    includeAuthIdentity: false,
+    permissionDeniedIsNonFatal: false,
+    failureContext: "save user root patch",
+  });
+}
 
-  if (prevEmail && authEmail && prevEmail !== authEmail) {
-    try {
-      await deleteDoc(doc(db, "userEmailLookup", emailLookupDocKey(prevEmail)));
-    } catch {
-      // Best-effort cleanup; stale lookup removal should not block profile updates.
-    }
-  }
-
-  try {
-    const payload = {
-      ...sanitizeUserRootFieldsForClientWrite(existingData),
-      schemaVersion: 1,
-      plan: existingPlan,
-      ...(authEmail ? { email: authEmail } : {}),
-      displayName: authDisplayName,
-      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      ...(patch || {}),
-    };
-    if (unsupportedKeys.length && process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Sanitizing legacy user root fields before write", {
-        uid,
-        unsupportedKeys,
-      });
-    }
-    if (unsupportedKeys.length) {
-      await setDoc(root, payload);
-    } else {
-      await setDoc(root, payload, { merge: true });
-    }
-
-    await upsertUserEmailLookup(uid);
-  } catch (error) {
-    if (isPermissionDeniedError(error)) {
-      if (process.env.NODE_ENV !== "production") {
-        const warnKey = String(uid || "").trim();
-        if (!userRootPermissionWarnedUids.has(warnKey)) {
-          userRootPermissionWarnedUids.add(warnKey);
-          console.warn("[tasktimer-cloud] User root write denied by current rules; continuing without root upsert", {
-            uid,
-            hasEmail: !!authEmail,
-            patchKeys: Object.keys(patch || {}),
-            error: describeError(error),
-          });
-        }
-      }
-      return;
-    }
-    if (process.env.NODE_ENV !== "production") {
-      console.error("[tasktimer-cloud] Failed to upsert user root", {
-        uid,
-        hasEmail: !!authEmail,
-        patchKeys: Object.keys(patch || {}),
-        error: describeError(error),
-      });
-    }
-    throw error;
-  }
+async function upsertUserRoot(uid: string): Promise<UserRootWriteResult> {
+  return writeUserRootDocument(uid, {
+    includeAuthIdentity: true,
+    permissionDeniedIsNonFatal: true,
+    permissionWarningKey: `${uid}:bootstrap`,
+    failureContext: "User root bootstrap",
+  });
 }
 
 export async function ensureUserProfileIndex(uid: string): Promise<void> {
   if (!uid) return;
   try {
     await upsertUserEmailLookup(uid);
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Continuing without email lookup bootstrap", {
+        uid,
+        error: describeError(error),
+      });
+    }
     // Email lookup bootstrap is best-effort and should not block workspace hydration.
   }
+  let rootReadable = false;
   try {
-    await upsertUserRoot(uid);
-  } catch {
-    // Keep email lookup available even if root profile shape is currently rejected by rules.
+    const result = await upsertUserRoot(uid);
+    rootReadable = result.rootReadable;
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Continuing without user root bootstrap", {
+        uid,
+        error: describeError(error),
+      });
+    }
+    // Keep email lookup available even if user root sync fails unexpectedly.
   }
+  if (!rootReadable) return;
   try {
     const root = usersDoc(uid);
     if (!root) return;
@@ -1067,18 +1140,11 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
     },
     { merge: true }
   );
-  const rootRef = usersDoc(uid);
-  if (!rootRef) return;
   try {
-    await setDoc(
-      rootRef,
-      {
-        rewardCurrentRankId: normalizedRewards.currentRankId,
-        rewardTotalXp: normalizedRewards.totalXp,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await saveUserRootPatch(uid, {
+      rewardCurrentRankId: normalizedRewards.currentRankId,
+      rewardTotalXp: normalizedRewards.totalXp,
+    });
   } catch (error) {
     if (!isPermissionDeniedError(error)) throw error;
     if (process.env.NODE_ENV !== "production") {

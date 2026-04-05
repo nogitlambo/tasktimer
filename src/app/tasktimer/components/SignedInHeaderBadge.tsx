@@ -2,10 +2,10 @@
 
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
-import { ensureUserProfileIndex } from "../lib/cloudStore";
+import { ensureUserProfileIndex, saveUserRootPatch } from "../lib/cloudStore";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import RankThumbnail from "./RankThumbnail";
 import {
@@ -158,14 +158,7 @@ export default function SignedInHeaderBadge({ href = "/settings?pane=general" }:
       rewards: nextRewards,
     });
     try {
-      const db = getFirebaseFirestoreClient();
-      if (db) {
-        await setDoc(
-          doc(db, "users", signedInUserUid),
-          { schemaVersion: 1, updatedAt: serverTimestamp(), rankThumbnailSrc: nextSrc || null },
-          { merge: true }
-        );
-      }
+      await saveUserRootPatch(signedInUserUid, { rankThumbnailSrc: nextSrc || null });
     } catch {
       // Keep local selection even if cloud sync fails.
     }

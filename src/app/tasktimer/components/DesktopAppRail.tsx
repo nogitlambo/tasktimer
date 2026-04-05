@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
@@ -44,6 +44,7 @@ import {
   readStoredRankThumbnailSrc,
   writeStoredRankThumbnailSrc,
 } from "../lib/accountProfileStorage";
+import { saveUserRootPatch } from "../lib/cloudStore";
 
 type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
 
@@ -301,15 +302,7 @@ export default function DesktopAppRail({
       const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
       const remotePlan = snap.exists() ? String(snap.get("plan") || "").trim().toLowerCase() : "";
       if (googlePhotoUrl && remoteGooglePhotoUrl !== googlePhotoUrl) {
-        void setDoc(
-          doc(db, "users", uid),
-          {
-            schemaVersion: 1,
-            updatedAt: serverTimestamp(),
-            googlePhotoUrl,
-          },
-          { merge: true }
-        ).catch(() => {
+        void saveUserRootPatch(uid, { googlePhotoUrl }).catch(() => {
           // Keep rendering from local auth state when cloud sync is unavailable.
         });
       }
@@ -431,18 +424,9 @@ export default function DesktopAppRail({
       rewards: nextRewards,
     });
     try {
-      const db = getFirebaseFirestoreClient();
-      if (db) {
-        await setDoc(
-          doc(db, "users", signedInUserUid),
-          {
-            schemaVersion: 1,
-            updatedAt: serverTimestamp(),
-            rankThumbnailSrc: nextSrc || null,
-          },
-          { merge: true }
-        );
-      }
+      await saveUserRootPatch(signedInUserUid, {
+        rankThumbnailSrc: nextSrc || null,
+      });
     } catch {
       // Keep local selection even if cloud sync fails.
     }

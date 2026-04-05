@@ -1281,3 +1281,123 @@ body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
   color:rgba(232,197,245,.62);
 }
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 24%),
+    linear-gradient(135deg, rgba(220,255,118,.12), rgba(255,255,255,0) 34%),
+    #12180a;
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.28),
+    inset 0 0 0 1px rgba(255,255,255,.02);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .name{
+  color: rgba(244,255,201,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .time{
+  color: #efff87;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
+  border-color: rgba(205,240,100,.34);
+  background: rgba(18,26,10,.74);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timeChunk{
+  background: rgba(22,31,11,.88);
+  border-color: rgba(205,240,100,.3);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn{
+  border-color: rgba(214,246,116,.34);
+  background: rgba(21,31,11,.9);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent{
+  border-color: rgba(241,255,151,.62);
+  background: linear-gradient(180deg, rgba(233,247,145,.34), rgba(122,144,38,.24));
+  color: #192103;
+  box-shadow: 0 0 12px rgba(219,255,79,.12), inset 0 0 0 1px rgba(255,255,255,.1);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent:active,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[aria-pressed="true"]{
+  border-color: rgba(241,255,151,.78);
+  background: linear-gradient(180deg, rgba(241,255,166,.46), rgba(156,182,52,.34));
+  color: #121703;
+  box-shadow: 0 0 14px rgba(219,255,79,.16), inset 0 0 0 1px rgba(255,255,255,.14);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume{
+  border-color: rgba(242,212,110,.58);
+  background: linear-gradient(180deg, rgba(229,198,94,.4), rgba(134,103,28,.28));
+  color: #fff7df;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume:active,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[aria-pressed="true"]{
+  border-color: #f1d77a;
+  background: #d4b248;
+  color: #191303;
+  box-shadow: 0 0 16px rgba(255,214,64,.18), inset 0 0 0 1px rgba(255,255,255,.14);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn{
+  border-color: rgba(200,136,136,.48);
+  background: linear-gradient(180deg, rgba(144,88,88,.4), rgba(88,54,54,.28));
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
+  background: rgba(35,46,16,.58);
+  border-color: rgba(200,234,102,.28);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyInline,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyCanvasWrap{
+  border-color: rgba(214,246,116,.22);
+  background: rgba(16,22,9,.84);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskAlertPulse){
+  border-color: transparent;
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.28),
+    inset 0 0 0 1px rgba(255,255,255,.02);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.1), rgba(219,255,79,0) 48%),
+    #101508;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    radial-gradient(120% 120% at 100% 0%, rgba(241,255,122,.08), rgba(241,255,122,0) 48%),
+    #12180a;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackTitle{
+  color: rgba(248,255,214,.95);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn{
+  border-color: rgba(214,246,116,.28);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList{
+  border: none;
+  background: #111509;
+  box-shadow: 0 18px 34px rgba(86,104,14,.2);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem{
+  color: rgba(247,255,216,.92);
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:focus-visible{
+  border-color: rgba(214,246,116,.34) !important;
+  box-shadow: 0 0 16px rgba(219,255,79,.12), inset 0 0 0 1px rgba(214,246,116,.14) !important;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
+  color: rgba(225,240,158,.68);
+}

@@ -4,7 +4,7 @@ import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsHelpPane({ active }: { active: boolean }) {
   return (
-    <SettingsDetailPane active={active} title="Support" subtitle="Open the Timebase user guide and walkthrough content.">
+    <SettingsDetailPane active={active} paneClassName="settingsHelpPane" title="Support" subtitle="Open the Timebase user guide and walkthrough content.">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsDataList">

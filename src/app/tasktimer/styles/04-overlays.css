@@ -2193,3 +2193,115 @@ body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
 #editOverlay .btn{
   font-family: var(--font-readable) !important;
 }
+body[data-theme="lime"] .task,
+body[data-theme="lime"] .modal,
+body[data-theme="lime"] .menu,
+body[data-theme="lime"] .historyInline,
+body[data-theme="lime"] .historyCanvasWrap,
+body[data-theme="lime"] .hmGroup,
+body[data-theme="lime"] .dashboardShell,
+body[data-theme="lime"] .dashboardCard{
+  border-color: rgba(219,255,79,.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(17,22,8,.94);
+  box-shadow: 0 20px 40px rgba(0,0,0,.34), inset 0 0 0 1px rgba(241,255,151,.05);
+}
+body[data-theme="lime"] #rankLadderOverlay .modal,
+body[data-theme="lime"] #rewardsInfoOverlay .modal,
+body[data-theme="lime"] #timeGoalCompleteOverlay .modal,
+body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modal,
+body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modal{
+  border-color: rgba(219,255,79,.24);
+  background:
+    radial-gradient(140% 120% at 100% 0%, rgba(219,255,79,.12), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(16,21,8,.96);
+}
+body[data-theme="lime"] .rankLadderItem,
+body[data-theme="lime"] .rewardsInfoDetailItem{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(21,28,9,.82);
+}
+body[data-theme="lime"] .rankLadderItem.isSelectable:hover,
+body[data-theme="lime"] .rankLadderItem.isSelectable:focus-visible{
+  border-color: rgba(241,255,151,.34);
+  box-shadow: 0 0 16px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.08);
+}
+body[data-theme="lime"] .rankLadderItem.isUnlocked,
+body[data-theme="lime"] .rankLadderItem.isCurrent,
+body[data-theme="lime"] .rankLadderItem.isSelectedThumbnail,
+body[data-theme="lime"] .rankLadderItemBadge,
+body[data-theme="lime"] .rankLadderItemTitle,
+body[data-theme="lime"] .rankLadderItemFlag,
+body[data-theme="lime"] .rewardsInfoDetailValue{
+  color: rgba(247,255,212,.96);
+}
+body[data-theme="lime"] .rankLadderItemMeta,
+body[data-theme="lime"] .rewardsInfoText,
+body[data-theme="lime"] .rewardsInfoDetailLabel,
+body[data-theme="lime"] #rewardsInfoOverlay .modalSubtext,
+body[data-theme="lime"] #timeGoalCompleteOverlay .modalSubtext,
+body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modalSubtext,
+body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modalSubtext{
+  color: rgba(226,239,170,.82);
+}
+body[data-theme="lime"] #editOverlay input[type="text"],
+body[data-theme="lime"] #editOverlay input[type="number"],
+body[data-theme="lime"] #editOverlay .checkpointAlertSoundModeField select{
+  border-color: rgba(213,255,102,.24);
+  background: rgba(20,27,10,.92);
+  color: rgba(247,255,212,.96);
+}
+body[data-theme="lime"] #editOverlay input[type="text"]:focus,
+body[data-theme="lime"] #editOverlay input[type="number"]:focus,
+body[data-theme="lime"] #editOverlay .checkpointAlertSoundModeField select:focus,
+body[data-theme="lime"] #addTaskOverlay .checkpointAlertSoundModeField select:focus{
+  border-color: rgba(241,255,151,.46);
+  box-shadow: 0 0 0 1px rgba(241,255,151,.12);
+}
+body[data-theme="lime"] #editOverlay option,
+body[data-theme="lime"] #editOverlay optgroup,
+body[data-theme="lime"] #addTaskOverlay option,
+body[data-theme="lime"] #addTaskOverlay optgroup{
+  background: #14180a;
+  color: #f7ffd0;
+}
+body[data-theme="lime"] #editOverlay option:hover,
+body[data-theme="lime"] #editOverlay option:focus,
+body[data-theme="lime"] #editOverlay option:checked,
+body[data-theme="lime"] #editOverlay option:checked:hover,
+body[data-theme="lime"] #editOverlay option:checked:focus,
+body[data-theme="lime"] #addTaskOverlay option:hover,
+body[data-theme="lime"] #addTaskOverlay option:focus,
+body[data-theme="lime"] #addTaskOverlay option:checked,
+body[data-theme="lime"] #addTaskOverlay option:checked:hover,
+body[data-theme="lime"] #addTaskOverlay option:checked:focus{
+  background: linear-gradient(180deg, rgba(239,255,99,.34), rgba(110,128,16,.96));
+  color: #f8ffd7;
+}
+body[data-theme="lime"] #editOverlay .unitBtn.isOn,
+body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
+  border-color: rgba(241,255,151,.42) !important;
+  background: linear-gradient(180deg, rgba(239,255,122,.28), rgba(130,154,33,.22)) !important;
+  color: #f9ffd8 !important;
+  box-shadow: inset 0 0 0 1px rgba(251,255,184,.07), 0 0 10px rgba(219,255,79,.12) !important;
+}
+body[data-theme="lime"] #editOverlay .switch.on{
+  background: rgba(219,255,79,.2) !important;
+}
+body[data-theme="lime"] #editOverlay .switch.on::after{
+  background: #f3ff7a !important;
+}
+body[data-theme="lime"] #editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
+  + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
+  border-top-color: rgba(241,255,151,.18);
+}
+body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel,
+body[data-theme="lime"] #timeGoalCompleteOverlay .confirmText,
+body[data-theme="lime"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
+  color: rgba(243,255,198,.92);
+}
+body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
+  color: rgba(241,255,151,.88);
+}

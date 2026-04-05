@@ -336,3 +336,52 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .userGuideNav
   background: transparent !important;
   box-shadow: 0 0 20px rgba(212,71,210,.12), inset 0 0 0 1px rgba(240,110,224,.14) !important;
 }
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideWindow,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+  border-color: rgba(219,255,79,.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(18,23,7,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuHead,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideTopicHead{
+  border-bottom-color: rgba(219,255,79,.14);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .menuTitle,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailTitle,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideSection h3{
+  color: rgba(249,255,216,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsDetailEmpty{
+  color: rgba(228,240,171,.82);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsNavItemIcon{
+  filter: brightness(0) saturate(100%) invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%) drop-shadow(0 0 8px rgba(219,255,79,.34));
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideShotPlaceholder{
+  border-color: rgba(219,255,79,.34);
+  background: rgba(28,36,12,.48);
+  color: rgba(236,244,189,.82);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideShotImage{
+  border-color: rgba(219,255,79,.24);
+  background: rgba(28,36,12,.48);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile{
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:focus-visible{
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile.isActive{
+  border-color: rgba(241,255,151,.52) !important;
+  background: transparent !important;
+  box-shadow: 0 0 20px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.14) !important;
+}

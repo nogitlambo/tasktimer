@@ -87,8 +87,14 @@ async function searchJiraIssueBySubmissionLabel(input: {
     | null;
 
   if (!response.ok) {
-    const errors = "errors" in (payload || {}) && payload?.errors ? Object.values(payload.errors) : [];
-    throw new Error(payload && "errorMessages" in payload && payload.errorMessages?.[0] ? payload.errorMessages[0] : errors[0] || "Jira search failed.");
+    const errorMessages = payload && "errorMessages" in payload && Array.isArray(payload.errorMessages) ? payload.errorMessages : [];
+    const fieldErrors =
+      payload && "errors" in payload && payload.errors && typeof payload.errors === "object"
+        ? Object.values(payload.errors)
+            .map((value) => asString(value))
+            .filter(Boolean)
+        : [];
+    throw new Error(errorMessages[0] || fieldErrors[0] || "Jira search failed.");
   }
 
   const issue = payload && "issues" in payload ? payload.issues?.[0] : null;

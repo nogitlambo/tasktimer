@@ -621,7 +621,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   try {
     await syncCurrentUserPlanCache(uid);
   } catch {
-    writeTaskTimerPlanToStorage("free", { uid });
+    // Keep the last confirmed per-user plan when the plan refresh is temporarily unavailable.
   }
   const snapshot = await loadUserWorkspace(uid);
   writeTaskTimerPlanToStorage(snapshot.plan, { uid });

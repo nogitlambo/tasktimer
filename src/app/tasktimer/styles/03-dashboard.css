@@ -670,10 +670,15 @@
   color: rgba(255,113,113,.95);
 }
 .dashboardGoalProgressBar{
+  --dashboard-goal-bar-border: rgba(117,231,255,.2);
+  --dashboard-goal-bar-track: rgba(0,0,0,.28);
+  --dashboard-goal-bar-fill-start: var(--accent);
+  --dashboard-goal-bar-fill-end: var(--accent3);
+  --dashboard-goal-bar-fill-glow: rgba(53,232,255,.18);
   margin-top: 10px;
   height: 8px;
-  border: 1px solid rgba(117,231,255,.2);
-  background: rgba(0,0,0,.28);
+  border: 1px solid var(--dashboard-goal-bar-border);
+  background: var(--dashboard-goal-bar-track);
   position: relative;
   overflow: hidden;
 }
@@ -718,7 +723,8 @@
 .dashboardGoalProgressBar > #dashboardTodayHoursProgressFill{
   position: absolute;
   inset: 0 auto 0 0;
-  background: linear-gradient(90deg, var(--accent), var(--accent3));
+  background: linear-gradient(90deg, var(--dashboard-goal-bar-fill-start), var(--dashboard-goal-bar-fill-end));
+  box-shadow: 0 0 10px var(--dashboard-goal-bar-fill-glow);
 }
 .dashboardGraphBars{
   margin-top:10px;
@@ -1186,6 +1192,37 @@ body[data-theme="purple"] .dashboardTimeline{
   --dashboard-timeline-copy-color: rgba(232,223,247,.84);
   --dashboard-timeline-marker-color: rgba(251,244,255,.96);
   --dashboard-timeline-marker-shadow: rgba(233,134,245,.24);
+}
+body[data-theme="lime"] .name,
+body[data-theme="lime"] .time,
+body[data-theme="lime"] .dashboardTitle,
+body[data-theme="lime"] .menuTitle{
+  color:#faffd9;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle{
+  color: rgba(246,255,204,.92) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle:focus-visible{
+  color: rgba(241,255,151,.98) !important;
+}
+body[data-theme="lime"] .dashboardTimelineDensityBtn{
+  border-color: rgba(219,255,79,.28);
+  color: rgba(240,248,198,.84);
+}
+body[data-theme="lime"] .dashboardTimelineDensityBtn.isOn{
+  border-color: rgba(241,255,151,.6);
+  background: rgba(219,255,79,.14);
+  color: rgba(251,255,228,.96);
+}
+body[data-theme="lime"] .dashboardTimeline{
+  --dashboard-timeline-note-color: rgba(227,236,185,.76);
+  --dashboard-timeline-track-border: rgba(219,255,79,.22);
+  --dashboard-timeline-track-fill: rgba(219,255,79,.08);
+  --dashboard-timeline-time-color: rgba(244,255,201,.94);
+  --dashboard-timeline-copy-color: rgba(232,240,191,.84);
+  --dashboard-timeline-marker-color: rgba(251,255,228,.96);
+  --dashboard-timeline-marker-shadow: rgba(241,255,151,.24);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
   display: block;
@@ -2092,6 +2129,13 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
   background: linear-gradient(90deg, #d447d2, #f06ee0);
   box-shadow: 0 0 10px rgba(212,71,210,.35);
 }
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGoalProgressBar{
+  --dashboard-goal-bar-border: rgba(214,96,229,.22);
+  --dashboard-goal-bar-track: rgba(24,13,35,.46);
+  --dashboard-goal-bar-fill-start: #d447d2;
+  --dashboard-goal-bar-fill-end: #f06ee0;
+  --dashboard-goal-bar-fill-glow: rgba(212,71,210,.22);
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressMeta{
   display: grid;
   gap: 6px;
@@ -2428,6 +2472,20 @@ body[data-theme="purple"][data-control-style="square"][data-app-page="dashboard"
   --dashboard-bar-fill-mid: #d447d2;
   --dashboard-bar-fill-deep: #f06ee0;
   --dashboard-bar-fill-glow: rgba(212,71,210,.18);
+}
+body[data-theme="lime"][data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-theme="lime"][data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar,
+body[data-theme="lime"][data-control-style="square"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardSegmentedBar{
+  --dashboard-bar-track-base: #111706;
+  --dashboard-bar-track-fill: rgba(137, 162, 24, .18);
+  --dashboard-bar-gap-color: rgba(14, 18, 6, .32);
+  --dashboard-bar-projection-mid: rgba(137, 162, 24, .49);
+  --dashboard-bar-projection-deep: rgba(137, 162, 24, .49);
+  --dashboard-bar-projection-glow: rgba(219,255,79,.05);
+  --dashboard-bar-fill-bright: #f3ff7a;
+  --dashboard-bar-fill-mid: #dbff4f;
+  --dashboard-bar-fill-deep: #b7df1d;
+  --dashboard-bar-fill-glow: rgba(219,255,79,.18);
 }
 @media (max-width: 980px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardStreakValue,
@@ -4406,4 +4464,119 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyChartInline > *{
   background: transparent !important;
   box-shadow: none !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  border-color: rgba(219,255,79,.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(219,255,79,.06),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.24),
+    0 30px 68px rgba(0,0,0,.42),
+    0 10px 28px rgba(219,255,79,.06) !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before{
+  background: radial-gradient(circle, rgba(219,255,79,.24) 0%, rgba(219,255,79,0) 70%);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::after{
+  background: radial-gradient(circle, rgba(241,255,122,.18) 0%, rgba(241,255,122,0) 72%);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
+  border-color: rgba(219,255,79,.14);
+  background:
+    radial-gradient(120% 140% at 0% 100%, rgba(177,219,33,.12), rgba(177,219,33,0) 42%),
+    radial-gradient(120% 120% at 100% 0%, rgba(241,255,122,.12), rgba(241,255,122,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+    rgba(6,9,3,.98) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(219,255,79,.03),
+    0 14px 30px rgba(0,0,0,.24),
+    0 0 24px rgba(219,255,79,.05) !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroDelta,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta.positive{
+  color: #dbff4f;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDelta.negative{
+  color: #ff7a7a;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
+  color: rgba(249,255,216,.92);
+  border-color: rgba(219,255,79,.18);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSegmentedBar{
+  --dashboard-bar-outline: rgba(241,255,151,.72);
+  --dashboard-bar-track-bg: rgba(24,31,8,.54);
+  --dashboard-bar-fill-start: #f3ff7a;
+  --dashboard-bar-fill-end: #dbff4f;
+  --dashboard-bar-fill-glow: rgba(219,255,79,.68);
+}
+body[data-theme="lime"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard .dashboardSegmentedBar,
+body[data-theme="lime"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardSegmentedBar,
+body[data-theme="lime"][data-control-style="parallelogram"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardSegmentedBar{
+  --dashboard-bar-track-base: #111706;
+  --dashboard-bar-track-fill: rgba(137, 162, 24, .18);
+  --dashboard-bar-gap-color: rgba(14, 18, 6, .32);
+  --dashboard-bar-projection-mid: rgba(137, 162, 24, .49);
+  --dashboard-bar-projection-deep: rgba(137, 162, 24, .49);
+  --dashboard-bar-projection-glow: rgba(219,255,79,.05);
+  --dashboard-bar-fill-bright: #f3ff7a;
+  --dashboard-bar-fill-mid: #dbff4f;
+  --dashboard-bar-fill-deep: #b7df1d;
+  --dashboard-bar-fill-glow: rgba(219,255,79,.18);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProjectionMarker,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardGoalProjectionMarker{
+  --dashboard-projection-marker-color: #f4ffae;
+  --dashboard-projection-marker-glow: rgba(241,255,151,.42);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGoalProgressBar{
+  --dashboard-goal-bar-border: rgba(219,255,79,.22);
+  --dashboard-goal-bar-track: rgba(18,24,7,.46);
+  --dashboard-goal-bar-fill-start: #dbff4f;
+  --dashboard-goal-bar-fill-end: #f3ff7a;
+  --dashboard-goal-bar-fill-glow: rgba(219,255,79,.2);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressFill{
+  background: linear-gradient(90deg, #dbff4f 0%, #f3ff7a 100%) !important;
+  box-shadow: 0 0 18px rgba(219,255,79,.18);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTrack,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeter{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(18,24,7,.76);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumBand{
+  background:
+    linear-gradient(90deg, rgba(90,110,18,.95) 0%, rgba(183,223,29,.95) 45%, rgba(243,255,122,.95) 100%) !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDial::before,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScaleGlow{
+  box-shadow: 0 0 20px rgba(219,255,79,.14) !important;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::after{
+  background: linear-gradient(90deg, rgba(189,116,255,.92) 0%, rgba(221,114,243,.98) 46%, rgba(164,91,230,.98) 100%) !important;
+  box-shadow:
+    0 0 8px rgba(221,114,243,.24),
+    0 0 2px rgba(246,214,255,.22) !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedleCore,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::after{
+  background: #f3ff7a !important;
+  box-shadow: 0 0 12px rgba(241,255,151,.22);
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScoreValue,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScoreStatus,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriver{
+  color: rgba(244,255,201,.9);
 }

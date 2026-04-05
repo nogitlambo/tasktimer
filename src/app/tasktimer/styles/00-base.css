@@ -551,6 +551,9 @@ body[data-theme="purple"] select{
 body[data-theme="cyan"] select{
   accent-color: #35e8ff;
 }
+body[data-theme="lime"] select{
+  accent-color: #efff63;
+}
 body[data-theme="purple"] option:checked,
 body[data-theme="purple"] option:hover,
 body[data-theme="purple"] option:focus{
@@ -567,6 +570,17 @@ body[data-theme="cyan"] option:hover,
 body[data-theme="cyan"] option:focus{
   background: linear-gradient(180deg, rgba(53,232,255,.34), rgba(8,83,110,.96));
   color: #f3feff;
+}
+body[data-theme="lime"] option,
+body[data-theme="lime"] optgroup{
+  background: #14180a;
+  color: #fbffdf;
+}
+body[data-theme="lime"] option:checked,
+body[data-theme="lime"] option:hover,
+body[data-theme="lime"] option:focus{
+  background: linear-gradient(180deg, rgba(239,255,99,.34), rgba(110,128,16,.96));
+  color: #f8ffd7;
 }
 .addTaskNameCombo{
   position:relative;
@@ -656,6 +670,11 @@ body[data-theme="cyan"] .addTaskNameItem:hover,
 body[data-theme="cyan"] .addTaskNameItem:focus{
   background: #183846;
   color: #eaf7ff;
+}
+body[data-theme="lime"] .addTaskNameItem:hover,
+body[data-theme="lime"] .addTaskNameItem:focus{
+  background: #2f3814;
+  color: #f7ffd0;
 }
 .categoryFieldRow{
   margin-top:10px;
@@ -2092,11 +2111,7 @@ body[data-theme="purple"]{
   --warn:#ff5a8d;
 }
 body[data-theme="purple"]{
-  background:
-    radial-gradient(58% 40% at 50% -8%, rgba(163,37,219,.52), rgba(20,4,30,0) 62%),
-    radial-gradient(42% 32% at 4% 52%, rgba(110,22,167,.28), rgba(10,2,18,0) 70%),
-    radial-gradient(45% 35% at 96% 57%, rgba(110,22,167,.26), rgba(10,2,18,0) 70%),
-    #05010b !important;
+  background: #0d0f13 !important;
   color:var(--text);
 }
 body[data-theme="purple"] .btn,
@@ -2218,6 +2233,136 @@ body[data-theme="purple"] .appFooterBtn.isOn .appFooterIconImage{
     brightness(0) saturate(100%)
     invert(72%) sepia(37%) saturate(1166%) hue-rotate(268deg) brightness(102%) contrast(101%)
     drop-shadow(0 0 10px rgba(240,110,224,.62)) !important;
+}
+/* Global Lime Theme Skin (neon yellow-lime) */
+body[data-theme="lime"]{
+  --bg:#0c0f07;
+  --panel:#151b0b;
+  --card:#1a210d;
+  --card-2:#20280f;
+  --text:#fbffeb;
+  --muted:rgba(233,244,191,.78);
+  --accent:#dbff4f;
+  --accent2:#b7df1d;
+  --accent3:#f3ff7a;
+  --warn:#ff7a7a;
+}
+body[data-theme="lime"]{
+  background: #0d0f13 !important;
+  color:var(--text);
+}
+body[data-theme="lime"] .btn,
+body[data-theme="lime"] .iconBtn,
+body[data-theme="lime"] .menuItem{
+  border-color: rgba(220,255,111,.34);
+  background: rgba(29,36,12,.9);
+  color:#fbffeb;
+}
+body[data-theme="lime"] .btn-accent,
+body[data-theme="lime"] .unitBtn.isOn,
+body[data-theme="lime"] .modeBtn.isOn,
+body[data-theme="lime"] .timerTypePill.isOn{
+  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  border-color: rgba(241,255,151,.72) !important;
+  color:#182003 !important;
+  box-shadow: 0 0 0 1px rgba(251,255,184,.22) inset, 0 0 16px rgba(219,255,79,.24) !important;
+}
+body[data-theme="lime"] .btn-ghost,
+body[data-theme="lime"] .iconBtn{
+  background: rgba(21,27,11,.9);
+  color:#eef7c8;
+}
+body[data-theme="lime"] .switch{
+  border-color: rgba(206,240,100,.32) !important;
+  background: rgba(34,42,15,.84) !important;
+}
+body[data-theme="lime"] .switch.on{
+  border-color: rgba(241,255,151,.6) !important;
+  background: rgba(219,255,79,.2) !important;
+}
+body[data-theme="lime"] .switch.on::after{
+  background: var(--accent3) !important;
+}
+body[data-theme="lime"] .appFooterNav{
+  border-top-color: rgba(213,255,102,.26) !important;
+  background:
+    linear-gradient(180deg, rgba(223,255,104,.08), rgba(0,0,0,0)),
+    rgba(11,14,6,.96);
+}
+body[data-theme="lime"] .appFooterBtn.isOn{
+  border-color: rgba(241,255,151,.72) !important;
+  background: rgba(219,255,79,.15) !important;
+  box-shadow: 0 0 14px rgba(219,255,79,.18) !important;
+}
+body[data-theme="lime"] select,
+body[data-theme="lime"] input[type="text"],
+body[data-theme="lime"] input[type="number"],
+body[data-theme="lime"] input[type="email"]{
+  border-color: rgba(213,255,102,.4) !important;
+}
+body[data-theme="lime"] select:focus,
+body[data-theme="lime"] input[type="text"]:focus,
+body[data-theme="lime"] input[type="number"]:focus,
+body[data-theme="lime"] input[type="email"]:focus{
+  border-color: rgba(241,255,151,.74) !important;
+  box-shadow: 0 0 0 1px rgba(241,255,151,.2) inset !important;
+}
+body[data-theme="lime"] .appFooterLabel{
+  color: rgba(246,255,204,.96) !important;
+  text-shadow: 0 0 8px rgba(219,255,79,.45) !important;
+}
+body[data-theme="lime"] .appFooterIconImage{
+  filter:
+    brightness(0) saturate(100%)
+    invert(91%) sepia(40%) saturate(724%) hue-rotate(25deg) brightness(106%) contrast(104%)
+    drop-shadow(0 0 7px rgba(219,255,79,.44)) !important;
+}
+body[data-theme="lime"] .appFooterBtn.isOn .appFooterLabel{
+  color: rgba(252,255,224,.98) !important;
+}
+body[data-theme="lime"] .appFooterBtn.isOn .appFooterIconImage{
+  filter:
+    brightness(0) saturate(100%)
+    invert(95%) sepia(35%) saturate(938%) hue-rotate(18deg) brightness(103%) contrast(104%)
+    drop-shadow(0 0 10px rgba(241,255,122,.6)) !important;
+}
+body[data-theme="lime"] .name,
+body[data-theme="lime"] .time,
+body[data-theme="lime"] .dashboardTitle,
+body[data-theme="lime"] .historyTitle,
+body[data-theme="lime"] .hmTitle,
+body[data-theme="lime"] .menuTitle,
+body[data-theme="lime"] .dashboardCardTitle,
+body[data-theme="lime"] .settingsDetailTitle,
+body[data-theme="lime"] .settingsInlineSectionTitle,
+body[data-theme="lime"] .settingsSectionLabel,
+body[data-theme="lime"] .checkpointAlertsTitle,
+body[data-theme="lime"] .focusInsightsTitle{
+  color: rgba(249,255,216,.96) !important;
+}
+body[data-theme="lime"] label,
+body[data-theme="lime"] .modalSubtext,
+body[data-theme="lime"] .historyMeta,
+body[data-theme="lime"] .modeSwitchesLabel,
+body[data-theme="lime"] .focusSessionNotesCollapseLabel{
+  color: rgba(228,240,171,.82) !important;
+}
+body[data-theme="lime"] .focusSessionNotesCollapseLabel::after{
+  color: rgba(241,255,151,.88) !important;
+}
+body[data-theme="lime"] .iconBtn,
+body[data-theme="lime"] .settingsInlineSectionIcon,
+body[data-theme="lime"] .settingsNavItemIcon,
+body[data-theme="lime"] .userGuideIcon{
+  color: rgba(244,255,201,.94);
+}
+body[data-theme="lime"] .settingsInlineSectionIcon,
+body[data-theme="lime"] .settingsNavItemIcon,
+body[data-theme="lime"] .userGuideIcon{
+  filter:
+    brightness(0) saturate(100%)
+    invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%)
+    drop-shadow(0 0 8px rgba(219,255,79,.34)) !important;
 }
 @keyframes signedInHeaderBadgeXpSlideIn{
   from{

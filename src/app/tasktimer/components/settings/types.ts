@@ -1,6 +1,7 @@
 import type { PushDiagnostics } from "@/app/tasktimer/lib/pushNotifications";
 import type { AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import type { RewardProgressV1 } from "@/app/tasktimer/lib/rewards";
+import type { TaskTimerPlan } from "@/app/tasktimer/lib/entitlements";
 
 export type SettingsPaneKey =
   | "general"
@@ -46,6 +47,9 @@ export type SettingsAccountViewModel = {
   authStatus: string;
   authError: string;
   authBusy: boolean;
+  authPlan: TaskTimerPlan;
+  authPlanStatus: "confirmed" | "refreshing";
+  authPlanIsProvisional: boolean;
   authUserEmail: string | null;
   authUserUid: string | null;
   authUserAlias: string;

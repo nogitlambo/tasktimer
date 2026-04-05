@@ -21,6 +21,9 @@ export function SettingsAppearancePane({ active }: { active: boolean }) {
               <button className="btn btn-ghost small unitBtn" id="themeCyanBtn" type="button" aria-pressed="false">
                 Cyan
               </button>
+              <button className="btn btn-ghost small unitBtn" id="themeLimeBtn" type="button" aria-pressed="false">
+                Lime
+              </button>
             </div>
           </div>
           <div className="unitRow" id="menuButtonStyleRow">

@@ -410,6 +410,12 @@
   letter-spacing:.05em;
   text-transform:uppercase;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataList{
+  display:grid;
+  grid-template-columns: repeat(2, 144px);
+  gap:8px;
+  justify-content:flex-start;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsDetailNote{
   border:1px solid rgba(121,226,255,.16);
   background: rgba(255,255,255,.02);
@@ -595,9 +601,38 @@
   font-size: 9px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsUidCopyBtn{
-  min-height:24px;
-  padding:3px 8px;
-  font-size:10px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyIcon{
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyIcon::before,
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyIcon::after{
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  background: transparent;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyIcon::before{
+  top: 1px;
+  left: 4px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsUidCopyIcon::after{
+  top: 4px;
+  left: 1px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineConfirmOverlay{
   position: fixed;
@@ -2778,10 +2813,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   position: relative;
   z-index: 1;
   display: grid !important;
-  grid-template-columns: 156px minmax(240px, max-content) minmax(0, 1fr) 184px !important;
+  grid-template-columns: 156px minmax(240px, max-content) minmax(0, 1fr) !important;
   grid-template-areas:
-    "avatar identity . decor"
-    "meta meta meta decor";
+    "avatar identity ."
+    "meta meta meta";
   align-items: start;
   gap: 16px 14px !important;
   margin-top: -34px;
@@ -2899,11 +2934,16 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   overflow-wrap: anywhere;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardMetaItem.settingsAccountUidRow{
+  position: relative;
   align-items: start;
+  padding-right: 48px;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardMetaItem.settingsAccountUidRow .settingsUidCopyBtn{
-  margin-top: 2px;
-  justify-self: start;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin-top: 0;
+  justify-self: auto;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardDecor{
   grid-area: decor;
@@ -3017,8 +3057,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     grid-template-columns: minmax(140px, 170px) minmax(0, 1fr);
     grid-template-areas:
       "avatar identity"
-      "meta meta"
-      "decor decor";
+      "meta meta";
     gap: 16px 4px;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster{
@@ -3027,13 +3066,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta{
     justify-items: start !important;
     text-align: left !important;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardDecor{
-    justify-items: start;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardDecorSignature{
-    justify-items: start;
-    text-align: left;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardIdentity{
     width: 100%;
@@ -3055,8 +3087,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     grid-template-areas:
       "avatar"
       "identity"
-      "meta"
-      "decor";
+      "meta";
     gap: 16px;
     margin-top: -28px;
     padding: 0 16px 18px;
@@ -3076,13 +3107,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardMetaGrid{
     grid-template-columns: 1fr;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster,
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardDecor{
+  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster{
     justify-items: center;
     text-align: center;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta,
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardDecorSignature{
+  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta{
     justify-items: center;
     align-items: center;
     text-align: center;
@@ -3294,7 +3323,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
 }
 
 #app[aria-label="TaskLaunch Settings"] #themePurpleBtn,
-#app[aria-label="TaskLaunch Settings"] #themeCyanBtn{
+#app[aria-label="TaskLaunch Settings"] #themeCyanBtn,
+#app[aria-label="TaskLaunch Settings"] #themeLimeBtn{
   min-width: 110px;
   justify-content: center;
 }
@@ -3402,4 +3432,163 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCa
   #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityGrid{
     grid-template-columns: 1fr;
   }
+}
+body[data-theme="lime"] .settingsSectionLabel,
+body[data-theme="lime"] .settingsDetailNote{
+  color: rgba(228,240,171,.8);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+  border-color: rgba(219,255,79,.16);
+  background: rgba(18,23,7,.9);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsNavRowText{
+  color: rgba(246,255,204,.94);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
+  border-color: rgba(241,255,151,.52) !important;
+  background: transparent !important;
+  box-shadow: 0 0 20px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.14) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive .settingsNavRowText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isActive .settingsNavRowText{
+  color: rgba(252,255,224,.98);
+  text-shadow: 0 0 8px rgba(219,255,79,.28);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+  border-color: rgba(241,255,151,.3);
+  box-shadow: 0 0 16px rgba(219,255,79,.1), inset 0 0 0 1px rgba(241,255,151,.1);
+}
+body[data-theme="lime"] .settingsDetailTitle,
+body[data-theme="lime"] .settingsInlineSectionTitle,
+body[data-theme="lime"] .settingsSectionLabel{
+  color: rgba(249,255,216,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsInlineSectionIcon{
+  filter: brightness(0) saturate(100%) invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%) drop-shadow(0 0 8px rgba(219,255,79,.34));
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPushDiagnostics{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(18,23,7,.76);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPushDiagnosticsLabel{
+  color: rgba(228,240,171,.74);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPushDiagnosticsValue{
+  color: rgba(247,255,212,.96);
+}
+body[data-theme="lime"] .dashboardTitle,
+body[data-theme="lime"] .historyTitle,
+body[data-theme="lime"] .hmTitle,
+body[data-theme="lime"] .menuTitle,
+body[data-theme="lime"] .dashboardCardTitle,
+body[data-theme="lime"] .settingsDetailTitle,
+body[data-theme="lime"] .settingsInlineSectionTitle,
+body[data-theme="lime"] .settingsSectionLabel,
+body[data-theme="lime"] .checkpointAlertsTitle,
+body[data-theme="lime"] .focusInsightsTitle{
+  color: rgba(249,255,216,.96);
+}
+body[data-theme="lime"] label,
+body[data-theme="lime"] .modeSwitchesLabel,
+body[data-theme="lime"] .historyMeta{
+  color: rgba(228,240,171,.82);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsMenuItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile .settingsNavItemIcon{
+  filter: brightness(0) saturate(100%) invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%) drop-shadow(0 0 8px rgba(219,255,79,.34)) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive .settingsMenuItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive .settingsNavItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isActive .settingsMenuItemIcon,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isActive .settingsNavItemIcon{
+  filter: brightness(0) saturate(100%) invert(95%) sepia(35%) saturate(938%) hue-rotate(18deg) brightness(103%) contrast(104%) drop-shadow(0 0 10px rgba(241,255,122,.58)) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem .settingsMenuItemText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
+  color: rgba(246,255,204,.94);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
+  filter: brightness(0) saturate(100%) invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%) drop-shadow(0 0 8px rgba(219,255,79,.34));
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:focus-visible{
+  border-color: rgba(241,255,151,.46) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityItem{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityLabel{
+  color: rgba(228,240,171,.78);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapabilityValue{
+  color: rgba(252,255,229,.94);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard{
+  border-color: rgba(219,255,79,.18);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.14), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(18,23,7,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard::after{
+  background:
+    radial-gradient(circle at 78% 26%, rgba(243,255,122,.18), transparent 28%),
+    linear-gradient(115deg, transparent 0 52%, rgba(255,255,255,.03) 52% 57%, transparent 57% 100%);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
+  background:
+    linear-gradient(135deg, rgba(162,194,28,.92), rgba(125,156,18,.9) 58%, rgba(43,58,10,.94)),
+    repeating-linear-gradient(120deg, rgba(255,255,255,.1) 0 2px, transparent 2px 52px);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandEyebrow{
+  color: rgba(239,248,184,.84);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandTitle{
+  color: rgba(252,255,224,.98);
+  text-shadow: 0 0 16px rgba(219,255,79,.22);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta .settingsAccountIdCardLabel{
+  color: rgba(243,250,188,.84) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta .settingsAccountIdCardRankValue{
+  color: rgba(252,255,229,.98);
+  text-shadow: 0 0 10px rgba(219,255,79,.18);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardLabel,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardMetaItem .settingsAccountUidLabel{
+  color: rgba(228,240,171,.74);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardNameValue,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardRankValue,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardMetaItem .settingsAccountUidValue,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardDecorSignatureText{
+  color: rgba(249,255,216,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardMetaItem{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardAvatarDock .accountAvatarPlaceholder{
+  border-color: rgba(251,255,224,.88);
+  background: linear-gradient(180deg, rgba(42,56,18,.98), rgba(25,33,10,.98));
+  box-shadow: 0 10px 26px rgba(0,0,0,.24), 0 0 0 1px rgba(219,255,79,.14);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardAvatarCaption{
+  color: rgba(228,240,171,.72);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBarcode span{
+  background: linear-gradient(180deg, rgba(252,255,229,.92), rgba(224,239,164,.84));
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  border-color: rgba(219,255,79,.18);
+  background: rgba(18,23,7,.82);
+  color: rgba(247,255,212,.96);
 }

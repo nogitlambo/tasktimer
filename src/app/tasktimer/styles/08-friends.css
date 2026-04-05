@@ -675,3 +675,27 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
 body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
   background: transparent !important;
 }
+body[data-theme="lime"] #shareTaskModal .shareTaskFriendOption{
+  border-color: rgba(219,255,79,.2);
+  background: rgba(18,23,7,.82);
+}
+body[data-theme="lime"] .friendRequestAvatar,
+body[data-theme="lime"] .friendIdentityAvatar{
+  box-shadow: 0 0 16px rgba(219,255,79,.14);
+}
+body[data-theme="lime"] .friendIdentityUid,
+body[data-theme="lime"] .friendRequestUid,
+body[data-theme="lime"] .friendSharedTasksCountText,
+body[data-theme="lime"] .friendIdentityMeta{
+  color: rgba(228,240,171,.82);
+}
+body[data-theme="lime"] .friendSharedTaskCard{
+  border-color: rgba(219,255,79,.18);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.12), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(18,23,7,.96);
+}
+body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
+  box-shadow: 0 0 22px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.06);
+}

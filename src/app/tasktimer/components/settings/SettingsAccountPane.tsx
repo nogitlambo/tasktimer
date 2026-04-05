@@ -14,6 +14,10 @@ function formatMemberSinceDate(value: string | null) {
   return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+function formatPlanUserLabel(plan: SettingsAccountViewModel["authPlan"]) {
+  return `${plan === "pro" ? "Pro" : "Free"} User`;
+}
+
 export function SettingsAccountPane({
   active,
   account,
@@ -37,8 +41,8 @@ export function SettingsAccountPane({
               <div className="settingsAccountIdCard" aria-label="Account profile card">
                 <div className="settingsAccountIdCardHeader">
                   <div className="settingsAccountIdCardBrandBlock">
-                    <div className="settingsAccountIdCardBrandEyebrow">TASKLAUNCH</div>
-                    <div className="settingsAccountIdCardBrandTitle">PROFILE.</div>
+                    <div className="settingsAccountIdCardBrandEyebrow">VERIFIED IDENTITY</div>
+                    <div className="settingsAccountIdCardBrandTitle">{formatPlanUserLabel(account.authPlan)}</div>
                   </div>
                   <div className="settingsAccountIdCardHeaderRankCluster">
                     <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardHeaderRankMeta">
@@ -87,7 +91,7 @@ export function SettingsAccountPane({
 
                   <div className="settingsAccountIdCardIdentity">
                     <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
-                      <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Name</div>
+                      <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Username</div>
                       <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
                         {account.authUserAliasEditing ? (
                           <>
@@ -152,35 +156,20 @@ export function SettingsAccountPane({
                       <div className="settingsAccountIdCardMetaItem settingsAccountUidRow">
                         <span className="settingsAccountUidLabel">UID</span>
                         <span className="settingsAccountUidValue">{account.authUserUid}</span>
-                        <button className="btn btn-ghost small settingsUidCopyBtn" type="button" onClick={() => void account.onCopyUid()}>
-                          {account.uidCopyStatus || "Copy"}
+                        <button
+                          className="iconBtn settingsUidCopyBtn"
+                          type="button"
+                          onClick={() => void account.onCopyUid()}
+                          aria-label={account.uidCopyStatus || "Copy UID"}
+                          title={account.uidCopyStatus || "Copy UID"}
+                        >
+                          <span className="settingsUidCopyIcon" aria-hidden="true" />
                         </button>
                       </div>
                     ) : null}
                     <div className="settingsAccountIdCardMetaItem settingsAccountMemberSinceRow">
                       <span className="settingsAccountUidLabel">Member Since</span>
                       <span className="settingsAccountUidValue">{formatMemberSinceDate(account.authMemberSince)}</span>
-                    </div>
-                  </div>
-
-                  <div className="settingsAccountIdCardDecor" aria-hidden="true">
-                    <div className="settingsAccountIdCardDecorSignature">
-                      <span className="settingsAccountFieldLabel settingsAccountIdCardLabel">Verified Identity</span>
-                      <span className="settingsAccountIdCardDecorSignatureText">TaskTimer Member</span>
-                    </div>
-                    <div className="settingsAccountIdCardBarcode">
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span />
                     </div>
                   </div>
                 </div>

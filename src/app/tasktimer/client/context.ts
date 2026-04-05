@@ -289,7 +289,7 @@ export type TaskTimerTasksContext = {
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
   getHistoryViewByTaskId: () => Record<string, HistoryViewState>;
-  getThemeMode: () => "purple" | "cyan";
+  getThemeMode: () => "purple" | "cyan" | "lime";
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
@@ -761,8 +761,8 @@ export type TaskTimerPreferencesContext = {
   defaultModeLabels: Record<MainMode, string>;
   defaultModeEnabled: Record<MainMode, boolean>;
   defaultModeColors: Record<MainMode, string>;
-  getThemeMode: () => "purple" | "cyan";
-  setThemeModeState: (value: "purple" | "cyan") => void;
+  getThemeMode: () => "purple" | "cyan" | "lime";
+  setThemeModeState: (value: "purple" | "cyan" | "lime") => void;
   getTaskView: () => "list" | "tile";
   setTaskViewState: (value: "list" | "tile") => void;
   getMenuButtonStyle: () => "parallelogram" | "square";

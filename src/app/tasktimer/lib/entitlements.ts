@@ -13,7 +13,7 @@ export type TaskTimerEntitlement =
 export const TASKTIMER_PLAN_STORAGE_KEY = `${TASKTIMER_STORAGE_KEY}:plan`;
 export const TASKTIMER_PLAN_CHANGED_EVENT = "tasktimer:plan-changed";
 
-type TaskTimerPlanCacheRecord = {
+export type TaskTimerPlanCacheRecord = {
   uid?: string | null;
   plan?: unknown;
 };
@@ -49,26 +49,35 @@ export function hasTaskTimerEntitlement(plan: TaskTimerPlan, entitlement: TaskTi
   return !!PLAN_ENTITLEMENTS[plan][entitlement];
 }
 
-export function readTaskTimerPlanFromStorage(): TaskTimerPlan {
-  if (typeof window === "undefined") return "free";
+export function readTaskTimerPlanCacheFromStorage(): { uid: string | null; plan: TaskTimerPlan } {
+  if (typeof window === "undefined") return { uid: null, plan: "free" };
   try {
     const raw = window.localStorage.getItem(TASKTIMER_PLAN_STORAGE_KEY);
-    if (!raw) return "free";
+    if (!raw) return { uid: null, plan: "free" };
     try {
       const parsed = JSON.parse(raw) as TaskTimerPlanCacheRecord | null;
       if (parsed && typeof parsed === "object") {
         const cachedUid = String(parsed.uid || "").trim();
-        const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
-        if (cachedUid && activeUid && cachedUid !== activeUid) return "free";
-        return normalizeTaskTimerPlan(parsed.plan);
+        return {
+          uid: cachedUid || null,
+          plan: normalizeTaskTimerPlan(parsed.plan),
+        };
       }
     } catch {
-      return normalizeTaskTimerPlan(raw);
+      return { uid: null, plan: normalizeTaskTimerPlan(raw) };
     }
-    return "free";
+    return { uid: null, plan: "free" };
   } catch {
-    return "free";
+    return { uid: null, plan: "free" };
   }
+}
+
+export function readTaskTimerPlanFromStorage(): TaskTimerPlan {
+  const cached = readTaskTimerPlanCacheFromStorage();
+  const cachedUid = String(cached.uid || "").trim();
+  const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+  if (cachedUid && activeUid && cachedUid !== activeUid) return "free";
+  return cached.plan;
 }
 
 export function writeTaskTimerPlanToStorage(plan: TaskTimerPlan, opts?: { uid?: string | null }) {

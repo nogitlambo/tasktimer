@@ -4,6 +4,7 @@ import { GoogleAuthProvider, deleteUser, getRedirectResult, reauthenticateWithPo
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { saveUserRootPatch } from "@/app/tasktimer/lib/cloudStore";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 import { clearScopedStorageState, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
@@ -37,15 +38,7 @@ export function userDocRef(uid: string) {
 export async function saveUserDocPatch(uid: string, patch: Record<string, unknown>) {
   const ref = userDocRef(uid);
   if (!ref) throw new Error("Cloud Firestore is not available.");
-  await setDoc(
-    ref,
-    {
-      schemaVersion: 1,
-      updatedAt: serverTimestamp(),
-      ...patch,
-    },
-    { merge: true },
-  );
+  await saveUserRootPatch(uid, patch);
 }
 
 export async function loadClaimedUsername(uid: string): Promise<string> {
