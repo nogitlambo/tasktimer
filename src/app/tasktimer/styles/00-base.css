@@ -1632,6 +1632,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .focusSessionNotesInput::placeholder{
   color: rgba(151,174,192,.9);
 }
+.focusSessionNotesBody{
+  display:grid;
+  gap:8px;
+}
+.focusSessionNotesSavedText{
+  display:none;
+  color:#63e6a6;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.02em;
+}
 .historySaveWorkingPanel{
   width: min(420px, calc(100vw - 28px));
   min-height: 74px;

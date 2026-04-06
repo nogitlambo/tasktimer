@@ -92,12 +92,37 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function syncFocusSessionNotesInput(taskId: string | null) {
     if (!els.focusSessionNotesInput) return;
     els.focusSessionNotesInput.value = taskId ? getFocusSessionDraft(taskId) : "";
+    clearFocusSessionNotesSavedStatus();
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    if (!els.focusSessionNotesSection) return;
-    const noteValue = taskId ? getFocusSessionDraft(taskId) : "";
-    els.focusSessionNotesSection.open = !!noteValue.trim();
+    if (els.focusSessionNotesSection) {
+      els.focusSessionNotesSection.setAttribute("data-notes-visible", String(!!String(taskId || "").trim()));
+    }
+  }
+
+  function clearFocusSessionNotesSavedStatus() {
+    if (!els.focusSessionNotesSavedText) return;
+    els.focusSessionNotesSavedText.textContent = "";
+    (els.focusSessionNotesSavedText as HTMLElement).style.display = "none";
+  }
+
+  function showFocusSessionNotesSavedStatus() {
+    if (!els.focusSessionNotesSavedText) return;
+    els.focusSessionNotesSavedText.textContent = "Session note automatically saved to this session.";
+    (els.focusSessionNotesSavedText as HTMLElement).style.display = "block";
+  }
+
+  function maybeShowFocusSessionNotesSavedStatus(taskId?: string | null) {
+    const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
+    const targetTaskId = String(taskId || activeTaskId).trim();
+    if (!activeTaskId || !targetTaskId || activeTaskId !== targetTaskId) return;
+    if (!String(els.focusSessionNotesInput?.value || "").trim()) {
+      clearFocusSessionNotesSavedStatus();
+      return;
+    }
+    flushPendingFocusSessionNoteSave(targetTaskId);
+    showFocusSessionNotesSavedStatus();
   }
 
   function scheduleFocusSessionNoteSave(taskId: string, noteRaw: string) {
@@ -1168,7 +1193,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     ctx.on(els.focusSessionNotesInput, "input", () => {
       if (!ctx.getFocusModeTaskId()) return;
+      clearFocusSessionNotesSavedStatus();
       scheduleFocusSessionNoteSave(String(ctx.getFocusModeTaskId() || ""), String(els.focusSessionNotesInput?.value || ""));
+    });
+    ctx.on(els.focusSessionNotesSection, "focusout", (event: Event) => {
+      const container = els.focusSessionNotesSection as HTMLElement | null;
+      const nextTarget = (event as FocusEvent).relatedTarget as Node | null;
+      window.setTimeout(() => {
+        if (!container) return;
+        const activeElement = document.activeElement;
+        if (nextTarget && container.contains(nextTarget)) return;
+        if (activeElement && container.contains(activeElement)) return;
+        maybeShowFocusSessionNotesSavedStatus(ctx.getFocusModeTaskId());
+      }, 0);
     });
     ctx.on(els.timeGoalCompleteUpdateGoalBtn, "click", () => {
       const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));

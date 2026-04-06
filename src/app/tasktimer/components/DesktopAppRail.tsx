@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -69,12 +69,13 @@ type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
 
 const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
 const ARCHIE_OUTLINE_DRAW_MS = 840;
-const ARCHIE_TYPE_MS = 1050;
+const ARCHIE_TYPE_MS = 2100;
+const ARCHIE_TYPE_MS_PER_CHAR = Math.max(12, Math.round((ARCHIE_TYPE_MS / ARCHIE_DEFAULT_PROMPT.length) / 2));
 const ARCHIE_BLINK_DURATION_MS = 2000;
 const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
 const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
 const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
-const ARCHIE_LINE_REVEAL_STEP_MS = 225;
+const ARCHIE_INACTIVITY_CLOSE_MS = 30000;
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const NAV_ITEMS: NavItem[] = [
@@ -251,19 +252,20 @@ export default function DesktopAppRail({
   const [isArchieBubbleOpen, setIsArchieBubbleOpen] = useState(false);
   const [archieQuestion, setArchieQuestion] = useState("");
   const [archieDisplayMessage, setArchieDisplayMessage] = useState(ARCHIE_DEFAULT_PROMPT);
+  const [archieRenderedMessage, setArchieRenderedMessage] = useState(ARCHIE_DEFAULT_PROMPT);
   const [archieTitleAnimation, setArchieTitleAnimation] = useState<"none" | "prompt" | "response">("none");
   const [archieTitleAnimationKey, setArchieTitleAnimationKey] = useState(0);
   const [archieOutlineAnimating, setArchieOutlineAnimating] = useState(false);
   const [archieOutlineComplete, setArchieOutlineComplete] = useState(false);
+  const [archieOutlineClosing, setArchieOutlineClosing] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
   const [archieBlinkPattern, setArchieBlinkPattern] = useState<ArchieBlinkPattern>("idle");
-  const [archieDisplayLines, setArchieDisplayLines] = useState<string[]>([ARCHIE_DEFAULT_PROMPT]);
-  const archieInputRef = useRef<HTMLInputElement | null>(null);
-  const archieTitleRef = useRef<HTMLDivElement | null>(null);
+  const archieInputRef = useRef<HTMLTextAreaElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
   const archieBlinkStartTimerRef = useRef<number | null>(null);
   const archieBlinkStopTimerRef = useRef<number | null>(null);
+  const archieInactivityTimerRef = useRef<number | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -470,25 +472,90 @@ export default function DesktopAppRail({
     }
   }, []);
 
+  const clearArchieInactivityTimer = useCallback(() => {
+    if (archieInactivityTimerRef.current != null) {
+      window.clearTimeout(archieInactivityTimerRef.current);
+      archieInactivityTimerRef.current = null;
+    }
+  }, []);
+
   const resetArchieBubble = useCallback(() => {
     clearArchieTimers();
+    clearArchieInactivityTimer();
     setArchieQuestion("");
     setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
+    setArchieRenderedMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieTitleAnimation("none");
     setArchieTitleAnimationKey((value) => value + 1);
     setArchieOutlineAnimating(false);
     setArchieOutlineComplete(false);
+    setArchieOutlineClosing(false);
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
-  }, [clearArchieTimers]);
+  }, [clearArchieInactivityTimer, clearArchieTimers]);
+
+  const closeArchieBubble = useCallback(
+    (opts?: { animated?: boolean }) => {
+      const reducedMotion = prefersReducedMotion();
+      const animated = opts?.animated !== false && !reducedMotion;
+      clearArchieTimers();
+      clearArchieInactivityTimer();
+      if (!animated) {
+        setIsArchieBubbleOpen(false);
+        resetArchieBubble();
+        return;
+      }
+      setArchieInputVisible(false);
+      setArchieTitleAnimation("none");
+      setArchieOutlineAnimating(false);
+      setArchieOutlineComplete(false);
+      setArchieOutlineClosing(true);
+      queueArchieTimer(() => {
+        setIsArchieBubbleOpen(false);
+        resetArchieBubble();
+      }, ARCHIE_OUTLINE_DRAW_MS);
+    },
+    [clearArchieInactivityTimer, clearArchieTimers, prefersReducedMotion, queueArchieTimer, resetArchieBubble]
+  );
+
+  const restartArchieInactivityTimer = useCallback(() => {
+    clearArchieInactivityTimer();
+    if (!isArchieBubbleOpen) return;
+    archieInactivityTimerRef.current = window.setTimeout(() => {
+      archieInactivityTimerRef.current = null;
+      closeArchieBubble({ animated: true });
+    }, ARCHIE_INACTIVITY_CLOSE_MS);
+  }, [clearArchieInactivityTimer, closeArchieBubble, isArchieBubbleOpen]);
+
+  const startArchieTyping = useCallback(
+    (messageRaw: string, onComplete?: () => void) => {
+      const message = String(messageRaw || "");
+      clearArchieTimers();
+      const stepMs = ARCHIE_TYPE_MS_PER_CHAR;
+      setArchieRenderedMessage("");
+      Array.from(message).forEach((_, index, chars) => {
+        queueArchieTimer(() => {
+          setArchieRenderedMessage(chars.slice(0, index + 1).join(""));
+          if (index === chars.length - 1) onComplete?.();
+        }, stepMs * (index + 1));
+      });
+      if (!message) {
+        onComplete?.();
+      }
+    },
+    [clearArchieTimers, queueArchieTimer]
+  );
 
   const startArchiePromptSequence = useCallback(() => {
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
+    clearArchieInactivityTimer();
     setArchieQuestion("");
     setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
+    setArchieRenderedMessage(reducedMotion ? ARCHIE_DEFAULT_PROMPT : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
+    setArchieOutlineClosing(false);
     setArchieOutlineAnimating(!reducedMotion);
     setArchieOutlineComplete(reducedMotion);
     setArchieTitleAnimation("none");
@@ -505,12 +572,12 @@ export default function DesktopAppRail({
       setArchieOutlineComplete(true);
       setArchieTitleAnimation("prompt");
       setArchieTitleAnimationKey((value) => value + 1);
+      startArchieTyping(ARCHIE_DEFAULT_PROMPT, () => {
+        setArchieTitleAnimation("none");
+        setArchieInputVisible(true);
+      });
     }, ARCHIE_OUTLINE_DRAW_MS);
-    queueArchieTimer(() => {
-      setArchieTitleAnimation("none");
-      setArchieInputVisible(true);
-    }, ARCHIE_OUTLINE_DRAW_MS + ARCHIE_TYPE_MS);
-  }, [clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+  }, [clearArchieInactivityTimer, clearArchieTimers, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
 
   const submitArchieQuestion = useCallback(() => {
     const nextQuestion = String(archieQuestion || "").trim();
@@ -518,10 +585,13 @@ export default function DesktopAppRail({
     const reducedMotion = prefersReducedMotion();
     const reply = resolveArchieAssistantResponse(nextQuestion, activePage);
     clearArchieTimers();
+    clearArchieInactivityTimer();
     setArchieQuestion("");
     setArchieDisplayMessage(reply.message);
+    setArchieRenderedMessage(reducedMotion ? reply.message : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(reply.suggestedAction || null);
+    setArchieOutlineClosing(false);
     setArchieOutlineAnimating(false);
     setArchieOutlineComplete(true);
     setArchieTitleAnimation(reducedMotion ? "none" : "response");
@@ -530,23 +600,26 @@ export default function DesktopAppRail({
       setArchieInputVisible(true);
       return;
     }
-    queueArchieTimer(() => {
+    startArchieTyping(reply.message, () => {
       setArchieTitleAnimation("none");
       setArchieInputVisible(true);
-    }, ARCHIE_TYPE_MS);
-  }, [activePage, archieQuestion, clearArchieTimers, prefersReducedMotion, queueArchieTimer]);
+    });
+  }, [activePage, archieQuestion, clearArchieInactivityTimer, clearArchieTimers, prefersReducedMotion, startArchieTyping]);
 
   const showArchieHelpMessage = useCallback((message: string) => {
     const nextMessage = String(message || "").trim();
     if (!nextMessage) return;
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
+    clearArchieInactivityTimer();
     const shouldAnimateOpen = !isArchieBubbleOpen;
     setIsArchieBubbleOpen(true);
     setArchieQuestion("");
     setArchieDisplayMessage(nextMessage);
+    setArchieRenderedMessage(reducedMotion ? nextMessage : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
+    setArchieOutlineClosing(false);
     setArchieOutlineAnimating(shouldAnimateOpen && !reducedMotion);
     setArchieOutlineComplete(!shouldAnimateOpen || reducedMotion);
     setArchieTitleAnimation("none");
@@ -564,25 +637,26 @@ export default function DesktopAppRail({
         setArchieOutlineComplete(true);
         setArchieTitleAnimation("prompt");
         setArchieTitleAnimationKey((value) => value + 1);
+        startArchieTyping(nextMessage, () => {
+          setArchieTitleAnimation("none");
+          setArchieInputVisible(true);
+        });
       }, ARCHIE_OUTLINE_DRAW_MS);
-      queueArchieTimer(() => {
-        setArchieTitleAnimation("none");
-        setArchieInputVisible(true);
-      }, ARCHIE_OUTLINE_DRAW_MS + ARCHIE_TYPE_MS);
       return;
     }
     setArchieOutlineAnimating(false);
     setArchieOutlineComplete(true);
     setArchieTitleAnimation("response");
     setArchieTitleAnimationKey((value) => value + 1);
-    queueArchieTimer(() => {
+    startArchieTyping(nextMessage, () => {
       setArchieTitleAnimation("none");
       setArchieInputVisible(true);
-    }, ARCHIE_TYPE_MS);
-  }, [clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer]);
+    });
+  }, [clearArchieInactivityTimer, clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
 
   const handleArchieSuggestedAction = useCallback(() => {
     if (!archieSuggestedAction || typeof window === "undefined") return;
+    restartArchieInactivityTimer();
     if (archieSuggestedAction.kind === "navigate") {
       window.location.assign(archieSuggestedAction.href);
       return;
@@ -604,21 +678,20 @@ export default function DesktopAppRail({
     const pathname = String(window.location.pathname || "");
     const onTasksRoute = /\/tasklaunch\/?$/i.test(pathname) || /\/tasklaunch\/index\.html$/i.test(pathname);
     if (!onTasksRoute) window.location.assign("/tasklaunch");
-  }, [archieSuggestedAction]);
+  }, [archieSuggestedAction, restartArchieInactivityTimer]);
 
   const handleArchieToggle = useCallback(() => {
     if (isArchieBubbleOpen) {
-      setIsArchieBubbleOpen(false);
-      resetArchieBubble();
+      closeArchieBubble({ animated: true });
       return;
     }
     setIsArchieBubbleOpen(true);
     startArchiePromptSequence();
-  }, [isArchieBubbleOpen, resetArchieBubble, startArchiePromptSequence]);
+  }, [closeArchieBubble, isArchieBubbleOpen, startArchiePromptSequence]);
 
   const handleArchieInputKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key !== "Enter") return;
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key !== "Enter" || event.shiftKey) return;
       event.preventDefault();
       submitArchieQuestion();
     },
@@ -631,86 +704,13 @@ export default function DesktopAppRail({
   }, [archieInputVisible, isArchieBubbleOpen]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const computeArchieDisplayLines = () => {
-      const titleEl = archieTitleRef.current;
-      const message = String(archieDisplayMessage || "").trim() || ARCHIE_DEFAULT_PROMPT;
-      if (!titleEl) {
-        setArchieDisplayLines([message]);
-        return;
-      }
-      const maxWidth = Math.max(0, Math.floor(titleEl.clientWidth));
-      if (!(maxWidth > 0)) {
-        setArchieDisplayLines([message]);
-        return;
-      }
-
-      const computed = window.getComputedStyle(titleEl);
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) {
-        setArchieDisplayLines([message]);
-        return;
-      }
-      context.font = computed.font;
-      const letterSpacingValue = Number.parseFloat(computed.letterSpacing || "0");
-      const letterSpacing = Number.isFinite(letterSpacingValue) ? letterSpacingValue : 0;
-
-      const measureLine = (value: string) => {
-        const text = String(value || "");
-        if (!text) return 0;
-        const glyphCount = Array.from(text).length;
-        return context.measureText(text).width + Math.max(0, glyphCount - 1) * letterSpacing;
-      };
-
-      const pushWrappedWord = (word: string, lines: string[]) => {
-        let remaining = word;
-        while (remaining) {
-          let slice = "";
-          for (const char of Array.from(remaining)) {
-            const nextSlice = `${slice}${char}`;
-            if (slice && measureLine(nextSlice) > maxWidth) break;
-            slice = nextSlice;
-          }
-          if (!slice) slice = Array.from(remaining)[0] || "";
-          lines.push(slice);
-          remaining = remaining.slice(slice.length);
-        }
-      };
-
-      const nextLines: string[] = [];
-      for (const rawParagraph of message.split(/\n+/)) {
-        const paragraph = rawParagraph.trim();
-        if (!paragraph) continue;
-        let currentLine = "";
-        for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-          const nextLine = currentLine ? `${currentLine} ${word}` : word;
-          if (measureLine(nextLine) <= maxWidth) {
-            currentLine = nextLine;
-            continue;
-          }
-          if (currentLine) nextLines.push(currentLine);
-          if (measureLine(word) <= maxWidth) {
-            currentLine = word;
-          } else {
-            pushWrappedWord(word, nextLines);
-            currentLine = "";
-          }
-        }
-        if (currentLine) nextLines.push(currentLine);
-      }
-
-      setArchieDisplayLines(nextLines.length ? nextLines : [message]);
-    };
-
-    computeArchieDisplayLines();
-    const titleEl = archieTitleRef.current;
-    if (!titleEl || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => computeArchieDisplayLines());
-    observer.observe(titleEl);
-    return () => observer.disconnect();
-  }, [archieDisplayMessage]);
+    if (!isArchieBubbleOpen || archieOutlineClosing) {
+      clearArchieInactivityTimer();
+      return;
+    }
+    restartArchieInactivityTimer();
+    return () => clearArchieInactivityTimer();
+  }, [archieDisplayMessage, archieInputVisible, archieOutlineClosing, archieQuestion, archieSuggestedAction, clearArchieInactivityTimer, isArchieBubbleOpen, restartArchieInactivityTimer]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -782,8 +782,9 @@ export default function DesktopAppRail({
           <div className="desktopRailMiddleSection">
             <div className="desktopRailMascot">
               <div
-                className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}`}
+                className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}`}
                 aria-hidden={!isArchieBubbleOpen}
+                onPointerDown={() => restartArchieInactivityTimer()}
               >
                 <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
@@ -793,20 +794,12 @@ export default function DesktopAppRail({
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
                   <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
                 </span>
-                <div className="desktopRailMascotBubbleTitle" ref={archieTitleRef}>
+                <div className="desktopRailMascotBubbleTitle">
                   <span
                     key={archieTitleAnimationKey}
                     className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
                   >
-                    {archieDisplayLines.map((line, index) => (
-                      <span
-                        key={`${archieTitleAnimationKey}-${index}-${line}`}
-                        className="desktopRailMascotBubbleTitleLine"
-                        style={{ "--archie-line-delay": `${index * ARCHIE_LINE_REVEAL_STEP_MS}ms` } as CSSProperties}
-                      >
-                        {line}
-                      </span>
-                    ))}
+                    {archieRenderedMessage}
                   </span>
                 </div>
                 {archieSuggestedAction ? (
@@ -821,13 +814,17 @@ export default function DesktopAppRail({
                   </div>
                 ) : null}
                 <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
-                  <input
+                  <textarea
                     ref={archieInputRef}
                     className="desktopRailMascotInput"
-                    type="text"
                     value={archieQuestion}
-                    onChange={(event) => setArchieQuestion(event.target.value)}
+                    rows={2}
+                    onChange={(event) => {
+                      restartArchieInactivityTimer();
+                      setArchieQuestion(event.target.value);
+                    }}
                     onKeyDown={handleArchieInputKeyDown}
+                    onFocus={() => restartArchieInactivityTimer()}
                     placeholder="Ask Archie a question..."
                     aria-label="Ask Archie a question"
                   />

@@ -564,6 +564,14 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
   margin-top: -2px;
 }
 
+#app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote {
+  color: #6dff96;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote {
+  color: #ff6b6b;
+}
+
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardList {
   display: grid;
   gap: 12px;
@@ -716,6 +724,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormTi
 
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext {
   color: rgba(232, 212, 244, .82);
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote {
+  color: #ff8f9d;
 }
 
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem {

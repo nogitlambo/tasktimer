@@ -1,5 +1,6 @@
 import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
+import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart } from "../lib/historyChart";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
@@ -24,6 +25,47 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function canUseAdvancedTaskConfig() {
     return ctx.hasEntitlement("advancedTaskConfig");
+  }
+
+  function canUsePremiumThemes() {
+    return ctx.getCurrentPlan() === "pro";
+  }
+
+  function syncThemeAvailabilityUi() {
+    const premiumThemesLocked = !canUsePremiumThemes();
+    const currentTheme = ctx.getThemeMode();
+    const lockedThemeSelected = premiumThemesLocked && (currentTheme === "purple" || currentTheme === "lime");
+
+    if (lockedThemeSelected) {
+      ctx.setThemeModeState("cyan");
+      document.body.setAttribute("data-theme", "cyan");
+    }
+
+    const appliedTheme = lockedThemeSelected ? "cyan" : currentTheme;
+    const lockTitle = premiumThemesLocked ? "Pro feature: Purple and Lime themes" : "";
+
+    els.themePurpleBtn?.classList.toggle("isOn", appliedTheme === "purple");
+    els.themeCyanBtn?.classList.toggle("isOn", appliedTheme === "cyan");
+    els.themeLimeBtn?.classList.toggle("isOn", appliedTheme === "lime");
+    els.themePurpleBtn?.setAttribute("aria-pressed", appliedTheme === "purple" ? "true" : "false");
+    els.themeCyanBtn?.setAttribute("aria-pressed", appliedTheme === "cyan" ? "true" : "false");
+    els.themeLimeBtn?.setAttribute("aria-pressed", appliedTheme === "lime" ? "true" : "false");
+
+    if (els.themePurpleBtn) {
+      els.themePurpleBtn.disabled = premiumThemesLocked;
+      els.themePurpleBtn.setAttribute("aria-disabled", String(premiumThemesLocked));
+      els.themePurpleBtn.title = lockTitle;
+    }
+    if (els.themeLimeBtn) {
+      els.themeLimeBtn.disabled = premiumThemesLocked;
+      els.themeLimeBtn.setAttribute("aria-disabled", String(premiumThemesLocked));
+      els.themeLimeBtn.title = lockTitle;
+    }
+    if (els.themeCyanBtn) {
+      els.themeCyanBtn.disabled = false;
+      els.themeCyanBtn.setAttribute("aria-disabled", "false");
+      els.themeCyanBtn.title = "";
+    }
   }
 
   function requireAdvancedTaskConfig(featureLabel: string) {
@@ -114,12 +156,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setThemeModeState(mode);
     const body = document.body;
     body.setAttribute("data-theme", mode);
-    els.themePurpleBtn?.classList.toggle("isOn", mode === "purple");
-    els.themeCyanBtn?.classList.toggle("isOn", mode === "cyan");
-    els.themeLimeBtn?.classList.toggle("isOn", mode === "lime");
-    els.themePurpleBtn?.setAttribute("aria-pressed", mode === "purple" ? "true" : "false");
-    els.themeCyanBtn?.setAttribute("aria-pressed", mode === "cyan" ? "true" : "false");
-    els.themeLimeBtn?.setAttribute("aria-pressed", mode === "lime" ? "true" : "false");
+    syncThemeAvailabilityUi();
   }
 
   function applyTaskViewPreference(next: "list" | "tile") {
@@ -280,6 +317,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function setThemeMode(next: "purple" | "cyan" | "lime") {
+    if ((next === "purple" || next === "lime") && !canUsePremiumThemes()) {
+      ctx.showUpgradePrompt(`${next === "purple" ? "Purple" : "Lime"} theme`, "pro");
+      syncThemeAvailabilityUi();
+      return;
+    }
     applyTheme(next);
     persistPreferencesToCloud();
   }
@@ -340,8 +382,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.appearanceLoadDefaultsBtn, "click", () => {
-      setThemeMode("purple");
+      setThemeMode(canUsePremiumThemes() ? "purple" : "cyan");
       setMenuButtonStyle("square");
+    });
+    ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
+      syncThemeAvailabilityUi();
     });
     ctx.on(els.taskDefaultFormatDay, "click", () => {
       ctx.setDefaultTaskTimerFormatState("day");

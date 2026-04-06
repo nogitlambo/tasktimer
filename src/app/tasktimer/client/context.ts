@@ -93,6 +93,60 @@ export type TaskTimerPopupMenuContext = {
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
+export type TaskTimerRewardsHistoryContext = {
+  rewardSessionTrackersStorageKey: string;
+  getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
+  getDeletedTaskMeta: () => DeletedTaskMeta;
+  getWeekStarting: () => DashboardWeekStart;
+  getDashboardIncludedModes: () => Record<MainMode, boolean>;
+  getRewardProgress: () => RewardProgressV1;
+  setRewardProgress: (value: RewardProgressV1) => void;
+  getRewardSessionTrackersByTaskId: () => Record<
+    string,
+    {
+      taskId: string;
+      untrackedMs: number;
+      segments: Array<{ startMs: number; endMs: number; multiplier: number }>;
+      activeSegmentStartMs: number | null;
+      activeMultiplier: number | null;
+    }
+  >;
+  setRewardSessionTrackersByTaskId: (
+    value: Record<
+      string,
+      {
+        taskId: string;
+        untrackedMs: number;
+        segments: Array<{ startMs: number; endMs: number; multiplier: number }>;
+        activeSegmentStartMs: number | null;
+        activeMultiplier: number | null;
+      }
+    >
+  ) => void;
+  getCloudPreferencesCache: () => unknown;
+  setCloudPreferencesCache: (value: unknown) => void;
+  getFocusModeTaskId: () => string | null;
+  getCurrentPlan: () => TaskTimerPlan;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  currentUid: () => string | null;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
+  isModeEnabled: (mode: MainMode) => boolean;
+  getTaskElapsedMs: (task: Task) => number;
+  sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  captureSessionNoteSnapshot: (taskId?: string | null) => string;
+  setFocusSessionDraft: (taskId: string, note: string) => void;
+  clearFocusSessionDraft: (taskId: string) => void;
+  syncFocusSessionNotesInput: (taskId: string | null) => void;
+  syncFocusSessionNotesAccordion: (taskId: string | null) => void;
+  appendHistoryEntry: (taskId: string, entry: Record<string, unknown>) => void;
+  saveHistoryLocally: (history: HistoryByTaskId) => void;
+  buildDefaultCloudPreferences: () => Record<string, unknown>;
+  saveCloudPreferences: (prefs: Record<string, unknown>) => void;
+  syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined }) => Promise<unknown>;
+};
+
 export type TaskTimerTaskUiPersistenceContext = {
   els: TaskTimerElements;
   getCurrentUid: () => string;

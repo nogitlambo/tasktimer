@@ -47,6 +47,10 @@ export type FeedbackItem = {
   viewerHasUpvoted?: boolean;
 };
 
+export type ToggleFeedbackUpvoteResult =
+  | { ok: true; upvoted: boolean; upvoteCount: number; jiraIssueBrowseUrl: string | null }
+  | { ok: false; message: string };
+
 export type CreateFeedbackItemInput = {
   ownerUid: string;
   authorDisplayName?: string | null;
@@ -225,7 +229,7 @@ export async function hasUserUpvoted(feedbackId: string, uid: string): Promise<b
 export async function toggleFeedbackUpvote(
   feedbackIdRaw: string,
   uidRaw: string
-): Promise<{ ok: true; upvoted: boolean } | { ok: false; message: string }> {
+): Promise<ToggleFeedbackUpvoteResult> {
   try {
     const db = dbOrNull();
     if (!db) return { ok: false, message: "Cloud Firestore is not available." };
@@ -242,6 +246,7 @@ export async function toggleFeedbackUpvote(
       if (!itemSnap.exists()) throw new Error("Feedback item not found.");
       const currentCount = Math.max(0, Math.floor(Number(itemSnap.get("upvoteCount") || 0) || 0));
       const nextCount = voteSnap.exists() ? Math.max(0, currentCount - 1) : currentCount + 1;
+      const jiraIssueBrowseUrl = normalizeNullableString(itemSnap.get("jiraIssueBrowseUrl"), 2048);
       if (voteSnap.exists()) {
         tx.delete(voteRef);
       } else {
@@ -256,10 +261,10 @@ export async function toggleFeedbackUpvote(
         },
         { merge: true }
       );
-      return !voteSnap.exists();
+      return { upvoted: !voteSnap.exists(), upvoteCount: nextCount, jiraIssueBrowseUrl };
     });
 
-    return { ok: true, upvoted: result };
+    return { ok: true, ...result };
   } catch (error) {
     const message = String((error as FirestoreError | undefined)?.message || (error as Error | undefined)?.message || "").trim();
     return { ok: false, message: message || "Could not update vote." };

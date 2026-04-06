@@ -36,11 +36,8 @@ import {
 } from "./lib/storage";
 import {
   DEFAULT_REWARD_PROGRESS,
-  type RewardSessionSegment,
-  awardCompletedSessionXp,
   normalizeRewardProgress,
 } from "./lib/rewards";
-import { computeMomentumSnapshot } from "./lib/momentum";
 import { measureDashboardRender } from "./lib/dashboardPerformance";
 import { buildDashboardRenderSummary } from "./lib/dashboardViewModel";
 import {
@@ -77,6 +74,7 @@ import { createTaskTimerPopupMenu } from "./client/popup-menu";
 import { createTaskTimerImportExport } from "./client/import-export";
 import { createTaskTimerTaskListUi } from "./client/task-list-ui";
 import { createTaskTimerTaskUiPersistence } from "./client/task-ui-persistence";
+import { createTaskTimerRewardsHistory } from "./client/rewards-history";
 import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
@@ -89,14 +87,6 @@ import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
-
-type RewardSessionTracker = {
-  taskId: string;
-  untrackedMs: number;
-  segments: RewardSessionSegment[];
-  activeSegmentStartMs: number | null;
-  activeMultiplier: number | null;
-};
 
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -198,7 +188,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
-  let rewardSessionTrackersByTaskId: Record<string, RewardSessionTracker> = {};
+  let rewardSessionTrackersByTaskId: Record<
+    string,
+    {
+      taskId: string;
+      untrackedMs: number;
+      segments: Array<{ startMs: number; endMs: number; multiplier: number }>;
+      activeSegmentStartMs: number | null;
+      activeMultiplier: number | null;
+    }
+  > = {};
 
   let historyByTaskId = initialState.historyByTaskId;
   let historyRangeDaysByTaskId = initialState.historyRangeDaysByTaskId;
@@ -335,6 +334,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let pendingDeferredCloudRefresh = initialState.pendingDeferredCloudRefresh;
   let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
   let historyManagerRefreshInFlight: Promise<void> | null = null;
+  let rewardsHistoryApi: ReturnType<typeof createTaskTimerRewardsHistory> | null = null;
   const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
   let lastDashboardLiveSignature = "";
   const unsubscribeCachedPreferences = workspaceRepository.subscribeCachedPreferences((prefs) => {
@@ -1633,293 +1633,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
   }
 
-  function rewardSessionTrackerStorageKey() {
-    const uid = currentUid();
-    return uid ? `${REWARD_SESSION_TRACKERS_KEY}:${uid}` : REWARD_SESSION_TRACKERS_KEY;
+  function escapeHtmlUI(str: unknown) {
+    return String(str ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  function normalizeRewardSessionTracker(rawTaskId: string, input: unknown): RewardSessionTracker | null {
-    if (!input || typeof input !== "object") return null;
-    const obj = input as Record<string, unknown>;
-    const taskId = String(obj.taskId || rawTaskId || "").trim();
-    if (!taskId) return null;
-    const untrackedMs = Math.max(0, Math.floor(Number(obj.untrackedMs || 0) || 0));
-    const activeSegmentStartMsRaw = Number(obj.activeSegmentStartMs || 0);
-    const activeSegmentStartMs =
-      Number.isFinite(activeSegmentStartMsRaw) && activeSegmentStartMsRaw > 0 ? Math.floor(activeSegmentStartMsRaw) : null;
-    const activeMultiplierRaw = Number(obj.activeMultiplier || 0);
-    const activeMultiplier = Number.isFinite(activeMultiplierRaw) && activeMultiplierRaw > 0 ? activeMultiplierRaw : null;
-    const segments = Array.isArray(obj.segments)
-      ? obj.segments
-          .map((segment) => {
-            if (!segment || typeof segment !== "object") return null;
-            const seg = segment as Record<string, unknown>;
-            const startMs = Math.max(0, Math.floor(Number(seg.startMs || 0) || 0));
-            const endMs = Math.max(startMs, Math.floor(Number(seg.endMs || 0) || 0));
-            const multiplier = Number.isFinite(Number(seg.multiplier)) ? Math.max(0, Number(seg.multiplier)) : 1;
-            if (!(endMs > startMs)) return null;
-            return { startMs, endMs, multiplier: multiplier > 0 ? multiplier : 1 };
-          })
-          .filter((segment): segment is RewardSessionSegment => !!segment)
-      : [];
-    return {
-      taskId,
-      untrackedMs,
-      segments,
-      activeSegmentStartMs,
-      activeMultiplier,
-    };
-  }
-
-  function loadRewardSessionTrackersFromStorage() {
-    if (typeof window === "undefined") return {} as Record<string, RewardSessionTracker>;
-    try {
-      const raw = window.localStorage.getItem(rewardSessionTrackerStorageKey());
-      if (!raw) return {} as Record<string, RewardSessionTracker>;
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      if (!parsed || typeof parsed !== "object") return {} as Record<string, RewardSessionTracker>;
-      const next: Record<string, RewardSessionTracker> = {};
-      Object.keys(parsed).forEach((taskId) => {
-        const normalized = normalizeRewardSessionTracker(taskId, parsed[taskId]);
-        if (normalized) next[normalized.taskId] = normalized;
-      });
-      return next;
-    } catch {
-      return {} as Record<string, RewardSessionTracker>;
-    }
-  }
-
-  function persistRewardSessionTrackers() {
-    if (typeof window === "undefined") return;
-    try {
-      const key = rewardSessionTrackerStorageKey();
-      const trackerIds = Object.keys(rewardSessionTrackersByTaskId).filter(Boolean);
-      if (!trackerIds.length) {
-        window.localStorage.removeItem(key);
-        return;
-      }
-      const payload: Record<string, RewardSessionTracker> = {};
-      trackerIds.forEach((taskId) => {
-        payload[taskId] = rewardSessionTrackersByTaskId[taskId]!;
-      });
-      window.localStorage.setItem(key, JSON.stringify(payload));
-    } catch {
-      // ignore localStorage failures
-    }
-  }
-
-  function getMomentumMultiplierNow(nowValue = nowMs()) {
-    if (!hasEntitlement("advancedInsights")) return 1;
-    try {
-      return computeMomentumSnapshot({
-        tasks,
-        historyByTaskId,
-        weekStarting,
-        includedModes: dashboardIncludedModes,
-        isModeEnabled,
-        taskModeOf: sharedTaskApi.taskModeOf,
-        nowValue,
-      }).multiplier;
-    } catch {
-      return 1;
-    }
-  }
-
-  function getOrCreateRewardSessionTracker(task: Task | null | undefined) {
-    const taskId = String(task?.id || "").trim();
-    if (!taskId) return null;
-    let tracker = rewardSessionTrackersByTaskId[taskId] || null;
-    if (!tracker) {
-      tracker = {
-        taskId,
-        untrackedMs: 0,
-        segments: [],
-        activeSegmentStartMs: null,
-        activeMultiplier: null,
-      };
-      rewardSessionTrackersByTaskId[taskId] = tracker;
-    }
-    return tracker;
-  }
-
-  function openRewardSessionSegment(task: Task | null | undefined, startMsRaw?: number | null) {
-    const tracker = getOrCreateRewardSessionTracker(task);
-    if (!tracker) return;
-    const startMs = Math.max(0, Math.floor(Number(startMsRaw ?? nowMs()) || 0));
-    if (tracker.activeSegmentStartMs != null) return;
-    tracker.activeSegmentStartMs = startMs;
-    tracker.activeMultiplier = getMomentumMultiplierNow(startMs);
-    persistRewardSessionTrackers();
-  }
-
-  function closeRewardSessionSegment(task: Task | null | undefined, endMsRaw?: number | null) {
-    const tracker = getOrCreateRewardSessionTracker(task);
-    if (!tracker || tracker.activeSegmentStartMs == null) return;
-    const endMs = Math.max(tracker.activeSegmentStartMs, Math.floor(Number(endMsRaw ?? nowMs()) || 0));
-    if (endMs > tracker.activeSegmentStartMs) {
-      tracker.segments.push({
-        startMs: tracker.activeSegmentStartMs,
-        endMs,
-        multiplier: tracker.activeMultiplier && tracker.activeMultiplier > 0 ? tracker.activeMultiplier : 1,
-      });
-    }
-    tracker.activeSegmentStartMs = null;
-    tracker.activeMultiplier = null;
-    persistRewardSessionTrackers();
-  }
-
-  function syncRewardSessionTrackerForRunningTask(task: Task | null | undefined, nowValue = nowMs()) {
-    const tracker = getOrCreateRewardSessionTracker(task);
-    if (!tracker || !task?.running) return;
-    if (tracker.activeSegmentStartMs == null) {
-      openRewardSessionSegment(task, nowValue);
-      return;
-    }
-    const nextMultiplier = getMomentumMultiplierNow(nowValue);
-    if ((tracker.activeMultiplier || 1) === nextMultiplier) return;
-    closeRewardSessionSegment(task, nowValue);
-    openRewardSessionSegment(task, nowValue);
-  }
-
-  function clearRewardSessionTracker(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId || !rewardSessionTrackersByTaskId[taskId]) return;
-    delete rewardSessionTrackersByTaskId[taskId];
-    persistRewardSessionTrackers();
-  }
-
-  function getRewardSessionSegmentsForTask(task: Task | null | undefined, completedAtMs: number, elapsedMs: number): RewardSessionSegment[] {
-    const taskId = String(task?.id || "").trim();
-    if (!taskId) return [];
-    const tracker = getOrCreateRewardSessionTracker(task);
-    if (!tracker) return [];
-    if (task?.running && tracker.activeSegmentStartMs != null) {
-      closeRewardSessionSegment(task, completedAtMs);
-    }
-    const closedSegments = tracker.segments
-      .map((segment) => ({
-        startMs: Math.max(0, Math.floor(Number(segment.startMs || 0) || 0)),
-        endMs: Math.max(0, Math.floor(Number(segment.endMs || 0) || 0)),
-        multiplier: Number.isFinite(Number(segment.multiplier)) ? Math.max(0, Number(segment.multiplier)) : 1,
-      }))
-      .filter((segment) => segment.endMs > segment.startMs)
-      .sort((a, b) => a.startMs - b.startMs);
-    const trackedMs = closedSegments.reduce((sum, segment) => sum + Math.max(0, segment.endMs - segment.startMs), 0);
-    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
-    const inferredUntrackedMs = Math.max(0, safeElapsedMs - trackedMs);
-    const segments: RewardSessionSegment[] = [];
-    if (inferredUntrackedMs > 0) {
-      segments.push({
-        startMs: Math.max(0, completedAtMs - safeElapsedMs),
-        endMs: Math.max(0, completedAtMs - safeElapsedMs + inferredUntrackedMs),
-        multiplier: 1,
-      });
-    }
-    closedSegments.forEach((segment) => segments.push(segment));
-    return segments.sort((a, b) => a.startMs - b.startMs);
-  }
-
-  function bootstrapRewardSessionTrackers() {
-    rewardSessionTrackersByTaskId = loadRewardSessionTrackersFromStorage();
-    tasks.forEach((task) => {
-      const taskId = String(task?.id || "").trim();
-      if (!taskId || !task?.hasStarted) return;
-      const tracker = getOrCreateRewardSessionTracker(task);
-      if (!tracker) return;
-      if (task.running) {
-        tracker.untrackedMs = Math.max(tracker.untrackedMs, Math.max(0, getTaskElapsedMs(task)));
-        tracker.activeSegmentStartMs = nowMs();
-        tracker.activeMultiplier = getMomentumMultiplierNow();
-      } else {
-        tracker.untrackedMs = Math.max(tracker.untrackedMs, Math.max(0, Number(task.accumulatedMs || 0) || 0));
-      }
-    });
-    persistRewardSessionTrackers();
-  }
-
-  function isArchitectUser() {
-    const uid = currentUid();
-    if (uid !== ARCHITECT_UID) return false;
-    const email = currentEmail();
-    if (!email) return true;
-    return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
-  }
-
-  function downloadCsvFile(filename: string, text: string) {
-    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 0);
-  }
-
-  function csvEscape(value: unknown): string {
-    const text = String(value ?? "");
-    if (!/[",\n\r]/.test(text)) return text;
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-
-  function parseCsvRows(input: string): string[][] {
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let cell = "";
-    let i = 0;
-    let inQuotes = false;
-
-    while (i < input.length) {
-      const ch = input[i];
-      if (inQuotes) {
-        if (ch === '"') {
-          if (input[i + 1] === '"') {
-            cell += '"';
-            i += 2;
-            continue;
-          }
-          inQuotes = false;
-          i += 1;
-          continue;
-        }
-        cell += ch;
-        i += 1;
-        continue;
-      }
-
-      if (ch === '"') {
-        inQuotes = true;
-        i += 1;
-        continue;
-      }
-      if (ch === ",") {
-        row.push(cell);
-        cell = "";
-        i += 1;
-        continue;
-      }
-      if (ch === "\n" || ch === "\r") {
-        row.push(cell);
-        cell = "";
-        rows.push(row);
-        row = [];
-        if (ch === "\r" && input[i + 1] === "\n") i += 2;
-        else i += 1;
-        continue;
-      }
-      cell += ch;
-      i += 1;
-    }
-
-    if (cell.length || row.length) {
-      row.push(cell);
-      rows.push(row);
-    }
-    return rows;
-  }
   function getElapsedMs(t: Task) {
     return sessionApi?.getElapsedMs(t) ?? 0;
   }
@@ -1961,85 +1683,87 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return getTaskElapsedMs(t) > 0;
   }
 
-  function escapeHtmlUI(str: any) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  function openRewardSessionSegment(task: Task | null | undefined, startMsRaw?: number | null) {
+    rewardsHistoryApi?.openRewardSessionSegment(task, startMsRaw);
   }
 
-  function appendHistory(taskId: string, entry: any) {
-    if (!taskId) return;
-    const normalizedEntry = {
-      ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
-      name: String(entry?.name || ""),
-      ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
-      xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
-      ...(entry?.color != null && String(entry.color).trim() ? { color: String(entry.color).trim() } : {}),
-      ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
-    };
-    if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
-    historyByTaskId[taskId].push(normalizedEntry);
-    appendHistoryEntry(taskId, normalizedEntry);
-    saveHistoryLocally(historyByTaskId);
-    void syncSharedTaskSummariesForTask(taskId).catch(() => {});
+  function closeRewardSessionSegment(task: Task | null | undefined, endMsRaw?: number | null) {
+    rewardsHistoryApi?.closeRewardSessionSegment(task, endMsRaw);
   }
 
-
-  function getCurrentSessionNoteForTask(taskId: string): string {
-    const taskKey = String(taskId || "");
-    if (!taskKey) return "";
-    return captureSessionNoteSnapshot(taskKey);
+  function clearRewardSessionTracker(taskIdRaw: string | null | undefined) {
+    rewardsHistoryApi?.clearRewardSessionTracker(taskIdRaw);
   }
 
   function appendCompletedSessionHistory(t: Task, completedAtMs: number, elapsedMs: number, noteOverride?: string) {
-    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
-    if (!t || !t.id || safeElapsedMs <= 0) return;
-    const taskId = String(t.id || "");
-    const liveNote = getCurrentSessionNoteForTask(taskId);
-    const note = String(noteOverride || liveNote || "").trim();
-    if (note) setFocusSessionDraft(taskId, note);
-    appendHistory(t.id, {
-      ts: completedAtMs,
-      name: t.name,
-      ms: safeElapsedMs,
-      xpDisqualifiedUntilReset: !!t.xpDisqualifiedUntilReset,
-      color: sessionColorForTaskMs(t, safeElapsedMs),
-      ...(note ? { note } : {}),
-    });
-    clearFocusSessionDraft(taskId);
-    if (String(focusModeTaskId || "") === taskId) {
-      syncFocusSessionNotesInput(taskId);
-      syncFocusSessionNotesAccordion(taskId);
-    }
-    const nextAward = awardCompletedSessionXp(rewardProgress, {
-      taskId,
-      awardedAt: completedAtMs,
-      elapsedMs: safeElapsedMs,
-      xpDisqualifiedUntilReset: !!t.xpDisqualifiedUntilReset,
-      historyByTaskId,
-      tasks,
-      weekStarting,
-      dashboardIncludedModes,
-      isModeEnabled,
-      taskModeOf: sharedTaskApi.taskModeOf,
-      momentumEntitled: hasEntitlement("advancedInsights"),
-      sessionSegments: getRewardSessionSegmentsForTask(t, completedAtMs, safeElapsedMs),
-    });
-    rewardProgress = nextAward.next;
-    clearRewardSessionTracker(taskId);
-    const nextPrefs = {
-      ...(cloudPreferencesCache || buildDefaultCloudPreferences()),
-      rewards: rewardProgress,
-    };
-    cloudPreferencesCache = nextPrefs;
-    saveCloudPreferences(nextPrefs);
-    const authUid = currentUid();
-    if (authUid) {
-      void syncOwnFriendshipProfile(authUid, { currentRankId: rewardProgress.currentRankId }).catch(() => {});
-    }
+    rewardsHistoryApi?.appendCompletedSessionHistory(t, completedAtMs, elapsedMs, noteOverride);
+  }
+
+  function csvEscape(value: unknown): string {
+    return rewardsHistoryApi?.csvEscape(value) ?? String(value ?? "");
+  }
+
+  function parseCsvRows(input: string): string[][] {
+    return rewardsHistoryApi?.parseCsvRows(input) ?? [];
+  }
+
+  function downloadCsvFile(filename: string, text: string) {
+    rewardsHistoryApi?.downloadCsvFile(filename, text);
+  }
+
+  function bootstrapRewardSessionTrackers() {
+    rewardsHistoryApi?.bootstrapRewardSessionTrackers();
+  }
+
+  rewardsHistoryApi = createTaskTimerRewardsHistory({
+    rewardSessionTrackersStorageKey: REWARD_SESSION_TRACKERS_KEY,
+    getTasks: () => tasks,
+    getHistoryByTaskId: () => historyByTaskId,
+    getDeletedTaskMeta: () => deletedTaskMeta,
+    getWeekStarting: () => weekStarting,
+    getDashboardIncludedModes: () => dashboardIncludedModes,
+    getRewardProgress: () => rewardProgress,
+    setRewardProgress: (value) => {
+      rewardProgress = value;
+    },
+    getRewardSessionTrackersByTaskId: () => rewardSessionTrackersByTaskId,
+    setRewardSessionTrackersByTaskId: (value) => {
+      rewardSessionTrackersByTaskId = value;
+    },
+    getCloudPreferencesCache: () => cloudPreferencesCache,
+    setCloudPreferencesCache: (value) => {
+      cloudPreferencesCache = value;
+    },
+    getFocusModeTaskId: () => focusModeTaskId,
+    getCurrentPlan: () => getCurrentPlan(),
+    hasEntitlement: (entitlement) => hasEntitlement(entitlement),
+    currentUid: () => currentUid(),
+    taskModeOf: (task) => taskModeOf(task),
+    isModeEnabled: (mode) => isModeEnabled(mode),
+    getTaskElapsedMs: (task) => getTaskElapsedMs(task),
+    sessionColorForTaskMs,
+    captureSessionNoteSnapshot,
+    setFocusSessionDraft,
+    clearFocusSessionDraft,
+    syncFocusSessionNotesInput,
+    syncFocusSessionNotesAccordion,
+    appendHistoryEntry: (taskId, entry) => appendHistoryEntry(taskId, entry as any),
+    saveHistoryLocally,
+    buildDefaultCloudPreferences: () => buildDefaultCloudPreferences() as Record<string, unknown>,
+    saveCloudPreferences: (prefs) => saveCloudPreferences(prefs as any),
+    syncSharedTaskSummariesForTask,
+    syncOwnFriendshipProfile,
+  });
+  const {
+    syncRewardSessionTrackerForRunningTask,
+  } = rewardsHistoryApi;
+
+  function isArchitectUser() {
+    const uid = currentUid();
+    if (uid !== ARCHITECT_UID) return false;
+    const email = currentEmail();
+    if (!email) return true;
+    return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
   }
 
   function render() {
@@ -2539,8 +2263,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setFocusSessionNotesInputValue: (value) => {
       if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = value;
     },
-    setFocusSessionNotesSectionOpen: (open) => {
-      if (els.focusSessionNotesSection) els.focusSessionNotesSection.open = open;
+    setFocusSessionNotesSectionOpen: (_open) => {
+      if (els.focusSessionNotesSection) {
+        els.focusSessionNotesSection.setAttribute("data-notes-visible", "true");
+      }
     },
     getCurrentAppPage: () => currentAppPage,
     getInitialAppPageFromLocation,

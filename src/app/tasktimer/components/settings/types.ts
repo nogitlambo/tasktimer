@@ -1,4 +1,3 @@
-import type { PushDiagnostics } from "@/app/tasktimer/lib/pushNotifications";
 import type { AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import type { RewardProgressV1 } from "@/app/tasktimer/lib/rewards";
 import type { TaskTimerPlan } from "@/app/tasktimer/lib/entitlements";
@@ -36,7 +35,6 @@ export type SettingsAvatarGroup = {
 };
 
 export type SettingsPushViewModel = {
-  diagnostics: PushDiagnostics | null;
   pushTestBusy: boolean;
   pushTestStatus: string;
   canTriggerPushTest: boolean;
@@ -72,6 +70,7 @@ export type SettingsAccountViewModel = {
   onCancelAliasEdit: () => void;
   onSaveAlias: () => Promise<void>;
   onAliasDraftChange: (value: string) => void;
+  onOpenPlanAction: () => Promise<void>;
 };
 
 export type SettingsAvatarViewModel = {

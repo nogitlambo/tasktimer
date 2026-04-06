@@ -205,6 +205,10 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
   function handleTaskListDragEnd() {
     const dragging = ctx.getTaskDragEl();
+    if (dragging && els.taskList?.contains(dragging)) {
+      persistTaskOrderFromTaskListDom();
+      ctx.render();
+    }
     if (dragging) dragging.classList.remove("isDragging");
     ctx.setTaskDragEl(null);
   }

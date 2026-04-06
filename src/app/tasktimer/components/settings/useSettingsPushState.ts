@@ -1,34 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getTaskTimerPushDiagnostics } from "@/app/tasktimer/lib/pushNotifications";
+import { useState } from "react";
 import { sendPushTestNotification } from "@/app/tasktimer/lib/pushFunctions";
 import { getErrorMessage } from "./settingsAccountService";
 import type { SettingsPushViewModel } from "./types";
 
 export function useSettingsPushState(authUserUid: string | null): SettingsPushViewModel {
-  const [diagnostics, setDiagnostics] = useState<SettingsPushViewModel["diagnostics"]>(null);
   const [pushTestBusy, setPushTestBusy] = useState(false);
   const [pushTestStatus, setPushTestStatus] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!authUserUid) {
-      setDiagnostics(null);
-      return;
-    }
-    const loadDiagnostics = async () => {
-      const nextDiagnostics = await getTaskTimerPushDiagnostics(authUserUid);
-      if (!cancelled) setDiagnostics(nextDiagnostics);
-    };
-    void loadDiagnostics();
-    return () => {
-      cancelled = true;
-    };
-  }, [authUserUid, pushTestStatus]);
-
   return {
-    diagnostics,
     pushTestBusy,
     pushTestStatus,
     canTriggerPushTest: !!authUserUid,

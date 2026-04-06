@@ -2386,6 +2386,8 @@
     width: auto;
     max-width: none;
     min-height: 215px;
+    height: auto;
+    max-height: none;
     padding: 14px 24px 12px 14px;
     border: 0;
     background: transparent;
@@ -2400,6 +2402,7 @@
     display: grid;
     align-content: start;
     gap: 8px;
+    overflow: visible;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 30px), 140px calc(100% - 30px), 130px 100%, 120px calc(100% - 30px), 0 calc(100% - 30px));
     transform: none;
     opacity: 0;
@@ -2417,6 +2420,12 @@
     transition:
       opacity .14s ease,
       visibility 0s linear 0s;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing{
+    opacity: 1;
+    visibility: visible;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleOutline,
@@ -2507,17 +2516,18 @@
     font-weight: 400;
     letter-spacing: .03em;
     line-height: 1.05;
-    text-wrap: wrap;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     min-height: 20px;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleText,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText{
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: block;
     max-width: 100%;
-    white-space: normal;
+    width: 100%;
+    white-space: inherit;
     overflow-wrap: anywhere;
     word-break: break-word;
     vertical-align: top;
@@ -2606,6 +2616,7 @@
     width: 100%;
     min-width: 0;
     margin-top: 2px;
+    min-height: 2.4em;
     padding: 0;
     border: 0;
     background: transparent;
@@ -2615,6 +2626,10 @@
     font-weight: 700;
     letter-spacing: .03em;
     line-height: 1.2;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    resize: none;
     outline: none;
     opacity: 1;
   }
@@ -2714,6 +2729,49 @@
     transform-origin: center bottom;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineTop,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineTop{
+    animation: desktopRailMascotBubbleLineGrowX .18s linear .66s reverse forwards;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineRight,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineRight{
+    animation: desktopRailMascotBubbleLineGrowY .12s linear .54s reverse forwards;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineBottomRight,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineBottomRight{
+    animation: desktopRailMascotBubbleLineGrowX .18s linear .36s reverse forwards;
+    transform-origin: right center;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTailSvg,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTailSvg{
+    animation: desktopRailMascotBubbleLineGrowY .12s linear .24s reverse forwards;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineBottomLeft,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineBottomLeft{
+    animation: desktopRailMascotBubbleLineGrowX .08s linear .16s reverse forwards;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineLeft,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineLeft{
+    animation: desktopRailMascotBubbleLineGrowY .12s linear 0s reverse forwards;
+    transform-origin: center bottom;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTitleText,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTitleText,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotInputRow,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotInputRow,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotActionRow,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotActionRow{
+    opacity: 0 !important;
+    transition: opacity .12s ease;
+    pointer-events: none;
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingPrompt,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingPrompt{
     animation: desktopRailMascotBubbleTitleReveal .02s linear forwards;
@@ -2723,7 +2781,7 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingPrompt .desktopRailMascotBubbleTitleLine{
     animation:
       desktopRailMascotBubbleTitleReveal .02s linear forwards,
-      desktopRailMascotBubbleTitleType .375s ease-out var(--archie-line-delay, 0ms) forwards;
+      desktopRailMascotBubbleTitleType .75s ease-out var(--archie-line-delay, 0ms) forwards;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingResponse,
@@ -2735,7 +2793,7 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingResponse .desktopRailMascotBubbleTitleLine{
     animation:
       desktopRailMascotBubbleTitleReveal .02s linear forwards,
-      desktopRailMascotBubbleTitleType .375s ease-out var(--archie-line-delay, 0ms) forwards;
+      desktopRailMascotBubbleTitleType .75s ease-out var(--archie-line-delay, 0ms) forwards;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleText.isTypingResponse .desktopRailMascotBubbleTitleLine:last-child::after,
@@ -2850,7 +2908,7 @@
     --desktop-rail-mascot-pad-top: clamp(2px, .35vh, 8px);
     --desktop-rail-mascot-pad-bottom: clamp(4px, .9vh, 10px);
     --desktop-rail-mascot-pad-left: clamp(2px, .35vw, 4px);
-    --desktop-rail-bubble-min-height: clamp(120px, 20vh, 170px);
+    --desktop-rail-bubble-min-height: clamp(144px, 23vh, 230px);
     --desktop-rail-bubble-pad-top: clamp(8px, .7vh, 12px);
     --desktop-rail-bubble-pad-right: clamp(12px, 1vw + 8px, 18px);
     --desktop-rail-bubble-pad-bottom: clamp(8px, .65vh, 10px);
@@ -3199,7 +3257,7 @@
     --desktop-rail-mascot-lift: clamp(-22px, -2.5vh, -12px);
     --desktop-rail-mascot-pad-top: 2px;
     --desktop-rail-mascot-pad-bottom: clamp(2px, .7vh, 8px);
-    --desktop-rail-bubble-min-height: clamp(110px, 17.5vh, 145px);
+    --desktop-rail-bubble-min-height: clamp(132px, 20vh, 188px);
     --desktop-rail-bubble-pad-top: 8px;
     --desktop-rail-bubble-pad-right: 14px;
     --desktop-rail-bubble-pad-bottom: 8px;
@@ -3243,7 +3301,7 @@
     --desktop-rail-mascot-lift: -14px;
     --desktop-rail-mascot-pad-top: 0;
     --desktop-rail-mascot-pad-bottom: 2px;
-    --desktop-rail-bubble-min-height: clamp(98px, 14.4vh, 123px);
+    --desktop-rail-bubble-min-height: clamp(118px, 17vh, 164px);
     --desktop-rail-bubble-pad-top: 7px;
     --desktop-rail-bubble-pad-right: 12px;
     --desktop-rail-bubble-pad-bottom: 7px;

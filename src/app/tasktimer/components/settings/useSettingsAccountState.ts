@@ -294,6 +294,45 @@ export function useSettingsAccountState(): {
     }
   }, [authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
 
+  const onOpenPlanAction = useCallback(async () => {
+    if (typeof window === "undefined") return;
+
+    if (authPlan === "pro") {
+      const auth = getFirebaseAuthClient();
+      const uid = String(auth?.currentUser?.uid || "").trim();
+      if (!uid) {
+        setAuthError("You must be signed in to manage your subscription.");
+        setAuthStatus("");
+        return;
+      }
+
+      setAuthError("");
+      setAuthStatus("");
+      try {
+        const res = await fetch("/api/stripe/create-billing-portal-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid,
+            returnPath: "/settings?pane=general",
+          }),
+        });
+        const data = (await res.json()) as { url?: string; error?: string };
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || "Could not open billing management.");
+        }
+        window.location.assign(data.url);
+        return;
+      } catch (err: unknown) {
+        setAuthError(getErrorMessage(err, "Could not open billing management."));
+        setAuthStatus("");
+        return;
+      }
+    }
+
+    window.open("/pricing", "_blank", "noopener,noreferrer");
+  }, [authPlan]);
+
   return {
     account: {
       authStatus,
@@ -333,6 +372,7 @@ export function useSettingsAccountState(): {
       },
       onSaveAlias,
       onAliasDraftChange: setAuthUserAliasDraft,
+      onOpenPlanAction,
     },
     authUserUid,
     authUserEmail,

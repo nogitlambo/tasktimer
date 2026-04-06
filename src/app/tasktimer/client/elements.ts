@@ -213,7 +213,7 @@ const els = {
   focusCheckpointLog: documentRef.getElementById("focusCheckpointLog"),
   focusCheckpointLogEmpty: documentRef.getElementById("focusCheckpointLogEmpty"),
   focusCheckpointLogList: documentRef.getElementById("focusCheckpointLogList"),
-  focusSessionNotesSection: documentRef.getElementById("focusSessionNotesSection") as HTMLDetailsElement | null,
+  focusSessionNotesSection: documentRef.getElementById("focusSessionNotesSection") as HTMLElement | null,
   focusTaskName: documentRef.getElementById("focusTaskName"),
   focusTimerDays: documentRef.getElementById("focusTimerDays"),
   focusTimerClock: documentRef.getElementById("focusTimerClock"),
@@ -224,6 +224,7 @@ const els = {
   focusInsightTodayDelta: documentRef.getElementById("focusInsightTodayDelta"),
   focusInsightWeekDelta: documentRef.getElementById("focusInsightWeekDelta"),
   focusSessionNotesInput: documentRef.getElementById("focusSessionNotesInput") as HTMLTextAreaElement | null,
+  focusSessionNotesSavedText: documentRef.getElementById("focusSessionNotesSavedText"),
   hmList: documentRef.getElementById("hmList"),
   closeMenuBtn: documentRef.getElementById("closeMenuBtn"),
 

@@ -214,8 +214,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    const noteValue = taskId ? getFocusSessionDraft(taskId) : "";
-    options.setFocusSessionNotesSectionOpen(!!noteValue.trim());
+    options.setFocusSessionNotesSectionOpen(!!String(taskId || "").trim());
   }
 
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {

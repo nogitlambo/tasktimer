@@ -18,6 +18,10 @@ function formatPlanUserLabel(plan: SettingsAccountViewModel["authPlan"]) {
   return `${plan === "pro" ? "Pro" : "Free"} User`;
 }
 
+function formatPlanActionLabel(plan: SettingsAccountViewModel["authPlan"]) {
+  return plan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
+}
+
 export function SettingsAccountPane({
   active,
   account,
@@ -43,6 +47,13 @@ export function SettingsAccountPane({
                   <div className="settingsAccountIdCardBrandBlock">
                     <div className="settingsAccountIdCardBrandEyebrow">VERIFIED IDENTITY</div>
                     <div className="settingsAccountIdCardBrandTitle">{formatPlanUserLabel(account.authPlan)}</div>
+                    <button
+                      className="settingsAccountIdCardPlanLink"
+                      type="button"
+                      onClick={() => void account.onOpenPlanAction()}
+                    >
+                      {formatPlanActionLabel(account.authPlan)}
+                    </button>
                   </div>
                   <div className="settingsAccountIdCardHeaderRankCluster">
                     <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardHeaderRankMeta">
@@ -188,32 +199,6 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
-
-              {push.diagnostics ? (
-                <div className="settingsPushDiagnostics" aria-label="Push notification diagnostics">
-                  <div className="settingsPushDiagnosticsRow">
-                    <span className="settingsPushDiagnosticsLabel">Push Runtime</span>
-                    <span className="settingsPushDiagnosticsValue">
-                      {push.diagnostics.runtime === "native" ? `${push.diagnostics.platform} native` : "web"}
-                    </span>
-                  </div>
-                  <div className="settingsPushDiagnosticsRow">
-                    <span className="settingsPushDiagnosticsLabel">Permission</span>
-                    <span className="settingsPushDiagnosticsValue">{push.diagnostics.permission}</span>
-                  </div>
-                  <div className="settingsPushDiagnosticsRow">
-                    <span className="settingsPushDiagnosticsLabel">Device ID</span>
-                    <span className="settingsPushDiagnosticsValue settingsPushDiagnosticsMono">{push.diagnostics.deviceId || "--"}</span>
-                  </div>
-                  <div className="settingsPushDiagnosticsRow">
-                    <span className="settingsPushDiagnosticsLabel">Push Token</span>
-                    <span className="settingsPushDiagnosticsValue">
-                      {push.diagnostics.cloudTokenPresent ? "saved to cloud" : push.diagnostics.localTokenPresent ? "local only" : "not registered"}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
               <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
                 {push.canTriggerPushTest ? (
                   <button
