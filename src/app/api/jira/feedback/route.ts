@@ -344,13 +344,14 @@ async function fetchJiraIssueStatuses(input: {
     throw new Error(message);
   }
 
-  const statuses: Record<string, { name: string; category: string }> = {};
+  const statuses: Record<string, { name: string; category: string; categoryName: string }> = {};
   (payload?.issues || []).forEach((issue) => {
     const key = asString(issue?.key, 120);
     if (!key) return;
     statuses[key] = {
       name: asString(issue?.fields?.status?.name, 120),
       category: asString(issue?.fields?.status?.statusCategory?.key, 120).toLowerCase(),
+      categoryName: asString(issue?.fields?.status?.statusCategory?.name, 120).toLowerCase(),
     };
   });
   return statuses;

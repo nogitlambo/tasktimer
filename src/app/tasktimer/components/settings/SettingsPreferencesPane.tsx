@@ -43,14 +43,15 @@ export function SettingsPreferencesPane({ active }: { active: boolean }) {
           </div>
           <div className="unitRow" id="taskWeekStartingRow">
             <span>Week Starts On</span>
-            <div className="unitButtons" role="group" aria-label="Week start">
-              <button className="btn btn-ghost small unitBtn isOn" id="taskWeekStartingMon" type="button" aria-pressed="true">
-                Monday
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="taskWeekStartingSun" type="button" aria-pressed="false">
-                Sunday
-              </button>
-            </div>
+            <select id="taskWeekStartingSelect" aria-label="Week start">
+              <option value="sun">Sunday</option>
+              <option value="mon">Monday</option>
+              <option value="tue">Tuesday</option>
+              <option value="wed">Wednesday</option>
+              <option value="thu">Thursday</option>
+              <option value="fri">Friday</option>
+              <option value="sat">Saturday</option>
+            </select>
           </div>
           <div className="settingsInlineFooter">
             <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">

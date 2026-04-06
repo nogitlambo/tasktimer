@@ -18,6 +18,9 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
       router.replace("/");
       return;
     }
+    if (auth.currentUser) {
+      setStatus("authed");
+    }
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         setStatus("authed");

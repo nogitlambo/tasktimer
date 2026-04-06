@@ -22,7 +22,7 @@ export default function FeedbackScreen() {
   const jiraBoardViewerUid = "mWN9rMhO4xMq410c4E4VYyThw0x2";
   const [otherFilter, setOtherFilter] = useState<"all" | FeedbackType>("all");
   const [otherStatusFilter, setOtherStatusFilter] = useState<"all" | "open" | "in_progress" | "closed" | "shipped">("all");
-  const [jiraStatusByIssueKey, setJiraStatusByIssueKey] = useState<Record<string, { name: string; category: string }>>({});
+  const [jiraStatusByIssueKey, setJiraStatusByIssueKey] = useState<Record<string, { name: string; category: string; categoryName: string }>>({});
   const otherFilterOptions: Array<{ value: "all" | FeedbackType; label: string }> = [
     { value: "all", label: "All" },
     { value: "bug", label: "Bugs" },
@@ -128,16 +128,17 @@ export default function FeedbackScreen() {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         const result = (await response.json().catch(() => null)) as
-          | { statuses?: Record<string, { name?: string; category?: string }> }
+          | { statuses?: Record<string, { name?: string; category?: string; categoryName?: string }> }
           | null;
         if (cancelled || !response.ok) return;
-        const nextStatuses: Record<string, { name: string; category: string }> = {};
+        const nextStatuses: Record<string, { name: string; category: string; categoryName: string }> = {};
         Object.entries(result?.statuses || {}).forEach(([key, value]) => {
           const jiraKey = String(key || "").trim();
           if (!jiraKey) return;
           nextStatuses[jiraKey] = {
             name: String(value?.name || "").trim(),
             category: String(value?.category || "").trim().toLowerCase(),
+            categoryName: String(value?.categoryName || "").trim().toLowerCase(),
           };
         });
         setJiraStatusByIssueKey(nextStatuses);
@@ -185,11 +186,12 @@ export default function FeedbackScreen() {
       if (!jiraStatus) return item.status;
       const name = jiraStatus.name.toLowerCase();
       const category = jiraStatus.category.toLowerCase();
+      const categoryName = jiraStatus.categoryName.toLowerCase();
       if (/closed|cancelled|canceled|rejected|declined|duplicate|won't fix|wont fix|invalid/.test(name)) return "closed";
-      if (/shipped|released|release|deployed|complete|completed|done/.test(name)) return "shipped";
+      if (/shipped|released|release|deployed|complete|completed|done|fixed|resolve|resolved|implemented|merged/.test(name)) return "shipped";
       if (/in progress|progress|implement|implementing|doing|active/.test(name)) return "in_progress";
       if (/planned|plan|backlog|selected|queued|next/.test(name)) return "planned";
-      if (category === "done") return "shipped";
+      if (category === "done" || /done|complete|completed/.test(categoryName)) return "shipped";
       if (category === "indeterminate") return "in_progress";
       return item.status;
     },

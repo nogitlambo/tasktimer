@@ -18,6 +18,7 @@ import type { AppPage } from "./client/types";
 import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
 import { subscribeCachedPreferences } from "./lib/storage";
 import { initTaskTimerClient } from "./tasktimerClient";
+import { getFirebaseAppCheckClient } from "@/lib/firebaseClient";
 import "./tasktimer.css";
 
 type TaskTimerMainAppClientProps = {
@@ -29,8 +30,30 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
 
   useEffect(() => {
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    let fallbackTimer: number | null = null;
+    let idleHandle: number | null = null;
+    const initAppCheck = () => {
+      getFirebaseAppCheckClient();
+    };
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      idleHandle = idleWindow.requestIdleCallback(initAppCheck);
+    } else {
+      fallbackTimer = window.setTimeout(initAppCheck, 250);
+    }
     const { destroy } = initTaskTimerClient(initialPage);
-    return () => destroy();
+    return () => {
+      if (idleHandle != null && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleHandle);
+      }
+      if (fallbackTimer != null) {
+        window.clearTimeout(fallbackTimer);
+      }
+      destroy();
+    };
   }, [initialPage]);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
@@ -26,6 +27,7 @@ const defaultAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DOMAIN;
 const defaultApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const mobileApiKeyOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY;
+const recaptchaEnterpriseSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
 
 function getFirebaseClientConfig() {
   const useMobileConfig = isNativeOrFileRuntime();
@@ -122,11 +124,35 @@ export function getFirebaseAppClient() {
 }
 
 let firebaseAuthInstance: Auth | null | undefined;
+let firebaseAppCheckInstance: AppCheck | null | undefined;
 
 export function getFirebaseAuthClient(): Auth | null {
   if (firebaseAuthInstance !== undefined) return firebaseAuthInstance;
   firebaseAuthInstance = createFirebaseAuth();
   return firebaseAuthInstance;
+}
+
+export function getFirebaseAppCheckClient(): AppCheck | null {
+  if (firebaseAppCheckInstance !== undefined) return firebaseAppCheckInstance;
+  if (typeof window === "undefined" || isNativeOrFileRuntime()) {
+    firebaseAppCheckInstance = null;
+    return firebaseAppCheckInstance;
+  }
+  const app = getFirebaseAppClient();
+  if (!app || !recaptchaEnterpriseSiteKey) {
+    firebaseAppCheckInstance = null;
+    return firebaseAppCheckInstance;
+  }
+  try {
+    firebaseAppCheckInstance = initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(recaptchaEnterpriseSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+    return firebaseAppCheckInstance;
+  } catch {
+    firebaseAppCheckInstance = null;
+    return firebaseAppCheckInstance;
+  }
 }
 
 export const hasFirebaseAuthClientConfig = hasFirebaseClientConfig(getFirebaseClientConfig());

@@ -617,12 +617,12 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
-  await ensureUserProfileIndex(uid);
-  try {
-    await syncCurrentUserPlanCache(uid);
-  } catch {
+  void ensureUserProfileIndex(uid).catch(() => {
+    // Profile bootstrap is best-effort and should not block workspace hydration.
+  });
+  void syncCurrentUserPlanCache(uid).catch(() => {
     // Keep the last confirmed per-user plan when the plan refresh is temporarily unavailable.
-  }
+  });
   const snapshot = await loadUserWorkspace(uid);
   writeTaskTimerPlanToStorage(snapshot.plan, { uid });
   const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];

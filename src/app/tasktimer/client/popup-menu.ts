@@ -13,7 +13,7 @@ export function createTaskTimerPopupMenu(ctx: TaskTimerPopupMenuContext) {
   }
 
   function registerPopupMenuEvents() {
-    document.querySelectorAll(".menuItem").forEach((btn) => {
+    document.querySelectorAll(".menuItem[data-menu]").forEach((btn) => {
       ctx.on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
     });
 

@@ -17,7 +17,7 @@ type PreferencesStateSnapshot = {
   theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
   defaultTaskTimerFormat: "day" | "hour" | "minute";
-  weekStarting: "mon" | "sun";
+  weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   taskView: "list" | "tile";
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
@@ -27,7 +27,7 @@ type PreferencesStateSnapshot = {
 };
 
 type StoredPreferences = UserPreferencesV1 & {
-  weekStarting?: "mon" | "sun";
+  weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 };
 
 export type TaskTimerStoredPreferences = StoredPreferences;
@@ -143,7 +143,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return raw === "day" || raw === "minute" ? raw : "hour";
   }
 
-  function loadWeekStarting(): "mon" | "sun" {
+  function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
     const cached = String(getStoredOrCachedPreferences().weekStarting || safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY))
       .trim()
       .toLowerCase();

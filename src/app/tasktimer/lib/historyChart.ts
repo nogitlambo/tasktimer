@@ -1,13 +1,34 @@
-export type DashboardWeekStart = "mon" | "sun";
+export type DashboardWeekStart = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 
 export function normalizeDashboardWeekStart(value: unknown): DashboardWeekStart {
-  return String(value || "").trim().toLowerCase() === "sun" ? "sun" : "mon";
+  const normalized = String(value || "").trim().toLowerCase();
+  if (
+    normalized === "sun" ||
+    normalized === "mon" ||
+    normalized === "tue" ||
+    normalized === "wed" ||
+    normalized === "thu" ||
+    normalized === "fri" ||
+    normalized === "sat"
+  ) {
+    return normalized;
+  }
+  return "mon";
 }
 
 export function weekdayIndexForWeekStart(dayOfWeek: number, weekStart: DashboardWeekStart) {
   const safeDayOfWeek = Math.max(0, Math.min(6, Math.floor(dayOfWeek)));
-  if (weekStart === "sun") return safeDayOfWeek;
-  return (safeDayOfWeek + 6) % 7;
+  const weekStartIndexByKey: Record<DashboardWeekStart, number> = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  const weekStartIndex = weekStartIndexByKey[weekStart] ?? 1;
+  return (safeDayOfWeek - weekStartIndex + 7) % 7;
 }
 
 export function getDashboardWeekdayLabels(weekStart: DashboardWeekStart, format: "narrow" | "short" = "short") {
@@ -15,8 +36,17 @@ export function getDashboardWeekdayLabels(weekStart: DashboardWeekStart, format:
     format === "narrow"
       ? ["S", "M", "T", "W", "T", "F", "S"]
       : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  if (weekStart === "sun") return labels;
-  return labels.slice(1).concat(labels[0]!);
+  const weekStartIndexByKey: Record<DashboardWeekStart, number> = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  const weekStartIndex = weekStartIndexByKey[weekStart] ?? 1;
+  return labels.slice(weekStartIndex).concat(labels.slice(0, weekStartIndex));
 }
 
 export function startOfCurrentWeekMs(nowValue: number, weekStart: DashboardWeekStart) {

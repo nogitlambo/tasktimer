@@ -1,7 +1,7 @@
 import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
-import { normalizeDashboardWeekStart } from "../lib/historyChart";
+import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 
@@ -195,13 +195,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setDefaultTaskTimerFormatState(preferenceService.loadDefaultTaskTimerFormat());
   }
 
-  function applyWeekStartingPreference(next: "mon" | "sun") {
+  function applyWeekStartingPreference(next: DashboardWeekStart) {
     ctx.setWeekStartingState(normalizeDashboardWeekStart(next));
-    const isMonday = ctx.getWeekStarting() === "mon";
-    els.taskWeekStartingMon?.classList.toggle("isOn", isMonday);
-    els.taskWeekStartingSun?.classList.toggle("isOn", !isMonday);
-    els.taskWeekStartingMon?.setAttribute("aria-pressed", isMonday ? "true" : "false");
-    els.taskWeekStartingSun?.setAttribute("aria-pressed", !isMonday ? "true" : "false");
+    if (els.taskWeekStartingSelect) {
+      els.taskWeekStartingSelect.value = ctx.getWeekStarting();
+    }
   }
 
   function loadWeekStartingPreference() {
@@ -270,10 +268,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
     els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
     els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
-    els.taskWeekStartingMon?.classList.toggle("isOn", weekStarting === "mon");
-    els.taskWeekStartingSun?.classList.toggle("isOn", weekStarting === "sun");
-    els.taskWeekStartingMon?.setAttribute("aria-pressed", weekStarting === "mon" ? "true" : "false");
-    els.taskWeekStartingSun?.setAttribute("aria-pressed", weekStarting === "sun" ? "true" : "false");
+    if (els.taskWeekStartingSelect) {
+      els.taskWeekStartingSelect.value = weekStarting;
+    }
     els.taskViewList?.classList.toggle("isOn", taskView === "list");
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
@@ -403,13 +400,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
-    ctx.on(els.taskWeekStartingMon, "click", () => {
-      applyWeekStartingPreference("mon");
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskWeekStartingSun, "click", () => {
-      applyWeekStartingPreference("sun");
+    ctx.on(els.taskWeekStartingSelect, "change", () => {
+      applyWeekStartingPreference(normalizeDashboardWeekStart(els.taskWeekStartingSelect?.value));
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
