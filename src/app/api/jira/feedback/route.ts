@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 
+export const dynamic = "force-static";
+
 type FeedbackType = "bug" | "general" | "feature";
+
+const isStaticExportBuild = process.env.NEXT_ANDROID_EXPORT === "1";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -353,6 +357,9 @@ async function fetchJiraIssueStatuses(input: {
 }
 
 export async function POST(req: Request) {
+  if (isStaticExportBuild) {
+    return NextResponse.json({ error: "Jira feedback API is unavailable in static export builds." }, { status: 503 });
+  }
   try {
     const authHeader = asString(req.headers.get("authorization"));
     const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
@@ -424,6 +431,9 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  if (isStaticExportBuild) {
+    return NextResponse.json({ ok: true, statuses: {} }, { status: 200 });
+  }
   try {
     const authHeader = asString(req.headers.get("authorization"));
     const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
@@ -457,6 +467,9 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  if (isStaticExportBuild) {
+    return NextResponse.json({ error: "Jira feedback API is unavailable in static export builds." }, { status: 503 });
+  }
   try {
     const authHeader = asString(req.headers.get("authorization"));
     const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";

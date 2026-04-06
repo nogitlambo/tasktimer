@@ -11,6 +11,7 @@ import type {
   MainMode,
 } from "./types";
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import type { UserPreferencesV1 } from "../lib/cloudStore";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
@@ -124,8 +125,8 @@ export type TaskTimerRewardsHistoryContext = {
       }
     >
   ) => void;
-  getCloudPreferencesCache: () => unknown;
-  setCloudPreferencesCache: (value: unknown) => void;
+  getCloudPreferencesCache: () => UserPreferencesV1 | null;
+  setCloudPreferencesCache: (value: UserPreferencesV1 | null) => void;
   getFocusModeTaskId: () => string | null;
   getCurrentPlan: () => TaskTimerPlan;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
@@ -141,8 +142,8 @@ export type TaskTimerRewardsHistoryContext = {
   syncFocusSessionNotesAccordion: (taskId: string | null) => void;
   appendHistoryEntry: (taskId: string, entry: Record<string, unknown>) => void;
   saveHistoryLocally: (history: HistoryByTaskId) => void;
-  buildDefaultCloudPreferences: () => Record<string, unknown>;
-  saveCloudPreferences: (prefs: Record<string, unknown>) => void;
+  buildDefaultCloudPreferences: () => UserPreferencesV1;
+  saveCloudPreferences: (prefs: UserPreferencesV1) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined }) => Promise<unknown>;
 };

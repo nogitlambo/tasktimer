@@ -1732,7 +1732,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     getCloudPreferencesCache: () => cloudPreferencesCache,
     setCloudPreferencesCache: (value) => {
-      cloudPreferencesCache = value;
+      cloudPreferencesCache = value ?? null;
     },
     getFocusModeTaskId: () => focusModeTaskId,
     getCurrentPlan: () => getCurrentPlan(),
@@ -1749,8 +1749,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncFocusSessionNotesAccordion,
     appendHistoryEntry: (taskId, entry) => appendHistoryEntry(taskId, entry as any),
     saveHistoryLocally,
-    buildDefaultCloudPreferences: () => buildDefaultCloudPreferences() as Record<string, unknown>,
-    saveCloudPreferences: (prefs) => saveCloudPreferences(prefs as any),
+    buildDefaultCloudPreferences: () => buildDefaultCloudPreferences(),
+    saveCloudPreferences: (prefs) => saveCloudPreferences(prefs),
     syncSharedTaskSummariesForTask,
     syncOwnFriendshipProfile,
   });
