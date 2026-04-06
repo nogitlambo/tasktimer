@@ -2420,6 +2420,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   display:grid;
   gap:10px;
 }
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSection + .feedbackBoardSection{
+  padding-top:26px;
+  border-top:1px solid rgba(255,255,255,.12);
+}
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
   display:flex;
   align-items:center;
@@ -2430,6 +2434,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   flex-wrap:wrap;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTitle{
+  flex:1 1 auto;
+  text-align:center;
   font-size:13px;
   letter-spacing:.08em;
 }
@@ -2448,8 +2454,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   margin-left:auto;
   display:flex;
   flex-wrap:wrap;
-  justify-content:flex-end;
+  justify-content:center;
+  width:100%;
   gap:12px;
+  padding-bottom:8px;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterLabel{
   white-space:nowrap;
@@ -2457,11 +2465,56 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterPills{
   display:flex;
   flex-wrap:wrap;
+  justify-content:center;
   gap:8px;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterPill{
   min-width:0;
   white-space:nowrap;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  padding:4px 9px;
+  border:1px solid rgba(255,255,255,.6);
+  background:rgba(255,255,255,.04);
+  color:rgba(241,248,255,.96);
+  font-family:var(--font-tight);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-bug{
+  border-color:rgba(255,64,64,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-feature{
+  border-color:rgba(255,232,64,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-general{
+  border-color:rgba(255,255,255,.96);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-open{
+  border-color:rgba(122,244,255,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-planned{
+  border-color:rgba(188,220,255,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-in_progress{
+  border-color:rgba(255,204,76,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-shipped{
+  border-color:rgba(102,255,170,1);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-closed{
+  border-color:rgba(255,118,118,1);
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardList{
   display:grid;
@@ -2494,6 +2547,9 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormFiel
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
   color:rgba(233,216,255,.84);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge{
+  background:rgba(255,255,255,.05);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem{
   border-color:rgba(221,108,241,.18);

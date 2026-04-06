@@ -228,7 +228,7 @@ export default function FeedbackScreen() {
   }, [getFeedbackSortDateMs, sortedFeedbackItems]);
 
   const otherItems = useMemo(() => {
-    return sortedFeedbackItems.filter((item) => !item.viewerHasUpvoted);
+    return sortedFeedbackItems;
   }, [sortedFeedbackItems]);
 
   const filteredOtherItems = useMemo(() => {
