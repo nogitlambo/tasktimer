@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
+import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
@@ -28,6 +28,56 @@ const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DO
 const defaultApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const mobileApiKeyOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY;
 const recaptchaEnterpriseSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+const shouldLogFirebaseDiagnostics = process.env.NODE_ENV !== "production";
+
+function describeFirebaseError(error: unknown): Record<string, unknown> {
+  if (!error) return { value: error };
+  if (error instanceof Error) {
+    const withCode = error as Error & { code?: unknown; customData?: unknown };
+    return {
+      name: error.name,
+      message: error.message,
+      code: withCode.code ?? null,
+      customData: withCode.customData ?? null,
+      stack: error.stack || null,
+    };
+  }
+  if (typeof error === "object") {
+    try {
+      return { ...(error as Record<string, unknown>) };
+    } catch {
+      return { value: String(error) };
+    }
+  }
+  return { value: error };
+}
+
+function logFirebaseAppCheck(message: string, details?: Record<string, unknown>) {
+  if (!shouldLogFirebaseDiagnostics) return;
+  if (details) {
+    console.info(`[firebase-app-check] ${message}`, details);
+    return;
+  }
+  console.info(`[firebase-app-check] ${message}`);
+}
+
+function warnFirebaseAppCheck(message: string, details?: Record<string, unknown>) {
+  if (!shouldLogFirebaseDiagnostics) return;
+  if (details) {
+    console.warn(`[firebase-app-check] ${message}`, details);
+    return;
+  }
+  console.warn(`[firebase-app-check] ${message}`);
+}
+
+function errorFirebaseAppCheck(message: string, details?: Record<string, unknown>) {
+  if (!shouldLogFirebaseDiagnostics) return;
+  if (details) {
+    console.error(`[firebase-app-check] ${message}`, details);
+    return;
+  }
+  console.error(`[firebase-app-check] ${message}`);
+}
 
 function getFirebaseClientConfig() {
   const useMobileConfig = isNativeOrFileRuntime();
@@ -125,6 +175,8 @@ export function getFirebaseAppClient() {
 
 let firebaseAuthInstance: Auth | null | undefined;
 let firebaseAppCheckInstance: AppCheck | null | undefined;
+let firebaseAppCheckInitStarted = false;
+let firebaseAppCheckTokenProbeStarted = false;
 
 export function getFirebaseAuthClient(): Auth | null {
   if (firebaseAuthInstance !== undefined) return firebaseAuthInstance;
@@ -135,11 +187,23 @@ export function getFirebaseAuthClient(): Auth | null {
 export function getFirebaseAppCheckClient(): AppCheck | null {
   if (firebaseAppCheckInstance !== undefined) return firebaseAppCheckInstance;
   if (typeof window === "undefined" || isNativeOrFileRuntime()) {
+    logFirebaseAppCheck("Skipping initialization for non-web runtime", {
+      mode: firebaseAuthMode(),
+    });
     firebaseAppCheckInstance = null;
     return firebaseAppCheckInstance;
   }
+  firebaseAppCheckInitStarted = true;
+  logFirebaseAppCheck("Initialization requested", {
+    mode: firebaseAuthMode(),
+    hasSiteKey: Boolean(recaptchaEnterpriseSiteKey),
+  });
   const app = getFirebaseAppClient();
   if (!app || !recaptchaEnterpriseSiteKey) {
+    warnFirebaseAppCheck("Initialization skipped because config is incomplete", {
+      hasApp: Boolean(app),
+      hasSiteKey: Boolean(recaptchaEnterpriseSiteKey),
+    });
     firebaseAppCheckInstance = null;
     return firebaseAppCheckInstance;
   }
@@ -148,11 +212,38 @@ export function getFirebaseAppCheckClient(): AppCheck | null {
       provider: new ReCaptchaEnterpriseProvider(recaptchaEnterpriseSiteKey),
       isTokenAutoRefreshEnabled: true,
     });
+    logFirebaseAppCheck("Initialized successfully", {
+      appId: app.options.appId || null,
+      authDomain: app.options.authDomain || null,
+    });
     return firebaseAppCheckInstance;
-  } catch {
+  } catch (error) {
+    errorFirebaseAppCheck("Initialization failed", {
+      error: describeFirebaseError(error),
+    });
     firebaseAppCheckInstance = null;
     return firebaseAppCheckInstance;
   }
+}
+
+export async function bootstrapFirebaseWebAppCheck(): Promise<AppCheck | null> {
+  const appCheck = getFirebaseAppCheckClient();
+  if (!appCheck) return null;
+  if (firebaseAppCheckTokenProbeStarted) return appCheck;
+  firebaseAppCheckTokenProbeStarted = true;
+  try {
+    const tokenResult = await getToken(appCheck, false);
+    logFirebaseAppCheck("Token probe succeeded", {
+      tokenPresent: Boolean(tokenResult?.token),
+      expireTimeMillis: tokenResult?.expireTimeMillis ?? null,
+      alreadyInitialized: firebaseAppCheckInitStarted,
+    });
+  } catch (error) {
+    errorFirebaseAppCheck("Token probe failed", {
+      error: describeFirebaseError(error),
+    });
+  }
+  return appCheck;
 }
 
 export const hasFirebaseAuthClientConfig = hasFirebaseClientConfig(getFirebaseClientConfig());

@@ -11,6 +11,16 @@ import {
 } from "./entitlements";
 
 const FUNCTIONS_REGION = (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1").trim() || "us-central1";
+const shouldLogFunctionDiagnostics = process.env.NODE_ENV !== "production";
+
+function logFunctionsDiagnostic(message: string, details?: Record<string, unknown>) {
+  if (!shouldLogFunctionDiagnostics) return;
+  if (details) {
+    console.info(`[firebase-functions] ${message}`, details);
+    return;
+  }
+  console.info(`[firebase-functions] ${message}`);
+}
 
 type SyncCurrentUserPlanResult = {
   plan?: unknown;
@@ -44,12 +54,28 @@ export async function syncCurrentUserPlanCache(uid?: string | null): Promise<Tas
   }
   const functions = getFunctions(app, FUNCTIONS_REGION);
   const callable = httpsCallable<Record<string, never>, SyncCurrentUserPlanResult>(functions, "syncCurrentUserPlan");
+  logFunctionsDiagnostic("Calling syncCurrentUserPlan", {
+    region: FUNCTIONS_REGION,
+    appId: app.options.appId || null,
+    uidPresent: Boolean(normalizedUid),
+  });
   try {
     const result = await callable({});
+    logFunctionsDiagnostic("syncCurrentUserPlan succeeded", {
+      region: FUNCTIONS_REGION,
+      plan: normalizeTaskTimerPlan(result.data?.plan),
+    });
     const nextPlan = normalizeTaskTimerPlan(result.data?.plan);
     writeTaskTimerPlanToStorage(nextPlan, { uid: normalizedUid || null });
     return nextPlan;
   } catch (error: unknown) {
+    logFunctionsDiagnostic("syncCurrentUserPlan failed", {
+      region: FUNCTIONS_REGION,
+      error:
+        error instanceof Error
+          ? { name: error.name, message: error.message }
+          : { value: String(error) },
+    });
     const message = normalizeCallableErrorMessage(error, "Unable to load your subscription plan right now.");
     throw new Error(message);
   }

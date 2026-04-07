@@ -590,7 +590,7 @@ export default function FeedbackScreen() {
         <SignedInHeaderBadge />
       </div>
       <div className="desktopAppShell">
-        <DesktopAppRail activePage="none" useClientNavButtons={false} showMobileFooter={false} />
+        <DesktopAppRail activePage="none" useClientNavButtons={false} showMobileFooter />
         <div className="desktopAppMain">
           <div className="dashboardNeonLayout feedbackPageLayout">
             <div className="dashboardMain feedbackPageMain">

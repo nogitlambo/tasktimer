@@ -21,6 +21,10 @@ const databaseId = String(
 const db = getFirestore(app, databaseId);
 const messaging = getMessaging(app);
 const TASK_TIME_GOAL_ACTIVE_TTL_MS = 2 * 60 * 1000;
+const protectedCallableOptions = {
+  region,
+  enforceAppCheck: true,
+};
 
 function asString(value, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
@@ -110,8 +114,13 @@ async function cleanupInvalidDeviceTokens(uid, deviceRows, response) {
   return invalidRows;
 }
 
-export const sendPushTest = onCall({region}, async (request) => {
+export const sendPushTest = onCall(protectedCallableOptions, async (request) => {
   const uid = asString(request.auth?.uid);
+  logger.info("sendPushTest App Check", {
+    uid: uid || null,
+    appId: request.app?.appId || null,
+    appCheckAlreadyConsumed: request.app?.alreadyConsumed ?? null,
+  });
   if (!uid) {
     throw new HttpsError("unauthenticated", "You must be signed in to send a push test.");
   }
@@ -188,8 +197,13 @@ export const sendPushTest = onCall({region}, async (request) => {
   }
 });
 
-export const syncCurrentUserPlan = onCall({region}, async (request) => {
+export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (request) => {
   const uid = asString(request.auth?.uid);
+  logger.info("syncCurrentUserPlan App Check", {
+    uid: uid || null,
+    appId: request.app?.appId || null,
+    appCheckAlreadyConsumed: request.app?.alreadyConsumed ?? null,
+  });
   if (!uid) {
     throw new HttpsError("unauthenticated", "You must be signed in to load your plan.");
   }
