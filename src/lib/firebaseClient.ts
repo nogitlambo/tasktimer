@@ -43,10 +43,53 @@ function describeFirebaseError(error: unknown): Record<string, unknown> {
     };
   }
   if (typeof error === "object") {
+    const errorObject = error as Record<string, unknown> & {
+      name?: unknown;
+      message?: unknown;
+      code?: unknown;
+      stack?: unknown;
+      toString?: () => string;
+    };
+    const ownPropertyNames = (() => {
+      try {
+        return Object.getOwnPropertyNames(errorObject);
+      } catch {
+        return [];
+      }
+    })();
+    const enumerableEntries = (() => {
+      try {
+        return { ...errorObject };
+      } catch {
+        return {};
+      }
+    })();
+    const stringified =
+      typeof errorObject.toString === "function"
+        ? (() => {
+            try {
+              return errorObject.toString();
+            } catch {
+              return null;
+            }
+          })()
+        : null;
     try {
-      return { ...(error as Record<string, unknown>) };
+      return {
+        ...enumerableEntries,
+        name: typeof errorObject.name === "string" ? errorObject.name : null,
+        message: typeof errorObject.message === "string" ? errorObject.message : null,
+        code: errorObject.code ?? null,
+        stack: typeof errorObject.stack === "string" ? errorObject.stack : null,
+        ownPropertyNames,
+        stringified,
+      };
     } catch {
-      return { value: String(error) };
+      return {
+        value: String(error),
+        ownPropertyNames,
+        stringified,
+      };
     }
   }
   return { value: error };
@@ -237,9 +280,12 @@ export async function bootstrapFirebaseWebAppCheck(): Promise<AppCheck | null> {
       tokenPresent: Boolean(tokenResult?.token),
       expireTimeMillis: tokenResult?.expireTimeMillis ?? null,
       alreadyInitialized: firebaseAppCheckInitStarted,
+      hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
     });
   } catch (error) {
     errorFirebaseAppCheck("Token probe failed", {
+      hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
+      origin: typeof window !== "undefined" ? window.location.origin || null : null,
       error: describeFirebaseError(error),
     });
   }
