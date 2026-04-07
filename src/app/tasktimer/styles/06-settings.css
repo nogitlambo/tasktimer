@@ -2430,6 +2430,14 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   justify-content:space-between;
   gap:12px;
 }
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTools{
+  margin-left:auto;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+}
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead-withFilter{
   flex-wrap:wrap;
 }

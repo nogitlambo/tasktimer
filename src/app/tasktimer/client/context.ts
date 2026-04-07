@@ -777,7 +777,6 @@ export type TaskTimerDashboardRenderContext = {
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
   setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
   getDashboardWidgetHasRenderedData: () => {
-    streak: boolean;
     tasksCompleted: boolean;
     momentum: boolean;
     focusTrend: boolean;

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import AppImg from "@/components/AppImg";
@@ -22,6 +22,9 @@ export default function FeedbackScreen() {
   const jiraBoardViewerUid = "mWN9rMhO4xMq410c4E4VYyThw0x2";
   const [otherFilter, setOtherFilter] = useState<"all" | FeedbackType>("all");
   const [otherStatusFilter, setOtherStatusFilter] = useState<"all" | "open" | "in_progress" | "closed" | "shipped">("all");
+  const [allItemsSearch, setAllItemsSearch] = useState("");
+  const [allItemsExpanded, setAllItemsExpanded] = useState(false);
+  const [upvotedExpanded, setUpvotedExpanded] = useState(false);
   const [jiraStatusByIssueKey, setJiraStatusByIssueKey] = useState<Record<string, { name: string; category: string; categoryName: string }>>({});
   const otherFilterOptions: Array<{ value: "all" | FeedbackType; label: string }> = [
     { value: "all", label: "All" },
@@ -53,10 +56,49 @@ export default function FeedbackScreen() {
   const [viewerRankThumbnailSrc, setViewerRankThumbnailSrc] = useState<string | null>(null);
   const [viewerCurrentRankId, setViewerCurrentRankId] = useState<string | null>(null);
 
+  const primeFeedbackAuthCookie = useCallback((idToken: string) => {
+    if (typeof document === "undefined" || !idToken) return;
+    const maxAgeSeconds = 300;
+    const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `tasktimer_feedback_auth=${encodeURIComponent(idToken)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+  }, []);
+
+  const resolveAuthSession = useCallback(async (): Promise<{ auth: Auth; user: User; idToken: string } | null> => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return null;
+    const authWithReady = auth as Auth & { authStateReady?: () => Promise<void> };
+    if (typeof authWithReady.authStateReady === "function") {
+      try {
+        await authWithReady.authStateReady();
+      } catch {
+        // ignore and continue with current auth state
+      }
+    }
+    let user = auth.currentUser;
+    if (!user) {
+      user = await new Promise<User | null>((resolve) => {
+        let settled = false;
+        const finish = (nextUser: User | null) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
+          unsubscribe();
+          resolve(nextUser);
+        };
+        const timeoutId = window.setTimeout(() => finish(auth.currentUser), 1500);
+        const unsubscribe = onAuthStateChanged(auth, (nextUser) => finish(nextUser || null));
+      });
+    }
+    if (!user) return null;
+    const idToken = await user.getIdToken();
+    if (!idToken) return null;
+    return { auth, user, idToken };
+  }, []);
+
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const syncViewerFromUser = (user: { uid?: string | null; email?: string | null; displayName?: string | null } | null) => {
       const nextEmail = user?.email || null;
       const nextUid = String(user?.uid || "").trim();
       setViewerUid(nextUid);
@@ -85,6 +127,10 @@ export default function FeedbackScreen() {
           if (storedName) setViewerDisplayName(storedName);
         })
         .catch(() => {});
+    };
+    syncViewerFromUser(auth.currentUser);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      syncViewerFromUser(user);
     });
     return () => unsub();
   }, [feedbackAnonymous]);
@@ -105,8 +151,6 @@ export default function FeedbackScreen() {
   }, [viewerUid]);
 
   useEffect(() => {
-    const auth = getFirebaseAuthClient();
-    const currentUser = auth?.currentUser;
     const jiraIssueKeys = Array.from(
       new Set(
         (feedbackItems ?? [])
@@ -115,22 +159,27 @@ export default function FeedbackScreen() {
           .filter(Boolean)
       )
     );
-    if (!currentUser || !jiraIssueKeys.length) {
+    if (!jiraIssueKeys.length) {
       setJiraStatusByIssueKey({});
       return;
     }
 
     let cancelled = false;
-    void currentUser
-      .getIdToken()
-      .then(async (idToken) => {
-        const response = await fetch(`/api/jira/feedback?keys=${encodeURIComponent(jiraIssueKeys.join(","))}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+    void fetch(`/api/jira/feedback/?keys=${encodeURIComponent(jiraIssueKeys.join(","))}`)
+      .then(async (response) => {
         const result = (await response.json().catch(() => null)) as
-          | { statuses?: Record<string, { name?: string; category?: string; categoryName?: string }> }
+          | { statuses?: Record<string, { name?: string; category?: string; categoryName?: string }>; error?: string }
           | null;
-        if (cancelled || !response.ok) return;
+        if (cancelled) return;
+        if (!response.ok) {
+          console.warn("[feedback] Jira status sync failed", {
+            status: response.status,
+            error: result?.error || null,
+            jiraIssueKeys,
+          });
+          setJiraStatusByIssueKey({});
+          return;
+        }
         const nextStatuses: Record<string, { name: string; category: string; categoryName: string }> = {};
         Object.entries(result?.statuses || {}).forEach(([key, value]) => {
           const jiraKey = String(key || "").trim();
@@ -163,14 +212,15 @@ export default function FeedbackScreen() {
 
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const canSubmitFeedback =
-    !!viewerUid &&
+    !!String(getFirebaseAuthClient()?.currentUser?.uid || viewerUid).trim() &&
     (feedbackAnonymous || isValidFeedbackEmail) &&
     !!feedbackType &&
     feedbackTitle.trim().length > 0 &&
     feedbackDetails.trim().length > 0;
 
   const getFeedbackValidationMessage = useCallback(() => {
-    if (!viewerUid) return "You must be signed in to submit feedback.";
+    const effectiveViewerUid = String(getFirebaseAuthClient()?.currentUser?.uid || viewerUid).trim();
+    if (!effectiveViewerUid) return "You must be signed in to submit feedback.";
     if (!feedbackAnonymous && !feedbackEmail.trim()) return "Email address is required unless you log feedback as anonymous.";
     if (!feedbackAnonymous && !isValidFeedbackEmail) return "Enter a valid email address or log feedback as anonymous.";
     if (!feedbackType) return "Select a feedback type before submitting.";
@@ -179,9 +229,13 @@ export default function FeedbackScreen() {
     return "";
   }, [feedbackAnonymous, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail, viewerUid]);
 
+  const getJiraIssueKey = useCallback((item: FeedbackItem) => {
+    return String(item.jiraIssueBrowseUrl || "").match(/\/browse\/([^/?#]+)/i)?.[1]?.trim() || "";
+  }, []);
+
   const getFeedbackEffectiveStatus = useCallback(
     (item: FeedbackItem): FeedbackStatus => {
-      const jiraIssueKey = String(item.jiraIssueBrowseUrl || "").match(/\/browse\/([^/?#]+)/i)?.[1] || "";
+      const jiraIssueKey = getJiraIssueKey(item);
       const jiraStatus = jiraStatusByIssueKey[String(jiraIssueKey || "").trim()];
       if (!jiraStatus) return item.status;
       const name = jiraStatus.name.toLowerCase();
@@ -195,7 +249,7 @@ export default function FeedbackScreen() {
       if (category === "indeterminate") return "in_progress";
       return item.status;
     },
-    [jiraStatusByIssueKey]
+    [getJiraIssueKey, jiraStatusByIssueKey]
   );
 
   const sortedFeedbackItems = useMemo(() => {
@@ -230,19 +284,27 @@ export default function FeedbackScreen() {
   }, [getFeedbackSortDateMs, sortedFeedbackItems]);
 
   const otherItems = useMemo(() => {
-    return sortedFeedbackItems;
-  }, [sortedFeedbackItems]);
+    return [...sortedFeedbackItems].sort((a, b) => getFeedbackSortDateMs(b) - getFeedbackSortDateMs(a));
+  }, [getFeedbackSortDateMs, sortedFeedbackItems]);
 
   const filteredOtherItems = useMemo(() => {
+    const normalizedSearch = allItemsSearch.trim().toLowerCase();
     return otherItems.filter((item) => {
       const matchesType = otherFilter === "all" || item.type === otherFilter;
       if (!matchesType) return false;
-      if (otherStatusFilter === "all") return true;
       const effectiveStatus = getFeedbackEffectiveStatus(item);
-      if (otherStatusFilter === "open") return effectiveStatus === "open" || effectiveStatus === "planned";
-      return effectiveStatus === otherStatusFilter;
+      const matchesStatus =
+        otherStatusFilter === "all"
+          ? true
+          : otherStatusFilter === "open"
+            ? effectiveStatus === "open" || effectiveStatus === "planned"
+            : effectiveStatus === otherStatusFilter;
+      if (!matchesStatus) return false;
+      if (!normalizedSearch) return true;
+      const jiraIssueKey = getJiraIssueKey(item).toLowerCase();
+      return [item.title, item.details, jiraIssueKey].some((value) => String(value || "").toLowerCase().includes(normalizedSearch));
     });
-  }, [getFeedbackEffectiveStatus, otherFilter, otherItems, otherStatusFilter]);
+  }, [allItemsSearch, getFeedbackEffectiveStatus, getJiraIssueKey, otherFilter, otherItems, otherStatusFilter]);
 
   const feedbackLoading = feedbackItems === null;
   const canViewJiraLinks = viewerUid === jiraBoardViewerUid;
@@ -258,24 +320,26 @@ export default function FeedbackScreen() {
     setFeedbackError("");
     setFeedbackStatus("");
     setFeedbackSubmitting(true);
-    const auth = getFirebaseAuthClient();
-    const currentUser = auth?.currentUser;
-    if (!currentUser || !viewerUid) {
+    let session: Awaited<ReturnType<typeof resolveAuthSession>> = null;
+    try {
+      session = await resolveAuthSession();
+    } catch {
+      session = null;
+    }
+    const currentUser = session?.user || null;
+    const effectiveViewerUid = String(currentUser?.uid || viewerUid).trim();
+    const effectiveViewerDisplayName = String(currentUser?.displayName || viewerDisplayName).trim();
+    const effectiveViewerEmail = feedbackAnonymous ? null : String(currentUser?.email || feedbackEmail).trim() || null;
+    if (!currentUser || !session?.idToken || !effectiveViewerUid) {
       setFeedbackSubmitting(false);
       setFeedbackError("You must be signed in to submit feedback.");
       return;
     }
-    let idToken = "";
-    try {
-      idToken = await currentUser.getIdToken();
-    } catch {
-      setFeedbackSubmitting(false);
-      setFeedbackError("Could not verify your sign-in session. Please try again.");
-      return;
-    }
+    const idToken = session.idToken;
+    primeFeedbackAuthCookie(idToken);
     const submissionSignature = JSON.stringify({
-      ownerUid: viewerUid,
-      authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
+      ownerUid: effectiveViewerUid,
+      authorEmail: effectiveViewerEmail,
       isAnonymous: feedbackAnonymous,
       type: feedbackType,
       title: feedbackTitle.trim(),
@@ -283,15 +347,17 @@ export default function FeedbackScreen() {
     });
     let jiraResult = lastJiraSubmissionRef.current?.signature === submissionSignature ? lastJiraSubmissionRef.current : null;
     if (!jiraResult) {
-      const response = await fetch("/api/jira/feedback", {
+      const response = await fetch("/api/jira/feedback/", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
-          Authorization: `Bearer ${idToken}`,
+          "x-firebase-auth": idToken,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          authorDisplayName: viewerDisplayName || null,
-          authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
+          authToken: idToken,
+          authorDisplayName: effectiveViewerDisplayName || null,
+          authorEmail: effectiveViewerEmail,
           authorRankThumbnailSrc: viewerRankThumbnailSrc,
           authorCurrentRankId: viewerCurrentRankId,
           isAnonymous: feedbackAnonymous,
@@ -314,9 +380,9 @@ export default function FeedbackScreen() {
       lastJiraSubmissionRef.current = jiraResult;
     }
     const saved = await createFeedbackItem({
-      ownerUid: viewerUid,
-      authorDisplayName: viewerDisplayName || null,
-      authorEmail: feedbackAnonymous ? null : feedbackEmail.trim(),
+      ownerUid: effectiveViewerUid,
+      authorDisplayName: effectiveViewerDisplayName || null,
+      authorEmail: effectiveViewerEmail,
       authorRankThumbnailSrc: viewerRankThumbnailSrc,
       authorCurrentRankId: viewerCurrentRankId,
       isAnonymous: feedbackAnonymous,
@@ -338,7 +404,7 @@ export default function FeedbackScreen() {
     setFeedbackType("");
     setFeedbackTitle("");
     setFeedbackDetails("");
-    setFeedbackStatus(jiraResult?.jiraIssueKey ? `Feedback submitted successfully. Jira issue ${jiraResult.jiraIssueKey} created.` : "Feedback submitted successfully.");
+    setFeedbackStatus(jiraResult?.jiraIssueKey ? `Feedback submitted successfully (REF: ${jiraResult.jiraIssueKey})` : "Feedback submitted successfully.");
   }, [
     feedbackAnonymous,
     feedbackDetails,
@@ -347,6 +413,8 @@ export default function FeedbackScreen() {
     feedbackTitle,
     feedbackType,
     getFeedbackValidationMessage,
+    primeFeedbackAuthCookie,
+    resolveAuthSession,
     viewerCurrentRankId,
     viewerDisplayName,
     viewerRankThumbnailSrc,
@@ -361,17 +429,19 @@ export default function FeedbackScreen() {
       const result = await toggleFeedbackUpvote(feedbackId, viewerUid);
       if (result.ok && result.jiraIssueBrowseUrl) {
         try {
-          const auth = getFirebaseAuthClient();
-          const currentUser = auth?.currentUser;
-          const idToken = currentUser ? await currentUser.getIdToken() : "";
+          const session = await resolveAuthSession();
+          const idToken = session?.idToken || "";
           if (idToken) {
-            await fetch("/api/jira/feedback", {
+            primeFeedbackAuthCookie(idToken);
+            await fetch("/api/jira/feedback/", {
               method: "PATCH",
+              credentials: "same-origin",
               headers: {
-                Authorization: `Bearer ${idToken}`,
+                "x-firebase-auth": idToken,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
+                authToken: idToken,
                 jiraIssueBrowseUrl: result.jiraIssueBrowseUrl,
                 upvoteCount: result.upvoteCount,
                 upvoted: result.upvoted,
@@ -389,7 +459,7 @@ export default function FeedbackScreen() {
       });
       if (!result.ok) setFeedbackError(result.message);
     },
-    [viewerUid, voteBusyById]
+    [primeFeedbackAuthCookie, resolveAuthSession, viewerUid, voteBusyById]
   );
 
   const handleToggleExpanded = useCallback((feedbackId: string) => {
@@ -434,16 +504,17 @@ export default function FeedbackScreen() {
       const voteBusy = !!voteBusyById[item.feedbackId];
       const isExpanded = !!expandedFeedbackById[item.feedbackId];
       const effectiveStatus = getFeedbackEffectiveStatus(item);
+      const jiraIssueKey = getJiraIssueKey(item);
       return (
         <article key={item.feedbackId} className={`feedbackBoardItem feedbackBoardItem-${item.type}`}>
           <div className="feedbackBoardCollapsedRow">
             <div className="feedbackBoardCollapsedMain">
               <div className="feedbackBoardBadges">
-                <span className={`feedbackBoardBadge feedbackBoardBadgeStatus feedbackBoardBadgeStatus-${effectiveStatus}`}>
-                  {getFeedbackStatusLabel(effectiveStatus)}
-                </span>
                 <span className={`feedbackBoardBadge feedbackBoardBadgeType feedbackBoardBadgeType-${item.type}`}>
                   {getFeedbackTypeLabel(item.type)}
+                </span>
+                <span className={`feedbackBoardBadge feedbackBoardBadgeStatus feedbackBoardBadgeStatus-${effectiveStatus}`}>
+                  {getFeedbackStatusLabel(effectiveStatus)}
                 </span>
               </div>
               <h3 className="dashboardCardTitle feedbackBoardTitle">{item.title}</h3>
@@ -472,9 +543,18 @@ export default function FeedbackScreen() {
             <>
               <p className="settingsDetailText feedbackBoardDetails">{item.details}</p>
               <div className="feedbackBoardMeta">
+                {jiraIssueKey ? (
+                  canViewJiraLinks && item.jiraIssueBrowseUrl ? (
+                    <a className="feedbackBoardMetaRef" href={item.jiraIssueBrowseUrl} target="_blank" rel="noreferrer">
+                      REF: {jiraIssueKey}
+                    </a>
+                  ) : (
+                    <span className="feedbackBoardMetaRef">REF: {jiraIssueKey}</span>
+                  )
+                ) : null}
                 <span>{getFeedbackAuthorLabel(item)}</span>
                 <span>{formatFeedbackDate(item)}</span>
-                {canViewJiraLinks && item.jiraIssueBrowseUrl ? (
+                {canViewJiraLinks && item.jiraIssueBrowseUrl && !jiraIssueKey ? (
                   <a className="btn btn-ghost small" href={item.jiraIssueBrowseUrl} target="_blank" rel="noreferrer">
                     Open in Jira
                   </a>
@@ -491,6 +571,7 @@ export default function FeedbackScreen() {
       formatFeedbackDate,
       getFeedbackAuthorLabel,
       getFeedbackEffectiveStatus,
+      getJiraIssueKey,
       getFeedbackStatusLabel,
       getFeedbackTypeLabel,
       handleToggleExpanded,
@@ -621,60 +702,95 @@ export default function FeedbackScreen() {
 
                   {sortedFeedbackItems.length ? (
                     <div className="feedbackBoardSections" aria-live="polite">
-                      <section className="feedbackBoardSection" aria-label="Upvoted feedback">
-                        <div className="feedbackBoardSectionHead">
-                          <div className="dashboardCardTitle feedbackBoardSectionTitle">Upvoted</div>
-                        </div>
-                        {upvotedItems.length ? (
-                          <div className="feedbackBoardList">{upvotedItems.map(renderFeedbackItem)}</div>
-                        ) : (
-                          <div className="settingsDetailNote feedbackBoardSectionEmpty">You have not upvoted any feedback yet.</div>
-                        )}
-                      </section>
-
-                      <section className="feedbackBoardSection" aria-label="Other feedback">
+                      <section className="feedbackBoardSection" aria-label="All feedback items">
                         <div className="feedbackBoardSectionHead feedbackBoardSectionHead-withFilter">
-                          <div className="dashboardCardTitle feedbackBoardSectionTitle">Other</div>
-                          <div className="feedbackBoardFilterWrap">
-                            <div className="feedbackBoardFilter" role="group" aria-label="Filter other feedback by type">
-                              <span className="feedbackBoardFilterLabel">Type</span>
-                              <div className="feedbackBoardFilterPills">
-                                {otherFilterOptions.map((option) => (
-                                  <button
-                                    key={option.value}
-                                    className={`btn btn-ghost small unitBtn feedbackBoardFilterPill${otherFilter === option.value ? " isOn" : ""}`}
-                                    type="button"
-                                    aria-pressed={otherFilter === option.value ? "true" : "false"}
-                                    onClick={() => setOtherFilter(option.value)}
-                                  >
-                                    {option.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="feedbackBoardFilter" role="group" aria-label="Filter other feedback by status">
-                              <span className="feedbackBoardFilterLabel">Status</span>
-                              <div className="feedbackBoardFilterPills">
-                                {otherStatusFilterOptions.map((option) => (
-                                  <button
-                                    key={option.value}
-                                    className={`btn btn-ghost small unitBtn feedbackBoardFilterPill${otherStatusFilter === option.value ? " isOn" : ""}`}
-                                    type="button"
-                                    aria-pressed={otherStatusFilter === option.value ? "true" : "false"}
-                                    onClick={() => setOtherStatusFilter(option.value)}
-                                  >
-                                    {option.label}
-                                  </button>
-                                ))}
-                              </div>
+                          <div className="feedbackBoardSectionHeaderRow">
+                            <div className="dashboardCardTitle feedbackBoardSectionTitle">
+                              <button
+                                className={`iconBtn feedbackBoardSectionChevron${allItemsExpanded ? " isExpanded" : ""}`}
+                                type="button"
+                                aria-label={allItemsExpanded ? "Collapse All Items section" : "Expand All Items section"}
+                                aria-expanded={allItemsExpanded ? "true" : "false"}
+                                onClick={() => setAllItemsExpanded((prev) => !prev)}
+                              >
+                                <span aria-hidden="true">&gt;</span>
+                              </button>
+                              <span>All Items</span>
                             </div>
                           </div>
+                          <div className="feedbackBoardSectionTools feedbackBoardSectionTools-underTitle">
+                            {allItemsExpanded ? (
+                              <div className="feedbackBoardFilterWrap">
+                                <div className="feedbackBoardFilter" role="group" aria-label="Filter other feedback by type">
+                                  <span className="feedbackBoardFilterLabel">Type</span>
+                                  <select value={otherFilter} onChange={(e) => setOtherFilter(e.target.value as "all" | FeedbackType)}>
+                                    {otherFilterOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="feedbackBoardFilter" role="group" aria-label="Filter other feedback by status">
+                                  <span className="feedbackBoardFilterLabel">Status</span>
+                                  <select
+                                    value={otherStatusFilter}
+                                    onChange={(e) => setOtherStatusFilter(e.target.value as "all" | "open" | "in_progress" | "closed" | "shipped")}
+                                  >
+                                    {otherStatusFilterOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="feedbackBoardSearch" role="search">
+                                  <label className="feedbackBoardFilterLabel" htmlFor="feedbackAllItemsSearch">
+                                    Search
+                                  </label>
+                                  <input
+                                    id="feedbackAllItemsSearch"
+                                    type="search"
+                                    placeholder="Search description or REF"
+                                    value={allItemsSearch}
+                                    onChange={(e) => setAllItemsSearch(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                        {filteredOtherItems.length ? (
-                          <div className="feedbackBoardList">{filteredOtherItems.map(renderFeedbackItem)}</div>
-                        ) : (
-                          <div className="settingsDetailNote feedbackBoardSectionEmpty">No feedback matches the current filter.</div>
-                        )}
+                        {allItemsExpanded ? (
+                          filteredOtherItems.length ? (
+                            <div className="feedbackBoardList">{filteredOtherItems.map(renderFeedbackItem)}</div>
+                          ) : (
+                            <div className="settingsDetailNote feedbackBoardSectionEmpty">No feedback matches the current filter.</div>
+                          )
+                        ) : null}
+                      </section>
+
+                      <section className="feedbackBoardSection" aria-label="Upvoted feedback">
+                        <div className="feedbackBoardSectionHead">
+                          <div className="dashboardCardTitle feedbackBoardSectionTitle">
+                            <button
+                              className={`iconBtn feedbackBoardSectionChevron${upvotedExpanded ? " isExpanded" : ""}`}
+                              type="button"
+                              aria-label={upvotedExpanded ? "Collapse Upvoted section" : "Expand Upvoted section"}
+                              aria-expanded={upvotedExpanded ? "true" : "false"}
+                              onClick={() => setUpvotedExpanded((prev) => !prev)}
+                            >
+                              <span aria-hidden="true">&gt;</span>
+                            </button>
+                            <span>Upvoted</span>
+                          </div>
+                        </div>
+                        {upvotedExpanded ? (
+                          upvotedItems.length ? (
+                            <div className="feedbackBoardList">{upvotedItems.map(renderFeedbackItem)}</div>
+                          ) : (
+                            <div className="settingsDetailNote feedbackBoardSectionEmpty">You have not upvoted any feedback yet.</div>
+                          )
+                        ) : null}
                       </section>
                     </div>
                   ) : null}

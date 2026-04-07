@@ -214,7 +214,6 @@ export type TaskTimerMutableState = {
   pendingDeferredCloudRefresh: boolean;
   lastUiInteractionAtMs: number;
   dashboardWidgetHasRenderedData: {
-    streak: boolean;
     tasksCompleted: boolean;
     momentum: boolean;
     focusTrend: boolean;

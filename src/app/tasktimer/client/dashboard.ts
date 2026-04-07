@@ -5,6 +5,24 @@ import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, Dash
 
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
+  const DASHBOARD_PANEL_REGISTRY = [
+    { panelId: "xp-progress", label: "XP Progress" },
+    { panelId: "week-hours", label: "Today" },
+    { panelId: "weekly-time-goals", label: "This Week" },
+    { panelId: "tasks-completed", label: "Tasks Completed" },
+    { panelId: "momentum", label: "Momentum" },
+    { panelId: "avg-session-by-task", label: "Avg Session by Task" },
+    { panelId: "timeline", label: "Timeline" },
+    { panelId: "heatmap", label: "Focus Heatmap" },
+  ] as const;
+
+  function getDashboardGridEl() {
+    return (document.querySelector("#appPageDashboard .dashboardGrid") as HTMLElement | null) || els.dashboardGrid || null;
+  }
+
+  function getDashboardPanelMenuListEl() {
+    return (document.getElementById("dashboardPanelMenuList") as HTMLElement | null) || els.dashboardPanelMenuList || null;
+  }
 
   function getCloudDashboardRecord() {
     const cached = ctx.getCloudDashboardCache();
@@ -28,7 +46,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function canUseCompactDashboardCardSize(cardId: string) {
     return (
-      cardId === "streak" ||
       cardId === "week-hours" ||
       cardId === "weekly-time-goals" ||
       cardId === "tasks-completed"
@@ -52,28 +69,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function collectDashboardPanelMeta() {
     const out = [] as Array<{ panel: HTMLElement; panelId: string; label: string }>;
-    const heroPanel = document.querySelector(
-      '#appPageDashboard .dashboardHeroPanel[data-dashboard-panel-id]'
-    ) as HTMLElement | null;
-    if (heroPanel) {
-      const panelId = String(heroPanel.getAttribute("data-dashboard-panel-id") || "").trim();
-      if (panelId) {
-        const titleEl = heroPanel.querySelector(".dashboardHeroTitle") as HTMLElement | null;
-        const title = String(titleEl?.textContent || "").trim();
-        const ariaLabel = String(heroPanel.getAttribute("aria-label") || "").trim();
-        out.push({
-          panel: heroPanel,
-          panelId,
-          label: title || ariaLabel || panelId,
-        });
-      }
-    }
-    const grid = els.dashboardGrid;
-    if (!grid) return out;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const panel = el as HTMLElement;
-      const panelId = String(panel.getAttribute("data-dashboard-id") || "").trim();
-      if (!panelId) return;
+    DASHBOARD_PANEL_REGISTRY.forEach(({ panelId, label }) => {
+      const panel = document.querySelector(
+        `#appPageDashboard [data-dashboard-id="${panelId}"]`
+      ) as HTMLElement | null;
+      if (!panel) return;
       const customLabel = String(panel.getAttribute("data-dashboard-label") || "").trim();
       const titleEl = panel.querySelector(".dashboardCardTitle") as HTMLElement | null;
       const title = String(titleEl?.textContent || "").trim();
@@ -81,7 +81,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       out.push({
         panel,
         panelId,
-        label: customLabel || title || ariaLabel || panelId,
+        label: customLabel || title || ariaLabel || label,
       });
     });
     return out;
@@ -101,7 +101,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function syncDashboardPanelMenuState() {
-    const menuList = els.dashboardPanelMenuList;
+    const menuList = getDashboardPanelMenuListEl();
     if (!menuList) return;
     const meta = collectDashboardPanelMeta();
     const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
@@ -123,7 +123,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function renderDashboardPanelMenu() {
-    const menuList = els.dashboardPanelMenuList;
+    const menuList = getDashboardPanelMenuListEl();
     if (!menuList) return;
     const meta = collectDashboardPanelMeta();
     menuList.innerHTML = "";
@@ -181,6 +181,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function openDashboardPanelMenu() {
+    renderDashboardPanelMenu();
     setDashboardMenuFlipped(true);
   }
 
@@ -270,7 +271,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function applyDashboardCardSizes() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     const cardSizes = ctx.getDashboardCardSizes();
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
@@ -284,7 +285,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function ensureDashboardCardSizeControls() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
       const card = el as HTMLElement;
@@ -313,7 +314,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function syncDashboardCardSizeControlState() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     const cardSizes = ctx.getDashboardCardSizes();
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
@@ -340,7 +341,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function closeDashboardCardSizeMenus() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     Array.from(grid.querySelectorAll(".dashboardCard.isSizeMenuOpen")).forEach((el) => {
       (el as HTMLElement).classList.remove("isSizeMenuOpen");
@@ -374,7 +375,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function applyDashboardOrderFromStorage() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     const dashboard = getCloudDashboardRecord();
     const order = Array.isArray(dashboard?.order) ? dashboard.order : [];
@@ -383,7 +384,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function getCurrentDashboardOrder() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return [] as string[];
     return Array.from(grid.querySelectorAll(".dashboardCard"))
       .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
@@ -448,7 +449,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function applyDashboardEditMode() {
-    const grid = els.dashboardGrid;
+    const grid = getDashboardGridEl();
     if (!grid) return;
     ensureDashboardCardSizeControls();
     if (!ctx.getDashboardEditMode()) closeDashboardCardSizeMenus();
@@ -489,6 +490,20 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       avgSessionByTaskRange: ctx.getDashboardAvgRange(),
     });
     if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
+  }
+
+  function clearDashboardPanelMenuSelections() {
+    const menuList = getDashboardPanelMenuListEl();
+    if (!menuList) return;
+    Array.from(menuList.querySelectorAll("input[data-dashboard-panel-id]")).forEach((node) => {
+      const checkbox = node as HTMLInputElement;
+      checkbox.checked = false;
+    });
+    const bulkToggleBtn = menuList.querySelector("[data-dashboard-panel-bulk-toggle]") as HTMLButtonElement | null;
+    if (bulkToggleBtn) {
+      bulkToggleBtn.textContent = "Select All";
+      bulkToggleBtn.setAttribute("aria-label", "Select all dashboard panels");
+    }
   }
 
   function handleDashboardPanelMenuChange(e: Event) {
@@ -588,7 +603,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const meta = collectDashboardPanelMeta();
     const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
     const allSelected = meta.length > 0 && visibleCount === meta.length;
-    applyDashboardBulkPanelVisibility(!allSelected);
+    if (allSelected) {
+      clearDashboardPanelMenuSelections();
+    } else {
+      applyDashboardBulkPanelVisibility(true);
+    }
     e.preventDefault();
   }
 

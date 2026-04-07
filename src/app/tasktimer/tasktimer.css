@@ -562,6 +562,38 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow {
   margin-top: -2px;
+  border:1px solid rgba(0,207,200,.18);
+  border-radius:0;
+  background:rgba(13,15,19,.92);
+  padding:12px 14px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  border-radius:0;
+  background:rgba(13,15,19,.92);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  padding-left:12px;
+  padding-right:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select{
+  padding-right:36px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  padding-top:12px;
+  padding-bottom:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select:focus-visible{
+  border-color:rgba(0,217,245,.9);
+  box-shadow:0 0 0 1px rgba(0,217,245,.18);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField.isDisabled input{
+  color:rgba(233,238,249,.42);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField.isDisabled input::placeholder{
+  color:rgba(233,238,249,.34);
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote {
@@ -889,4 +921,162 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   letter-spacing: 0.04em;
   text-transform: none;
   color: rgba(232, 238, 255, 0.72);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead-withFilter{
+  align-items:stretch;
+  flex-direction:column;
+  flex-wrap:wrap;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHeaderRow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:12px;
+  width:100%;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTitle{
+  flex:1 1 auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTools{
+  margin-left:auto;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTools-underTitle{
+  width:100%;
+  margin-left:0;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterWrap{
+  width:100%;
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter,
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch{
+  margin-left:auto;
+  flex:0 1 320px;
+  min-width:220px;
+  max-width:360px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
+  flex:0 0 auto;
+  min-width:150px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterLabel{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(218,226,253,.7);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter select,
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch input{
+  min-height:38px;
+  border:1px solid rgba(0,207,200,.28);
+  background:rgba(13,15,19,.92);
+  color:#e9eef9;
+  font-size:14px;
+  caret-color:#e9eef9;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch input{
+  width:100%;
+  padding-left:12px;
+  padding-right:12px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  background:rgba(13,15,19,.92);
+  caret-color:#e9eef9;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch input::placeholder{
+  font-size:14px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch input:focus::placeholder{
+  color:transparent;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef{
+  color:#9ff7f2;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  text-decoration:none;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef:hover,
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef:focus-visible{
+  color:#d8ffff;
+  text-decoration:underline;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionChevron{
+  width:28px;
+  height:28px;
+  min-width:28px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  line-height:1;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionChevron.isExpanded{
+  transform:rotate(90deg);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterLabel{
+  color:rgba(233,219,243,.74);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter select,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch input{
+  border-color:rgba(212,71,210,.3);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow{
+  border-color:rgba(212,71,210,.22);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField select:focus-visible{
+  border-color:rgba(240,110,224,.9);
+  box-shadow:0 0 0 1px rgba(240,110,224,.18);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  border-color:rgba(212,71,210,.3);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef{
+  color:#f0b1ef;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardMetaRef:focus-visible{
+  color:#ffe6ff;
+}
+@media (max-width: 780px){
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterWrap{
+    flex-wrap:wrap;
+    align-items:stretch;
+    justify-content:stretch;
+  }
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter,
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch{
+    min-width:0;
+    max-width:none;
+    width:100%;
+    flex:1 1 100%;
+  }
+  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSearch{
+    margin-left:0;
+  }
 }

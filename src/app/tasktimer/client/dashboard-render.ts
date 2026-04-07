@@ -239,105 +239,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }, 0);
   }
 
-  function renderDashboardStreakCard() {
-    const valueEl = els.dashboardStreakValue as HTMLElement | null;
-    const metaEl = els.dashboardStreakMeta as HTMLElement | null;
-    const historyByTaskId = ctx.getHistoryByTaskId();
-
-    const eligibleTasks = getDashboardFilteredTasks().filter((task) => {
-      if (!task) return false;
-      if (!task.timeGoalEnabled) return false;
-      if (task.timeGoalPeriod !== "day") return false;
-      return Math.max(0, Number(task.timeGoalMinutes || 0)) > 0;
-    });
-
-    const taskGoalMinutesById = new Map<string, number>();
-    eligibleTasks.forEach((task) => {
-      const taskId = String(task.id || "").trim();
-      if (!taskId) return;
-      taskGoalMinutesById.set(taskId, Math.max(0, Number(task.timeGoalMinutes || 0)));
-    });
-
-    const qualifyingDayTaskMs = new Map<string, Map<string, number>>();
-    taskGoalMinutesById.forEach((_goalMinutes, taskId) => {
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      entries.forEach((entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
-        const dayKey = localDayKey(ts);
-        let byTaskForDay = qualifyingDayTaskMs.get(dayKey);
-        if (!byTaskForDay) {
-          byTaskForDay = new Map<string, number>();
-          qualifyingDayTaskMs.set(dayKey, byTaskForDay);
-        }
-        byTaskForDay.set(taskId, (byTaskForDay.get(taskId) || 0) + ms);
-      });
-    });
-
-    const qualifyingDayKeys = Array.from(qualifyingDayTaskMs.entries())
-      .filter(([, byTask]) => {
-        for (const [taskId, totalMs] of byTask.entries()) {
-          const goalMinutes = taskGoalMinutesById.get(taskId) || 0;
-          if (goalMinutes > 0 && totalMs >= goalMinutes * 60000) return true;
-        }
-        return false;
-      })
-      .map(([dayKey]) => dayKey)
-      .sort();
-
-    const hasData = qualifyingDayKeys.length > 0;
-    if (shouldHoldDashboardWidget("streak", hasData)) return;
-
-    let currentStreakDays = 0;
-    let longestStreakDays = 0;
-    let previousDayTime = 0;
-    let runningStreak = 0;
-
-    qualifyingDayKeys.forEach((dayKey) => {
-      const dayTime = new Date(`${dayKey}T00:00:00`).getTime();
-      if (previousDayTime > 0 && dayTime - previousDayTime === 86400000) runningStreak += 1;
-      else runningStreak = 1;
-      if (runningStreak > longestStreakDays) longestStreakDays = runningStreak;
-      previousDayTime = dayTime;
-    });
-
-    const todayKey = localDayKey(nowMs());
-    const yesterdayKey = localDayKey(nowMs() - 86400000);
-    const qualifyingDaySet = new Set(qualifyingDayKeys);
-    const todayComplete = qualifyingDaySet.has(todayKey);
-    const yesterdayComplete = qualifyingDaySet.has(yesterdayKey);
-
-    if (hasData) {
-      let probeTime = todayComplete
-        ? new Date(`${todayKey}T00:00:00`).getTime()
-        : yesterdayComplete
-          ? new Date(`${yesterdayKey}T00:00:00`).getTime()
-          : 0;
-      while (probeTime > 0) {
-        const probeKey = localDayKey(probeTime);
-        if (!qualifyingDaySet.has(probeKey)) break;
-        currentStreakDays += 1;
-        probeTime -= 86400000;
-      }
-    }
-
-    const isPendingToday = !todayComplete && yesterdayComplete && currentStreakDays > 0;
-    const isBroken = !todayComplete && !isPendingToday && hasData;
-    const dayLabel = (count: number) => `${count} Day${count === 1 ? "" : "s"}`;
-
-    if (!hasData) {
-      if (valueEl) valueEl.textContent = "No streak yet";
-      if (metaEl) metaEl.textContent = "Complete a daily goal to start a streak";
-      return;
-    }
-
-    if (valueEl) valueEl.textContent = isBroken ? "0 Days" : dayLabel(currentStreakDays);
-    if (metaEl) {
-      metaEl.textContent = longestStreakDays > 0 ? `Longest streak: ${dayLabel(longestStreakDays)}` : "";
-    }
-  }
-
   function renderDashboardWeeklyGoalsCard() {
     const valueEl = els.dashboardWeeklyGoalsValue as HTMLElement | null;
     const metaEl = els.dashboardWeeklyGoalsMeta as HTMLElement | null;
@@ -1832,7 +1733,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
-    renderDashboardStreakCard();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -1859,7 +1759,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   return {
     renderDashboardMomentumCard,
-    renderDashboardStreakCard,
     renderDashboardWeeklyGoalsCard,
     renderDashboardTasksCompletedCard,
     renderDashboardTodayHoursCard,

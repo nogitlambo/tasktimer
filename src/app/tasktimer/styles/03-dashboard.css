@@ -31,6 +31,8 @@
 .dashboardShellFaceFront{
   position:relative;
   z-index:2;
+  opacity:1;
+  visibility:visible;
 }
 .dashboardShellFaceBack{
   position:absolute;
@@ -38,6 +40,19 @@
   display:flex;
   min-height:100%;
   transform: rotateY(180deg);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.dashboardShellScene.isFlipped .dashboardShellFaceFront{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.dashboardShellScene.isFlipped .dashboardShellFaceBack{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
 }
 .dashboardBackPanel{
   width:100%;

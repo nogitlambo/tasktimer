@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type FeedbackType = "bug" | "general" | "feature";
 
@@ -357,25 +358,83 @@ async function fetchJiraIssueStatuses(input: {
   return statuses;
 }
 
+function describeAuthHeader(req: Request) {
+  const rawHeader = req.headers.get("authorization");
+  const customHeader = req.headers.get("x-firebase-auth");
+  const cookieHeader = req.headers.get("cookie");
+  const normalized = asString(rawHeader, 4096);
+  const hasBearerPrefix = /^Bearer\s+/i.test(normalized);
+  const token = hasBearerPrefix ? normalized.replace(/^Bearer\s+/i, "").trim() : "";
+  const cookieToken = parseCookieValue(cookieHeader, "tasktimer_feedback_auth");
+  return {
+    hasAuthorizationHeader: rawHeader != null,
+    authorizationScheme: normalized ? normalized.split(/\s+/, 1)[0] || null : null,
+    hasBearerPrefix,
+    tokenLength: token.length,
+    hasCustomFirebaseAuthHeader: customHeader != null,
+    customTokenLength: asString(customHeader, 8192).length,
+    hasFeedbackAuthCookie: !!cookieToken,
+    cookieTokenLength: cookieToken.length,
+  };
+}
+
+function parseCookieValue(cookieHeader: string | null, name: string) {
+  const source = String(cookieHeader || "");
+  if (!source) return "";
+  const parts = source.split(";");
+  for (const part of parts) {
+    const [rawName, ...rawValue] = part.split("=");
+    if (asString(rawName) !== name) continue;
+    const joined = rawValue.join("=").trim();
+    if (!joined) return "";
+    try {
+      return decodeURIComponent(joined);
+    } catch {
+      return joined;
+    }
+  }
+  return "";
+}
+
+function getRequestIdToken(req: Request) {
+  const authHeader = asString(req.headers.get("authorization"));
+  if (authHeader.startsWith("Bearer ")) {
+    const bearerToken = authHeader.slice("Bearer ".length).trim();
+    if (bearerToken) return bearerToken;
+  }
+  const customHeaderToken = asString(req.headers.get("x-firebase-auth"), 8192);
+  if (customHeaderToken) return customHeaderToken;
+  return parseCookieValue(req.headers.get("cookie"), "tasktimer_feedback_auth");
+}
+
+function getRequestIdTokenFromBody(body: Record<string, unknown> | null | undefined) {
+  return asString(body?.authToken as string | undefined, 8192);
+}
+
 export async function POST(req: Request) {
   if (isStaticExportBuild) {
     return NextResponse.json({ error: "Jira feedback API is unavailable in static export builds." }, { status: 503 });
   }
   try {
-    const authHeader = asString(req.headers.get("authorization"));
-    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
+    const authDiagnostics = describeAuthHeader(req);
+    const body = (await req.json()) as Record<string, unknown>;
+    const idToken = getRequestIdToken(req) || getRequestIdTokenFromBody(body);
     if (!idToken) {
+      console.warn("[api/jira/feedback] Missing bearer token on POST", authDiagnostics);
       return NextResponse.json({ error: "You must be signed in to submit feedback." }, { status: 401 });
     }
 
     let decodedToken: { uid: string };
     try {
       decodedToken = await getFirebaseAdminAuth().verifyIdToken(idToken);
-    } catch {
+    } catch (error) {
+      console.warn("[api/jira/feedback] Invalid bearer token on POST", {
+        ...authDiagnostics,
+        error: describeError(error),
+      });
       return NextResponse.json({ error: "Your sign-in session is no longer valid. Please sign in again." }, { status: 401 });
     }
 
-    const body = (await req.json()) as Record<string, unknown>;
     const title = asString(body.title, 160);
     const details = asString(body.details, 8000);
     const type = normalizeFeedbackType(body.type);
@@ -433,21 +492,17 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   if (isStaticExportBuild) {
-    return NextResponse.json({ ok: true, statuses: {} }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, statuses: {} },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   }
   try {
-    const authHeader = asString(req.headers.get("authorization"));
-    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
-    if (!idToken) {
-      return NextResponse.json({ error: "You must be signed in to load feedback." }, { status: 401 });
-    }
-
-    try {
-      await getFirebaseAdminAuth().verifyIdToken(idToken);
-    } catch {
-      return NextResponse.json({ error: "Your sign-in session is no longer valid. Please sign in again." }, { status: 401 });
-    }
-
     const url = new URL(req.url);
     const jiraIssueKeys = parseIssueKeysParam(url.searchParams.get("keys"));
     if (!jiraIssueKeys.length) {
@@ -457,13 +512,32 @@ export async function GET(req: Request) {
     const jiraBaseUrl = getRequiredEnv("JIRA_BASE_URL").replace(/\/+$/, "");
     const jiraProjectKey = getRequiredEnv("JIRA_PROJECT_KEY");
     const statuses = await fetchJiraIssueStatuses({ jiraBaseUrl, jiraProjectKey, jiraIssueKeys });
-    return NextResponse.json({ ok: true, statuses });
+    console.info("[api/jira/feedback] Jira status sync result", {
+      requestedKeys: jiraIssueKeys,
+      returnedKeys: Object.keys(statuses),
+    });
+    return NextResponse.json(
+      { ok: true, statuses },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("[api/jira/feedback] Jira status load failed", {
       error: describeError(error),
     });
     const message = error instanceof Error && error.message ? error.message : "Could not load Jira feedback status.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   }
 }
 
@@ -472,8 +546,8 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Jira feedback API is unavailable in static export builds." }, { status: 503 });
   }
   try {
-    const authHeader = asString(req.headers.get("authorization"));
-    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
+    const body = (await req.json()) as Record<string, unknown>;
+    const idToken = getRequestIdToken(req) || getRequestIdTokenFromBody(body);
     if (!idToken) {
       return NextResponse.json({ error: "You must be signed in to update feedback." }, { status: 401 });
     }
@@ -483,8 +557,6 @@ export async function PATCH(req: Request) {
     } catch {
       return NextResponse.json({ error: "Your sign-in session is no longer valid. Please sign in again." }, { status: 401 });
     }
-
-    const body = (await req.json()) as Record<string, unknown>;
     const jiraIssueKey = parseJiraIssueKeyFromBrowseUrl(body.jiraIssueBrowseUrl);
     const upvoteCount = Math.max(0, Math.floor(Number(body.upvoteCount || 0) || 0));
     const upvoted = normalizeBoolean(body.upvoted);

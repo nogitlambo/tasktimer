@@ -2,6 +2,17 @@
 
 import AppImg from "@/components/AppImg";
 
+const dashboardPanelOptions = [
+  { id: "xp-progress", label: "XP Progress" },
+  { id: "week-hours", label: "Today" },
+  { id: "weekly-time-goals", label: "This Week" },
+  { id: "tasks-completed", label: "Tasks Completed" },
+  { id: "momentum", label: "Momentum" },
+  { id: "avg-session-by-task", label: "Avg Session by Task" },
+  { id: "timeline", label: "Timeline" },
+  { id: "heatmap", label: "Focus Heatmap" },
+] as const;
+
 type RewardsHeader = {
   totalXp: number;
   progressPct: number;
@@ -53,14 +64,6 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                 </div>
 
                 <div className="dashboardGrid">
-                  <section className="dashboardCard dashboardStreakCard" data-dashboard-id="streak" aria-label="Streak information">
-                    <div className="dashboardStreakHeader">
-                      <div className="dashboardCardTitle">Streak</div>
-                    </div>
-                    <div className="dashboardStreakValue" id="dashboardStreakValue">No streak yet</div>
-                    <div className="dashboardStreakMeta" id="dashboardStreakMeta">Complete a daily goal to start a streak</div>
-                  </section>
-
                   <section className="dashboardCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
                     <div className="dashboardCardTitle">XP Progress</div>
                     <div className="dashboardXpProgressValue">
@@ -358,7 +361,27 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                     <div className="dashboardBackMenuHead">
                       <div className="dashboardCardTitle">Customize Dashboard</div>
                     </div>
-                    <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels" />
+                    <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels">
+                      <div className="dashboardPanelMenuSectionTitle">
+                        <span>Panels</span>
+                        <button
+                          type="button"
+                          className="dashboardPanelMenuSectionAction"
+                          data-dashboard-panel-bulk-toggle="true"
+                          aria-label="Select all dashboard panels"
+                        >
+                          Select All
+                        </button>
+                      </div>
+                      <div className="dashboardPanelMenuSectionBody dashboardPanelMenuPanelGrid">
+                        {dashboardPanelOptions.map((panel) => (
+                          <label className="dashboardPanelMenuItem dashboardPanelMenuTile" key={panel.id}>
+                            <input type="checkbox" data-dashboard-panel-id={panel.id} />
+                            <span>{panel.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </section>
                 </div>
               </div>

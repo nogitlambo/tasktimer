@@ -184,7 +184,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     pendingDeferredCloudRefresh: false,
     lastUiInteractionAtMs: 0,
     dashboardWidgetHasRenderedData: {
-      streak: false,
       tasksCompleted: false,
       momentum: false,
       focusTrend: false,
