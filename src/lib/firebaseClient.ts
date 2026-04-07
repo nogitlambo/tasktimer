@@ -28,7 +28,33 @@ const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DO
 const defaultApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const mobileApiKeyOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY;
 const recaptchaEnterpriseSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+const appCheckDebugTokenOverride = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
 const shouldLogFirebaseDiagnostics = process.env.NODE_ENV !== "production";
+
+function isLocalhostWebRuntime() {
+  if (typeof window === "undefined" || isNativeOrFileRuntime()) return false;
+  const hostname = String(window.location.hostname || "").trim().toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function configureFirebaseAppCheckDebugToken() {
+  if (typeof window === "undefined" || !isLocalhostWebRuntime()) return false;
+  const appCheckGlobal = globalThis as typeof globalThis & {
+    FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
+  };
+  const normalizedOverride = String(appCheckDebugTokenOverride || "").trim();
+  const nextDebugToken =
+    normalizedOverride && normalizedOverride.toLowerCase() !== "true"
+      ? normalizedOverride
+      : true;
+  if (appCheckGlobal.FIREBASE_APPCHECK_DEBUG_TOKEN === nextDebugToken) return true;
+  appCheckGlobal.FIREBASE_APPCHECK_DEBUG_TOKEN = nextDebugToken;
+  logFirebaseAppCheck("Enabled debug token mode for localhost", {
+    hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
+    tokenSource: normalizedOverride ? "env" : "auto",
+  });
+  return true;
+}
 
 function describeFirebaseError(error: unknown): Record<string, unknown> {
   if (!error) return { value: error };
@@ -250,9 +276,11 @@ export function getFirebaseAppCheckClient(): AppCheck | null {
     return firebaseAppCheckInstance;
   }
   firebaseAppCheckInitStarted = true;
+  const usingDebugToken = configureFirebaseAppCheckDebugToken();
   logFirebaseAppCheck("Initialization requested", {
     mode: firebaseAuthMode(),
     hasSiteKey: Boolean(recaptchaEnterpriseSiteKey),
+    usingDebugToken,
   });
   const app = getOrCreateFirebaseAppClient();
   if (!app || !recaptchaEnterpriseSiteKey) {
@@ -291,7 +319,6 @@ export async function bootstrapFirebaseWebAppCheck(): Promise<AppCheck | null> {
     const tokenResult = await getToken(appCheck, false);
     logFirebaseAppCheck("Token probe succeeded", {
       tokenPresent: Boolean(tokenResult?.token),
-      expireTimeMillis: tokenResult?.expireTimeMillis ?? null,
       alreadyInitialized: firebaseAppCheckInitStarted,
       hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
     });
