@@ -1,7 +1,7 @@
 import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 
 import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
-import { getFirebaseAppClient, hasFirebaseAuthClientConfig, isNativeOrFileRuntime } from "./firebaseClient";
+import { getFirebaseAppCheckClient, getFirebaseAppClient, hasFirebaseAuthClientConfig, isNativeOrFileRuntime } from "./firebaseClient";
 
 let firestoreClient: Firestore | null | undefined;
 const configuredFirestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
@@ -90,6 +90,7 @@ export function getFirebaseFirestoreClient(): Firestore | null {
   }
   try {
     const app = getFirebaseAppClient();
+    const appCheck = getFirebaseAppCheckClient();
     const transportConfig = getFirestoreTransportConfig();
     firestoreClient = app
       ? transportConfig.forceLongPolling
@@ -99,6 +100,7 @@ export function getFirebaseFirestoreClient(): Firestore | null {
     if (process.env.NODE_ENV !== "production") {
       console.info("[firebase-firestore] Firestore client initialized", {
         databaseId: FIREBASE_DATABASE_ID,
+        appCheckRegistered: Boolean(appCheck),
         transport: transportConfig.forceLongPolling ? "long-polling" : "default",
         transportReason: transportConfig.reason,
       });

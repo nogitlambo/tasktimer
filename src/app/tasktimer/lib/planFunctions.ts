@@ -3,7 +3,7 @@
 import type { FirebaseError } from "firebase/app";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
-import { getFirebaseAppClient } from "@/lib/firebaseClient";
+import { bootstrapFirebaseWebAppCheck, getFirebaseAppClient } from "@/lib/firebaseClient";
 import {
   normalizeTaskTimerPlan,
   type TaskTimerPlan,
@@ -46,6 +46,7 @@ function normalizeCallableErrorMessage(error: unknown, fallback: string): string
 
 export async function syncCurrentUserPlanCache(uid?: string | null): Promise<TaskTimerPlan> {
   const normalizedUid = String(uid || "").trim();
+  await bootstrapFirebaseWebAppCheck();
   const app = getFirebaseAppClient();
   if (!app) {
     const fallbackPlan = "free" as TaskTimerPlan;

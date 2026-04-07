@@ -3,7 +3,7 @@
 import type { FirebaseError } from "firebase/app";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
-import { getFirebaseAppClient } from "@/lib/firebaseClient";
+import { bootstrapFirebaseWebAppCheck, getFirebaseAppClient } from "@/lib/firebaseClient";
 
 const FUNCTIONS_REGION = (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1").trim() || "us-central1";
 const shouldLogFunctionDiagnostics = process.env.NODE_ENV !== "production";
@@ -34,6 +34,7 @@ export async function sendPushTestNotification(input?: {
   body?: string;
   data?: Record<string, string>;
 }): Promise<PushTestResult> {
+  await bootstrapFirebaseWebAppCheck();
   const app = getFirebaseAppClient();
   if (!app) {
     throw new Error("Firebase client is not configured.");

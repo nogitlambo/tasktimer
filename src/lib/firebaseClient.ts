@@ -202,7 +202,7 @@ function createFirebaseAuth(): Auth | null {
   }
 }
 
-export function getFirebaseAppClient() {
+function getOrCreateFirebaseAppClient() {
   if (typeof window === "undefined") return null;
   const firebaseConfig = getFirebaseClientConfig();
   if (!hasFirebaseClientConfig(firebaseConfig)) {
@@ -214,6 +214,19 @@ export function getFirebaseAppClient() {
   } catch {
     return null;
   }
+}
+
+export function getFirebaseAppClient() {
+  const app = getOrCreateFirebaseAppClient();
+  if (
+    app &&
+    typeof window !== "undefined" &&
+    !isNativeOrFileRuntime() &&
+    firebaseAppCheckInstance === undefined
+  ) {
+    getFirebaseAppCheckClient();
+  }
+  return app;
 }
 
 let firebaseAuthInstance: Auth | null | undefined;
@@ -241,7 +254,7 @@ export function getFirebaseAppCheckClient(): AppCheck | null {
     mode: firebaseAuthMode(),
     hasSiteKey: Boolean(recaptchaEnterpriseSiteKey),
   });
-  const app = getFirebaseAppClient();
+  const app = getOrCreateFirebaseAppClient();
   if (!app || !recaptchaEnterpriseSiteKey) {
     warnFirebaseAppCheck("Initialization skipped because config is incomplete", {
       hasApp: Boolean(app),

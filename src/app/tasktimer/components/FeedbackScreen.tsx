@@ -56,6 +56,19 @@ export default function FeedbackScreen() {
   const [viewerRankThumbnailSrc, setViewerRankThumbnailSrc] = useState<string | null>(null);
   const [viewerCurrentRankId, setViewerCurrentRankId] = useState<string | null>(null);
 
+  const getSafeJiraBrowseUrl = useCallback((rawUrl: string | null | undefined) => {
+    const value = String(rawUrl || "").trim();
+    if (!value) return "";
+    try {
+      const parsed = new URL(value, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      const protocol = String(parsed.protocol || "").toLowerCase();
+      if (protocol !== "https:" && protocol !== "http:") return "";
+      return parsed.toString();
+    } catch {
+      return "";
+    }
+  }, []);
+
   const primeFeedbackAuthCookie = useCallback((idToken: string) => {
     if (typeof document === "undefined" || !idToken) return;
     const maxAgeSeconds = 300;
@@ -154,7 +167,8 @@ export default function FeedbackScreen() {
     const jiraIssueKeys = Array.from(
       new Set(
         (feedbackItems ?? [])
-          .map((item) => String(item.jiraIssueBrowseUrl || "").match(/\/browse\/([^/?#]+)/i)?.[1] || "")
+          .map((item) => getSafeJiraBrowseUrl(item.jiraIssueBrowseUrl))
+          .map((url) => String(url).match(/\/browse\/([^/?#]+)/i)?.[1] || "")
           .map((key) => key.trim())
           .filter(Boolean)
       )
@@ -199,7 +213,7 @@ export default function FeedbackScreen() {
     return () => {
       cancelled = true;
     };
-  }, [feedbackItems]);
+  }, [feedbackItems, getSafeJiraBrowseUrl]);
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -230,8 +244,8 @@ export default function FeedbackScreen() {
   }, [feedbackAnonymous, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail, viewerUid]);
 
   const getJiraIssueKey = useCallback((item: FeedbackItem) => {
-    return String(item.jiraIssueBrowseUrl || "").match(/\/browse\/([^/?#]+)/i)?.[1]?.trim() || "";
-  }, []);
+    return getSafeJiraBrowseUrl(item.jiraIssueBrowseUrl).match(/\/browse\/([^/?#]+)/i)?.[1]?.trim() || "";
+  }, [getSafeJiraBrowseUrl]);
 
   const getFeedbackEffectiveStatus = useCallback(
     (item: FeedbackItem): FeedbackStatus => {
@@ -375,7 +389,7 @@ export default function FeedbackScreen() {
       jiraResult = {
         signature: submissionSignature,
         jiraIssueKey: result?.jiraIssueKey || null,
-        jiraIssueBrowseUrl: result?.jiraIssueBrowseUrl || null,
+        jiraIssueBrowseUrl: getSafeJiraBrowseUrl(result?.jiraIssueBrowseUrl) || null,
       };
       lastJiraSubmissionRef.current = jiraResult;
     }
@@ -389,7 +403,7 @@ export default function FeedbackScreen() {
       type: feedbackType as FeedbackType,
       title: feedbackTitle,
       details: feedbackDetails,
-      jiraIssueBrowseUrl: jiraResult?.jiraIssueBrowseUrl || null,
+      jiraIssueBrowseUrl: getSafeJiraBrowseUrl(jiraResult?.jiraIssueBrowseUrl) || null,
     });
     setFeedbackSubmitting(false);
     if (!saved.ok) {
@@ -419,6 +433,7 @@ export default function FeedbackScreen() {
     viewerDisplayName,
     viewerRankThumbnailSrc,
     viewerUid,
+    getSafeJiraBrowseUrl,
   ]);
 
   const handleToggleVote = useCallback(
@@ -505,6 +520,7 @@ export default function FeedbackScreen() {
       const isExpanded = !!expandedFeedbackById[item.feedbackId];
       const effectiveStatus = getFeedbackEffectiveStatus(item);
       const jiraIssueKey = getJiraIssueKey(item);
+      const safeJiraBrowseUrl = getSafeJiraBrowseUrl(item.jiraIssueBrowseUrl);
       return (
         <article key={item.feedbackId} className={`feedbackBoardItem feedbackBoardItem-${item.type}`}>
           <div className="feedbackBoardCollapsedRow">
@@ -544,8 +560,8 @@ export default function FeedbackScreen() {
               <p className="settingsDetailText feedbackBoardDetails">{item.details}</p>
               <div className="feedbackBoardMeta">
                 {jiraIssueKey ? (
-                  canViewJiraLinks && item.jiraIssueBrowseUrl ? (
-                    <a className="feedbackBoardMetaRef" href={item.jiraIssueBrowseUrl} target="_blank" rel="noreferrer">
+                  canViewJiraLinks && safeJiraBrowseUrl ? (
+                    <a className="feedbackBoardMetaRef" href={safeJiraBrowseUrl} target="_blank" rel="noreferrer">
                       REF: {jiraIssueKey}
                     </a>
                   ) : (
@@ -554,8 +570,8 @@ export default function FeedbackScreen() {
                 ) : null}
                 <span>{getFeedbackAuthorLabel(item)}</span>
                 <span>{formatFeedbackDate(item)}</span>
-                {canViewJiraLinks && item.jiraIssueBrowseUrl && !jiraIssueKey ? (
-                  <a className="btn btn-ghost small" href={item.jiraIssueBrowseUrl} target="_blank" rel="noreferrer">
+                {canViewJiraLinks && safeJiraBrowseUrl && !jiraIssueKey ? (
+                  <a className="btn btn-ghost small" href={safeJiraBrowseUrl} target="_blank" rel="noreferrer">
                     Open in Jira
                   </a>
                 ) : null}
@@ -572,6 +588,7 @@ export default function FeedbackScreen() {
       getFeedbackAuthorLabel,
       getFeedbackEffectiveStatus,
       getJiraIssueKey,
+      getSafeJiraBrowseUrl,
       getFeedbackStatusLabel,
       getFeedbackTypeLabel,
       handleToggleExpanded,
