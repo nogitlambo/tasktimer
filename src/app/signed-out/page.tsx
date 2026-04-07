@@ -75,7 +75,7 @@ export default function SignedOutPage() {
         <header className="flex items-center justify-between">
           <Link href="/" aria-label="TaskLaunch home">
             <Image
-              src="/logo/tasklaunch-logo.png"
+              src="/logo/tasklaunch-logo-v2.png"
               alt="TaskLaunch"
               width={255}
               height={35}

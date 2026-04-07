@@ -2378,6 +2378,9 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble{
+    --desktop-rail-bubble-tail-tip-x: 104px;
+    --desktop-rail-bubble-tail-base-left: 130px;
+    --desktop-rail-bubble-tail-base-right: 146px;
     position: absolute;
     left: 0;
     right: 0;
@@ -2403,7 +2406,15 @@
     align-content: start;
     gap: 8px;
     overflow: visible;
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 30px), 140px calc(100% - 30px), 130px 100%, 120px calc(100% - 30px), 0 calc(100% - 30px));
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 30px),
+      var(--desktop-rail-bubble-tail-base-right) calc(100% - 30px),
+      var(--desktop-rail-bubble-tail-tip-x) 100%,
+      var(--desktop-rail-bubble-tail-base-left) calc(100% - 30px),
+      0 calc(100% - 30px)
+    );
     transform: none;
     opacity: 0;
     visibility: hidden;
@@ -2434,6 +2445,7 @@
     inset: 0;
     display: block;
     pointer-events: none;
+    z-index: 3;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleLine,
@@ -2446,14 +2458,14 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTailSvg,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTailSvg{
     position: absolute;
-    left: 118px;
+    left: var(--desktop-rail-bubble-tail-tip-x);
     bottom: 0;
-    width: 24px;
+    width: calc(var(--desktop-rail-bubble-tail-base-right) - var(--desktop-rail-bubble-tail-tip-x));
     height: 31px;
     display: block;
     background-repeat: no-repeat;
     background-size: 100% 100%;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='31' viewBox='0 0 24 31' fill='none'%3E%3Cpath d='M0 1H5.5M18.5 1H24M6 1L12 30L18 1' stroke='rgba(86,232,255,0.32)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='31' viewBox='0 0 42 31' fill='none'%3E%3Cpath d='M26 1L0 30L42 1' stroke='rgba(86,232,255,0.32)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
     transform: scaleY(0);
     transform-origin: center top;
     pointer-events: none;
@@ -2481,7 +2493,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleLineBottomRight,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleLineBottomRight{
-    left: 140px;
+    left: var(--desktop-rail-bubble-tail-base-right);
     right: 0;
     bottom: 30px;
     height: 1.5px;
@@ -2492,7 +2504,7 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleLineBottomLeft,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleLineBottomLeft{
     left: 0;
-    width: 120px;
+    width: var(--desktop-rail-bubble-tail-base-left);
     bottom: 30px;
     height: 1.5px;
     transform: scaleX(0);
@@ -2715,7 +2727,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isOutlineAnimating .desktopRailMascotBubbleTailSvg,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isOutlineAnimating .desktopRailMascotBubbleTailSvg{
-    animation: desktopRailMascotBubbleLineGrowY .12s linear .48s forwards;
+    animation: desktopRailMascotBubbleTailGrow .12s linear .48s forwards;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isOutlineAnimating .desktopRailMascotBubbleLineBottomLeft,
@@ -2747,7 +2759,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTailSvg,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleTailSvg{
-    animation: desktopRailMascotBubbleLineGrowY .12s linear .24s reverse forwards;
+    animation: desktopRailMascotBubbleTailGrow .12s linear .24s reverse forwards;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble.isClosing .desktopRailMascotBubbleLineBottomLeft,
@@ -2856,6 +2868,11 @@
     background: rgba(86,232,255,.32);
   }
 
+  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTailSvg,
+  body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTailSvg{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='31' viewBox='0 0 42 31' fill='none'%3E%3Cpath d='M26 1L0 30L42 1' stroke='rgba(86,232,255,0.32)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+  }
+
   body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
   body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble{
     background: transparent;
@@ -2864,6 +2881,11 @@
   body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleLine,
   body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleLine{
     background: rgba(221,108,241,.34);
+  }
+
+  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTailSvg,
+  body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTailSvg{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='31' viewBox='0 0 42 31' fill='none'%3E%3Cpath d='M26 1L0 30L42 1' stroke='rgba(221,108,241,0.34)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
   }
 }
 
@@ -3329,6 +3351,15 @@
   }
 }
 
+@keyframes desktopRailMascotBubbleTailGrow{
+  from{
+    transform: scaleY(0);
+  }
+  to{
+    transform: scaleY(1);
+  }
+}
+
 @keyframes desktopRailMascotBubbleTailRight{
   from{
     transform: rotate(-50deg) scaleX(0);
@@ -3677,7 +3708,7 @@
   }
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTailSvg,
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTailSvg{
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='31' viewBox='0 0 24 31' fill='none'%3E%3Cpath d='M0 1H5.5M18.5 1H24M6 1L12 30L18 1' stroke='rgba(241,255,151,0.72)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='31' viewBox='0 0 42 31' fill='none'%3E%3Cpath d='M26 1L0 30L42 1' stroke='rgba(241,255,151,0.72)' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
   }
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleLine::after,
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleLine::after,

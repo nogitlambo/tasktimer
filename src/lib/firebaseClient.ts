@@ -323,7 +323,7 @@ export async function bootstrapFirebaseWebAppCheck(): Promise<AppCheck | null> {
       hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
     });
   } catch (error) {
-    errorFirebaseAppCheck("Token probe failed", {
+    warnFirebaseAppCheck("Token probe failed; continuing without eager App Check confirmation", {
       hostname: typeof window !== "undefined" ? window.location.hostname || null : null,
       origin: typeof window !== "undefined" ? window.location.origin || null : null,
       error: describeFirebaseError(error),

@@ -3420,6 +3420,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   margin-right: auto;
 }
 
+/* Final Preferences selected-pill override */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn.isOn{
+  color: #000;
+  text-shadow: none;
+}
+
 /* Final Settings route cleanup: remove outer frame and keep overflow inside panels only when needed. */
 #app[aria-label="TaskLaunch Settings"]{
   overflow-y: visible;

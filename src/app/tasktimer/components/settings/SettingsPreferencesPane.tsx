@@ -57,9 +57,6 @@ export function SettingsPreferencesPane({ active }: { active: boolean }) {
             <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
               Load Defaults
             </button>
-            <button className="btn btn-accent" id="taskSettingsSaveBtn" type="button" tabIndex={-1}>
-              Save
-            </button>
           </div>
         </section>
       </div>
