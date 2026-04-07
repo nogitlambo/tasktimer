@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 type FeedbackType = "bug" | "general" | "feature";
 
 const isStaticExportBuild = process.env.NEXT_ANDROID_EXPORT === "1";
+export const dynamic = "force-static";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
