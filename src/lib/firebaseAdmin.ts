@@ -30,6 +30,16 @@ export function hasFirebaseAdminCredentialConfig() {
   return !!(projectId && clientEmail && privateKey);
 }
 
+export function canUseFirebaseAdminDefaultCredentials() {
+  return !!(
+    asString(process.env.GOOGLE_CLOUD_PROJECT) ||
+    asString(process.env.GCLOUD_PROJECT) ||
+    asString(process.env.K_SERVICE) ||
+    asString(process.env.K_REVISION) ||
+    asString(process.env.FUNCTION_TARGET)
+  );
+}
+
 export function getFirebaseAdminApp() {
   if (getApps().length) return getApp();
   const projectId = getFirebaseAdminProjectId();

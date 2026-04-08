@@ -56,8 +56,37 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: STRIPE_PRICE_ID_PRO_MONTHLY
+    value: "price_1TGvSTRoafccyHKo76cv8aug"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: JIRA_BASE_URL
+    value: "https://aniven82.atlassian.net/"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: JIRA_PROJECT_KEY
+    value: "TLAPP"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: JIRA_EMAIL
+    secret: JIRA_EMAIL
+    availability:
+      - RUNTIME
 
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+    availability:
+      - RUNTIME
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: STRIPE_WEBHOOK_SECRET
+    availability:
+      - RUNTIME
+  - variable: JIRA_API_TOKEN
+    secret: JIRA_API_TOKEN
+    availability:
+      - RUNTIME

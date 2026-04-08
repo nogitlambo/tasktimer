@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 
-import { getFirebaseAdminAuth, getFirebaseAdminDb, hasFirebaseAdminCredentialConfig } from "@/lib/firebaseAdmin";
+import {
+  canUseFirebaseAdminDefaultCredentials,
+  getFirebaseAdminAuth,
+  getFirebaseAdminDb,
+  hasFirebaseAdminCredentialConfig,
+} from "@/lib/firebaseAdmin";
 import { asString, type FeedbackType } from "../jira/feedback/shared";
 
 export const FEEDBACK_SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -70,10 +75,10 @@ export async function verifyFeedbackRequestUser(req: Request, body?: Record<stri
   if (!idToken) {
     throw new FeedbackApiError("feedback/unauthenticated", "You must be signed in to use feedback.", 401);
   }
-  if (!hasFirebaseAdminCredentialConfig()) {
+  if (!hasFirebaseAdminCredentialConfig() && !canUseFirebaseAdminDefaultCredentials()) {
     throw new FeedbackApiError(
       "feedback/admin-config-missing",
-      "Firebase Admin credentials are not configured for this environment. Add FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY to continue.",
+      "Firebase Admin credentials are not configured for this environment. Add FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY locally, or run in a Google-managed runtime with default credentials.",
       503
     );
   }
