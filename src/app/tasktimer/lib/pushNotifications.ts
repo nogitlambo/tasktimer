@@ -8,7 +8,7 @@ import {
   type ActionPerformed,
 } from "@capacitor/push-notifications";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
@@ -51,8 +51,16 @@ type CapacitorWindowShape = Window & {
   };
 };
 
-let initPromise: Promise<() => void> | null = null;
+type PushNotificationsPluginShape = typeof PushNotifications & {
+  unregister?: () => Promise<void>;
+};
+
 let latestPushToken = "";
+let runtimeCleanup: (() => void) | null = null;
+let runtimeEnabled = false;
+let desiredPushEnabled = false;
+let syncPromise: Promise<boolean> = Promise.resolve(false);
+let lastSyncedUid = "";
 
 function isPromiseLike<T>(value: Promise<T> | T): value is Promise<T> {
   return !!value && typeof value === "object" && "then" in value && typeof value.then === "function";
@@ -149,6 +157,7 @@ async function savePushDevicePatchForUser(user: User | null, patch: Record<strin
   const uid = String(user?.uid || "").trim();
   const db = getFirebaseFirestoreClient();
   if (!uid || !db) return;
+  lastSyncedUid = uid;
   const platform = (() => {
     try {
       return String(Capacitor.getPlatform?.() || "native");
@@ -172,18 +181,45 @@ async function savePushDevicePatchForUser(user: User | null, patch: Record<strin
   );
 }
 
+async function clearPushDeviceForUid(uid: string | null | undefined) {
+  const normalizedUid = String(uid || "").trim();
+  const db = getFirebaseFirestoreClient();
+  if (!normalizedUid || !db) return;
+  await setDoc(
+    doc(db, "users", normalizedUid, "devices", getPushDeviceId()),
+    {
+      enabled: false,
+      appActive: false,
+      appStateUpdatedAtMs: Date.now(),
+      token: deleteField(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+async function clearPushDeviceForUser(user: User | null) {
+  const uid = String(user?.uid || lastSyncedUid || "").trim();
+  if (!uid) return;
+  await clearPushDeviceForUid(uid);
+  if (uid === lastSyncedUid) lastSyncedUid = "";
+}
+
 async function savePushTokenForUser(user: User | null, token: string) {
   const normalizedToken = String(token || "").trim();
   if (!normalizedToken) return;
   await savePushDevicePatchForUser(user, {
     token: normalizedToken,
+    enabled: true,
     appActive: isAppActivelyForegrounded(),
     appStateUpdatedAtMs: Date.now(),
   });
 }
 
 async function savePushAppStateForUser(user: User | null, isActive: boolean) {
+  if (!user) return;
   await savePushDevicePatchForUser(user, {
+    enabled: true,
     appActive: !!isActive,
     appStateUpdatedAtMs: Date.now(),
   });
@@ -198,7 +234,7 @@ async function registerForPush() {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[push] Notification permission not granted", { receive: permission.receive });
     }
-    return;
+    return false;
   }
   try {
     await PushNotifications.createChannel({
@@ -213,63 +249,108 @@ async function registerForPush() {
     // Channel creation is Android-only and safe to ignore elsewhere.
   }
   await PushNotifications.register();
+  return true;
 }
 
-export async function initTaskTimerPushNotifications(): Promise<() => void> {
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    if (!isNativePushRuntime()) return () => {};
+async function unregisterForPush() {
+  const plugin = PushNotifications as PushNotificationsPluginShape;
+  if (typeof plugin.unregister !== "function") return;
+  await plugin.unregister();
+}
 
-    const auth = getFirebaseAuthClient();
-    if (!auth) return () => {};
+function removeListenerHandle(handle: CapAppListenerHandle | null | undefined) {
+  if (!handle?.remove) return;
+  try {
+    void handle.remove();
+  } catch {
+    // Ignore listener cleanup failures.
+  }
+}
 
-    const registrationHandle = await PushNotifications.addListener("registration", (token: PushNotificationToken) => {
-      latestPushToken = String(token.value || "").trim();
-      if (!latestPushToken) return;
-      void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
-        if (process.env.NODE_ENV !== "production") {
-          console.error("[push] Failed to save registration token", error);
-        }
-      });
-    });
+async function disableTaskTimerPushRuntime(opts?: { clearCloudRegistration?: boolean }) {
+  const cleanup = runtimeCleanup;
+  runtimeCleanup = null;
+  runtimeEnabled = false;
+  if (cleanup) cleanup();
+  try {
+    await unregisterForPush();
+  } catch {
+    // Ignore unregister failures; removing backend eligibility is the important part.
+  }
+  if (opts?.clearCloudRegistration) {
+    try {
+      const auth = getFirebaseAuthClient();
+      await clearPushDeviceForUser(auth?.currentUser || null);
+    } catch {
+      // Ignore cloud cleanup failures so local runtime still tears down cleanly.
+    }
+  }
+  latestPushToken = "";
+}
 
-    const registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
+async function enableTaskTimerPushRuntime(): Promise<boolean> {
+  if (!isNativePushRuntime()) return true;
+
+  const auth = getFirebaseAuthClient();
+  if (!auth) return false;
+
+  if (runtimeEnabled && runtimeCleanup) {
+    void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
+    return true;
+  }
+
+  await disableTaskTimerPushRuntime({ clearCloudRegistration: false });
+
+  const registrationHandle = await PushNotifications.addListener("registration", (token: PushNotificationToken) => {
+    latestPushToken = String(token.value || "").trim();
+    if (!latestPushToken) return;
+    void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
       if (process.env.NODE_ENV !== "production") {
-        console.error("[push] Registration error", event);
+        console.error("[push] Failed to save registration token", error);
       }
     });
+  });
 
-    const receivedHandle = await PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
-      if (process.env.NODE_ENV !== "production") {
-        console.info("[push] Notification received", notification);
-      }
-    });
+  const registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[push] Registration error", event);
+    }
+  });
 
-    const actionHandle = await PushNotifications.addListener("pushNotificationActionPerformed", (event: ActionPerformed) => {
-      const data = event?.notification?.data && typeof event.notification.data === "object"
-        ? (event.notification.data as Record<string, unknown>)
-        : {};
-      const taskId = String(data.taskId || "").trim();
-      const route = String(data.route || "/tasklaunch").trim();
-      if (taskId) setPendingPushTaskId(taskId);
-      try {
-        window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId } }));
-      } catch {
-        // Ignore custom event failures.
-      }
-      if (
-        route === "/tasklaunch" &&
-        !(/\/tasklaunch\/?$/i.test(window.location.pathname || "") || /\/tasklaunch\/index\.html$/i.test(window.location.pathname || ""))
-      ) {
-        window.location.href = resolveTaskTimerTasksRoute();
-      }
-      if (process.env.NODE_ENV !== "production") {
-        console.info("[push] Notification action", event);
-      }
-    });
+  const receivedHandle = await PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[push] Notification received", notification);
+    }
+  });
 
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (user && latestPushToken) {
+  const actionHandle = await PushNotifications.addListener("pushNotificationActionPerformed", (event: ActionPerformed) => {
+    const data = event?.notification?.data && typeof event.notification.data === "object"
+      ? (event.notification.data as Record<string, unknown>)
+      : {};
+    const taskId = String(data.taskId || "").trim();
+    const route = String(data.route || "/tasklaunch").trim();
+    if (taskId) setPendingPushTaskId(taskId);
+    try {
+      window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId } }));
+    } catch {
+      // Ignore custom event failures.
+    }
+    if (
+      route === "/tasklaunch" &&
+      !(/\/tasklaunch\/?$/i.test(window.location.pathname || "") || /\/tasklaunch\/index\.html$/i.test(window.location.pathname || ""))
+    ) {
+      window.location.href = resolveTaskTimerTasksRoute();
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[push] Notification action", event);
+    }
+  });
+
+  const unsubAuth = onAuthStateChanged(auth, (user) => {
+    const previousUid = String(lastSyncedUid || "").trim();
+    if (user?.uid) {
+      lastSyncedUid = user.uid;
+      if (latestPushToken) {
         void savePushTokenForUser(user, latestPushToken).catch((error) => {
           if (process.env.NODE_ENV !== "production") {
             console.error("[push] Failed to sync token after auth change", error);
@@ -277,58 +358,97 @@ export async function initTaskTimerPushNotifications(): Promise<() => void> {
         });
       }
       void savePushAppStateForUser(user, isAppActivelyForegrounded()).catch(() => {});
-    });
-
-    const onVisibilityChange = () => {
-      void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
-    };
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", onVisibilityChange);
+      return;
     }
-
-    let removeCapAppStateListener: (() => void) | null = null;
-    try {
-      const capApp = getCapAppPlugin();
-      if (capApp?.addListener) {
-        const maybePromise = capApp.addListener("appStateChange", (state: { isActive?: boolean } | null) => {
-          void savePushAppStateForUser(auth.currentUser, !!state?.isActive).catch(() => {});
-        });
-        if (isPromiseLike(maybePromise)) {
-          maybePromise
-            .then((h) => {
-              if (h?.remove) removeCapAppStateListener = () => h.remove();
-            })
-            .catch(() => {});
-        } else if (maybePromise?.remove) {
-          removeCapAppStateListener = () => maybePromise.remove();
-        }
-      }
-    } catch {
-      // Ignore native app-state listener failures.
+    if (previousUid) {
+      void clearPushDeviceForUid(previousUid).catch(() => {});
+      lastSyncedUid = "";
     }
+    latestPushToken = "";
+  });
 
-    await registerForPush().catch((error) => {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("[push] Failed to register for push notifications", error);
-      }
-    });
+  const onVisibilityChange = () => {
     void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
+  };
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  }
 
-    return () => {
-      unsubAuth();
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", onVisibilityChange);
+  let capAppStateHandle: CapAppListenerHandle | null = null;
+  try {
+    const capApp = getCapAppPlugin();
+    if (capApp?.addListener) {
+      const maybeHandle = capApp.addListener("appStateChange", (state: { isActive?: boolean } | null) => {
+        void savePushAppStateForUser(auth.currentUser, !!state?.isActive).catch(() => {});
+      });
+      if (isPromiseLike(maybeHandle)) {
+        maybeHandle.catch(() => {});
+        capAppStateHandle = await maybeHandle.catch(() => null);
+      } else {
+        capAppStateHandle = maybeHandle;
       }
-      if (removeCapAppStateListener) removeCapAppStateListener();
-      void registrationHandle.remove();
-      void registrationErrorHandle.remove();
-      void receivedHandle.remove();
-      void actionHandle.remove();
-      initPromise = null;
-    };
-  })();
+    }
+  } catch {
+    // Ignore native app-state listener failures.
+  }
 
-  return initPromise;
+  const cleanup = () => {
+    unsubAuth();
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    }
+    removeListenerHandle(capAppStateHandle);
+    removeListenerHandle(registrationHandle);
+    removeListenerHandle(registrationErrorHandle);
+    removeListenerHandle(receivedHandle);
+    removeListenerHandle(actionHandle);
+  };
+
+  const granted = await registerForPush().catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[push] Failed to register for push notifications", error);
+    }
+    return false;
+  });
+
+  if (!granted) {
+    cleanup();
+    await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
+    return false;
+  }
+
+  runtimeCleanup = cleanup;
+  runtimeEnabled = true;
+  void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
+  return true;
+}
+
+export async function disableTaskTimerPushNotifications(): Promise<void> {
+  desiredPushEnabled = false;
+  await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
+}
+
+export async function syncTaskTimerPushNotificationsEnabled(enabled: boolean): Promise<boolean> {
+  desiredPushEnabled = !!enabled;
+  syncPromise = syncPromise
+    .catch(() => false)
+    .then(async () => {
+      if (desiredPushEnabled) {
+        const active = await enableTaskTimerPushRuntime();
+        if (!active) desiredPushEnabled = false;
+        return active;
+      }
+      await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
+      return false;
+    });
+  return syncPromise;
+}
+
+export async function initTaskTimerPushNotifications(): Promise<() => void> {
+  await syncTaskTimerPushNotificationsEnabled(true);
+  return () => {
+    void syncTaskTimerPushNotificationsEnabled(false);
+  };
 }
 
 export async function getTaskTimerPushDiagnostics(uid: string | null | undefined): Promise<PushDiagnostics> {

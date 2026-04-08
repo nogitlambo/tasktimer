@@ -3,6 +3,7 @@ import type { MainMode } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
+import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 
 type PreferenceEventDeps = {
@@ -43,6 +44,20 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
     const appliedTheme = lockedThemeSelected ? "cyan" : currentTheme;
     const lockTitle = premiumThemesLocked ? "Pro feature: Purple and Lime themes" : "";
+
+    if (els.themeSelect) {
+      els.themeSelect.value = appliedTheme;
+      if (premiumThemesLocked && els.themeSelect.value !== "cyan") {
+        els.themeSelect.value = "cyan";
+      }
+      els.themeSelect.title = lockTitle;
+      const purpleOption = els.themeSelect.querySelector('option[value="purple"]') as HTMLOptionElement | null;
+      const limeOption = els.themeSelect.querySelector('option[value="lime"]') as HTMLOptionElement | null;
+      const cyanOption = els.themeSelect.querySelector('option[value="cyan"]') as HTMLOptionElement | null;
+      if (purpleOption) purpleOption.disabled = premiumThemesLocked;
+      if (limeOption) limeOption.disabled = premiumThemesLocked;
+      if (cyanOption) cyanOption.disabled = false;
+    }
 
     els.themePurpleBtn?.classList.toggle("isOn", appliedTheme === "purple");
     els.themeCyanBtn?.classList.toggle("isOn", appliedTheme === "cyan");
@@ -123,6 +138,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       taskView: ctx.getTaskView(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
+      mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
@@ -263,6 +279,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     const taskView = ctx.getTaskView();
     toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
+    toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
@@ -299,12 +316,32 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setDynamicColorsEnabledState(preferenceService.loadDynamicColorsEnabled());
   }
 
+  function loadMobilePushAlertsSetting() {
+    ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
+  }
+
   function saveDynamicColorsSetting() {
     persistPreferencesToCloud();
   }
 
+  function saveMobilePushAlertsSetting() {
+    persistPreferencesToCloud();
+  }
+
+  async function applyMobilePushAlertsPreference(nextEnabled: boolean) {
+    ctx.setMobilePushAlertsEnabledState(nextEnabled);
+    syncTaskSettingsUi();
+    saveMobilePushAlertsSetting();
+    const appliedEnabled = await syncTaskTimerPushNotificationsEnabled(nextEnabled).catch(() => false);
+    if (appliedEnabled === nextEnabled) return;
+    ctx.setMobilePushAlertsEnabledState(appliedEnabled);
+    syncTaskSettingsUi();
+    saveMobilePushAlertsSetting();
+  }
+
   function loadCheckpointAlertSettings() {
     const prefs = preferenceService.loadCheckpointAlerts();
+    ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
     ctx.setCheckpointAlertSoundEnabledState(prefs.checkpointAlertSoundEnabled !== false);
     ctx.setCheckpointAlertToastEnabledState(prefs.checkpointAlertToastEnabled !== false);
   }
@@ -334,6 +371,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveTaskViewPreference();
     saveAutoFocusOnTaskLaunchSetting();
     saveDynamicColorsSetting();
+    saveMobilePushAlertsSetting();
     saveCheckpointAlertSettings();
     ctx.render();
   }
@@ -357,6 +395,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.on(els.themePurpleBtn, "click", () => {
       setThemeMode("purple");
     });
+    ctx.on(els.themeSelect, "change", () => {
+      const next = String(els.themeSelect?.value || "cyan").trim().toLowerCase();
+      setThemeMode(next === "lime" ? "lime" : next === "cyan" ? "cyan" : "purple");
+    });
     ctx.on(els.themeCyanBtn, "click", () => {
       setThemeMode("cyan");
     });
@@ -375,8 +417,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.setAutoFocusOnTaskLaunchEnabledState(false);
       ctx.setTaskViewState("tile");
       ctx.setDynamicColorsEnabledState(true);
+      ctx.setMobilePushAlertsEnabledState(false);
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
+      void syncTaskTimerPushNotificationsEnabled(false);
     });
     ctx.on(els.appearanceLoadDefaultsBtn, "click", () => {
       setThemeMode(canUsePremiumThemes() ? "purple" : "cyan");
@@ -443,6 +487,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
+    ctx.on(els.taskMobilePushAlertsToggle, "click", () => {
+      void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
+    });
+    ctx.on(els.taskMobilePushAlertsToggleRow, "click", (e: Event) => {
+      if (eventTargetClosest(e.target, "#taskMobilePushAlertsToggle")) return;
+      void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
+    });
     ctx.on(els.taskCheckpointSoundToggle, "click", () => {
       if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       const nextValue = !ctx.getCheckpointAlertSoundEnabled();
@@ -478,6 +529,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveWeekStartingPreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
+      saveMobilePushAlertsSetting();
       saveCheckpointAlertSettings();
       ctx.render();
       ctx.closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
@@ -515,8 +567,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     isSwitchOn,
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
+    loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
     loadCheckpointAlertSettings,
+    saveMobilePushAlertsSetting,
     saveCheckpointAlertSettings,
     setThemeMode,
     setMenuButtonStyle,

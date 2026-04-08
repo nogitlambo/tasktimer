@@ -41,6 +41,7 @@ export type TaskTimerCachedPreferences = {
   taskView?: unknown;
   autoFocusOnTaskLaunchEnabled?: unknown;
   dynamicColorsEnabled?: unknown;
+  mobilePushAlertsEnabled?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   modeSettings?: TaskTimerCachedModeSettings;
@@ -807,6 +808,7 @@ export type TaskTimerPreferencesContext = {
     THEME_KEY: string;
     TASK_VIEW_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+    MOBILE_PUSH_ALERTS_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     MODE_SETTINGS_KEY: string;
     DEFAULT_TASK_TIMER_FORMAT_KEY: string;
@@ -829,6 +831,8 @@ export type TaskTimerPreferencesContext = {
   setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
   getDynamicColorsEnabled: () => boolean;
   setDynamicColorsEnabledState: (value: boolean) => void;
+  getMobilePushAlertsEnabled: () => boolean;
+  setMobilePushAlertsEnabledState: (value: boolean) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;

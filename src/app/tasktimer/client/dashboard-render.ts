@@ -1610,6 +1610,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     donutEl.style.background = `conic-gradient(var(--mode1-accent) 0 ${mode1End}%, var(--mode2-accent) ${mode1End}% ${mode2End}%, var(--mode3-accent) ${mode2End}% 100%)`;
   }
 
+  let dashboardAvgSessionMeasureRetryPending = false;
+
   function renderDashboardAvgSessionChart() {
     const titleEl = els.dashboardAvgSessionTitle as HTMLElement | null;
     const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
@@ -1641,11 +1643,26 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const measuredWidth = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
     const measuredHeight = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
-    if (measuredWidth <= 0 || measuredHeight <= 0) return;
+    if (measuredWidth <= 0 || measuredHeight <= 0) {
+      if (!dashboardAvgSessionMeasureRetryPending) {
+        dashboardAvgSessionMeasureRetryPending = true;
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            dashboardAvgSessionMeasureRetryPending = false;
+            renderDashboardAvgSessionChart();
+          });
+        });
+      }
+      if (measuredWidth <= 0) return;
+    }
+    const fallbackHeight = Math.max(176, Math.min(236, Math.round(measuredWidth * 0.62)));
     const width = measuredWidth;
-    const height = measuredHeight;
+    const height = measuredHeight > 0 ? measuredHeight : fallbackHeight;
+    wrap.style.minHeight = measuredHeight > 0 ? "" : `${fallbackHeight}px`;
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
+    canvas.style.width = "100%";
+    canvas.style.height = `${height}px`;
     const context = canvas.getContext("2d");
     if (!context) return;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);

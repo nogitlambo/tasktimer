@@ -778,6 +778,7 @@ export function buildDefaultCloudPreferences() {
     taskView: "list" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
+    mobilePushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),

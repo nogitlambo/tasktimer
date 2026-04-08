@@ -79,6 +79,7 @@ export type TaskTimerMutableState = {
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
+  mobilePushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   rewardProgress: unknown;

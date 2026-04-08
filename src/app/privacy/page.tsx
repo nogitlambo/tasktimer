@@ -266,19 +266,56 @@ export default function PrivacyPolicyPage() {
               <Section number={11} title="Account deletion and local data reset">
                 <div className="space-y-2">
                   <Clause letter="a">
-                    If you signed in to TaskLaunch, you can request account deletion in the app from{" "}
+                    This page is the public account-deletion information page for TaskLaunch. If you signed in to
+                    TaskLaunch, you can request account deletion in the app from{" "}
                     <strong className="font-semibold text-[#79e2ff]">Settings &gt; Account &gt; Delete Account</strong>.
                   </Clause>
                   <Clause letter="b">
-                    Deleting the signed-in account removes the Firebase Authentication account used by TaskLaunch.
+                    To request deletion in the app: sign in to the account you want to remove, open{" "}
+                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Account</strong>, expand the delete
+                    disclosure, and confirm <strong className="font-semibold text-[#79e2ff]">Delete Account</strong>.
                   </Clause>
                   <Clause letter="c">
-                    Local data stored on your device is separate and is not automatically removed when the signed-in
-                    account is deleted.
+                    If you cannot access the app, or if you want help with a deletion request, email{" "}
+                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong> and include the email
+                    address used for TaskLaunch sign-in.
                   </Clause>
                   <Clause letter="d">
+                    Deleting the signed-in account removes the Firebase Authentication account used by TaskLaunch and
+                    clears the app&apos;s account-state deletion marker used during the delete flow.
+                  </Clause>
+                  <Clause letter="e">
+                    Local task and history data stored on your device is separate and is not automatically removed when
+                    the signed-in account is deleted.
+                  </Clause>
+                  <Clause letter="f">
                     Local device data can be cleared separately using{" "}
                     <strong className="font-semibold text-[#79e2ff]">Settings &gt; Reset All Data</strong>.
+                  </Clause>
+                  <Clause letter="g">
+                    Unless you separately clear local data, it remains on the device until you remove it with{" "}
+                    <strong className="font-semibold text-[#79e2ff]">Reset All Data</strong> or uninstall the app.
+                  </Clause>
+                  <Clause letter="h">
+                    If you want deletion help beyond the in-app account removal flow, contact{" "}
+                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong>. If additional
+                    cloud-backed app records are identified for your account, they may require manual follow-up rather
+                    than immediate in-app deletion.
+                  </Clause>
+                  <Clause letter="i">
+                    TaskLaunch also provides a way to request deletion of some app data without requiring account
+                    deletion. To remove local task and history data while keeping your sign-in account, use{" "}
+                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Reset All Data</strong>.
+                  </Clause>
+                  <Clause letter="j">
+                    If you want help deleting specific data without deleting your account, email{" "}
+                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong> with the email address
+                    used for TaskLaunch sign-in and a description of the data you want deleted.
+                  </Clause>
+                  <Clause letter="k">
+                    Data deleted through <strong className="font-semibold text-[#79e2ff]">Reset All Data</strong> is
+                    removed from the local device. Using Reset All Data does not itself delete the Firebase
+                    Authentication account.
                   </Clause>
                 </div>
               </Section>

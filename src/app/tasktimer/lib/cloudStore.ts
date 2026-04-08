@@ -27,6 +27,7 @@ export type UserPreferencesV1 = {
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
+  mobilePushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   modeSettings?: Record<string, unknown> | null;
@@ -844,6 +845,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
+        mobilePushAlertsEnabled: asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
         modeSettings:
@@ -1173,6 +1175,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     taskView: data.taskView === "tile" ? "tile" : "list",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
+    mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
     modeSettings: data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null,

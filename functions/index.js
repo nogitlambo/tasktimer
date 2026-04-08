@@ -136,8 +136,9 @@ export const sendPushTest = onCall(protectedCallableOptions, async (request) => 
       .map((docSnap) => ({
         id: docSnap.id,
         token: asString(docSnap.get("token")),
+        enabled: docSnap.get("enabled") !== false,
       }))
-      .filter((row) => !!row.token);
+      .filter((row) => !!row.token && row.enabled);
 
     if (!deviceRows.length) {
       throw new HttpsError("failed-precondition", "No registered device tokens were found for this user.");
@@ -275,13 +276,14 @@ function extractAndroidDeviceRows(snapshot) {
     .map((docSnap) => ({
       id: docSnap.id,
       token: asString(docSnap.get("token")),
+      enabled: docSnap.get("enabled") !== false,
       native: asBool(docSnap.get("native")),
       provider: asString(docSnap.get("provider")),
       platform: asString(docSnap.get("platform")).toLowerCase(),
       appActive: asBool(docSnap.get("appActive")),
       appStateUpdatedAtMs: asInt(docSnap.get("appStateUpdatedAtMs"), 0),
     }))
-    .filter((row) => !!row.token && row.native && row.provider === "fcm" && row.platform === "android");
+    .filter((row) => !!row.token && row.enabled && row.native && row.provider === "fcm" && row.platform === "android");
 }
 
 function hasFreshForegroundDevice(deviceRows, nowMs) {

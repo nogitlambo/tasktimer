@@ -154,6 +154,7 @@
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
 - `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
+- `MOBILE_PUSH_ALERTS_KEY = `${storageKey}:mobilePushAlertsEnabled``
 - `MODE_SETTINGS_KEY = `${storageKey}:modeSettings``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
 - `PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId``

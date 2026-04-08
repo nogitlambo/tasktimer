@@ -198,6 +198,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return Math.max(0, (task.accumulatedMs || 0) + runMs);
   }
 
+  function getActiveTimeGoalModalTaskId() {
+    const stateTaskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
+    if (stateTaskId) return stateTaskId;
+    return String((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.taskId || "").trim();
+  }
+
+  function getActiveTimeGoalModalTask() {
+    const taskId = getActiveTimeGoalModalTaskId();
+    if (!taskId) return null;
+    return ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null;
+  }
+
   function clearPendingTimeGoalFlow() {
     if (typeof window === "undefined") return;
     try {
@@ -221,6 +233,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       clearPendingTimeGoalFlow();
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
+    }
+    if (
+      !normalizedTaskId ||
+      String((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.taskId || "").trim() === normalizedTaskId
+    ) {
+      const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+      if (overlay) delete overlay.dataset.taskId;
     }
     if (normalizedTaskId) delete ctx.getTimeGoalReminderAtMsByTaskId()[normalizedTaskId];
   }
@@ -338,6 +357,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!taskId) return;
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
+    if (els.timeGoalCompleteOverlay) {
+      (els.timeGoalCompleteOverlay as HTMLElement).dataset.taskId = taskId;
+    }
     delete ctx.getTimeGoalReminderAtMsByTaskId()[taskId];
     if (els.timeGoalCompleteTitle) {
       els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete`;
@@ -450,7 +472,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function resumeTaskAfterTimeGoalModal(task: Task) {
     const taskId = String(task.id || "").trim();
-    if (!taskId || ctx.getTimeGoalModalTaskId() !== taskId) return;
+    if (!taskId || getActiveTimeGoalModalTaskId() !== taskId) return;
     const frozenElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
     task.accumulatedMs = frozenElapsedMs;
     task.startMs = nowMs();
@@ -459,6 +481,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.syncRewardSessionTrackerForTask(task, task.startMs);
     ctx.setTimeGoalModalTaskId(null);
     ctx.setTimeGoalModalFrozenElapsedMs(0);
+    if (els.timeGoalCompleteOverlay) {
+      delete (els.timeGoalCompleteOverlay as HTMLElement).dataset.taskId;
+    }
   }
 
   function syncFocusRunButtons(task?: Task | null) {
@@ -1208,13 +1233,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }, 0);
     });
     ctx.on(els.timeGoalCompleteUpdateGoalBtn, "click", () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (!task) return;
       populateTimeGoalCompleteEditor(task);
       setTimeGoalCompleteEditorVisible(true);
     });
     ctx.on(els.timeGoalCompleteContinueNowBtn, "click", () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (!task) return;
       continueTaskAfterTimeGoalModal(task);
     });
@@ -1237,22 +1262,22 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       syncTimeGoalCompleteDurationUnitUi();
     });
     ctx.on(els.timeGoalCompleteSaveBtn, "click", async () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (task) openTimeGoalSaveNoteChoice(task);
     });
     ctx.on(els.timeGoalCompleteDiscardBtn, "click", async () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (task) await resolveTimeGoalCompletion(task, { logHistory: false });
     });
     ctx.on(els.timeGoalCompleteSaveNoteNoBtn, "click", async () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (!task) return;
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       persistPendingTimeGoalFlow(task, "main");
       await resolveTimeGoalCompletion(task, { logHistory: true });
     });
     ctx.on(els.timeGoalCompleteSaveNoteYesBtn, "click", () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (task) openTimeGoalNoteModal(task);
     });
     ctx.on(els.timeGoalCompleteNoteInput, "input", () => {
@@ -1260,15 +1285,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (taskId) setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
     });
     ctx.on(els.timeGoalCompleteNoteDoneBtn, "click", async () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
-      const taskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
+      const task = getActiveTimeGoalModalTask();
+      const taskId = getActiveTimeGoalModalTaskId();
       if (!task || !taskId) return;
       setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
       await resolveTimeGoalCompletion(task, { logHistory: true });
     });
     ctx.on(els.timeGoalCompleteContinueConfirmBtn, "click", () => {
-      const task = ctx.getTasks().find((row) => String(row.id || "") === String(ctx.getTimeGoalModalTaskId() || ""));
+      const task = getActiveTimeGoalModalTask();
       if (!task) return;
       const currentElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
       const nextGoalMinutes = getTimeGoalCompleteDurationMinutes();

@@ -96,6 +96,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     initialState,
     storageKeys: {
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+      MOBILE_PUSH_ALERTS_KEY,
       THEME_KEY,
       MENU_BUTTON_STYLE_KEY,
       DEFAULT_TASK_TIMER_FORMAT_KEY,
@@ -184,6 +185,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let taskView = initialState.taskView;
   let dynamicColorsEnabled = initialState.dynamicColorsEnabled;
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
+  let mobilePushAlertsEnabled = initialState.mobilePushAlertsEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
@@ -1996,6 +1998,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       THEME_KEY,
       TASK_VIEW_KEY,
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
+      MOBILE_PUSH_ALERTS_KEY,
       MENU_BUTTON_STYLE_KEY,
       MODE_SETTINGS_KEY,
       DEFAULT_TASK_TIMER_FORMAT_KEY,
@@ -2031,6 +2034,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
     setDynamicColorsEnabledState: (value) => {
       dynamicColorsEnabled = value;
+    },
+    getMobilePushAlertsEnabled: () => mobilePushAlertsEnabled,
+    setMobilePushAlertsEnabledState: (value) => {
+      mobilePushAlertsEnabled = value;
     },
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     setCheckpointAlertSoundEnabledState: (value) => {
@@ -2475,9 +2482,17 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         maybeRestorePendingTimeGoalFlowApi();
       });
     });
+    maybeOpenImportFromQuery();
+    syncDashboardMenuFlipUi();
+    syncDashboardRefreshButtonUi();
+  };
+
+  bootstrap();
+
+  const finishBootstrapUi = () => {
+    if (runtime.destroyed) return;
     render();
     maybeHandlePendingTaskJump();
-    maybeOpenImportFromQuery();
     if (!els.taskList && els.historyManagerScreen) {
       openHistoryManager();
     }
@@ -2485,15 +2500,25 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       tickApi();
       runtime.tickStarted = true;
     }
-    syncDashboardMenuFlipUi();
-    syncDashboardRefreshButtonUi();
   };
 
-  bootstrap();
   if (currentAppPage === "dashboard") {
+    finishBootstrapUi();
     setDashboardRefreshPending(true);
   } else {
-    void rehydrateFromCloudAndRender();
+    const shouldHydrateBeforeInteractiveBoot = !!currentUid();
+    if (shouldHydrateBeforeInteractiveBoot) {
+      void rehydrateFromCloudAndRender()
+        .catch(() => {
+          // Fall back to cached state if the initial cloud hydrate is unavailable.
+        })
+        .finally(() => {
+          finishBootstrapUi();
+        });
+    } else {
+      finishBootstrapUi();
+      void rehydrateFromCloudAndRender();
+    }
   }
 
   return { destroy };

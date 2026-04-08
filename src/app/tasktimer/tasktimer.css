@@ -1080,3 +1080,19 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardM
     margin-left:0;
   }
 }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyChartInline {
+  box-shadow: none;
+  filter: none;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap {
+  background: transparent;
+}
+
+@media (max-width: 780px) {
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap {
+    min-height: 176px;
+  }
+}

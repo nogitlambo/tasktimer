@@ -4,22 +4,32 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { initTaskTimerPushNotifications } from "@/app/tasktimer/lib/pushNotifications";
+import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
+import { loadCachedPreferences, STORAGE_KEY, subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 
 type GuardStatus = "checking" | "authed";
 
 export default function TaskLaunchAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [status, setStatus] = useState<GuardStatus>("checking");
+  const [status, setStatus] = useState<GuardStatus>(() => {
+    const auth = getFirebaseAuthClient();
+    return auth?.currentUser ? "authed" : "checking";
+  });
+
+  function readStoredMobilePushAlertsEnabled() {
+    if (typeof window === "undefined") return false;
+    try {
+      return String(window.localStorage.getItem(`${STORAGE_KEY}:mobilePushAlertsEnabled`) || "").trim() === "true";
+    } catch {
+      return false;
+    }
+  }
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
       router.replace("/");
       return;
-    }
-    if (auth.currentUser) {
-      setStatus("authed");
     }
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -32,14 +42,21 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
   }, [router]);
 
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
-    void initTaskTimerPushNotifications()
-      .then((dispose) => {
-        cleanup = dispose;
-      })
-      .catch(() => {});
+    const syncPreference = (enabled: boolean) => {
+      void syncTaskTimerPushNotificationsEnabled(enabled).catch(() => {});
+    };
+    const cachedPreferences = loadCachedPreferences();
+    const initialEnabled =
+      cachedPreferences && typeof cachedPreferences === "object" && "mobilePushAlertsEnabled" in cachedPreferences
+        ? !!cachedPreferences.mobilePushAlertsEnabled
+        : readStoredMobilePushAlertsEnabled();
+    syncPreference(initialEnabled);
+    const unsub = subscribeCachedPreferences((prefs) => {
+      if (!prefs || typeof prefs !== "object" || !("mobilePushAlertsEnabled" in prefs)) return;
+      syncPreference(!!prefs.mobilePushAlertsEnabled);
+    });
     return () => {
-      cleanup?.();
+      unsub();
     };
   }, []);
 

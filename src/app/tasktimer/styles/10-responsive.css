@@ -3716,8 +3716,22 @@
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotInputCaret{
     color: #ffffff;
   }
-  body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotInput::placeholder,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotInput::placeholder,
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotInput::placeholder{
     color: rgba(248,251,239,.74);
+  }
+}
+
+/* Final dashboard scroll chrome override: keep desktop dashboard scrollable without showing the right scrollbar. */
+@media (min-width: 981px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar{
+    width: 0;
+    height: 0;
+    display: none;
   }
 }

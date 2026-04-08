@@ -10,6 +10,7 @@ export type TaskTimerPreferenceStorageKeys = {
   WEEK_STARTING_KEY: string;
   TASK_VIEW_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+  MOBILE_PUSH_ALERTS_KEY: string;
   MODE_SETTINGS_KEY: string;
 };
 
@@ -21,6 +22,7 @@ type PreferencesStateSnapshot = {
   taskView: "list" | "tile";
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
+  mobilePushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   rewards: RewardProgressV1;
@@ -95,6 +97,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       taskView: state.taskView,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
+      mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
       rewards: state.rewards,
@@ -109,6 +112,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.MOBILE_PUSH_ALERTS_KEY,
+      snapshot.mobilePushAlertsEnabled ? "true" : "false",
     );
     safeWriteLocalStorage(
       storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
@@ -170,6 +177,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return getStoredOrCachedPreferences().dynamicColorsEnabled !== false;
   }
 
+  function loadMobilePushAlertsEnabled(): boolean {
+    const cloudValue = getStoredOrCachedPreferences().mobilePushAlertsEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const raw = safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY).toLowerCase();
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    return false;
+  }
+
   function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled"> {
     const prefs = getStoredOrCachedPreferences();
     return {
@@ -188,6 +204,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadTaskView,
     loadAutoFocusOnTaskLaunchEnabled,
     loadDynamicColorsEnabled,
+    loadMobilePushAlertsEnabled,
     loadCheckpointAlerts,
     normalizeThemeMode,
   };

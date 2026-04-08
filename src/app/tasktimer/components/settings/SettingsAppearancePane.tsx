@@ -14,17 +14,11 @@ export function SettingsAppearancePane({ active }: { active: boolean }) {
           </div>
           <div className="unitRow" id="themeToggleRow">
             <span>Color Theme</span>
-            <div className="unitButtons" role="group" aria-label="Color theme">
-              <button className="btn btn-ghost small unitBtn" id="themePurpleBtn" type="button" aria-pressed="false">
-                Purple
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="themeLimeBtn" type="button" aria-pressed="false">
-                Lime
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="themeCyanBtn" type="button" aria-pressed="false">
-                Cyan
-              </button>
-            </div>
+            <select id="themeSelect" defaultValue="purple" aria-label="Color theme">
+              <option value="purple">Purple</option>
+              <option value="lime">Lime</option>
+              <option value="cyan">Cyan</option>
+            </select>
           </div>
           <div className="unitRow" id="menuButtonStyleRow">
             <span>Button Shape</span>

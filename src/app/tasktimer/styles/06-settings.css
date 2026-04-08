@@ -3513,6 +3513,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   gap: 14px;
 }
 
+#app[aria-label="TaskLaunch Settings"] #themeSelect{
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-right: 32px;
+  text-align: right;
+  text-align-last: right;
+}
+
 #app[aria-label="TaskLaunch Settings"] #themeToggleRow .unitButtons,
 #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow .unitButtons{
   flex-wrap: wrap;
@@ -3536,6 +3547,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] #themeToggleRow,
   #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow{
     align-items: stretch;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] #themeSelect{
+    width: 100%;
+    text-align: left;
+    text-align-last: left;
   }
 
   #app[aria-label="TaskLaunch Settings"] #themeToggleRow .unitButtons,
@@ -3792,4 +3809,32 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormFiel
   border-color: rgba(219,255,79,.18);
   background: rgba(18,23,7,.82);
   color: rgba(247,255,212,.96);
+}
+
+/* Final Notifications typography override: match the compact all-caps settings language used by Preferences. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsDetailText,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsInlineSectionTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .toggleRow > span{
+  font-family: var(--font-tight) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsDetailText{
+  line-height: 1.45;
+  color: rgba(205,230,239,.78);
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsInlineSection{
+  gap: 8px;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .toggleRow{
+  padding: 8px 0;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsDetailText{
+  color: rgba(233,216,255,.76);
 }
