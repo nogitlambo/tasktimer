@@ -774,7 +774,6 @@ export function buildDefaultCloudPreferences() {
     schemaVersion: 1 as const,
     theme: "purple" as const,
     menuButtonStyle: "square" as const,
-    defaultTaskTimerFormat: "hour" as const,
     taskView: "list" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,

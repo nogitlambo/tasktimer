@@ -150,7 +150,6 @@
 - `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``
 - `CHECKPOINT_ALERT_SOUND_KEY = `${storageKey}:checkpointAlertSoundEnabled``
 - `CHECKPOINT_ALERT_TOAST_KEY = `${storageKey}:checkpointAlertToastEnabled``
-- `DEFAULT_TASK_TIMER_FORMAT_KEY = `${storageKey}:defaultTaskTimerFormat``
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
 - `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
@@ -183,6 +182,7 @@
 - `data-action="stop"`
 - `data-history-action="analyse"`
 - `data-history-action="clearLocks"`
+- `data-history-action="close"`
 - `data-history-action="delete"`
 - `data-history-action="manage"`
 - `data-history-action="newer"`

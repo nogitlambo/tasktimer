@@ -89,7 +89,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       finalCheckpointAction?: Task["timeGoalAction"];
     };
     delete taskWithMode.mode;
-    if (task.milestoneTimeUnit !== "day" && task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
+    if (task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
       task.milestoneTimeUnit = "hour";
     }
     task.checkpointSoundEnabled = !!task.checkpointSoundEnabled;

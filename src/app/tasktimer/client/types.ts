@@ -74,7 +74,6 @@ export type TaskTimerMutableState = {
   themeMode: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
   addTaskCustomNames: string[];
-  defaultTaskTimerFormat: "day" | "hour" | "minute";
   weekStarting: DashboardWeekStart;
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;

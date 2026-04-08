@@ -5,7 +5,6 @@ export type TaskTimerStorageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
-  DEFAULT_TASK_TIMER_FORMAT_KEY: string;
   WEEK_STARTING_KEY: string;
   TASK_VIEW_KEY: string;
   DYNAMIC_COLORS_KEY: string;
@@ -42,7 +41,6 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: `${storageKey}:autoFocusOnTaskLaunchEnabled`,
     THEME_KEY: `${storageKey}:theme`,
     MENU_BUTTON_STYLE_KEY: `${storageKey}:menuButtonStyle`,
-    DEFAULT_TASK_TIMER_FORMAT_KEY: `${storageKey}:defaultTaskTimerFormat`,
     WEEK_STARTING_KEY: `${storageKey}:weekStarting`,
     TASK_VIEW_KEY: `${storageKey}:taskView`,
     DYNAMIC_COLORS_KEY: `${storageKey}:dynamicColorsEnabled`,
@@ -75,7 +73,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     themeMode: "purple",
     menuButtonStyle: "square",
     addTaskCustomNames: [],
-    defaultTaskTimerFormat: "hour",
     weekStarting: "mon",
     taskView: "tile",
     dynamicColorsEnabled: true,

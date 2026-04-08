@@ -4,8 +4,18 @@ export default function ElapsedPadOverlay() {
     <div className="overlay" id="elapsedPadOverlay">
       <div className="modal elapsedPadModal" role="dialog" aria-modal="true" aria-label="Enter Time Value">
         <h2 id="elapsedPadTitle">Enter Value</h2>
-        <div className="elapsedPadDisplay" id="elapsedPadDisplay">
-          0
+        <div className="elapsedPadHeadRow">
+          <div className="elapsedPadDisplay" id="elapsedPadDisplay">
+            0
+          </div>
+          <div className="unitButtons elapsedPadUnitButtons" role="group" aria-label="Checkpoint format">
+            <button className="btn btn-ghost small unitBtn" id="elapsedPadUnitHourBtn" type="button">
+              H
+            </button>
+            <button className="btn btn-ghost small unitBtn" id="elapsedPadUnitMinuteBtn" type="button">
+              M
+            </button>
+          </div>
         </div>
         <div className="elapsedPadError" id="elapsedPadError" aria-live="polite" />
         <div className="elapsedPadGrid" id="elapsedPadGrid">

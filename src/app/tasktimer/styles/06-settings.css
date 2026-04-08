@@ -3476,21 +3476,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   }
 }
 
-/* Final Preferences timer-format override: compact equal-square buttons for D / H / M. */
-#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatDay,
-#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatHour,
-#app[aria-label="TaskLaunch Settings"] #taskDefaultFormatMinute{
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
 #app[aria-label="TaskLaunch Settings"] #taskWeekStartingRow{
   justify-content: space-between;
 }

@@ -133,7 +133,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return preferenceService.buildSnapshot({
       theme: ctx.getThemeMode(),
       menuButtonStyle: ctx.getMenuButtonStyle(),
-      defaultTaskTimerFormat: ctx.getDefaultTaskTimerFormat(),
       weekStarting: ctx.getWeekStarting(),
       taskView: ctx.getTaskView(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
@@ -207,10 +206,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyMenuButtonStyle(preferenceService.loadMenuButtonStyle());
   }
 
-  function loadDefaultTaskTimerFormat() {
-    ctx.setDefaultTaskTimerFormatState(preferenceService.loadDefaultTaskTimerFormat());
-  }
-
   function applyWeekStartingPreference(next: DashboardWeekStart) {
     ctx.setWeekStartingState(normalizeDashboardWeekStart(next));
     if (els.taskWeekStartingSelect) {
@@ -233,10 +228,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function loadTaskViewPreference() {
     applyTaskViewPreference(preferenceService.loadTaskView());
-  }
-
-  function saveDefaultTaskTimerFormat() {
-    persistPreferencesToCloud();
   }
 
   function saveTaskViewPreference() {
@@ -274,7 +265,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function syncTaskSettingsUi() {
-    const defaultTaskTimerFormat = ctx.getDefaultTaskTimerFormat();
     const weekStarting = ctx.getWeekStarting();
     const taskView = ctx.getTaskView();
     toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
@@ -282,9 +272,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
-    els.taskDefaultFormatDay?.classList.toggle("isOn", defaultTaskTimerFormat === "day");
-    els.taskDefaultFormatHour?.classList.toggle("isOn", defaultTaskTimerFormat === "hour");
-    els.taskDefaultFormatMinute?.classList.toggle("isOn", defaultTaskTimerFormat === "minute");
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
@@ -366,7 +353,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function persistInlineTaskSettingsImmediate() {
-    saveDefaultTaskTimerFormat();
     saveWeekStartingPreference();
     saveTaskViewPreference();
     saveAutoFocusOnTaskLaunchSetting();
@@ -412,7 +398,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       setMenuButtonStyle("square");
     });
     ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
-      ctx.setDefaultTaskTimerFormatState("hour");
       applyWeekStartingPreference("mon");
       ctx.setAutoFocusOnTaskLaunchEnabledState(false);
       ctx.setTaskViewState("tile");
@@ -428,21 +413,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
       syncThemeAvailabilityUi();
-    });
-    ctx.on(els.taskDefaultFormatDay, "click", () => {
-      ctx.setDefaultTaskTimerFormatState("day");
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskDefaultFormatHour, "click", () => {
-      ctx.setDefaultTaskTimerFormatState("hour");
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskDefaultFormatMinute, "click", () => {
-      ctx.setDefaultTaskTimerFormatState("minute");
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskWeekStartingSelect, "change", () => {
       applyWeekStartingPreference(normalizeDashboardWeekStart(els.taskWeekStartingSelect?.value));
@@ -525,7 +495,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
-      saveDefaultTaskTimerFormat();
       saveWeekStartingPreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
@@ -554,12 +523,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyMenuButtonStyle,
     loadThemePreference,
     loadMenuButtonStylePreference,
-    loadDefaultTaskTimerFormat,
     applyWeekStartingPreference,
     loadWeekStartingPreference,
     saveWeekStartingPreference,
     loadTaskViewPreference,
-    saveDefaultTaskTimerFormat,
     saveTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
     saveAutoFocusOnTaskLaunchSetting,

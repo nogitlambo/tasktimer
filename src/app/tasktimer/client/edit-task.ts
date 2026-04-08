@@ -1,8 +1,12 @@
 import type { Task } from "../lib/types";
 import {
+  formatAggregateTimeGoalValidationMessage,
   formatAddTaskDurationReadout,
+  getAggregateTimeGoalValidationForReplacement,
   getAddTaskDurationMaxForPeriod,
+  isAggregateTimeGoalValidationWorsened,
   normalizeTaskConfigMilestones,
+  validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
 import type { TaskTimerEditTaskContext } from "./context";
 
@@ -11,6 +15,70 @@ import type { TaskTimerEditTaskContext } from "./context";
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+
+  function padTwo(value: number) {
+    return String(Math.max(0, Math.floor(value || 0))).padStart(2, "0");
+  }
+
+  function parsePlannedStartParts(raw: string | null | undefined) {
+    const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+    const hours24 = match ? Math.max(0, Math.min(23, Number(match[1] || 0))) : 9;
+    const minutes = match ? Math.max(0, Math.min(59, Number(match[2] || 0))) : 0;
+    const meridiem = hours24 >= 12 ? "PM" : "AM";
+    const hour12 = hours24 % 12 || 12;
+    return {
+      hour: padTwo(hour12),
+      minute: padTwo(minutes),
+      meridiem,
+    };
+  }
+
+  function readEditPlannedStartValueFromSelectors() {
+    const hour12 = Math.max(1, Math.min(12, Number(els.editPlannedStartHourSelect?.value || "9") || 9));
+    const minute = Math.max(0, Math.min(59, Number(els.editPlannedStartMinuteSelect?.value || "0") || 0));
+    const meridiem = String(els.editPlannedStartMeridiemSelect?.value || "AM").trim().toUpperCase() === "PM" ? "PM" : "AM";
+    let hours24 = hour12 % 12;
+    if (meridiem === "PM") hours24 += 12;
+    return `${padTwo(hours24)}:${padTwo(minute)}`;
+  }
+
+  function syncEditPlannedStartSelectors(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    const parts = parsePlannedStartParts(currentTask?.plannedStartTime || "09:00");
+    const openEnded = !!currentTask?.plannedStartOpenEnded;
+    if (els.editPlannedStartHourSelect) {
+      els.editPlannedStartHourSelect.value = parts.hour;
+      els.editPlannedStartHourSelect.disabled = openEnded;
+      els.editPlannedStartHourSelect.classList.toggle("isDisabled", openEnded);
+    }
+    if (els.editPlannedStartMinuteSelect) {
+      els.editPlannedStartMinuteSelect.value = parts.minute;
+      els.editPlannedStartMinuteSelect.disabled = openEnded;
+      els.editPlannedStartMinuteSelect.classList.toggle("isDisabled", openEnded);
+    }
+    if (els.editPlannedStartMeridiemSelect) {
+      els.editPlannedStartMeridiemSelect.value = parts.meridiem;
+      els.editPlannedStartMeridiemSelect.disabled = openEnded;
+      els.editPlannedStartMeridiemSelect.classList.toggle("isDisabled", openEnded);
+    }
+    if (els.editPlannedStartInput) {
+      els.editPlannedStartInput.value = String(currentTask?.plannedStartTime || "09:00");
+    }
+    if (els.editPlannedStartOpenEnded) {
+      els.editPlannedStartOpenEnded.checked = openEnded;
+    }
+  }
+
+  function syncEditPlannedStartValueFromSelectors() {
+    const t = getCurrentEditTask();
+    if (!t) return;
+    const nextValue = readEditPlannedStartValueFromSelectors();
+    t.plannedStartTime = nextValue;
+    if (els.editPlannedStartInput) {
+      els.editPlannedStartInput.value = nextValue;
+    }
+    syncEditSaveAvailability(t);
+  }
 
   function canUseAdvancedTaskConfig() {
     return ctx.hasEntitlement("advancedTaskConfig");
@@ -54,12 +122,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       durationPeriod,
       noTimeGoal,
       milestonesEnabled: !!currentTask?.milestonesEnabled,
-      milestoneTimeUnit:
-        currentTask?.milestoneTimeUnit === "day"
-          ? "day"
-          : currentTask?.milestoneTimeUnit === "minute"
-            ? "minute"
-            : "hour",
+      milestoneTimeUnit: currentTask?.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestones: normalizeTaskConfigMilestones(
         (Array.isArray(currentTask?.milestones) ? currentTask.milestones : []).map((milestone, index) => ({
           id: String(milestone?.id || ""),
@@ -170,11 +233,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.msToggle.toggleAttribute("disabled", checkpointControlsDisabled);
       els.msToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
     }
-    [els.msUnitDay, els.msUnitHour, els.msUnitMinute].forEach((btn) => {
-      if (!btn) return;
-      btn.toggleAttribute("disabled", checkpointControlsDisabled);
-      btn.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
-    });
     if (els.editPresetIntervalsToggle) {
       els.editPresetIntervalsToggle.toggleAttribute("disabled", checkpointControlsDisabled);
       els.editPresetIntervalsToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
@@ -235,7 +293,46 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editTaskDurationValueInput?.classList.add("isInvalid");
       return false;
     }
+    const aggregateValidation = getEditAggregateTimeGoalValidation();
+    if (aggregateValidation?.shouldBlock) {
+      els.editTaskDurationValueInput?.classList.add("isInvalid");
+      return false;
+    }
     return true;
+  }
+
+  function buildEditTimeGoalDraft(task: Task | null | undefined): Task | null {
+    if (!task) return null;
+    return {
+      ...task,
+      timeGoalEnabled: isEditTimeGoalEnabled(),
+      timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
+      timeGoalUnit: ctx.getEditTaskDurationUnit(),
+      timeGoalPeriod: ctx.getEditTaskDurationPeriod(),
+      timeGoalMinutes: getEditTaskTimeGoalMinutes(),
+    };
+  }
+
+  function getEditAggregateTimeGoalValidation(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    const replacementTask = buildEditTimeGoalDraft(currentTask);
+    if (!replacementTask) return null;
+
+    const editIndex = ctx.getEditIndex();
+    const tasks = ctx.getTasks();
+    const sourceTask = editIndex != null ? tasks[editIndex] : null;
+    const currentResult = validateAggregateTimeGoalTotals(tasks);
+    const nextResult = getAggregateTimeGoalValidationForReplacement(tasks, replacementTask, sourceTask?.id || replacementTask.id);
+    const shouldBlock = currentResult.isWithinLimit
+      ? !nextResult.isWithinLimit
+      : isAggregateTimeGoalValidationWorsened(currentResult, nextResult);
+
+    return {
+      currentResult,
+      nextResult,
+      shouldBlock,
+      message: shouldBlock ? formatAggregateTimeGoalValidationMessage(nextResult) : "",
+    };
   }
 
   function applyEditCheckpointValidationHighlights(task: Task | null | undefined) {
@@ -273,14 +370,13 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
   }
 
-  function setMilestoneUnitUi(unit: "day" | "hour" | "minute") {
-    els.msUnitDay?.classList.toggle("isOn", unit === "day");
-    els.msUnitHour?.classList.toggle("isOn", unit === "hour");
-    els.msUnitMinute?.classList.toggle("isOn", unit === "minute");
+  function setMilestoneUnitUi(unit: "hour" | "minute") {
+    els.elapsedPadUnitHourBtn?.classList.toggle("isOn", unit === "hour");
+    els.elapsedPadUnitMinuteBtn?.classList.toggle("isOn", unit === "minute");
   }
 
   function isEditMilestoneUnitDay(): boolean {
-    return !!ctx.getEditTaskDraft() && ctx.getEditTaskDraft()?.milestoneTimeUnit === "day";
+    return false;
   }
 
   function cloneTaskForEdit(task: Task): Task {
@@ -457,12 +553,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       : null;
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
+      plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+      plannedStartOpenEnded: !!task.plannedStartOpenEnded,
       timeGoalEnabled: isEditTimeGoalEnabled(),
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       timeGoalUnit: ctx.getEditTaskDurationUnit(),
       timeGoalPeriod: ctx.getEditTaskDurationPeriod(),
       timeGoalMinutes: getEditTaskTimeGoalMinutes(),
-      milestoneTimeUnit: task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+      milestoneTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestonesEnabled: !!task.milestonesEnabled,
       milestones,
       overrideElapsedEnabled: !!elapsedDraft,
@@ -496,6 +594,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       return;
     }
     const invalidTimeGoal = !validateEditTimeGoal();
+    const aggregateValidation = getEditAggregateTimeGoalValidation(task);
     const checkpointingActive = !!task.milestonesEnabled && editTaskHasActiveTimeGoal();
     const noCheckpoints = checkpointingActive && (!Array.isArray(task.milestones) || task.milestones.length === 0);
     const invalidCheckpointTimes =
@@ -503,7 +602,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       (sharedTasks.hasNonPositiveCheckpoint(task.milestones) ||
         sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, sharedTasks.milestoneUnitSec(task), getEditTaskTimeGoalMinutes()));
     const invalidPresetInterval = checkpointingActive && !!task.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(task);
-    const blocked = invalidTimeGoal || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
+    const blocked = invalidTimeGoal || !!aggregateValidation?.shouldBlock || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
     els.saveEditBtn.disabled = blocked;
     els.saveEditBtn.title = blocked ? "Resolve validation issues before saving" : "Save Changes";
     if (!blocked) return;
@@ -608,6 +707,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.elapsedPadDisplay.textContent = text;
   }
 
+  function setCheckpointUnitForTask(task: Task | null | undefined, nextUnit: "hour" | "minute") {
+    if (!task) return;
+    task.milestoneTimeUnit = nextUnit;
+    setMilestoneUnitUi(nextUnit);
+    if (els.elapsedPadTitle) {
+      els.elapsedPadTitle.textContent = `Set Checkpoint <${nextUnit === "minute" ? "minutes" : "hours"}>`;
+    }
+  }
+
   function openElapsedPadForMilestone(
     task: Task,
     milestone: { hours: number; description: string },
@@ -621,9 +729,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setElapsedPadOriginal(original);
     ctx.setElapsedPadDraft(original);
     if (els.elapsedPadTitle) {
-      const unit = task?.milestoneTimeUnit === "day" ? "days" : task?.milestoneTimeUnit === "minute" ? "minutes" : "hours";
+      const unit = task?.milestoneTimeUnit === "minute" ? "minutes" : "hours";
       els.elapsedPadTitle.textContent = `Set Checkpoint <${unit}>`;
     }
+    setMilestoneUnitUi(task?.milestoneTimeUnit === "minute" ? "minute" : "hour");
     clearElapsedPadError();
     renderElapsedPadDisplay();
     (els.elapsedPadOverlay as HTMLElement).style.display = "flex";
@@ -719,9 +828,11 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const sourceTask = ctx.getTasks()[i];
     if (!sourceTask) return;
     const t = ctx.cloneTaskForEdit(sourceTask);
+    t.milestoneTimeUnit = t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     ctx.setEditIndex(i);
     ctx.setEditTaskDraft(t);
     if (els.editName) els.editName.value = t.name || "";
+    syncEditPlannedStartSelectors(t);
     ctx.setEditTimeGoalEnabled(!!t.timeGoalEnabled);
     if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
     ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
@@ -748,7 +859,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.syncEditSaveAvailability(t);
     if (els.msArea && "open" in (els.msArea as any)) (els.msArea as HTMLDetailsElement).open = false;
     ctx.syncEditMilestoneSectionUi(t);
-    ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "day" ? "day" : t.milestoneTimeUnit === "minute" ? "minute" : "hour");
+    ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
     ctx.renderMilestoneEditor(t);
     sharedTasks.ensureMilestoneIdentity(t);
     if (els.editPresetIntervalInput) els.editPresetIntervalInput.value = String(Number(t.presetIntervalValue || 0) || 0);
@@ -766,7 +877,13 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const t = getCurrentEditTask();
     if (saveChanges && t && sourceTask) {
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
-      if (!ctx.validateEditTimeGoal()) return void ctx.showEditValidationError(t, "Enter a valid time goal or turn Time Goal off.");
+      const aggregateValidation = getEditAggregateTimeGoalValidation(t);
+      if (!ctx.validateEditTimeGoal()) {
+        return void ctx.showEditValidationError(
+          t,
+          aggregateValidation?.shouldBlock ? aggregateValidation.message : "Enter a valid time goal or turn Time Goal off."
+        );
+      }
       const checkpointingActiveForSave = !!t.milestonesEnabled && ctx.editTaskHasActiveTimeGoal();
       if (checkpointingActiveForSave && (!Array.isArray(t.milestones) || t.milestones.length === 0)) {
         ctx.syncEditSaveAvailability(t);
@@ -789,6 +906,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
       const prevElapsedMs = ctx.getElapsedMs(sourceTask);
       t.name = (els.editName?.value || "").trim() || t.name;
+      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
+      t.plannedStartTime = readEditPlannedStartValueFromSelectors();
       if (isEditElapsedOverrideEnabled()) {
         const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
         const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
@@ -871,6 +990,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const t = getCurrentEditTask();
       if (!t) return;
       ctx.setEditTimeGoalEnabled(nextEnabled);
+      if (nextEnabled) {
+        t.milestoneTimeUnit = ctx.getEditTaskDurationUnit() === "minute" ? "minute" : "hour";
+      }
       ctx.clearEditValidationState();
       if (!nextEnabled && els.msArea && "open" in (els.msArea as any)) {
         (els.msArea as HTMLDetailsElement).open = false;
@@ -890,6 +1012,16 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       closeEdit(true);
     });
     ctx.on(els.editName, "input", handleEditNameInput);
+    ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
+    ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
+    ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
+    ctx.on(els.editPlannedStartOpenEnded, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
     ctx.on(els.editNoGoalCheckbox, "change", () => {
       syncEditTimeGoalToggle(ctx.isEditTimeGoalEnabled());
     });
@@ -921,6 +1053,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         return;
       }
       ctx.setEditTaskDurationUnit("minute");
+      t.milestoneTimeUnit = "minute";
       ctx.syncEditTaskTimeGoalUi(t);
       ctx.syncEditSaveAvailability(t);
     });
@@ -932,6 +1065,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         return;
       }
       ctx.setEditTaskDurationUnit("hour");
+      t.milestoneTimeUnit = "hour";
       ctx.syncEditTaskTimeGoalUi(t);
       ctx.syncEditSaveAvailability(t);
     });
@@ -1157,42 +1291,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         ctx.syncEditMilestoneSectionUi(t);
       }
     });
-    ctx.on(els.msUnitDay, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time checkpoints", "pro");
-        return;
-      }
-      t.milestoneTimeUnit = "day";
-      ctx.setMilestoneUnitUi("day");
-      ctx.renderMilestoneEditor(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.msUnitHour, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time checkpoints", "pro");
-        return;
-      }
-      t.milestoneTimeUnit = "hour";
-      ctx.setMilestoneUnitUi("hour");
-      ctx.renderMilestoneEditor(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.msUnitMinute, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time checkpoints", "pro");
-        return;
-      }
-      t.milestoneTimeUnit = "minute";
-      ctx.setMilestoneUnitUi("minute");
-      ctx.renderMilestoneEditor(t);
-      ctx.syncEditSaveAvailability(t);
-    });
     ctx.on(els.addMsBtn, "click", () => {
       if (!canUseAdvancedTaskConfig()) {
         ctx.showUpgradePrompt("Time checkpoints", "pro");
@@ -1236,6 +1334,20 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.on(els.elapsedPadDoneBtn, "click", (e: any) => {
       e?.preventDefault?.();
       closeElapsedPad(true);
+    });
+    ctx.on(els.elapsedPadUnitHourBtn, "click", () => {
+      const milestoneRef = ctx.getElapsedPadMilestoneRef();
+      if (!milestoneRef) return;
+      setCheckpointUnitForTask(milestoneRef.task, "hour");
+      if (milestoneRef.onApplied) milestoneRef.onApplied();
+      else ctx.renderMilestoneEditor(milestoneRef.task);
+    });
+    ctx.on(els.elapsedPadUnitMinuteBtn, "click", () => {
+      const milestoneRef = ctx.getElapsedPadMilestoneRef();
+      if (!milestoneRef) return;
+      setCheckpointUnitForTask(milestoneRef.task, "minute");
+      if (milestoneRef.onApplied) milestoneRef.onApplied();
+      else ctx.renderMilestoneEditor(milestoneRef.task);
     });
     const padKeys = Array.from(document.querySelectorAll("#elapsedPadOverlay [data-pad-digit], #elapsedPadOverlay [data-pad-action]"));
     padKeys.forEach((el) => ctx.on(el as HTMLElement, "click", handleElapsedPadKeyClick));

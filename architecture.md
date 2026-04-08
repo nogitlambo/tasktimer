@@ -103,6 +103,7 @@
 - [`src/app/tasktimer/lib/dashboardPerformance.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/dashboardPerformance.ts)
 - [`src/app/tasktimer/lib/dashboardViewModel.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/dashboardViewModel.ts)
 - [`src/app/tasktimer/lib/entitlements.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/entitlements.ts)
+- [`src/app/tasktimer/lib/feedbackStatus.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/feedbackStatus.ts)
 - [`src/app/tasktimer/lib/feedbackStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/feedbackStore.ts)
 - [`src/app/tasktimer/lib/focusInsights.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/focusInsights.ts)
 - [`src/app/tasktimer/lib/friendsStore.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/friendsStore.ts)

@@ -23,7 +23,6 @@ export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
-  defaultTaskTimerFormat: "day" | "hour" | "minute";
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
@@ -610,7 +609,7 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.milestoneTimeUnit !== "hour" &&
     row.milestoneTimeUnit !== "minute"
   ) {
-    row.milestoneTimeUnit = checkpointTimeUnit;
+    row.milestoneTimeUnit = checkpointTimeUnit === "minute" ? "minute" : "hour";
   }
 
   if (Array.isArray(row.checkpoints) && !Array.isArray(row.milestones)) {
@@ -670,8 +669,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     startMs: task.startMs == null ? null : (Number.isFinite(Number(task.startMs)) ? Math.floor(Number(task.startMs)) : null),
     hasStarted: !!task.hasStarted,
     checkpointsEnabled: !!task.milestonesEnabled,
-    checkpointTimeUnit:
-      task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+    checkpointTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
     checkpoints: Array.isArray(task.milestones) ? task.milestones : [],
     checkpointSoundEnabled: !!task.checkpointSoundEnabled,
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
@@ -838,10 +836,6 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         schemaVersion: 1,
         theme: normalizeThemeMode(prefSnap.get("theme")),
         menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
-        defaultTaskTimerFormat:
-          prefSnap.get("defaultTaskTimerFormat") === "day" || prefSnap.get("defaultTaskTimerFormat") === "minute"
-            ? prefSnap.get("defaultTaskTimerFormat")
-            : "hour",
         taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
@@ -1168,10 +1162,6 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
     menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
-    defaultTaskTimerFormat:
-      data.defaultTaskTimerFormat === "day" || data.defaultTaskTimerFormat === "minute"
-        ? data.defaultTaskTimerFormat
-        : "hour",
     taskView: data.taskView === "tile" ? "tile" : "list",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),

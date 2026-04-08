@@ -8,7 +8,17 @@ import {
   type ActionPerformed,
 } from "@capacitor/push-notifications";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { deleteField, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
@@ -181,10 +191,44 @@ async function savePushDevicePatchForUser(user: User | null, patch: Record<strin
   );
 }
 
+async function clearDuplicatePushTokenRegistrations(
+  uid: string | null | undefined,
+  token: string,
+  opts?: { keepCurrentDevice?: boolean }
+) {
+  const normalizedUid = String(uid || "").trim();
+  const normalizedToken = String(token || "").trim();
+  const db = getFirebaseFirestoreClient();
+  if (!normalizedUid || !normalizedToken || !db) return;
+
+  const currentDeviceId = getPushDeviceId();
+  const devicesRef = collection(db, "users", normalizedUid, "devices");
+  const snapshot = await getDocs(query(devicesRef, where("token", "==", normalizedToken)));
+  if (snapshot.empty) return;
+
+  await Promise.all(
+    snapshot.docs.map(async (docSnap) => {
+      if (opts?.keepCurrentDevice && docSnap.id === currentDeviceId) return;
+      await setDoc(
+        doc(db, "users", normalizedUid, "devices", docSnap.id),
+        {
+          enabled: false,
+          appActive: false,
+          appStateUpdatedAtMs: Date.now(),
+          token: deleteField(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    })
+  );
+}
+
 async function clearPushDeviceForUid(uid: string | null | undefined) {
   const normalizedUid = String(uid || "").trim();
   const db = getFirebaseFirestoreClient();
   if (!normalizedUid || !db) return;
+  const tokenToClear = String(latestPushToken || "").trim();
   await setDoc(
     doc(db, "users", normalizedUid, "devices", getPushDeviceId()),
     {
@@ -196,6 +240,9 @@ async function clearPushDeviceForUid(uid: string | null | undefined) {
     },
     { merge: true }
   );
+  if (tokenToClear) {
+    await clearDuplicatePushTokenRegistrations(normalizedUid, tokenToClear);
+  }
 }
 
 async function clearPushDeviceForUser(user: User | null) {
@@ -207,7 +254,9 @@ async function clearPushDeviceForUser(user: User | null) {
 
 async function savePushTokenForUser(user: User | null, token: string) {
   const normalizedToken = String(token || "").trim();
-  if (!normalizedToken) return;
+  const normalizedUid = String(user?.uid || "").trim();
+  if (!normalizedToken || !normalizedUid) return;
+  await clearDuplicatePushTokenRegistrations(normalizedUid, normalizedToken, { keepCurrentDevice: true });
   await savePushDevicePatchForUser(user, {
     token: normalizedToken,
     enabled: true,

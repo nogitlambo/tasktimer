@@ -896,17 +896,11 @@ service cloud.firestore {
 
     match /feedback_items/{feedbackId} {
       allow read: if request.auth != null;
-      allow create: if isFeedbackItemCreate(feedbackId);
-      allow update: if resource != null && isFeedbackVoteMutation(feedbackId);
-      allow delete: if request.auth != null
-        && resource != null
-        && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false;
 
       match /votes/{uid} {
         allow read: if request.auth != null;
-        allow create: if isFeedbackVoteCreate(feedbackId, uid);
-        allow update: if false;
-        allow delete: if canDeleteFeedbackVote(feedbackId, uid);
+        allow create, update, delete: if false;
       }
     }
   }

@@ -31,12 +31,48 @@ export default function AddTaskOverlay() {
               What time of the day do you plan to start this task?
             </div>
             <div className="addTaskPlannedStartSection">
-              <input id="addTaskPlannedStartInput" type="time" defaultValue="09:00" />
+              <div className="addTaskPlannedStartSelectorRow">
+                <select id="addTaskPlannedStartHourSelect" aria-label="Start hour" defaultValue="09">
+                  <option value="01">01</option>
+                  <option value="02">02</option>
+                  <option value="03">03</option>
+                  <option value="04">04</option>
+                  <option value="05">05</option>
+                  <option value="06">06</option>
+                  <option value="07">07</option>
+                  <option value="08">08</option>
+                  <option value="09">09</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                </select>
+                <span className="addTaskPlannedStartSeparator" aria-hidden="true">
+                  :
+                </span>
+                <select id="addTaskPlannedStartMinuteSelect" aria-label="Start minute" defaultValue="00">
+                  <option value="00">00</option>
+                  <option value="05">05</option>
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                  <option value="25">25</option>
+                  <option value="30">30</option>
+                  <option value="35">35</option>
+                  <option value="40">40</option>
+                  <option value="45">45</option>
+                  <option value="50">50</option>
+                  <option value="55">55</option>
+                </select>
+                <select id="addTaskPlannedStartMeridiemSelect" aria-label="Start time meridiem" defaultValue="AM">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+              <input id="addTaskPlannedStartInput" type="hidden" defaultValue="09:00" />
               <label className="addTaskPlannedStartCheckboxRow" htmlFor="addTaskPlannedStartOpenEnded">
                 <input id="addTaskPlannedStartOpenEnded" type="checkbox" />
-                <span>Set to open-ended</span>
+                <span>Flexible/No specific time</span>
               </label>
-              <p className="addTaskPlannedStartHelp">Times will be used as only a rough guide and can be adjusted later</p>
             </div>
           </section>
 
@@ -97,20 +133,6 @@ export default function AddTaskOverlay() {
                   <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
                 </span>
               </summary>
-              <div className="unitRow" id="addTaskMsUnitRow">
-                <span>Task Timer Format</span>
-                <div className="unitButtons">
-                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitDay" type="button">
-                    Day
-                  </button>
-                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitHour" type="button">
-                    Hour
-                  </button>
-                  <button className="btn btn-ghost small unitBtn" id="addTaskMsUnitMinute" type="button">
-                    Minute
-                  </button>
-                </div>
-              </div>
               <div className="toggleRow" id="addTaskPresetIntervalsToggleRow">
                 <span>Use Preset Intervals</span>
                 <div className="switch" id="addTaskPresetIntervalsToggle" role="switch" aria-checked="false" />

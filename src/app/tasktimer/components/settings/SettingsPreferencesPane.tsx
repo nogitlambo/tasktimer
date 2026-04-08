@@ -12,20 +12,6 @@ export function SettingsPreferencesPane({ active }: { active: boolean }) {
             <AppImg className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
             <div className="settingsInlineSectionTitle">Task Settings</div>
           </div>
-          <div className="unitRow">
-            <span>Default Task Timer Format</span>
-            <div className="unitButtons">
-              <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatDay" type="button">
-                D
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="taskDefaultFormatHour" type="button">
-                H
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="taskDefaultFormatMinute" type="button">
-                M
-              </button>
-            </div>
-          </div>
           <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
             <span>Auto switch to Focus Mode on launch</span>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />

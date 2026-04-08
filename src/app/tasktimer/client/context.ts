@@ -36,7 +36,6 @@ export type TaskTimerCachedPreferences = {
   schemaVersion?: unknown;
   theme?: unknown;
   menuButtonStyle?: unknown;
-  defaultTaskTimerFormat?: unknown;
   weekStarting?: unknown;
   taskView?: unknown;
   autoFocusOnTaskLaunchEnabled?: unknown;
@@ -576,7 +575,6 @@ export type TaskTimerAddTaskContext = {
   getTasks: () => Task[];
   getCurrentMode: () => MainMode;
   setTasks: (value: Task[]) => void;
-  getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
   getAddTaskWizardStep: () => 1 | 2 | 3 | 4;
@@ -811,7 +809,6 @@ export type TaskTimerPreferencesContext = {
     MOBILE_PUSH_ALERTS_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     MODE_SETTINGS_KEY: string;
-    DEFAULT_TASK_TIMER_FORMAT_KEY: string;
     WEEK_STARTING_KEY: string;
   };
   defaultModeLabels: Record<MainMode, string>;
@@ -823,8 +820,6 @@ export type TaskTimerPreferencesContext = {
   setTaskViewState: (value: "list" | "tile") => void;
   getMenuButtonStyle: () => "parallelogram" | "square";
   setMenuButtonStyleState: (value: "parallelogram" | "square") => void;
-  getDefaultTaskTimerFormat: () => "day" | "hour" | "minute";
-  setDefaultTaskTimerFormatState: (value: "day" | "hour" | "minute") => void;
   getWeekStarting: () => DashboardWeekStart;
   setWeekStartingState: (value: DashboardWeekStart) => void;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;

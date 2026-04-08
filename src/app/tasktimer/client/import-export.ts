@@ -40,8 +40,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     return {
       ...task,
       milestonesEnabled: !!task.milestonesEnabled,
-      milestoneTimeUnit:
-        task.milestoneTimeUnit === "day" ? "day" : task.milestoneTimeUnit === "minute" ? "minute" : "hour",
+      milestoneTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestones: ctx.sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((milestone) => ({
         id: String((milestone as any)?.id || ctx.createId()),
         createdSeq: Number.isFinite(+(milestone as any)?.createdSeq)
@@ -131,8 +130,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.startMs = null;
     nextTask.collapsed = !!rawTask.collapsed;
     nextTask.milestonesEnabled = !!rawTask.milestonesEnabled;
-    nextTask.milestoneTimeUnit =
-      rawTask.milestoneTimeUnit === "day" ? "day" : rawTask.milestoneTimeUnit === "minute" ? "minute" : "hour";
+    nextTask.milestoneTimeUnit = rawTask.milestoneTimeUnit === "minute" ? "minute" : "hour";
     nextTask.milestones = Array.isArray(rawTask.milestones)
       ? rawTask.milestones.map((milestone: any) => ({
           id: milestone?.id ? String(milestone.id) : ctx.createId(),

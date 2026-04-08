@@ -4379,7 +4379,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
   background: transparent !important;
-  box-shadow: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.02),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.22) !important;
   border-color: rgba(121,226,255,.08) !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before,
@@ -4402,6 +4405,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
   border-color: rgba(214,96,229,.10) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.02),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.22) !important;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.02),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.22) !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard.isPlanLocked::after{
   background: transparent !important;
@@ -4594,4 +4610,26 @@ body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch A
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScoreStatus,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriver{
   color: rgba(244,255,201,.9);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
+  background: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.02),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.22) !important;
+}
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.02),
+    0 8px 16px rgba(0,0,0,.14),
+    0 18px 34px rgba(0,0,0,.22) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap{
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: rgba(255,255,255,.08) !important;
 }

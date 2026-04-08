@@ -742,9 +742,14 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .elapsedPadModal{
   width:min(360px, 100%);
 }
+.elapsedPadHeadRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin: 4px 0 10px;
+}
 .elapsedPadDisplay{
-  margin-top: 4px;
-  margin-bottom: 10px;
+  margin: 0;
   padding: 12px;
   border-radius: 12px;
   border:1px solid rgba(255,255,255,.14);
@@ -753,6 +758,16 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight: 900;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  flex:1 1 auto;
+}
+.elapsedPadUnitButtons{
+  flex:0 0 auto;
+  gap:6px;
+}
+.elapsedPadUnitButtons .unitBtn{
+  min-width:44px;
+  min-height:40px;
+  padding:0 10px;
 }
 .elapsedPadError{
   min-height: 18px;
@@ -1112,6 +1127,20 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .historyRangeActions{
   justify-content:flex-end;
   margin-left:auto;
+  flex: 0 0 auto;
+}
+.historyCloseBtn{
+  min-width: 0;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  font-family: var(--font-tight);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  justify-content: center;
 }
 .historyActionIconBtn{
   width:30px;
@@ -1833,37 +1862,6 @@ body[data-control-style="square"] .historySaveWorkingPanel{
 }
 .checkpointAlertsGroup .toggleRow + .toggleRow{
   margin-top:4px;
-}
-#msUnitRow,
-#addTaskMsUnitRow{
-  display:none;
-}
-#msArea.on > #msUnitRow,
-#addTaskMsArea.on > #addTaskMsUnitRow{
-  display:flex;
-}
-#msArea > #msUnitRow,
-#addTaskMsArea > #addTaskMsUnitRow{
-  margin:8px 0 0;
-}
-details.milestones:not([open]) > #msUnitRow,
-details.milestones:not([open]) > #addTaskMsUnitRow{
-  display:none;
-}
-details.milestones.on:not([open]) > #msUnitRow,
-details.milestones.on:not([open]) > #addTaskMsUnitRow{
-  display:flex;
-}
-#msUnitRow .unitButtons,
-#addTaskMsUnitRow .unitButtons{
-  gap:6px;
-}
-#msUnitRow .unitBtn,
-#addTaskMsUnitRow .unitBtn{
-  min-width:74px;
-  min-height:26px;
-  padding:4px 8px;
-  font-size:10px;
 }
 .checkpointAlertSoundModeField{
   margin-top:6px;

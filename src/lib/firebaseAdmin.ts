@@ -23,6 +23,13 @@ function getFirebaseAdminCredential() {
   return cert({ projectId, clientEmail, privateKey });
 }
 
+export function hasFirebaseAdminCredentialConfig() {
+  const projectId = getFirebaseAdminProjectId();
+  const clientEmail = asString(process.env.FIREBASE_ADMIN_CLIENT_EMAIL);
+  const privateKey = asString(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+  return !!(projectId && clientEmail && privateKey);
+}
+
 export function getFirebaseAdminApp() {
   if (getApps().length) return getApp();
   const projectId = getFirebaseAdminProjectId();

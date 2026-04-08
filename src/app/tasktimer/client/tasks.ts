@@ -170,6 +170,11 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                   <button class="historyRangeModePill" type="button" data-history-range-mode="day" aria-pressed="false">Day</button>
                 </div>
               </div>
+              <div class="historyMeta historyRangeActions">
+                <button class="btn btn-ghost small historyCloseBtn" type="button" data-history-action="close" aria-label="Close history chart">
+                  Close
+                </button>
+              </div>
             </div>
           </section>
         `

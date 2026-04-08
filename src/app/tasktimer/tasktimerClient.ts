@@ -99,7 +99,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       MOBILE_PUSH_ALERTS_KEY,
       THEME_KEY,
       MENU_BUTTON_STYLE_KEY,
-      DEFAULT_TASK_TIMER_FORMAT_KEY,
       WEEK_STARTING_KEY,
       TASK_VIEW_KEY,
       MODE_SETTINGS_KEY,
@@ -180,7 +179,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let themeMode = initialState.themeMode;
   let menuButtonStyle = initialState.menuButtonStyle;
   let addTaskCustomNames = initialState.addTaskCustomNames;
-  let defaultTaskTimerFormat = initialState.defaultTaskTimerFormat;
   let weekStarting = initialState.weekStarting;
   let taskView = initialState.taskView;
   let dynamicColorsEnabled = initialState.dynamicColorsEnabled;
@@ -1318,7 +1316,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setSuppressAddTaskNameFocusOpenState: (value) => {
       suppressAddTaskNameFocusOpen = value;
     },
-    getDefaultTaskTimerFormat: () => defaultTaskTimerFormat,
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     loadCachedTaskUi: () => cloudTaskUiCache || loadCachedTaskUi(),
@@ -2001,7 +1998,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       MOBILE_PUSH_ALERTS_KEY,
       MENU_BUTTON_STYLE_KEY,
       MODE_SETTINGS_KEY,
-      DEFAULT_TASK_TIMER_FORMAT_KEY,
       WEEK_STARTING_KEY,
     },
     defaultModeLabels: DEFAULT_MODE_LABELS,
@@ -2018,10 +2014,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getMenuButtonStyle: () => menuButtonStyle,
     setMenuButtonStyleState: (value) => {
       menuButtonStyle = value;
-    },
-    getDefaultTaskTimerFormat: () => defaultTaskTimerFormat,
-    setDefaultTaskTimerFormatState: (value) => {
-      defaultTaskTimerFormat = value;
     },
     getWeekStarting: () => weekStarting,
     setWeekStartingState: (value: DashboardWeekStart) => {
@@ -2112,7 +2104,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadModeLabels,
     loadThemePreference,
     loadMenuButtonStylePreference,
-    loadDefaultTaskTimerFormat,
     loadWeekStartingPreference,
     loadTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
@@ -2287,7 +2278,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     primeDashboardCacheFromShadow,
     loadFocusSessionNotes: () => loadFocusSessionNotesApi(),
     loadAddTaskCustomNames: () => loadAddTaskCustomNamesApi(),
-    loadDefaultTaskTimerFormat,
     loadWeekStartingPreference,
     loadTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,

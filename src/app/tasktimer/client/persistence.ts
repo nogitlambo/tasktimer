@@ -43,7 +43,6 @@ type CreateTaskTimerPersistenceOptions = {
   primeDashboardCacheFromShadow: () => void;
   loadFocusSessionNotes: () => Record<string, string>;
   loadAddTaskCustomNames: () => void;
-  loadDefaultTaskTimerFormat: () => void;
   loadWeekStartingPreference: () => void;
   loadTaskViewPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
@@ -317,7 +316,6 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     loadHistoryRangePrefs();
     load();
     options.loadAddTaskCustomNames();
-    options.loadDefaultTaskTimerFormat();
     options.loadWeekStartingPreference();
     options.loadTaskViewPreference();
     options.loadAutoFocusOnTaskLaunchSetting();

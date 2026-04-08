@@ -6,9 +6,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  runTransaction,
-  serverTimestamp,
-  setDoc,
   type FirestoreError,
   type QueryDocumentSnapshot,
   type Timestamp,
@@ -62,6 +59,7 @@ export type CreateFeedbackItemInput = {
   title: string;
   details: string;
   jiraIssueBrowseUrl?: string | null;
+  authToken: string;
 };
 
 function dbOrNull() {
@@ -125,48 +123,62 @@ function feedbackVoteDoc(feedbackId: string, uid: string) {
   return db ? doc(db, "feedback_items", feedbackId, "votes", uid) : null;
 }
 
-function feedbackItemDoc(feedbackId: string) {
-  const db = dbOrNull();
-  return db ? doc(db, "feedback_items", feedbackId) : null;
-}
-
 export async function createFeedbackItem(input: CreateFeedbackItemInput): Promise<{ ok: true; item: FeedbackItem } | { ok: false; message: string }> {
   try {
-    const col = feedbackItemsCollection();
-    if (!col) return { ok: false, message: "Cloud Firestore is not available." };
-
     const ownerUid = normalizeString(input.ownerUid, 120);
     const title = normalizeString(input.title, 160);
     const details = normalizeString(input.details, 8000);
     if (!ownerUid) return { ok: false, message: "You must be signed in to submit feedback." };
     if (!title) return { ok: false, message: "A feedback title is required." };
     if (!details) return { ok: false, message: "Feedback details are required." };
-
-    const ref = doc(col);
-    await setDoc(ref, {
-      feedbackId: ref.id,
-      ownerUid,
-      authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
-      authorEmail: normalizeNullableString(input.authorEmail, 320),
-      authorRankThumbnailSrc: normalizeNullableString(input.authorRankThumbnailSrc, 1024),
-      authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
-      isAnonymous: !!input.isAnonymous,
-      type: normalizeFeedbackType(input.type),
-      title,
-      details,
-      status: "open",
-      upvoteCount: 0,
-      commentCount: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      lastActivityAt: serverTimestamp(),
-      schemaVersion: 1,
-      jiraIssueBrowseUrl: normalizeNullableString(input.jiraIssueBrowseUrl, 2048),
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "x-firebase-auth": normalizeString(input.authToken, 8192),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        authToken: normalizeString(input.authToken, 8192),
+        authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
+        authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
+        authorEmail: normalizeNullableString(input.authorEmail, 320),
+        authorRankThumbnailSrc: normalizeNullableString(input.authorRankThumbnailSrc, 1024),
+        details,
+        isAnonymous: !!input.isAnonymous,
+        title,
+        type: normalizeFeedbackType(input.type),
+      }),
     });
-
-    const saved = await getDoc(ref);
-    if (!saved.exists()) return { ok: false, message: "Feedback was saved, but could not be reloaded." };
-    return { ok: true, item: asFeedbackItem(saved as QueryDocumentSnapshot) };
+    const result = (await response.json().catch(() => null)) as
+      | { error?: string; jiraIssueBrowseUrl?: string | null; jiraIssueKey?: string | null }
+      | null;
+    if (!response.ok) {
+      return { ok: false, message: result?.error || "Could not submit feedback." };
+    }
+    return {
+      ok: true,
+      item: {
+        feedbackId: "",
+        ownerUid,
+        authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
+        authorEmail: normalizeNullableString(input.authorEmail, 320),
+        authorRankThumbnailSrc: normalizeNullableString(input.authorRankThumbnailSrc, 1024),
+        authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
+        isAnonymous: !!input.isAnonymous,
+        type: normalizeFeedbackType(input.type),
+        title,
+        details,
+        status: "open",
+        upvoteCount: 0,
+        commentCount: 0,
+        createdAt: null,
+        updatedAt: null,
+        lastActivityAt: null,
+        schemaVersion: 1,
+        jiraIssueBrowseUrl: normalizeNullableString(result?.jiraIssueBrowseUrl, 2048),
+      },
+    };
   } catch (error) {
     const message = String((error as FirestoreError | undefined)?.message || "").trim();
     return { ok: false, message: message || "Could not submit feedback." };
@@ -228,69 +240,41 @@ export async function hasUserUpvoted(feedbackId: string, uid: string): Promise<b
 
 export async function toggleFeedbackUpvote(
   feedbackIdRaw: string,
-  uidRaw: string
+  uidRaw: string,
+  authTokenRaw: string
 ): Promise<ToggleFeedbackUpvoteResult> {
   try {
-    const db = dbOrNull();
-    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
     const feedbackId = normalizeString(feedbackIdRaw, 120);
     const uid = normalizeString(uidRaw, 120);
+    const authToken = normalizeString(authTokenRaw, 8192);
     if (!feedbackId || !uid) return { ok: false, message: "You must be signed in to vote." };
-
-    const itemRef = feedbackItemDoc(feedbackId);
-    const voteRef = feedbackVoteDoc(feedbackId, uid);
-    if (!itemRef || !voteRef) return { ok: false, message: "Feedback vote target is unavailable." };
-
-    const result = await runTransaction(db, async (tx) => {
-      const [itemSnap, voteSnap] = await Promise.all([tx.get(itemRef), tx.get(voteRef)]);
-      if (!itemSnap.exists()) throw new Error("Feedback item not found.");
-      const currentCount = Math.max(0, Math.floor(Number(itemSnap.get("upvoteCount") || 0) || 0));
-      const nextCount = voteSnap.exists() ? Math.max(0, currentCount - 1) : currentCount + 1;
-      const jiraIssueBrowseUrl = normalizeNullableString(itemSnap.get("jiraIssueBrowseUrl"), 2048);
-      if (voteSnap.exists()) {
-        tx.delete(voteRef);
-      } else {
-        tx.set(voteRef, { uid, createdAt: serverTimestamp() });
-      }
-      tx.set(
-        itemRef,
-        {
-          upvoteCount: nextCount,
-          updatedAt: serverTimestamp(),
-          lastActivityAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-      return { upvoted: !voteSnap.exists(), upvoteCount: nextCount, jiraIssueBrowseUrl };
+    const response = await fetch("/api/feedback", {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {
+        "x-firebase-auth": authToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        authToken,
+        feedbackId,
+      }),
     });
-
-    return { ok: true, ...result };
+    const result = (await response.json().catch(() => null)) as
+      | { error?: string; upvoted?: boolean; upvoteCount?: number; jiraIssueBrowseUrl?: string | null }
+      | null;
+    if (!response.ok) {
+      return { ok: false, message: result?.error || "Could not update vote." };
+    }
+    return {
+      ok: true,
+      upvoted: result?.upvoted === true,
+      upvoteCount: Math.max(0, Math.floor(Number(result?.upvoteCount || 0) || 0)),
+      jiraIssueBrowseUrl: normalizeNullableString(result?.jiraIssueBrowseUrl, 2048),
+    };
   } catch (error) {
     const message = String((error as FirestoreError | undefined)?.message || (error as Error | undefined)?.message || "").trim();
     return { ok: false, message: message || "Could not update vote." };
   }
 }
 
-export async function updateFeedbackStatus(
-  feedbackIdRaw: string,
-  nextStatusRaw: FeedbackStatus
-): Promise<{ ok: true } | { ok: false; message: string }> {
-  try {
-    const itemRef = feedbackItemDoc(normalizeString(feedbackIdRaw, 120));
-    if (!itemRef) return { ok: false, message: "Cloud Firestore is not available." };
-    const nextStatus = normalizeFeedbackStatus(nextStatusRaw);
-    await setDoc(
-      itemRef,
-      {
-        status: nextStatus,
-        updatedAt: serverTimestamp(),
-        lastActivityAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    return { ok: true };
-  } catch (error) {
-    const message = String((error as FirestoreError | undefined)?.message || "").trim();
-    return { ok: false, message: message || "Could not update feedback status." };
-  }
-}

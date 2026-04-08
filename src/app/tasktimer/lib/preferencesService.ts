@@ -6,7 +6,6 @@ import { normalizeDashboardWeekStart } from "./historyChart";
 export type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
-  DEFAULT_TASK_TIMER_FORMAT_KEY: string;
   WEEK_STARTING_KEY: string;
   TASK_VIEW_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
@@ -17,7 +16,6 @@ export type TaskTimerPreferenceStorageKeys = {
 type PreferencesStateSnapshot = {
   theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
-  defaultTaskTimerFormat: "day" | "hour" | "minute";
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   taskView: "list" | "tile";
   autoFocusOnTaskLaunchEnabled: boolean;
@@ -92,7 +90,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       schemaVersion: 1,
       theme: state.theme,
       menuButtonStyle: state.menuButtonStyle,
-      defaultTaskTimerFormat: state.defaultTaskTimerFormat,
       weekStarting: state.weekStarting,
       taskView: state.taskView,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
@@ -117,10 +114,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       storageKeys.MOBILE_PUSH_ALERTS_KEY,
       snapshot.mobilePushAlertsEnabled ? "true" : "false",
     );
-    safeWriteLocalStorage(
-      storageKeys.DEFAULT_TASK_TIMER_FORMAT_KEY,
-      String(snapshot.defaultTaskTimerFormat || "hour"),
-    );
     safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
     safeRemoveLocalStorage(storageKeys.MODE_SETTINGS_KEY);
 
@@ -143,11 +136,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     const cached = getStoredOrCachedPreferences();
     const raw = String(cached.menuButtonStyle || safeReadLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY)).trim().toLowerCase();
     return raw === "square" ? "square" : "parallelogram";
-  }
-
-  function loadDefaultTaskTimerFormat(): "day" | "hour" | "minute" {
-    const raw = getStoredOrCachedPreferences().defaultTaskTimerFormat;
-    return raw === "day" || raw === "minute" ? raw : "hour";
   }
 
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
@@ -199,7 +187,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     persistSnapshot,
     loadThemeMode,
     loadMenuButtonStyle,
-    loadDefaultTaskTimerFormat,
     loadWeekStarting,
     loadTaskView,
     loadAutoFocusOnTaskLaunchEnabled,

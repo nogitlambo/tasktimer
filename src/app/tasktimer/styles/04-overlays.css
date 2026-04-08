@@ -1059,6 +1059,43 @@ body[data-theme="purple"] .rewardsInfoText{
   margin:8px 0 2px;
 }
 
+#editOverlay .editPlannedStartField{
+  margin-top: 10px;
+}
+
+#editOverlay .editPlannedStartSection{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#editOverlay #editPlannedStartHourSelect,
+#editOverlay #editPlannedStartMinuteSelect,
+#editOverlay #editPlannedStartMeridiemSelect{
+  min-width: 0;
+}
+
+#editOverlay #editPlannedStartHourSelect,
+#editOverlay #editPlannedStartMinuteSelect{
+  width: 84px;
+}
+
+#editOverlay #editPlannedStartMeridiemSelect{
+  width: 92px;
+}
+
+#editOverlay #editPlannedStartHourSelect.isDisabled,
+#editOverlay #editPlannedStartMinuteSelect.isDisabled,
+#editOverlay #editPlannedStartMeridiemSelect.isDisabled,
+#editOverlay #editPlannedStartHourSelect:disabled,
+#editOverlay #editPlannedStartMinuteSelect:disabled,
+#editOverlay #editPlannedStartMeridiemSelect:disabled{
+  opacity: .48;
+  color: rgba(168,184,196,.72);
+  background: rgba(36,44,54,.58);
+  border-color: rgba(118,132,148,.24);
+}
+
 #editOverlay .checkpointAlertSoundModeField{
   margin-top:8px;
 }
@@ -1240,12 +1277,40 @@ body[data-theme="purple"] .rewardsInfoText{
   gap:10px;
 }
 
-#addTaskOverlay #addTaskPlannedStartInput{
-  width: 100%;
+#addTaskOverlay .addTaskPlannedStartSelectorRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 
-#addTaskOverlay #addTaskPlannedStartInput.isDisabled,
-#addTaskOverlay #addTaskPlannedStartInput:disabled{
+#addTaskOverlay #addTaskPlannedStartHourSelect,
+#addTaskOverlay #addTaskPlannedStartMinuteSelect,
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect{
+  min-width: 0;
+}
+
+#addTaskOverlay #addTaskPlannedStartHourSelect,
+#addTaskOverlay #addTaskPlannedStartMinuteSelect{
+  width: 84px;
+}
+
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect{
+  width: 92px;
+}
+
+#addTaskOverlay .addTaskPlannedStartSeparator{
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(226,246,255,.9);
+}
+
+#addTaskOverlay #addTaskPlannedStartHourSelect.isDisabled,
+#addTaskOverlay #addTaskPlannedStartMinuteSelect.isDisabled,
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect.isDisabled,
+#addTaskOverlay #addTaskPlannedStartHourSelect:disabled,
+#addTaskOverlay #addTaskPlannedStartMinuteSelect:disabled,
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect:disabled{
   opacity: .48;
   color: rgba(168,184,196,.72);
   background: rgba(36,44,54,.58);
@@ -1641,6 +1706,14 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntryNoteHeader{
   display: block;
   margin-bottom: 10px;
+}
+
+#historyEntryNoteOverlay{
+  background: transparent;
+}
+
+#historyEntryNoteOverlay::before{
+  display: none;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteHeader h2{
