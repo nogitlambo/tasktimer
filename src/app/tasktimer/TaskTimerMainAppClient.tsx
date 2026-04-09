@@ -13,6 +13,7 @@ import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
+import SchedulePageContent from "./components/SchedulePageContent";
 import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
@@ -55,7 +56,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <h2 className="dashboardTitle">Tasks</h2>
               </div>
               <div className="taskPageHeaderActions">
-                <button className="btn btn-ghost small" id="openAddTaskBtn" type="button">
+                <button className="btn btn-ghost small taskScreenPill isOn" data-screen-pill="tasks" aria-current="page" role="tab" type="button">
+                  Tasks
+                </button>
+                <button className="btn btn-ghost small taskScreenPill" id="openScheduleBtn" data-screen-pill="schedule" role="tab" type="button">
+                  Schedule
+                </button>
+                <span className="taskScreenHeaderPipe" aria-hidden="true">
+                  |
+                </span>
+                <button className="btn btn-ghost small taskScreenPill" id="openAddTaskBtn" type="button">
                   + Add Task
                 </button>
               </div>
@@ -68,6 +78,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           </section>
 
           <DashboardPageContent rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
+          <SchedulePageContent active={initialPage === "schedule"} />
 
           <section className={`appPage${initialPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">

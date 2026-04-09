@@ -344,6 +344,12 @@
     min-height:34px;
     padding:8px 10px;
   }
+  #openScheduleBtn,
+  #closeScheduleBtn,
+  #scheduleAddTaskBtn{
+    min-height:34px;
+    padding:8px 10px;
+  }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
     min-width:0;
     min-height:auto;
@@ -365,6 +371,50 @@
     min-height:32px;
     padding:7px 10px;
     font-size:10px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRow{
+    align-items:flex-start;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePageHeaderActions{
+    width:100%;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    gap:8px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleMobileDayTabs{
+    display:flex;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller{
+    max-height:58vh;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlanner{
+    min-width:100%;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerHead{
+    grid-template-columns:72px minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerBody{
+    grid-template-columns:72px minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDays,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayColumns{
+    grid-template-columns:minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerCorner,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayHeader,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDayChip{
+    min-height:48px;
+    font-size:10px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTimeLabel{
+    font-size:9px;
+    padding-left:8px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTray{
+    padding:12px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTrayList{
+    grid-template-columns:1fr;
   }
   .modeSwitchWrap::before,
   .modeSwitchWrap::after{
@@ -2523,6 +2573,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitle,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitle{
+    font-family: var(--font-geist-sans);
     color: #f3fbff;
     font-size: 19px;
     font-weight: 400;
@@ -2600,6 +2651,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotActionBtn,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotActionBtn{
+    font-family: var(--font-geist-sans);
     min-height: 28px;
     padding: 0 10px;
     font-size: 11px;
@@ -2633,7 +2685,7 @@
     border: 0;
     background: transparent;
     color: rgba(207,233,243,.62);
-    font-family: var(--font-tight);
+    font-family: var(--font-geist-sans);
     font-size: 15px;
     font-weight: 700;
     letter-spacing: .03em;

@@ -21,7 +21,16 @@ const databaseId = String(
 const db = getFirestore(app, databaseId);
 const messaging = getMessaging(app);
 const TASK_TIME_GOAL_ACTIVE_TTL_MS = 2 * 60 * 1000;
+const PUSH_ACTION_SNOOZE_MS = 10 * 60 * 1000;
 const PLANNED_START_REMINDER_EVENT = "plannedStartReminder";
+const PLANNED_START_SNOOZED_EVENT = "plannedStartReminderSnoozed";
+const PLANNED_START_NOTIFICATION_KIND = "plannedStart";
+const UNSCHEDULED_GAP_REMINDER_EVENT = "unscheduledGapReminder";
+const UNSCHEDULED_GAP_NOTIFICATION_KIND = "unscheduledGap";
+const PUSH_ACTION_LAUNCH_TASK = "launchTask";
+const PUSH_ACTION_SNOOZE_10M = "snooze10m";
+const PUSH_ACTION_POSTPONE_NEXT_GAP = "postponeNextGap";
+const MINUTE_MS = 60 * 1000;
 const protectedCallableOptions = {
   region,
   enforceAppCheck: true,
@@ -291,30 +300,253 @@ function hasFreshForegroundDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
-function computeNextPlannedStartDueAtMs(plannedStartTime, fromMs) {
+function splitDeviceRows(deviceRows) {
+  const nativeRows = [];
+  const webRows = [];
+  deviceRows.forEach((row) => {
+    if (row.native) nativeRows.push(row);
+    else webRows.push(row);
+  });
+  return {nativeRows, webRows};
+}
+
+function computeNextPlannedStartDueAtMs(plannedStartDay, plannedStartTime, fromMs) {
   const match = asString(plannedStartTime).match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return null;
   const hours = Math.max(0, Math.min(23, Number(match[1] || 0)));
   const minutes = Math.max(0, Math.min(59, Number(match[2] || 0)));
+  const normalizedDay = asString(plannedStartDay).toLowerCase();
+  const dayMap = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
   const next = new Date(fromMs);
-  next.setDate(next.getDate() + 1);
+  if (Object.prototype.hasOwnProperty.call(dayMap, normalizedDay)) {
+    const diffDays = (dayMap[normalizedDay] - next.getDay() + 7) % 7;
+    next.setDate(next.getDate() + diffDays);
+  }
   next.setHours(hours, minutes, 0, 0);
+  if (next.getTime() <= fromMs) {
+    next.setDate(next.getDate() + (Object.prototype.hasOwnProperty.call(dayMap, normalizedDay) ? 7 : 1));
+  }
   return next.getTime();
 }
 
-async function processDueScheduledTask(docSnap, nowMs) {
+function localDayKeyFromMs(ts) {
+  const date = new Date(ts);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfLocalDayMs(ts) {
+  const date = new Date(ts);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function nextLocalDayStartMs(ts) {
+  const date = new Date(ts);
+  date.setHours(24, 0, 0, 0);
+  return date.getTime();
+}
+
+function parseScheduleTimeMinutes(raw) {
+  const match = asString(raw).match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function normalizeDayGoalMinutes(taskData) {
+  if (taskData.timeGoalEnabled !== true) return null;
+  if (asString(taskData.timeGoalPeriod) !== "day") return null;
+  const minutes = asInt(taskData.timeGoalMinutes, null);
+  return minutes != null && minutes > 0 ? minutes : null;
+}
+
+function normalizeScheduleDay(raw) {
+  const value = asString(raw).toLowerCase();
+  return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].includes(value) ? value : "";
+}
+
+function scheduleDayMatches(day, ts) {
+  const normalizedDay = normalizeScheduleDay(day);
+  if (!normalizedDay) return true;
+  const dayMap = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  return dayMap[normalizedDay] === new Date(ts).getDay();
+}
+
+function isUnscheduledGapCandidateTask(taskData) {
+  return (
+    normalizeDayGoalMinutes(taskData) != null &&
+    !asString(taskData.plannedStartTime) &&
+    !normalizeScheduleDay(taskData.plannedStartDay) &&
+    taskData.plannedStartOpenEnded !== true
+  );
+}
+
+function buildScheduledBlocksForDay(taskRows, ts) {
+  return taskRows
+    .map((taskData) => {
+      const durationMinutes = normalizeDayGoalMinutes(taskData);
+      const startMinutes = parseScheduleTimeMinutes(taskData.plannedStartTime);
+      if (durationMinutes == null || startMinutes == null) return null;
+      if (taskData.plannedStartOpenEnded === true) return null;
+      if (!scheduleDayMatches(taskData.plannedStartDay, ts)) return null;
+      const endMinutes = startMinutes + durationMinutes;
+      if (endMinutes > 24 * 60) return null;
+      return {
+        startMinutes,
+        endMinutes,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.startMinutes - b.startMinutes);
+}
+
+function findCurrentGap(blocks, nowMs) {
+  const dayStartMs = startOfLocalDayMs(nowMs);
+  const nowMinutes = Math.max(0, Math.floor((nowMs - dayStartMs) / MINUTE_MS));
+  const covering = blocks.find((block) => nowMinutes >= block.startMinutes && nowMinutes < block.endMinutes);
+  if (covering) {
+    return {
+      status: "occupied",
+      nextDueAtMs: dayStartMs + (covering.endMinutes * MINUTE_MS),
+    };
+  }
+  const nextBlock = blocks.find((block) => block.startMinutes > nowMinutes);
+  if (nextBlock) {
+    return {
+      status: "gap",
+      gapStartMs: nowMs,
+      gapEndMs: dayStartMs + (nextBlock.startMinutes * MINUTE_MS),
+      nextDueAtMs: dayStartMs + (nextBlock.startMinutes * MINUTE_MS),
+    };
+  }
+  return {
+    status: "gap",
+    gapStartMs: nowMs,
+    gapEndMs: nextLocalDayStartMs(nowMs),
+    nextDueAtMs: nextLocalDayStartMs(nowMs),
+  };
+}
+
+async function hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs) {
+  const historySnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId)
+    .collection("history")
+    .where("ts", ">=", dayStartMs)
+    .where("ts", "<", dayEndMs)
+    .get();
+  return historySnap.docs.some((docSnap) => asInt(docSnap.get("ms"), 0) > 0);
+}
+
+async function sendScheduledTaskNotification({
+  uid,
+  nowMs,
+  route,
+  taskId,
+  taskName,
+  payloadData,
+  webTitle,
+  webBody,
+  allowWeb = true,
+}) {
+  const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
+  const deviceRows = extractAndroidDeviceRows(devicesSnap);
+  const {nativeRows, webRows} = splitDeviceRows(deviceRows);
+  if (!deviceRows.length) {
+    return {status: "no-devices"};
+  }
+  if (hasFreshForegroundDevice(deviceRows, nowMs)) {
+    return {status: "foreground"};
+  }
+
+  const responses = [];
+  const invalidRows = [];
+
+  if (nativeRows.length) {
+    const nativeResponse = await messaging.sendEachForMulticast({
+      tokens: nativeRows.map((row) => row.token),
+      android: {
+        priority: "high",
+      },
+      data: payloadData,
+    });
+    responses.push(nativeResponse);
+    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse));
+  }
+
+  if (allowWeb && webRows.length) {
+    const webResponse = await messaging.sendEachForMulticast({
+      tokens: webRows.map((row) => row.token),
+      notification: {
+        title: webTitle,
+        body: webBody,
+      },
+      webpush: {
+        notification: {
+          title: webTitle,
+          body: webBody,
+        },
+        fcmOptions: {
+          link: route,
+        },
+      },
+      data: payloadData,
+    });
+    responses.push(webResponse);
+    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, webRows, webResponse));
+  }
+
+  const response = responses.reduce((acc, item) => ({
+    successCount: acc.successCount + item.successCount,
+    failureCount: acc.failureCount + item.failureCount,
+  }), {successCount: 0, failureCount: 0});
+
+  return {
+    status: response.successCount > 0 ? "sent" : "failed",
+    successCount: response.successCount,
+    failureCount: response.failureCount,
+    invalidTokenCount: invalidRows.length,
+    taskId,
+    taskName,
+  };
+}
+
+async function processDuePlannedStartTask(docSnap, nowMs) {
   const data = docSnap.data() || {};
   const uid = asString(data.ownerUid);
   const taskId = asString(data.taskId || docSnap.id);
-  const taskName = asString(data.taskName, "Task");
   const dueAtMs = asInt(data.dueAtMs, null);
   const sentDueAtMs = asInt(data.sentDueAtMs, null);
   const eventType = asString(data.eventType);
+  const baseEventType = asString(data.baseEventType, PLANNED_START_REMINDER_EVENT) || PLANNED_START_REMINDER_EVENT;
+  const effectiveEventType = asString(data.effectiveEventType, eventType || baseEventType) || baseEventType;
+  const plannedStartDay = asString(data.plannedStartDay);
   const plannedStartTime = asString(data.plannedStartTime);
   const remindersEnabled = data.plannedStartPushRemindersEnabled !== false;
   const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
+  const snoozedUntilMs = asInt(data.snoozedUntilMs, null);
 
-  if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || eventType !== PLANNED_START_REMINDER_EVENT) {
+  if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || baseEventType !== PLANNED_START_REMINDER_EVENT) {
     return {status: "skipped"};
   }
   if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
@@ -332,84 +564,365 @@ async function processDueScheduledTask(docSnap, nowMs) {
   }
 
   const taskData = taskSnap.data() || {};
+  const taskName = asString(taskData.name || data.taskName, "Task");
   const taskRunning = taskData.running === true;
   const taskOpenEnded = taskData.plannedStartOpenEnded === true;
   const taskReminderEnabled = taskData.plannedStartPushRemindersEnabled !== false;
+  const taskPlannedStartDay = asString(taskData.plannedStartDay || plannedStartDay);
   const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
   if (taskOpenEnded || !taskReminderEnabled || !taskPlannedStartTime) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
   if (taskRunning) {
-    const nextRunningDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartTime, nowMs);
+    const nextRunningDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
     if (nextRunningDueAtMs != null) {
       await docSnap.ref.set({
         dueAtMs: nextRunningDueAtMs,
+        eventType: PLANNED_START_REMINDER_EVENT,
+        baseEventType: PLANNED_START_REMINDER_EVENT,
+        effectiveEventType: PLANNED_START_REMINDER_EVENT,
+        plannedStartDay: taskPlannedStartDay || null,
         plannedStartTime: taskPlannedStartTime,
         plannedStartPushRemindersEnabled: true,
+        snoozedUntilMs: null,
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
     }
     return {status: "running"};
   }
 
-  const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
-  const deviceRows = extractAndroidDeviceRows(devicesSnap);
-  if (!deviceRows.length) {
-    return {status: "no-devices"};
-  }
-  if (hasFreshForegroundDevice(deviceRows, nowMs)) {
-    return {status: "foreground"};
-  }
-
-  const response = await messaging.sendEachForMulticast({
-    tokens: deviceRows.map((row) => row.token),
-    notification: {
-      title: "Task Reminder",
-      body: `${taskName} is scheduled to start now.`,
-    },
-    android: {
-      priority: "high",
-      notification: {
-        channelId: "tasklaunch-default",
-      },
-    },
-    webpush: {
-      notification: {
-        title: "Task Reminder",
-        body: `${taskName} is scheduled to start now.`,
-      },
-      fcmOptions: {
-        link: route,
-      },
-    },
-    data: {
-      eventType: PLANNED_START_REMINDER_EVENT,
-      route,
-      taskId,
-      taskName,
-    },
+  const payloadData = {
+    eventType: effectiveEventType === PLANNED_START_SNOOZED_EVENT ? PLANNED_START_SNOOZED_EVENT : PLANNED_START_REMINDER_EVENT,
+    baseEventType: PLANNED_START_REMINDER_EVENT,
+    effectiveEventType: effectiveEventType === PLANNED_START_SNOOZED_EVENT ? PLANNED_START_SNOOZED_EVENT : PLANNED_START_REMINDER_EVENT,
+    route,
+    taskId,
+    taskName,
+    notificationKind: PLANNED_START_NOTIFICATION_KIND,
+    plannedStartDay: taskPlannedStartDay || "",
+    snoozedUntilMs: snoozedUntilMs == null ? "" : String(snoozedUntilMs),
+  };
+  const response = await sendScheduledTaskNotification({
+    uid,
+    nowMs,
+    route,
+    taskId,
+    taskName,
+    payloadData,
+    webTitle: "Task Reminder",
+    webBody: `${taskName} is scheduled to start now.`,
   });
-
-  const invalidRows = await cleanupInvalidDeviceTokens(uid, deviceRows, response);
-  const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartTime, nowMs);
+  const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
   if (response.successCount > 0) {
     await docSnap.ref.set({
       sentAtMs: nowMs,
       sentDueAtMs: dueAtMs,
       dueAtMs: nextDueAtMs,
+      eventType: PLANNED_START_REMINDER_EVENT,
+      baseEventType: PLANNED_START_REMINDER_EVENT,
+      effectiveEventType: PLANNED_START_REMINDER_EVENT,
+      plannedStartDay: taskPlannedStartDay || null,
       plannedStartTime: taskPlannedStartTime,
+      snoozedUntilMs: null,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }
 
-  return {
-    status: response.successCount > 0 ? "sent" : "failed",
-    successCount: response.successCount,
-    failureCount: response.failureCount,
-    invalidTokenCount: invalidRows.length,
-  };
+  return response;
 }
+
+async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
+  const dayStartMs = startOfLocalDayMs(nowMs);
+  const dayEndMs = nextLocalDayStartMs(nowMs);
+  const todayKey = localDayKeyFromMs(nowMs);
+  const tasksSnap = await db.collection("users").doc(uid).collection("tasks").get();
+  const taskRows = tasksSnap.docs.map((taskSnap) => ({
+    id: taskSnap.id,
+    data: taskSnap.data() || {},
+  }));
+
+  const runningTask = taskRows.find((row) => row.data.running === true);
+  if (runningTask) {
+    await Promise.all(docSnaps.map((docSnap) =>
+      docSnap.ref.set({
+        dueAtMs: nowMs + MINUTE_MS,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true})
+    ));
+    return {status: "running"};
+  }
+
+  const gap = findCurrentGap(buildScheduledBlocksForDay(taskRows.map((row) => row.data), nowMs), nowMs);
+  if (gap.status !== "gap") {
+    await Promise.all(docSnaps.map((docSnap) =>
+      docSnap.ref.set({
+        dueAtMs: gap.nextDueAtMs,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true})
+    ));
+    return {status: "skipped"};
+  }
+
+  const gapDurationMinutes = Math.max(0, Math.floor((gap.gapEndMs - gap.gapStartMs) / MINUTE_MS));
+  const docByTaskId = new Map(docSnaps.map((docSnap) => [asString((docSnap.data() || {}).taskId || docSnap.id), docSnap]));
+  const eligibleRows = [];
+  const deferredDueAtByTaskId = new Map();
+
+  for (const {id, data: taskData} of taskRows) {
+    const docSnap = docByTaskId.get(id);
+    if (!docSnap) continue;
+    const dueAtMs = asInt((docSnap.data() || {}).dueAtMs, null);
+    if (dueAtMs == null || dueAtMs > nowMs) continue;
+    if (!isUnscheduledGapCandidateTask(taskData)) continue;
+    const taskMinutes = normalizeDayGoalMinutes(taskData);
+    if (taskMinutes == null || taskMinutes > gapDurationMinutes) continue;
+    if (await hasLoggedTimeToday(uid, id, dayStartMs, dayEndMs)) {
+      deferredDueAtByTaskId.set(id, dayEndMs);
+      continue;
+    }
+    const docData = docSnap.data() || {};
+    const lastGapAlertDayKey = asString(docData.lastGapAlertDayKey);
+    const postponedGapDayKey = asString(docData.postponedGapDayKey);
+    const postponedGapStartMs = asInt(docData.postponedGapStartMs, null);
+    const postponedGapEndMs = asInt(docData.postponedGapEndMs, null);
+    if (lastGapAlertDayKey === todayKey && postponedGapDayKey !== todayKey) {
+      deferredDueAtByTaskId.set(id, dayEndMs);
+      continue;
+    }
+    if (postponedGapDayKey === todayKey && postponedGapStartMs === gap.gapStartMs && postponedGapEndMs === gap.gapEndMs) {
+      deferredDueAtByTaskId.set(id, gap.nextDueAtMs);
+      continue;
+    }
+    eligibleRows.push({
+      taskId: id,
+      taskName: asString(taskData.name, "Task"),
+      timeGoalMinutes: taskMinutes,
+      docSnap,
+    });
+  }
+
+  if (!eligibleRows.length) {
+    await Promise.all(docSnaps.map((docSnap) =>
+      docSnap.ref.set({
+        dueAtMs: deferredDueAtByTaskId.get(asString((docSnap.data() || {}).taskId || docSnap.id)) || gap.nextDueAtMs,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true})
+    ));
+    return {status: "skipped"};
+  }
+
+  eligibleRows.sort((a, b) => {
+    if (a.timeGoalMinutes !== b.timeGoalMinutes) return a.timeGoalMinutes - b.timeGoalMinutes;
+    return a.taskName.localeCompare(b.taskName);
+  });
+  const selected = eligibleRows[0];
+  const payloadData = {
+    eventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+    baseEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+    effectiveEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+    route: "/tasklaunch",
+    taskId: selected.taskId,
+    taskName: selected.taskName,
+    notificationKind: UNSCHEDULED_GAP_NOTIFICATION_KIND,
+    gapDayKey: todayKey,
+    gapStartMs: String(gap.gapStartMs),
+    gapEndMs: String(gap.gapEndMs),
+  };
+  const response = await sendScheduledTaskNotification({
+    uid,
+    nowMs,
+    route: "/tasklaunch",
+    taskId: selected.taskId,
+    taskName: selected.taskName,
+    payloadData,
+    webTitle: "Open Gap Available",
+    webBody: `You have time to start ${selected.taskName} before your next scheduled task.`,
+    allowWeb: false,
+  });
+
+  if (response.status === "sent") {
+    await selected.docSnap.ref.set({
+      notificationKind: UNSCHEDULED_GAP_NOTIFICATION_KIND,
+      eventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+      baseEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+      effectiveEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+      dueAtMs: dayEndMs,
+      timeGoalMinutes: selected.timeGoalMinutes,
+      sentAtMs: nowMs,
+      sentDueAtMs: asInt((selected.docSnap.data() || {}).dueAtMs, null),
+      activeGapDayKey: todayKey,
+      activeGapStartMs: gap.gapStartMs,
+      activeGapEndMs: gap.gapEndMs,
+      lastGapAlertDayKey: todayKey,
+      lastGapAlertStartMs: gap.gapStartMs,
+      lastGapAlertEndMs: gap.gapEndMs,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    await Promise.all(
+      eligibleRows
+        .slice(1)
+        .map((row) =>
+          row.docSnap.ref.set({
+            dueAtMs: gap.nextDueAtMs,
+            activeGapDayKey: todayKey,
+            activeGapStartMs: gap.gapStartMs,
+            activeGapEndMs: gap.gapEndMs,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, {merge: true})
+        )
+    );
+  }
+
+  return response;
+}
+
+export const applyScheduledPushAction = onCall(protectedCallableOptions, async (request) => {
+  const uid = asString(request.auth?.uid);
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to apply a push action.");
+  }
+
+  const rawData = request.data && typeof request.data === "object" ? request.data : {};
+  const actionId = asString(rawData.actionId);
+  const taskId = asString(rawData.taskId);
+  const route = asString(rawData.route, "/tasklaunch") || "/tasklaunch";
+  const deviceId = asString(rawData.deviceId);
+  const nowMs = Date.now();
+
+  if (!taskId) {
+    throw new HttpsError("invalid-argument", "A valid task id is required.");
+  }
+  if (
+    actionId !== PUSH_ACTION_LAUNCH_TASK &&
+    actionId !== PUSH_ACTION_SNOOZE_10M &&
+    actionId !== PUSH_ACTION_POSTPONE_NEXT_GAP
+  ) {
+    throw new HttpsError("invalid-argument", "Unsupported push action.");
+  }
+
+  const scheduledRef = db.collection("scheduled_time_goal_pushes").doc(`${uid}__${taskId}`);
+  const scheduledSnap = await scheduledRef.get();
+  if (!scheduledSnap.exists) {
+    return {ok: true, applied: false, reason: "missing-schedule"};
+  }
+
+  const data = scheduledSnap.data() || {};
+  const plannedStartDay = asString(data.plannedStartDay);
+  const plannedStartTime = asString(data.plannedStartTime);
+  const remindersEnabled = data.plannedStartPushRemindersEnabled !== false;
+  const eventType = asString(data.eventType, PLANNED_START_REMINDER_EVENT) || PLANNED_START_REMINDER_EVENT;
+  const baseEventType = asString(data.baseEventType, eventType) || eventType;
+  const notificationKind = asString(data.notificationKind);
+
+  const taskSnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId).get();
+  if (!taskSnap.exists) {
+    await scheduledRef.delete().catch(() => {});
+    return {ok: true, applied: false, reason: "missing-task"};
+  }
+  const taskData = taskSnap.data() || {};
+  const taskRunning = taskData.running === true;
+  const taskOpenEnded = taskData.plannedStartOpenEnded === true;
+  const taskReminderEnabled = taskData.plannedStartPushRemindersEnabled !== false;
+  const taskPlannedStartDay = asString(taskData.plannedStartDay || plannedStartDay);
+  const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
+
+  if (baseEventType === UNSCHEDULED_GAP_REMINDER_EVENT) {
+    if (!isUnscheduledGapCandidateTask(taskData)) {
+      await scheduledRef.delete().catch(() => {});
+      return {ok: true, applied: false, reason: "disabled"};
+    }
+    if (actionId === PUSH_ACTION_POSTPONE_NEXT_GAP) {
+      const activeGapDayKey = asString(data.activeGapDayKey);
+      const activeGapStartMs = asInt(data.activeGapStartMs, null);
+      const activeGapEndMs = asInt(data.activeGapEndMs, null);
+      const nextDueAtMs = activeGapEndMs != null ? activeGapEndMs : nextLocalDayStartMs(nowMs);
+      await scheduledRef.set({
+        route,
+        notificationKind: notificationKind || UNSCHEDULED_GAP_NOTIFICATION_KIND,
+        eventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        baseEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        effectiveEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        dueAtMs: nextDueAtMs,
+        postponedGapDayKey: activeGapDayKey || localDayKeyFromMs(nowMs),
+        postponedGapStartMs: activeGapStartMs,
+        postponedGapEndMs: activeGapEndMs,
+        lastActionAtMs: nowMs,
+        lastActionByDeviceId: deviceId || null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return {ok: true, applied: true, actionId, dueAtMs: nextDueAtMs};
+    }
+    if (actionId === PUSH_ACTION_LAUNCH_TASK) {
+      await scheduledRef.set({
+        route,
+        notificationKind: notificationKind || UNSCHEDULED_GAP_NOTIFICATION_KIND,
+        eventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        baseEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        effectiveEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
+        lastActionAtMs: nowMs,
+        lastActionByDeviceId: deviceId || null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return {ok: true, applied: true, actionId};
+    }
+    return {ok: true, applied: false, reason: "unsupported-action"};
+  }
+
+  if (!remindersEnabled || !taskReminderEnabled || taskOpenEnded || !taskPlannedStartTime || baseEventType !== PLANNED_START_REMINDER_EVENT) {
+    await scheduledRef.delete().catch(() => {});
+    return {ok: true, applied: false, reason: "disabled"};
+  }
+
+  if (taskRunning) {
+    const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
+    await scheduledRef.set({
+      dueAtMs: nextDueAtMs,
+      eventType: PLANNED_START_REMINDER_EVENT,
+      baseEventType: PLANNED_START_REMINDER_EVENT,
+      effectiveEventType: PLANNED_START_REMINDER_EVENT,
+      plannedStartDay: taskPlannedStartDay || null,
+      plannedStartTime: taskPlannedStartTime,
+      snoozedUntilMs: null,
+      lastActionAtMs: nowMs,
+      lastActionByDeviceId: deviceId || null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return {ok: true, applied: false, reason: "running"};
+  }
+
+  if (actionId === PUSH_ACTION_LAUNCH_TASK) {
+    await scheduledRef.set({
+      eventType,
+      baseEventType: PLANNED_START_REMINDER_EVENT,
+    effectiveEventType: eventType,
+    plannedStartDay: taskPlannedStartDay || null,
+    lastActionAtMs: nowMs,
+    lastActionByDeviceId: deviceId || null,
+    route,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return {ok: true, applied: true, actionId};
+  }
+
+  const snoozedUntilMs = nowMs + PUSH_ACTION_SNOOZE_MS;
+  await scheduledRef.set({
+    dueAtMs: snoozedUntilMs,
+    route,
+    eventType: PLANNED_START_SNOOZED_EVENT,
+    baseEventType: PLANNED_START_REMINDER_EVENT,
+    effectiveEventType: PLANNED_START_SNOOZED_EVENT,
+    plannedStartDay: taskPlannedStartDay || null,
+    plannedStartTime: taskPlannedStartTime,
+    snoozedUntilMs,
+    sentAtMs: null,
+    sentDueAtMs: null,
+    lastActionAtMs: nowMs,
+    lastActionByDeviceId: deviceId || null,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  return {ok: true, applied: true, actionId, dueAtMs: snoozedUntilMs};
+});
 
 export const sendDueTimeGoalPushes = onSchedule(
   {
@@ -441,10 +954,26 @@ export const sendDueTimeGoalPushes = onSchedule(
     let skippedCount = 0;
     let foregroundCount = 0;
     let noDeviceCount = 0;
+    const plannedDocs = [];
+    const unscheduledByUid = new Map();
 
-    for (const docSnap of dueSnap.docs) {
+    dueSnap.docs.forEach((docSnap) => {
+      const data = docSnap.data() || {};
+      const baseEventType = asString(data.baseEventType, asString(data.eventType));
+      if (baseEventType === UNSCHEDULED_GAP_REMINDER_EVENT) {
+        const uid = asString(data.ownerUid);
+        if (!uid) return;
+        const existing = unscheduledByUid.get(uid) || [];
+        existing.push(docSnap);
+        unscheduledByUid.set(uid, existing);
+        return;
+      }
+      plannedDocs.push(docSnap);
+    });
+
+    for (const docSnap of plannedDocs) {
       try {
-        const result = await processDueScheduledTask(docSnap, nowMs);
+        const result = await processDuePlannedStartTask(docSnap, nowMs);
         if (result.status === "sent") sentCount += 1;
         else if (result.status === "duplicate") duplicateCount += 1;
         else if (result.status === "foreground") foregroundCount += 1;
@@ -453,6 +982,23 @@ export const sendDueTimeGoalPushes = onSchedule(
       } catch (error) {
         logger.error("sendDueTimeGoalPushes task processing failed", {
           path: docSnap.ref.path,
+          message: error instanceof Error ? error.message : "Unknown error",
+          error,
+        });
+      }
+    }
+
+    for (const [uid, docSnaps] of unscheduledByUid.entries()) {
+      try {
+        const result = await processDueUnscheduledGapTasks(uid, docSnaps, nowMs);
+        if (result.status === "sent") sentCount += 1;
+        else if (result.status === "foreground") foregroundCount += 1;
+        else if (result.status === "no-devices") noDeviceCount += 1;
+        else skippedCount += 1;
+      } catch (error) {
+        logger.error("sendDueTimeGoalPushes unscheduled-gap processing failed", {
+          uid,
+          docCount: docSnaps.length,
           message: error instanceof Error ? error.message : "Unknown error",
           error,
         });

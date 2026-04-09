@@ -26,6 +26,7 @@ type CreateTaskTimerCloudSyncOptions = {
   render: () => void;
   renderDashboardWidgets?: (opts?: DashboardRenderOptions) => void;
   maybeHandlePendingTaskJump: () => void;
+  maybeHandlePendingPushAction?: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   currentUid: () => string;
   showDashboardBusyIndicator?: (message?: string) => number;
@@ -100,6 +101,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
           options.renderDashboardWidgets?.();
         }
         options.maybeHandlePendingTaskJump();
+        options.maybeHandlePendingPushAction?.();
         options.maybeRestorePendingTimeGoalFlow();
         options.lastCloudRefreshAtMs.set(options.nowMs());
       })

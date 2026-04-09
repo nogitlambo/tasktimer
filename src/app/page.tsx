@@ -37,6 +37,18 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
+function isMissingNativeFirebaseAuthPluginError(err: unknown) {
+  const message =
+    err && typeof err === "object" && "message" in err
+      ? String((err as { message?: unknown }).message || "").toLowerCase()
+      : String(err || "").toLowerCase();
+  return (
+    message.includes("firebaseauthentication plugin is not implemented on android") ||
+    message.includes("firebaseauthentication plugin is not implemented") ||
+    message.includes("plugin is not implemented")
+  );
+}
+
 function maskApiKey(value: string | undefined) {
   if (!value) return null;
   if (value.length <= 8) return value;
@@ -399,24 +411,31 @@ function HomeContent() {
     setAuthStatus("Signing in with Google...");
     try {
       if (shouldUseRedirectAuth()) {
-        const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
-        const nativeResult = await FirebaseAuthentication.signInWithGoogle({
-          skipNativeAuth: true,
-        });
-        const idToken = nativeResult.credential?.idToken;
-        const accessToken = nativeResult.credential?.accessToken;
-        if (!idToken && !accessToken) {
-          throw new Error("Google sign-in did not return an auth token.");
+        try {
+          const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+          const nativeResult = await FirebaseAuthentication.signInWithGoogle({
+            skipNativeAuth: true,
+          });
+          const idToken = nativeResult.credential?.idToken;
+          const accessToken = nativeResult.credential?.accessToken;
+          if (!idToken && !accessToken) {
+            throw new Error("Google sign-in did not return an auth token.");
+          }
+          const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
+          await signInWithCredential(auth, nativeCredential);
+          console.info("[auth-debug] google", {
+            stage: "afterSignInWithCredential",
+            provider: "google.com",
+            tokenSource: "native-capacitor",
+          });
+          setAuthStatus("Signed in successfully.");
+          return;
+        } catch (nativeErr: unknown) {
+          if (!isMissingNativeFirebaseAuthPluginError(nativeErr)) throw nativeErr;
+          throw new Error(
+            "Google sign-in is unavailable in this Android build because the native FirebaseAuthentication plugin is not loading."
+          );
         }
-        const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
-        await signInWithCredential(auth, nativeCredential);
-        console.info("[auth-debug] google", {
-          stage: "afterSignInWithCredential",
-          provider: "google.com",
-          tokenSource: "native-capacitor",
-        });
-        setAuthStatus("Signed in successfully.");
-        return;
       }
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });

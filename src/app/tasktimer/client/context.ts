@@ -433,7 +433,7 @@ export type TaskTimerTasksContext = {
   syncEditCheckpointAlertUi: (task: Task) => void;
   syncEditSaveAvailability: (task: Task) => void;
   syncEditMilestoneSectionUi: (task: Task) => void;
-  setMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
+  setMilestoneUnitUi: (unit: "hour" | "minute") => void;
   renderMilestoneEditor: (task: Task) => void;
   clearEditValidationState: () => void;
   validateEditTimeGoal: () => boolean;
@@ -546,7 +546,7 @@ export type TaskTimerEditTaskContext = {
   syncEditCheckpointAlertUi: (task: Task) => void;
   syncEditSaveAvailability: (task?: Task | null) => void;
   syncEditMilestoneSectionUi: (task: Task) => void;
-  setMilestoneUnitUi: (unit: "day" | "hour" | "minute") => void;
+  setMilestoneUnitUi: (unit: "hour" | "minute") => void;
   renderMilestoneEditor: (task: Task) => void;
   clearEditValidationState: () => void;
   validateEditTimeGoal: () => boolean;
@@ -727,6 +727,8 @@ export type TaskTimerDashboardContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
   syncDashboardRefreshButtonUi: () => void;
+  getRewardProgress: () => RewardProgressV1;
+  getTasks: () => Task[];
   getCurrentAppPage: () => AppPage;
   getDashboardMenuFlipped: () => boolean;
   setDashboardMenuFlipped: (value: boolean) => void;

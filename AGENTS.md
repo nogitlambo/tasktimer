@@ -156,6 +156,7 @@
 - `MOBILE_PUSH_ALERTS_KEY = `${storageKey}:mobilePushAlertsEnabled``
 - `MODE_SETTINGS_KEY = `${storageKey}:modeSettings``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
+- `PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction``
 - `PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId``
 - `REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers``
 - `STORAGE_KEY = "taskticker_tasks_v1"`

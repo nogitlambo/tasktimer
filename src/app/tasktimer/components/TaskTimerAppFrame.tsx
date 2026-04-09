@@ -5,7 +5,7 @@ import AppImg from "@/components/AppImg";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";
 import DesktopAppRail from "./DesktopAppRail";
 
-type MainAppPage = "tasks" | "dashboard" | "test2";
+type MainAppPage = "tasks" | "schedule" | "dashboard" | "test2";
 
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
@@ -13,6 +13,7 @@ type TaskTimerAppFrameProps = {
 };
 
 export default function TaskTimerAppFrame({ activePage, children }: TaskTimerAppFrameProps) {
+  const railPage = activePage === "schedule" ? "tasks" : activePage;
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch App">
       <div className="topbar">
@@ -23,10 +24,10 @@ export default function TaskTimerAppFrame({ activePage, children }: TaskTimerApp
         <SignedInHeaderBadge />
       </div>
       <div className="desktopAppShell">
-        <DesktopAppRail activePage={activePage} useClientNavButtons={true} showMobileFooter={false} />
+        <DesktopAppRail activePage={railPage} useClientNavButtons={true} showMobileFooter={false} />
         <div className="desktopAppMain">{children}</div>
       </div>
-      <DesktopAppRail activePage={activePage} useClientNavButtons={true} showDesktopRail={false} />
+      <DesktopAppRail activePage={railPage} useClientNavButtons={true} showDesktopRail={false} />
     </div>
   );
 }

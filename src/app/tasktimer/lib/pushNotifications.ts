@@ -27,8 +27,15 @@ import { STORAGE_KEY } from "./storage";
 
 const PUSH_DEVICE_ID_KEY = "tasktimer:pushDeviceId";
 const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
+const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
 const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 export const TASKLAUNCH_PUSH_CHANNEL_ID = "tasklaunch-default";
+
+export type PendingPushAction = {
+  taskId: string;
+  route: string;
+  actionId: "default" | "launchTask" | "snooze10m" | "postponeNextGap";
+};
 
 export type PushDiagnostics = {
   runtime: "native" | "web";
@@ -307,6 +314,42 @@ async function saveWebPushTokenForUser(user: User | null, token: string) {
   }
 }
 
+function normalizePendingPushAction(
+  input: Partial<PendingPushAction> | null | undefined
+): PendingPushAction | null {
+  const taskId = String(input?.taskId || "").trim();
+  if (!taskId) return null;
+  const route = String(input?.route || "/tasklaunch").trim() || "/tasklaunch";
+  const rawActionId = String(input?.actionId || "").trim();
+  const actionId =
+    rawActionId === "launchTask" || rawActionId === "snooze10m" || rawActionId === "postponeNextGap"
+      ? rawActionId
+      : "default";
+  return { taskId, route, actionId };
+}
+
+function setPendingPushAction(action: Partial<PendingPushAction> | null | undefined) {
+  if (typeof window === "undefined") return;
+  try {
+    const normalized = normalizePendingPushAction(action);
+    if (normalized) window.localStorage.setItem(PENDING_PUSH_ACTION_KEY, JSON.stringify(normalized));
+    else window.localStorage.removeItem(PENDING_PUSH_ACTION_KEY);
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+export function loadPendingPushAction(): PendingPushAction | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PENDING_PUSH_ACTION_KEY);
+    if (!raw) return null;
+    return normalizePendingPushAction(JSON.parse(raw) as Partial<PendingPushAction>);
+  } catch {
+    return null;
+  }
+}
+
 async function savePushAppStateForUser(user: User | null, isActive: boolean) {
   if (!user) return;
   await savePushDevicePatchForUser(user, {
@@ -408,9 +451,17 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   const handlePushPayload = (data: Record<string, unknown>) => {
     const taskId = String(data.taskId || "").trim();
     const route = String(data.route || "/tasklaunch").trim();
+    const actionIdRaw =
+      String(data.tasktimerActionId || data.actionId || "").trim() ||
+      "default";
+    const actionId =
+      actionIdRaw === "launchTask" || actionIdRaw === "snooze10m" || actionIdRaw === "postponeNextGap"
+        ? actionIdRaw
+        : "default";
     if (taskId) setPendingPushTaskId(taskId);
+    if (taskId) setPendingPushAction({ taskId, route, actionId });
     try {
-      window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId } }));
+      window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId, route, actionId } }));
     } catch {
       // Ignore custom event failures.
     }

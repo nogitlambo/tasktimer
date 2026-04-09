@@ -244,6 +244,7 @@ service cloud.firestore {
         "timeGoalUnit",
         "timeGoalPeriod",
         "timeGoalMinutes",
+        "plannedStartDay",
         "plannedStartTime",
         "plannedStartOpenEnded",
         "plannedStartPushRemindersEnabled",
@@ -288,6 +289,7 @@ service cloud.firestore {
       && (!("timeGoalUnit" in request.resource.data) || request.resource.data.timeGoalUnit in ["minute", "hour"])
       && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod in ["day", "week"])
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
+      && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
       && (!("plannedStartOpenEnded" in request.resource.data) || request.resource.data.plannedStartOpenEnded is bool)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
@@ -613,13 +615,30 @@ service cloud.firestore {
         "ownerUid",
         "taskId",
         "taskName",
+        "notificationKind",
         "eventType",
+        "baseEventType",
+        "effectiveEventType",
         "dueAtMs",
+        "timeGoalMinutes",
+        "plannedStartDay",
         "plannedStartTime",
         "plannedStartPushRemindersEnabled",
         "route",
+        "snoozedUntilMs",
         "sentAtMs",
         "sentDueAtMs",
+        "lastActionAtMs",
+        "lastActionByDeviceId",
+        "lastGapAlertDayKey",
+        "lastGapAlertStartMs",
+        "lastGapAlertEndMs",
+        "activeGapDayKey",
+        "activeGapStartMs",
+        "activeGapEndMs",
+        "postponedGapDayKey",
+        "postponedGapStartMs",
+        "postponedGapEndMs",
         "createdAt",
         "updatedAt",
         "schemaVersion"
@@ -627,13 +646,30 @@ service cloud.firestore {
       && request.resource.data.ownerUid is string
       && request.resource.data.taskId is string
       && request.resource.data.taskName is string
+      && (!("notificationKind" in request.resource.data) || request.resource.data.notificationKind is string)
       && request.resource.data.eventType is string
+      && (!("baseEventType" in request.resource.data) || request.resource.data.baseEventType is string)
+      && (!("effectiveEventType" in request.resource.data) || request.resource.data.effectiveEventType is string)
       && request.resource.data.dueAtMs is int
+      && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes == null || request.resource.data.timeGoalMinutes is int)
+      && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
       && request.resource.data.route is string
+      && (!("snoozedUntilMs" in request.resource.data) || request.resource.data.snoozedUntilMs == null || request.resource.data.snoozedUntilMs is int)
       && (!("sentAtMs" in request.resource.data) || request.resource.data.sentAtMs == null || request.resource.data.sentAtMs is int)
       && (!("sentDueAtMs" in request.resource.data) || request.resource.data.sentDueAtMs == null || request.resource.data.sentDueAtMs is int)
+      && (!("lastActionAtMs" in request.resource.data) || request.resource.data.lastActionAtMs == null || request.resource.data.lastActionAtMs is int)
+      && (!("lastActionByDeviceId" in request.resource.data) || request.resource.data.lastActionByDeviceId == null || request.resource.data.lastActionByDeviceId is string)
+      && (!("lastGapAlertDayKey" in request.resource.data) || request.resource.data.lastGapAlertDayKey == null || request.resource.data.lastGapAlertDayKey is string)
+      && (!("lastGapAlertStartMs" in request.resource.data) || request.resource.data.lastGapAlertStartMs == null || request.resource.data.lastGapAlertStartMs is int)
+      && (!("lastGapAlertEndMs" in request.resource.data) || request.resource.data.lastGapAlertEndMs == null || request.resource.data.lastGapAlertEndMs is int)
+      && (!("activeGapDayKey" in request.resource.data) || request.resource.data.activeGapDayKey == null || request.resource.data.activeGapDayKey is string)
+      && (!("activeGapStartMs" in request.resource.data) || request.resource.data.activeGapStartMs == null || request.resource.data.activeGapStartMs is int)
+      && (!("activeGapEndMs" in request.resource.data) || request.resource.data.activeGapEndMs == null || request.resource.data.activeGapEndMs is int)
+      && (!("postponedGapDayKey" in request.resource.data) || request.resource.data.postponedGapDayKey == null || request.resource.data.postponedGapDayKey is string)
+      && (!("postponedGapStartMs" in request.resource.data) || request.resource.data.postponedGapStartMs == null || request.resource.data.postponedGapStartMs is int)
+      && (!("postponedGapEndMs" in request.resource.data) || request.resource.data.postponedGapEndMs == null || request.resource.data.postponedGapEndMs is int)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)

@@ -97,6 +97,16 @@ export type RewardsHeaderViewModel = {
   nextBandXp: number | null;
 };
 
+type XpReasonSummary = {
+  totalXp: number;
+  sessionTaskXp: Map<string, number>;
+  dailyConsistencyXp: number;
+  streakBonusXp: number;
+  weeklyGoal60Xp: number;
+  weeklyGoal100Xp: number;
+  launchXp: number;
+};
+
 export const XP_PER_TASK_LAUNCH = 5;
 export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
 export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
@@ -787,4 +797,120 @@ export function buildRewardsHeaderViewModel(progress: RewardProgressV1): Rewards
     currentBandXp,
     nextBandXp,
   };
+}
+
+function formatWholeXp(value: number): string {
+  return `${Math.round(Math.max(0, Number(value) || 0))} XP`;
+}
+
+function humanJoin(parts: string[]): string {
+  const cleaned = parts.map((part) => String(part || "").trim()).filter(Boolean);
+  if (!cleaned.length) return "";
+  if (cleaned.length === 1) return cleaned[0]!;
+  if (cleaned.length === 2) return `${cleaned[0]} and ${cleaned[1]}`;
+  return `${cleaned.slice(0, -1).join(", ")}, and ${cleaned[cleaned.length - 1]}`;
+}
+
+function formatTaskNameList(taskNames: string[]): string {
+  const names = taskNames.map((taskName) => String(taskName || "").trim()).filter(Boolean);
+  if (!names.length) return "a task";
+  return humanJoin(names.slice(0, 3));
+}
+
+function summarizeRecentXpRewards(
+  progress: RewardProgressV1,
+  tasks: Task[],
+  nowValue: number
+): XpReasonSummary {
+  const windowStart = Math.max(0, nowValue - DAY_MS);
+  const taskNameById = new Map(
+    (Array.isArray(tasks) ? tasks : [])
+      .map((task) => [String(task?.id || "").trim(), String(task?.name || "").trim()] as const)
+      .filter(([taskId]) => !!taskId)
+  );
+  const summary: XpReasonSummary = {
+    totalXp: 0,
+    sessionTaskXp: new Map<string, number>(),
+    dailyConsistencyXp: 0,
+    streakBonusXp: 0,
+    weeklyGoal60Xp: 0,
+    weeklyGoal100Xp: 0,
+    launchXp: 0,
+  };
+
+  progress.awardLedger.forEach((entry) => {
+    const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
+    if (!ts || ts < windowStart || ts > nowValue) return;
+    const xp = Math.max(0, Number(entry?.xp) || 0);
+    if (!(xp > 0)) return;
+    summary.totalXp += xp;
+    if (entry.reason === "session") {
+      const taskId = String(entry.taskId || "").trim();
+      const taskName = taskNameById.get(taskId) || "a task";
+      summary.sessionTaskXp.set(taskName, (summary.sessionTaskXp.get(taskName) || 0) + xp);
+      return;
+    }
+    if (entry.reason === "dailyConsistency") {
+      summary.dailyConsistencyXp += xp;
+      return;
+    }
+    if (entry.reason === "streakBonus") {
+      summary.streakBonusXp += xp;
+      return;
+    }
+    if (entry.reason === "weeklyGoal60") {
+      summary.weeklyGoal60Xp += xp;
+      return;
+    }
+    if (entry.reason === "weeklyGoal100") {
+      summary.weeklyGoal100Xp += xp;
+      return;
+    }
+    if (entry.reason === "launch") {
+      summary.launchXp += xp;
+    }
+  });
+
+  return summary;
+}
+
+export function buildXpProgressArchieMessage(progressInput: unknown, tasks: Task[], nowValue = Date.now()): string {
+  const progress = normalizeRewardProgress(progressInput);
+  const rewardsHeader = buildRewardsHeaderViewModel(progress);
+  const safeNow = Math.max(0, Math.floor(Number(nowValue || 0) || 0)) || Date.now();
+  const recentSummary = summarizeRecentXpRewards(progress, tasks, safeNow);
+  const rankProgressText =
+    rewardsHeader.xpToNext != null
+      ? `You have ${formatWholeXp(rewardsHeader.totalXp)} total, ${rewardsHeader.progressLabel} in your current rank band, and ${formatWholeXp(rewardsHeader.xpToNext)} to the next rank.`
+      : `You have ${formatWholeXp(rewardsHeader.totalXp)} total and you have reached the highest configured rank.`;
+
+  if (!(recentSummary.totalXp > 0)) {
+    return `XP Progress shows your total XP and how far you are into your current rank band before the next rank. ${rankProgressText} You have not earned XP in the last 24 hours yet.`;
+  }
+
+  const detailParts: string[] = [];
+  if (recentSummary.sessionTaskXp.size) {
+    const sessionTasks = Array.from(recentSummary.sessionTaskXp.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([taskName]) => taskName);
+    const sessionXp = Array.from(recentSummary.sessionTaskXp.values()).reduce((sum, value) => sum + value, 0);
+    detailParts.push(`${formatWholeXp(sessionXp)} from session time on ${formatTaskNameList(sessionTasks)}`);
+  }
+  if (recentSummary.dailyConsistencyXp > 0) {
+    detailParts.push(`${formatWholeXp(recentSummary.dailyConsistencyXp)} from daily consistency`);
+  }
+  if (recentSummary.streakBonusXp > 0) {
+    detailParts.push(`${formatWholeXp(recentSummary.streakBonusXp)} from streak bonus`);
+  }
+  if (recentSummary.weeklyGoal60Xp > 0) {
+    detailParts.push(`${formatWholeXp(recentSummary.weeklyGoal60Xp)} from the 60% weekly goal bonus`);
+  }
+  if (recentSummary.weeklyGoal100Xp > 0) {
+    detailParts.push(`${formatWholeXp(recentSummary.weeklyGoal100Xp)} from the 100% weekly goal bonus`);
+  }
+  if (recentSummary.launchXp > 0) {
+    detailParts.push(`${formatWholeXp(recentSummary.launchXp)} from launches`);
+  }
+
+  return `XP Progress shows your total XP and how far you are into your current rank band before the next rank. ${rankProgressText} In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}.`;
 }

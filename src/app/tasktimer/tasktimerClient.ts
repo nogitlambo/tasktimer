@@ -83,10 +83,24 @@ import {
   DEFAULT_MODE_LABELS,
 } from "./client/state";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
+import { applyScheduledPushAction } from "./lib/pushFunctions";
+import { getTaskTimerPushDeviceId, loadPendingPushAction } from "./lib/pushNotifications";
 
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
+const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const SCHEDULE_DAY_LABELS: Record<(typeof SCHEDULE_DAY_ORDER)[number], string> = {
+  mon: "Mon",
+  tue: "Tue",
+  wed: "Wed",
+  thu: "Thu",
+  fri: "Fri",
+  sat: "Sat",
+  sun: "Sun",
+};
+const SCHEDULE_SNAP_MINUTES = 30;
+const SCHEDULE_MINUTE_PX = 44 / 30;
 
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -110,6 +124,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   } = createTaskTimerRootBootstrap(initialAppPage, STORAGE_KEY);
   const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
   const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
+  const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
   const REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers`;
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 
@@ -223,7 +238,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let addTaskCheckpointToastMode = initialState.addTaskCheckpointToastMode;
   let addTaskPresetIntervalsEnabled = initialState.addTaskPresetIntervalsEnabled;
   let addTaskPresetIntervalValue = initialState.addTaskPresetIntervalValue;
-  let addTaskTimeGoalAction = initialState.addTaskTimeGoalAction;
   let timeGoalModalTaskId = initialState.timeGoalModalTaskId;
   let timeGoalModalFrozenElapsedMs = initialState.timeGoalModalFrozenElapsedMs;
   const timeGoalReminderAtMsByTaskId = initialState.timeGoalReminderAtMsByTaskId;
@@ -258,6 +272,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardTimelineDensity = initialState.dashboardTimelineDensity;
   let dashboardMenuFlipped = initialState.dashboardMenuFlipped;
   let currentAppPage = initialState.currentAppPage;
+  let scheduleSelectedDay: Task["plannedStartDay"] = "mon";
+  let scheduleDragTaskId: string | null = null;
   let currentTileColumnCount = initialState.currentTileColumnCount;
   let suppressNavStackPush = initialState.suppressNavStackPush;
   let lastNativeBackHandledAtMs = initialState.lastNativeBackHandledAtMs;
@@ -980,6 +996,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els,
     on,
     syncDashboardRefreshButtonUi,
+    getRewardProgress: () => rewardProgress,
+    getTasks: () => tasks,
     getCurrentAppPage: () => currentAppPage,
     getDashboardMenuFlipped: () => dashboardMenuFlipped,
     setDashboardMenuFlipped: (value: boolean) => {
@@ -1304,10 +1322,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setAddTaskPresetIntervalValueState: (value) => {
       addTaskPresetIntervalValue = value;
     },
-    getAddTaskTimeGoalAction: () => addTaskTimeGoalAction,
-    setAddTaskTimeGoalActionState: (value) => {
-      addTaskTimeGoalAction = value;
-    },
     getAddTaskCustomNames: () => addTaskCustomNames,
     setAddTaskCustomNamesState: (value) => {
       addTaskCustomNames = value;
@@ -1591,6 +1605,59 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     persistenceApi?.maybeHandlePendingTaskJump();
   }
 
+  function clearPendingPushAction() {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(PENDING_PUSH_ACTION_KEY);
+    } catch {
+      // ignore localStorage failures
+    }
+  }
+
+  function maybeHandlePendingPushAction() {
+    const pending = loadPendingPushAction();
+    if (!pending) return;
+    if (!currentUid()) return;
+    const taskId = String(pending.taskId || "").trim();
+    if (!taskId) {
+      clearPendingPushAction();
+      return;
+    }
+    const taskIndex = tasks.findIndex((row) => String(row.id || "").trim() === taskId);
+    if (taskIndex < 0) return;
+    clearPendingPushAction();
+    if (pending.actionId === "launchTask") {
+      void applyScheduledPushAction({
+        actionId: "launchTask",
+        taskId,
+        route: pending.route,
+        deviceId: getTaskTimerPushDeviceId(),
+      }).catch(() => {});
+      tasksApi.startTask(taskIndex);
+      return;
+    }
+    if (pending.actionId === "snooze10m") {
+      void applyScheduledPushAction({
+        actionId: "snooze10m",
+        taskId,
+        route: pending.route,
+        deviceId: getTaskTimerPushDeviceId(),
+      }).catch(() => {});
+      jumpToTaskById(taskId);
+      return;
+    }
+    if (pending.actionId === "postponeNextGap") {
+      void applyScheduledPushAction({
+        actionId: "postponeNextGap",
+        taskId,
+        route: pending.route,
+        deviceId: getTaskTimerPushDeviceId(),
+      }).catch(() => {});
+      jumpToTaskById(taskId);
+      return;
+    }
+  }
+
   function save(opts?: { deletedTaskIds?: string[] }) {
     persistenceApi?.save(opts);
   }
@@ -1765,8 +1832,245 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return email.toLowerCase() === ARCHITECT_EMAIL.toLowerCase();
   }
 
+  function normalizeScheduleDay(raw: unknown): Task["plannedStartDay"] {
+    const value = String(raw || "").trim().toLowerCase();
+    return SCHEDULE_DAY_ORDER.includes(value as (typeof SCHEDULE_DAY_ORDER)[number])
+      ? (value as (typeof SCHEDULE_DAY_ORDER)[number])
+      : null;
+  }
+
+  function isScheduleMobileLayout() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  }
+
+  function parseScheduleTimeMinutes(raw: unknown): number | null {
+    const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+    const hours = Number(match[1] || 0);
+    const minutes = Number(match[2] || 0);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  }
+
+  function formatScheduleMinutes(totalMinutes: number) {
+    const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
+    const hours24 = Math.floor(safeMinutes / 60);
+    const minutes = safeMinutes % 60;
+    const meridiem = hours24 >= 12 ? "PM" : "AM";
+    const hours12 = hours24 % 12 || 12;
+    return `${hours12}:${String(minutes).padStart(2, "0")} ${meridiem}`;
+  }
+
+  function formatScheduleStoredTime(totalMinutes: number) {
+    const safeMinutes = Math.max(0, Math.min(24 * 60 - SCHEDULE_SNAP_MINUTES, Math.floor(Number(totalMinutes) || 0)));
+    const hours = Math.floor(safeMinutes / 60);
+    const minutes = safeMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  function formatScheduleDurationMinutes(totalMinutes: number) {
+    const safeMinutes = Math.max(0, Math.floor(Number(totalMinutes) || 0));
+    if (safeMinutes <= 0) return "0m";
+    const hours = Math.floor(safeMinutes / 60);
+    const minutes = safeMinutes % 60;
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h`;
+    return `${minutes}m`;
+  }
+
+  function snapScheduleMinutes(totalMinutes: number) {
+    return Math.max(
+      0,
+      Math.min(24 * 60 - SCHEDULE_SNAP_MINUTES, Math.round(Math.max(0, totalMinutes) / SCHEDULE_SNAP_MINUTES) * SCHEDULE_SNAP_MINUTES)
+    );
+  }
+
+  function getScheduleTaskDurationMinutes(task: Task) {
+    const hasGoal = !!task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0;
+    if (!hasGoal) return 0;
+    const goalMinutes = Math.max(SCHEDULE_SNAP_MINUTES, Math.round(Number(task.timeGoalMinutes || 0)));
+    return Math.min(24 * 60, goalMinutes);
+  }
+
+  function isScheduleRenderableTask(task: Task) {
+    return getScheduleTaskDurationMinutes(task) > 0;
+  }
+
+  function getScheduleVisibleDays(): Array<(typeof SCHEDULE_DAY_ORDER)[number]> {
+    if (isScheduleMobileLayout()) {
+      const selectedDay = normalizeScheduleDay(scheduleSelectedDay) || "mon";
+      scheduleSelectedDay = selectedDay;
+      return [selectedDay];
+    }
+    return [...SCHEDULE_DAY_ORDER];
+  }
+
+  function getScheduleDaysForTask(task: Task): Array<(typeof SCHEDULE_DAY_ORDER)[number]> {
+    const explicitDay = normalizeScheduleDay(task.plannedStartDay);
+    if (explicitDay) return [explicitDay];
+    return [...SCHEDULE_DAY_ORDER];
+  }
+
+  function buildScheduleViewModel() {
+    const scheduled: Array<{
+      task: Task;
+      day: (typeof SCHEDULE_DAY_ORDER)[number];
+      startMinutes: number;
+      durationMinutes: number;
+    }> = [];
+    const unscheduled: Array<{ task: Task; canDrop: boolean }> = [];
+
+    for (const task of tasks) {
+      const durationMinutes = getScheduleTaskDurationMinutes(task);
+      const startMinutes = parseScheduleTimeMinutes(task.plannedStartTime);
+      if (
+        durationMinutes > 0 &&
+        startMinutes != null &&
+        task.plannedStartOpenEnded !== true &&
+        startMinutes + durationMinutes <= 24 * 60
+      ) {
+        const days = getScheduleDaysForTask(task);
+        days.forEach((day) => {
+          scheduled.push({ task, day, startMinutes, durationMinutes });
+        });
+      } else {
+        unscheduled.push({ task, canDrop: durationMinutes > 0 });
+      }
+    }
+
+    scheduled.sort((a, b) => {
+      if (a.day !== b.day) return SCHEDULE_DAY_ORDER.indexOf(a.day) - SCHEDULE_DAY_ORDER.indexOf(b.day);
+      if (a.startMinutes !== b.startMinutes) return a.startMinutes - b.startMinutes;
+      return a.task.order - b.task.order;
+    });
+    unscheduled.sort((a, b) => a.task.order - b.task.order);
+    return { scheduled, unscheduled };
+  }
+
+  function schedulePlacementHasOverlap(
+    taskId: string,
+    day: (typeof SCHEDULE_DAY_ORDER)[number],
+    startMinutes: number,
+    durationMinutes: number
+  ) {
+    const endMinutes = startMinutes + durationMinutes;
+    if (endMinutes > 24 * 60) return true;
+    const { scheduled } = buildScheduleViewModel();
+    return scheduled.some((entry) => {
+      if (String(entry.task.id || "") === taskId) return false;
+      if (entry.day !== day) return false;
+      const entryEnd = entry.startMinutes + entry.durationMinutes;
+      return startMinutes < entryEnd && endMinutes > entry.startMinutes;
+    });
+  }
+
+  function moveTaskOnSchedule(taskIdRaw: string, dayRaw: unknown, rawMinutes: number) {
+    const taskId = String(taskIdRaw || "").trim();
+    const day = normalizeScheduleDay(dayRaw);
+    if (!taskId || !day) return;
+    const taskIndex = tasks.findIndex((entry) => String(entry.id || "") === taskId);
+    if (taskIndex < 0) return;
+    const task = tasks[taskIndex];
+    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    if (!(durationMinutes > 0)) return;
+    const startMinutes = snapScheduleMinutes(rawMinutes);
+    if (schedulePlacementHasOverlap(taskId, day, startMinutes, durationMinutes)) return;
+    const hadExplicitDay = !!normalizeScheduleDay(task.plannedStartDay);
+    task.plannedStartDay = hadExplicitDay ? day : null;
+    task.plannedStartTime = formatScheduleStoredTime(startMinutes);
+    task.plannedStartOpenEnded = false;
+    scheduleSelectedDay = day;
+    save();
+    render();
+  }
+
+  function buildScheduleGridHtml() {
+    const visibleDays = getScheduleVisibleDays();
+    const { scheduled } = buildScheduleViewModel();
+    const timeLabels = Array.from({ length: 48 }, (_, index) => {
+      const minutes = index * SCHEDULE_SNAP_MINUTES;
+      return `<div class="scheduleTimeLabel" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px">${escapeHtmlUI(
+        formatScheduleMinutes(minutes)
+      )}</div>`;
+    }).join("");
+
+    const dayColumns = visibleDays
+      .map((day) => {
+        const cards = scheduled
+          .filter((entry) => entry.day === day)
+          .map((entry) => {
+            const topPx = entry.startMinutes * SCHEDULE_MINUTE_PX;
+            const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
+            const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
+            return `<button class="scheduleTaskCard" draggable="true" data-schedule-task-id="${escapeHtmlUI(
+              String(entry.task.id || "")
+            )}" type="button" style="top:${topPx}px;height:${heightPx}px">
+              <span class="scheduleTaskCardName">${escapeHtmlUI(entry.task.name || "Task")}</span>
+              <span class="scheduleTaskCardMeta">${escapeHtmlUI(metaText)}</span>
+            </button>`;
+          })
+          .join("");
+        const slots = Array.from({ length: 48 }, () => `<div class="scheduleSlot" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`).join("");
+        return `<section class="scheduleDayColumn" data-schedule-drop-day="${day}">
+          <div class="scheduleDayBody">
+            <div class="scheduleDaySlots">${slots}</div>
+            <div class="scheduleDayCards">${cards}</div>
+          </div>
+        </section>`;
+      })
+      .join("");
+
+    return `<div class="schedulePlanner${isScheduleMobileLayout() ? " isMobile" : ""}">
+      <div class="schedulePlannerHead">
+        <div class="schedulePlannerCorner">Time</div>
+        <div class="schedulePlannerDays">${visibleDays
+          .map((day) => `<div class="schedulePlannerDayChip">${escapeHtmlUI(SCHEDULE_DAY_LABELS[day])}</div>`)
+          .join("")}</div>
+      </div>
+      <div class="schedulePlannerBody">
+        <div class="scheduleTimeRail">${timeLabels}</div>
+        <div class="scheduleDayColumns">${dayColumns}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderSchedulePage() {
+    if (!els.scheduleGrid || !els.scheduleTrayList) return;
+    els.scheduleGrid.innerHTML = buildScheduleGridHtml();
+    const { unscheduled } = buildScheduleViewModel();
+    els.scheduleTrayList.innerHTML = unscheduled.length
+      ? unscheduled
+          .map(({ task, canDrop }) => {
+            const unsupportedReason =
+              canDrop || (task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)
+                ? ""
+                : '<span class="scheduleTrayMeta">Needs a daily time goal before it can be placed.</span>';
+            return `<div class="scheduleTrayTask${canDrop ? "" : " isDisabled"}" ${
+              canDrop ? 'draggable="true"' : ""
+            } data-schedule-task-id="${escapeHtmlUI(String(task.id || ""))}">
+              <span class="scheduleTrayTaskName">${escapeHtmlUI(task.name || "Task")}</span>
+              ${unsupportedReason}
+            </div>`;
+          })
+          .join("")
+      : '<div class="scheduleTrayEmpty">All schedulable tasks are already on the planner.</div>';
+
+    if (els.scheduleMobileDayTabs) {
+      const selectedDay = normalizeScheduleDay(scheduleSelectedDay) || "mon";
+      Array.from(els.scheduleMobileDayTabs.querySelectorAll<HTMLElement>("[data-schedule-day]")).forEach((button) => {
+        const day = normalizeScheduleDay(button.dataset.scheduleDay);
+        const isSelected = day === selectedDay;
+        button.classList.toggle("isOn", isSelected);
+        button.setAttribute("aria-selected", String(isSelected));
+        button.setAttribute("tabindex", isSelected ? "0" : "-1");
+      });
+    }
+  }
+
   function render() {
     renderTasksPage();
+    renderSchedulePage();
   }
 
   function getTileColumnCount() {
@@ -2350,6 +2654,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     render,
     renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     maybeHandlePendingTaskJump,
+    maybeHandlePendingPushAction,
     maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
     currentUid: () => currentUid(),
     showDashboardBusyIndicator,
@@ -2385,11 +2690,71 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setEditPresetIntervalsInfoOpen(false);
     });
     registerAppShellEvents();
+    on(document as any, "click", (e: any) => {
+      const dayButton = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-day]") as HTMLElement | null;
+      if (!dayButton) return;
+      const day = normalizeScheduleDay(dayButton.dataset.scheduleDay);
+      if (!day) return;
+      e?.preventDefault?.();
+      scheduleSelectedDay = day;
+      renderSchedulePage();
+    });
+    on(document as any, "dragstart", (e: any) => {
+      const source = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-task-id]") as HTMLElement | null;
+      if (!source) return;
+      const taskId = String(source.dataset.scheduleTaskId || "").trim();
+      if (!taskId) return;
+      const task = tasks.find((entry) => String(entry.id || "") === taskId);
+      if (!task || !isScheduleRenderableTask(task)) {
+        e?.preventDefault?.();
+        return;
+      }
+      scheduleDragTaskId = taskId;
+      source.classList.add("isDragging");
+      try {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", taskId);
+      } catch {
+        // ignore browser drag transfer failures
+      }
+    });
+    on(document as any, "dragend", (e: any) => {
+      scheduleDragTaskId = null;
+      (e?.target as HTMLElement | null)?.closest?.("[data-schedule-task-id]")?.classList?.remove?.("isDragging");
+      document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
+    });
+    on(document as any, "dragover", (e: any) => {
+      const dropZone = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
+      if (!dropZone || !scheduleDragTaskId) return;
+      e?.preventDefault?.();
+      document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
+      dropZone.classList.add("isDropActive");
+      try {
+        e.dataTransfer.dropEffect = "move";
+      } catch {
+        // ignore browser drag transfer failures
+      }
+    });
+    on(document as any, "drop", (e: any) => {
+      const dropZone = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
+      if (!dropZone || !els.scheduleGridScroller) return;
+      const taskId = scheduleDragTaskId || String(e?.dataTransfer?.getData?.("text/plain") || "").trim();
+      const day = normalizeScheduleDay(dropZone.dataset.scheduleDropDay);
+      if (!taskId || !day) return;
+      e?.preventDefault?.();
+      const rect = dropZone.getBoundingClientRect();
+      const yWithinColumn = Math.max(0, (Number(e?.clientY) || 0) - rect.top + els.scheduleGridScroller.scrollTop);
+      const startMinutes = snapScheduleMinutes(yWithinColumn / SCHEDULE_MINUTE_PX);
+      moveTaskOnSchedule(taskId, day, startMinutes);
+      document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
+      scheduleDragTaskId = null;
+    });
     on(els.rewardsInfoOpenBtn, "click", (e: any) => {
       e?.preventDefault?.();
       openOverlay(els.rewardsInfoOverlay as HTMLElement | null);
     });
     on(window, "resize", () => {
+      if (currentAppPage === "schedule") renderSchedulePage();
       if (taskView !== "tile" || !els.taskList) return;
       const nextCount = getTileColumnCount();
       if (nextCount !== currentTileColumnCount) render();
@@ -2467,8 +2832,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
     on(window, PENDING_PUSH_TASK_EVENT as any, () => {
       maybeHandlePendingTaskJump();
+      maybeHandlePendingPushAction();
       void rehydrateFromCloudAndRender({ force: true }).then(() => {
         if (runtime.destroyed) return;
+        maybeHandlePendingTaskJump();
+        maybeHandlePendingPushAction();
         maybeRestorePendingTimeGoalFlowApi();
       });
     });
@@ -2483,6 +2851,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (runtime.destroyed) return;
     render();
     maybeHandlePendingTaskJump();
+    maybeHandlePendingPushAction();
     if (!els.taskList && els.historyManagerScreen) {
       openHistoryManager();
     }

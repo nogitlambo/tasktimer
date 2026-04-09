@@ -65,7 +65,18 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
 
                 <div className="dashboardGrid">
                   <section className="dashboardCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
-                    <div className="dashboardCardTitle">XP Progress</div>
+                    <div className="dashboardXpProgressTitleRow">
+                      <div className="dashboardCardTitle">XP Progress</div>
+                      <button
+                        className="iconBtn dashboardXpProgressHelpBtn"
+                        id="dashboardXpProgressHelpBtn"
+                        type="button"
+                        aria-label="Explain XP progress"
+                        title="Explain XP progress"
+                      >
+                        ?
+                      </button>
+                    </div>
                     <div className="dashboardXpProgressValue">
                       <strong>{rewardsHeader.totalXp} XP</strong>
                     </div>

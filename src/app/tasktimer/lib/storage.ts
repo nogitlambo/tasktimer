@@ -194,6 +194,17 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
   const timeGoalAction = "confirmModal";
   const taskWithoutMode = { ...(task as Task & { mode?: unknown }) };
   delete taskWithoutMode.mode;
+  const plannedStartDayRaw = String(task.plannedStartDay || "").trim().toLowerCase();
+  const plannedStartDay =
+    plannedStartDayRaw === "mon" ||
+    plannedStartDayRaw === "tue" ||
+    plannedStartDayRaw === "wed" ||
+    plannedStartDayRaw === "thu" ||
+    plannedStartDayRaw === "fri" ||
+    plannedStartDayRaw === "sat" ||
+    plannedStartDayRaw === "sun"
+      ? plannedStartDayRaw
+      : null;
   return {
     ...taskWithoutMode,
     timeGoalAction,
@@ -203,6 +214,7 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    plannedStartDay,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
@@ -501,6 +513,7 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
+    plannedStartDay: task.plannedStartDay == null ? null : String(task.plannedStartDay).trim().toLowerCase() || null,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,

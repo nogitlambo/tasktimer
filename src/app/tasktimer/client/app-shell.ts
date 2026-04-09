@@ -82,6 +82,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   function appPathForPage(page: AppPage) {
     if (page === "dashboard") return appRoute("/dashboard");
     if (page === "test2") return appRoute("/friends");
+    if (page === "schedule") return appRoute("/tasklaunch?page=schedule");
     return appRoute("/tasklaunch");
   }
 
@@ -101,6 +102,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       const params = new URLSearchParams(window.location.search || "");
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
+      if (page === "schedule") return "schedule";
       if (page === "test2") return "test2";
     } catch {
       // ignore
@@ -145,10 +147,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
-    const m = String(token || "").match(/\|page=(tasks|dashboard|test2)$/);
+    const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|test2)$/);
     if (!m) return null;
     const p = m[1];
-    if (p === "tasks" || p === "dashboard" || p === "test2") return p;
+    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "test2") return p;
     return null;
   }
 
@@ -292,6 +294,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     const targetPageMissing =
       (page === "tasks" && !hasTasksPage) ||
+      (page === "schedule" && !ctx.els.appPageSchedule) ||
       (page === "dashboard" && !hasDashboardPage) ||
       (page === "test2" && !hasFriendsPage);
 
@@ -305,8 +308,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     const nextPage: AppPage = page;
 
-    if (ctx.getCurrentAppPage() === "tasks" && nextPage !== "tasks") ctx.resetAllOpenHistoryChartSelections();
-    if (nextPage !== "tasks") ctx.clearTaskFlipStates();
+    if ((ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") && nextPage !== "tasks" && nextPage !== "schedule") {
+      ctx.resetAllOpenHistoryChartSelections();
+    }
+    if (nextPage !== "tasks" && nextPage !== "schedule") ctx.clearTaskFlipStates();
     if (nextPage !== "dashboard" && ctx.getDashboardMenuFlipped()) {
       ctx.setDashboardMenuFlipped(false);
       ctx.syncDashboardMenuFlipUi();
@@ -315,14 +320,22 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(nextPage);
     document.body.setAttribute("data-app-page", nextPage);
     ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks");
+    ctx.els.appPageSchedule?.classList.toggle("appPageOn", nextPage === "schedule");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
     ctx.els.appPageTest2?.classList.toggle("appPageOn", nextPage === "test2");
-    ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
+    ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "test2");
-    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
+    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "test2");
+    document.querySelectorAll<HTMLElement>("[data-screen-pill]").forEach((pill) => {
+      const pillPage = String(pill.dataset.screenPill || "").trim();
+      const isOn = pillPage === nextPage;
+      pill.classList.toggle("isOn", isOn);
+      if (isOn) pill.setAttribute("aria-current", "page");
+      else pill.removeAttribute("aria-current");
+    });
     if (ctx.els.commandCenterDashboardBtn) {
       if (nextPage === "dashboard") ctx.els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
       else ctx.els.commandCenterDashboardBtn.removeAttribute("aria-current");
@@ -351,16 +364,18 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
     ctx.closeFriendProfileModal();
     ctx.closeFriendRequestModal();
-    if (nextPage === "tasks") {
+    if (nextPage === "tasks" || nextPage === "schedule") {
       ctx.render();
-      window.requestAnimationFrame(() => {
+      if (nextPage === "tasks") {
         window.requestAnimationFrame(() => {
-          if (ctx.runtime.destroyed || ctx.getCurrentAppPage() !== "tasks") return;
-          for (const taskId of ctx.getOpenHistoryTaskIds()) {
-            ctx.renderHistory(taskId);
-          }
+          window.requestAnimationFrame(() => {
+            if (ctx.runtime.destroyed || ctx.getCurrentAppPage() !== "tasks") return;
+            for (const taskId of ctx.getOpenHistoryTaskIds()) {
+              ctx.renderHistory(taskId);
+            }
+          });
         });
-      });
+      }
       return;
     }
     if (nextPage === "dashboard" && !opts?.skipDashboardRender) {
@@ -478,6 +493,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.commandCenterTasksBtn, "click", () =>
       applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" })
     );
+    ctx.on(ctx.els.openScheduleBtn, "click", () => applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" }));
+    ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
+    ctx.on(ctx.els.scheduleAddTaskBtn, "click", () => {
+      ctx.els.openAddTaskBtn?.click();
+    });
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
     );

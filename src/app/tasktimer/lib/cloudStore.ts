@@ -509,19 +509,61 @@ function normalizeNullableInt(raw: unknown): number | null {
   return Number.isFinite(Number(raw)) ? Math.floor(Number(raw)) : null;
 }
 
+function normalizePlannedStartDay(raw: unknown): Task["plannedStartDay"] {
+  const value = String(raw || "").trim().toLowerCase();
+  return value === "mon" ||
+    value === "tue" ||
+    value === "wed" ||
+    value === "thu" ||
+    value === "fri" ||
+    value === "sat" ||
+    value === "sun"
+    ? value
+    : null;
+}
+
+function normalizeDayTimeGoalMinutes(task: Task): number | null {
+  if (!task.timeGoalEnabled || task.timeGoalPeriod !== "day") return null;
+  const minutes = normalizeTimeGoalValue(task.timeGoalMinutes);
+  return minutes > 0 ? Math.floor(minutes) : null;
+}
+
 function computePlannedStartPushDueAtMs(task: Task): number | null {
   const raw = String(task.plannedStartTime || "").trim();
   const match = raw.match(/^(\d{1,2}):(\d{2})$/);
   if (!match || task.plannedStartOpenEnded || task.plannedStartPushRemindersEnabled === false) return null;
   const hours = Math.max(0, Math.min(23, Number(match[1] || 0)));
   const minutes = Math.max(0, Math.min(59, Number(match[2] || 0)));
+  const plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
+  const dayMap: Record<NonNullable<Task["plannedStartDay"]>, number> = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
   const now = new Date();
   const scheduled = new Date(now);
+  if (plannedStartDay) {
+    const diffDays = (dayMap[plannedStartDay] - scheduled.getDay() + 7) % 7;
+    scheduled.setDate(scheduled.getDate() + diffDays);
+  }
   scheduled.setHours(hours, minutes, 0, 0);
   if (scheduled.getTime() <= now.getTime()) {
-    scheduled.setDate(scheduled.getDate() + 1);
+    scheduled.setDate(scheduled.getDate() + (plannedStartDay ? 7 : 1));
   }
   return scheduled.getTime();
+}
+
+function isUnscheduledGapPushCandidate(task: Task): boolean {
+  return (
+    normalizeDayTimeGoalMinutes(task) != null &&
+    !String(task.plannedStartTime || "").trim() &&
+    !normalizePlannedStartDay(task.plannedStartDay) &&
+    task.plannedStartOpenEnded !== true
+  );
 }
 
 async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void> {
@@ -529,7 +571,9 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
   const ref = scheduledTimeGoalPushDoc(uid, taskId);
   if (!ref || !taskId) return;
 
-  const dueAtMs = computePlannedStartPushDueAtMs(task);
+  const plannedStartDueAtMs = computePlannedStartPushDueAtMs(task);
+  const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
+  const dueAtMs = plannedStartDueAtMs ?? (unscheduledGapCandidate ? Date.now() : null);
   if (dueAtMs == null) {
     try {
       await deleteDoc(ref);
@@ -562,25 +606,71 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
   }
   const existingDueAtMs = existing?.exists() ? normalizeNullableInt(existing.get("dueAtMs")) : null;
   const preserveSendBookkeeping = !!existing?.exists() && existingDueAtMs === dueAtMs;
-  await setDoc(
-    ref,
-    {
-      ownerUid: uid,
-      taskId,
-      taskName: String(task.name || "").trim() || "Task",
-      eventType: "plannedStartReminder",
-      dueAtMs,
-      plannedStartTime: String(task.plannedStartTime || "").trim() || null,
-      plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
-      route: "/tasklaunch",
-      sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
-      sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
-      updatedAt: serverTimestamp(),
-      createdAt: existing?.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
-      schemaVersion: 1,
-    },
-    {merge: true}
-  );
+  const notificationKind = plannedStartDueAtMs != null ? "plannedStart" : "unscheduledGap";
+  const eventType = plannedStartDueAtMs != null ? "plannedStartReminder" : "unscheduledGapReminder";
+  const baseEventType = eventType;
+  const effectiveEventType = eventType;
+  const timeGoalMinutes = normalizeDayTimeGoalMinutes(task);
+  const payload = {
+    ownerUid: uid,
+    taskId,
+    taskName: String(task.name || "").trim() || "Task",
+    notificationKind,
+    eventType,
+    baseEventType,
+    effectiveEventType,
+    dueAtMs,
+    timeGoalMinutes,
+    plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
+    plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    route: "/tasklaunch",
+    snoozedUntilMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("snoozedUntilMs")) : null,
+    sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
+    sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
+    lastActionAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastActionAtMs")) : null,
+    lastActionByDeviceId: preserveSendBookkeeping ? String(existing!.get("lastActionByDeviceId") || "").trim() || null : null,
+    lastGapAlertDayKey: preserveSendBookkeeping ? String(existing!.get("lastGapAlertDayKey") || "").trim() || null : null,
+    lastGapAlertStartMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastGapAlertStartMs")) : null,
+    lastGapAlertEndMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastGapAlertEndMs")) : null,
+    activeGapDayKey: preserveSendBookkeeping ? String(existing!.get("activeGapDayKey") || "").trim() || null : null,
+    activeGapStartMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("activeGapStartMs")) : null,
+    activeGapEndMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("activeGapEndMs")) : null,
+    postponedGapDayKey: preserveSendBookkeeping ? String(existing!.get("postponedGapDayKey") || "").trim() || null : null,
+    postponedGapStartMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("postponedGapStartMs")) : null,
+    postponedGapEndMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("postponedGapEndMs")) : null,
+    updatedAt: serverTimestamp(),
+    createdAt: existing?.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+    schemaVersion: 1,
+  };
+  try {
+    await setDoc(ref, payload, {merge: true});
+  } catch (error) {
+    const describedError = describeError(error);
+    const shouldRetryLegacy =
+      describedError.code === "permission-denied" ||
+      String(describedError.message || "").toLowerCase().includes("missing or insufficient permissions");
+    if (!shouldRetryLegacy) throw error;
+    await setDoc(
+      ref,
+      {
+        ownerUid: uid,
+        taskId,
+        taskName: String(task.name || "").trim() || "Task",
+        eventType,
+        dueAtMs,
+        plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+        plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+        route: "/tasklaunch",
+        sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing?.get("sentAtMs")) : null,
+        sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing?.get("sentDueAtMs")) : null,
+        updatedAt: serverTimestamp(),
+        createdAt: existing?.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+        schemaVersion: 1,
+      },
+      {merge: true}
+    );
+  }
 }
 
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
@@ -640,6 +730,7 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
   row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
   row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
+  row.plannedStartDay = normalizePlannedStartDay(row.plannedStartDay);
   row.plannedStartTime =
     row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
   row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
@@ -687,6 +778,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime:
       task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
@@ -701,10 +793,11 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
 function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
   const row = mapTaskToFirestore(task);
   const legacyTimeGoalAction = "confirmModal";
-  const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, ...legacyRow } = row;
+  const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, plannedStartDay, ...legacyRow } = row;
   void timeGoalAction;
   void bgTimeGoalPushEligible;
   void bgTimeGoalPushDueAtMs;
+  void plannedStartDay;
   return {
     ...legacyRow,
     finalCheckpointAction: legacyTimeGoalAction,
@@ -895,6 +988,7 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
     await setDoc(ref, await buildSavePayload(taskRow));
   } catch (error) {
     const describedError = describeError(error);
+    let recoveredWithLegacyFallback = false;
     const shouldRetryLegacy =
       describedError.code === "permission-denied" ||
       String(describedError.message || "").toLowerCase().includes("missing or insufficient permissions");
@@ -910,6 +1004,7 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
             databaseRowKeys: savedRowKeys,
           });
         }
+        recoveredWithLegacyFallback = true;
       } catch (legacyError) {
         if (process.env.NODE_ENV !== "production") {
           const describedLegacyError = describeError(legacyError);
@@ -925,6 +1020,10 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
         }
         throw legacyError;
       }
+    }
+    if (recoveredWithLegacyFallback) {
+      // The old payload shape was accepted by the deployed rules, so treat the save as successful.
+      return;
     }
     if (process.env.NODE_ENV !== "production") {
       console.error("[tasktimer-cloud] Failed to save task", {

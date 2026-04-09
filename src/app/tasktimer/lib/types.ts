@@ -34,6 +34,7 @@ export type Task = {
   timeGoalUnit?: "minute" | "hour";
   timeGoalPeriod?: "day" | "week";
   timeGoalMinutes?: number;
+  plannedStartDay?: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun" | null;
   plannedStartTime?: string | null;
   plannedStartOpenEnded?: boolean;
   plannedStartPushRemindersEnabled?: boolean;

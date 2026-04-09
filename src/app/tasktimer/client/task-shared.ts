@@ -2,6 +2,21 @@ import { sortMilestones } from "../lib/milestones";
 import type { Task } from "../lib/types";
 import type { MainMode } from "./types";
 
+function normalizePlannedStartDay(
+  raw: unknown
+): "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun" | null {
+  const value = String(raw || "").trim().toLowerCase();
+  return value === "mon" ||
+    value === "tue" ||
+    value === "wed" ||
+    value === "thu" ||
+    value === "fri" ||
+    value === "sat" ||
+    value === "sun"
+    ? value
+    : null;
+}
+
 export type TaskTimerSharedTaskContext = {
   createId: () => string;
   getCurrentMode: () => MainMode;
@@ -79,6 +94,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       timeGoalUnit: "hour",
       timeGoalPeriod: "week",
       timeGoalMinutes: 0,
+      plannedStartDay: null,
       plannedStartPushRemindersEnabled: true,
     };
     return task;
@@ -103,6 +119,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+    task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
   }
 
