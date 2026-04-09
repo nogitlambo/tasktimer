@@ -203,6 +203,8 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   };
 }
@@ -499,6 +501,8 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
+    plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   });
 }
