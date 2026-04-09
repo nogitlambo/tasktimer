@@ -191,12 +191,7 @@ function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
 
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
-  const timeGoalAction =
-    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-      ? task.timeGoalAction
-      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
-        ? task.finalCheckpointAction
-        : "continue";
+  const timeGoalAction = "confirmModal";
   const taskWithoutMode = { ...(task as Task & { mode?: unknown }) };
   delete taskWithoutMode.mode;
   return {
@@ -208,6 +203,7 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   };
 }
 
@@ -492,12 +488,7 @@ function taskSignature(task: Task | null | undefined): string {
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-    timeGoalAction:
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-        ? task.timeGoalAction
-        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
-          ? task.finalCheckpointAction
-          : "continue",
+    timeGoalAction: "confirmModal",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number(task.presetIntervalValue || 0),
@@ -508,6 +499,7 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   });
 }
 

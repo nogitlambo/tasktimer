@@ -157,6 +157,18 @@
   text-align:left;
 }
 
+.hmTable thead th{
+  font-family: var(--font-orbitron);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.hmTable tbody td{
+  font-family: var(--font-geist-sans);
+  letter-spacing: .01em;
+}
+
 .hmTable tbody tr{
   background: transparent;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
@@ -189,7 +201,8 @@
   color:inherit;
   font:inherit;
   font-weight:800;
-  letter-spacing:.02em;
+  letter-spacing:.08em;
+  text-transform: uppercase;
   cursor:pointer;
   padding:0;
 }
@@ -209,20 +222,19 @@
 .hmNoteBtn{
   display:block;
   width:100%;
-  border:1px solid rgba(160,232,255,.16);
-  background: rgba(255,255,255,.03);
+  border:none;
+  background: transparent;
   color: rgba(236,249,255,.92);
   font:inherit;
   text-align:left;
-  padding:7px 9px;
+  padding:0;
   cursor:pointer;
-  transition: border-color .16s ease, background .16s ease, color .16s ease;
+  transition: color .16s ease;
 }
 
 .hmNoteBtn:hover,
 .hmNoteBtn:focus-visible{
-  border-color: rgba(160,232,255,.38);
-  background: rgba(160,232,255,.08);
+  color: rgba(255,255,255,.98);
   outline: none;
 }
 
@@ -236,6 +248,7 @@
 .hmNoteEmpty{
   display:inline-block;
   color: rgba(255,255,255,.4);
+  font-family: var(--font-geist-sans);
 }
 
 .hmBulkCheckbox{
@@ -327,7 +340,7 @@
   }
 
   .hmNoteBtn{
-    padding:6px 8px;
+    padding:0;
   }
 }
 

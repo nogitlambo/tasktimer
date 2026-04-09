@@ -85,6 +85,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function syncAddTaskPlannedStartUi() {
+    const openEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
     const taskName = String(els.addTaskName?.value || "").trim() || "this task";
     if (els.addTaskPlannedStartPrompt) {
       els.addTaskPlannedStartPrompt.textContent = `What time of the day do you plan to start ${taskName}?`;
@@ -92,24 +93,28 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     const plannedStartParts = parsePlannedStartParts(ctx.getAddTaskPlannedStartTime() || "09:00");
     if (els.addTaskPlannedStartHourSelect) {
       els.addTaskPlannedStartHourSelect.value = plannedStartParts.hour;
-      els.addTaskPlannedStartHourSelect.disabled = !!ctx.getAddTaskPlannedStartOpenEnded();
-      els.addTaskPlannedStartHourSelect.classList.toggle("isDisabled", !!ctx.getAddTaskPlannedStartOpenEnded());
+      els.addTaskPlannedStartHourSelect.disabled = openEnded;
+      els.addTaskPlannedStartHourSelect.classList.toggle("isDisabled", openEnded);
     }
     if (els.addTaskPlannedStartMinuteSelect) {
       els.addTaskPlannedStartMinuteSelect.value = plannedStartParts.minute;
-      els.addTaskPlannedStartMinuteSelect.disabled = !!ctx.getAddTaskPlannedStartOpenEnded();
-      els.addTaskPlannedStartMinuteSelect.classList.toggle("isDisabled", !!ctx.getAddTaskPlannedStartOpenEnded());
+      els.addTaskPlannedStartMinuteSelect.disabled = openEnded;
+      els.addTaskPlannedStartMinuteSelect.classList.toggle("isDisabled", openEnded);
     }
     if (els.addTaskPlannedStartMeridiemSelect) {
       els.addTaskPlannedStartMeridiemSelect.value = plannedStartParts.meridiem;
-      els.addTaskPlannedStartMeridiemSelect.disabled = !!ctx.getAddTaskPlannedStartOpenEnded();
-      els.addTaskPlannedStartMeridiemSelect.classList.toggle("isDisabled", !!ctx.getAddTaskPlannedStartOpenEnded());
+      els.addTaskPlannedStartMeridiemSelect.disabled = openEnded;
+      els.addTaskPlannedStartMeridiemSelect.classList.toggle("isDisabled", openEnded);
     }
     if (els.addTaskPlannedStartInput) {
       els.addTaskPlannedStartInput.value = String(ctx.getAddTaskPlannedStartTime() || "09:00");
     }
     if (els.addTaskPlannedStartOpenEnded) {
-      els.addTaskPlannedStartOpenEnded.checked = !!ctx.getAddTaskPlannedStartOpenEnded();
+      els.addTaskPlannedStartOpenEnded.checked = openEnded;
+    }
+    if (els.addTaskPlannedStartOpenEndedToggle) {
+      els.addTaskPlannedStartOpenEndedToggle.classList.toggle("on", openEnded);
+      els.addTaskPlannedStartOpenEndedToggle.setAttribute("aria-checked", String(openEnded));
     }
   }
 
@@ -266,14 +271,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }
     if (els.addTaskCheckpointToastModeSelect) {
       els.addTaskCheckpointToastModeSelect.value = ctx.getAddTaskCheckpointToastMode() === "manual" ? "manual" : "auto5s";
-    }
-    if (els.addTaskFinalCheckpointActionSelect) {
-      els.addTaskFinalCheckpointActionSelect.value =
-        ctx.getAddTaskTimeGoalAction() === "resetLog" ||
-        ctx.getAddTaskTimeGoalAction() === "resetNoLog" ||
-        ctx.getAddTaskTimeGoalAction() === "confirmModal"
-          ? ctx.getAddTaskTimeGoalAction()
-          : "confirmModal";
     }
 
     const soundAvailable = ctx.getCheckpointAlertSoundEnabled();
@@ -583,12 +580,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.checkpointToastMode = ctx.getAddTaskCheckpointToastMode() === "manual" ? "manual" : "auto5s";
     newTask.presetIntervalsEnabled = checkpointingEnabled && !!ctx.getAddTaskPresetIntervalsEnabled();
     newTask.presetIntervalValue = Math.max(0, Number(ctx.getAddTaskPresetIntervalValue()) || 0);
-    newTask.timeGoalAction =
-      ctx.getAddTaskTimeGoalAction() === "resetLog" ||
-      ctx.getAddTaskTimeGoalAction() === "resetNoLog" ||
-      ctx.getAddTaskTimeGoalAction() === "confirmModal"
-        ? ctx.getAddTaskTimeGoalAction()
-        : "confirmModal";
+    newTask.timeGoalAction = "confirmModal";
     newTask.timeGoalEnabled = !ctx.getAddTaskNoTimeGoal();
     newTask.timeGoalValue = ctx.getAddTaskNoTimeGoal() ? 0 : Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     newTask.timeGoalUnit = ctx.getAddTaskNoTimeGoal() ? "hour" : ctx.getAddTaskDurationUnit();
@@ -631,7 +623,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskCheckpointToastModeState("auto5s");
     ctx.setAddTaskPresetIntervalsEnabledState(false);
     ctx.setAddTaskPresetIntervalValueState(0);
-    ctx.setAddTaskTimeGoalActionState("confirmModal");
     if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
     const milestoneDetails = els.addTaskMsArea as HTMLDetailsElement | null;
     if (milestoneDetails) milestoneDetails.open = false;
@@ -861,6 +852,24 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded?.checked);
       syncAddTaskPlannedStartUi();
     });
+    ctx.on(els.addTaskPlannedStartOpenEndedToggle, "click", (e: Event) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      if (els.addTaskPlannedStartOpenEnded) {
+        els.addTaskPlannedStartOpenEnded.checked = !els.addTaskPlannedStartOpenEnded.checked;
+        ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded.checked);
+      }
+      syncAddTaskPlannedStartUi();
+    });
+    ctx.on(els.addTaskPlannedStartOpenEndedRow, "click", (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("#addTaskPlannedStartOpenEndedToggle")) return;
+      if (els.addTaskPlannedStartOpenEnded) {
+        els.addTaskPlannedStartOpenEnded.checked = !els.addTaskPlannedStartOpenEnded.checked;
+        ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded.checked);
+      }
+      syncAddTaskPlannedStartUi();
+    });
     ctx.on(els.addTaskPresetIntervalsToggle, "click", (e: Event) => {
       e?.preventDefault?.();
       if (!canUseAdvancedTaskConfig()) {
@@ -898,22 +907,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPresetIntervalInput, "change", () => {
       ctx.setAddTaskPresetIntervalValueState(Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0));
       clearAddTaskValidationState();
-      syncAddTaskCheckpointAlertUi();
-    });
-    ctx.on(els.addTaskFinalCheckpointActionSelect, "change", () => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time goal completion actions", "pro");
-        return;
-      }
-      ctx.setAddTaskTimeGoalActionState(
-        els.addTaskFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.addTaskFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.addTaskFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue"
-      );
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(els.addTaskCheckpointSoundToggle, "click", (e: Event) => {

@@ -106,7 +106,6 @@ export type TaskTimerMutableState = {
   addTaskCheckpointToastMode: "auto5s" | "manual";
   addTaskPresetIntervalsEnabled: boolean;
   addTaskPresetIntervalValue: number;
-  addTaskTimeGoalAction: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
   timeGoalModalTaskId: string | null;
   timeGoalModalFrozenElapsedMs: number;
   timeGoalReminderAtMsByTaskId: Record<string, number>;

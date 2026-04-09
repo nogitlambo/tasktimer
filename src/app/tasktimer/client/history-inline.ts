@@ -572,16 +572,55 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const compactLabels = w <= 560;
     const veryCompactLabels = w <= 420;
     const padL = 12;
-    const markerLabelPadR = 10;
     const padR = 12;
     const padT = 14;
     const barCount = Math.max(1, entries.length);
     const slotCount = Math.max(1, historyPageSize(taskId));
     const useAngledLabels = true;
-    const padB = useAngledLabels ? (veryCompactLabels ? 110 : 122) : compactLabels ? 84 : 72;
+    const padB = useAngledLabels ? (veryCompactLabels ? 116 : 128) : compactLabels ? 84 : 72;
 
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
+    const maxEntryMs = Math.max(...entries.map((e) => e.ms || 0), 1);
+    const historyTask = ctx.getTasks().find((task) => String(task.id || "") === taskId) || null;
+    const milestoneMs =
+      historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
+        ? ctx
+            .sortMilestones(historyTask.milestones)
+            .map((m) => ({
+              kind: "checkpoint" as const,
+              value: +m.hours || 0,
+              ms: Math.max(0, (+m.hours || 0) * sharedTasks.milestoneUnitSec(historyTask) * 1000),
+              label: `${+m.hours || 0}${sharedTasks.milestoneUnitSuffix(historyTask || undefined)}`,
+            }))
+            .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
+        : [];
+    const timeGoalMs =
+      historyTask && historyTask.timeGoalEnabled && Number(historyTask.timeGoalMinutes || 0) > 0
+        ? Math.max(0, Number(historyTask.timeGoalMinutes || 0) * 60 * 1000)
+        : 0;
+    const goalMarker =
+      historyTask && timeGoalMs > 0
+        ? {
+            kind: "timeGoal" as const,
+            value: Number(historyTask.timeGoalValue || 0),
+            ms: timeGoalMs,
+            label: `Goal ${sharedTasks.formatCheckpointTimeGoalText(historyTask)}`,
+          }
+        : null;
+    const chartMarkers = goalMarker ? [...milestoneMs, goalMarker] : milestoneMs;
+    const visibleMarkerLabels = chartMarkers.filter((marker) => marker.kind !== "timeGoal");
+    const markerLabelFontPx = veryCompactLabels ? 9 : 10;
+    draw.font = `${markerLabelFontPx}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+    const markerLabelPadR = visibleMarkerLabels.length
+      ? Math.min(
+          Math.floor(innerW * 0.42),
+          Math.max(
+            18,
+            ...visibleMarkerLabels.map((marker) => Math.ceil(draw.measureText(String(marker.label || "")).width) + 10)
+          )
+        )
+      : 10;
     const labelGutterW = markerLabelPadR;
     const plotSidePad = useAngledLabels ? (veryCompactLabels ? 10 : 14) : 6;
     const plotW = Math.max(140, innerW - labelGutterW - plotSidePad * 2);
@@ -606,26 +645,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       return;
     }
 
-    const maxEntryMs = Math.max(...entries.map((e) => e.ms || 0), 1);
-    const historyTask = ctx.getTasks().find((task) => String(task.id || "") === taskId) || null;
-    const milestoneMs =
-      historyTask && historyTask.milestonesEnabled && Array.isArray(historyTask.milestones)
-        ? ctx
-            .sortMilestones(historyTask.milestones)
-            .map((m) => ({
-              value: +m.hours || 0,
-              ms: Math.max(0, (+m.hours || 0) * sharedTasks.milestoneUnitSec(historyTask) * 1000),
-            }))
-            .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
-        : [];
-    const maxGoalMs = milestoneMs.length ? Math.max(...milestoneMs.map((m) => m.ms || 0), 0) : 0;
+    const maxGoalMs = chartMarkers.length ? Math.max(...chartMarkers.map((m) => m.ms || 0), 0) : 0;
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
     const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotW * 0.02)) : Math.max(3, Math.floor(plotW * 0.01));
     const barW = Math.max(4, Math.floor((plotW - gap * (slotCount - 1)) / slotCount));
 
     draw.textAlign = "center";
 
-    const labelStep = useAngledLabels ? 1 : veryCompactLabels ? 2 : barCount <= 10 ? 1 : Math.ceil(barCount / 10);
+    const labelStep = 1;
     for (let idx = 0; idx < barCount; idx++) {
       const e = entries[idx];
       if (!e) continue;
@@ -757,12 +784,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       }
     }
 
-    if (milestoneMs.length) {
+    if (chartMarkers.length) {
       draw.save();
-      draw.strokeStyle = "rgba(255,255,255,.5)";
       draw.lineWidth = 1;
 
-      const sortedGoals = milestoneMs.slice().sort((a, b) => b.ms - a.ms);
+      const sortedGoals = chartMarkers.slice().sort((a, b) => b.ms - a.ms);
       const drawnLabelY: number[] = [];
       const minLabelGap = 11;
 
@@ -770,6 +796,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const markerRatio = Math.max(0, Math.min(1, goal.ms / scaleMaxMs));
         const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
 
+        draw.strokeStyle = goal.kind === "timeGoal" ? "rgba(0,207,200,.92)" : "rgba(255,255,255,.5)";
+        if (goal.kind === "timeGoal") {
+          draw.setLineDash([6, 4]);
+        } else {
+          draw.setLineDash([]);
+        }
         draw.beginPath();
         draw.moveTo(plotLeft, markerY);
         draw.lineTo(plotRight, markerY);
@@ -779,12 +811,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (tooClose) continue;
         drawnLabelY.push(markerY);
 
-        draw.fillStyle = "rgba(255,255,255,.92)";
-        draw.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-        draw.textAlign = "right";
-        draw.textBaseline = "middle";
-        draw.fillText(`${goal.value}${sharedTasks.milestoneUnitSuffix(historyTask || undefined)}`, padL + innerW - 4, markerY);
+        if (goal.kind !== "timeGoal") {
+          draw.fillStyle = "rgba(255,255,255,.92)";
+          draw.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+          draw.textAlign = "right";
+          draw.textBaseline = "middle";
+          draw.fillText(goal.label, plotRight + markerLabelPadR - 4, markerY);
+        }
       }
+      draw.setLineDash([]);
       draw.restore();
       draw.textAlign = "center";
       draw.textBaseline = "alphabetic";

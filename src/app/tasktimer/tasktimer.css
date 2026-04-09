@@ -9,6 +9,47 @@
 @import "./styles/08-friends.css";
 @import "./styles/09-desktop-rail.css";
 @import "./styles/10-responsive.css";
+
+#editOverlay .field label,
+#editOverlay .toggleRow > span,
+#editOverlay .milestonesSummary > span,
+#editOverlay .milestonesSummaryPrimary,
+#editOverlay .milestonesSummaryCollapseLabel,
+#editOverlay .checkpointAlertsTitle,
+#editOverlay .editTaskTimeGoalHeaderLabel {
+  font-family: var(--font-orbitron);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#editOverlay .field input,
+#editOverlay .field select,
+#editOverlay .field textarea,
+#editOverlay select,
+#editOverlay .editValidationError,
+#editOverlay .checkpointAlertsNote,
+#editOverlay .addTaskPlannedStartCheckboxRow > span,
+#editOverlay .addTaskPlannedStartSeparator,
+#editOverlay .addTaskDurationPerLabel,
+#editOverlay .addTaskCheckpointInfoDialog,
+#editOverlay #msList .msSkewInput,
+#editOverlay option {
+  font-family: var(--font-geist-sans);
+}
+
+#editOverlay .editHead h1,
+#editOverlay .editHead h2,
+#editOverlay .editHead h3,
+#editOverlay .editHead h4,
+#editOverlay .editHead h5,
+#editOverlay .editHead h6,
+#editOverlay .btn,
+#editOverlay .iconBtn {
+  font-family: inherit;
+}
+
 #confirmChkLabel .confirmChkLabelText {
   display: inline-flex;
   align-items: center;
@@ -597,11 +638,31 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote {
-  color: #6dff96;
+  color: #39d353;
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote {
   color: #ff6b6b;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusy {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 6px 0 2px;
+  text-align: center;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusy .modalSubtext {
+  margin: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyArrowStage {
+  margin-top: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyArrowShell {
+  width: 42px;
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardList {
@@ -760,6 +821,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormSu
 
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote {
   color: #ff8f9d;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote {
+  color: #5ee36f;
 }
 
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem {
@@ -1110,4 +1175,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap {
     min-height: 176px;
   }
+}
+
+/* Final Edit modal typography override: keep selected dropdown value and checkpoint descriptions on Geist Sans. */
+#editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select,
+#editOverlay #msList .msRow input[type="text"],
+#editOverlay #msList .msRow .msSkewInput {
+  font-family: var(--font-geist-sans) !important;
 }

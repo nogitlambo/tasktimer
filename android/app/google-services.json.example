@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "996538028829",
-    "project_id": "tasktimer-prod",
-    "storage_bucket": "tasktimer-prod.firebasestorage.app"
+    "project_number": "YOUR_FIREBASE_PROJECT_NUMBER",
+    "project_id": "YOUR_FIREBASE_PROJECT_ID",
+    "storage_bucket": "YOUR_FIREBASE_STORAGE_BUCKET"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:996538028829:android:ce582526ee40d176ffc7f4",
+        "mobilesdk_app_id": "YOUR_ANDROID_MOBILESDK_APP_ID",
         "android_client_info": {
           "package_name": "com.tasklaunch.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "996538028829-jnea2eves3dgvi1hcm0annlq2vd8p17d.apps.googleusercontent.com",
+          "client_id": "YOUR_ANDROID_OAUTH_CLIENT_ID",
           "client_type": 1,
           "android_info": {
             "package_name": "com.tasklaunch.app",
-            "certificate_hash": "284680344447d752714e8a665966441288f87e75"
+            "certificate_hash": "YOUR_ANDROID_CERTIFICATE_HASH"
           }
         },
         {
-          "client_id": "996538028829-tkrcs3kr5l0udrfhr682chinq6d9239e.apps.googleusercontent.com",
+          "client_id": "YOUR_WEB_OAUTH_CLIENT_ID",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBYSJIxeOXhZHfpDr6-vkWioaQi-lKZq7Q"
+          "current_key": "YOUR_ANDROID_FIREBASE_API_KEY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "996538028829-tkrcs3kr5l0udrfhr682chinq6d9239e.apps.googleusercontent.com",
+              "client_id": "YOUR_WEB_OAUTH_CLIENT_ID",
               "client_type": 3
             }
           ]

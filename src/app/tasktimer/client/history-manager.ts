@@ -878,10 +878,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
                   <thead>
                     <tr>
                       <th class="hmSelectHead"></th>
-                      <th><button class="hmSortBtn" type="button" data-hm-sort="ts">Date/Time${dateSortArrow}</button></th>
-                      <th><button class="hmSortBtn" type="button" data-hm-sort="ms">Elapsed${elapsedSortArrow}</button></th>
-                      <th class="hmNotesHead">Notes</th>
-                      <th style="text-align:right;">Delete</th>
+                      <th><button class="hmSortBtn" type="button" data-hm-sort="ts">DATE/TIME${dateSortArrow}</button></th>
+                      <th><button class="hmSortBtn" type="button" data-hm-sort="ms">ELAPSED${elapsedSortArrow}</button></th>
+                      <th class="hmNotesHead">NOTES</th>
+                      <th style="text-align:right;">DELETE</th>
                     </tr>
                   </thead>
                   <tbody>

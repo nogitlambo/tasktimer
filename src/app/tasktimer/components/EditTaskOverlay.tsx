@@ -55,10 +55,20 @@ export default function EditTaskOverlay() {
               </select>
             </div>
             <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
-            <label className="addTaskPlannedStartCheckboxRow" htmlFor="editPlannedStartOpenEnded">
-              <input id="editPlannedStartOpenEnded" type="checkbox" />
+            <div className="addTaskPlannedStartCheckboxRow toggleRow" id="editPlannedStartOpenEndedRow">
               <span>Flexible/No specific time</span>
-            </label>
+              <div className="addTaskPlannedStartToggleWrap">
+                <input id="editPlannedStartOpenEnded" type="checkbox" hidden />
+                <div className="switch" id="editPlannedStartOpenEndedToggle" role="switch" aria-checked="false" />
+              </div>
+            </div>
+            <div className="addTaskPlannedStartCheckboxRow toggleRow" id="editPlannedStartPushRemindersRow">
+              <span>Enable Push Reminders</span>
+              <div className="addTaskPlannedStartToggleWrap">
+                <input id="editPlannedStartPushReminders" type="checkbox" hidden defaultChecked />
+                <div className="switch on" id="editPlannedStartPushRemindersToggle" role="switch" aria-checked="true" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -91,19 +101,6 @@ export default function EditTaskOverlay() {
             </div>
           </div>
           <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
-            <div
-              className="field checkpointAlertSoundModeField"
-              id="editFinalCheckpointActionField"
-              style={{ width: "100%", maxWidth: "none", minWidth: 0 }}
-            >
-              <label htmlFor="editFinalCheckpointActionSelect">When time goal is reached</label>
-              <select id="editFinalCheckpointActionSelect" defaultValue="confirmModal" style={{ display: "block", width: "100%", maxWidth: "none" }}>
-                <option value="continue">Continue to run timer until stopped by user</option>
-                <option value="resetLog">Stop/reset timer and save session to history</option>
-                <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
-                <option value="confirmModal">Display task complete modal and await user confirmation (default)</option>
-              </select>
-            </div>
           </div>
         </div>
 

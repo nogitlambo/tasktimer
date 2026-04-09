@@ -509,13 +509,19 @@ function normalizeNullableInt(raw: unknown): number | null {
   return Number.isFinite(Number(raw)) ? Math.floor(Number(raw)) : null;
 }
 
-function computeBackgroundTimeGoalPushDueAtMs(task: Task): number | null {
-  const timeGoalMinutes = normalizeTimeGoalValue(task.timeGoalMinutes);
-  const accumulatedMs = Number.isFinite(Number(task.accumulatedMs)) ? Math.max(0, Math.floor(Number(task.accumulatedMs))) : 0;
-  const startMs = task.startMs == null ? null : normalizeNullableInt(task.startMs);
-  if (!task.running || !task.timeGoalEnabled || timeGoalMinutes <= 0 || startMs == null) return null;
-  const remainingMs = Math.max(0, Math.round(timeGoalMinutes * 60_000) - accumulatedMs);
-  return Math.max(0, startMs + remainingMs);
+function computePlannedStartPushDueAtMs(task: Task): number | null {
+  const raw = String(task.plannedStartTime || "").trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match || task.plannedStartOpenEnded || task.plannedStartPushRemindersEnabled === false) return null;
+  const hours = Math.max(0, Math.min(23, Number(match[1] || 0)));
+  const minutes = Math.max(0, Math.min(59, Number(match[2] || 0)));
+  const now = new Date();
+  const scheduled = new Date(now);
+  scheduled.setHours(hours, minutes, 0, 0);
+  if (scheduled.getTime() <= now.getTime()) {
+    scheduled.setDate(scheduled.getDate() + 1);
+  }
+  return scheduled.getTime();
 }
 
 async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void> {
@@ -523,7 +529,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
   const ref = scheduledTimeGoalPushDoc(uid, taskId);
   if (!ref || !taskId) return;
 
-  const dueAtMs = computeBackgroundTimeGoalPushDueAtMs(task);
+  const dueAtMs = computePlannedStartPushDueAtMs(task);
   if (dueAtMs == null) {
     try {
       await deleteDoc(ref);
@@ -562,8 +568,10 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
       ownerUid: uid,
       taskId,
       taskName: String(task.name || "").trim() || "Task",
+      eventType: "plannedStartReminder",
       dueAtMs,
-      timeGoalMinutes: normalizeTimeGoalValue(task.timeGoalMinutes),
+      plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+      plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
       route: "/tasklaunch",
       sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
       sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
@@ -624,18 +632,7 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.presetIntervalLastMilestoneId = presetLastCheckpointId;
   }
 
-  if (
-    row.timeGoalAction !== "continue" &&
-    row.timeGoalAction !== "resetLog" &&
-    row.timeGoalAction !== "resetNoLog" &&
-    row.timeGoalAction !== "confirmModal" &&
-    (row.finalCheckpointAction === "continue" ||
-      row.finalCheckpointAction === "resetLog" ||
-      row.finalCheckpointAction === "resetNoLog" ||
-      row.finalCheckpointAction === "confirmModal")
-  ) {
-    row.timeGoalAction = row.finalCheckpointAction;
-  }
+  row.timeGoalAction = "confirmModal";
 
   row.xpDisqualifiedUntilReset = !!row.xpDisqualifiedUntilReset;
   row.timeGoalEnabled = !!row.timeGoalEnabled;
@@ -646,6 +643,7 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.plannedStartTime =
     row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
   row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
+  row.plannedStartPushRemindersEnabled = row.plannedStartPushRemindersEnabled !== false;
 
   return row as Task;
 }
@@ -654,7 +652,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
   const source = task as unknown as Record<string, unknown>;
   const modeRaw = String(source.mode || "").trim();
   const mode = modeRaw === "mode2" || modeRaw === "mode3" ? modeRaw : "mode1";
-  const bgTimeGoalPushDueAtMs = computeBackgroundTimeGoalPushDueAtMs(task);
+  const plannedStartPushDueAtMs = computePlannedStartPushDueAtMs(task);
 
   // Firestore rules for users/{uid}/tasks/{taskId} are strict (`hasOnly(...)`), so
   // only persist explicitly allowed keys to prevent permission-denied on legacy/extra fields.
@@ -675,12 +673,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-    timeGoalAction:
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-        ? task.timeGoalAction
-        : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
-          ? task.finalCheckpointAction
-          : "continue",
+    timeGoalAction: "confirmModal",
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
@@ -697,8 +690,9 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     plannedStartTime:
       task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
-    bgTimeGoalPushEligible: bgTimeGoalPushDueAtMs != null,
-    bgTimeGoalPushDueAtMs,
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    bgTimeGoalPushEligible: plannedStartPushDueAtMs != null,
+    bgTimeGoalPushDueAtMs: plannedStartPushDueAtMs,
     mode,
   };
   return row;
@@ -706,12 +700,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
 
 function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
   const row = mapTaskToFirestore(task);
-  const legacyTimeGoalAction =
-    task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-      ? task.timeGoalAction
-      : task.finalCheckpointAction === "resetLog" || task.finalCheckpointAction === "resetNoLog" || task.finalCheckpointAction === "confirmModal"
-        ? task.finalCheckpointAction
-        : "continue";
+  const legacyTimeGoalAction = "confirmModal";
   const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, ...legacyRow } = row;
   void timeGoalAction;
   void bgTimeGoalPushEligible;

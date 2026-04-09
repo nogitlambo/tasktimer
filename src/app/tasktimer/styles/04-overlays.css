@@ -452,6 +452,10 @@ body[data-theme="purple"] .rankLadderItemFlag{
   min-height:42px;
 }
 
+#editOverlay #editPlannedStartPushRemindersRow.isDisabled{
+  opacity: .58;
+}
+
 #editOverlay .switch{
   width:39px;
   height:21px;
@@ -1594,6 +1598,38 @@ body[data-theme="purple"] .rewardsInfoText{
 #addTaskOverlay .addTaskNoGoalRow input[type="checkbox"]{
   width: 16px;
   height: 16px;
+}
+
+#addTaskOverlay .addTaskPlannedStartCheckboxRow{
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: rgba(194,224,236,.88);
+  cursor: pointer;
+}
+
+#addTaskOverlay .addTaskPlannedStartToggleWrap{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+#editOverlay .addTaskPlannedStartCheckboxRow{
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: rgba(194,224,236,.88);
+  cursor: pointer;
+}
+
+#editOverlay .addTaskPlannedStartToggleWrap{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 #addTaskOverlay .addTaskDurationRow.isDisabled,

@@ -74,6 +74,19 @@ Local development should stay on Stripe test mode.
 9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
 10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
 
+## Firebase Config Hygiene
+
+Firebase client identifiers should be supplied via environment variables or deployment secrets, not committed directly into repo config files.
+
+- Local web/native setup:
+  - Copy values from your Firebase project into `.env.local` using the keys listed in `.env.example`.
+  - For Android native builds, place the real Firebase config at `android/app/google-services.json`.
+  - A placeholder file lives at `android/app/google-services.json.example` to document the expected shape.
+- App Hosting:
+  - Configure `NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY` as App Hosting secrets, since `apphosting.yaml` now references them via `secret:`.
+- Git hygiene:
+  - `android/app/google-services.json` is intentionally ignored and should not be committed.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

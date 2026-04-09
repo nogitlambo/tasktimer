@@ -21,6 +21,7 @@ const databaseId = String(
 const db = getFirestore(app, databaseId);
 const messaging = getMessaging(app);
 const TASK_TIME_GOAL_ACTIVE_TTL_MS = 2 * 60 * 1000;
+const PLANNED_START_REMINDER_EVENT = "plannedStartReminder";
 const protectedCallableOptions = {
   region,
   enforceAppCheck: true,
@@ -283,28 +284,73 @@ function extractAndroidDeviceRows(snapshot) {
       appActive: asBool(docSnap.get("appActive")),
       appStateUpdatedAtMs: asInt(docSnap.get("appStateUpdatedAtMs"), 0),
     }))
-    .filter((row) => !!row.token && row.enabled && row.native && row.provider === "fcm" && row.platform === "android");
+    .filter((row) => !!row.token && row.enabled && row.provider === "fcm" && (row.native || row.platform === "web"));
 }
 
 function hasFreshForegroundDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
-async function processDueTimeGoalTask(docSnap, nowMs) {
+function computeNextPlannedStartDueAtMs(plannedStartTime, fromMs) {
+  const match = asString(plannedStartTime).match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = Math.max(0, Math.min(23, Number(match[1] || 0)));
+  const minutes = Math.max(0, Math.min(59, Number(match[2] || 0)));
+  const next = new Date(fromMs);
+  next.setDate(next.getDate() + 1);
+  next.setHours(hours, minutes, 0, 0);
+  return next.getTime();
+}
+
+async function processDueScheduledTask(docSnap, nowMs) {
   const data = docSnap.data() || {};
   const uid = asString(data.ownerUid);
   const taskId = asString(data.taskId || docSnap.id);
   const taskName = asString(data.taskName, "Task");
   const dueAtMs = asInt(data.dueAtMs, null);
   const sentDueAtMs = asInt(data.sentDueAtMs, null);
-  const timeGoalMinutes = Number(data.timeGoalMinutes || 0);
+  const eventType = asString(data.eventType);
+  const plannedStartTime = asString(data.plannedStartTime);
+  const remindersEnabled = data.plannedStartPushRemindersEnabled !== false;
   const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
 
-  if (!uid || !taskId || !(timeGoalMinutes > 0) || dueAtMs == null || dueAtMs > nowMs) {
+  if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || eventType !== PLANNED_START_REMINDER_EVENT) {
     return {status: "skipped"};
   }
   if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
     return {status: "duplicate"};
+  }
+  if (!remindersEnabled || !plannedStartTime) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
+
+  const taskSnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId).get();
+  if (!taskSnap.exists) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
+
+  const taskData = taskSnap.data() || {};
+  const taskRunning = taskData.running === true;
+  const taskOpenEnded = taskData.plannedStartOpenEnded === true;
+  const taskReminderEnabled = taskData.plannedStartPushRemindersEnabled !== false;
+  const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
+  if (taskOpenEnded || !taskReminderEnabled || !taskPlannedStartTime) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
+  if (taskRunning) {
+    const nextRunningDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartTime, nowMs);
+    if (nextRunningDueAtMs != null) {
+      await docSnap.ref.set({
+        dueAtMs: nextRunningDueAtMs,
+        plannedStartTime: taskPlannedStartTime,
+        plannedStartPushRemindersEnabled: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
+    return {status: "running"};
   }
 
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
@@ -319,8 +365,8 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
   const response = await messaging.sendEachForMulticast({
     tokens: deviceRows.map((row) => row.token),
     notification: {
-      title: "Time Goal Reached",
-      body: `${taskName} reached its time goal.`,
+      title: "Task Reminder",
+      body: `${taskName} is scheduled to start now.`,
     },
     android: {
       priority: "high",
@@ -328,8 +374,17 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
         channelId: "tasklaunch-default",
       },
     },
+    webpush: {
+      notification: {
+        title: "Task Reminder",
+        body: `${taskName} is scheduled to start now.`,
+      },
+      fcmOptions: {
+        link: route,
+      },
+    },
     data: {
-      eventType: "timeGoalReached",
+      eventType: PLANNED_START_REMINDER_EVENT,
       route,
       taskId,
       taskName,
@@ -337,10 +392,13 @@ async function processDueTimeGoalTask(docSnap, nowMs) {
   });
 
   const invalidRows = await cleanupInvalidDeviceTokens(uid, deviceRows, response);
+  const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartTime, nowMs);
   if (response.successCount > 0) {
     await docSnap.ref.set({
       sentAtMs: nowMs,
       sentDueAtMs: dueAtMs,
+      dueAtMs: nextDueAtMs,
+      plannedStartTime: taskPlannedStartTime,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }
@@ -386,7 +444,7 @@ export const sendDueTimeGoalPushes = onSchedule(
 
     for (const docSnap of dueSnap.docs) {
       try {
-        const result = await processDueTimeGoalTask(docSnap, nowMs);
+        const result = await processDueScheduledTask(docSnap, nowMs);
         if (result.status === "sent") sentCount += 1;
         else if (result.status === "duplicate") duplicateCount += 1;
         else if (result.status === "foreground") foregroundCount += 1;

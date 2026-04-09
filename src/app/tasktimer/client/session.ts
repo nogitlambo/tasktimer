@@ -283,10 +283,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function getTaskTimeGoalAction(task: Task | null | undefined) {
-    if (!task) return "continue";
-    return task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-      ? task.timeGoalAction
-      : "continue";
+    void task;
+    return "confirmModal";
   }
 
   function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
@@ -1058,7 +1056,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task))) > 0);
     const totalCheckpoints = validMilestones.length;
     let beepCount = 0;
-    let shouldResetAtTimeGoal: null | "resetLog" | "resetNoLog" = null;
     let shouldOpenTimeGoalModal = false;
     let openTimeGoalModalAsReminder = false;
     msSorted.forEach((m) => {
@@ -1087,27 +1084,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
     });
     const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Math.round(Number(task.timeGoalMinutes || 0) * 60) : 0;
-    const taskTimeGoalAction = getTaskTimeGoalAction(task);
     if (
       timeGoalSec > 0 &&
       prevBaseline < timeGoalSec &&
       elapsedWholeSec >= timeGoalSec &&
-      (taskTimeGoalAction === "resetLog" || taskTimeGoalAction === "resetNoLog")
-    ) {
-      shouldResetAtTimeGoal = taskTimeGoalAction;
-    }
-    if (
-      timeGoalSec > 0 &&
-      taskTimeGoalAction === "confirmModal" &&
-      ctx.getTimeGoalModalTaskId() !== taskId &&
-      prevBaseline < timeGoalSec &&
-      elapsedWholeSec >= timeGoalSec
+      ctx.getTimeGoalModalTaskId() !== taskId
     ) {
       shouldOpenTimeGoalModal = true;
     }
     if (
       timeGoalSec > 0 &&
-      taskTimeGoalAction === "confirmModal" &&
       ctx.getTimeGoalModalTaskId() !== taskId &&
       !shouldOpenTimeGoalModal &&
       Number(ctx.getTimeGoalReminderAtMsByTaskId()[taskId] || 0) > 0 &&
@@ -1130,12 +1116,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       openTimeGoalCompleteModal(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder });
       baselineByTaskId[taskId] = Math.floor(getElapsedMs(task) / 1000);
       return;
-    }
-    if (shouldResetAtTimeGoal) {
-      ctx.resetTaskStateImmediate(task, {
-        logHistory: shouldResetAtTimeGoal === "resetLog",
-        sessionNote: captureResetActionSessionNote(String(task.id || "")),
-      });
     }
   }
 

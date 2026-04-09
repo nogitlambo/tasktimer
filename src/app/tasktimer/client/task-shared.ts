@@ -79,6 +79,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       timeGoalUnit: "hour",
       timeGoalPeriod: "week",
       timeGoalMinutes: 0,
+      plannedStartPushRemindersEnabled: true,
     };
     return task;
   }
@@ -96,19 +97,13 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
     task.checkpointToastEnabled = !!task.checkpointToastEnabled;
     task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
-    task.timeGoalAction =
-      task.timeGoalAction === "resetLog" || task.timeGoalAction === "resetNoLog" || task.timeGoalAction === "confirmModal"
-        ? task.timeGoalAction
-        : taskWithMode.finalCheckpointAction === "resetLog" ||
-            taskWithMode.finalCheckpointAction === "resetNoLog" ||
-            taskWithMode.finalCheckpointAction === "confirmModal"
-          ? taskWithMode.finalCheckpointAction
-          : "continue";
+    task.timeGoalAction = "confirmModal";
     task.timeGoalEnabled = !!task.timeGoalEnabled;
     task.timeGoalValue = Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0;
     task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+    task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
   }
 
   function ensureMilestoneIdentity(task: Task) {

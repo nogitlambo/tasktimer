@@ -1121,6 +1121,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .historyRangeText{
   min-width:0;
+  font-family: var(--font-geist-sans);
   font-size:10px;
   line-height:1.2;
 }

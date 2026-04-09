@@ -69,10 +69,13 @@ export default function AddTaskOverlay() {
                 </select>
               </div>
               <input id="addTaskPlannedStartInput" type="hidden" defaultValue="09:00" />
-              <label className="addTaskPlannedStartCheckboxRow" htmlFor="addTaskPlannedStartOpenEnded">
-                <input id="addTaskPlannedStartOpenEnded" type="checkbox" />
+              <div className="addTaskPlannedStartCheckboxRow toggleRow" id="addTaskPlannedStartOpenEndedRow">
                 <span>Flexible/No specific time</span>
-              </label>
+                <div className="addTaskPlannedStartToggleWrap">
+                  <input id="addTaskPlannedStartOpenEnded" type="checkbox" hidden />
+                  <div className="switch" id="addTaskPlannedStartOpenEndedToggle" role="switch" aria-checked="false" />
+                </div>
+              </div>
             </div>
           </section>
 
@@ -167,15 +170,6 @@ export default function AddTaskOverlay() {
 
             <div className="checkpointAlertsGroup" id="addTaskTimerSettingsGroup">
               <div className="checkpointAlertsTitle">Timer Settings</div>
-              <div className="field checkpointAlertSoundModeField" id="addTaskFinalCheckpointActionField">
-                <label htmlFor="addTaskFinalCheckpointActionSelect">When time goal is reached</label>
-                <select id="addTaskFinalCheckpointActionSelect" defaultValue="confirmModal">
-                  <option value="continue">Continue to run timer until stopped by user</option>
-                  <option value="resetLog">Stop/reset timer and save session to history</option>
-                  <option value="resetNoLog">Stop/reset timer and do not save session to history</option>
-                  <option value="confirmModal">Display task complete modal and await user confirmation (default)</option>
-                </select>
-              </div>
             </div>
 
             <div className="checkpointAlertsGroup" id="addTaskCheckpointAlertsGroup">

@@ -187,6 +187,8 @@ service cloud.firestore {
         "appId",
         "appActive",
         "appStateUpdatedAtMs",
+        "kind",
+        "scope",
         "createdAt",
         "updatedAt"
       ])
@@ -198,6 +200,8 @@ service cloud.firestore {
       && (!("appId" in request.resource.data) || request.resource.data.appId == null || request.resource.data.appId is string)
       && (!("appActive" in request.resource.data) || request.resource.data.appActive is bool)
       && (!("appStateUpdatedAtMs" in request.resource.data) || request.resource.data.appStateUpdatedAtMs is int)
+      && (!("kind" in request.resource.data) || request.resource.data.kind is string)
+      && (!("scope" in request.resource.data) || request.resource.data.scope is string)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
@@ -238,6 +242,7 @@ service cloud.firestore {
         "timeGoalMinutes",
         "plannedStartTime",
         "plannedStartOpenEnded",
+        "plannedStartPushRemindersEnabled",
         "bgTimeGoalPushEligible",
         "bgTimeGoalPushDueAtMs",
         "bgTimeGoalPushSentAtMs",
@@ -281,6 +286,7 @@ service cloud.firestore {
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
       && (!("plannedStartOpenEnded" in request.resource.data) || request.resource.data.plannedStartOpenEnded is bool)
+      && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
       && (!("bgTimeGoalPushEligible" in request.resource.data) || request.resource.data.bgTimeGoalPushEligible is bool)
       && (!("bgTimeGoalPushDueAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushDueAtMs == null || request.resource.data.bgTimeGoalPushDueAtMs is int)
       && (!("bgTimeGoalPushSentAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushSentAtMs == null || request.resource.data.bgTimeGoalPushSentAtMs is int)
@@ -603,8 +609,10 @@ service cloud.firestore {
         "ownerUid",
         "taskId",
         "taskName",
+        "eventType",
         "dueAtMs",
-        "timeGoalMinutes",
+        "plannedStartTime",
+        "plannedStartPushRemindersEnabled",
         "route",
         "sentAtMs",
         "sentDueAtMs",
@@ -615,8 +623,10 @@ service cloud.firestore {
       && request.resource.data.ownerUid is string
       && request.resource.data.taskId is string
       && request.resource.data.taskName is string
+      && request.resource.data.eventType is string
       && request.resource.data.dueAtMs is int
-      && (request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
+      && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
+      && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
       && request.resource.data.route is string
       && (!("sentAtMs" in request.resource.data) || request.resource.data.sentAtMs == null || request.resource.data.sentAtMs is int)
       && (!("sentDueAtMs" in request.resource.data) || request.resource.data.sentDueAtMs == null || request.resource.data.sentDueAtMs is int)

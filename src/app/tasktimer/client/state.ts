@@ -105,7 +105,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskCheckpointToastMode: "auto5s",
     addTaskPresetIntervalsEnabled: false,
     addTaskPresetIntervalValue: 0,
-    addTaskTimeGoalAction: "continue",
     timeGoalModalTaskId: null,
     timeGoalModalFrozenElapsedMs: 0,
     timeGoalReminderAtMsByTaskId: {},

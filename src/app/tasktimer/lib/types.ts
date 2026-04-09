@@ -36,6 +36,7 @@ export type Task = {
   timeGoalMinutes?: number;
   plannedStartTime?: string | null;
   plannedStartOpenEnded?: boolean;
+  plannedStartPushRemindersEnabled?: boolean;
 };
 
 export type HistoryEntry = {

@@ -46,6 +46,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const currentTask = task || getCurrentEditTask();
     const parts = parsePlannedStartParts(currentTask?.plannedStartTime || "09:00");
     const openEnded = !!currentTask?.plannedStartOpenEnded;
+    const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
     if (els.editPlannedStartHourSelect) {
       els.editPlannedStartHourSelect.value = parts.hour;
       els.editPlannedStartHourSelect.disabled = openEnded;
@@ -67,6 +68,21 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editPlannedStartOpenEnded) {
       els.editPlannedStartOpenEnded.checked = openEnded;
     }
+    if (els.editPlannedStartOpenEndedToggle) {
+      els.editPlannedStartOpenEndedToggle.classList.toggle("on", openEnded);
+      els.editPlannedStartOpenEndedToggle.setAttribute("aria-checked", String(openEnded));
+    }
+    if (els.editPlannedStartPushReminders) {
+      els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
+      els.editPlannedStartPushReminders.disabled = openEnded;
+    }
+    if (els.editPlannedStartPushRemindersToggle) {
+      els.editPlannedStartPushRemindersToggle.classList.toggle("on", pushRemindersEnabled);
+      els.editPlannedStartPushRemindersToggle.setAttribute("aria-checked", String(pushRemindersEnabled));
+      els.editPlannedStartPushRemindersToggle.toggleAttribute("disabled", openEnded);
+      els.editPlannedStartPushRemindersToggle.setAttribute("aria-disabled", String(openEnded));
+    }
+    els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", openEnded);
   }
 
   function syncEditPlannedStartValueFromSelectors() {
@@ -140,16 +156,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       checkpointToastMode: currentTask?.checkpointToastMode === "manual" ? "manual" : "auto5s",
       presetIntervalsEnabled: !!currentTask?.presetIntervalsEnabled,
       presetIntervalValue: String(Number(currentTask?.presetIntervalValue || 0) || 0),
-      timeGoalAction:
-        currentTask?.timeGoalAction === "resetLog" ||
-        currentTask?.timeGoalAction === "resetNoLog" ||
-        currentTask?.timeGoalAction === "confirmModal"
-          ? currentTask.timeGoalAction
-          : currentTask?.finalCheckpointAction === "resetLog" ||
-              currentTask?.finalCheckpointAction === "resetNoLog" ||
-              currentTask?.finalCheckpointAction === "confirmModal"
-            ? currentTask.finalCheckpointAction
-            : "confirmModal",
+      timeGoalAction: "confirmModal",
     });
   }
 
@@ -245,9 +252,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.addMsBtn) {
       els.addMsBtn.disabled = checkpointControlsDisabled;
       els.addMsBtn.title = checkpointControlsDisabled ? "Set a time goal to add checkpoints" : "";
-    }
-    if (els.editFinalCheckpointActionSelect) {
-      els.editFinalCheckpointActionSelect.disabled = checkpointControlsDisabled;
     }
     if (els.editCheckpointSoundToggle) {
       els.editCheckpointSoundToggle.toggleAttribute("disabled", checkpointControlsDisabled);
@@ -484,16 +488,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled
     );
     els.editTimerSettingsGroup?.classList.toggle("isHidden", !timeGoalEnabled || !hasActiveTimeGoal);
-    if (els.editFinalCheckpointActionSelect) {
-      els.editFinalCheckpointActionSelect.value =
-        t.timeGoalAction === "resetLog" || t.timeGoalAction === "resetNoLog" || t.timeGoalAction === "confirmModal"
-          ? t.timeGoalAction
-          : t.finalCheckpointAction === "resetLog" ||
-              t.finalCheckpointAction === "resetNoLog" ||
-              t.finalCheckpointAction === "confirmModal"
-            ? t.finalCheckpointAction
-            : "continue";
-    }
     const notes: string[] = [];
     if (!timeGoalEnabled || !hasActiveTimeGoal) notes.push("set a time goal to enable checkpoints");
     if (!ctx.getCheckpointAlertSoundEnabled()) notes.push("sound alerts are disabled globally");
@@ -555,6 +549,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       name: String(els.editName?.value || task.name || "").trim(),
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
       plannedStartOpenEnded: !!task.plannedStartOpenEnded,
+      plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
       timeGoalEnabled: isEditTimeGoalEnabled(),
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       timeGoalUnit: ctx.getEditTaskDurationUnit(),
@@ -569,14 +564,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
       checkpointToastEnabled: !!ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null),
       checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
-      timeGoalAction:
-        els.editFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue",
+      timeGoalAction: "confirmModal",
       presetIntervalsEnabled: !!ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null),
       presetIntervalValue: Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0),
       presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
@@ -828,6 +816,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const sourceTask = ctx.getTasks()[i];
     if (!sourceTask) return;
     const t = ctx.cloneTaskForEdit(sourceTask);
+    t.plannedStartPushRemindersEnabled = t.plannedStartPushRemindersEnabled !== false;
     t.milestoneTimeUnit = t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     ctx.setEditIndex(i);
     ctx.setEditTaskDraft(t);
@@ -928,20 +917,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.checkpointToastEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
       t.presetIntervalsEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      t.timeGoalAction =
-        els.editFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue";
+      t.timeGoalAction = "confirmModal";
       t.timeGoalEnabled = timeGoalEnabledForSave;
       if (!t.timeGoalEnabled) t.milestonesEnabled = false;
       t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
       t.timeGoalUnit = ctx.getEditTaskDurationUnit();
       t.timeGoalPeriod = ctx.getEditTaskDurationPeriod();
       t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
+      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       sharedTasks.ensureMilestoneIdentity(t);
       t.milestones = ctx.sortMilestones(t.milestones);
       delete (t as Task & { mode?: string }).mode;
@@ -1019,6 +1002,51 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const t = getCurrentEditTask();
       if (!t) return;
       t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editPlannedStartOpenEndedToggle, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const t = getCurrentEditTask();
+      if (!t || !els.editPlannedStartOpenEnded) return;
+      els.editPlannedStartOpenEnded.checked = !els.editPlannedStartOpenEnded.checked;
+      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editPlannedStartPushReminders, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t || t.plannedStartOpenEnded) return;
+      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editPlannedStartPushRemindersToggle, "click", (e: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const t = getCurrentEditTask();
+      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
+      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
+      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editPlannedStartPushRemindersRow, "click", (e: any) => {
+      if (e.target?.closest?.("#editPlannedStartPushRemindersToggle")) return;
+      const t = getCurrentEditTask();
+      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
+      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
+      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editPlannedStartOpenEndedRow, "click", (e: any) => {
+      if (e.target?.closest?.("#editPlannedStartOpenEndedToggle")) return;
+      const t = getCurrentEditTask();
+      if (!t || !els.editPlannedStartOpenEnded) return;
+      els.editPlannedStartOpenEnded.checked = !els.editPlannedStartOpenEnded.checked;
+      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
     });
@@ -1209,24 +1237,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       if (!t) return;
       t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
       ctx.clearEditValidationState();
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editFinalCheckpointActionSelect, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time goal completion actions", "pro");
-        return;
-      }
-      t.timeGoalAction =
-        els.editFinalCheckpointActionSelect?.value === "resetLog"
-          ? "resetLog"
-          : els.editFinalCheckpointActionSelect?.value === "resetNoLog"
-            ? "resetNoLog"
-            : els.editFinalCheckpointActionSelect?.value === "confirmModal"
-              ? "confirmModal"
-              : "continue";
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     });

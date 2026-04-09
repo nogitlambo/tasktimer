@@ -1,6 +1,7 @@
 "use client";
 
 import { Capacitor } from "@capacitor/core";
+import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
 import {
   PushNotifications,
   type PushNotificationSchema,
@@ -20,7 +21,7 @@ import {
   where,
 } from "firebase/firestore";
 
-import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { getFirebaseAppClient, getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { STORAGE_KEY } from "./storage";
 
@@ -66,6 +67,7 @@ type PushNotificationsPluginShape = typeof PushNotifications & {
 };
 
 let latestPushToken = "";
+let latestWebPushToken = "";
 let runtimeCleanup: (() => void) | null = null;
 let runtimeEnabled = false;
 let desiredPushEnabled = false;
@@ -81,6 +83,16 @@ function isNativePushRuntime() {
   if (!isNativeOrFileRuntime()) return false;
   try {
     return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+async function isWebPushRuntimeSupported() {
+  if (typeof window === "undefined" || isNativeOrFileRuntime()) return false;
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) return false;
+  try {
+    return await isSupported();
   } catch {
     return false;
   }
@@ -228,7 +240,7 @@ async function clearPushDeviceForUid(uid: string | null | undefined) {
   const normalizedUid = String(uid || "").trim();
   const db = getFirebaseFirestoreClient();
   if (!normalizedUid || !db) return;
-  const tokenToClear = String(latestPushToken || "").trim();
+  const tokenToClear = String(latestPushToken || latestWebPushToken || "").trim();
   await setDoc(
     doc(db, "users", normalizedUid, "devices", getPushDeviceId()),
     {
@@ -260,6 +272,24 @@ async function savePushTokenForUser(user: User | null, token: string) {
   await savePushDevicePatchForUser(user, {
     token: normalizedToken,
     enabled: true,
+    appActive: isAppActivelyForegrounded(),
+    appStateUpdatedAtMs: Date.now(),
+  });
+}
+
+async function saveWebPushTokenForUser(user: User | null, token: string) {
+  const normalizedToken = String(token || "").trim();
+  const normalizedUid = String(user?.uid || "").trim();
+  if (!normalizedToken || !normalizedUid) return;
+  await clearDuplicatePushTokenRegistrations(normalizedUid, normalizedToken, { keepCurrentDevice: true });
+  await savePushDevicePatchForUser(user, {
+    token: normalizedToken,
+    enabled: true,
+    native: false,
+    platform: "web",
+    kind: "webpush",
+    scope: "web",
+    channelId: null,
     appActive: isAppActivelyForegrounded(),
     appStateUpdatedAtMs: Date.now(),
   });
@@ -307,6 +337,18 @@ async function unregisterForPush() {
   await plugin.unregister();
 }
 
+async function unregisterWebPush() {
+  if (!(await isWebPushRuntimeSupported())) return;
+  try {
+    const app = getFirebaseAppClient();
+    if (!app) return;
+    await deleteToken(getMessaging(app));
+  } catch {
+    // Ignore web unregister failures.
+  }
+  latestWebPushToken = "";
+}
+
 function removeListenerHandle(handle: CapAppListenerHandle | null | undefined) {
   if (!handle?.remove) return;
   try {
@@ -335,13 +377,15 @@ async function disableTaskTimerPushRuntime(opts?: { clearCloudRegistration?: boo
     }
   }
   latestPushToken = "";
+  await unregisterWebPush().catch(() => {});
 }
 
 async function enableTaskTimerPushRuntime(): Promise<boolean> {
-  if (!isNativePushRuntime()) return true;
-
   const auth = getFirebaseAuthClient();
   if (!auth) return false;
+  const nativeRuntime = isNativePushRuntime();
+  const webRuntime = await isWebPushRuntimeSupported();
+  if (!nativeRuntime && !webRuntime) return true;
 
   if (runtimeEnabled && runtimeCleanup) {
     void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
@@ -349,33 +393,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   }
 
   await disableTaskTimerPushRuntime({ clearCloudRegistration: false });
-
-  const registrationHandle = await PushNotifications.addListener("registration", (token: PushNotificationToken) => {
-    latestPushToken = String(token.value || "").trim();
-    if (!latestPushToken) return;
-    void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("[push] Failed to save registration token", error);
-      }
-    });
-  });
-
-  const registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("[push] Registration error", event);
-    }
-  });
-
-  const receivedHandle = await PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.info("[push] Notification received", notification);
-    }
-  });
-
-  const actionHandle = await PushNotifications.addListener("pushNotificationActionPerformed", (event: ActionPerformed) => {
-    const data = event?.notification?.data && typeof event.notification.data === "object"
-      ? (event.notification.data as Record<string, unknown>)
-      : {};
+  const handlePushPayload = (data: Record<string, unknown>) => {
     const taskId = String(data.taskId || "").trim();
     const route = String(data.route || "/tasklaunch").trim();
     if (taskId) setPendingPushTaskId(taskId);
@@ -390,10 +408,48 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     ) {
       window.location.href = resolveTaskTimerTasksRoute();
     }
-    if (process.env.NODE_ENV !== "production") {
-      console.info("[push] Notification action", event);
-    }
-  });
+  };
+
+  let registrationHandle: CapAppListenerHandle | null = null;
+  let registrationErrorHandle: CapAppListenerHandle | null = null;
+  let receivedHandle: CapAppListenerHandle | null = null;
+  let actionHandle: CapAppListenerHandle | null = null;
+
+  if (nativeRuntime) {
+    registrationHandle = await PushNotifications.addListener("registration", (token: PushNotificationToken) => {
+      latestPushToken = String(token.value || "").trim();
+      if (!latestPushToken) return;
+      void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[push] Failed to save registration token", error);
+        }
+      });
+    });
+
+    registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[push] Registration error", event);
+      }
+    });
+
+    receivedHandle = await PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.info("[push] Notification received", notification);
+      }
+    });
+
+    actionHandle = await PushNotifications.addListener("pushNotificationActionPerformed", (event: ActionPerformed) => {
+      const data = event?.notification?.data && typeof event.notification.data === "object"
+        ? (event.notification.data as Record<string, unknown>)
+        : {};
+      handlePushPayload(data);
+      if (process.env.NODE_ENV !== "production") {
+        console.info("[push] Notification action", event);
+      }
+    });
+  }
+
+  let serviceWorkerMessageListener: ((event: MessageEvent) => void) | null = null;
 
   const unsubAuth = onAuthStateChanged(auth, (user) => {
     const previousUid = String(lastSyncedUid || "").trim();
@@ -406,6 +462,13 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
           }
         });
       }
+      if (latestWebPushToken) {
+        void saveWebPushTokenForUser(user, latestWebPushToken).catch((error) => {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[push] Failed to sync web token after auth change", error);
+          }
+        });
+      }
       void savePushAppStateForUser(user, isAppActivelyForegrounded()).catch(() => {});
       return;
     }
@@ -414,6 +477,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       lastSyncedUid = "";
     }
     latestPushToken = "";
+    latestWebPushToken = "";
   });
 
   const onVisibilityChange = () => {
@@ -451,14 +515,64 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     removeListenerHandle(registrationErrorHandle);
     removeListenerHandle(receivedHandle);
     removeListenerHandle(actionHandle);
+    if (serviceWorkerMessageListener && typeof navigator !== "undefined" && navigator.serviceWorker) {
+      navigator.serviceWorker.removeEventListener("message", serviceWorkerMessageListener);
+    }
   };
 
-  const granted = await registerForPush().catch((error) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("[push] Failed to register for push notifications", error);
+  let granted = true;
+  if (nativeRuntime) {
+    granted = await registerForPush().catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[push] Failed to register for push notifications", error);
+      }
+      return false;
+    });
+  }
+
+  if (webRuntime) {
+    try {
+      const app = getFirebaseAppClient();
+      const vapidKey = String(process.env.NEXT_PUBLIC_FIREBASE_WEB_PUSH_VAPID_KEY || "").trim();
+      if (!app || !vapidKey) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[push] Web push registration skipped because Firebase app or VAPID key is missing");
+        }
+      } else {
+        let permission = Notification.permission;
+        if (permission === "default") permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          const serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw");
+          const messaging = getMessaging(app);
+          latestWebPushToken = String(
+            (await getToken(messaging, {
+              vapidKey,
+              serviceWorkerRegistration,
+            })) || ""
+          ).trim();
+          if (latestWebPushToken) {
+            await saveWebPushTokenForUser(auth.currentUser, latestWebPushToken);
+          }
+          serviceWorkerMessageListener = (event: MessageEvent) => {
+            const data =
+              event?.data && typeof event.data === "object"
+                ? (event.data as Record<string, unknown>)
+                : {};
+            if (String(data.type || "").trim() !== "tasktimer-push-click") return;
+            handlePushPayload(data);
+          };
+          navigator.serviceWorker.addEventListener("message", serviceWorkerMessageListener);
+        } else if (!nativeRuntime) {
+          granted = false;
+        }
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[push] Failed to register for web push notifications", error);
+      }
+      if (!nativeRuntime) granted = false;
     }
-    return false;
-  });
+  }
 
   if (!granted) {
     cleanup();
@@ -503,6 +617,7 @@ export async function initTaskTimerPushNotifications(): Promise<() => void> {
 export async function getTaskTimerPushDiagnostics(uid: string | null | undefined): Promise<PushDiagnostics> {
   const normalizedUid = String(uid || "").trim();
   const nativeRuntime = isNativePushRuntime();
+  const webRuntime = !nativeRuntime;
   const deviceId = getPushDeviceId();
   const platform = (() => {
     try {
@@ -520,14 +635,16 @@ export async function getTaskTimerPushDiagnostics(uid: string | null | undefined
     } catch {
       permission = "unknown";
     }
+  } else if (typeof window !== "undefined" && "Notification" in window) {
+    permission = String(Notification.permission || "unknown");
   }
 
   const diagnostics: PushDiagnostics = {
-    runtime: nativeRuntime ? "native" : "web",
+    runtime: nativeRuntime ? "native" : webRuntime ? "web" : "web",
     platform,
     deviceId,
     permission,
-    localTokenPresent: !!latestPushToken,
+    localTokenPresent: !!(latestPushToken || latestWebPushToken),
     cloudDocPresent: false,
     cloudTokenPresent: false,
   };

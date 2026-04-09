@@ -53,16 +53,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
       checkpointToastEnabled: !!task.checkpointToastEnabled,
       checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
-      timeGoalAction:
-        task.timeGoalAction === "resetLog" ||
-        task.timeGoalAction === "resetNoLog" ||
-        task.timeGoalAction === "confirmModal"
-          ? task.timeGoalAction
-          : task.finalCheckpointAction === "resetLog" ||
-              task.finalCheckpointAction === "resetNoLog" ||
-              task.finalCheckpointAction === "confirmModal"
-            ? task.finalCheckpointAction
-            : "continue",
+      timeGoalAction: "confirmModal",
       presetIntervalsEnabled: !!task.presetIntervalsEnabled,
       presetIntervalValue: ctx.getPresetIntervalValueNum(task),
       presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId
@@ -145,16 +136,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.checkpointSoundMode = rawTask.checkpointSoundMode === "repeat" ? "repeat" : "once";
     nextTask.checkpointToastEnabled = !!rawTask.checkpointToastEnabled;
     nextTask.checkpointToastMode = rawTask.checkpointToastMode === "manual" ? "manual" : "auto5s";
-    nextTask.timeGoalAction =
-      rawTask.timeGoalAction === "resetLog" ||
-      rawTask.timeGoalAction === "resetNoLog" ||
-      rawTask.timeGoalAction === "confirmModal"
-        ? rawTask.timeGoalAction
-        : rawTask.finalCheckpointAction === "resetLog" ||
-            rawTask.finalCheckpointAction === "resetNoLog" ||
-            rawTask.finalCheckpointAction === "confirmModal"
-          ? rawTask.finalCheckpointAction
-          : "continue";
+    nextTask.timeGoalAction = "confirmModal";
     nextTask.xpDisqualifiedUntilReset = !!rawTask.xpDisqualifiedUntilReset;
     nextTask.presetIntervalsEnabled = !!rawTask.presetIntervalsEnabled;
     nextTask.presetIntervalValue = ctx.getPresetIntervalValueNum(rawTask as Task);
