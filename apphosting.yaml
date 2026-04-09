@@ -12,12 +12,12 @@ env:
   # Configure environment variables.
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    secret: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: AIzaSyAn-9BJKDDMCxjCcnNcqFhGcSyXwO3bVw8
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY
-    secret: NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY
+    secret: AIzaSyAJKOzUzbWO2n9ofnFoSrEJBwgyKZQB0_8
     availability:
       - BUILD
       - RUNTIME
@@ -48,6 +48,11 @@ env:
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     value: "G-Z5N5YGG09P"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_WEB_PUSH_VAPID_KEY
+    value: "BD9frAPdZah_mfGFVdt1OYoZdof72YXvOm6Y9YRgHRb08DRyoUK7nFiEwcgRdhdLZTxlREQb5yAmxJIP154_o-8"
     availability:
       - BUILD
       - RUNTIME
