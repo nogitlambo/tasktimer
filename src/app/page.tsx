@@ -18,6 +18,7 @@ import {
   signInWithEmailLink,
   signInWithPopup,
 } from "firebase/auth";
+import { Capacitor } from "@capacitor/core";
 
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
@@ -38,15 +39,26 @@ function shouldUseRedirectAuth() {
 }
 
 function isMissingNativeFirebaseAuthPluginError(err: unknown) {
+  const code =
+    err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code || "").toLowerCase() : "";
   const message =
     err && typeof err === "object" && "message" in err
       ? String((err as { message?: unknown }).message || "").toLowerCase()
       : String(err || "").toLowerCase();
   return (
+    code === "unimplemented" ||
     message.includes("firebaseauthentication plugin is not implemented on android") ||
     message.includes("firebaseauthentication plugin is not implemented") ||
     message.includes("plugin is not implemented")
   );
+}
+
+function isNativeFirebaseAuthPluginAvailable() {
+  try {
+    return Capacitor.isPluginAvailable("FirebaseAuthentication");
+  } catch {
+    return false;
+  }
 }
 
 function maskApiKey(value: string | undefined) {
@@ -431,7 +443,9 @@ function HomeContent() {
           setAuthStatus("Signed in successfully.");
           return;
         } catch (nativeErr: unknown) {
-          if (!isMissingNativeFirebaseAuthPluginError(nativeErr)) throw nativeErr;
+          if (!isMissingNativeFirebaseAuthPluginError(nativeErr) || isNativeFirebaseAuthPluginAvailable()) {
+            throw nativeErr;
+          }
           throw new Error(
             "Google sign-in is unavailable in this Android build because the native FirebaseAuthentication plugin is not loading."
           );

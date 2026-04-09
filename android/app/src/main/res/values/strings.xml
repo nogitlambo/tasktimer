@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">TaskLaunch</string>
     <string name="title_activity_main">TaskLaunch</string>
-    <string name="package_name">com.tasktimer.app</string>
-    <string name="custom_url_scheme">com.tasktimer.app</string>
+    <string name="package_name">com.tasklaunch.app</string>
+    <string name="custom_url_scheme">com.tasklaunch.app</string>
 </resources>
