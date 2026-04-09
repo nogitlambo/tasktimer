@@ -288,7 +288,7 @@ function extractAndroidDeviceRows(snapshot) {
 }
 
 function hasFreshForegroundDevice(deviceRows, nowMs) {
-  return deviceRows.some((row) => row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
+  return deviceRows.some((row) => row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
 function computeNextPlannedStartDueAtMs(plannedStartTime, fromMs) {

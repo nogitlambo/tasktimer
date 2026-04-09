@@ -1,7 +1,7 @@
 "use client";
 
 import { Capacitor } from "@capacitor/core";
-import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
+import { deleteToken, getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import {
   PushNotifications,
   type PushNotificationSchema,
@@ -180,21 +180,26 @@ async function savePushDevicePatchForUser(user: User | null, patch: Record<strin
   const db = getFirebaseFirestoreClient();
   if (!uid || !db) return;
   lastSyncedUid = uid;
-  const platform = (() => {
-    try {
-      return String(Capacitor.getPlatform?.() || "native");
-    } catch {
-      return "native";
-    }
-  })();
+  const nativeRuntime = isNativePushRuntime();
+  const platform = nativeRuntime
+    ? (() => {
+        try {
+          return String(Capacitor.getPlatform?.() || "native");
+        } catch {
+          return "native";
+        }
+      })()
+    : "web";
   await setDoc(
     doc(db, "users", uid, "devices", getPushDeviceId()),
     {
       platform,
       provider: "fcm",
-      channelId: TASKLAUNCH_PUSH_CHANNEL_ID,
-      native: true,
-      appId: "com.tasklaunch.app",
+      channelId: nativeRuntime ? TASKLAUNCH_PUSH_CHANNEL_ID : null,
+      native: nativeRuntime,
+      appId: nativeRuntime ? "com.tasklaunch.app" : null,
+      kind: nativeRuntime ? "native" : "webpush",
+      scope: nativeRuntime ? "native" : "web",
       ...patch,
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp(),
@@ -293,6 +298,13 @@ async function saveWebPushTokenForUser(user: User | null, token: string) {
     appActive: isAppActivelyForegrounded(),
     appStateUpdatedAtMs: Date.now(),
   });
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[push] Saved web push token", {
+      uid: normalizedUid,
+      deviceId: getPushDeviceId(),
+      tokenPreview: `${normalizedToken.slice(0, 12)}...`,
+    });
+  }
 }
 
 async function savePushAppStateForUser(user: User | null, isActive: boolean) {
@@ -450,6 +462,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   }
 
   let serviceWorkerMessageListener: ((event: MessageEvent) => void) | null = null;
+  let unsubscribeForegroundWebMessage: (() => void) | null = null;
 
   const unsubAuth = onAuthStateChanged(auth, (user) => {
     const previousUid = String(lastSyncedUid || "").trim();
@@ -515,6 +528,13 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     removeListenerHandle(registrationErrorHandle);
     removeListenerHandle(receivedHandle);
     removeListenerHandle(actionHandle);
+    if (unsubscribeForegroundWebMessage) {
+      try {
+        unsubscribeForegroundWebMessage();
+      } catch {
+        // Ignore foreground listener cleanup failures.
+      }
+    }
     if (serviceWorkerMessageListener && typeof navigator !== "undefined" && navigator.serviceWorker) {
       navigator.serviceWorker.removeEventListener("message", serviceWorkerMessageListener);
     }
@@ -541,18 +561,105 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       } else {
         let permission = Notification.permission;
         if (permission === "default") permission = await Notification.requestPermission();
+        if (process.env.NODE_ENV !== "production") {
+          console.info("[push] Web push permission status", {
+            permission,
+            hasApp: !!app,
+            hasVapidKey: !!vapidKey,
+          });
+        }
         if (permission === "granted") {
-          const serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw");
+          const serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          await navigator.serviceWorker.ready;
+          if (!serviceWorkerRegistration.active) {
+            await new Promise<void>((resolve) => {
+              const installingWorker =
+                serviceWorkerRegistration.installing || serviceWorkerRegistration.waiting;
+              if (!installingWorker) {
+                resolve();
+                return;
+              }
+              const handleStateChange = () => {
+                if (installingWorker.state === "activated") {
+                  installingWorker.removeEventListener("statechange", handleStateChange);
+                  resolve();
+                }
+              };
+              installingWorker.addEventListener("statechange", handleStateChange);
+            });
+          }
+          if (process.env.NODE_ENV !== "production") {
+            console.info("[push] Web push service worker ready", {
+              scope: serviceWorkerRegistration.scope,
+              active: !!serviceWorkerRegistration.active,
+              installing: !!serviceWorkerRegistration.installing,
+              waiting: !!serviceWorkerRegistration.waiting,
+            });
+          }
           const messaging = getMessaging(app);
-          latestWebPushToken = String(
-            (await getToken(messaging, {
-              vapidKey,
-              serviceWorkerRegistration,
-            })) || ""
-          ).trim();
+          let webToken = "";
+          try {
+            webToken = String(
+              (await getToken(messaging, {
+                vapidKey,
+                serviceWorkerRegistration,
+              })) || ""
+            ).trim();
+          } catch (error) {
+            if (process.env.NODE_ENV !== "production") {
+              console.error("[push] Web getToken failed", {
+                error,
+                permission,
+                scope: serviceWorkerRegistration.scope,
+                active: !!serviceWorkerRegistration.active,
+                origin: typeof window !== "undefined" ? window.location.origin : null,
+              });
+            }
+            throw error;
+          }
+          latestWebPushToken = webToken;
+          if (process.env.NODE_ENV !== "production") {
+            console.info("[push] Web getToken completed", {
+              tokenPresent: !!latestWebPushToken,
+              tokenPreview: latestWebPushToken ? `${latestWebPushToken.slice(0, 12)}...` : null,
+            });
+          }
           if (latestWebPushToken) {
             await saveWebPushTokenForUser(auth.currentUser, latestWebPushToken);
+          } else if (process.env.NODE_ENV !== "production") {
+            console.warn("[push] Web getToken returned an empty token");
           }
+          unsubscribeForegroundWebMessage = onMessage(messaging, (payload) => {
+            const notification =
+              payload?.notification && typeof payload.notification === "object"
+                ? payload.notification
+                : {};
+            const data =
+              payload?.data && typeof payload.data === "object"
+                ? (payload.data as Record<string, unknown>)
+                : {};
+            const title = String(notification.title || "Task Reminder").trim() || "Task Reminder";
+            const body = String(notification.body || "A task is scheduled to start now.").trim();
+            if (Notification.permission === "granted") {
+              try {
+                void serviceWorkerRegistration.showNotification(title, {
+                  body,
+                  data,
+                });
+              } catch (error) {
+                if (process.env.NODE_ENV !== "production") {
+                  console.warn("[push] Failed to show foreground web notification", { error, data });
+                }
+              }
+            }
+            if (process.env.NODE_ENV !== "production") {
+              console.info("[push] Foreground web push received", {
+                title,
+                body,
+                taskId: String(data.taskId || "").trim() || null,
+              });
+            }
+          });
           serviceWorkerMessageListener = (event: MessageEvent) => {
             const data =
               event?.data && typeof event.data === "object"

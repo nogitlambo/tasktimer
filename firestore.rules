@@ -109,6 +109,7 @@ service cloud.firestore {
         "defaultTaskTimerFormat",
         "taskView",
         "autoFocusOnTaskLaunchEnabled",
+        "mobilePushAlertsEnabled",
         "dynamicColorsEnabled",
         "checkpointAlertSoundEnabled",
         "checkpointAlertToastEnabled",
@@ -123,6 +124,7 @@ service cloud.firestore {
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
+      && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)
@@ -180,6 +182,7 @@ service cloud.firestore {
     function isDeviceDoc() {
       return onlyKeys([
         "token",
+        "enabled",
         "platform",
         "provider",
         "channelId",
@@ -193,6 +196,7 @@ service cloud.firestore {
         "updatedAt"
       ])
       && (!("token" in request.resource.data) || request.resource.data.token is string)
+      && (!("enabled" in request.resource.data) || request.resource.data.enabled is bool)
       && (!("platform" in request.resource.data) || request.resource.data.platform is string)
       && (!("provider" in request.resource.data) || request.resource.data.provider is string)
       && (!("channelId" in request.resource.data) || request.resource.data.channelId == null || request.resource.data.channelId is string)
