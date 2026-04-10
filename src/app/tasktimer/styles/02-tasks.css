@@ -1512,6 +1512,12 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   position:absolute;
   left:8px;
   right:8px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:6px;
+  padding:10px 10px 8px;
   border:1px dashed rgba(117,231,255,.52);
   background:
     linear-gradient(180deg, rgba(53,232,255,.22), rgba(53,232,255,.08)),
@@ -1526,6 +1532,33 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
     linear-gradient(180deg, rgba(255,120,120,.18), rgba(255,120,120,.06)),
     rgba(38,15,20,.4);
   box-shadow:inset 0 0 0 1px rgba(255,120,120,.18);
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDropPreview.isShort{
+  min-height:22px;
+  justify-content:center;
+  gap:0;
+  padding-top:4px;
+  padding-bottom:4px;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDropPreviewName{
+  font-family:var(--font-tight);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  line-height:1.05;
+  color:#f3fcff;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDropPreviewMeta{
+  font-size:10px;
+  line-height:1.25;
+  font-weight:600;
+  letter-spacing:.03em;
+  color:rgba(243,252,255,.84);
+  white-space:normal;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDropPreview.isShort .scheduleDropPreviewMeta{
+  display:none;
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleSlot{
   border-top:1px solid rgba(255,255,255,.05);
@@ -1742,6 +1775,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
   color:#f7fdff !important;
+  transform:translateY(1px);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenHeaderPipe,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenHeaderPipe{
@@ -1759,19 +1793,34 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
 body[data-theme="cyan"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
   border-color:rgba(117,231,255,.34) !important;
-  background:rgba(53,232,255,.14) !important;
-  box-shadow:0 0 16px rgba(60,223,255,.1), inset 0 0 0 1px rgba(117,231,255,.12) !important;
+  background:
+    linear-gradient(180deg, rgba(53,232,255,.1), rgba(11,33,40,.18)) !important;
+  box-shadow:
+    0 0 10px rgba(60,223,255,.06),
+    inset 0 2px 5px rgba(4,18,24,.42),
+    inset 0 0 0 1px rgba(117,231,255,.12),
+    inset 0 -1px 0 rgba(170,247,255,.08) !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
   border-color:rgba(214,120,255,.32) !important;
-  background:rgba(214,120,255,.14) !important;
-  box-shadow:0 0 16px rgba(214,120,255,.08), inset 0 0 0 1px rgba(214,120,255,.1) !important;
+  background:
+    linear-gradient(180deg, rgba(214,120,255,.1), rgba(33,16,42,.2)) !important;
+  box-shadow:
+    0 0 10px rgba(214,120,255,.05),
+    inset 0 2px 5px rgba(20,8,29,.46),
+    inset 0 0 0 1px rgba(214,120,255,.1),
+    inset 0 -1px 0 rgba(242,194,255,.08) !important;
 }
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
   border-color:rgba(214,246,116,.34) !important;
-  background:rgba(214,246,116,.16) !important;
+  background:
+    linear-gradient(180deg, rgba(214,246,116,.12), rgba(43,46,15,.22)) !important;
   color:#fbffe3 !important;
-  box-shadow:0 0 16px rgba(219,255,79,.1), inset 0 0 0 1px rgba(214,246,116,.12) !important;
+  box-shadow:
+    0 0 10px rgba(219,255,79,.06),
+    inset 0 2px 5px rgba(27,31,8,.42),
+    inset 0 0 0 1px rgba(214,246,116,.12),
+    inset 0 -1px 0 rgba(241,255,181,.08) !important;
 }

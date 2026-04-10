@@ -68,10 +68,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editPlannedStartOpenEnded) {
       els.editPlannedStartOpenEnded.checked = openEnded;
     }
-    if (els.editPlannedStartOpenEndedToggle) {
-      els.editPlannedStartOpenEndedToggle.classList.toggle("on", openEnded);
-      els.editPlannedStartOpenEndedToggle.setAttribute("aria-checked", String(openEnded));
-    }
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
       els.editPlannedStartPushReminders.disabled = openEnded;
@@ -1005,16 +1001,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
     });
-    ctx.on(els.editPlannedStartOpenEndedToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const t = getCurrentEditTask();
-      if (!t || !els.editPlannedStartOpenEnded) return;
-      els.editPlannedStartOpenEnded.checked = !els.editPlannedStartOpenEnded.checked;
-      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
-    });
     ctx.on(els.editPlannedStartPushReminders, "change", () => {
       const t = getCurrentEditTask();
       if (!t || t.plannedStartOpenEnded) return;
@@ -1038,15 +1024,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
       els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editPlannedStartOpenEndedRow, "click", (e: any) => {
-      if (e.target?.closest?.("#editPlannedStartOpenEndedToggle")) return;
-      const t = getCurrentEditTask();
-      if (!t || !els.editPlannedStartOpenEnded) return;
-      els.editPlannedStartOpenEnded.checked = !els.editPlannedStartOpenEnded.checked;
-      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
     });

@@ -180,21 +180,23 @@ service cloud.firestore {
     }
 
     function isDeviceDoc() {
-      return onlyKeys([
-        "token",
-        "enabled",
-        "platform",
-        "provider",
+        return onlyKeys([
+          "token",
+          "enabled",
+          "platform",
+          "provider",
         "channelId",
         "native",
         "appId",
         "appActive",
         "appStateUpdatedAtMs",
-        "kind",
-        "scope",
-        "createdAt",
-        "updatedAt"
-      ])
+          "kind",
+          "scope",
+          "checkpointAlertMuteTaskId",
+          "checkpointAlertMuteAtMs",
+          "createdAt",
+          "updatedAt"
+        ])
       && (!("token" in request.resource.data) || request.resource.data.token is string)
       && (!("enabled" in request.resource.data) || request.resource.data.enabled is bool)
       && (!("platform" in request.resource.data) || request.resource.data.platform is string)
@@ -204,11 +206,13 @@ service cloud.firestore {
       && (!("appId" in request.resource.data) || request.resource.data.appId == null || request.resource.data.appId is string)
       && (!("appActive" in request.resource.data) || request.resource.data.appActive is bool)
       && (!("appStateUpdatedAtMs" in request.resource.data) || request.resource.data.appStateUpdatedAtMs is int)
-      && (!("kind" in request.resource.data) || request.resource.data.kind is string)
-      && (!("scope" in request.resource.data) || request.resource.data.scope is string)
-      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
-      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
-    }
+        && (!("kind" in request.resource.data) || request.resource.data.kind is string)
+        && (!("scope" in request.resource.data) || request.resource.data.scope is string)
+        && (!("checkpointAlertMuteTaskId" in request.resource.data) || request.resource.data.checkpointAlertMuteTaskId == null || request.resource.data.checkpointAlertMuteTaskId is string)
+        && (!("checkpointAlertMuteAtMs" in request.resource.data) || request.resource.data.checkpointAlertMuteAtMs is int)
+        && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
+        && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+      }
 
     function isTaskDoc() {
       return onlyKeys([

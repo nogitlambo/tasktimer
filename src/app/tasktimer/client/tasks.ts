@@ -539,6 +539,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         },
       });
     } else if (action === "muteCheckpointAlert") {
+      if (taskId) ctx.broadcastCheckpointAlertMute(taskId);
       ctx.stopCheckpointRepeatAlert();
       return;
     }

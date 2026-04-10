@@ -1,5 +1,7 @@
 ﻿﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { collection, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+
 import type { Task, DeletedTaskMeta } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
@@ -48,6 +50,7 @@ import {
   type TaskTimerPlan,
 } from "./lib/entitlements";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import type {
   AppPage,
   DashboardRenderOptions,
@@ -144,6 +147,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   const destroy = () => {
     if (dashboardBusyHideTimer != null) window.clearTimeout(dashboardBusyHideTimer);
+    if (unsubscribeCheckpointAlertMuteSignals) {
+      unsubscribeCheckpointAlertMuteSignals();
+      unsubscribeCheckpointAlertMuteSignals = null;
+    }
     sessionApi?.destroySessionRuntime();
     dashboardBusyHideTimer = null;
     dashboardBusyStack.length = 0;
@@ -358,6 +365,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let rewardsHistoryApi: ReturnType<typeof createTaskTimerRewardsHistory> | null = null;
   const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
   let lastDashboardLiveSignature = "";
+  let unsubscribeCheckpointAlertMuteSignals: (() => void) | null = null;
   const unsubscribeCachedPreferences = workspaceRepository.subscribeCachedPreferences((prefs) => {
     cloudPreferencesCache = prefs;
     rewardProgress = normalizeRewardProgress((prefs || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS);
@@ -1239,6 +1247,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     checkpointRepeatActiveTaskId: () => sessionApi?.checkpointRepeatActiveTaskId() || null,
     activeCheckpointToastTaskId: () => sessionApi?.activeCheckpointToastTaskId() || null,
     stopCheckpointRepeatAlert: () => sessionApi?.stopCheckpointRepeatAlert(),
+    broadcastCheckpointAlertMute,
     enqueueCheckpointToast: (title, text, opts) => sessionApi?.enqueueCheckpointToast(title, text, opts as any),
     syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
     syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
@@ -1488,6 +1497,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     stopTask: (index) => stopTaskApi(index),
     resetTask: (index) => resetTaskApi(index),
     resetTaskStateImmediate: (task, opts) => resetTaskStateImmediateApi(task, opts),
+    broadcastCheckpointAlertMute,
   });
   bootstrapRewardSessionTrackers();
   const {
@@ -1720,6 +1730,59 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function currentEmail() {
     return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
+  }
+
+  function broadcastCheckpointAlertMute(taskIdRaw: string) {
+    const uid = currentUid();
+    const taskId = String(taskIdRaw || "").trim();
+    const db = getFirebaseFirestoreClient();
+    if (!uid || !taskId || !db) return;
+    void setDoc(
+      doc(db, "users", uid, "devices", getTaskTimerPushDeviceId()),
+      {
+        checkpointAlertMuteTaskId: taskId,
+        checkpointAlertMuteAtMs: Date.now(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    ).catch(() => {});
+  }
+
+  function subscribeToCheckpointAlertMuteSignals() {
+    if (unsubscribeCheckpointAlertMuteSignals) {
+      unsubscribeCheckpointAlertMuteSignals();
+      unsubscribeCheckpointAlertMuteSignals = null;
+    }
+    const uid = currentUid();
+    const db = getFirebaseFirestoreClient();
+    if (!uid || !db) return;
+    let isInitialSnapshot = true;
+    let lastProcessedMuteAtMs = 0;
+    unsubscribeCheckpointAlertMuteSignals = onSnapshot(
+      collection(db, "users", uid, "devices"),
+      (snapshot) => {
+        let latestMuteAtMs = lastProcessedMuteAtMs;
+        let latestMutedTaskId = "";
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Record<string, unknown>;
+          const muteAtMs = Math.max(0, Math.floor(Number(data?.checkpointAlertMuteAtMs || 0) || 0));
+          if (muteAtMs < latestMuteAtMs) return;
+          latestMuteAtMs = muteAtMs;
+          latestMutedTaskId = String(data?.checkpointAlertMuteTaskId || "").trim();
+        });
+        if (isInitialSnapshot) {
+          isInitialSnapshot = false;
+          lastProcessedMuteAtMs = latestMuteAtMs;
+          return;
+        }
+        if (latestMuteAtMs <= lastProcessedMuteAtMs || !latestMutedTaskId) return;
+        lastProcessedMuteAtMs = latestMuteAtMs;
+        if (sessionApi?.checkpointRepeatActiveTaskId() === latestMutedTaskId) {
+          sessionApi.stopCheckpointRepeatAlert();
+        }
+      },
+      () => {}
+    );
   }
 
   function escapeHtmlUI(str: unknown) {
@@ -2069,9 +2132,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
           .join("");
         const previewCard =
           dragPreview && dragPreview.day === day
-            ? `<div class="scheduleDropPreview${dragPreview.hasOverlap ? " isBlocked" : ""}" aria-hidden="true" style="top:${
-                dragPreview.startMinutes * SCHEDULE_MINUTE_PX
-              }px;height:${dragPreview.durationMinutes * SCHEDULE_MINUTE_PX}px"></div>`
+            ? (() => {
+                const previewMetaText = `${formatScheduleMinutes(dragPreview.startMinutes)} | ${formatScheduleDurationMinutes(dragPreview.durationMinutes)}`;
+                const shortClass = dragPreview.durationMinutes < 30 ? " isShort" : "";
+                return `<div class="scheduleDropPreview${dragPreview.hasOverlap ? " isBlocked" : ""}${shortClass}" aria-hidden="true" style="top:${
+                  dragPreview.startMinutes * SCHEDULE_MINUTE_PX
+                }px;height:${dragPreview.durationMinutes * SCHEDULE_MINUTE_PX}px">
+                  <span class="scheduleDropPreviewName">${escapeHtmlUI(dragPreview.task.name || "Task")}</span>
+                  <span class="scheduleDropPreviewMeta">${escapeHtmlUI(previewMetaText)}</span>
+                </div>`;
+              })()
             : "";
         const slots = Array.from({ length: 24 * 60 / SCHEDULE_SNAP_MINUTES }, (_, index) => {
           const slotMinutes = index * SCHEDULE_SNAP_MINUTES;
@@ -2889,6 +2959,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   // Init
   const bootstrap = () => {
     hydrateUiStateFromCaches();
+    subscribeToCheckpointAlertMuteSignals();
     void refreshOwnSharedSummaries()
       .then(() => reconcileOwnedSharedSummaryStates())
       .then(() => {

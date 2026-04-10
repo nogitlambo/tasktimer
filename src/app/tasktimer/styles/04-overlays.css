@@ -1073,19 +1073,49 @@ body[data-theme="purple"] .rewardsInfoText{
   gap: 10px;
 }
 
+#editOverlay .addTaskPlannedStartTimeCluster,
+#addTaskOverlay .addTaskPlannedStartTimeCluster{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+
 #editOverlay #editPlannedStartHourSelect,
 #editOverlay #editPlannedStartMinuteSelect,
 #editOverlay #editPlannedStartMeridiemSelect{
   min-width: 0;
+  appearance: none;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  border: 1px solid rgba(126, 214, 236, .24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+    rgba(13,18,24,.92);
+  color: rgba(234,247,255,.96);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  text-align: center;
+  text-align-last: center;
+  font-weight: 700;
+  padding: 7px 22px 7px 10px;
+  line-height: 1.1;
 }
 
 #editOverlay #editPlannedStartHourSelect,
 #editOverlay #editPlannedStartMinuteSelect{
-  width: 84px;
+  width: 56px;
 }
 
 #editOverlay #editPlannedStartMeridiemSelect{
-  width: 92px;
+  width: 62px;
+}
+
+#editOverlay #editPlannedStartHourSelect:focus-visible,
+#editOverlay #editPlannedStartMinuteSelect:focus-visible,
+#editOverlay #editPlannedStartMeridiemSelect:focus-visible{
+  outline: none;
+  border-color: rgba(117,231,255,.42);
+  box-shadow: inset 0 0 0 1px rgba(117,231,255,.12), 0 0 0 1px rgba(117,231,255,.18);
 }
 
 #editOverlay #editPlannedStartHourSelect.isDisabled,
@@ -1284,23 +1314,52 @@ body[data-theme="purple"] .rewardsInfoText{
 #addTaskOverlay .addTaskPlannedStartSelectorRow{
   display:flex;
   align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
+  gap:6px;
+  flex-wrap:nowrap;
+}
+
+#editOverlay .addTaskPlannedStartSelectorRow{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:nowrap;
 }
 
 #addTaskOverlay #addTaskPlannedStartHourSelect,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect,
 #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
   min-width: 0;
+  appearance: none;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  border: 1px solid rgba(126, 214, 236, .24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+    rgba(13,18,24,.92);
+  color: rgba(234,247,255,.96);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  text-align: center;
+  text-align-last: center;
+  font-weight: 700;
+  padding: 7px 14px;
+  line-height: 1.1;
 }
 
 #addTaskOverlay #addTaskPlannedStartHourSelect,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect{
-  width: 84px;
+  width: 64px;
 }
 
 #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
-  width: 92px;
+  width: 72px;
+}
+
+#addTaskOverlay #addTaskPlannedStartHourSelect:focus-visible,
+#addTaskOverlay #addTaskPlannedStartMinuteSelect:focus-visible,
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect:focus-visible{
+  outline: none;
+  border-color: rgba(117,231,255,.42);
+  box-shadow: inset 0 0 0 1px rgba(117,231,255,.12), 0 0 0 1px rgba(117,231,255,.18);
 }
 
 #addTaskOverlay .addTaskPlannedStartSeparator{
@@ -1331,6 +1390,35 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .addTaskPlannedStartCheckboxRow input[type="checkbox"]{
   margin:0;
+}
+
+#addTaskOverlay .addTaskPlannedStartInlineCheckboxRow,
+#editOverlay .addTaskPlannedStartInlineCheckboxRow{
+  gap:0;
+  color: rgba(221,236,246,.92);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  align-self:center;
+  margin-left:10px;
+}
+
+#addTaskOverlay .addTaskPlannedStartInlineCheckboxRow span,
+#editOverlay .addTaskPlannedStartInlineCheckboxRow span{
+  display:inline-block;
+  padding-left:10px;
+  font-family: var(--font-orbitron);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+#addTaskOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"],
+#editOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"]{
+  width:14px;
+  height:14px;
 }
 
 #addTaskOverlay .addTaskPlannedStartHelp{
@@ -1623,6 +1711,17 @@ body[data-theme="purple"] .rewardsInfoText{
   margin-top: 10px;
   color: rgba(194,224,236,.88);
   cursor: pointer;
+}
+
+#addTaskOverlay .addTaskPlannedStartInlineCheckboxRow,
+#editOverlay .addTaskPlannedStartInlineCheckboxRow{
+  justify-content: flex-start;
+  margin-top: 0;
+  color: rgba(194,224,236,.88);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  clip-path: none;
 }
 
 #editOverlay .addTaskPlannedStartToggleWrap{
@@ -2015,13 +2114,16 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   font-size: 18px;
   font-weight: 700;
   letter-spacing: .06em;
+  text-align: center;
   text-transform: uppercase;
 }
 
 #timeGoalCompleteOverlay .modalSubtext{
   margin: 0 0 12px;
   color: rgba(226,246,255,.9);
+  font-family: var(--font-geist-sans);
   line-height: 1.45;
+  text-align: center;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteMeta[hidden]{
@@ -2029,13 +2131,12 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
-  flex-direction: column;
-  margin-top: 0;
-  gap: 8px;
+  justify-content: center;
+  margin-top: 4px;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn{
-  width: 100%;
+  min-width: 132px;
   justify-content: center;
 }
 
@@ -2055,17 +2156,6 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   box-shadow: 0 0 14px rgba(0,220,255,.3);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteGoalEditor{
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(120, 220, 255, 0.18);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteGoalEditor .footerBtns{
-  margin-top: 10px;
-  gap: 8px;
-}
-
 body[data-theme="purple"] #timeGoalCompleteOverlay .modal{
   border-color: rgba(214,96,229,.42);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
@@ -2073,10 +2163,6 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .modal{
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .modalSubtext{
   color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteGoalEditor{
-  border-top-color: rgba(214,96,229,.24);
 }
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,

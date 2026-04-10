@@ -1,6 +1,7 @@
 import type { Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { computeFocusInsights } from "../lib/focusInsights";
+import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import type { TaskTimerSessionContext } from "./context";
 
@@ -299,55 +300,23 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
   }
 
-  function getTimeGoalReminderDelayMs() {
-    return 60 * 60 * 1000;
-  }
-
-  function setUnitButtonActive(btn: HTMLButtonElement | null, active: boolean) {
-    if (!btn) return;
-    btn.classList.toggle("isOn", active);
-    btn.setAttribute("aria-pressed", active ? "true" : "false");
-  }
-
-  function getTimeGoalCompleteDurationMinutes() {
-    const value = Math.max(0, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "0") || 0));
-    if (!(value > 0)) return 0;
-    if (ctx.getTimeGoalCompleteDurationUnit() === "minute") {
-      return ctx.getTimeGoalCompleteDurationPeriod() === "day" ? value : value * 7;
-    }
-    return ctx.getTimeGoalCompleteDurationPeriod() === "day" ? value * 60 : value * 60 * 7;
-  }
-
-  function syncTimeGoalCompleteDurationUnitUi() {
-    const minuteOn = ctx.getTimeGoalCompleteDurationUnit() === "minute";
-    setUnitButtonActive(els.timeGoalCompleteDurationUnitMinute, minuteOn);
-    setUnitButtonActive(els.timeGoalCompleteDurationUnitHour, !minuteOn);
-    const dayOn = ctx.getTimeGoalCompleteDurationPeriod() === "day";
-    setUnitButtonActive(els.timeGoalCompleteDurationPeriodDay, dayOn);
-    setUnitButtonActive(els.timeGoalCompleteDurationPeriodWeek, !dayOn);
-    const value = Math.max(0, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "0") || 0));
-    const unitLabel =
-      ctx.getTimeGoalCompleteDurationUnit() === "minute" ? (value === 1 ? "minute" : "minutes") : value === 1 ? "hour" : "hours";
-    const periodLabel = ctx.getTimeGoalCompleteDurationPeriod() === "day" ? "day" : "week";
-    if (els.timeGoalCompleteDurationReadout) {
-      els.timeGoalCompleteDurationReadout.textContent = `${value} ${unitLabel} per ${periodLabel}`;
-    }
-  }
-
-  function setTimeGoalCompleteEditorVisible(visible: boolean) {
-    if (els.timeGoalCompleteGoalEditor) {
-      (els.timeGoalCompleteGoalEditor as HTMLElement).style.display = visible ? "block" : "none";
-    }
-  }
-
-  function populateTimeGoalCompleteEditor(task: Task) {
-    const durationValue = Math.max(1, Math.floor(Number(task.timeGoalValue || 1) || 1));
-    ctx.setTimeGoalCompleteDurationUnit(task.timeGoalUnit === "minute" ? "minute" : "hour");
-    ctx.setTimeGoalCompleteDurationPeriod(task.timeGoalPeriod === "week" ? "week" : "day");
-    if (els.timeGoalCompleteDurationValueInput) {
-      els.timeGoalCompleteDurationValueInput.value = String(durationValue);
-    }
-    syncTimeGoalCompleteDurationUnitUi();
+  function getTimeGoalCompletionAwardXp(task: Task, elapsedMs: number) {
+    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    if (safeElapsedMs <= 0) return 0;
+    const award = awardCompletedSessionXp(ctx.getRewardProgress(), {
+      taskId: String(task.id || "").trim() || null,
+      awardedAt: nowMs(),
+      elapsedMs: safeElapsedMs,
+      xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      tasks: ctx.getTasks(),
+      weekStarting: ctx.getWeekStarting(),
+      dashboardIncludedModes: ctx.getDashboardIncludedModes(),
+      isModeEnabled: ctx.isModeEnabled,
+      taskModeOf: ctx.taskModeOf,
+      momentumEntitled: ctx.hasEntitlement("advancedInsights"),
+    });
+    return Math.max(0, Math.floor(Number(award.amount || 0) || 0));
   }
 
   function openTimeGoalCompleteModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
@@ -360,17 +329,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     delete ctx.getTimeGoalReminderAtMsByTaskId()[taskId];
     if (els.timeGoalCompleteTitle) {
-      els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete`;
+      els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete!`;
     }
-    const elapsedLabel = sharedTasks.formatCheckpointTimeGoalText(task);
+    const awardedXp = getTimeGoalCompletionAwardXp(task, elapsedMs);
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = opts?.reminder
-        ? `This task is still running beyond its current time goal of ${elapsedLabel}. Please choose how you want to proceed.`
-        : `This task has reached its current time goal of ${elapsedLabel}. Please choose how you want to proceed.`;
+      els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
     }
     if (els.timeGoalCompleteMeta) els.timeGoalCompleteMeta.textContent = "";
-    populateTimeGoalCompleteEditor(task);
-    setTimeGoalCompleteEditorVisible(false);
     persistPendingTimeGoalFlow(task, "main", opts);
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
   }
@@ -451,37 +416,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
-  }
-
-  function continueTaskAfterTimeGoalModal(task: Task) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId) return;
-    const currentElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
-    resumeTaskAfterTimeGoalModal(task);
-    ctx.getTimeGoalReminderAtMsByTaskId()[taskId] = nowMs() + getTimeGoalReminderDelayMs();
-    ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(currentElapsedMs / 1000);
-    ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-    clearPendingTimeGoalFlow();
-    ctx.save();
-    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    ctx.render();
-    openDeferredFocusModeTimeGoalModal();
-  }
-
-  function resumeTaskAfterTimeGoalModal(task: Task) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId || getActiveTimeGoalModalTaskId() !== taskId) return;
-    const frozenElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
-    task.accumulatedMs = frozenElapsedMs;
-    task.startMs = nowMs();
-    task.running = true;
-    task.hasStarted = true;
-    ctx.syncRewardSessionTrackerForTask(task, task.startMs);
-    ctx.setTimeGoalModalTaskId(null);
-    ctx.setTimeGoalModalFrozenElapsedMs(0);
-    if (els.timeGoalCompleteOverlay) {
-      delete (els.timeGoalCompleteOverlay as HTMLElement).dataset.taskId;
-    }
   }
 
   function syncFocusRunButtons(task?: Task | null) {
@@ -981,6 +915,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       ctx.getCheckpointRepeatActiveTaskId() &&
       String(active.taskId) === String(ctx.getCheckpointRepeatActiveTaskId())
     ) {
+      ctx.broadcastCheckpointAlertMute(String(active.taskId));
       stopCheckpointRepeatAlert();
     }
     if (ctx.getCheckpointToastAutoCloseTimer() != null) {
@@ -1212,42 +1147,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         maybeShowFocusSessionNotesSavedStatus(ctx.getFocusModeTaskId());
       }, 0);
     });
-    ctx.on(els.timeGoalCompleteUpdateGoalBtn, "click", () => {
+    ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();
-      if (!task) return;
-      populateTimeGoalCompleteEditor(task);
-      setTimeGoalCompleteEditorVisible(true);
-    });
-    ctx.on(els.timeGoalCompleteContinueNowBtn, "click", () => {
-      const task = getActiveTimeGoalModalTask();
-      if (!task) return;
-      continueTaskAfterTimeGoalModal(task);
-    });
-    ctx.on(els.timeGoalCompleteContinueCancelBtn, "click", () => setTimeGoalCompleteEditorVisible(false));
-    ctx.on(els.timeGoalCompleteDurationValueInput, "input", syncTimeGoalCompleteDurationUnitUi);
-    ctx.on(els.timeGoalCompleteDurationUnitMinute, "click", () => {
-      ctx.setTimeGoalCompleteDurationUnit("minute");
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    ctx.on(els.timeGoalCompleteDurationUnitHour, "click", () => {
-      ctx.setTimeGoalCompleteDurationUnit("hour");
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    ctx.on(els.timeGoalCompleteDurationPeriodDay, "click", () => {
-      ctx.setTimeGoalCompleteDurationPeriod("day");
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    ctx.on(els.timeGoalCompleteDurationPeriodWeek, "click", () => {
-      ctx.setTimeGoalCompleteDurationPeriod("week");
-      syncTimeGoalCompleteDurationUnitUi();
-    });
-    ctx.on(els.timeGoalCompleteSaveBtn, "click", async () => {
-      const task = getActiveTimeGoalModalTask();
-      if (task) openTimeGoalSaveNoteChoice(task);
-    });
-    ctx.on(els.timeGoalCompleteDiscardBtn, "click", async () => {
-      const task = getActiveTimeGoalModalTask();
-      if (task) await resolveTimeGoalCompletion(task, { logHistory: false });
+      if (task) await resolveTimeGoalCompletion(task, { logHistory: true });
     });
     ctx.on(els.timeGoalCompleteSaveNoteNoBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();
@@ -1271,32 +1173,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
       await resolveTimeGoalCompletion(task, { logHistory: true });
-    });
-    ctx.on(els.timeGoalCompleteContinueConfirmBtn, "click", () => {
-      const task = getActiveTimeGoalModalTask();
-      if (!task) return;
-      const currentElapsedMs = Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0));
-      const nextGoalMinutes = getTimeGoalCompleteDurationMinutes();
-      const rawValue = Math.max(1, Math.floor(Number(els.timeGoalCompleteDurationValueInput?.value || "1") || 1));
-      task.timeGoalEnabled = nextGoalMinutes > 0;
-      task.timeGoalValue = rawValue;
-      task.timeGoalUnit = ctx.getTimeGoalCompleteDurationUnit();
-      task.timeGoalPeriod = ctx.getTimeGoalCompleteDurationPeriod();
-      task.timeGoalMinutes = nextGoalMinutes;
-      resumeTaskAfterTimeGoalModal(task);
-      const taskId = String(task.id || "").trim();
-      if (!(nextGoalMinutes > 0) || nextGoalMinutes * 60 <= Math.floor(currentElapsedMs / 1000)) {
-        ctx.getTimeGoalReminderAtMsByTaskId()[taskId] = nowMs() + getTimeGoalReminderDelayMs();
-      } else {
-        delete ctx.getTimeGoalReminderAtMsByTaskId()[taskId];
-      }
-      ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(currentElapsedMs / 1000);
-      ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-      clearPendingTimeGoalFlow();
-      ctx.save();
-      void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-      ctx.render();
-      openDeferredFocusModeTimeGoalModal();
     });
     ctx.on(els.checkpointToastHost, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-action]");

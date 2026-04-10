@@ -1,7 +1,10 @@
 "use client";
 
+import "../tasktimer/tasktimer.css";
+
 import {
   GoogleAuthProvider,
+  type Auth,
   getRedirectResult,
   isSignInWithEmailLink,
   onAuthStateChanged,
@@ -10,6 +13,7 @@ import {
   signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
+  type User,
 } from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
 import { Suspense, useEffect, useState } from "react";
@@ -56,15 +60,43 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
+async function resolveAuthUser(auth: Auth): Promise<User | null> {
+  const authWithReady = auth as Auth & { authStateReady?: () => Promise<void> };
+  if (typeof authWithReady.authStateReady === "function") {
+    try {
+      await authWithReady.authStateReady();
+    } catch {
+      // ignore and continue with current auth state
+    }
+  }
+  let user = auth.currentUser;
+  if (user) return user;
+  user = await new Promise<User | null>((resolve) => {
+    let settled = false;
+    const finish = (nextUser: User | null) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      unsubscribe();
+      resolve(nextUser);
+    };
+    const timeoutId = window.setTimeout(() => finish(auth.currentUser), 1500);
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => finish(nextUser || null));
+  });
+  return user;
+}
+
 function WebSignInPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isNativeLaunchRuntime = isNativeOrFileRuntime();
   const [authEmail, setAuthEmail] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
+  const [isResolvingNativeLaunchAuth, setIsResolvingNativeLaunchAuth] = useState(() => isNativeLaunchRuntime);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
@@ -109,6 +141,37 @@ function WebSignInPageContent() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (!isNativeLaunchRuntime) {
+      setIsResolvingNativeLaunchAuth(false);
+      return;
+    }
+    if (bypassAutoRedirect) {
+      setIsResolvingNativeLaunchAuth(false);
+      return;
+    }
+    const auth = getFirebaseAuthClient();
+    if (!auth) {
+      setIsResolvingNativeLaunchAuth(false);
+      return;
+    }
+    let cancelled = false;
+    const resolveLaunchAuth = async () => {
+      const user = await resolveAuthUser(auth);
+      if (cancelled) return;
+      const email = user?.email || null;
+      const uid = user?.uid || null;
+      setAuthUserEmail(email);
+      setAuthUserUid(uid);
+      if (uid) void ensureUserProfileIndex(uid);
+      setIsResolvingNativeLaunchAuth(false);
+    };
+    void resolveLaunchAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, [bypassAutoRedirect, isNativeLaunchRuntime]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -432,6 +495,10 @@ function WebSignInPageContent() {
         setAuthEmail(value);
         setAuthError("");
       }}
+      showLaunchingScreen={
+        isNativeLaunchRuntime &&
+        (isResolvingNativeLaunchAuth || (!!authUserEmail && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect))
+      }
     />
   );
 }

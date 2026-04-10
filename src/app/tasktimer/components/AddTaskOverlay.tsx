@@ -27,60 +27,7 @@ export default function AddTaskOverlay() {
           </section>
 
           <section className="addTaskWizardStep" id="addTaskStep2">
-            <div className="addTaskStepPrompt" id="addTaskPlannedStartPrompt">
-              What time of the day do you plan to start this task?
-            </div>
-            <div className="addTaskPlannedStartSection">
-              <div className="addTaskPlannedStartSelectorRow">
-                <select id="addTaskPlannedStartHourSelect" aria-label="Start hour" defaultValue="09">
-                  <option value="01">01</option>
-                  <option value="02">02</option>
-                  <option value="03">03</option>
-                  <option value="04">04</option>
-                  <option value="05">05</option>
-                  <option value="06">06</option>
-                  <option value="07">07</option>
-                  <option value="08">08</option>
-                  <option value="09">09</option>
-                  <option value="10">10</option>
-                  <option value="11">11</option>
-                  <option value="12">12</option>
-                </select>
-                <span className="addTaskPlannedStartSeparator" aria-hidden="true">
-                  :
-                </span>
-                <select id="addTaskPlannedStartMinuteSelect" aria-label="Start minute" defaultValue="00">
-                  <option value="00">00</option>
-                  <option value="05">05</option>
-                  <option value="10">10</option>
-                  <option value="15">15</option>
-                  <option value="20">20</option>
-                  <option value="25">25</option>
-                  <option value="30">30</option>
-                  <option value="35">35</option>
-                  <option value="40">40</option>
-                  <option value="45">45</option>
-                  <option value="50">50</option>
-                  <option value="55">55</option>
-                </select>
-                <select id="addTaskPlannedStartMeridiemSelect" aria-label="Start time meridiem" defaultValue="AM">
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
-              <input id="addTaskPlannedStartInput" type="hidden" defaultValue="09:00" />
-              <div className="addTaskPlannedStartCheckboxRow toggleRow" id="addTaskPlannedStartOpenEndedRow">
-                <span>Flexible/No specific time</span>
-                <div className="addTaskPlannedStartToggleWrap">
-                  <input id="addTaskPlannedStartOpenEnded" type="checkbox" hidden />
-                  <div className="switch" id="addTaskPlannedStartOpenEndedToggle" role="switch" aria-checked="false" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="addTaskWizardStep" id="addTaskStep3">
-            <div className="addTaskStepPrompt">How much time do you want to spend on this task?</div>
+            <div className="addTaskStepPrompt">How much time to you want to spend on this task?</div>
             <div className="addTaskDurationRow" id="addTaskDurationRow">
               <input id="addTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
               <div className="unitButtons addTaskDurationPills" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
@@ -108,6 +55,58 @@ export default function AddTaskOverlay() {
               <input id="addTaskNoGoalCheckbox" type="checkbox" />
               <span>Don&apos;t set a time goal</span>
             </label>
+          </section>
+
+          <section className="addTaskWizardStep" id="addTaskStep3">
+            <div className="addTaskStepPrompt" id="addTaskPlannedStartPrompt">
+              What time of the day do you plan to start this task?
+            </div>
+            <div className="addTaskPlannedStartSection">
+              <div className="addTaskPlannedStartSelectorRow">
+                <div className="addTaskPlannedStartTimeCluster">
+                  <select id="addTaskPlannedStartHourSelect" aria-label="Start hour" defaultValue="09">
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
+                    <option value="09">09</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                  </select>
+                  <span className="addTaskPlannedStartSeparator" aria-hidden="true">
+                    :
+                  </span>
+                  <select id="addTaskPlannedStartMinuteSelect" aria-label="Start minute" defaultValue="00">
+                    <option value="00">00</option>
+                    <option value="05">05</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="25">25</option>
+                    <option value="30">30</option>
+                    <option value="35">35</option>
+                    <option value="40">40</option>
+                    <option value="45">45</option>
+                    <option value="50">50</option>
+                    <option value="55">55</option>
+                  </select>
+                  <select id="addTaskPlannedStartMeridiemSelect" aria-label="Start time meridiem" defaultValue="AM">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+                <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="addTaskPlannedStartOpenEndedRow" htmlFor="addTaskPlannedStartOpenEnded">
+                  <input id="addTaskPlannedStartOpenEnded" type="checkbox" />
+                  <span>No Specific Time</span>
+                </label>
+              </div>
+              <input id="addTaskPlannedStartInput" type="hidden" defaultValue="09:00" />
+            </div>
           </section>
 
           <section className="addTaskWizardStep" id="addTaskStep4">

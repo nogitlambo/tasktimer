@@ -320,34 +320,8 @@
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn {
-  width: 100%;
+  width: auto;
   justify-content: center;
-}
-
-#timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn {
-  border-color: rgba(255, 92, 112, 0.46);
-  color: rgba(255, 144, 160, 0.98);
-}
-
-#timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:hover:not(:disabled),
-#timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:focus-visible:not(:disabled),
-#timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:active:not(:disabled) {
-  background: rgba(76, 21, 31, 0.82);
-  border-color: rgba(255, 106, 126, 0.92);
-  color: rgba(255, 230, 234, 0.98);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn {
-  border-color: rgba(255, 114, 152, 0.44);
-  color: rgba(255, 166, 214, 0.96);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:hover:not(:disabled),
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:focus-visible:not(:disabled),
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteDiscardBtn:active:not(:disabled) {
-  background: rgba(91, 24, 61, 0.84);
-  border-color: rgba(255, 128, 194, 0.88);
-  color: rgba(255, 236, 246, 0.98);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive {

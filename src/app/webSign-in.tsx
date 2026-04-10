@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import AppImg from "@/components/AppImg";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -11,6 +12,7 @@ type WebSignInProps = {
   authStatus: string;
   authError: string;
   authBusy: boolean;
+  showLaunchingScreen: boolean;
   onToggleEmailLoginForm: () => void;
   onGoogleSignIn: () => void;
   onSendEmailLink: () => void;
@@ -28,12 +30,53 @@ export default function WebSignIn(props: WebSignInProps) {
     authStatus,
     authError,
     authBusy,
+    showLaunchingScreen,
     onToggleEmailLoginForm,
     onGoogleSignIn,
     onSendEmailLink,
     onCompleteEmailLink,
     onAuthEmailChange,
   } = props;
+
+  if (showLaunchingScreen) {
+    return (
+      <main className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white">
+        <div className="landingV2Glow landingV2GlowTop pointer-events-none" aria-hidden="true" />
+        <div className="landingV2Glow landingV2GlowBottom pointer-events-none" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-35"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(191,138,255,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(64,225,255,.09) 1px, transparent 1px)",
+            backgroundSize: "68px 68px",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,.82), rgba(0,0,0,.14))",
+          }}
+        />
+        <div className="landingV2Container relative mx-auto flex min-h-screen w-full max-w-[1625px] items-center justify-center px-6 pb-20 pt-8 sm:px-8 md:px-12">
+          <section className="relative flex w-full max-w-[560px] flex-col items-center justify-center gap-5 text-center">
+            <Image
+              src="/logo/tasklaunch-logo-v2.png"
+              alt="TaskLaunch"
+              width={560}
+              height={76}
+              priority
+              className="h-auto w-[230px] sm:w-[280px] md:w-[340px]"
+            />
+            <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
+              <h2 className="sr-only">Launching TaskLaunch</h2>
+              <p className="modalSubtext confirmText">Launching TaskLaunch...</p>
+              <div className="dashboardRefreshBusyArrowStage" aria-hidden="true">
+                <div className="dashboardRefreshBusyArrowShell">
+                  <div className="dashboardRefreshBusyArrowBeamBlend" />
+                  <AppImg className="dashboardRefreshBusyArrowGraphic" src="/logo/launch-icon.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white">

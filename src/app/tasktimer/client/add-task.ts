@@ -112,10 +112,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskPlannedStartOpenEnded) {
       els.addTaskPlannedStartOpenEnded.checked = openEnded;
     }
-    if (els.addTaskPlannedStartOpenEndedToggle) {
-      els.addTaskPlannedStartOpenEndedToggle.classList.toggle("on", openEnded);
-      els.addTaskPlannedStartOpenEndedToggle.setAttribute("aria-checked", String(openEnded));
-    }
   }
 
   function clearAddTaskValidationState() {
@@ -428,8 +424,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }
     const noTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
     ctx.setAddTaskNoTimeGoalState(noTimeGoal);
-    if (els.addTaskStep2NextBtn) {
-      els.addTaskStep2NextBtn.textContent = noTimeGoal ? "Done" : "Next";
+    if (els.addTaskStep3NextBtn) {
+      els.addTaskStep3NextBtn.textContent = noTimeGoal ? "Done" : "Next";
     }
     els.addTaskDurationRow?.classList.toggle("isDisabled", noTimeGoal);
     els.addTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
@@ -664,7 +660,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       if (!validateAddTaskStep1()) return;
       setAddTaskWizardStep(2);
       try {
-        els.addTaskPlannedStartHourSelect?.focus();
+        els.addTaskDurationValueInput?.focus();
       } catch {
         // ignore
       }
@@ -678,9 +674,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       }
     });
     ctx.on(els.addTaskStep2NextBtn, "click", () => {
+      if (!validateAddTaskStep2()) return;
       setAddTaskWizardStep(3);
       try {
-        els.addTaskDurationValueInput?.focus();
+        els.addTaskPlannedStartHourSelect?.focus();
       } catch {
         // ignore
       }
@@ -688,13 +685,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskStep3BackBtn, "click", () => {
       setAddTaskWizardStep(2);
       try {
-        els.addTaskPlannedStartHourSelect?.focus();
+        els.addTaskDurationValueInput?.focus();
       } catch {
         // ignore
       }
     });
     ctx.on(els.addTaskStep3NextBtn, "click", () => {
-      if (!validateAddTaskStep2()) return;
       if (ctx.getAddTaskNoTimeGoal()) {
         if (!validateAddTaskStep1()) return;
         submitAddTaskWizard();
@@ -850,24 +846,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartOpenEnded, "change", () => {
       ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded?.checked);
-      syncAddTaskPlannedStartUi();
-    });
-    ctx.on(els.addTaskPlannedStartOpenEndedToggle, "click", (e: Event) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      if (els.addTaskPlannedStartOpenEnded) {
-        els.addTaskPlannedStartOpenEnded.checked = !els.addTaskPlannedStartOpenEnded.checked;
-        ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded.checked);
-      }
-      syncAddTaskPlannedStartUi();
-    });
-    ctx.on(els.addTaskPlannedStartOpenEndedRow, "click", (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest?.("#addTaskPlannedStartOpenEndedToggle")) return;
-      if (els.addTaskPlannedStartOpenEnded) {
-        els.addTaskPlannedStartOpenEnded.checked = !els.addTaskPlannedStartOpenEnded.checked;
-        ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded.checked);
-      }
       syncAddTaskPlannedStartUi();
     });
     ctx.on(els.addTaskPresetIntervalsToggle, "click", (e: Event) => {

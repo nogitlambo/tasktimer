@@ -479,12 +479,14 @@ export type TaskTimerTasksContext = {
   checkpointRepeatActiveTaskId: () => string | null;
   activeCheckpointToastTaskId: () => string | null;
   stopCheckpointRepeatAlert: () => void;
+  broadcastCheckpointAlertMute: (taskId: string) => void;
   enqueueCheckpointToast: (title: string, text: string, opts: unknown) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
+  broadcastCheckpointAlertMute: (taskId: string) => void;
 };
 
 export type TaskTimerEditTaskContext = {

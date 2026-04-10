@@ -28,6 +28,7 @@ export default function TaskTimerAppFrame({ activePage, children }: TaskTimerApp
         <div className="desktopAppMain">{children}</div>
       </div>
       <DesktopAppRail activePage={railPage} useClientNavButtons={true} showDesktopRail={false} />
+      <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>
   );
 }
