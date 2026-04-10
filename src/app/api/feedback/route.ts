@@ -6,6 +6,7 @@ import {
   describeError,
   parseJiraIssueKeyFromBrowseUrl,
   syncJiraIssueVote,
+  uploadJiraIssueAttachment,
 } from "../jira/feedback/shared";
 import {
   FeedbackApiError,
@@ -16,6 +17,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MAX_FEEDBACK_ATTACHMENTS = 8;
+const MAX_FEEDBACK_ATTACHMENT_BYTES = 6 * 1024 * 1024;
+
+type ParsedFeedbackAttachment = {
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
+  data: Uint8Array;
+};
+
 function normalizeFeedbackType(value: unknown): "bug" | "general" | "feature" {
   const raw = asString(value, 32).toLowerCase();
   if (raw === "bug" || raw === "feature") return raw;
@@ -23,7 +36,7 @@ function normalizeFeedbackType(value: unknown): "bug" | "general" | "feature" {
 }
 
 function normalizeBoolean(value: unknown) {
-  return value === true;
+  return value === true || asString(value, 16).toLowerCase() === "true";
 }
 
 function createErrorResponse(error: unknown, fallbackMessage: string) {
@@ -34,9 +47,77 @@ function createErrorResponse(error: unknown, fallbackMessage: string) {
   return NextResponse.json({ error: message, code: "feedback/internal" }, { status: 500 });
 }
 
+async function parseFeedbackPostBody(req: Request) {
+  const contentType = asString(req.headers.get("content-type"), 240).toLowerCase();
+  if (!contentType.includes("multipart/form-data")) {
+    const body = (await req.json()) as Record<string, unknown>;
+    return { body, attachments: [] as ParsedFeedbackAttachment[] };
+  }
+
+  const formData = await req.formData();
+  const body: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    if (typeof value === "string" && key !== "attachments") {
+      body[key] = value;
+    }
+  });
+
+  const attachmentEntries = formData.getAll("attachments");
+  if (attachmentEntries.length > MAX_FEEDBACK_ATTACHMENTS) {
+    throw new FeedbackApiError(
+      "feedback/too-many-attachments",
+      `You can attach up to ${MAX_FEEDBACK_ATTACHMENTS} screenshots per submission.`,
+      400
+    );
+  }
+
+  const attachments = await Promise.all(
+    attachmentEntries.map(async (entry, index) => {
+      if (!(entry instanceof File)) {
+        throw new FeedbackApiError("feedback/invalid-attachment", "One of the screenshots could not be read.", 400);
+      }
+      const sizeBytes = Math.max(0, Math.floor(Number(entry.size || 0) || 0));
+      if (!sizeBytes || sizeBytes > MAX_FEEDBACK_ATTACHMENT_BYTES) {
+        throw new FeedbackApiError(
+          "feedback/attachment-too-large",
+          `Each screenshot must be a PNG under ${Math.round(MAX_FEEDBACK_ATTACHMENT_BYTES / (1024 * 1024))} MB.`,
+          400
+        );
+      }
+      const mimeType = asString(entry.type, 120).toLowerCase();
+      if (mimeType !== "image/png") {
+        throw new FeedbackApiError("feedback/invalid-attachment-type", "Screenshots must be submitted as PNG images.", 400);
+      }
+      const metaRaw = asString(formData.get(`attachmentMeta:${index}`), 4000);
+      let width = 0;
+      let height = 0;
+      if (metaRaw) {
+        try {
+          const meta = JSON.parse(metaRaw) as { width?: unknown; height?: unknown };
+          width = Math.max(0, Math.floor(Number(meta.width || 0) || 0));
+          height = Math.max(0, Math.floor(Number(meta.height || 0) || 0));
+        } catch {
+          width = 0;
+          height = 0;
+        }
+      }
+      return {
+        filename: asString(entry.name, 240) || `feedback-screenshot-${index + 1}.png`,
+        mimeType: "image/png",
+        sizeBytes,
+        width,
+        height,
+        data: new Uint8Array(await entry.arrayBuffer()),
+      } satisfies ParsedFeedbackAttachment;
+    })
+  );
+
+  return { body, attachments };
+}
+
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Record<string, unknown>;
+    const { body, attachments } = await parseFeedbackPostBody(req);
     const { uid } = await verifyFeedbackRequestUser(req, body);
 
     const title = asString(body.title, 160);
@@ -67,6 +148,16 @@ export async function POST(req: Request) {
       authorEmail,
       authorDisplayName,
     });
+
+    const jiraIssueTarget = asString(jira.jiraIssueId, 120) || asString(jira.jiraIssueKey, 120);
+    for (const attachment of attachments) {
+      await uploadJiraIssueAttachment({
+        jiraIssueIdOrKey: jiraIssueTarget,
+        filename: attachment.filename,
+        contentType: attachment.mimeType,
+        data: attachment.data,
+      });
+    }
 
     const result = await validateAndRecordFeedbackSubmission({
       uid,

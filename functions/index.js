@@ -296,8 +296,8 @@ function extractAndroidDeviceRows(snapshot) {
     .filter((row) => !!row.token && row.enabled && row.provider === "fcm" && (row.native || row.platform === "web"));
 }
 
-function hasFreshForegroundDevice(deviceRows, nowMs) {
-  return deviceRows.some((row) => row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
+function hasFreshForegroundWebDevice(deviceRows, nowMs) {
+  return deviceRows.some((row) => !row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
 function splitDeviceRows(deviceRows) {
@@ -475,7 +475,10 @@ async function sendScheduledTaskNotification({
   if (!deviceRows.length) {
     return {status: "no-devices"};
   }
-  if (hasFreshForegroundDevice(deviceRows, nowMs)) {
+  // Do not suppress native scheduled reminders based on app foreground state.
+  // Native Android data messages are rendered into notifications by the app service,
+  // and stale appActive state can otherwise cause scheduled alerts to be skipped.
+  if (hasFreshForegroundWebDevice(deviceRows, nowMs)) {
     return {status: "foreground"};
   }
 

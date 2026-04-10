@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ClipboardEvent } from "react";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -7,9 +7,63 @@ import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
-import { createFeedbackItem, type FeedbackType } from "../lib/feedbackStore";
+import { createFeedbackItem, type FeedbackAttachmentUploadInput, type FeedbackType } from "../lib/feedbackStore";
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
 import SignedInHeaderBadge from "./SignedInHeaderBadge";
+
+const FEEDBACK_ATTACHMENT_MAX_DIMENSION = 1600;
+
+type FeedbackAttachmentDraft = FeedbackAttachmentUploadInput & {
+  id: string;
+};
+
+function formatAttachmentSize(sizeBytes: number) {
+  if (sizeBytes < 1024) return `${sizeBytes} B`;
+  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function resizeClipboardImageToPng(file: File): Promise<FeedbackAttachmentUploadInput> {
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("The pasted image could not be loaded."));
+      img.src = imageUrl;
+    });
+    const sourceWidth = Math.max(1, Math.floor(image.naturalWidth || image.width || 0));
+    const sourceHeight = Math.max(1, Math.floor(image.naturalHeight || image.height || 0));
+    const scale = Math.min(1, FEEDBACK_ATTACHMENT_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Image processing is unavailable in this browser.");
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((nextBlob) => {
+        if (nextBlob) resolve(nextBlob);
+        else reject(new Error("The pasted image could not be converted to PNG."));
+      }, "image/png");
+    });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `feedback-screenshot-${timestamp}.png`;
+    return {
+      filename,
+      file: new File([blob], filename, { type: "image/png" }),
+      mimeType: "image/png",
+      sizeBytes: blob.size,
+      width,
+      height,
+    };
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
 
 export default function FeedbackScreen() {
   const [feedbackEmail, setFeedbackEmail] = useState("");
@@ -20,6 +74,8 @@ export default function FeedbackScreen() {
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [feedbackError, setFeedbackError] = useState("");
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackAttachmentDrafts, setFeedbackAttachmentDrafts] = useState<FeedbackAttachmentDraft[]>([]);
+  const [feedbackAttachmentBusy, setFeedbackAttachmentBusy] = useState(false);
   const [viewerUid, setViewerUid] = useState("");
   const [viewerDisplayName, setViewerDisplayName] = useState("");
   const [viewerRankThumbnailSrc, setViewerRankThumbnailSrc] = useState<string | null>(null);
@@ -103,20 +159,21 @@ export default function FeedbackScreen() {
       window.history.back();
       return;
     }
-    window.location.assign("/tasklaunch");
+    window.location.assign(resolveTaskTimerRouteHref("/tasklaunch"));
   }, []);
 
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const getFeedbackValidationMessage = useCallback(() => {
     const effectiveViewerUid = String(getFirebaseAuthClient()?.currentUser?.uid || viewerUid).trim();
     if (!effectiveViewerUid) return "You must be signed in to submit feedback.";
+    if (feedbackAttachmentBusy) return "Please wait for pasted screenshots to finish processing.";
     if (!feedbackAnonymous && !feedbackEmail.trim()) return "Email address is required unless you log feedback as anonymous.";
     if (!feedbackAnonymous && !isValidFeedbackEmail) return "Enter a valid email address or log feedback as anonymous.";
     if (!feedbackType) return "Select a feedback type before submitting.";
     if (!feedbackTitle.trim()) return "Enter a feedback title before submitting.";
     if (!feedbackDetails.trim()) return "Enter feedback details before submitting.";
     return "";
-  }, [feedbackAnonymous, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail, viewerUid]);
+  }, [feedbackAnonymous, feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail, viewerUid]);
 
   const handleSubmitFeedback = useCallback(async () => {
     const validationMessage = getFeedbackValidationMessage();
@@ -125,7 +182,7 @@ export default function FeedbackScreen() {
       setFeedbackError(validationMessage);
       return;
     }
-    if (feedbackSubmitting) return;
+    if (feedbackSubmitting || feedbackAttachmentBusy) return;
     setFeedbackError("");
     setFeedbackStatus("");
     setFeedbackSubmitting(true);
@@ -155,6 +212,7 @@ export default function FeedbackScreen() {
       type: feedbackType as FeedbackType,
       title: feedbackTitle,
       details: feedbackDetails,
+      attachments: feedbackAttachmentDrafts,
     });
     setFeedbackSubmitting(false);
     if (!saved.ok) {
@@ -164,11 +222,14 @@ export default function FeedbackScreen() {
     setFeedbackType("");
     setFeedbackTitle("");
     setFeedbackDetails("");
+    setFeedbackAttachmentDrafts([]);
     setFeedbackStatus("Feedback submitted successfully.");
   }, [
     feedbackAnonymous,
     feedbackDetails,
     feedbackEmail,
+    feedbackAttachmentDrafts,
+    feedbackAttachmentBusy,
     feedbackSubmitting,
     feedbackTitle,
     feedbackType,
@@ -179,6 +240,39 @@ export default function FeedbackScreen() {
     viewerRankThumbnailSrc,
     viewerUid,
   ]);
+
+  const handleRemoveAttachment = useCallback((attachmentId: string) => {
+    setFeedbackAttachmentDrafts((prev) => prev.filter((attachment) => attachment.id !== attachmentId));
+  }, []);
+
+  const handleDetailsPaste = useCallback(async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(event.clipboardData?.items || []);
+    const imageItems = items.filter((item) => item.kind === "file" && item.type.startsWith("image/"));
+    if (!imageItems.length) return;
+    event.preventDefault();
+    setFeedbackError("");
+    setFeedbackStatus("");
+    setFeedbackAttachmentBusy(true);
+    try {
+      const nextAttachments = await Promise.all(
+        imageItems.map(async (item, index) => {
+          const file = item.getAsFile();
+          if (!file) throw new Error("A pasted screenshot could not be read.");
+          const resized = await resizeClipboardImageToPng(file);
+          return {
+            id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}`,
+            ...resized,
+          } satisfies FeedbackAttachmentDraft;
+        })
+      );
+      setFeedbackAttachmentDrafts((prev) => [...prev, ...nextAttachments]);
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : "The pasted screenshot could not be added.";
+      setFeedbackError(message);
+    } finally {
+      setFeedbackAttachmentBusy(false);
+    }
+  }, []);
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Feedback">
@@ -237,7 +331,12 @@ export default function FeedbackScreen() {
 
                   <div className="field feedbackFormField">
                     <label htmlFor="feedbackTypeSelect">Feedback Type</label>
-                    <select id="feedbackTypeSelect" value={feedbackType} onChange={(e) => setFeedbackType(e.target.value as FeedbackType | "")}>
+                    <select
+                      id="feedbackTypeSelect"
+                      className={!feedbackType ? "isPlaceholderValue" : undefined}
+                      value={feedbackType}
+                      onChange={(e) => setFeedbackType(e.target.value as FeedbackType | "")}
+                    >
                       <option value="" disabled>
                         --Please Select--
                       </option>
@@ -264,11 +363,35 @@ export default function FeedbackScreen() {
                     <textarea
                       id="feedbackDetailsInput"
                       rows={8}
-                      placeholder="Share details, steps to reproduce, or what you would like improved."
+                      placeholder="Please provide steps to reproduce or what you would like improved. Screenshots can be pasted here."
                       value={feedbackDetails}
                       onChange={(e) => setFeedbackDetails(e.target.value)}
+                      onPaste={handleDetailsPaste}
                     />
                   </div>
+
+                  {feedbackAttachmentDrafts.length ? (
+                    <div className="feedbackAttachmentList" aria-label="Pasted screenshots">
+                      {feedbackAttachmentDrafts.map((attachment) => (
+                        <div className="feedbackAttachmentItem" key={attachment.id}>
+                          <div className="feedbackAttachmentMeta">
+                            <span className="feedbackAttachmentName">{attachment.filename}</span>
+                            <span className="feedbackAttachmentDetails">
+                              {attachment.width}x{attachment.height} | {formatAttachmentSize(attachment.sizeBytes)}
+                            </span>
+                          </div>
+                          <button
+                            className="btn btn-ghost small feedbackAttachmentRemoveBtn"
+                            type="button"
+                            disabled={feedbackSubmitting || feedbackAttachmentBusy}
+                            onClick={() => handleRemoveAttachment(attachment.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
 
                   {feedbackStatus || feedbackError ? (
                     <div className={`settingsDetailNote${feedbackError ? " feedbackErrorNote" : " feedbackSuccessNote"}`} aria-live="polite">
@@ -289,10 +412,7 @@ export default function FeedbackScreen() {
                   ) : null}
 
                   <div className="feedbackFormActions">
-                    <button className="btn btn-ghost small settingsFeedbackUploadBtn" type="button" disabled>
-                      Upload Screenshot
-                    </button>
-                    <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={feedbackSubmitting} onClick={handleSubmitFeedback}>
+                    <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={feedbackSubmitting || feedbackAttachmentBusy} onClick={handleSubmitFeedback}>
                       {feedbackSubmitting ? "Submitting..." : "Submit Feedback"}
                     </button>
                   </div>

@@ -30,6 +30,17 @@ function getJiraAuthHeaders() {
   };
 }
 
+function getJiraAttachmentHeaders() {
+  const jiraEmail = getRequiredEnv("JIRA_EMAIL");
+  const jiraApiToken = getRequiredEnv("JIRA_API_TOKEN");
+  const auth = Buffer.from(`${jiraEmail}:${jiraApiToken}`).toString("base64");
+  return {
+    Authorization: `Basic ${auth}`,
+    Accept: "application/json",
+    "X-Atlassian-Token": "no-check",
+  };
+}
+
 function buildSubmissionSignature(input: {
   uid: string;
   type: FeedbackType;
@@ -262,6 +273,44 @@ export async function createJiraIssue(input: {
     jiraIssueBrowseUrl: payload?.key ? `${jiraBaseUrl}/browse/${payload.key}` : "",
     deduplicated: false,
   };
+}
+
+export async function uploadJiraIssueAttachment(input: {
+  jiraIssueIdOrKey: string;
+  filename: string;
+  contentType: string;
+  data: Uint8Array;
+}) {
+  const jiraBaseUrl = getRequiredEnv("JIRA_BASE_URL").replace(/\/+$/, "");
+  const issueIdOrKey = asString(input.jiraIssueIdOrKey, 120);
+  if (!issueIdOrKey) throw new Error("Jira issue key is unavailable for attachment upload.");
+  const formData = new FormData();
+  const fileBytes = input.data instanceof Uint8Array ? input.data : new Uint8Array(input.data);
+  const fileBuffer = new ArrayBuffer(fileBytes.byteLength);
+  new Uint8Array(fileBuffer).set(fileBytes);
+  formData.append(
+    "file",
+    new Blob([fileBuffer], { type: asString(input.contentType, 120) || "image/png" }),
+    asString(input.filename, 240) || "feedback-screenshot.png"
+  );
+  const response = await fetch(`${jiraBaseUrl}/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/attachments`, {
+    method: "POST",
+    headers: getJiraAttachmentHeaders(),
+    body: formData,
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => null)) as
+    | Array<{ id?: string; filename?: string; content?: string }>
+    | { errorMessages?: string[]; errors?: Record<string, string> }
+    | null;
+  if (!response.ok) {
+    const fieldErrors =
+      payload && !Array.isArray(payload) && payload.errors ? Object.values(payload.errors).filter(Boolean) : [];
+    const errorMessages =
+      payload && !Array.isArray(payload) && Array.isArray(payload.errorMessages) ? payload.errorMessages : [];
+    throw new Error(errorMessages[0] || fieldErrors[0] || "Jira attachment upload failed.");
+  }
+  return Array.isArray(payload) ? payload : [];
 }
 
 export async function syncJiraIssueVote(input: {

@@ -2240,6 +2240,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
+  --feedback-mobile-footer-height: 72px;
+  --feedback-mobile-footer-space: calc(var(--feedback-mobile-footer-height) + var(--safe-bottom));
 }
 #app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
 #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
@@ -2319,17 +2321,73 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   margin: 4px 0 0;
   color: rgba(188,214,230,.78);
   font-size: 12px;
+  font-family: var(--font-geist-sans);
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField{
   min-width: 0;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormNote,
+#app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote,
+#app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote,
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusy .confirmText{
+  font-family: var(--font-geist-sans);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   width: 100%;
 }
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select.isPlaceholderValue{
+  color: rgba(188,214,230,.58);
+}
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow{
   margin: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField > label,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow > span,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions .btn{
+  font-family: var(--font-orbitron);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentList{
+  display: grid;
+  gap: 10px;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentMeta{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-geist-sans);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(226,247,255,.94);
+  overflow-wrap: anywhere;
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
+  font-size: 11px;
+  color: rgba(188,214,230,.74);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentRemoveBtn{
+  flex: 0 0 auto;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormActions{
   display: flex;
@@ -2342,8 +2400,18 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 }
 
 @media (max-width: 640px){
+  #app[aria-label="TaskLaunch Feedback"] .topbar{
+    padding-top: calc(12px + var(--safe-top));
+    padding-left: calc(12px + var(--safe-left));
+    padding-right: calc(12px + var(--safe-right));
+  }
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+    padding-bottom: var(--feedback-mobile-footer-space);
+    min-height: calc(100dvh - var(--safe-top));
+    box-sizing: border-box;
+  }
   #app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-    padding: 14px;
+    padding: 12px calc(14px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(14px + var(--safe-left));
   }
   #app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
     padding: 16px;
@@ -2387,13 +2455,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   display: none !important;
 }
 
-/* Final Feedback route cleanup: allow the standalone page to scroll instead of clipping long content. */
+/* Final Feedback route cleanup: keep scrolling inside the route shell so native bars remain hard stops. */
 #app[aria-label="TaskLaunch Feedback"]{
-  overflow-y: auto;
+  overflow: hidden;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   min-height: 100dvh;
-  height: auto !important;
+  height: 100dvh !important;
 }
 
 #app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
@@ -2402,6 +2469,22 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 #app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
 #app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
   min-height: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
+#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+  height: 100%;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
   height: auto;
   overflow: visible;
 }
@@ -2550,8 +2633,22 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   border-color: rgba(221,108,241,.28);
 }
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+  border-color: rgba(212,71,210,.22);
+  background: rgba(212,71,210,.06);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
+  color: rgba(250,233,255,.94);
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
+  color: rgba(231,208,242,.72);
+}
 body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   border-color: rgba(86,232,255,.3);
+}
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+  border-color: rgba(86,232,255,.22);
+  background: rgba(53,232,255,.06);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
   color:rgba(233,216,255,.84);
@@ -3794,6 +3891,16 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormFiel
   border-color: rgba(219,255,79,.18);
   background: rgba(18,23,7,.82);
   color: rgba(247,255,212,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+  border-color: rgba(214,246,116,.2);
+  background: rgba(214,246,116,.06);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
+  color: rgba(251,255,227,.94);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
+  color: rgba(229,240,190,.72);
 }
 
 /* Final Notifications typography override: match the compact all-caps settings language used by Preferences. */

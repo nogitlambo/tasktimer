@@ -99,7 +99,8 @@ const SCHEDULE_DAY_LABELS: Record<(typeof SCHEDULE_DAY_ORDER)[number], string> =
   sat: "Sat",
   sun: "Sun",
 };
-const SCHEDULE_SNAP_MINUTES = 30;
+const SCHEDULE_SNAP_MINUTES = 15;
+const SCHEDULE_LABEL_MINUTES = 30;
 const SCHEDULE_MINUTE_PX = 44 / 30;
 
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
@@ -274,6 +275,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let currentAppPage = initialState.currentAppPage;
   let scheduleSelectedDay: Task["plannedStartDay"] = "mon";
   let scheduleDragTaskId: string | null = null;
+  let scheduleDragPreviewDay: (typeof SCHEDULE_DAY_ORDER)[number] | null = null;
+  let scheduleDragPreviewStartMinutes: number | null = null;
+  let scheduleDragPointerOffsetMinutes = 0;
   let currentTileColumnCount = initialState.currentTileColumnCount;
   let suppressNavStackPush = initialState.suppressNavStackPush;
   let lastNativeBackHandledAtMs = initialState.lastNativeBackHandledAtMs;
@@ -1976,8 +1980,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
     if (schedulePlacementHasOverlap(taskId, day, startMinutes, durationMinutes)) return;
-    const hadExplicitDay = !!normalizeScheduleDay(task.plannedStartDay);
-    task.plannedStartDay = hadExplicitDay ? day : null;
+    task.plannedStartDay = day;
     task.plannedStartTime = formatScheduleStoredTime(startMinutes);
     task.plannedStartOpenEnded = false;
     scheduleSelectedDay = day;
@@ -1985,12 +1988,45 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     render();
   }
 
+  function clearScheduleDragPreview() {
+    scheduleDragPreviewDay = null;
+    scheduleDragPreviewStartMinutes = null;
+    scheduleDragPointerOffsetMinutes = 0;
+  }
+
+  function getScheduleDragPreview(taskIdRaw: string | null) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || !scheduleDragPreviewDay || scheduleDragPreviewStartMinutes == null) return null;
+    const task = tasks.find((entry) => String(entry.id || "") === taskId);
+    if (!task) return null;
+    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    if (!(durationMinutes > 0)) return null;
+    return {
+      taskId,
+      task,
+      day: scheduleDragPreviewDay,
+      startMinutes: scheduleDragPreviewStartMinutes,
+      durationMinutes,
+      hasOverlap: schedulePlacementHasOverlap(taskId, scheduleDragPreviewDay, scheduleDragPreviewStartMinutes, durationMinutes),
+    };
+  }
+
+  function resolveScheduleDropStartMinutes(dropZone: HTMLElement, clientYRaw: unknown) {
+    const dayBody = dropZone.querySelector(".scheduleDayBody") as HTMLElement | null;
+    const bodyRect = (dayBody || dropZone).getBoundingClientRect();
+    const clientY = Number(clientYRaw) || 0;
+    const yWithinBody = Math.max(0, Math.min(bodyRect.height, clientY - bodyRect.top));
+    const adjustedMinutes = yWithinBody / SCHEDULE_MINUTE_PX - scheduleDragPointerOffsetMinutes;
+    return snapScheduleMinutes(adjustedMinutes);
+  }
+
   function buildScheduleGridHtml() {
     const visibleDays = getScheduleVisibleDays();
     const { scheduled } = buildScheduleViewModel();
-    const timeLabels = Array.from({ length: 48 }, (_, index) => {
-      const minutes = index * SCHEDULE_SNAP_MINUTES;
-      return `<div class="scheduleTimeLabel" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px">${escapeHtmlUI(
+    const dragPreview = getScheduleDragPreview(scheduleDragTaskId);
+    const timeLabels = Array.from({ length: 24 * 60 / SCHEDULE_LABEL_MINUTES }, (_, index) => {
+      const minutes = index * SCHEDULE_LABEL_MINUTES;
+      return `<div class="scheduleTimeLabel" style="height:${SCHEDULE_LABEL_MINUTES * SCHEDULE_MINUTE_PX}px">${escapeHtmlUI(
         formatScheduleMinutes(minutes)
       )}</div>`;
     }).join("");
@@ -2003,7 +2039,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             const topPx = entry.startMinutes * SCHEDULE_MINUTE_PX;
             const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
             const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
-            return `<button class="scheduleTaskCard" draggable="true" data-schedule-task-id="${escapeHtmlUI(
+            const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
+            return `<button class="scheduleTaskCard${shortClass}" draggable="true" data-schedule-task-id="${escapeHtmlUI(
               String(entry.task.id || "")
             )}" type="button" style="top:${topPx}px;height:${heightPx}px">
               <span class="scheduleTaskCardName">${escapeHtmlUI(entry.task.name || "Task")}</span>
@@ -2011,10 +2048,21 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             </button>`;
           })
           .join("");
-        const slots = Array.from({ length: 48 }, () => `<div class="scheduleSlot" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`).join("");
-        return `<section class="scheduleDayColumn" data-schedule-drop-day="${day}">
+        const previewCard =
+          dragPreview && dragPreview.day === day
+            ? `<div class="scheduleDropPreview${dragPreview.hasOverlap ? " isBlocked" : ""}" aria-hidden="true" style="top:${
+                dragPreview.startMinutes * SCHEDULE_MINUTE_PX
+              }px;height:${dragPreview.durationMinutes * SCHEDULE_MINUTE_PX}px"></div>`
+            : "";
+        const slots = Array.from({ length: 24 * 60 / SCHEDULE_SNAP_MINUTES }, (_, index) => {
+          const slotMinutes = index * SCHEDULE_SNAP_MINUTES;
+          const middayClass = slotMinutes === 12 * 60 ? " isMidday" : "";
+          return `<div class="scheduleSlot${middayClass}" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`;
+        }).join("");
+        return `<section class="scheduleDayColumn${dragPreview && dragPreview.day === day ? " isDropActive" : ""}" data-schedule-drop-day="${day}">
           <div class="scheduleDayBody">
             <div class="scheduleDaySlots">${slots}</div>
+            ${previewCard}
             <div class="scheduleDayCards">${cards}</div>
           </div>
         </section>`;
@@ -2710,6 +2758,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         return;
       }
       scheduleDragTaskId = taskId;
+      clearScheduleDragPreview();
+      if (source.classList.contains("scheduleTaskCard")) {
+        const rect = source.getBoundingClientRect();
+        const pointerOffsetPx = Math.max(0, Math.min(rect.height, (Number(e?.clientY) || 0) - rect.top));
+        scheduleDragPointerOffsetMinutes = pointerOffsetPx / SCHEDULE_MINUTE_PX;
+      }
       source.classList.add("isDragging");
       try {
         e.dataTransfer.effectAllowed = "move";
@@ -2720,15 +2774,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(document as any, "dragend", (e: any) => {
       scheduleDragTaskId = null;
+      clearScheduleDragPreview();
       (e?.target as HTMLElement | null)?.closest?.("[data-schedule-task-id]")?.classList?.remove?.("isDragging");
       document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
+      if (currentAppPage === "schedule") renderSchedulePage();
     });
     on(document as any, "dragover", (e: any) => {
       const dropZone = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
       if (!dropZone || !scheduleDragTaskId) return;
       e?.preventDefault?.();
+      const day = normalizeScheduleDay(dropZone.dataset.scheduleDropDay);
+      const startMinutes = resolveScheduleDropStartMinutes(dropZone, e?.clientY);
       document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
       dropZone.classList.add("isDropActive");
+      if (day && (scheduleDragPreviewDay !== day || scheduleDragPreviewStartMinutes !== startMinutes)) {
+        scheduleDragPreviewDay = day;
+        scheduleDragPreviewStartMinutes = startMinutes;
+        if (currentAppPage === "schedule") renderSchedulePage();
+      }
       try {
         e.dataTransfer.dropEffect = "move";
       } catch {
@@ -2737,17 +2800,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     on(document as any, "drop", (e: any) => {
       const dropZone = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
-      if (!dropZone || !els.scheduleGridScroller) return;
+      if (!dropZone) return;
       const taskId = scheduleDragTaskId || String(e?.dataTransfer?.getData?.("text/plain") || "").trim();
       const day = normalizeScheduleDay(dropZone.dataset.scheduleDropDay);
       if (!taskId || !day) return;
       e?.preventDefault?.();
-      const rect = dropZone.getBoundingClientRect();
-      const yWithinColumn = Math.max(0, (Number(e?.clientY) || 0) - rect.top + els.scheduleGridScroller.scrollTop);
-      const startMinutes = snapScheduleMinutes(yWithinColumn / SCHEDULE_MINUTE_PX);
+      const startMinutes = resolveScheduleDropStartMinutes(dropZone, e?.clientY);
       moveTaskOnSchedule(taskId, day, startMinutes);
       document.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
       scheduleDragTaskId = null;
+      clearScheduleDragPreview();
     });
     on(els.rewardsInfoOpenBtn, "click", (e: any) => {
       e?.preventDefault?.();

@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
 import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsHelpPane({ active }: { active: boolean }) {
@@ -11,7 +12,12 @@ export function SettingsHelpPane({ active }: { active: boolean }) {
             <button className="menuItem settingsDataTile" data-menu="howto" type="button">
               <MenuIconLabel icon="/About.svg" label="User Guide" />
             </button>
-            <a className="menuItem settingsDataTile" id="commandCenterFeedbackBtn" href="/feedback" aria-label="Feedback">
+            <a
+              className="menuItem settingsDataTile"
+              id="commandCenterFeedbackBtn"
+              href={resolveTaskTimerRouteHref("/feedback")}
+              aria-label="Feedback"
+            >
               <MenuIconLabel icon="/About.svg" label="Feedback" />
             </a>
           </div>

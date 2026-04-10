@@ -60,6 +60,16 @@ export type CreateFeedbackItemInput = {
   details: string;
   jiraIssueBrowseUrl?: string | null;
   authToken: string;
+  attachments?: FeedbackAttachmentUploadInput[];
+};
+
+export type FeedbackAttachmentUploadInput = {
+  filename: string;
+  file: File;
+  mimeType: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
 };
 
 function dbOrNull() {
@@ -131,14 +141,40 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     if (!ownerUid) return { ok: false, message: "You must be signed in to submit feedback." };
     if (!title) return { ok: false, message: "A feedback title is required." };
     if (!details) return { ok: false, message: "Feedback details are required." };
-    const response = await fetch("/api/feedback", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "x-firebase-auth": normalizeString(input.authToken, 8192),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const attachments = Array.isArray(input.attachments) ? input.attachments : [];
+    const hasAttachments = attachments.length > 0;
+    const headers: Record<string, string> = {
+      "x-firebase-auth": normalizeString(input.authToken, 8192),
+    };
+    let body: BodyInit;
+    if (hasAttachments) {
+      const formData = new FormData();
+      formData.append("authToken", normalizeString(input.authToken, 8192));
+      formData.append("authorCurrentRankId", normalizeNullableString(input.authorCurrentRankId, 120) || "");
+      formData.append("authorDisplayName", normalizeNullableString(input.authorDisplayName, 120) || "");
+      formData.append("authorEmail", normalizeNullableString(input.authorEmail, 320) || "");
+      formData.append("authorRankThumbnailSrc", normalizeNullableString(input.authorRankThumbnailSrc, 1024) || "");
+      formData.append("details", details);
+      formData.append("isAnonymous", String(!!input.isAnonymous));
+      formData.append("title", title);
+      formData.append("type", normalizeFeedbackType(input.type));
+      attachments.forEach((attachment, index) => {
+        formData.append("attachments", attachment.file, attachment.filename);
+        formData.append(
+          `attachmentMeta:${index}`,
+          JSON.stringify({
+            filename: normalizeString(attachment.filename, 240),
+            mimeType: normalizeString(attachment.mimeType, 120),
+            sizeBytes: Math.max(0, Math.floor(Number(attachment.sizeBytes || 0) || 0)),
+            width: Math.max(0, Math.floor(Number(attachment.width || 0) || 0)),
+            height: Math.max(0, Math.floor(Number(attachment.height || 0) || 0)),
+          })
+        );
+      });
+      body = formData;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify({
         authToken: normalizeString(input.authToken, 8192),
         authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
@@ -148,7 +184,13 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
         isAnonymous: !!input.isAnonymous,
         title,
         type: normalizeFeedbackType(input.type),
-      }),
+      });
+    }
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      credentials: "same-origin",
+      headers,
+      body,
     });
     const result = (await response.json().catch(() => null)) as
       | { error?: string; jiraIssueBrowseUrl?: string | null; jiraIssueKey?: string | null }
