@@ -128,6 +128,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
   const REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers`;
   const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
+  const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
 
   const runtime = createTaskTimerRuntime();
   const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -1662,6 +1663,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     }
   }
 
+  function handleArchieNavigate(hrefRaw: unknown) {
+    const href = String(hrefRaw || "").trim();
+    if (!href) return;
+    if (href === "/tasklaunch") {
+      applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
+      return;
+    }
+    if (href === "/dashboard") {
+      applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" });
+      return;
+    }
+    if (href === "/friends") {
+      applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+      return;
+    }
+    navigateToAppRoute(href);
+  }
+
   function save(opts?: { deletedTaskIds?: string[] }) {
     persistenceApi?.save(opts);
   }
@@ -2901,6 +2920,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         maybeHandlePendingPushAction();
         maybeRestorePendingTimeGoalFlowApi();
       });
+    });
+    on(window, ARCHIE_NAVIGATE_EVENT as any, (event: any) => {
+      if (runtime.destroyed) return;
+      const href = event?.detail && typeof event.detail === "object" ? event.detail.href : "";
+      handleArchieNavigate(href);
     });
     maybeOpenImportFromQuery();
     syncDashboardMenuFlipUi();

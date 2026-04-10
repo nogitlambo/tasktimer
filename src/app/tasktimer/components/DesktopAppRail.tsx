@@ -75,6 +75,7 @@ const ARCHIE_BLINK_DURATION_MS = 2000;
 const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
 const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
 const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
+const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
 const ARCHIE_INACTIVITY_CLOSE_MS = 30000;
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
@@ -658,11 +659,20 @@ export default function DesktopAppRail({
     if (!archieSuggestedAction || typeof window === "undefined") return;
     restartArchieInactivityTimer();
     if (archieSuggestedAction.kind === "navigate") {
-      window.location.assign(archieSuggestedAction.href);
+      try {
+        window.dispatchEvent(new CustomEvent(ARCHIE_NAVIGATE_EVENT, { detail: { href: archieSuggestedAction.href } }));
+      } catch {
+        window.location.assign(archieSuggestedAction.href);
+      }
       return;
     }
     if (archieSuggestedAction.kind === "openSettingsPane") {
-      window.location.assign(`/settings?pane=${archieSuggestedAction.pane}`);
+      const href = `/settings?pane=${archieSuggestedAction.pane}`;
+      try {
+        window.dispatchEvent(new CustomEvent(ARCHIE_NAVIGATE_EVENT, { detail: { href } }));
+      } catch {
+        window.location.assign(href);
+      }
       return;
     }
     try {
