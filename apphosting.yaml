@@ -12,12 +12,12 @@ env:
   # Configure environment variables.
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    secret: AIzaSyAn-9BJKDDMCxjCcnNcqFhGcSyXwO3bVw8
+    secret: NEXT_PUBLIC_FIREBASE_API_KEY
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY
-    secret: AIzaSyAJKOzUzbWO2n9ofnFoSrEJBwgyKZQB0_8
+    secret: NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY
     availability:
       - BUILD
       - RUNTIME
