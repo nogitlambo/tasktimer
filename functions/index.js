@@ -649,6 +649,7 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     taskName,
     notificationKind: PLANNED_START_NOTIFICATION_KIND,
     plannedStartDay: taskPlannedStartDay || "",
+    dueAtMs: dueAtMs == null ? "" : String(dueAtMs),
     snoozedUntilMs: snoozedUntilMs == null ? "" : String(snoozedUntilMs),
   };
   const response = await sendScheduledTaskNotification({

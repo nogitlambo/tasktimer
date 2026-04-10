@@ -537,11 +537,13 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       return;
     }
     if (previousUid) {
-      void clearPushDeviceForUid(previousUid).catch(() => {});
+      void savePushDevicePatchForUser({ uid: previousUid } as User, {
+        enabled: true,
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      }).catch(() => {});
       lastSyncedUid = "";
     }
-    latestPushToken = "";
-    latestWebPushToken = "";
   });
 
   const onVisibilityChange = () => {

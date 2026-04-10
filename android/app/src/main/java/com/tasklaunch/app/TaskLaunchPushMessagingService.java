@@ -57,6 +57,7 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String messageId = valueOrEmpty(remoteMessage.getMessageId());
         String eventType = valueOrEmpty(data.get("eventType"));
         String notificationKind = valueOrEmpty(data.get("notificationKind"));
+        long dueAtMs = parseLongOrZero(data.get("dueAtMs"));
         boolean isUnscheduledGap = NOTIFICATION_KIND_UNSCHEDULED_GAP.equals(notificationKind) &&
             EVENT_UNSCHEDULED_GAP.equals(eventType);
         String title = isUnscheduledGap ? "Open Gap Available" : "Task Reminder";
@@ -68,11 +69,11 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String secondaryActionId = isUnscheduledGap ? ACTION_POSTPONE_NEXT_GAP : ACTION_SNOOZE_10M;
 
         int notificationId = Math.abs((messageId.isEmpty() ? (taskId + route) : messageId).hashCode());
-        Intent defaultIntent = buildActivityIntent(taskId, route, taskName, messageId, "default", notificationId, eventType, notificationKind);
-        Intent launchIntent = buildReceiverIntent(taskId, route, taskName, messageId, ACTION_LAUNCH_TASK, notificationId, eventType, notificationKind);
-        Intent secondaryIntent = buildReceiverIntent(taskId, route, taskName, messageId, secondaryActionId, notificationId, eventType, notificationKind);
+        Intent defaultIntent = buildReceiverIntent(taskId, route, taskName, messageId, "default", notificationId, eventType, notificationKind, dueAtMs);
+        Intent launchIntent = buildReceiverIntent(taskId, route, taskName, messageId, ACTION_LAUNCH_TASK, notificationId, eventType, notificationKind, dueAtMs);
+        Intent secondaryIntent = buildReceiverIntent(taskId, route, taskName, messageId, secondaryActionId, notificationId, eventType, notificationKind, dueAtMs);
 
-        PendingIntent contentPendingIntent = PendingIntent.getActivity(
+        PendingIntent contentPendingIntent = PendingIntent.getBroadcast(
             this,
             notificationId,
             defaultIntent,
@@ -97,10 +98,20 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
             .setContentText(body)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
             .setContentIntent(contentPendingIntent)
             .addAction(0, primaryLabel, launchPendingIntent)
             .addAction(0, secondaryLabel, secondaryPendingIntent);
+        if (!isUnscheduledGap && dueAtMs > 0) {
+            long whenMs = System.currentTimeMillis() - Math.max(0L, System.currentTimeMillis() - dueAtMs);
+            builder
+                .setWhen(whenMs)
+                .setShowWhen(true)
+                .setUsesChronometer(true)
+                .setChronometerCountDown(false)
+                .setSubText("Started");
+        }
 
         NotificationManagerCompat.from(this).notify(notificationId, builder.build());
     }
@@ -113,7 +124,8 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String actionId,
         int notificationId,
         String eventType,
-        String notificationKind
+        String notificationKind,
+        long dueAtMs
     ) {
         Intent intent = new Intent(this, TaskLaunchPushActionReceiver.class);
         intent.putExtra("google.message_id", messageId);
@@ -124,33 +136,19 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         intent.putExtra("notificationKind", notificationKind);
         intent.putExtra("tasktimerActionId", actionId);
         intent.putExtra("tasktimerNotificationId", notificationId);
-        return intent;
-    }
-
-    private Intent buildActivityIntent(
-        String taskId,
-        String route,
-        String taskName,
-        String messageId,
-        String actionId,
-        int notificationId,
-        String eventType,
-        String notificationKind
-    ) {
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.putExtra("google.message_id", messageId);
-        intent.putExtra("taskId", taskId);
-        intent.putExtra("route", route);
-        intent.putExtra("taskName", taskName);
-        intent.putExtra("eventType", eventType);
-        intent.putExtra("notificationKind", notificationKind);
-        intent.putExtra("tasktimerActionId", actionId);
-        intent.putExtra("tasktimerNotificationId", notificationId);
+        intent.putExtra("tasktimerDueAtMs", dueAtMs);
         return intent;
     }
 
     private String valueOrEmpty(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private long parseLongOrZero(String value) {
+        try {
+            return Long.parseLong(valueOrEmpty(value));
+        } catch (Exception ignored) {
+            return 0L;
+        }
     }
 }
