@@ -5,7 +5,12 @@ import { SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsAppearancePane({ active }: { active: boolean }) {
   return (
-    <SettingsDetailPane active={active} title="Appearance" subtitle="Choose your theme and visual display options.">
+    <SettingsDetailPane
+      active={active}
+      paneClassName="settingsDisplayTypographyPane"
+      title="Appearance"
+      subtitle="Choose your theme and visual display options."
+    >
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">
@@ -22,14 +27,10 @@ export function SettingsAppearancePane({ active }: { active: boolean }) {
           </div>
           <div className="unitRow" id="menuButtonStyleRow">
             <span>Button Shape</span>
-            <div className="unitButtons" role="group" aria-label="Menu button style">
-              <button className="btn btn-ghost small unitBtn" id="menuButtonStyleParallelogramBtn" type="button">
-                Parallelogram
-              </button>
-              <button className="btn btn-ghost small unitBtn" id="menuButtonStyleSquareBtn" type="button">
-                Square
-              </button>
-            </div>
+            <select id="menuButtonStyleSelect" defaultValue="square" aria-label="Button shape">
+              <option value="parallelogram">Parallelogram</option>
+              <option value="square">Square</option>
+            </select>
           </div>
           <div className="toggleRow" id="taskDynamicColorsToggleRow">
             <span>Dynamic Colors</span>

@@ -189,6 +189,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setMenuButtonStyleState(menuButtonStyle);
     const body = document.body;
     body.setAttribute("data-control-style", menuButtonStyle);
+    if (els.menuButtonStyleSelect) {
+      els.menuButtonStyleSelect.value = menuButtonStyle;
+    }
     els.menuButtonStyleParallelogramBtn?.classList.toggle("isOn", menuButtonStyle === "parallelogram");
     els.menuButtonStyleSquareBtn?.classList.toggle("isOn", menuButtonStyle === "square");
     els.menuButtonStyleParallelogramBtn?.setAttribute(
@@ -396,6 +399,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.menuButtonStyleSquareBtn, "click", () => {
       setMenuButtonStyle("square");
+    });
+    ctx.on(els.menuButtonStyleSelect, "change", () => {
+      setMenuButtonStyle(els.menuButtonStyleSelect?.value === "parallelogram" ? "parallelogram" : "square");
     });
     ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
       applyWeekStartingPreference("mon");

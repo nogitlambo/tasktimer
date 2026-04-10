@@ -257,31 +257,11 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                       </div>
                     </div>
                     <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
-                      <div className="dashboardCardTitle dashboardMomentumDriversTitle">Momentum Drivers</div>
                       <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
                         <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/40</span></li>
                         <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/25</span></li>
                         <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/25</span></li>
                         <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
-                      </ul>
-                    </section>
-                    <section className="dashboardMomentumDriversSection dashboardMomentumDriversMeterSection" aria-hidden="true">
-                      <div className="dashboardCardTitle dashboardMomentumDriversTitle dashboardMomentumDriversTitleSpacer">Visual</div>
-                      <ul className="dashboardMomentumDrivers dashboardMomentumDriverMeterList" id="dashboardMomentumDriverMeters">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                          <li className="dashboardMomentumDriver" key={`momentum-meter-${index}`}>
-                            <span className="dashboardMomentumDriverMeter">
-                              <span className="dashboardMomentumDriverMeterFill" style={{ ["--momentum-driver-fill" as string]: "0%" }} />
-                              <span className="dashboardMomentumDriverMeterTrack" aria-hidden="true">
-                                <span className="dashboardMomentumDriverMeterSegment" />
-                                <span className="dashboardMomentumDriverMeterSegment" />
-                                <span className="dashboardMomentumDriverMeterSegment" />
-                                <span className="dashboardMomentumDriverMeterSegment" />
-                                <span className="dashboardMomentumDriverMeterSegment" />
-                              </span>
-                            </span>
-                          </li>
-                        ))}
                       </ul>
                     </section>
                   </section>

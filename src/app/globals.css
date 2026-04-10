@@ -4,6 +4,8 @@
 @import "@fontsource/orbitron/latin-700.css";
 @import "@fontsource/orbitron/latin-800.css";
 @import "@fontsource/orbitron/latin-900.css";
+@import "@fontsource/inconsolata/latin-400.css";
+@import "@fontsource/inconsolata/latin-700.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
@@ -14,6 +16,7 @@
   --font-geist-sans: Geist Variable, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-geist-mono: Geist Mono Variable, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --font-orbitron: Orbitron, "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --font-archie: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   --font-readable: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }

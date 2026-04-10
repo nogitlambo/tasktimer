@@ -4201,11 +4201,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   gap: 10px;
   min-width: 0;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriversTitle{
-  font-size: 13px;
-  letter-spacing: .08em;
-  text-transform: none;
-}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDrivers{
   display: grid !important;
   gap: 6px !important;
@@ -4227,82 +4222,17 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverText{
   min-width: 0 !important;
+  font-family: var(--font-archie) !important;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverTextList .dashboardMomentumDriver,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeterList .dashboardMomentumDriver{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverTextList .dashboardMomentumDriver{
   min-height: 24px !important;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeter{
-  --dashboard-bar-segment: 14px;
-  --dashboard-bar-gap: 4px;
-  --dashboard-bar-track-base: #14100b;
-  --dashboard-bar-track-fill: rgba(117, 82, 35, .22);
-  --dashboard-bar-gap-color: rgba(6, 8, 12, .82);
-  --dashboard-bar-fill-mid: #a9d65f;
-  --dashboard-bar-fill-deep: #8f1623;
-  --dashboard-bar-fill-glow: rgba(255, 158, 55, .22);
-  position: relative !important;
-  display: block !important;
-  width: min(100%, 96px) !important;
-  height: 10px !important;
-  border-radius: 0 !important;
-  overflow: hidden !important;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      var(--dashboard-bar-track-fill) 0 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
-      var(--dashboard-bar-gap-color) calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
-    ),
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)),
-    var(--dashboard-bar-track-base) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.05) !important;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeterFill{
-  position: absolute !important;
-  inset: 1px auto 1px 1px !important;
-  display: block !important;
-  height: auto !important;
-  width: var(--momentum-driver-fill, 0%) !important;
-  border-radius: 0 !important;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      #a9d65f 0,
-      #cfe06f 24%,
-      #ffd54a 48%,
-      #ff7a1c 72%,
-      #8f1623 calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)),
-      transparent calc(var(--dashboard-bar-segment) - var(--dashboard-bar-gap)) var(--dashboard-bar-segment)
-    ) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,242,214,.14),
-    0 0 4px var(--dashboard-bar-fill-glow) !important;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeterTrack{
-  display: none !important;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeterSegment{
-  display: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard.isPlanLocked .dashboardMomentumDriver{
   color: rgba(210,223,236,.72) !important;
   background: transparent !important;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriversTitleSpacer{
-  opacity: 0 !important;
-  pointer-events: none !important;
-  user-select: none !important;
-}
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriver{
   border-color: transparent !important;
-}
-body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeter{
-  --dashboard-bar-track-base: #1a0f1f;
-  --dashboard-bar-track-fill: rgba(112, 64, 146, .24);
-  --dashboard-bar-gap-color: rgba(14, 9, 22, .84);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.05) !important;
 }
 @media (max-width: 720px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
@@ -4599,8 +4529,7 @@ body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch A
   background: linear-gradient(90deg, #dbff4f 0%, #f3ff7a 100%) !important;
   box-shadow: 0 0 18px rgba(219,255,79,.18);
 }
-body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTrack,
-body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverMeter{
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTrack{
   border-color: rgba(219,255,79,.18);
   background: rgba(18,24,7,.76);
 }

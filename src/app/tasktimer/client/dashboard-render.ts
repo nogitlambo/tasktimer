@@ -123,38 +123,20 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return MOMENTUM_DRIVER_DEFS.map((driver, index) => {
       const rawScore = Math.max(0, Math.min(driver.max, Number(scores[index] || 0)));
       const roundedScore = Math.round(rawScore);
-      const fillPct = driver.max > 0 ? Math.max(0, Math.min(100, (rawScore / driver.max) * 100)) : 0;
       return {
         label: driver.label,
         roundedScore,
         max: driver.max,
-        fillPct,
       };
     });
   }
 
-  function renderMomentumDriverRows(driverTextsEl: HTMLElement, driverMetersEl: HTMLElement, scores: number[]) {
+  function renderMomentumDriverRows(driverTextsEl: HTMLElement, scores: number[]) {
     const rows = buildMomentumDriverRows(scores);
     driverTextsEl.innerHTML = rows
       .map(
         (row) => `<li class="dashboardMomentumDriver">
           <span class="dashboardMomentumDriverText">${ctx.escapeHtmlUI(`${row.label}: ${row.roundedScore}/${row.max}`)}</span>
-        </li>`
-      )
-      .join("");
-    driverMetersEl.innerHTML = rows
-      .map(
-        (row) => `<li class="dashboardMomentumDriver">
-          <span class="dashboardMomentumDriverMeter" aria-hidden="true">
-            <span class="dashboardMomentumDriverMeterFill" style="--momentum-driver-fill:${row.fillPct.toFixed(2)}%"></span>
-            <span class="dashboardMomentumDriverMeterTrack" aria-hidden="true">
-              <span class="dashboardMomentumDriverMeterSegment"></span>
-              <span class="dashboardMomentumDriverMeterSegment"></span>
-              <span class="dashboardMomentumDriverMeterSegment"></span>
-              <span class="dashboardMomentumDriverMeterSegment"></span>
-              <span class="dashboardMomentumDriverMeterSegment"></span>
-            </span>
-          </span>
         </li>`
       )
       .join("");
@@ -190,13 +172,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     targetScore: number;
     targetBandLabel: string;
     driverTextsEl: HTMLElement;
-    driverMetersEl: HTMLElement;
     targetDriverScores: number[];
   }) {
     cancelMomentumAnimation();
     momentumAnimationStartTimerId = window.setTimeout(() => {
       momentumAnimationStartTimerId = null;
-      renderMomentumDriverRows(opts.driverTextsEl, opts.driverMetersEl, [0, 0, 0, 0]);
+      renderMomentumDriverRows(opts.driverTextsEl, [0, 0, 0, 0]);
       applyMomentumVisualState({
         dialEl: opts.dialEl,
         arcActiveEl: opts.arcActiveEl,
@@ -214,11 +195,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           const eased = 1 - Math.pow(1 - progress, 3);
           const displayedScore = opts.targetScore * eased;
           const displayedDriverScores = opts.targetDriverScores.map((score) => score * eased);
-          renderMomentumDriverRows(
-            opts.driverTextsEl,
-            opts.driverMetersEl,
-            progress >= 1 ? opts.targetDriverScores : displayedDriverScores
-          );
+          renderMomentumDriverRows(opts.driverTextsEl, progress >= 1 ? opts.targetDriverScores : displayedDriverScores);
           applyMomentumVisualState({
             dialEl: opts.dialEl,
             arcActiveEl: opts.arcActiveEl,
@@ -342,8 +319,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const scoreValueEl = els.dashboardMomentumScoreValue as HTMLElement | null;
     const scoreStatusEl = els.dashboardMomentumScoreStatus as HTMLElement | null;
     const driverTextsEl = els.dashboardMomentumDrivers as HTMLElement | null;
-    const driverMetersEl = els.dashboardMomentumDriverMeters as HTMLElement | null;
-    if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driverTextsEl || !driverMetersEl) return;
+    if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driverTextsEl) return;
 
     if (!hasAdvancedInsights()) {
       cancelMomentumAnimation();
@@ -367,7 +343,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       lastMomentumRenderSignature = lockedSignature;
       scoreValueEl.textContent = "--";
       scoreStatusEl.textContent = "Locked";
-      renderMomentumDriverRows(driverTextsEl, driverMetersEl, lockedDriverScores);
+      renderMomentumDriverRows(driverTextsEl, lockedDriverScores);
       return;
     }
 
@@ -404,7 +380,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
     const isSameTarget = lastMomentumRenderSignature === nextSignature;
     if (!isSameTarget) {
-      renderMomentumDriverRows(driverTextsEl, driverMetersEl, nextDriverScores);
+      renderMomentumDriverRows(driverTextsEl, nextDriverScores);
     }
 
     const hasAnimatedBefore = lastMomentumAnimatedTargetScore != null;
@@ -433,14 +409,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         targetScore: score,
         targetBandLabel: bandLabel,
         driverTextsEl,
-        driverMetersEl,
         targetDriverScores: nextDriverScores,
       });
       return;
     }
 
     cancelMomentumAnimation();
-    renderMomentumDriverRows(driverTextsEl, driverMetersEl, nextDriverScores);
+    renderMomentumDriverRows(driverTextsEl, nextDriverScores);
     applyMomentumVisualState({
       dialEl,
       arcActiveEl,

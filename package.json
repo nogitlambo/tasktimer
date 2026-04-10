@@ -30,6 +30,7 @@
     "@capacitor/push-notifications": "^8.0.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
+    "@fontsource/inconsolata": "^5.2.8",
     "@fontsource/orbitron": "^5.2.8",
     "@google/stitch-sdk": "^0.1.0",
     "@stripe/stripe-js": "^9.0.1",

@@ -2798,6 +2798,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
   gap:8px;
   align-items:flex-start;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsDataList{
+  display:flex !important;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem{
   min-height:46px;
   width:min(100%, 252px);
@@ -2833,6 +2839,9 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
   min-height:24px;
   text-align:left;
   transform:translateY(-1px);
+}
+#app[aria-label="TaskLaunch Settings"] #taskDynamicColorsToggleRow > span{
+  font-family:var(--font-orbitron) !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsDataListItem:focus-visible{
@@ -2884,6 +2893,9 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataLi
 }
 @media (max-width: 900px){
   #app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsInlineSection{
+    align-items:stretch;
+  }
+  #app[aria-label="TaskLaunch Settings"] .settingsDataListStack .settingsDataList{
     align-items:stretch;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsDataListItem{
@@ -3606,6 +3618,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   text-align-last: right;
 }
 
+#app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect{
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-right: 32px;
+  text-align: right;
+  text-align-last: right;
+}
+
 #app[aria-label="TaskLaunch Settings"] #themeToggleRow .unitButtons,
 #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow .unitButtons{
   flex-wrap: wrap;
@@ -3632,6 +3655,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   }
 
   #app[aria-label="TaskLaunch Settings"] #themeSelect{
+    width: 100%;
+    text-align: left;
+    text-align-last: left;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect{
     width: 100%;
     text-align: left;
     text-align-last: left;

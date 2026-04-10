@@ -2150,18 +2150,15 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard{
     --profile-sd-notch: 24px;
+    --profile-sd-line: rgba(224,236,238,.78);
+    --profile-sd-corner: rgba(224,236,238,.58);
     position: relative;
     overflow: visible !important;
-    padding: 18px 18px 16px 28px !important;
+    padding: 18px 18px 18px 28px !important;
     border-radius: 0 !important;
     border: 0 !important;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015) 28%, rgba(255,255,255,0) 100%),
-      radial-gradient(140% 120% at 0 0, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
-      linear-gradient(180deg, #06080d 0%, #04060b 100%) !important;
-    box-shadow:
-      0 18px 32px rgba(0,0,0,.28),
-      0 30px 70px rgba(0,0,0,.46) !important;
+    background: rgba(5,7,10,.9) !important;
+    box-shadow: 0 14px 28px rgba(0,0,0,.34) !important;
     -webkit-clip-path: polygon(
       var(--profile-sd-notch) 0,
       100% 0,
@@ -2183,14 +2180,24 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-      radial-gradient(100% 100% at 0 0, rgba(255,255,255,.07), rgba(255,255,255,0) 40%),
-      linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
-    opacity: .78;
+    z-index: 0;
+    background: radial-gradient(130% 115% at 50% 0, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
+    -webkit-clip-path: inherit;
+    clip-path: inherit;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard::after,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard::after{
-    display: none;
+    content: "";
+    position: absolute;
+    inset: 5px 5px 5px 5px;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      linear-gradient(var(--profile-sd-corner), var(--profile-sd-corner)) top right / 40px 1px no-repeat,
+      linear-gradient(var(--profile-sd-corner), var(--profile-sd-corner)) top right / 1px 28px no-repeat,
+      linear-gradient(var(--profile-sd-corner), var(--profile-sd-corner)) bottom left / 40px 1px no-repeat,
+      linear-gradient(var(--profile-sd-corner), var(--profile-sd-corner)) bottom left / 1px 28px no-repeat;
+    opacity: .78;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard > *,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard > *{
@@ -2199,17 +2206,15 @@
   }
   body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
   body[data-theme="cyan"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard{
-    box-shadow:
-      0 18px 32px rgba(0,0,0,.28),
-      0 30px 70px rgba(0,0,0,.46),
-      0 0 22px rgba(24,225,255,.04);
+    --profile-sd-line: rgba(189,243,255,.78);
+    --profile-sd-corner: rgba(105,228,255,.5);
+    box-shadow: 0 14px 28px rgba(0,0,0,.34);
   }
   body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
   body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard{
-    box-shadow:
-      0 18px 32px rgba(0,0,0,.28),
-      0 30px 70px rgba(0,0,0,.46),
-      0 0 22px rgba(145,86,255,.05);
+    --profile-sd-line: rgba(244,220,255,.76);
+    --profile-sd-corner: rgba(232,117,255,.48);
+    box-shadow: 0 14px 28px rgba(0,0,0,.34);
   }
 }
 
@@ -3732,11 +3737,10 @@
   }
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileSummarySdCard{
-    background:
-      radial-gradient(130% 120% at 100% 0%, rgba(219,255,79,.16), rgba(0,0,0,0) 42%),
-      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-      rgba(18,23,7,.96);
-    border-color: rgba(241,255,151,.2);
+    --profile-sd-line: rgba(241,255,190,.76);
+    --profile-sd-corner: rgba(219,255,79,.5);
+    background: rgba(8,12,5,.92) !important;
+    border-color: transparent;
   }
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
   body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble{
