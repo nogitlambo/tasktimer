@@ -449,6 +449,45 @@ function findCurrentGap(blocks, nowMs) {
   };
 }
 
+async function activateTaskFromPush(uid, taskId, nowMs) {
+  const tasksRef = db.collection("users").doc(uid).collection("tasks");
+  const targetRef = tasksRef.doc(taskId);
+  const [targetSnap, runningSnap] = await Promise.all([
+    targetRef.get(),
+    tasksRef.where("running", "==", true).get(),
+  ]);
+  if (!targetSnap.exists) {
+    return {ok: false, reason: "missing-task"};
+  }
+
+  const batch = db.batch();
+  runningSnap.docs.forEach((docSnap) => {
+    const row = docSnap.data() || {};
+    const rowId = asString(docSnap.id);
+    if (!rowId || rowId === taskId) return;
+    const startMs = asInt(row.startMs, null);
+    const accumulatedMs = Math.max(0, asInt(row.accumulatedMs, 0) || 0);
+    const nextAccumulatedMs = startMs != null ? accumulatedMs + Math.max(0, nowMs - startMs) : accumulatedMs;
+    batch.set(docSnap.ref, {
+      accumulatedMs: nextAccumulatedMs,
+      running: false,
+      startMs: null,
+      updatedAt: FieldValue.serverTimestamp(),
+      schemaVersion: 1,
+    }, {merge: true});
+  });
+
+  batch.set(targetRef, {
+    running: true,
+    startMs: nowMs,
+    hasStarted: true,
+    updatedAt: FieldValue.serverTimestamp(),
+    schemaVersion: 1,
+  }, {merge: true});
+  await batch.commit();
+  return {ok: true};
+}
+
 async function hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs) {
   const historySnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId)
     .collection("history")
@@ -862,10 +901,14 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
       }, {merge: true});
       return {ok: true, applied: true, actionId, dueAtMs: nextDueAtMs};
     }
-    if (actionId === PUSH_ACTION_LAUNCH_TASK) {
-      await scheduledRef.set({
-        route,
-        notificationKind: notificationKind || UNSCHEDULED_GAP_NOTIFICATION_KIND,
+  if (actionId === PUSH_ACTION_LAUNCH_TASK) {
+    const activation = await activateTaskFromPush(uid, taskId, nowMs);
+    if (!activation.ok) {
+      return {ok: true, applied: false, reason: activation.reason || "missing-task"};
+    }
+    await scheduledRef.set({
+      route,
+      notificationKind: notificationKind || UNSCHEDULED_GAP_NOTIFICATION_KIND,
         eventType: UNSCHEDULED_GAP_REMINDER_EVENT,
         baseEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
         effectiveEventType: UNSCHEDULED_GAP_REMINDER_EVENT,
@@ -901,17 +944,27 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
   }
 
   if (actionId === PUSH_ACTION_LAUNCH_TASK) {
+    const activation = await activateTaskFromPush(uid, taskId, nowMs);
+    if (!activation.ok) {
+      return {ok: true, applied: false, reason: activation.reason || "missing-task"};
+    }
+    const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
     await scheduledRef.set({
-      eventType,
+      dueAtMs: nextDueAtMs,
+      eventType: PLANNED_START_REMINDER_EVENT,
       baseEventType: PLANNED_START_REMINDER_EVENT,
-    effectiveEventType: eventType,
-    plannedStartDay: taskPlannedStartDay || null,
-    lastActionAtMs: nowMs,
-    lastActionByDeviceId: deviceId || null,
-    route,
+      effectiveEventType: PLANNED_START_REMINDER_EVENT,
+      plannedStartDay: taskPlannedStartDay || null,
+      plannedStartTime: taskPlannedStartTime,
+      sentAtMs: nowMs,
+      sentDueAtMs: dueAtMs,
+      snoozedUntilMs: null,
+      lastActionAtMs: nowMs,
+      lastActionByDeviceId: deviceId || null,
+      route,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
-    return {ok: true, applied: true, actionId};
+    return {ok: true, applied: true, actionId, dueAtMs: nextDueAtMs};
   }
 
   const snoozedUntilMs = nowMs + PUSH_ACTION_SNOOZE_MS;
