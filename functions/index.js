@@ -472,14 +472,9 @@ async function sendScheduledTaskNotification({
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const deviceRows = extractAndroidDeviceRows(devicesSnap);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
+  const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
   if (!deviceRows.length) {
     return {status: "no-devices"};
-  }
-  // Do not suppress native scheduled reminders based on app foreground state.
-  // Native Android data messages are rendered into notifications by the app service,
-  // and stale appActive state can otherwise cause scheduled alerts to be skipped.
-  if (hasFreshForegroundWebDevice(deviceRows, nowMs)) {
-    return {status: "foreground"};
   }
 
   const responses = [];
@@ -497,7 +492,7 @@ async function sendScheduledTaskNotification({
     invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse));
   }
 
-  if (allowWeb && webRows.length) {
+  if (allowWeb && webRows.length && !hasForegroundWebDevice) {
     const webResponse = await messaging.sendEachForMulticast({
       tokens: webRows.map((row) => row.token),
       notification: {
@@ -523,6 +518,17 @@ async function sendScheduledTaskNotification({
     successCount: acc.successCount + item.successCount,
     failureCount: acc.failureCount + item.failureCount,
   }), {successCount: 0, failureCount: 0});
+
+  if (!response.successCount && !response.failureCount && hasForegroundWebDevice) {
+    return {
+      status: nativeRows.length ? "sent" : "foreground",
+      successCount: 0,
+      failureCount: 0,
+      invalidTokenCount: invalidRows.length,
+      taskId,
+      taskName,
+    };
+  }
 
   return {
     status: response.successCount > 0 ? "sent" : "failed",
