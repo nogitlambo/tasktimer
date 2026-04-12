@@ -27,6 +27,8 @@ const PLANNED_START_SNOOZED_EVENT = "plannedStartReminderSnoozed";
 const PLANNED_START_NOTIFICATION_KIND = "plannedStart";
 const UNSCHEDULED_GAP_REMINDER_EVENT = "unscheduledGapReminder";
 const UNSCHEDULED_GAP_NOTIFICATION_KIND = "unscheduledGap";
+const TIME_GOAL_COMPLETE_EVENT = "timeGoalComplete";
+const TIME_GOAL_COMPLETE_NOTIFICATION_KIND = "timeGoalComplete";
 const PUSH_ACTION_LAUNCH_TASK = "launchTask";
 const PUSH_ACTION_SNOOZE_10M = "snooze10m";
 const PUSH_ACTION_POSTPONE_NEXT_GAP = "postponeNextGap";
@@ -42,6 +44,10 @@ function asString(value, fallback = "") {
 
 function asInt(value, fallback = null) {
   return Number.isFinite(Number(value)) ? Math.floor(Number(value)) : fallback;
+}
+
+function asNumber(value, fallback = null) {
+  return Number.isFinite(Number(value)) ? Number(value) : fallback;
 }
 
 function asBool(value) {
@@ -300,6 +306,10 @@ function hasFreshForegroundWebDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => !row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
+function hasFreshForegroundDevice(deviceRows, nowMs) {
+  return deviceRows.some((row) => row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
+}
+
 function splitDeviceRows(deviceRows) {
   const nativeRows = [];
   const webRows = [];
@@ -507,6 +517,7 @@ async function sendScheduledTaskNotification({
   webTitle,
   webBody,
   allowWeb = true,
+  skipIfForeground = false,
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const deviceRows = extractAndroidDeviceRows(devicesSnap);
@@ -514,6 +525,16 @@ async function sendScheduledTaskNotification({
   const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
   if (!deviceRows.length) {
     return {status: "no-devices"};
+  }
+  if (skipIfForeground && hasFreshForegroundDevice(deviceRows, nowMs)) {
+    return {
+      status: "foreground",
+      successCount: 0,
+      failureCount: 0,
+      invalidTokenCount: 0,
+      taskId,
+      taskName,
+    };
   }
 
   const responses = [];
@@ -826,6 +847,80 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
   return response;
 }
 
+async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
+  const data = docSnap.data() || {};
+  const uid = asString(data.ownerUid);
+  const taskId = asString(data.taskId || docSnap.id);
+  const dueAtMs = asInt(data.dueAtMs, null);
+  const sentDueAtMs = asInt(data.sentDueAtMs, null);
+  const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
+
+  if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs) {
+    return {status: "skipped"};
+  }
+  if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
+    return {status: "duplicate"};
+  }
+
+  const taskSnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId).get();
+  if (!taskSnap.exists) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
+
+  const taskData = taskSnap.data() || {};
+  const taskName = asString(taskData.name || data.taskName, "Task");
+  const startMs = asInt(taskData.startMs, null);
+  const accumulatedMs = Math.max(0, asInt(taskData.accumulatedMs, 0) || 0);
+  const goalMinutes = taskData.timeGoalEnabled === true ? Math.max(0, asNumber(taskData.timeGoalMinutes, 0) || 0) : 0;
+  const goalMs = goalMinutes * MINUTE_MS;
+
+  if (taskData.running !== true || startMs == null || !(goalMs > 0)) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
+  if (accumulatedMs + Math.max(0, nowMs - startMs) < goalMs) {
+    await docSnap.ref.set({
+      dueAtMs: startMs + Math.max(0, goalMs - accumulatedMs),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return {status: "skipped"};
+  }
+
+  const payloadData = {
+    eventType: TIME_GOAL_COMPLETE_EVENT,
+    baseEventType: TIME_GOAL_COMPLETE_EVENT,
+    effectiveEventType: TIME_GOAL_COMPLETE_EVENT,
+    route,
+    taskId,
+    taskName,
+    notificationKind: TIME_GOAL_COMPLETE_NOTIFICATION_KIND,
+    dueAtMs: String(dueAtMs),
+  };
+  const response = await sendScheduledTaskNotification({
+    uid,
+    nowMs,
+    route,
+    taskId,
+    taskName,
+    payloadData,
+    webTitle: "Time Goal Reached",
+    webBody: `Return to TaskLaunch to view XP awarded for ${taskName}.`,
+    allowWeb: false,
+    skipIfForeground: true,
+  });
+
+  if (response.status === "sent" || response.status === "foreground") {
+    await docSnap.ref.set({
+      sentAtMs: nowMs,
+      sentDueAtMs: dueAtMs,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+
+  return response;
+}
+
 export const applyScheduledPushAction = onCall(protectedCallableOptions, async (request) => {
   const uid = asString(request.auth?.uid);
   if (!uid) {
@@ -1023,6 +1118,10 @@ export const sendDueTimeGoalPushes = onSchedule(
     dueSnap.docs.forEach((docSnap) => {
       const data = docSnap.data() || {};
       const baseEventType = asString(data.baseEventType, asString(data.eventType));
+      if (baseEventType === TIME_GOAL_COMPLETE_EVENT) {
+        plannedDocs.push(docSnap);
+        return;
+      }
       if (baseEventType === UNSCHEDULED_GAP_REMINDER_EVENT) {
         const uid = asString(data.ownerUid);
         if (!uid) return;
@@ -1036,7 +1135,11 @@ export const sendDueTimeGoalPushes = onSchedule(
 
     for (const docSnap of plannedDocs) {
       try {
-        const result = await processDuePlannedStartTask(docSnap, nowMs);
+        const data = docSnap.data() || {};
+        const baseEventType = asString(data.baseEventType, asString(data.eventType));
+        const result = baseEventType === TIME_GOAL_COMPLETE_EVENT
+          ? await processDueTimeGoalCompleteTask(docSnap, nowMs)
+          : await processDuePlannedStartTask(docSnap, nowMs);
         if (result.status === "sent") sentCount += 1;
         else if (result.status === "duplicate") duplicateCount += 1;
         else if (result.status === "foreground") foregroundCount += 1;

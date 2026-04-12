@@ -1677,6 +1677,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       jumpToTaskById(taskId);
       return;
     }
+    jumpToTaskById(taskId);
+    sessionApi?.maybeRestorePendingTimeGoalFlow();
+    window.setTimeout(() => sessionApi?.maybeRestorePendingTimeGoalFlow(), 120);
   }
 
   function handleArchieNavigate(hrefRaw: unknown) {

@@ -2,9 +2,9 @@
 
 import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsDataPane({ active }: { active: boolean }) {
+export function SettingsDataPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
-    <SettingsDetailPane active={active} paneClassName="settingsDataPane" title="Data" subtitle="Manage history, export or import backups, and reset local data.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsDataPane" title="Data" subtitle="Manage history, export or import backups, and reset local data.">
       <div className="settingsInlineStack settingsDataListStack">
         <section className="settingsInlineSection">
           <div className="settingsDataList">

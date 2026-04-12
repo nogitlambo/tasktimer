@@ -3,9 +3,9 @@
 import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
 import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsHelpPane({ active }: { active: boolean }) {
+export function SettingsHelpPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
-    <SettingsDetailPane active={active} paneClassName="settingsHelpPane" title="Support" subtitle="Open the Timebase user guide and walkthrough content.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsHelpPane" title="Support" subtitle="Open the Timebase user guide and walkthrough content.">
       <div className="settingsInlineStack settingsDataListStack">
         <section className="settingsInlineSection">
           <div className="settingsDataList">

@@ -100,6 +100,31 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
+
+function railPageOrder(page: DesktopRailPage) {
+  if (page === "dashboard") return 0;
+  if (page === "tasks") return 1;
+  if (page === "test2") return 2;
+  if (page === "settings") return 3;
+  return -1;
+}
+
+function rememberRailTransition(fromPage: DesktopRailPage, toPage: DesktopRailPage) {
+  if (typeof window === "undefined") return;
+  const fromIndex = railPageOrder(fromPage);
+  const toIndex = railPageOrder(toPage);
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+  try {
+    window.sessionStorage.setItem(
+      RAIL_TRANSITION_STORAGE_KEY,
+      JSON.stringify({ toPage, direction: toIndex > fromIndex ? "forward" : "backward", at: Date.now() })
+    );
+  } catch {
+    // ignore sessionStorage failures
+  }
+}
+
 function labelFromUser(user: User | null) {
   const displayName = String(user?.displayName || "").trim();
   if (displayName) return displayName;
@@ -153,7 +178,7 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   }
 
   return (
-    <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href}>
+    <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href} onClick={() => rememberRailTransition(activePage, item.page)}>
       <AppImg
         className="dashboardRailMenuIconImage"
         src={item.iconSrc}
@@ -196,7 +221,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   }
 
   return (
-    <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href}>
+    <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href} onClick={() => rememberRailTransition(activePage, item.page)}>
       <AppImg
         className="appFooterIconImage"
         src={item.iconSrc}

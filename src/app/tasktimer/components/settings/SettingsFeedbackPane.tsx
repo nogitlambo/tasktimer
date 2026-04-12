@@ -5,17 +5,19 @@ import { SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsFeedbackPane({
   active,
+  exiting = false,
   feedback,
   setFeedback,
   canSubmitFeedback,
 }: {
   active: boolean;
+  exiting?: boolean;
   feedback: SettingsFeedbackState;
   setFeedback: (next: SettingsFeedbackState) => void;
   canSubmitFeedback: boolean;
 }) {
   return (
-    <SettingsDetailPane active={active} title="Feedback" subtitle="Share product feedback and suggestions.">
+    <SettingsDetailPane active={active} exiting={exiting} title="Feedback" subtitle="Share product feedback and suggestions.">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">

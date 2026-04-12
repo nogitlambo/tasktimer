@@ -557,6 +557,17 @@ function computePlannedStartPushDueAtMs(task: Task): number | null {
   return scheduled.getTime();
 }
 
+function computeTimeGoalCompletePushDueAtMs(task: Task): number | null {
+  if (!task.running || !task.timeGoalEnabled) return null;
+  const timeGoalMinutes = normalizeTimeGoalValue(task.timeGoalMinutes);
+  if (!(timeGoalMinutes > 0)) return null;
+  const startMs = normalizeNullableInt(task.startMs);
+  if (startMs == null) return null;
+  const accumulatedMs = Number.isFinite(Number(task.accumulatedMs)) ? Math.max(0, Math.floor(Number(task.accumulatedMs))) : 0;
+  const remainingMs = Math.max(0, Math.floor(timeGoalMinutes * 60_000) - accumulatedMs);
+  return startMs + remainingMs;
+}
+
 function isUnscheduledGapPushCandidate(task: Task): boolean {
   return (
     normalizeDayTimeGoalMinutes(task) != null &&
@@ -573,8 +584,10 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
 
   const plannedStartDueAtMs = computePlannedStartPushDueAtMs(task);
   const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
-  const dueAtMs = plannedStartDueAtMs ?? (unscheduledGapCandidate ? Date.now() : null);
-  if (dueAtMs == null) {
+  const timeGoalCompleteDueAtMs = computeTimeGoalCompletePushDueAtMs(task);
+  const fallbackDueAtMs = plannedStartDueAtMs ?? (unscheduledGapCandidate ? Date.now() : null);
+  const effectiveDueAtMs = timeGoalCompleteDueAtMs ?? fallbackDueAtMs;
+  if (effectiveDueAtMs == null) {
     try {
       await deleteDoc(ref);
     } catch {
@@ -605,9 +618,12 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
     }
   }
   const existingDueAtMs = existing?.exists() ? normalizeNullableInt(existing.get("dueAtMs")) : null;
-  const preserveSendBookkeeping = !!existing?.exists() && existingDueAtMs === dueAtMs;
-  const notificationKind = plannedStartDueAtMs != null ? "plannedStart" : "unscheduledGap";
-  const eventType = plannedStartDueAtMs != null ? "plannedStartReminder" : "unscheduledGapReminder";
+  const existingKind = existing?.exists() ? String(existing.get("notificationKind") || "").trim() : "";
+  const notificationKind =
+    timeGoalCompleteDueAtMs != null ? "timeGoalComplete" : plannedStartDueAtMs != null ? "plannedStart" : "unscheduledGap";
+  const preserveSendBookkeeping = !!existing?.exists() && existingDueAtMs === effectiveDueAtMs && existingKind === notificationKind;
+  const eventType =
+    timeGoalCompleteDueAtMs != null ? "timeGoalComplete" : plannedStartDueAtMs != null ? "plannedStartReminder" : "unscheduledGapReminder";
   const baseEventType = eventType;
   const effectiveEventType = eventType;
   const timeGoalMinutes = normalizeDayTimeGoalMinutes(task);
@@ -619,8 +635,8 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
     eventType,
     baseEventType,
     effectiveEventType,
-    dueAtMs,
-    timeGoalMinutes,
+    dueAtMs: effectiveDueAtMs,
+    timeGoalMinutes: timeGoalCompleteDueAtMs != null ? Math.floor(normalizeTimeGoalValue(task.timeGoalMinutes)) : timeGoalMinutes,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime: String(task.plannedStartTime || "").trim() || null,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
@@ -658,7 +674,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
         taskId,
         taskName: String(task.name || "").trim() || "Task",
         eventType,
-        dueAtMs,
+        dueAtMs: effectiveDueAtMs,
         plannedStartTime: String(task.plannedStartTime || "").trim() || null,
         plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
         route: "/tasklaunch",

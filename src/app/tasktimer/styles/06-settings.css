@@ -299,6 +299,77 @@
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isActive{
   display:flex;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+  overflow-x:hidden;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
+  display:flex;
+  position:absolute;
+  inset:12px;
+  z-index:0;
+  pointer-events:none;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isActive{
+  position:relative;
+  z-index:1;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel[data-settings-slide-direction="forward"] .settingsDetailPane.isActive{
+  animation: settingsPaneSlideInForward .22s ease both;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel[data-settings-slide-direction="forward"] .settingsDetailPane.isExiting{
+  animation: settingsPaneSlideOutForward .22s ease both;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel[data-settings-slide-direction="backward"] .settingsDetailPane.isActive{
+  animation: settingsPaneSlideInBackward .22s ease both;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel[data-settings-slide-direction="backward"] .settingsDetailPane.isExiting{
+  animation: settingsPaneSlideOutBackward .22s ease both;
+}
+body.isRouteSlideEntering[data-route-slide-direction="forward"] #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+  animation: settingsRouteSlideInForward .22s ease both;
+}
+body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+  animation: settingsRouteSlideInBackward .22s ease both;
+}
+@keyframes settingsPaneSlideInForward{
+  from{ opacity:0; transform:translateX(24px); }
+  to{ opacity:1; transform:translateX(0); }
+}
+@keyframes settingsPaneSlideOutForward{
+  from{ opacity:1; transform:translateX(0); }
+  to{ opacity:0; transform:translateX(-24px); }
+}
+@keyframes settingsPaneSlideInBackward{
+  from{ opacity:0; transform:translateX(-24px); }
+  to{ opacity:1; transform:translateX(0); }
+}
+@keyframes settingsPaneSlideOutBackward{
+  from{ opacity:1; transform:translateX(0); }
+  to{ opacity:0; transform:translateX(24px); }
+}
+@keyframes settingsRouteSlideInForward{
+  from{ opacity:0; transform:translateX(24px); }
+  to{ opacity:1; transform:translateX(0); }
+}
+@keyframes settingsRouteSlideInBackward{
+  from{ opacity:0; transform:translateX(-24px); }
+  to{ opacity:1; transform:translateX(0); }
+}
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel .settingsDetailPane.isActive,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel .settingsDetailPane.isExiting,
+  body.isRouteSlideEntering #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    animation:none !important;
+  }
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
+    display:none;
+  }
+}
+@media (max-width:640px){
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
+    top:64px;
+  }
+}
 #app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty{
   border:1px solid rgba(121,226,255,.14);
   background: rgba(255,255,255,.02);

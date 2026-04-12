@@ -20,8 +20,10 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
     private static final String EVENT_PLANNED_START = "plannedStartReminder";
     private static final String EVENT_PLANNED_START_SNOOZED = "plannedStartReminderSnoozed";
     private static final String EVENT_UNSCHEDULED_GAP = "unscheduledGapReminder";
+    private static final String EVENT_TIME_GOAL_COMPLETE = "timeGoalComplete";
     private static final String NOTIFICATION_KIND_PLANNED_START = "plannedStart";
     private static final String NOTIFICATION_KIND_UNSCHEDULED_GAP = "unscheduledGap";
+    private static final String NOTIFICATION_KIND_TIME_GOAL_COMPLETE = "timeGoalComplete";
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -45,7 +47,8 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String eventType = valueOrEmpty(data.get("eventType"));
         return (NOTIFICATION_KIND_PLANNED_START.equals(notificationKind) &&
             (EVENT_PLANNED_START.equals(eventType) || EVENT_PLANNED_START_SNOOZED.equals(eventType))) ||
-            (NOTIFICATION_KIND_UNSCHEDULED_GAP.equals(notificationKind) && EVENT_UNSCHEDULED_GAP.equals(eventType));
+            (NOTIFICATION_KIND_UNSCHEDULED_GAP.equals(notificationKind) && EVENT_UNSCHEDULED_GAP.equals(eventType)) ||
+            (NOTIFICATION_KIND_TIME_GOAL_COMPLETE.equals(notificationKind) && EVENT_TIME_GOAL_COMPLETE.equals(eventType));
     }
 
     private void showActionNotification(RemoteMessage remoteMessage, Map<String, String> data) {
@@ -60,10 +63,14 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         long dueAtMs = parseLongOrZero(data.get("dueAtMs"));
         boolean isUnscheduledGap = NOTIFICATION_KIND_UNSCHEDULED_GAP.equals(notificationKind) &&
             EVENT_UNSCHEDULED_GAP.equals(eventType);
-        String title = isUnscheduledGap ? "Open Gap Available" : "Task Reminder";
-        String body = isUnscheduledGap
-            ? "You have time to start " + taskName + " before your next scheduled task."
-            : taskName + " is scheduled to start now.";
+        boolean isTimeGoalComplete = NOTIFICATION_KIND_TIME_GOAL_COMPLETE.equals(notificationKind) &&
+            EVENT_TIME_GOAL_COMPLETE.equals(eventType);
+        String title = isTimeGoalComplete ? "Time Goal Reached" : isUnscheduledGap ? "Open Gap Available" : "Task Reminder";
+        String body = isTimeGoalComplete
+            ? "Return to TaskLaunch to view XP awarded for " + taskName + "."
+            : isUnscheduledGap
+                ? "You have time to start " + taskName + " before your next scheduled task."
+                : taskName + " is scheduled to start now.";
         String primaryLabel = isUnscheduledGap ? "Start" : "Launch";
         String secondaryLabel = isUnscheduledGap ? "Postpone" : "Snooze 10m";
         String secondaryActionId = isUnscheduledGap ? ACTION_POSTPONE_NEXT_GAP : ACTION_SNOOZE_10M;
@@ -100,10 +107,13 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(false)
             .setOnlyAlertOnce(true)
-            .setContentIntent(contentPendingIntent)
-            .addAction(0, primaryLabel, launchPendingIntent)
-            .addAction(0, secondaryLabel, secondaryPendingIntent);
-        if (!isUnscheduledGap && dueAtMs > 0) {
+            .setContentIntent(contentPendingIntent);
+        if (!isTimeGoalComplete) {
+            builder
+                .addAction(0, primaryLabel, launchPendingIntent)
+                .addAction(0, secondaryLabel, secondaryPendingIntent);
+        }
+        if (!isUnscheduledGap && !isTimeGoalComplete && dueAtMs > 0) {
             long whenMs = System.currentTimeMillis() - Math.max(0L, System.currentTimeMillis() - dueAtMs);
             builder
                 .setWhen(whenMs)

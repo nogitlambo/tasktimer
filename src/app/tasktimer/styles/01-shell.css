@@ -121,6 +121,37 @@ body[data-app-page="test2"] .appPages{
 .appPage.appPageOn{
   display:block;
 }
+body.isAppPageSliding[data-app-page-slide-direction="forward"] #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
+  animation: appPageSlideInForward .22s ease both;
+}
+body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
+  animation: appPageSlideInBackward .22s ease both;
+}
+@keyframes appPageSlideInForward{
+  from{
+    opacity:0;
+    transform:translateX(24px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+@keyframes appPageSlideInBackward{
+  from{
+    opacity:0;
+    transform:translateX(-24px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  body.isAppPageSliding #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
+    animation:none;
+  }
+}
 /* Use more available width on the Tasks page without affecting route screens that reuse `.list`. */
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
   padding:0;

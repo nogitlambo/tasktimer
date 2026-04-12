@@ -57,7 +57,10 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       <div className={`settingsSplitLayout${paneState.mobileDetailOpen ? " isMobileDetailOpen" : ""}`}>
         <SettingsNav navItems={navItems} activePane={paneState.activePane} onSelectPane={paneState.selectPane} />
 
-        <div className={`settingsDetailPanel dashboardCard${paneState.mobileDetailOpen ? " isMobileOpen" : ""}`}>
+        <div
+          className={`settingsDetailPanel dashboardCard${paneState.mobileDetailOpen ? " isMobileOpen" : ""}`}
+          data-settings-slide-direction={paneState.paneSlideDirection || undefined}
+        >
           <div className="settingsMobileDetailHead">
             <button
               type="button"
@@ -76,20 +79,21 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             </div>
           ) : null}
 
-          <SettingsAccountPane active={paneState.activePane === "general"} account={accountState.account} avatar={avatarState} push={pushState} />
-          <SettingsPreferencesPane active={paneState.activePane === "preferences"} />
-          <SettingsAppearancePane active={paneState.activePane === "appearance"} />
-          <SettingsNotificationsPane active={paneState.activePane === "notifications"} />
-          <SettingsPrivacyPane active={paneState.activePane === "privacy"} />
-          <SettingsHelpPane active={paneState.activePane === "userGuide"} />
-          <SettingsAboutPane active={paneState.activePane === "about"} />
+          <SettingsAccountPane active={paneState.activePane === "general"} exiting={paneState.exitingPane === "general"} account={accountState.account} avatar={avatarState} push={pushState} />
+          <SettingsPreferencesPane active={paneState.activePane === "preferences"} exiting={paneState.exitingPane === "preferences"} />
+          <SettingsAppearancePane active={paneState.activePane === "appearance"} exiting={paneState.exitingPane === "appearance"} />
+          <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />
+          <SettingsPrivacyPane active={paneState.activePane === "privacy"} exiting={paneState.exitingPane === "privacy"} />
+          <SettingsHelpPane active={paneState.activePane === "userGuide"} exiting={paneState.exitingPane === "userGuide"} />
+          <SettingsAboutPane active={paneState.activePane === "about"} exiting={paneState.exitingPane === "about"} />
           <SettingsFeedbackPane
             active={paneState.activePane === "feedback"}
+            exiting={paneState.exitingPane === "feedback"}
             feedback={{ ...feedback, email: feedback.anonymous ? feedback.email : feedback.email || accountState.authUserEmail || "" }}
             setFeedback={setFeedback}
             canSubmitFeedback={canSubmitFeedback}
           />
-          <SettingsDataPane active={paneState.activePane === "data"} />
+          <SettingsDataPane active={paneState.activePane === "data"} exiting={paneState.exitingPane === "data"} />
         </div>
       </div>
     </div>

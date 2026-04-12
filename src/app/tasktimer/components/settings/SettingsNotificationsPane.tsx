@@ -3,10 +3,11 @@
 import AppImg from "@/components/AppImg";
 import { SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsNotificationsPane({ active }: { active: boolean }) {
+export function SettingsNotificationsPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
     <SettingsDetailPane
       active={active}
+      exiting={exiting}
       paneClassName="settingsDisplayTypographyPane settingsNotificationsPane"
       title="Notifications"
       subtitle="Manage mobile push, checkpoint sound, and toast alerts."

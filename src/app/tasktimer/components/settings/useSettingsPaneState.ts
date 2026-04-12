@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SettingsNavItem, SettingsPaneKey } from "./types";
 
 const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
@@ -15,6 +15,20 @@ const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
   "data",
   "reset",
 ];
+
+const SETTINGS_VISIBLE_PANE_KEYS: SettingsPaneKey[] = [
+  "general",
+  "preferences",
+  "appearance",
+  "notifications",
+  "userGuide",
+  "data",
+  "about",
+];
+
+const SETTINGS_PANE_TRANSITION_MS = 220;
+
+export type SettingsPaneSlideDirection = "forward" | "backward";
 
 export function isSettingsPaneKey(value: string): value is SettingsPaneKey {
   return SETTINGS_PANE_KEYS.includes(value as SettingsPaneKey);
@@ -33,15 +47,52 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
   });
   const [activePane, setActivePane] = useState<SettingsPaneKey | null>(initialState.activePane);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(initialState.mobileDetailOpen);
+  const [paneSlideDirection, setPaneSlideDirection] = useState<SettingsPaneSlideDirection | null>(null);
+  const [exitingPane, setExitingPane] = useState<SettingsPaneKey | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current);
+    };
+  }, []);
+
+  function clearPaneTransitionLater(nextExitingPane: SettingsPaneKey | null) {
+    if (typeof window === "undefined") return;
+    if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = window.setTimeout(() => {
+      setExitingPane((current) => (current === nextExitingPane ? null : current));
+      transitionTimerRef.current = null;
+    }, SETTINGS_PANE_TRANSITION_MS);
+  }
+
+  function paneIndex(pane: SettingsPaneKey | null) {
+    if (!pane) return -1;
+    return SETTINGS_VISIBLE_PANE_KEYS.indexOf(pane);
+  }
 
   return {
     activePane,
     setActivePane,
     mobileDetailOpen,
     setMobileDetailOpen,
+    paneSlideDirection,
+    exitingPane,
     selectPane: (pane: SettingsPaneKey) => {
+      if (pane === activePane) {
+        setMobileDetailOpen(true);
+        return;
+      }
+      const previousPane = activePane;
+      const previousIndex = paneIndex(previousPane);
+      const nextIndex = paneIndex(pane);
+      const direction: SettingsPaneSlideDirection =
+        previousIndex >= 0 && nextIndex >= 0 && nextIndex < previousIndex ? "backward" : "forward";
+      setPaneSlideDirection(direction);
+      setExitingPane(previousPane);
       setActivePane(pane);
       setMobileDetailOpen(true);
+      clearPaneTransitionLater(previousPane);
     },
   };
 }

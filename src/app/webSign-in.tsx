@@ -40,27 +40,19 @@ export default function WebSignIn(props: WebSignInProps) {
 
   if (showLaunchingScreen) {
     return (
-      <main className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white">
-        <div className="landingV2Glow landingV2GlowTop pointer-events-none" aria-hidden="true" />
-        <div className="landingV2Glow landingV2GlowBottom pointer-events-none" aria-hidden="true" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-35"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(191,138,255,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(64,225,255,.09) 1px, transparent 1px)",
-            backgroundSize: "68px 68px",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,.82), rgba(0,0,0,.14))",
-          }}
-        />
-        <div className="landingV2Container relative mx-auto flex min-h-screen w-full max-w-[1625px] items-center justify-center px-6 pb-20 pt-8 sm:px-8 md:px-12">
-          <section className="relative flex w-full max-w-[560px] flex-col items-center justify-center gap-5 text-center">
+      <main className="webSignInPage relative min-h-screen overflow-hidden text-white">
+        <div className="webSignInGlow webSignInGlowTop" aria-hidden="true" />
+        <div className="webSignInGlow webSignInGlowBottom" aria-hidden="true" />
+        <div className="webSignInGrid" aria-hidden="true" />
+        <div className="webSignInContainer">
+          <section className="webSignInLaunchPanel">
             <Image
               src="/logo/tasklaunch-logo-v2.png"
               alt="TaskLaunch"
               width={560}
               height={76}
               priority
-              className="h-auto w-[230px] sm:w-[280px] md:w-[340px]"
+              className="webSignInLogo"
             />
             <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
               <h2 className="sr-only">Launching TaskLaunch</h2>
@@ -79,35 +71,27 @@ export default function WebSignIn(props: WebSignInProps) {
   }
 
   return (
-    <main className="landingV2 relative min-h-screen overflow-hidden bg-[#05010b] text-white">
-      <div className="landingV2Glow landingV2GlowTop pointer-events-none" aria-hidden="true" />
-      <div className="landingV2Glow landingV2GlowBottom pointer-events-none" aria-hidden="true" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-35"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(191,138,255,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(64,225,255,.09) 1px, transparent 1px)",
-          backgroundSize: "68px 68px",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,.82), rgba(0,0,0,.14))",
-        }}
-      />
+    <main className="webSignInPage relative min-h-screen overflow-hidden text-white">
+      <div className="webSignInGlow webSignInGlowTop" aria-hidden="true" />
+      <div className="webSignInGlow webSignInGlowBottom" aria-hidden="true" />
+      <div className="webSignInGrid" aria-hidden="true" />
 
-      <div className="landingV2Container relative mx-auto flex min-h-screen w-full max-w-[1625px] items-center justify-center px-6 pb-20 pt-8 sm:px-8 md:px-12">
-        <section className="relative flex w-full max-w-[560px] flex-col items-center justify-center gap-4 text-center">
+      <div className="webSignInContainer">
+        <section className="webSignInAuthFrame">
           <div className="relative z-10 flex flex-col items-center gap-3">
-              <Image
-                src="/logo/tasklaunch-logo-v2.png"
-                alt="TaskLaunch"
-                width={560}
-                height={76}
+            <Image
+              src="/logo/tasklaunch-logo-v2.png"
+              alt="TaskLaunch"
+              width={560}
+              height={76}
               priority
-              className="h-auto w-[230px] sm:w-[280px] md:w-[340px]"
+              className="webSignInLogo"
             />
           </div>
 
           <section
             id="landingAuthPanel"
-            className="relative w-full px-6 pb-4 pt-2 text-left sm:max-w-[560px] sm:px-8"
+            className="webSignInAuthPanel relative w-full px-6 pb-4 pt-2 text-left sm:px-8"
           >
             <div className="relative">
               <p className="displayFont text-center text-[12px] uppercase tracking-[0.22em] text-[#f1c9ff]">

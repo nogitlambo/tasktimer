@@ -1,0 +1,20 @@
+<svg width="920" height="380" viewBox="0 0 920 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="cyanGlow" x="-30%" y="-40%" width="160%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="920" height="380" fill="transparent"/>
+  <path d="M126 210L348 96L540 160L732 118" stroke="#35e8ff" stroke-opacity="0.95" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)"/>
+  <path d="M126 210L348 96L540 160L732 118" stroke="#d3fbff" stroke-opacity="0.7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g filter="url(#cyanGlow)">
+    <circle cx="126" cy="210" r="14" fill="#35e8ff"/>
+    <circle cx="348" cy="96" r="15" fill="#35e8ff"/>
+    <circle cx="540" cy="160" r="17" fill="#35e8ff"/>
+    <circle cx="732" cy="118" r="15" fill="#35e8ff"/>
+  </g>
+</svg>

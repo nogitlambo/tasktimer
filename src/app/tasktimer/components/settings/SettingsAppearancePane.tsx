@@ -3,10 +3,11 @@
 import AppImg from "@/components/AppImg";
 import { SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsAppearancePane({ active }: { active: boolean }) {
+export function SettingsAppearancePane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
     <SettingsDetailPane
       active={active}
+      exiting={exiting}
       paneClassName="settingsDisplayTypographyPane"
       title="Appearance"
       subtitle="Choose your theme and visual display options."

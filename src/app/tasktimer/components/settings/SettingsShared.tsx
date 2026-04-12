@@ -74,12 +74,14 @@ export function SettingsNav({
 
 export function SettingsDetailPane({
   active,
+  exiting = false,
   paneClassName = "",
   title,
   subtitle,
   children,
 }: {
   active: boolean;
+  exiting?: boolean;
   paneClassName?: string;
   title: string;
   subtitle: string;
@@ -87,7 +89,7 @@ export function SettingsDetailPane({
 }) {
   return (
     <section
-      className={`settingsDetailPane${active ? " isActive" : ""}${paneClassName ? ` ${paneClassName}` : ""}`}
+      className={`settingsDetailPane${active ? " isActive" : ""}${exiting ? " isExiting" : ""}${paneClassName ? ` ${paneClassName}` : ""}`}
       aria-hidden={active ? "false" : "true"}
     >
       <div className="settingsDetailHead">

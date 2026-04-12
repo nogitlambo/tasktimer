@@ -2,9 +2,9 @@
 
 import { SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsAboutPane({ active }: { active: boolean }) {
+export function SettingsAboutPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
-    <SettingsDetailPane active={active} title="About" subtitle="App summary, version information, and feature overview.">
+    <SettingsDetailPane active={active} exiting={exiting} title="About" subtitle="App summary, version information, and feature overview.">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsDetailNote">

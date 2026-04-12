@@ -24,11 +24,13 @@ function formatPlanActionLabel(plan: SettingsAccountViewModel["authPlan"]) {
 
 export function SettingsAccountPane({
   active,
+  exiting = false,
   account,
   avatar,
   push,
 }: {
   active: boolean;
+  exiting?: boolean;
   account: SettingsAccountViewModel;
   avatar: SettingsAvatarViewModel;
   push: SettingsPushViewModel;
@@ -37,7 +39,7 @@ export function SettingsAccountPane({
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <SettingsDetailPane active={active} title="Account" subtitle="">
+    <SettingsDetailPane active={active} exiting={exiting} title="Account" subtitle="">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           {account.authUserEmail ? (

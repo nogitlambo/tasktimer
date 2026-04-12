@@ -4,6 +4,31 @@ import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./contex
 import type { AppPage } from "./types";
 
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
+  let appPageSlideTimerId: number | null = null;
+
+  function appPageOrder(page: AppPage) {
+    const normalized = page === "schedule" ? "tasks" : page;
+    if (normalized === "dashboard") return 0;
+    if (normalized === "tasks") return 1;
+    if (normalized === "test2") return 2;
+    return -1;
+  }
+
+  function applyAppPageSlideDirection(nextPage: AppPage) {
+    const currentIndex = appPageOrder(ctx.getCurrentAppPage());
+    const nextIndex = appPageOrder(nextPage);
+    if (currentIndex < 0 || nextIndex < 0 || currentIndex === nextIndex) return;
+    const direction = nextIndex > currentIndex ? "forward" : "backward";
+    document.body.setAttribute("data-app-page-slide-direction", direction);
+    document.body.classList.add("isAppPageSliding");
+    if (appPageSlideTimerId != null) window.clearTimeout(appPageSlideTimerId);
+    appPageSlideTimerId = window.setTimeout(() => {
+      document.body.classList.remove("isAppPageSliding");
+      document.body.removeAttribute("data-app-page-slide-direction");
+      appPageSlideTimerId = null;
+    }, 220);
+  }
+
   function isKnownAppRoute(path: string) {
     return (
       path === "/tasklaunch" ||
@@ -307,6 +332,8 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
 
     const nextPage: AppPage = page;
+
+    applyAppPageSlideDirection(nextPage);
 
     if ((ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") && nextPage !== "tasks" && nextPage !== "schedule") {
       ctx.resetAllOpenHistoryChartSelections();

@@ -3,9 +3,9 @@
 import AppImg from "@/components/AppImg";
 import { SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsPreferencesPane({ active }: { active: boolean }) {
+export function SettingsPreferencesPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
-    <SettingsDetailPane active={active} paneClassName="settingsDisplayTypographyPane" title="Preferences" subtitle="Configure task behavior and dashboard options.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsDisplayTypographyPane" title="Preferences" subtitle="Configure task behavior and dashboard options.">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">

@@ -2,10 +2,11 @@
 
 import { SettingsDetailPane } from "./SettingsShared";
 
-export function SettingsPrivacyPane({ active }: { active: boolean }) {
+export function SettingsPrivacyPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
     <SettingsDetailPane
       active={active}
+      exiting={exiting}
       title="Privacy Policy"
       subtitle="Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information."
     >
