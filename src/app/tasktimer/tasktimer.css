@@ -1549,6 +1549,118 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssi
   }
 }
 
+#app[aria-label="TaskLaunch App"] .desktopRailMascotMeta,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotMeta,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:8px 0 2px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotMeta.isVisible,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotMeta.isVisible,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMeta.isVisible{
+  opacity:1;
+  pointer-events:auto;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotMetaTag,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotMetaTag,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMetaTag{
+  display:inline-flex;
+  align-items:center;
+  min-height:20px;
+  padding:1px 7px;
+  border:1px solid rgba(53,232,255,.24);
+  border-radius:6px;
+  color:rgba(215,246,255,.82);
+  background:rgba(6,18,25,.42);
+  font-size:10px;
+  line-height:1.2;
+}
+
+.archieDraftModal{
+  width:min(560px, calc(100vw - 28px));
+}
+
+.archieDraftSection{
+  margin-top:12px;
+}
+
+.archieDraftSectionTitle{
+  margin-bottom:6px;
+  color:rgba(229,247,255,.92);
+  font-size:12px;
+  line-height:1.2;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.archieDraftReasoning{
+  color:rgba(220,236,247,.88);
+  font-size:14px;
+  line-height:1.45;
+}
+
+.archieDraftList{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.archieDraftListItem{
+  padding:10px 12px;
+  border:1px solid rgba(101,204,220,.2);
+  border-radius:6px;
+  background:rgba(10,16,26,.52);
+  color:rgba(229,242,249,.88);
+  font-size:13px;
+  line-height:1.4;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopRailMascotMetaTag,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopRailMascotMetaTag,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMetaTag{
+  border-color:rgba(240,110,224,.28);
+  color:rgba(247,224,252,.86);
+  background:rgba(28,8,29,.42);
+}
+
+body[data-theme="purple"] .archieDraftListItem{
+  border-color:rgba(240,110,224,.22);
+  background:rgba(25,10,28,.52);
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopRailMascotMetaTag,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopRailMascotMetaTag,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMetaTag{
+  border-color:rgba(219,255,79,.28);
+  color:rgba(245,255,204,.88);
+  background:rgba(17,22,7,.42);
+}
+
+body[data-theme="lime"] .archieDraftListItem{
+  border-color:rgba(219,255,79,.22);
+  background:rgba(20,24,8,.52);
+  color:rgba(247,255,212,.9);
+}
+
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotMeta,
+  #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotMeta{
+    margin-top:6px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotMetaTag,
+  #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotMetaTag{
+    font-size:9px;
+  }
+}
+
 /* Final form-control typography override: user-entered values and native option rows use Ligconsolata while labels/headings keep Orbitron. */
 #app input:not([type]),
 #app input[type="text"],
