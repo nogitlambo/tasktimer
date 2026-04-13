@@ -73,13 +73,28 @@ type PushNotificationsPluginShape = typeof PushNotifications & {
   unregister?: () => Promise<void>;
 };
 
+export type PushChannelPreference = {
+  mobileEnabled: boolean;
+  webEnabled: boolean;
+};
+
 let latestPushToken = "";
 let latestWebPushToken = "";
 let runtimeCleanup: (() => void) | null = null;
 let runtimeEnabled = false;
-let desiredPushEnabled = false;
-let syncPromise: Promise<boolean> = Promise.resolve(false);
+let desiredPushEnabled: PushChannelPreference = { mobileEnabled: false, webEnabled: false };
+let syncPromise: Promise<PushChannelPreference> = Promise.resolve(desiredPushEnabled);
 let lastSyncedUid = "";
+
+function normalizePushChannelPreference(input: boolean | Partial<PushChannelPreference>): PushChannelPreference {
+  if (typeof input === "boolean") {
+    return { mobileEnabled: input, webEnabled: input };
+  }
+  return {
+    mobileEnabled: !!input.mobileEnabled,
+    webEnabled: !!input.webEnabled,
+  };
+}
 
 function isPromiseLike<T>(value: Promise<T> | T): value is Promise<T> {
   return !!value && typeof value === "object" && "then" in value && typeof value.then === "function";
@@ -440,6 +455,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   if (!auth) return false;
   const nativeRuntime = isNativePushRuntime();
   const webRuntime = await isWebPushRuntimeSupported();
+  if ((nativeRuntime && !desiredPushEnabled.mobileEnabled) || (webRuntime && !desiredPushEnabled.webEnabled)) {
+    await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
+    return false;
+  }
   if (!nativeRuntime && !webRuntime) return true;
 
   if (runtimeEnabled && runtimeCleanup) {
@@ -747,30 +766,42 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
 }
 
 export async function disableTaskTimerPushNotifications(): Promise<void> {
-  desiredPushEnabled = false;
+  desiredPushEnabled = { mobileEnabled: false, webEnabled: false };
   await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
 }
 
-export async function syncTaskTimerPushNotificationsEnabled(enabled: boolean): Promise<boolean> {
-  desiredPushEnabled = !!enabled;
+export async function syncTaskTimerPushNotificationsEnabled(
+  enabled: boolean | Partial<PushChannelPreference>
+): Promise<PushChannelPreference> {
+  desiredPushEnabled = normalizePushChannelPreference(enabled);
   syncPromise = syncPromise
-    .catch(() => false)
+    .catch(() => ({ mobileEnabled: false, webEnabled: false }))
     .then(async () => {
-      if (desiredPushEnabled) {
+      const nativeRuntime = isNativePushRuntime();
+      const webRuntime = await isWebPushRuntimeSupported();
+      const currentRuntimeEnabled = nativeRuntime
+        ? desiredPushEnabled.mobileEnabled
+        : webRuntime
+          ? desiredPushEnabled.webEnabled
+          : desiredPushEnabled.mobileEnabled || desiredPushEnabled.webEnabled;
+      if (currentRuntimeEnabled) {
         const active = await enableTaskTimerPushRuntime();
-        if (!active) desiredPushEnabled = false;
-        return active;
+        if (!active) {
+          if (nativeRuntime) desiredPushEnabled = { ...desiredPushEnabled, mobileEnabled: false };
+          if (webRuntime) desiredPushEnabled = { ...desiredPushEnabled, webEnabled: false };
+        }
+        return desiredPushEnabled;
       }
       await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
-      return false;
+      return desiredPushEnabled;
     });
   return syncPromise;
 }
 
 export async function initTaskTimerPushNotifications(): Promise<() => void> {
-  await syncTaskTimerPushNotificationsEnabled(true);
+  await syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: true });
   return () => {
-    void syncTaskTimerPushNotificationsEnabled(false);
+    void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
   };
 }
 

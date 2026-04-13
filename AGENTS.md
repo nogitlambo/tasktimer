@@ -163,6 +163,7 @@
 - `TASK_VIEW_KEY = `${storageKey}:taskView``
 - `THEME_KEY = `${storageKey}:theme``
 - `TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow``
+- `WEB_PUSH_ALERTS_KEY = `${storageKey}:webPushAlertsEnabled``
 - `WEEK_STARTING_KEY = `${storageKey}:weekStarting``
 
 ### Data hooks (derived from client/components)

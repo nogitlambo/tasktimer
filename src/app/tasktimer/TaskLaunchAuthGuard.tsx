@@ -25,6 +25,18 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
     }
   }
 
+  function readStoredWebPushAlertsEnabled(fallback: boolean) {
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = String(window.localStorage.getItem(`${STORAGE_KEY}:webPushAlertsEnabled`) || "").trim();
+      if (raw === "true") return true;
+      if (raw === "false") return false;
+      return fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
@@ -42,18 +54,24 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
   }, [router]);
 
   useEffect(() => {
-    const syncPreference = (enabled: boolean) => {
-      void syncTaskTimerPushNotificationsEnabled(enabled).catch(() => {});
+    const syncPreference = (mobileEnabled: boolean, webEnabled: boolean) => {
+      void syncTaskTimerPushNotificationsEnabled({ mobileEnabled, webEnabled }).catch(() => {});
     };
     const cachedPreferences = loadCachedPreferences();
-    const initialEnabled =
+    const initialMobileEnabled =
       cachedPreferences && typeof cachedPreferences === "object" && "mobilePushAlertsEnabled" in cachedPreferences
         ? !!cachedPreferences.mobilePushAlertsEnabled
         : readStoredMobilePushAlertsEnabled();
-    syncPreference(initialEnabled);
+    const initialWebEnabled =
+      cachedPreferences && typeof cachedPreferences === "object" && "webPushAlertsEnabled" in cachedPreferences
+        ? !!cachedPreferences.webPushAlertsEnabled
+        : readStoredWebPushAlertsEnabled(initialMobileEnabled);
+    syncPreference(initialMobileEnabled, initialWebEnabled);
     const unsub = subscribeCachedPreferences((prefs) => {
       if (!prefs || typeof prefs !== "object" || !("mobilePushAlertsEnabled" in prefs)) return;
-      syncPreference(!!prefs.mobilePushAlertsEnabled);
+      const mobileEnabled = !!prefs.mobilePushAlertsEnabled;
+      const webEnabled = "webPushAlertsEnabled" in prefs ? !!prefs.webPushAlertsEnabled : mobileEnabled;
+      syncPreference(mobileEnabled, webEnabled);
     });
     return () => {
       unsub();

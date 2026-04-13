@@ -93,7 +93,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function canUseAdvancedTaskConfig() {
-    return ctx.hasEntitlement("advancedTaskConfig");
+    // Time Goals and Checkpoints are available on the free plan; keep this gate local so
+    // unrelated advanced task configuration entitlements remain unchanged elsewhere.
+    return true;
   }
 
   function getCurrentEditTask() {

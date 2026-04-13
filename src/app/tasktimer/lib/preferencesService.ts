@@ -10,6 +10,7 @@ export type TaskTimerPreferenceStorageKeys = {
   TASK_VIEW_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
+  WEB_PUSH_ALERTS_KEY: string;
   MODE_SETTINGS_KEY: string;
 };
 
@@ -21,6 +22,7 @@ type PreferencesStateSnapshot = {
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
+  webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   rewards: RewardProgressV1;
@@ -95,6 +97,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
+      webPushAlertsEnabled: state.webPushAlertsEnabled,
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
       rewards: state.rewards,
@@ -113,6 +116,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.MOBILE_PUSH_ALERTS_KEY,
       snapshot.mobilePushAlertsEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.WEB_PUSH_ALERTS_KEY,
+      snapshot.webPushAlertsEnabled ? "true" : "false",
     );
     safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
     safeRemoveLocalStorage(storageKeys.MODE_SETTINGS_KEY);
@@ -174,6 +181,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return false;
   }
 
+  function loadWebPushAlertsEnabled(): boolean {
+    const prefs = getStoredOrCachedPreferences();
+    if (typeof prefs.webPushAlertsEnabled === "boolean") return prefs.webPushAlertsEnabled;
+    const raw = safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY).toLowerCase();
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    return loadMobilePushAlertsEnabled();
+  }
+
   function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled"> {
     const prefs = getStoredOrCachedPreferences();
     return {
@@ -192,6 +208,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadAutoFocusOnTaskLaunchEnabled,
     loadDynamicColorsEnabled,
     loadMobilePushAlertsEnabled,
+    loadWebPushAlertsEnabled,
     loadCheckpointAlerts,
     normalizeThemeMode,
   };

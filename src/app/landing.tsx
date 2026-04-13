@@ -59,9 +59,9 @@ function LandingIntroSequence({
 
 export default function Landing({ showTitlePhase, showActions }: LandingExperimentalProps) {
   const [revealStage, setRevealStage] = useState(0);
-  const fullHeroText = "A smarter way to stay productive";
+  const fullHeroText = "The smarter way to stay productive";
   const supportLineOne =
-    "Built to work around your natural focus patterns, with automation that keeps progress effortless, and clever insights to help refine your workflow over time.";
+    "Built around your natural focus patterns, with intelligent automation that keeps progress effortless and consistent, and AI-driven insights that continuously refine your workflow.";
   const supportLineTwo = "";
 
   useEffect(() => {

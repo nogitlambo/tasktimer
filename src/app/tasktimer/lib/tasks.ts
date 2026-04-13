@@ -25,12 +25,13 @@ export function formatMainTaskElapsed(ms: number): string {
 export function formatMainTaskElapsedHtml(ms: number, isRunning = false): string {
   const parts = formatMainTaskElapsed(ms).split(" ");
   const panelStateClass = !isRunning ? " isStopped" : "";
+  const chunkClass = (value: string) => `timeChunk${value === "00" ? " timeChunkZero" : ""}`;
   return `
       <span class="timePanel${panelStateClass}">
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[1]}</span><span class="timeBoxUnit">H</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[2]}</span><span class="timeBoxUnit">M</span></span></span>
-        <span class="timeChunk"><span class="timeBoxValue"><span class="timeBoxNum">${parts[3]}</span><span class="timeBoxUnit">S</span></span></span>
+        <span class="${chunkClass(parts[0])}"><span class="timeBoxValue"><span class="timeBoxNum">${parts[0]}</span><span class="timeBoxUnit">D</span></span></span>
+        <span class="${chunkClass(parts[1])}"><span class="timeBoxValue"><span class="timeBoxNum">${parts[1]}</span><span class="timeBoxUnit">H</span></span></span>
+        <span class="${chunkClass(parts[2])}"><span class="timeBoxValue"><span class="timeBoxNum">${parts[2]}</span><span class="timeBoxUnit">M</span></span></span>
+        <span class="${chunkClass(parts[3])}"><span class="timeBoxValue"><span class="timeBoxNum">${parts[3]}</span><span class="timeBoxUnit">S</span></span></span>
       </span>
     `;
 }

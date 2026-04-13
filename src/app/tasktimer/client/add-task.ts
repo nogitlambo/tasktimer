@@ -26,7 +26,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function canUseAdvancedTaskConfig() {
-    return ctx.hasEntitlement("advancedTaskConfig");
+    // Time Goals and Checkpoints are available on the free plan; keep this gate local so
+    // unrelated advanced task configuration entitlements remain unchanged elsewhere.
+    return true;
   }
 
   function toggleSwitchElement(el: HTMLElement | null, on: boolean) {

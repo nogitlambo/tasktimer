@@ -1,5 +1,4 @@
 import { escapeRegExp, newTaskId } from "../lib/ids";
-import type { RewardLedgerEntry } from "../lib/rewards";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import type { TaskTimerTasksContext } from "./context";
 
@@ -8,18 +7,6 @@ import type { TaskTimerTasksContext } from "./context";
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
-
-  function getTaskXpAwarded(taskIdRaw: string): number {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return 0;
-    const awardLedger = Array.isArray(ctx.getRewardProgress()?.awardLedger) ? ctx.getRewardProgress().awardLedger : [];
-    const awardedXp = awardLedger.reduce((sum: number, entry: RewardLedgerEntry) => {
-      if (!entry || entry.reason !== "session") return sum;
-      if (String(entry.taskId || "").trim() !== taskId) return sum;
-      return sum + Math.max(0, Number(entry.xp || 0) || 0);
-    }, 0);
-    return Math.max(0, Math.floor(awardedXp));
-  }
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
@@ -146,7 +133,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
       const showHistory = openHistoryTaskIds.has(taskId);
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
-      const xpAwardedHTML = `<div class="taskXpAwarded">${getTaskXpAwarded(taskId)} XP awarded</div>`;
       const historyHTML = showHistory
         ? `
           <section class="historyInline" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
@@ -202,12 +188,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 }
                 <button class="iconBtn" data-action="reset" title="${t.running ? "Stop task to reset" : "Reset"}" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>
                 <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-                <button class="iconBtn historyActionBtn ${showHistory || isHistoryPinned ? "isActive" : ""} ${isHistoryPinned ? "isPinned" : ""}" data-action="history" title="${isHistoryPinned ? "History pinned" : "History"}" aria-pressed="${showHistory || isHistoryPinned ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}><img src="/Dashboard.svg" alt="" aria-hidden="true" width="18" height="18"></button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#8942;</button>
               </div>
             </div>
             ${progressHTML}
-            ${xpAwardedHTML}
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
+              <span class="taskHistoryRevealIcon" aria-hidden="true">&#8964;</span>
+            </button>
             ${historyHTML}
             </div>
           </div>

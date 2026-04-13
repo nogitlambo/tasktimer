@@ -51,6 +51,7 @@ export type DashboardCardSize = "full" | "half" | "quarter" | "eighth";
 
 export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
+export type DashboardMomentumDriverKey = "recentActivity" | "consistency" | "weeklyProgress" | "liveBonus";
 export type DashboardRenderOptions = {
   includeAvgSession?: boolean;
   showBusy?: boolean;
@@ -79,6 +80,7 @@ export type TaskTimerMutableState = {
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
+  webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   rewardProgress: unknown;

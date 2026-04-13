@@ -138,6 +138,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
+      webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
@@ -273,6 +274,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
     toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
     toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
+    toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
     toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     if (els.taskWeekStartingSelect) {
@@ -308,6 +310,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function loadMobilePushAlertsSetting() {
     ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
+    ctx.setWebPushAlertsEnabledState(preferenceService.loadWebPushAlertsEnabled());
   }
 
   function saveDynamicColorsSetting() {
@@ -322,9 +325,26 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setMobilePushAlertsEnabledState(nextEnabled);
     syncTaskSettingsUi();
     saveMobilePushAlertsSetting();
-    const appliedEnabled = await syncTaskTimerPushNotificationsEnabled(nextEnabled).catch(() => false);
-    if (appliedEnabled === nextEnabled) return;
-    ctx.setMobilePushAlertsEnabledState(appliedEnabled);
+    const appliedEnabled = await syncTaskTimerPushNotificationsEnabled({
+      mobileEnabled: nextEnabled,
+      webEnabled: ctx.getWebPushAlertsEnabled(),
+    }).catch(() => ({ mobileEnabled: false, webEnabled: ctx.getWebPushAlertsEnabled() }));
+    if (appliedEnabled.mobileEnabled === nextEnabled) return;
+    ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
+    syncTaskSettingsUi();
+    saveMobilePushAlertsSetting();
+  }
+
+  async function applyWebPushAlertsPreference(nextEnabled: boolean) {
+    ctx.setWebPushAlertsEnabledState(nextEnabled);
+    syncTaskSettingsUi();
+    saveMobilePushAlertsSetting();
+    const appliedEnabled = await syncTaskTimerPushNotificationsEnabled({
+      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+      webEnabled: nextEnabled,
+    }).catch(() => ({ mobileEnabled: ctx.getMobilePushAlertsEnabled(), webEnabled: false }));
+    if (appliedEnabled.webEnabled === nextEnabled) return;
+    ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
     syncTaskSettingsUi();
     saveMobilePushAlertsSetting();
   }
@@ -332,6 +352,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   function loadCheckpointAlertSettings() {
     const prefs = preferenceService.loadCheckpointAlerts();
     ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
+    ctx.setWebPushAlertsEnabledState(preferenceService.loadWebPushAlertsEnabled());
     ctx.setCheckpointAlertSoundEnabledState(prefs.checkpointAlertSoundEnabled !== false);
     ctx.setCheckpointAlertToastEnabledState(prefs.checkpointAlertToastEnabled !== false);
   }
@@ -409,9 +430,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.setTaskViewState("tile");
       ctx.setDynamicColorsEnabledState(true);
       ctx.setMobilePushAlertsEnabledState(false);
+      ctx.setWebPushAlertsEnabledState(false);
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
-      void syncTaskTimerPushNotificationsEnabled(false);
+      void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
     });
     ctx.on(els.appearanceLoadDefaultsBtn, "click", () => {
       setThemeMode(canUsePremiumThemes() ? "purple" : "cyan");
@@ -469,6 +491,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.on(els.taskMobilePushAlertsToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskMobilePushAlertsToggle")) return;
       void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
+    });
+    ctx.on(els.taskWebPushAlertsToggle, "click", () => {
+      void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
+    });
+    ctx.on(els.taskWebPushAlertsToggleRow, "click", (e: Event) => {
+      if (eventTargetClosest(e.target, "#taskWebPushAlertsToggle")) return;
+      void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
     });
     ctx.on(els.taskCheckpointSoundToggle, "click", () => {
       if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;

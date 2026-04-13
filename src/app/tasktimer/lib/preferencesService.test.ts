@@ -13,6 +13,7 @@ describe("TaskTimerPreferencesService", () => {
         TASK_VIEW_KEY: "view",
         AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "auto",
         MOBILE_PUSH_ALERTS_KEY: "push",
+        WEB_PUSH_ALERTS_KEY: "webPush",
         MODE_SETTINGS_KEY: "mode",
       },
       repository: {

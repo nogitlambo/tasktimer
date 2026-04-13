@@ -787,6 +787,7 @@ export function buildDefaultCloudPreferences() {
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
     mobilePushAlertsEnabled: false,
+    webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),

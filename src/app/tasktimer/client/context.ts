@@ -5,6 +5,7 @@ import type {
   AppPage,
   DashboardAvgRange,
   DashboardCardSize,
+  DashboardMomentumDriverKey,
   DashboardRenderOptions,
   DashboardTimelineDensity,
   HistoryViewState,
@@ -41,6 +42,7 @@ export type TaskTimerCachedPreferences = {
   autoFocusOnTaskLaunchEnabled?: unknown;
   dynamicColorsEnabled?: unknown;
   mobilePushAlertsEnabled?: unknown;
+  webPushAlertsEnabled?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   modeSettings?: TaskTimerCachedModeSettings;
@@ -768,6 +770,7 @@ export type TaskTimerDashboardContext = {
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
+  selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
@@ -815,6 +818,7 @@ export type TaskTimerPreferencesContext = {
     TASK_VIEW_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
+    WEB_PUSH_ALERTS_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     MODE_SETTINGS_KEY: string;
     WEEK_STARTING_KEY: string;
@@ -836,6 +840,8 @@ export type TaskTimerPreferencesContext = {
   setDynamicColorsEnabledState: (value: boolean) => void;
   getMobilePushAlertsEnabled: () => boolean;
   setMobilePushAlertsEnabledState: (value: boolean) => void;
+  getWebPushAlertsEnabled: () => boolean;
+  setWebPushAlertsEnabledState: (value: boolean) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;

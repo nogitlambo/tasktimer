@@ -55,13 +55,23 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function isFixedFullWidthDashboardCard(cardId: string) {
-    return cardId === "timeline" || cardId === "momentum";
+    return cardId === "timeline";
+  }
+
+  function isFixedHalfWidthDashboardCard(cardId: string) {
+    return cardId === "momentum";
+  }
+
+  function isFixedDashboardCard(cardId: string) {
+    return isFixedFullWidthDashboardCard(cardId) || isFixedHalfWidthDashboardCard(cardId);
   }
 
   function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
-    if (isFixedFullWidthDashboardCard(String(cardId || "").trim())) return "full";
+    const normalizedCardId = String(cardId || "").trim();
+    if (isFixedFullWidthDashboardCard(normalizedCardId)) return "full";
+    if (isFixedHalfWidthDashboardCard(normalizedCardId)) return "half";
     if (value === "full" || value === "half" || value === "quarter") return value;
-    if (value === "eighth" && canUseCompactDashboardCardSize(String(cardId || "").trim())) return value;
+    if (value === "eighth" && canUseCompactDashboardCardSize(normalizedCardId)) return value;
     return null;
   }
 
@@ -293,7 +303,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const card = el as HTMLElement;
       if (card.querySelector(".dashboardSizeControl")) return;
       const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      if (isFixedFullWidthDashboardCard(cardId)) return;
+      if (isFixedDashboardCard(cardId)) return;
       const compactSizeOption = canUseCompactDashboardCardSize(cardId)
         ? `
           <button class="dashboardSizeOption" type="button" data-dashboard-size="eighth" role="menuitemradio" aria-checked="false">Compact</button>`
@@ -326,7 +336,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const selectedSize = sanitizeDashboardCardSize(cardSizes[cardId], cardId);
       const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
       const menuOpen = card.classList.contains("isSizeMenuOpen");
-      if (isFixedFullWidthDashboardCard(cardId)) {
+      if (isFixedDashboardCard(cardId)) {
         if (toggle) toggle.remove();
         const menu = card.querySelector("[data-dashboard-size-menu]") as HTMLElement | null;
         if (menu) menu.remove();
@@ -570,6 +580,21 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (timelineMarkerBtn) {
       const suggestionKey = String(timelineMarkerBtn.getAttribute("data-dashboard-timeline-key") || "").trim();
       ctx.selectDashboardTimelineSuggestion(suggestionKey || null);
+      const message = String(timelineMarkerBtn.getAttribute("data-dashboard-timeline-message") || "").trim();
+      if (typeof window !== "undefined" && message) {
+        window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
+      }
+      e.preventDefault();
+      return;
+    }
+    const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
+    if (momentumDriverBtn) {
+      const driverKey = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-driver") || "").trim();
+      const fallbackMessage = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-message") || "").trim();
+      const message = ctx.selectDashboardMomentumDriver(driverKey) || fallbackMessage;
+      if (typeof window !== "undefined" && message) {
+        window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
+      }
       e.preventDefault();
       return;
     }

@@ -352,6 +352,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: 0 0 0 1px rgba(124, 232, 255, 0.16), 0 0 20px rgba(0, 220, 255, 0.16);
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell {
+  border-radius: 0 !important;
+  overflow: hidden;
+  clip-path: polygon(9% 0, 100% 0, 100% 74%, 91% 100%, 0 100%, 0 26%) !important;
+}
+
 .rewardSegmentedBar {
   --reward-bar-segment: 18px;
   --reward-bar-gap: 3px;
@@ -953,14 +959,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   padding: 10px 0 2px;
   color: rgba(211, 229, 240, 0.78);
 }
-.taskXpAwarded {
-  margin: 8px 2px 0;
-  font-size: 12px;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  color: rgba(232, 238, 255, 0.72);
-}
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
   display:flex;
   align-items:center;
@@ -1543,10 +1541,171 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     box-shadow:0 22px 44px rgba(0,0,0,.58), inset 0 0 0 1px rgba(255,190,252,.08);
   }
 
-  body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotBubble,
-  body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotBubble{
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotBubble,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotBubble{
     color:#f7ffd4;
     border-color:rgba(219,255,79,.34);
     box-shadow:0 22px 44px rgba(0,0,0,.58), inset 0 0 0 1px rgba(241,255,151,.08);
   }
+}
+
+/* Final form-control typography override: user-entered values and native option rows use Ligconsolata while labels/headings keep Orbitron. */
+#app input:not([type]),
+#app input[type="text"],
+#app input[type="email"],
+#app input[type="number"],
+#app input[type="password"],
+#app input[type="search"],
+#app input[type="tel"],
+#app input[type="url"],
+#app textarea,
+#app select,
+#app option,
+#app optgroup,
+#editOverlay input:not([type]),
+#editOverlay input[type="text"],
+#editOverlay input[type="email"],
+#editOverlay input[type="number"],
+#editOverlay input[type="password"],
+#editOverlay input[type="search"],
+#editOverlay input[type="tel"],
+#editOverlay input[type="url"],
+#editOverlay textarea,
+#editOverlay select,
+#editOverlay option,
+#editOverlay optgroup,
+.desktopRailMascotInput,
+.addTaskNameItem {
+  font-family: var(--font-archie) !important;
+}
+
+/* Final global app typography override: body/control text uses Ligconsolata; headers, titles, and field labels stay Orbitron. */
+#app,
+#app :where(
+  p,
+  span,
+  a,
+  button,
+  summary,
+  li,
+  td,
+  th,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  small,
+  strong,
+  em,
+  div
+),
+#editOverlay,
+#editOverlay :where(
+  p,
+  span,
+  a,
+  button,
+  summary,
+  li,
+  td,
+  th,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  small,
+  strong,
+  em,
+  div
+) {
+  font-family: var(--font-archie) !important;
+}
+
+#app :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  .displayFont,
+  .menuTitle,
+  .settingsDetailTitle,
+  .settingsInlineSectionTitle,
+  .dashboardCardTitle,
+  .dashboardPanelTitle,
+  .dashboardWidgetTitle,
+  .desktopRailTitle,
+  .desktopRailBubbleTitle,
+  .hmTitle,
+  .modal h1,
+  .modal h2,
+  .modal h3,
+  .modalTitle,
+  .sectionTitle,
+  .field > label,
+  .toggleRow > span,
+  .unitRow > span
+),
+#editOverlay :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  .displayFont,
+  .editHead,
+  .editHead *,
+  .field > label,
+  .toggleRow > span,
+  .unitRow > span,
+  .checkpointAlertsTitle,
+  .editTaskTimeGoalHeaderLabel,
+  .milestonesSummaryPrimary,
+  .milestonesSummaryCollapseLabel
+) {
+  font-family: var(--font-orbitron) !important;
+}
+
+/* Final Orbitron restores requested after the global Ligconsolata pass. */
+#app :where(
+  .desktopAppRail .dashboardRailMenuLabel,
+  .desktopAppRail .dashboardRailSectionLabel,
+  .desktopAppRail .dashboardProfileName,
+  .settingsNavPanel .settingsNavRowText,
+  #appPageTasks .task .time,
+  #appPageTasks .task .time *,
+  #appPageTasks .task .timeBoxValue,
+  #appPageTasks .task .timeBoxValue *,
+  #appPageTasks .task .actions .btn[data-action="start"],
+  #appPageTasks .task .actions .btn[data-action="stop"]
+) {
+  font-family: var(--font-orbitron) !important;
+}
+
+/* Final reward progress block clipping. */
+.rewardSegmentedBar {
+  --reward-bar-block-cut: 6px;
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+}
+.rewardSegmentedBarFill {
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+  -webkit-mask-image: repeating-linear-gradient(
+    90deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+  mask-image: repeating-linear-gradient(
+    90deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+}
+.rewardSegmentedBarSegment {
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
 }

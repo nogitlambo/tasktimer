@@ -180,13 +180,13 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                         <svg className="dashboardMomentumSvg" viewBox="0 0 187 122" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                           <defs>
                             <linearGradient id="momentumGaugeGradient" x1="22" y1="50" x2="165" y2="50" gradientUnits="userSpaceOnUse">
-                              <stop offset="0%" stopColor="#a9d65f" />
-                              <stop offset="22%" stopColor="#cfe06f" />
-                              <stop offset="42%" stopColor="#ffd54a" />
-                              <stop offset="58%" stopColor="#f7a625" />
-                              <stop offset="74%" stopColor="#ff7a1c" />
-                              <stop offset="88%" stopColor="#e4421f" />
-                              <stop offset="100%" stopColor="#8f1623" />
+                              <stop offset="0%" stopColor="#8f1623" />
+                              <stop offset="12%" stopColor="#e4421f" />
+                              <stop offset="26%" stopColor="#ff7a1c" />
+                              <stop offset="42%" stopColor="#f7a625" />
+                              <stop offset="58%" stopColor="#ffd54a" />
+                              <stop offset="78%" stopColor="#cfe06f" />
+                              <stop offset="100%" stopColor="#a9d65f" />
                             </linearGradient>
                             <filter id="momentumGaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
                               <feGaussianBlur stdDeviation="0.8" result="blur" />
@@ -258,9 +258,9 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                     </div>
                     <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
                       <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/40</span></li>
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/25</span></li>
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/25</span></li>
+                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/25</span></li>
+                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/45</span></li>
+                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/20</span></li>
                         <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
                       </ul>
                     </section>

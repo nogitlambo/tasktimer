@@ -110,6 +110,7 @@ service cloud.firestore {
         "taskView",
         "autoFocusOnTaskLaunchEnabled",
         "mobilePushAlertsEnabled",
+        "webPushAlertsEnabled",
         "dynamicColorsEnabled",
         "checkpointAlertSoundEnabled",
         "checkpointAlertToastEnabled",
@@ -125,6 +126,7 @@ service cloud.firestore {
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)
+      && (!("webPushAlertsEnabled" in request.resource.data) || request.resource.data.webPushAlertsEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)

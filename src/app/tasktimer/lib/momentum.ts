@@ -115,7 +115,7 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
   });
 
   const recentWeightedMs = recentDaysMs[0] * 1 + recentDaysMs[1] * 0.65 + recentDaysMs[2] * 0.35;
-  const recentActivityScore = Math.max(0, Math.min(40, (recentWeightedMs / (120 * 60000)) * 40));
+  const recentActivityScore = Math.max(0, Math.min(25, (recentWeightedMs / (120 * 60000)) * 25));
 
   const qualifyingDayKeys = Array.from(activeDayKeys).sort();
   let trailingStreak = 0;
@@ -125,12 +125,12 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
     trailingStreak += 1;
     probeTime -= dayLengthMs;
   }
-  const activeDaysScore = Math.max(0, Math.min(15, (activeDayKeys.size / 5) * 15));
-  const streakScore = Math.max(0, Math.min(10, (trailingStreak / 4) * 10));
+  const activeDaysScore = Math.max(0, Math.min(27, (activeDayKeys.size / 5) * 27));
+  const streakScore = Math.max(0, Math.min(18, (trailingStreak / 4) * 18));
   const consistencyScore = activeDaysScore + streakScore;
 
   const weeklyProgressRatio = currentWeekGoalMs > 0 ? currentWeekLoggedMs / currentWeekGoalMs : 0;
-  const weeklyProgressScore = Math.max(0, Math.min(25, weeklyProgressRatio * 25));
+  const weeklyProgressScore = Math.max(0, Math.min(20, weeklyProgressRatio * 20));
   const activeSessionBonus = Math.min(10, runningTaskCount > 0 ? 6 + Math.min(4, runningTaskCount - 1) : 0);
 
   const score = clampMomentumScore(recentActivityScore + consistencyScore + weeklyProgressScore + activeSessionBonus);

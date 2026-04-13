@@ -20,8 +20,12 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
           </div>
           <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
             <div className="toggleRow" id="taskMobilePushAlertsToggleRow">
-              <span>Enable Push Notifications</span>
+              <span>Enable Mobile Push Notifications</span>
               <button className="switch" id="taskMobilePushAlertsToggle" type="button" role="switch" aria-checked="false" />
+            </div>
+            <div className="toggleRow" id="taskWebPushAlertsToggleRow">
+              <span>Enable Web Push Notifications</span>
+              <button className="switch" id="taskWebPushAlertsToggle" type="button" role="switch" aria-checked="false" />
             </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <span>Checkpoint Sound</span>

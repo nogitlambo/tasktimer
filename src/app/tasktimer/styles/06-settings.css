@@ -3722,17 +3722,34 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
 @media (max-width: 640px){
   #app[aria-label="TaskLaunch Settings"] #themeToggleRow,
   #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
+    justify-content: stretch;
+    gap: 8px;
+    padding: 8px 0 14px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] #themeToggleRow > span,
+  #app[aria-label="TaskLaunch Settings"] #menuButtonStyleRow > span{
+    min-width: 0;
+    line-height: 1.25;
   }
 
   #app[aria-label="TaskLaunch Settings"] #themeSelect{
     width: 100%;
+    min-height: 34px;
+    margin-left: 0;
+    padding: 8px 28px 8px 0;
     text-align: left;
     text-align-last: left;
   }
 
   #app[aria-label="TaskLaunch Settings"] #menuButtonStyleSelect{
     width: 100%;
+    min-height: 34px;
+    margin-left: 0;
+    padding: 8px 28px 8px 0;
     text-align: left;
     text-align-last: left;
   }

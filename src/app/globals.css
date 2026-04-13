@@ -17,7 +17,7 @@
   --font-geist-mono: Geist Mono Variable, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --font-orbitron: Orbitron, "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-archie: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  --font-readable: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --font-readable: var(--font-archie);
   --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
@@ -174,7 +174,10 @@ canvas {
   --landing-muted: rgba(245, 248, 244, 0.74);
   --landing-line: rgba(201, 255, 36, 0.78);
   --landing-safe-top: max(22px, env(safe-area-inset-top, 0px));
-  --landing-foreground-shift: 82px;
+  --landing-foreground-shift: clamp(18px, 7svh, 82px);
+  --landing-hero-pad-top: clamp(18px, 5svh, 42px);
+  --landing-copy-gap: clamp(24px, 7svh, 90px);
+  --landing-action-gap: clamp(24px, 7svh, 90px);
   min-height: 100svh;
   background: #000;
   font-family: var(--font-display-ui);
@@ -188,6 +191,8 @@ canvas {
 
 .landingV2 .landingV2Panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100svh;
   overflow: hidden;
   isolation: isolate;
@@ -315,8 +320,9 @@ canvas {
   z-index: 1;
   display: flex;
   justify-content: center;
-  min-height: 860px;
-  padding: 42px 48px 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--landing-hero-pad-top) 48px max(28px, env(safe-area-inset-bottom, 0px));
   text-align: center;
   transform: translateY(var(--landing-foreground-shift));
 }
@@ -329,9 +335,9 @@ canvas {
   margin: 0 auto;
   max-width: 12ch;
   color: #f9faf8;
-  font-size: 86px;
+  font-size: clamp(48px, 8.4svh, 86px);
   font-weight: 900;
-  line-height: 1.18;
+  line-height: 1.08;
   text-transform: uppercase;
   text-wrap: balance;
   opacity: 0;
@@ -366,7 +372,7 @@ canvas {
 
 .landingV2 .landingV2HeroCopy {
   max-width: 720px;
-  margin: 90px auto 0;
+  margin: var(--landing-copy-gap) auto 0;
   color: var(--landing-muted);
   font-family: var(--font-archie);
   font-size: 20px;
@@ -394,7 +400,7 @@ canvas {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  margin-top: 90px;
+  margin-top: var(--landing-action-gap);
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 620ms cubic-bezier(0.22, 1, 0.36, 1), transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -442,7 +448,9 @@ canvas {
 
 @media (max-width: 1180px) {
   .landingV2 {
-    --landing-foreground-shift: 70px;
+    --landing-foreground-shift: clamp(16px, 6svh, 70px);
+    --landing-copy-gap: clamp(22px, 6svh, 70px);
+    --landing-action-gap: clamp(22px, 6svh, 70px);
   }
 
   .landingV2 .landingV2Shell {
@@ -464,14 +472,17 @@ canvas {
   }
 
   .landingV2 .landingV2HeroTitle {
-    font-size: 68px;
+    font-size: clamp(44px, 8svh, 68px);
   }
 
 }
 
 @media (max-width: 860px) {
   .landingV2 {
-    --landing-foreground-shift: 58px;
+    --landing-foreground-shift: clamp(12px, 5svh, 58px);
+    --landing-hero-pad-top: clamp(16px, 5svh, 58px);
+    --landing-copy-gap: clamp(18px, 5svh, 55px);
+    --landing-action-gap: clamp(18px, 5svh, 55px);
   }
 
   .landingV2 .landingV2Shell {
@@ -507,22 +518,20 @@ canvas {
   }
 
   .landingV2 .landingV2Hero {
-    min-height: 760px;
-    padding: 58px 24px 0;
+    padding-right: 24px;
+    padding-left: 24px;
   }
 
   .landingV2 .landingV2HeroTitle {
-    font-size: 50px;
+    font-size: clamp(34px, 7.4svh, 50px);
   }
 
   .landingV2 .landingV2HeroCopy {
     font-size: 18px;
-    margin-top: 55px;
   }
 
   .landingV2 .landingV2Actions {
     width: min(100%, 430px);
-    margin-top: 55px;
   }
 
   .landingV2 .landingV2PrimaryBtn,
@@ -544,7 +553,10 @@ canvas {
 
 @media (max-width: 560px) {
   .landingV2 {
-    --landing-foreground-shift: 44px;
+    --landing-foreground-shift: clamp(8px, 4svh, 44px);
+    --landing-hero-pad-top: clamp(14px, 4svh, 52px);
+    --landing-copy-gap: clamp(16px, 4svh, 35px);
+    --landing-action-gap: clamp(16px, 4svh, 35px);
   }
 
   .landingV2 .landingV2Shell {
@@ -566,24 +578,22 @@ canvas {
   }
 
   .landingV2 .landingV2Hero {
-    min-height: 680px;
-    padding: 52px 18px 0;
+    padding-right: 18px;
+    padding-left: 18px;
   }
 
   .landingV2 .landingV2HeroTitle {
-    font-size: 36px;
+    font-size: clamp(30px, 7svh, 36px);
   }
 
   .landingV2 .landingV2HeroCopy {
     font-size: 16px;
-    margin-top: 35px;
   }
 
   .landingV2 .landingV2Actions {
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
-    margin-top: 35px;
   }
 
   .landingV2 .landingV2PrimaryBtn,
@@ -593,6 +603,67 @@ canvas {
     margin-left: 0;
   }
 
+}
+
+@media (max-height: 760px) {
+  .landingV2 {
+    --landing-foreground-shift: clamp(4px, 2.5svh, 18px);
+    --landing-hero-pad-top: clamp(10px, 2.5svh, 20px);
+    --landing-copy-gap: clamp(14px, 3svh, 28px);
+    --landing-action-gap: clamp(14px, 3svh, 28px);
+  }
+
+  .landingV2 .landingV2Header {
+    min-height: clamp(82px, 16svh, 116px);
+    padding-top: clamp(12px, 2.5svh, 20px);
+    padding-bottom: clamp(12px, 2.5svh, 20px);
+  }
+
+  .landingV2 .landingV2BrandLogo {
+    width: clamp(210px, 28vw, 300px);
+  }
+
+  .landingV2 .landingV2HeroTitle {
+    font-size: clamp(30px, 7.2svh, 62px);
+  }
+
+  .landingV2 .landingV2HeroCopy {
+    font-size: clamp(15px, 2.5svh, 18px);
+    line-height: 1.34;
+  }
+
+  .landingV2 .landingV2PrimaryBtn,
+  .landingV2 .landingV2SecondaryBtn {
+    min-height: clamp(46px, 8svh, 60px);
+  }
+}
+
+@media (max-width: 560px) and (max-height: 700px) {
+  .landingV2 .landingV2Header {
+    min-height: 82px;
+    padding: 12px 16px;
+  }
+
+  .landingV2 .landingV2BrandLogo {
+    width: min(210px, 68vw);
+  }
+
+  .landingV2 .landingV2HeroTitle {
+    font-size: clamp(27px, 6.6svh, 32px);
+  }
+
+  .landingV2 .landingV2HeroCopy {
+    font-size: 15px;
+  }
+
+  .landingV2 .landingV2Actions {
+    gap: 8px;
+  }
+
+  .landingV2 .landingV2PrimaryBtn,
+  .landingV2 .landingV2SecondaryBtn {
+    min-height: 46px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

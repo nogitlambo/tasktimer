@@ -148,13 +148,18 @@ export const sendPushTest = onCall(protectedCallableOptions, async (request) => 
     const data = asStringMap(rawData.data);
 
     const snapshot = await db.collection("users").doc(uid).collection("devices").get();
+    const prefs = await loadUserPushPreferences(uid);
     const deviceRows = snapshot.docs
       .map((docSnap) => ({
         id: docSnap.id,
         token: asString(docSnap.get("token")),
         enabled: docSnap.get("enabled") !== false,
+        native: asBool(docSnap.get("native")),
+        platform: asString(docSnap.get("platform")).toLowerCase(),
       }))
-      .filter((row) => !!row.token && row.enabled);
+      .filter((row) => !!row.token && row.enabled)
+      .filter((row) => row.native || row.platform === "web")
+      .filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled);
 
     if (!deviceRows.length) {
       throw new HttpsError("failed-precondition", "No registered device tokens were found for this user.");
@@ -318,6 +323,23 @@ function splitDeviceRows(deviceRows) {
     else webRows.push(row);
   });
   return {nativeRows, webRows};
+}
+
+async function loadUserPushPreferences(uid) {
+  const prefSnap = await db.collection("users").doc(uid).collection("preferences").doc("v1").get();
+  if (!prefSnap.exists) {
+    return {mobilePushAlertsEnabled: false, webPushAlertsEnabled: false};
+  }
+  const mobilePushAlertsEnabled = prefSnap.get("mobilePushAlertsEnabled") === true;
+  const webPushAlertsEnabled =
+    typeof prefSnap.get("webPushAlertsEnabled") === "boolean"
+      ? prefSnap.get("webPushAlertsEnabled") === true
+      : mobilePushAlertsEnabled;
+  return {mobilePushAlertsEnabled, webPushAlertsEnabled};
+}
+
+function filterDeviceRowsByPushPreferences(deviceRows, prefs) {
+  return deviceRows.filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled);
 }
 
 function computeNextPlannedStartDueAtMs(plannedStartDay, plannedStartTime, fromMs) {
@@ -520,7 +542,8 @@ async function sendScheduledTaskNotification({
   skipIfForeground = false,
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
-  const deviceRows = extractAndroidDeviceRows(devicesSnap);
+  const prefs = await loadUserPushPreferences(uid);
+  const deviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
   const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
   if (!deviceRows.length) {

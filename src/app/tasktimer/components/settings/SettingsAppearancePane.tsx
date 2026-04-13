@@ -26,17 +26,6 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
               <option value="cyan">Cyan</option>
             </select>
           </div>
-          <div className="unitRow" id="menuButtonStyleRow">
-            <span>Button Shape</span>
-            <select id="menuButtonStyleSelect" defaultValue="square" aria-label="Button shape">
-              <option value="parallelogram">Parallelogram</option>
-              <option value="square">Square</option>
-            </select>
-          </div>
-          <div className="toggleRow" id="taskDynamicColorsToggleRow">
-            <span>Dynamic Colors</span>
-            <button className="switch on" id="taskDynamicColorsToggle" type="button" role="switch" aria-checked="true" />
-          </div>
           <div className="settingsInlineFooter">
             <button className="btn btn-ghost" id="appearanceLoadDefaultsBtn" type="button">
               Load Defaults

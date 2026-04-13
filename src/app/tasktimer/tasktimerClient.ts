@@ -115,6 +115,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     storageKeys: {
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       MOBILE_PUSH_ALERTS_KEY,
+      WEB_PUSH_ALERTS_KEY,
       THEME_KEY,
       MENU_BUTTON_STYLE_KEY,
       WEEK_STARTING_KEY,
@@ -208,6 +209,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dynamicColorsEnabled = initialState.dynamicColorsEnabled;
   let autoFocusOnTaskLaunchEnabled = initialState.autoFocusOnTaskLaunchEnabled;
   let mobilePushAlertsEnabled = initialState.mobilePushAlertsEnabled;
+  let webPushAlertsEnabled = initialState.webPushAlertsEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
@@ -1002,6 +1004,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderDashboardLiveWidgets: renderDashboardLiveWidgetsApi,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
     selectDashboardTimelineSuggestion: selectDashboardTimelineSuggestionApi,
+    selectDashboardMomentumDriver: selectDashboardMomentumDriverApi,
     openDashboardHeatSummaryCard: openDashboardHeatSummaryCardApi,
     closeDashboardHeatSummaryCard: closeDashboardHeatSummaryCardApi,
   } = dashboardRenderApi;
@@ -1067,6 +1070,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     renderDashboardTimelineCard: () => renderDashboardTimelineCardApi(),
     selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestionApi(key),
+    selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriverApi(key),
     openDashboardHeatSummaryCard: (dayKey, dateLabel) => openDashboardHeatSummaryCardApi(dayKey, dateLabel),
     closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCardApi(opts),
   });
@@ -2446,6 +2450,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       TASK_VIEW_KEY,
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       MOBILE_PUSH_ALERTS_KEY,
+      WEB_PUSH_ALERTS_KEY,
       MENU_BUTTON_STYLE_KEY,
       MODE_SETTINGS_KEY,
       WEEK_STARTING_KEY,
@@ -2480,6 +2485,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getMobilePushAlertsEnabled: () => mobilePushAlertsEnabled,
     setMobilePushAlertsEnabledState: (value) => {
       mobilePushAlertsEnabled = value;
+    },
+    getWebPushAlertsEnabled: () => webPushAlertsEnabled,
+    setWebPushAlertsEnabledState: (value) => {
+      webPushAlertsEnabled = value;
     },
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     setCheckpointAlertSoundEnabledState: (value) => {

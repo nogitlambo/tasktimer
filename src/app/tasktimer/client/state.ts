@@ -9,6 +9,7 @@ export type TaskTimerStorageKeys = {
   TASK_VIEW_KEY: string;
   DYNAMIC_COLORS_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
+  WEB_PUSH_ALERTS_KEY: string;
   CHECKPOINT_ALERT_SOUND_KEY: string;
   CHECKPOINT_ALERT_TOAST_KEY: string;
   MODE_SETTINGS_KEY: string;
@@ -45,6 +46,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     TASK_VIEW_KEY: `${storageKey}:taskView`,
     DYNAMIC_COLORS_KEY: `${storageKey}:dynamicColorsEnabled`,
     MOBILE_PUSH_ALERTS_KEY: `${storageKey}:mobilePushAlertsEnabled`,
+    WEB_PUSH_ALERTS_KEY: `${storageKey}:webPushAlertsEnabled`,
     CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
     CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
     MODE_SETTINGS_KEY: `${storageKey}:modeSettings`,
@@ -78,6 +80,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
     mobilePushAlertsEnabled: false,
+    webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     rewardProgress: DEFAULT_REWARD_PROGRESS,
