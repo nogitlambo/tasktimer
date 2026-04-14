@@ -1,4 +1,5 @@
 import type { TaskTimerPopupMenuContext } from "./context";
+import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { createTaskTimerOverlayController } from "./overlay-controller";
 import { createTaskTimerOverlayRegistry } from "./overlay-registry";
 
@@ -13,18 +14,20 @@ export function createTaskTimerPopupMenu(ctx: TaskTimerPopupMenuContext) {
   }
 
   function registerPopupMenuEvents() {
-    document.querySelectorAll(".menuItem[data-menu]").forEach((btn) => {
-      ctx.on(btn, "click", () => openPopup((btn as HTMLElement).dataset.menu || ""));
-    });
+    ctx.on(document, "click", (event: Event) => {
+      const menuAction = getDelegatedAction(event.target, "data-menu");
+      if (menuAction && menuAction.element.classList.contains("menuItem")) {
+        openPopup(menuAction.action);
+        return;
+      }
 
-    document.querySelectorAll(".closePopup").forEach((btn) => {
-      ctx.on(btn, "click", () => {
-        const overlay = (btn as HTMLElement).closest(".overlay") as HTMLElement | null;
-        if (overlay?.id === "historyEntryNoteOverlay") {
-          ctx.clearHistoryEntryNoteOverlayPosition();
-        }
-        if (overlay) ctx.closeOverlay(overlay);
-      });
+      const closeBtn = findDelegatedElement(event.target, ".closePopup");
+      if (!closeBtn) return;
+      const overlay = closeBtn.closest(".overlay") as HTMLElement | null;
+      if (overlay?.id === "historyEntryNoteOverlay") {
+        ctx.clearHistoryEntryNoteOverlayPosition();
+      }
+      if (overlay) ctx.closeOverlay(overlay);
     });
   }
 

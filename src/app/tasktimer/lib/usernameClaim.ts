@@ -1,7 +1,4 @@
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
-
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 
 type ClaimUsernameResult = {
@@ -33,57 +30,26 @@ export async function claimUsernameClient(rawUsername: string): Promise<ClaimUse
     throw new Error(validationError);
   }
 
-  const db = getFirebaseFirestoreClient();
-  if (!db) {
-    throw new Error("Cloud Firestore is not available.");
+  const idToken = await user.getIdToken();
+  if (!idToken) {
+    throw new Error("Your sign-in session is no longer valid. Please sign in again.");
   }
-
-  const usersRef = doc(db, "users", uid);
-  const usernamesRef = doc(db, "usernames", usernameKey);
 
   for (let attempt = 0; attempt < USERNAME_CLAIM_MAX_RETRIES; attempt += 1) {
     try {
-      await runTransaction(db, async (tx) => {
-        const [userSnap, usernameSnap] = await Promise.all([tx.get(usersRef), tx.get(usernamesRef)]);
-
-        const existingUsernameUid = usernameSnap.exists() ? String(usernameSnap.get("uid") || "").trim() : "";
-        if (existingUsernameUid && existingUsernameUid !== uid) {
-          throw new Error("That username is already taken.");
-        }
-
-        const currentUsernameKey = userSnap.exists() ? String(userSnap.get("usernameKey") || "").trim() : "";
-        const currentUsername = userSnap.exists() ? String(userSnap.get("username") || "").trim() : "";
-
-        if (currentUsernameKey === usernameKey && currentUsername === usernameKey && existingUsernameUid === uid) {
-          return;
-        }
-
-        tx.set(
-          usernamesRef,
-          {
-            uid,
-            username: usernameKey,
-            usernameKey,
-          },
-          { merge: true }
-        );
-
-        tx.set(
-          usersRef,
-          {
-            username: usernameKey,
-            usernameKey,
-            schemaVersion: 1,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        if (currentUsernameKey && currentUsernameKey !== usernameKey) {
-          tx.delete(doc(db, "usernames", currentUsernameKey));
-        }
+      const response = await fetch("/api/account/claim-username", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({ username: rawUsername }),
       });
-      return { usernameKey };
+      const payload = (await response.json().catch(() => ({}))) as { usernameKey?: string; error?: string };
+      if (!response.ok) {
+        throw new Error(String(payload.error || "Unable to update your username right now."));
+      }
+      return { usernameKey: String(payload.usernameKey || usernameKey).trim() || usernameKey };
     } catch (err) {
       if (attempt >= USERNAME_CLAIM_MAX_RETRIES - 1 || !shouldRetryUsernameClaim(err)) {
         throw err;

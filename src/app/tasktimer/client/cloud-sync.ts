@@ -5,6 +5,7 @@ import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerStateAccessor } from "./root-state";
 
 import type { DashboardRenderOptions } from "./types";
+import { isOverlayVisible } from "./overlay-visibility";
 
 type CreateTaskTimerCloudSyncOptions = {
   runtime: TaskTimerRuntime;
@@ -63,11 +64,6 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
 
   function hasRecentUiInteraction(windowMs = 1200) {
     return options.nowMs() - options.lastUiInteractionAtMs.get() < windowMs;
-  }
-
-  function isOverlayVisible(overlay: HTMLElement | null) {
-    if (!overlay) return false;
-    return overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
   }
 
   function hasActiveTimeGoalCompletionFlow() {

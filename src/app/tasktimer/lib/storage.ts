@@ -31,6 +31,11 @@ import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
+import {
+  filterPendingSyncEntries,
+  PENDING_PREFERENCES_SYNC_TTL_MS,
+  PENDING_WORKSPACE_SYNC_TTL_MS,
+} from "./pending-sync";
 
 export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
@@ -45,7 +50,6 @@ const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
-const PENDING_SYNC_TTL_MS = 5 * 60 * 1000;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
 const HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS = 600;
 let historySaveWorkingActiveCount = 0;
@@ -392,20 +396,12 @@ function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>
   }
 }
 
-function loadPendingMap(key: string): Record<string, number> {
+function loadPendingMap(key: string, opts?: { maxAgeMs?: number }): Record<string, number> {
   const uid = scopedUid();
   const parsed = loadScopedShadowData<Record<string, number>>(key, uid, {});
   if (!parsed || typeof parsed !== "object") return {};
   try {
-    const now = nowMs();
-    const next: Record<string, number> = {};
-    Object.entries(parsed).forEach(([id, ts]) => {
-      const num = Number(ts || 0);
-      if (!id || !Number.isFinite(num) || num <= 0) return;
-      if (now - num > PENDING_SYNC_TTL_MS) return;
-      next[id] = num;
-    });
-    return next;
+    return filterPendingSyncEntries(parsed, nowMs(), opts?.maxAgeMs ?? PENDING_WORKSPACE_SYNC_TTL_MS);
   } catch {
     return {};
   }
@@ -423,7 +419,7 @@ function loadPendingPreferencesSync(): PendingPreferencesSync | null {
     if (!parsed || typeof parsed !== "object") return null;
     const ts = Number(parsed.ts || 0);
     if (!Number.isFinite(ts) || ts <= 0) return null;
-    if (nowMs() - ts > PENDING_SYNC_TTL_MS) {
+    if (nowMs() - ts > PENDING_PREFERENCES_SYNC_TTL_MS) {
       window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
       return null;
     }

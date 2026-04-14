@@ -43,6 +43,30 @@ service cloud.firestore {
       );
     }
 
+    function userUsernameIsClientSafe() {
+      return !("username" in request.resource.data)
+      || (
+        resource == null
+          ? request.resource.data.username == null
+          : (
+            ("username" in resource.data && request.resource.data.username == resource.data.username)
+            || (!("username" in resource.data) && request.resource.data.username == null)
+          )
+      );
+    }
+
+    function userUsernameKeyIsClientSafe() {
+      return !("usernameKey" in request.resource.data)
+      || (
+        resource == null
+          ? request.resource.data.usernameKey == null
+          : (
+            ("usernameKey" in resource.data && request.resource.data.usernameKey == resource.data.usernameKey)
+            || (!("usernameKey" in resource.data) && request.resource.data.usernameKey == null)
+          )
+      );
+    }
+
     function isUserDoc() {
       return onlyKeys([
         "email",
@@ -87,7 +111,9 @@ service cloud.firestore {
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
       && userPlanIsClientSafe()
-      && userPlanUpdatedAtIsClientSafe();
+      && userPlanUpdatedAtIsClientSafe()
+      && userUsernameIsClientSafe()
+      && userUsernameKeyIsClientSafe();
     }
 
     function isFriendshipProfileValue(value) {
@@ -425,6 +451,16 @@ service cloud.firestore {
       && request.resource.data.requestId == resource.data.requestId
       && request.resource.data.senderUid == resource.data.senderUid
       && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.senderEmail == resource.data.senderEmail
+      && request.resource.data.receiverEmail == resource.data.receiverEmail
+      && request.resource.data.senderAlias == resource.data.senderAlias
+      && request.resource.data.senderAvatarId == resource.data.senderAvatarId
+      && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
+      && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.receiverAlias == resource.data.receiverAlias
+      && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
+      && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
+      && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;
@@ -439,6 +475,16 @@ service cloud.firestore {
       && request.resource.data.requestId == resource.data.requestId
       && request.resource.data.senderUid == resource.data.senderUid
       && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.senderEmail == resource.data.senderEmail
+      && request.resource.data.receiverEmail == resource.data.receiverEmail
+      && request.resource.data.senderAlias == resource.data.senderAlias
+      && request.resource.data.senderAvatarId == resource.data.senderAvatarId
+      && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
+      && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.receiverAlias == resource.data.receiverAlias
+      && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
+      && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
+      && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == null
       && request.resource.data.respondedAt == null;
@@ -453,6 +499,16 @@ service cloud.firestore {
       && request.resource.data.requestId == resource.data.requestId
       && request.resource.data.senderUid == resource.data.senderUid
       && request.resource.data.receiverUid == resource.data.receiverUid
+      && request.resource.data.senderEmail == resource.data.senderEmail
+      && request.resource.data.receiverEmail == resource.data.receiverEmail
+      && request.resource.data.senderAlias == resource.data.senderAlias
+      && request.resource.data.senderAvatarId == resource.data.senderAvatarId
+      && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
+      && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.receiverAlias == resource.data.receiverAlias
+      && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
+      && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
+      && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;
@@ -618,6 +674,22 @@ service cloud.firestore {
         || request.resource.data.updatedAt != null);
     }
 
+    function canWriteOwnUserEmailLookup() {
+      return request.auth != null
+      && request.resource.data.uid == request.auth.uid
+      && request.auth.token.email != null
+      && request.resource.data.email == request.auth.token.email
+      && (
+        resource == null
+        || (
+          resource.data.uid is string
+          && resource.data.uid == request.auth.uid
+          && resource.data.email is string
+          && resource.data.email == request.auth.token.email
+        )
+      );
+    }
+
     function isUsernameReservationDoc(usernameKey) {
       return onlyKeys([
         "uid",
@@ -629,6 +701,18 @@ service cloud.firestore {
       && request.resource.data.usernameKey is string
       && request.resource.data.usernameKey == usernameKey
       && request.resource.data.username == usernameKey;
+    }
+
+    function canWriteOwnUsernameReservation() {
+      return request.auth != null
+      && request.resource.data.uid == request.auth.uid
+      && (
+        resource == null
+        || (
+          resource.data.uid is string
+          && resource.data.uid == request.auth.uid
+        )
+      );
     }
 
     function isScheduledTimeGoalPushDoc(scheduleDocId) {
@@ -902,10 +986,7 @@ service cloud.firestore {
             || requestId.matches("^pending:[^:]+:" + request.auth.uid + "$")
           ))
         );
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.senderUid
-        && requestId == request.resource.data.requestId
-        && isFriendRequestCreateDoc();
+      allow create: if false;
       allow update: if isFriendRequestDecisionUpdate() || isFriendRequestRetryUpdate() || isFriendRequestSenderCancelUpdate();
       allow delete: if canDeletePendingFriendRequest();
     }
@@ -947,24 +1028,12 @@ service cloud.firestore {
     }
 
     match /userEmailLookup/{emailKey} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && isUserEmailLookupDoc()
-        && request.resource.data.uid == request.auth.uid
-        ;
-      allow delete: if request.auth != null
-        && resource.data.uid is string
-        && resource.data.uid == request.auth.uid;
+      allow read: if false;
+      allow create, update, delete: if false;
     }
 
     match /usernames/{usernameKey} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && isUsernameReservationDoc(usernameKey)
-        && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null
-        && resource.data.uid is string
-        && resource.data.uid == request.auth.uid;
+      allow read, create, update, delete: if false;
     }
 
     match /scheduled_time_goal_pushes/{scheduleDocId} {

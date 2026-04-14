@@ -11,6 +11,7 @@ const buildDraft = vi.fn((seed) => ({
 }));
 const saveArchieDraft = vi.fn();
 const buildRecommendationDraft = vi.fn();
+const maybeGenerateArchieDraftSeed = vi.fn();
 const createArchieErrorResponse = vi.fn((error: unknown) => {
   const typedError = error as Error & { code?: string; status?: number };
   return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
@@ -38,6 +39,10 @@ vi.mock("@/app/tasktimer/lib/archieEngine", () => ({
   buildRecommendationDraft,
 }));
 
+vi.mock("@/app/tasktimer/lib/archieModel", () => ({
+  maybeGenerateArchieDraftSeed,
+}));
+
 function createRequest() {
   return new Request("http://localhost/api/archie/recommendations/draft", {
     method: "POST",
@@ -63,6 +68,7 @@ describe("POST /api/archie/recommendations/draft", () => {
       evidence: [],
       proposedChanges: [],
     });
+    maybeGenerateArchieDraftSeed.mockReset().mockImplementation(async ({ fallbackSeed }) => fallbackSeed);
     createArchieErrorResponse.mockClear();
   });
 
@@ -91,6 +97,7 @@ describe("POST /api/archie/recommendations/draft", () => {
     expect(json.ok).toBe(true);
     expect(json.draft.id).toBe("draft-1");
     expect(loadArchieWorkspaceContext).toHaveBeenCalled();
+    expect(maybeGenerateArchieDraftSeed).toHaveBeenCalled();
     expect(saveArchieDraft).toHaveBeenCalledWith("user-1", expect.objectContaining({ id: "draft-1" }));
   });
 });

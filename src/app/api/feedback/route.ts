@@ -10,6 +10,7 @@ import {
 } from "../jira/feedback/shared";
 import {
   FeedbackApiError,
+  loadFeedbackAuthorProfile,
   toggleFeedbackVoteWithLimits,
   validateAndRecordFeedbackSubmission,
   verifyFeedbackRequestUser,
@@ -118,16 +119,17 @@ async function parseFeedbackPostBody(req: Request) {
 export async function POST(req: Request) {
   try {
     const { body, attachments } = await parseFeedbackPostBody(req);
-    const { uid } = await verifyFeedbackRequestUser(req, body);
+    const { uid, email } = await verifyFeedbackRequestUser(req, body);
 
     const title = asString(body.title, 160);
     const details = asString(body.details, 8000);
     const type = normalizeFeedbackType(body.type);
     const isAnonymous = normalizeBoolean(body.isAnonymous);
-    const authorEmail = isAnonymous ? null : asString(body.authorEmail, 320) || null;
-    const authorDisplayName = isAnonymous ? null : asString(body.authorDisplayName, 120) || null;
-    const authorRankThumbnailSrc = isAnonymous ? null : asString(body.authorRankThumbnailSrc, 1024) || null;
-    const authorCurrentRankId = isAnonymous ? null : asString(body.authorCurrentRankId, 120) || null;
+    const authorProfile = isAnonymous ? null : await loadFeedbackAuthorProfile(uid);
+    const authorEmail = isAnonymous ? null : email || null;
+    const authorDisplayName = isAnonymous ? null : authorProfile?.displayName || null;
+    const authorRankThumbnailSrc = isAnonymous ? null : authorProfile?.rankThumbnailSrc || null;
+    const authorCurrentRankId = isAnonymous ? null : authorProfile?.currentRankId || null;
 
     if (!title) {
       throw new FeedbackApiError("feedback/invalid-title", "A feedback title is required.", 400);

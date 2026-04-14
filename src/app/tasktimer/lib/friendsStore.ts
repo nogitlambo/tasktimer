@@ -5,7 +5,6 @@ import {
   getDoc,
   getDocs,
   query,
-  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -14,6 +13,7 @@ import {
 } from "firebase/firestore";
 import type { FirebaseError } from "firebase/app";
 
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
 export type FriendRequestStatus = "pending" | "approved" | "declined";
@@ -90,7 +90,7 @@ export type SharedTaskSummaryInput = {
   totalTimeLoggedMs: number;
 };
 
-type SendRequestResult = { ok: true; request: FriendRequest } | { ok: false; message: string };
+type SendRequestResult = { ok: true; request?: FriendRequest | null } | { ok: false; message: string };
 
 function dbOrNull() {
   return getFirebaseFirestoreClient();
@@ -99,14 +99,6 @@ function dbOrNull() {
 function sortedPair(a: string, b: string): [string, string] {
   // Match Firestore rules string ordering checks (`<` / `>`) deterministically.
   return [a, b].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)) as [string, string];
-}
-
-function requestDocId(senderUid: string, receiverUid: string) {
-  return `pending:${senderUid}:${receiverUid}`;
-}
-
-function emailLookupDocKey(email: string) {
-  return encodeURIComponent(String(email || "").trim().toLowerCase());
 }
 
 function friendshipDocId(uidA: string, uidB: string) {
@@ -253,9 +245,6 @@ export async function sendFriendRequest(
   receiverEmailRaw: string
 ): Promise<SendRequestResult> {
   try {
-    const db = dbOrNull();
-    if (!db) return { ok: false, message: "Cloud Firestore is not available." };
-
     const receiverEmail = String(receiverEmailRaw || "").trim().toLowerCase();
     if (!senderUid) return { ok: false, message: "You must be signed in." };
     if (!receiverEmail) return { ok: false, message: "Email address is required." };
@@ -263,96 +252,29 @@ export async function sendFriendRequest(
     if (senderEmailNorm && senderEmailNorm === receiverEmail) {
       return { ok: false, message: "You cannot send a request to yourself." };
     }
-
-    let lookupSnap;
-    try {
-      lookupSnap = await getDoc(doc(db, "userEmailLookup", emailLookupDocKey(receiverEmail)));
-    } catch (err: unknown) {
-      const firebaseErr = err as FirebaseError | undefined;
-      if (String(firebaseErr?.code || "").trim() === "permission-denied") {
-        return { ok: false, message: "Permission denied reading user lookup." };
-      }
-      return { ok: false, message: "Could not read user lookup for this email address." };
+    const auth = getFirebaseAuthClient();
+    const currentUser = auth?.currentUser || null;
+    const idToken = await currentUser?.getIdToken();
+    if (!idToken) {
+      return { ok: false, message: "Your sign-in session is no longer valid. Please sign in again." };
     }
-    if (!lookupSnap.exists()) return { ok: false, message: "No user found for this email address." };
-    const receiverUid = String(lookupSnap.get("uid") || "").trim();
-    if (!receiverUid) return { ok: false, message: "Could not resolve user account." };
-    if (receiverUid === senderUid) return { ok: false, message: "You cannot send a request to yourself." };
-    const senderProfile = await loadOwnProfile(senderUid);
-
-    const requestId = requestDocId(senderUid, receiverUid);
-    const requestRef = doc(db, "friend_requests", requestId);
-    const pairRef = doc(db, "friendships", friendshipDocId(senderUid, receiverUid));
-
-    let failure: string | null = null;
-    await runTransaction(db, async (tx) => {
-      const existing = await tx.get(requestRef);
-      const friendship = await tx.get(pairRef);
-
-      if (friendship.exists()) {
-        failure = "You are already friends with this user.";
-        return;
-      }
-
-      const receiverEmailRawValue = lookupSnap.get("email");
-      const receiverEmailValue = receiverEmailRawValue == null ? null : String(receiverEmailRawValue || "");
-      if (existing.exists()) {
-        const status = String(existing.get("status") || "pending");
-        if (status === "pending") {
-          failure = "A pending request already exists for this user.";
-          return;
-        }
-        if (status !== "declined" && status !== "approved") {
-          failure = "Request state is invalid. Remove or fix the existing request first.";
-          return;
-        }
-
-        // Retry path: recycle declined or stale approved records back to pending
-        // when the friendship document no longer exists.
-        tx.update(requestRef, {
-          status: "pending",
-          senderEmail: senderEmail || null,
-          receiverEmail: receiverEmailValue,
-          senderAlias: senderProfile.alias,
-          senderAvatarId: senderProfile.avatarId,
-          senderRankThumbnailSrc: senderProfile.rankThumbnailSrc,
-          senderCurrentRankId: senderProfile.currentRankId,
-          receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
-          receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
-          receiverRankThumbnailSrc: normalizeRankThumbnailSrc(lookupSnap.get("rankThumbnailSrc")),
-          receiverCurrentRankId: normalizeAvatarId(lookupSnap.get("rewardCurrentRankId")),
-          updatedAt: serverTimestamp(),
-          respondedAt: null,
-          respondedBy: null,
-        });
-        return;
-      }
-
-      tx.set(requestRef, {
-        requestId,
-        senderUid,
-        receiverUid,
-        senderEmail: senderEmail || null,
-        receiverEmail: receiverEmailValue,
-        senderAlias: senderProfile.alias,
-        senderAvatarId: senderProfile.avatarId,
-        senderRankThumbnailSrc: senderProfile.rankThumbnailSrc,
-        senderCurrentRankId: senderProfile.currentRankId,
-        receiverAlias: normalizeAlias(lookupSnap.get("displayName")),
-        receiverAvatarId: normalizeAvatarId(lookupSnap.get("avatarId")),
-        receiverRankThumbnailSrc: normalizeRankThumbnailSrc(lookupSnap.get("rankThumbnailSrc")),
-        receiverCurrentRankId: normalizeAvatarId(lookupSnap.get("rewardCurrentRankId")),
-        status: "pending",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        respondedAt: null,
-        respondedBy: null,
-      });
+    const response = await fetch("/api/friends/requests", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-firebase-auth": idToken,
+      },
+      body: JSON.stringify({ receiverEmail }),
     });
-
-    if (failure) return { ok: false, message: failure };
-    const snap = await getDoc(requestRef);
-    return { ok: true, request: asFriendRequest(requestId, (snap.data() || {}) as Record<string, unknown>) };
+    const payload = (await response.json().catch(() => ({}))) as {
+      ok?: boolean;
+      request?: FriendRequest | null;
+      error?: string;
+    };
+    if (!response.ok || !payload.ok) {
+      return { ok: false, message: String(payload.error || "Could not send friend request.") };
+    }
+    return { ok: true, request: payload.request || null };
   } catch (err: unknown) {
     const firebaseErr = err as FirebaseError | undefined;
     const code = String(firebaseErr?.code || "").trim();

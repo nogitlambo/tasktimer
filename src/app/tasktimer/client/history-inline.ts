@@ -1,5 +1,6 @@
 import type { HistoryViewState } from "./types";
 import type { TaskTimerHistoryInlineContext } from "./context";
+import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1020,7 +1021,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       { capture: true }
     );
     ctx.on(document, "click", (e: any) => {
-      const copyBtn = e.target?.closest?.("[data-history-note-copy]") as HTMLButtonElement | null;
+      const copyBtn = findDelegatedElement(e.target, "[data-history-note-copy]") as HTMLButtonElement | null;
       if (!copyBtn) return;
       const text = String(copyBtn.getAttribute("data-history-note-copy") || "");
       void copyTextToClipboard(text).then((ok) => {
@@ -1033,7 +1034,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
 
     ctx.on(els.taskList, "click", (ev: any) => {
-      const rangeToggle = ev.target?.closest?.("[data-history-range-toggle]") as HTMLElement | null;
+      const rangeToggle = findDelegatedElement(ev.target, "[data-history-range-toggle]");
       if (rangeToggle) {
         const taskEl = rangeToggle.closest?.(".task") as HTMLElement | null;
         const taskId = taskEl?.getAttribute?.("data-task-id") || "";
@@ -1045,7 +1046,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         renderHistory(taskId);
         return;
       }
-      const rangeModeBtn = ev.target?.closest?.("[data-history-range-mode]") as HTMLElement | null;
+      const rangeModeBtn = findDelegatedElement(ev.target, "[data-history-range-mode]");
       if (rangeModeBtn) {
         const taskEl = rangeModeBtn.closest?.(".task") as HTMLElement | null;
         const taskId = taskEl?.getAttribute?.("data-task-id") || "";
@@ -1058,71 +1059,69 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         return;
       }
 
-      const btn = ev.target?.closest?.("[data-history-action]");
-      const action = btn?.getAttribute?.("data-history-action");
-      if (!action) return;
-      const taskEl = btn?.closest?.(".task") as HTMLElement | null;
+      const delegatedAction = getDelegatedAction(ev.target, "data-history-action");
+      if (!delegatedAction) return;
+      const { element: btn, action } = delegatedAction;
+      const taskEl = btn.closest?.(".task") as HTMLElement | null;
       const taskId = taskEl?.getAttribute?.("data-task-id") || "";
       if (!taskId) return;
       const state = ensureHistoryViewState(taskId);
 
-      if (action === "pin") {
-        if (!ctx.hasEntitlement("advancedHistory")) {
-          ctx.showUpgradePrompt("Pinned history charts", "pro");
-          return;
-        }
-        const nextPinned = new Set(ctx.getPinnedHistoryTaskIds());
-        if (nextPinned.has(taskId)) nextPinned.delete(taskId);
-        else nextPinned.add(taskId);
-        ctx.setPinnedHistoryTaskIds(nextPinned);
-        ctx.savePinnedHistoryTaskIds();
-        if (nextPinned.has(taskId)) ctx.getOpenHistoryTaskIds().add(taskId);
-        ctx.render();
-        return;
-      }
-      if (action === "close") {
-        resetHistoryChartSelectionToDefault(taskId);
-        closeHistory(taskId);
-        return;
-      }
-      if (action === "edit") {
-        state.editMode = !state.editMode;
-        renderHistory(taskId);
-        return;
-      }
-      if (action === "older") {
-        state.slideDir = "left";
-        state.page += 1;
-        renderHistory(taskId);
-        return;
-      }
-      if (action === "newer") {
-        state.slideDir = "right";
-        state.page = Math.max(0, state.page - 1);
-        renderHistory(taskId);
-        return;
-      }
-      if (action === "manage") {
-        if (!ctx.hasEntitlement("advancedHistory")) {
-          ctx.showUpgradePrompt("History Manager", "pro");
-          return;
-        }
-        ctx.navigateToAppRoute(`/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
-        return;
-      }
-      if (action === "analyse") {
-        if (!ctx.hasEntitlement("advancedHistory")) {
-          ctx.showUpgradePrompt("Inline history analysis", "pro");
-          return;
-        }
-        if (state.lockedAbsIndexes.size < 2) return;
-        openHistoryAnalysisModal(taskId);
-        return;
-      }
-      if (action === "clearLocks") {
-        clearHistoryLockedSelections(taskId);
-        renderHistory(taskId);
-        return;
+      const actionHandlers: Record<string, () => void> = {
+        pin: () => {
+          if (!ctx.hasEntitlement("advancedHistory")) {
+            ctx.showUpgradePrompt("Pinned history charts", "pro");
+            return;
+          }
+          const nextPinned = new Set(ctx.getPinnedHistoryTaskIds());
+          if (nextPinned.has(taskId)) nextPinned.delete(taskId);
+          else nextPinned.add(taskId);
+          ctx.setPinnedHistoryTaskIds(nextPinned);
+          ctx.savePinnedHistoryTaskIds();
+          if (nextPinned.has(taskId)) ctx.getOpenHistoryTaskIds().add(taskId);
+          ctx.render();
+        },
+        close: () => {
+          resetHistoryChartSelectionToDefault(taskId);
+          closeHistory(taskId);
+        },
+        edit: () => {
+          state.editMode = !state.editMode;
+          renderHistory(taskId);
+        },
+        older: () => {
+          state.slideDir = "left";
+          state.page += 1;
+          renderHistory(taskId);
+        },
+        newer: () => {
+          state.slideDir = "right";
+          state.page = Math.max(0, state.page - 1);
+          renderHistory(taskId);
+        },
+        manage: () => {
+          if (!ctx.hasEntitlement("advancedHistory")) {
+            ctx.showUpgradePrompt("History Manager", "pro");
+            return;
+          }
+          ctx.navigateToAppRoute(`/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
+        },
+        analyse: () => {
+          if (!ctx.hasEntitlement("advancedHistory")) {
+            ctx.showUpgradePrompt("Inline history analysis", "pro");
+            return;
+          }
+          if (state.lockedAbsIndexes.size < 2) return;
+          openHistoryAnalysisModal(taskId);
+        },
+        clearLocks: () => {
+          clearHistoryLockedSelections(taskId);
+          renderHistory(taskId);
+        },
+      };
+      if (action !== "delete") {
+        actionHandlers[action]?.();
+        if (Object.prototype.hasOwnProperty.call(actionHandlers, action)) return;
       }
       const lockedList = Array.from(state.lockedAbsIndexes.values());
       const deleteAbsIndex = state.selectedAbsIndex != null ? state.selectedAbsIndex : lockedList[lockedList.length - 1] ?? null;

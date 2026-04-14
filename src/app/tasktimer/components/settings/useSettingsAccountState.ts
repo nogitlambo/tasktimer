@@ -299,7 +299,8 @@ export function useSettingsAccountState(): {
 
     if (authPlan === "pro") {
       const auth = getFirebaseAuthClient();
-      const uid = String(auth?.currentUser?.uid || "").trim();
+      const currentUser = auth?.currentUser || null;
+      const uid = String(currentUser?.uid || "").trim();
       if (!uid) {
         setAuthError("You must be signed in to manage your subscription.");
         setAuthStatus("");
@@ -309,9 +310,11 @@ export function useSettingsAccountState(): {
       setAuthError("");
       setAuthStatus("");
       try {
+        const idToken = await currentUser?.getIdToken();
+        if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
         const res = await fetch("/api/stripe/create-billing-portal-session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
             uid,
             returnPath: "/settings?pane=general",

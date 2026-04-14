@@ -243,6 +243,138 @@ describe("Archie engine", () => {
     }
   });
 
+  it("uses broader 90-day history to identify recently under-served tasks", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-14T10:00:00.000Z"));
+
+    const historicalRows = Array.from({ length: 12 }, (_, index) => ({
+      ts: new Date(2026, 0, 5 + index * 7, 8, 0).getTime(),
+      name: "Admin Cleanup",
+      ms: 60 * 60 * 1000,
+    }));
+
+    const draft = buildRecommendationDraft(
+      createContext({
+        historyByTaskId: {
+          "task-a": [
+            { ts: new Date(2026, 3, 11, 9, 0).getTime(), name: "Deep Work", ms: 2 * 60 * 60 * 1000 },
+            { ts: new Date(2026, 3, 12, 9, 0).getTime(), name: "Deep Work", ms: 2 * 60 * 60 * 1000 },
+            { ts: new Date(2026, 3, 13, 9, 0).getTime(), name: "Deep Work", ms: 2 * 60 * 60 * 1000 },
+          ],
+          "task-b": [
+            ...historicalRows,
+            { ts: new Date(2026, 3, 13, 8, 0).getTime(), name: "Admin Cleanup", ms: 15 * 60 * 1000 },
+          ],
+        },
+      })
+    );
+
+    expect(draft?.summary).toContain("Admin Cleanup");
+    expect(draft?.evidence.some((item) => item.includes("broader 90-day activity pattern"))).toBe(true);
+    expect(draft?.reasoning).toContain("broader 90-day pattern");
+  });
+
+  it("builds a multi-task daily schedule revamp from trailing 30-day activity", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-14T10:00:00.000Z"));
+
+    const draft = buildRecommendationDraft(
+      createContext({
+        tasks: [
+          {
+            id: "task-a",
+            name: "Deep Work",
+            order: 0,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: true,
+            timeGoalEnabled: true,
+            timeGoalValue: 1,
+            timeGoalUnit: "hour",
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+            plannedStartDay: null,
+            plannedStartTime: null,
+            plannedStartOpenEnded: false,
+          },
+          {
+            id: "task-b",
+            name: "Admin Cleanup",
+            order: 1,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: true,
+            timeGoalEnabled: true,
+            timeGoalValue: 1,
+            timeGoalUnit: "hour",
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+            plannedStartDay: null,
+            plannedStartTime: null,
+            plannedStartOpenEnded: false,
+          },
+          {
+            id: "task-c",
+            name: "Meditation",
+            order: 2,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: true,
+            timeGoalEnabled: true,
+            timeGoalValue: 1,
+            timeGoalUnit: "hour",
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+            plannedStartDay: null,
+            plannedStartTime: null,
+            plannedStartOpenEnded: false,
+          },
+        ],
+        historyByTaskId: {
+          "task-a": Array.from({ length: 10 }, (_, index) => ({
+            ts: new Date(2026, 2, 12 + index, 8, 0).getTime(),
+            name: "Deep Work",
+            ms: 90 * 60 * 1000,
+          })),
+          "task-b": Array.from({ length: 9 }, (_, index) => ({
+            ts: new Date(2026, 2, 12 + index, 10, 0).getTime(),
+            name: "Admin Cleanup",
+            ms: 45 * 60 * 1000,
+          })),
+          "task-c": Array.from({ length: 12 }, (_, index) => ({
+            ts: new Date(2026, 2, 12 + index, 18, 30).getTime(),
+            name: "Meditation",
+            ms: 30 * 60 * 1000,
+          })),
+        },
+      }),
+      "Please rebuild my schedule based on the last 30 days of activity."
+    );
+
+    expect(draft?.kind).toBe("schedule_adjustment");
+    expect(draft?.summary).toContain("full schedule revamp");
+    const scheduleChanges = draft?.proposedChanges.filter((change) => change.kind === "update_schedule") || [];
+    expect(scheduleChanges.length).toBeGreaterThanOrEqual(3);
+    scheduleChanges.forEach((change) => {
+      if (change.kind !== "update_schedule") return;
+      expect(change.after.plannedStartDay).toBeNull();
+      expect(change.after.plannedStartTime).not.toBeNull();
+    });
+    expect(draft?.evidence.some((item) => item.includes("active on"))).toBe(true);
+  });
+
   it("abstains on unsupported product questions instead of creating a workflow draft", () => {
     const response = buildArchieQueryResponse("How do I connect Slack to TaskLaunch?", createContext(), (seed) => ({
       ...seed,

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { ArchieQueryRequest } from "@/app/tasktimer/lib/archieAssistant";
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import { buildArchieQueryResponse } from "@/app/tasktimer/lib/archieEngine";
-import { maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
+import { maybeGenerateArchieDraftSeed, maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
 import {
   attachArchieDraftSession,
   buildDraft,
@@ -39,21 +39,41 @@ export async function POST(req: Request) {
       }
       return NextResponse.json(buildArchieUpgradeResponse());
     }
-    if (baseResponse.draft) {
-      await saveArchieDraft(uid, baseResponse.draft);
+    let responseBase = baseResponse;
+    if (baseResponse.mode === "workflow_advice" && baseResponse.draft) {
+      const { id: _id, createdAt: _createdAt, status: _status, ...fallbackSeed } = baseResponse.draft;
+      void _id;
+      void _createdAt;
+      void _status;
+      const nextSeed = await maybeGenerateArchieDraftSeed({
+        userMessage: requestBody.message,
+        context,
+        fallbackSeed,
+      });
+      const nextDraft = buildDraft(nextSeed);
+      responseBase = {
+        ...baseResponse,
+        message: nextDraft.summary,
+        draftId: nextDraft.id,
+        draft: nextDraft,
+        suggestedAction: { kind: "reviewDraft", label: "Review Draft", draftId: nextDraft.id },
+      };
+    }
+    if (responseBase.draft) {
+      await saveArchieDraft(uid, responseBase.draft);
     }
     const response = await maybeRefineArchieResponse({
       userMessage: requestBody.message,
-      baseResponse,
-      draft: baseResponse.draft,
+      baseResponse: responseBase,
+      draft: responseBase.draft,
     });
     const sessionId = await writeArchieSession(uid, {
       request: requestBody,
       response,
       latencyMs: Date.now() - startedAt,
     });
-    if (baseResponse.draft?.id) {
-      await attachArchieDraftSession(uid, baseResponse.draft.id, sessionId);
+    if (responseBase.draft?.id) {
+      await attachArchieDraftSession(uid, responseBase.draft.id, sessionId);
     }
     return NextResponse.json({ ...response, sessionId });
   } catch (error) {

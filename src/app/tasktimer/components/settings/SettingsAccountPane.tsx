@@ -2,8 +2,10 @@
 
 import { useMemo, useRef } from "react";
 import AppImg from "@/components/AppImg";
-import { buildRewardsHeaderViewModel, RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "@/app/tasktimer/lib/rewards";
+import { buildRewardsHeaderViewModel } from "@/app/tasktimer/lib/rewards";
+import RankLadderModal from "../RankLadderModal";
 import RankThumbnail from "../RankThumbnail";
+import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
 import type { SettingsAccountViewModel, SettingsAvatarViewModel, SettingsPushViewModel } from "./types";
 
@@ -262,154 +264,93 @@ export function SettingsAccountPane({
         </section>
       </div>
 
-      {account.showDeleteAccountConfirm ? (
-        <div className="overlay settingsInlineConfirmOverlay" onClick={() => account.setShowDeleteAccountConfirm(false)}>
-          <div className="modal settingsInlineConfirmModal" role="dialog" aria-modal="true" aria-label="Delete Account" onClick={(event) => event.stopPropagation()}>
-            <h3 className="settingsInlineConfirmTitle">Delete Account</h3>
-            <p className="settingsInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
-            <p className="settingsInlineConfirmText">
-              Local task and history data on this device are not deleted automatically. Use Reset All separately if needed.
-            </p>
-            <div className="footerBtns settingsInlineConfirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-warn" type="button" onClick={() => void account.onDeleteAccount()} disabled={account.authBusy}>
-                Delete Account
-              </button>
-            </div>
-          </div>
+      <InlineConfirmModal
+        open={account.showDeleteAccountConfirm}
+        onClose={() => account.setShowDeleteAccountConfirm(false)}
+        ariaLabel="Delete Account"
+        title="Delete Account"
+      >
+        <p className="settingsInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
+        <p className="settingsInlineConfirmText">
+          Local task and history data on this device are not deleted automatically. Use Reset All separately if needed.
+        </p>
+        <div className="footerBtns settingsInlineConfirmBtns">
+          <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
+            Cancel
+          </button>
+          <button className="btn btn-warn" type="button" onClick={() => void account.onDeleteAccount()} disabled={account.authBusy}>
+            Delete Account
+          </button>
         </div>
-      ) : null}
+      </InlineConfirmModal>
 
-      {avatar.showAvatarPickerModal ? (
-        <div className="overlay settingsInlineConfirmOverlay" onClick={() => avatar.setShowAvatarPickerModal(false)}>
-          <div
-            className="modal settingsInlineConfirmModal settingsAvatarModal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Choose Avatar"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 className="settingsInlineConfirmTitle">Choose Avatar</h3>
-            <div className="settingsAvatarOptions" role="list" aria-label="Available avatars">
-              {avatar.avatarGroups.map((group) => (
-                <section key={group.key} className="settingsAvatarGroup" aria-label={group.title}>
-                  <h4 className="settingsAvatarGroupTitle">{group.title}</h4>
-                  <div className="settingsAvatarGroupRow" role="list">
-                    {group.items.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        className={`settingsAvatarOption${avatar.selectedAvatarId === option.id ? " isSelected" : ""}`}
-                        onClick={() => void avatar.onSelectAvatar(option.id)}
-                        aria-pressed={avatar.selectedAvatarId === option.id}
-                        title={option.label}
-                      >
-                        <AppImg src={option.src} alt={option.label} className="settingsAvatarOptionImg" />
-                        <span className="settingsAvatarOptionLabel">{option.label}</span>
-                        {avatar.selectedAvatarId === option.id ? (
-                          <span className="settingsAvatarOptionSelected" aria-hidden="true">
-                            Selected
-                          </span>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-            <div className="footerBtns settingsInlineConfirmBtns">
-              <input
-                ref={avatarUploadInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(event) => {
-                  const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
-                  void avatar.onUploadAvatar(file);
-                  event.currentTarget.value = "";
-                }}
-              />
-              <button className="btn btn-accent" type="button" onClick={() => avatarUploadInputRef.current?.click()}>
-                Upload
-              </button>
-              <button className="btn btn-ghost" type="button" onClick={() => avatar.setShowAvatarPickerModal(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {avatar.showRankLadderModal ? (
-        <div className="overlay" id="rankLadderOverlay" onClick={() => avatar.setShowRankLadderModal(false)}>
-          <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
-            <h2>Rank Ladder</h2>
-            <p className="modalSubtext">
-              {rewardsHeader.rankLabel} is your current rank at {rewardsHeader.totalXp} XP.{" "}
-              {rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to reach the next rank.` : "You have reached the highest configured rank."}
-            </p>
-            <div className="rankLadderList" role="list" aria-label="Available ranks">
-              {RANK_LADDER.map((rank, index) => {
-                const isCurrent = rank.id === avatar.rewardProgress.currentRankId;
-                const isUnlocked = index <= avatar.currentRankIndex;
-                const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
-                const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-                const isSelectedThumbnail = avatar.rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
-                const content = (
-                  <>
-                    <div className="rankLadderItemBadge" aria-hidden="true">
-                      <RankThumbnail
-                        rankId={rank.id}
-                        storedThumbnailSrc=""
-                        className="rankLadderItemBadgeShell"
-                        imageClassName="rankLadderItemBadgeImage"
-                        placeholderClassName="rankLadderItemBadgePlaceholder"
-                        alt=""
-                        size={34}
-                        aria-hidden
-                      />
-                    </div>
-                    <div className="rankLadderItemBody">
-                      <div className="rankLadderItemTitleRow">
-                        <span className="rankLadderItemTitle">{rank.label}</span>
-                        {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
-                        {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
-                        {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
-                      </div>
-                      <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
-                    </div>
-                  </>
-                );
-                return avatar.canSelectRankInsignia ? (
+      <InlineConfirmModal
+        open={avatar.showAvatarPickerModal}
+        onClose={() => avatar.setShowAvatarPickerModal(false)}
+        ariaLabel="Choose Avatar"
+        title="Choose Avatar"
+        modalClassName="settingsInlineConfirmModal settingsAvatarModal"
+      >
+        <div className="settingsAvatarOptions" role="list" aria-label="Available avatars">
+          {avatar.avatarGroups.map((group) => (
+            <section key={group.key} className="settingsAvatarGroup" aria-label={group.title}>
+              <h4 className="settingsAvatarGroupTitle">{group.title}</h4>
+              <div className="settingsAvatarGroupRow" role="list">
+                {group.items.map((option) => (
                   <button
-                    key={rank.id}
+                    key={option.id}
                     type="button"
-                    className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                    onClick={() => void avatar.onSelectRankThumbnail(rank.id)}
+                    className={`settingsAvatarOption${avatar.selectedAvatarId === option.id ? " isSelected" : ""}`}
+                    onClick={() => void avatar.onSelectAvatar(option.id)}
+                    aria-pressed={avatar.selectedAvatarId === option.id}
+                    title={option.label}
                   >
-                    {content}
+                    <AppImg src={option.src} alt={option.label} className="settingsAvatarOptionImg" />
+                    <span className="settingsAvatarOptionLabel">{option.label}</span>
+                    {avatar.selectedAvatarId === option.id ? (
+                      <span className="settingsAvatarOptionSelected" aria-hidden="true">
+                        Selected
+                      </span>
+                    ) : null}
                   </button>
-                ) : (
-                  <div
-                    key={rank.id}
-                    className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                    role="listitem"
-                  >
-                    {content}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="confirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={() => avatar.setShowRankLadderModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
-      ) : null}
+        <div className="footerBtns settingsInlineConfirmBtns">
+          <input
+            ref={avatarUploadInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(event) => {
+              const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
+              void avatar.onUploadAvatar(file);
+              event.currentTarget.value = "";
+            }}
+          />
+          <button className="btn btn-accent" type="button" onClick={() => avatarUploadInputRef.current?.click()}>
+            Upload
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={() => avatar.setShowAvatarPickerModal(false)}>
+            Cancel
+          </button>
+        </div>
+      </InlineConfirmModal>
+
+      <RankLadderModal
+        open={avatar.showRankLadderModal}
+        onClose={() => avatar.setShowRankLadderModal(false)}
+        rankLabel={rewardsHeader.rankLabel}
+        totalXp={rewardsHeader.totalXp}
+        rankSummary={avatar.rankLadderSummary}
+        currentRankId={avatar.rewardProgress.currentRankId}
+        currentRankIndex={avatar.currentRankIndex}
+        rankThumbnailSrc={avatar.rankThumbnailSrc}
+        canSelectRankInsignia={avatar.canSelectRankInsignia}
+        onSelectRankThumbnail={avatar.onSelectRankThumbnail}
+      />
     </SettingsDetailPane>
   );
 }

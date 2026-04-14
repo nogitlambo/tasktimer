@@ -7,6 +7,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { ensureUserProfileIndex, saveUserRootPatch } from "../lib/cloudStore";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
+import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import {
   buildRewardProgressForRankSelection,
@@ -221,78 +222,18 @@ export default function SignedInHeaderBadge({ href = "/settings?pane=general" }:
           </span>
         </span>
       </a>
-      {showRankLadderModal ? (
-        <div className="overlay" id="rankLadderOverlay" onClick={() => setShowRankLadderModal(false)}>
-          <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
-            <h2>Rank Ladder</h2>
-            <p className="modalSubtext">
-              {displayedRankLabel} is your current rank at {rewardsHeader.totalXp} XP. {rankLadderSummary}
-            </p>
-            <div className="rankLadderList" role="list" aria-label="Available ranks">
-              {RANK_LADDER.map((rank, index) => {
-                const isCurrent = rank.id === rewardProgress.currentRankId;
-                const isUnlocked = index <= currentRankIndex;
-                const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
-                const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-                const isSelectable = canSelectRankInsignia;
-                const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
-                const content = (
-                  <>
-                    <div className="rankLadderItemBadge" aria-hidden="true">
-                      <RankThumbnail
-                        rankId={rank.id}
-                        storedThumbnailSrc=""
-                        className="rankLadderItemBadgeShell"
-                        imageClassName="rankLadderItemBadgeImage"
-                        placeholderClassName="rankLadderItemBadgePlaceholder"
-                        alt=""
-                        size={34}
-                        aria-hidden
-                      />
-                    </div>
-                    <div className="rankLadderItemBody">
-                      <div className="rankLadderItemTitleRow">
-                        <span className="rankLadderItemTitle">{rank.label}</span>
-                        {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
-                        {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
-                        {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
-                      </div>
-                      <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
-                    </div>
-                  </>
-                );
-                if (isSelectable) {
-                  return (
-                    <button
-                      key={rank.id}
-                      type="button"
-                      className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                      role="listitem"
-                      onClick={() => void handleSelectRankThumbnail(rank.id)}
-                    >
-                      {content}
-                    </button>
-                  );
-                }
-                return (
-                  <div
-                    key={rank.id}
-                    className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                    role="listitem"
-                  >
-                    {content}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="confirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={() => setShowRankLadderModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <RankLadderModal
+        open={showRankLadderModal}
+        onClose={() => setShowRankLadderModal(false)}
+        rankLabel={displayedRankLabel}
+        totalXp={rewardsHeader.totalXp}
+        rankSummary={rankLadderSummary}
+        currentRankId={rewardProgress.currentRankId}
+        currentRankIndex={currentRankIndex}
+        rankThumbnailSrc={rankThumbnailSrc}
+        canSelectRankInsignia={canSelectRankInsignia}
+        onSelectRankThumbnail={handleSelectRankThumbnail}
+      />
     </>
   );
 }

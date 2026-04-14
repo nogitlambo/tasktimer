@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { ArchieRecommendationDraftRequest } from "@/app/tasktimer/lib/archieAssistant";
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import { buildRecommendationDraft } from "@/app/tasktimer/lib/archieEngine";
+import { maybeGenerateArchieDraftSeed } from "@/app/tasktimer/lib/archieModel";
 import {
   assertCanUseArchieAi,
   buildDraft,
@@ -28,11 +29,16 @@ export async function POST(req: Request) {
       source: body?.source || "manual",
     };
     const context = await loadArchieWorkspaceContext(uid, requestBody);
-    const seed = buildRecommendationDraft(context);
+    const seed = buildRecommendationDraft(context, requestBody.message);
     if (!seed) {
       return NextResponse.json({ error: "Archie could not create a recommendation draft from the current workspace.", code: "archie/no-draft" }, { status: 422 });
     }
-    const draft = buildDraft(seed);
+    const nextSeed = await maybeGenerateArchieDraftSeed({
+      userMessage: requestBody.message,
+      context,
+      fallbackSeed: seed,
+    });
+    const draft = buildDraft(nextSeed);
     await saveArchieDraft(uid, draft);
     return NextResponse.json({ ok: true, draft });
   } catch (error) {

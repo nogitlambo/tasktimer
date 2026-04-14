@@ -85,11 +85,36 @@ export async function verifyFeedbackRequestUser(req: Request, body?: Record<stri
   try {
     const decodedToken = await getFirebaseAdminAuth().verifyIdToken(idToken);
     const uid = asString(decodedToken.uid, 120);
+    const email = asString(decodedToken.email, 320) || null;
     if (!uid) throw new Error("Missing uid.");
-    return { uid, idToken };
+    return { uid, email, idToken };
   } catch {
     throw new FeedbackApiError("feedback/invalid-session", "Your sign-in session is no longer valid. Please sign in again.", 401);
   }
+}
+
+export async function loadFeedbackAuthorProfile(uid: string) {
+  const normalizedUid = asString(uid, 120);
+  if (!normalizedUid) {
+    return {
+      displayName: null,
+      rankThumbnailSrc: null,
+      currentRankId: null,
+    };
+  }
+  const snap = await getFirebaseAdminDb().collection("users").doc(normalizedUid).get();
+  if (!snap.exists) {
+    return {
+      displayName: null,
+      rankThumbnailSrc: null,
+      currentRankId: null,
+    };
+  }
+  return {
+    displayName: asString(snap.get("displayName"), 120) || null,
+    rankThumbnailSrc: asString(snap.get("rankThumbnailSrc"), 2048) || null,
+    currentRankId: asString(snap.get("rewardCurrentRankId"), 120) || null,
+  };
 }
 
 function feedbackControlDoc(uid: string) {

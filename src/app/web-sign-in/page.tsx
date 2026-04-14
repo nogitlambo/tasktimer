@@ -215,7 +215,6 @@ function WebSignInPageContent() {
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser;
     const uid = String(user?.uid || authUserUid || "").trim();
-    const email = String(user?.email || authUserEmail || "").trim();
     if (!uid) return;
 
     let cancelled = false;
@@ -224,12 +223,13 @@ function WebSignInPageContent() {
       setAuthError("");
       setAuthStatus("Redirecting to secure checkout...");
       try {
+        const idToken = await user?.getIdToken();
+        if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
         const res = await fetch("/api/stripe/create-checkout-session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
             uid,
-            email,
           }),
         });
         const data = (await res.json()) as { url?: string; error?: string };
@@ -250,7 +250,7 @@ function WebSignInPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [authUserEmail, authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout]);
+  }, [authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

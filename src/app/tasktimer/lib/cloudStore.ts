@@ -259,10 +259,6 @@ function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): strin
   return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
 }
 
-function emailLookupDocKey(email: string): string {
-  return encodeURIComponent(normalizeEmail(email));
-}
-
 function sanitizeUsernameCandidate(raw: unknown): string {
   const value = String(raw || "").trim().toLowerCase();
   if (!value) return "";
@@ -332,39 +328,39 @@ async function claimMissingUsername(uid: string): Promise<void> {
   }
 }
 
-async function upsertUserEmailLookup(uid: string): Promise<void> {
-  const db = dbOrNull();
-  if (!db || !uid) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Skipping userEmailLookup write", {
-        hasDb: !!db,
-        uid,
-      });
-    }
-    return;
-  }
+async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string | null; displayName?: string | null }): Promise<void> {
+  if (!uid) return;
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
-  const authEmail = normalizeEmail(currentUser?.email);
-  if (!authEmail) return;
-  const authDisplayName = currentUser?.displayName == null ? null : String(currentUser.displayName || "").trim() || null;
+  const idToken = await currentUser?.getIdToken();
+  const authDisplayName =
+    options?.displayName !== undefined
+      ? options.displayName
+      : currentUser?.displayName == null
+        ? null
+        : String(currentUser.displayName || "").trim() || null;
+  if (!idToken) return;
   try {
-    await setDoc(
-      doc(db, "userEmailLookup", emailLookupDocKey(authEmail)),
-      {
-        uid,
-        email: authEmail,
-        displayName: authDisplayName,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+    const response = await fetch("/api/account/sync-identity", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-firebase-auth": idToken,
       },
-      { merge: true }
-    );
+      body: JSON.stringify({
+        prevEmail: options?.prevEmail || null,
+        displayName: authDisplayName,
+      }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(String(payload.error || "Could not sync user identity lookup."));
+    }
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[tasktimer-cloud] Failed to write userEmailLookup", {
+      console.error("[tasktimer-cloud] Failed to sync account identity index", {
         uid,
-        email: authEmail,
+        prevEmail: options?.prevEmail || null,
         error: describeError(error),
       });
     }
@@ -449,14 +445,6 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
     schemaVersion: 1,
   };
 
-  if (prevEmail && authEmail && prevEmail !== authEmail) {
-    try {
-      await deleteDoc(doc(db, "userEmailLookup", emailLookupDocKey(prevEmail)));
-    } catch {
-      // Best-effort cleanup; stale lookup removal should not block profile updates.
-    }
-  }
-
   try {
     if (unsupportedKeys.length && process.env.NODE_ENV !== "production") {
       console.warn("[tasktimer-cloud] Sanitizing legacy user root fields before write", {
@@ -469,6 +457,17 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
     } else {
       await setDoc(root, payload, { merge: true });
     }
+    await syncUserIdentityIndex(uid, {
+      prevEmail: prevEmail || null,
+      displayName: authDisplayName,
+    }).catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[tasktimer-cloud] Continuing without account identity sync", {
+          uid,
+          error: describeError(error),
+        });
+      }
+    });
     return { wrote: true, rootReadable: true };
   } catch (error) {
     const failureContext = String(options?.failureContext || "User root write").trim() || "User root write";
@@ -852,15 +851,15 @@ async function upsertUserRoot(uid: string): Promise<UserRootWriteResult> {
 export async function ensureUserProfileIndex(uid: string): Promise<void> {
   if (!uid) return;
   try {
-    await upsertUserEmailLookup(uid);
+    await syncUserIdentityIndex(uid);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Continuing without email lookup bootstrap", {
+      console.warn("[tasktimer-cloud] Continuing without account identity bootstrap", {
         uid,
         error: describeError(error),
       });
     }
-    // Email lookup bootstrap is best-effort and should not block workspace hydration.
+    // Account identity bootstrap is best-effort and should not block workspace hydration.
   }
   let rootReadable = false;
   try {

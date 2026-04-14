@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
+import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "@/app/api/shared/auth";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -9,12 +10,8 @@ function asString(value: unknown) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const uid = asString(body.uid);
+    const { uid } = await verifyFirebaseRequestUser(req, body);
     const returnPath = asString(body.returnPath) || "/settings?pane=general";
-
-    if (!uid) {
-      return NextResponse.json({ error: "A valid user id is required." }, { status: 400 });
-    }
 
     const db = getFirebaseAdminDb();
     const userSnap = await db.collection("users").doc(uid).get();
@@ -36,8 +33,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    const message =
-      error instanceof Error && error.message ? error.message : "Could not create billing portal session.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof Error && "status" in error) {
+      return createApiAuthErrorResponse(error, "Could not create billing portal session.");
+    }
+    return createApiInternalErrorResponse(
+      error,
+      "Could not create billing portal session.",
+      "[api/stripe/create-billing-portal-session] Request failed"
+    );
   }
 }

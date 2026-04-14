@@ -16,6 +16,7 @@ const buildDraft = vi.fn((seed: Omit<ArchieRecommendationDraft, "id" | "createdA
 }));
 const buildArchieQueryResponse = vi.fn();
 const maybeRefineArchieResponse = vi.fn();
+const maybeGenerateArchieDraftSeed = vi.fn();
 
 vi.mock("../shared", () => ({
   verifyArchieRequestUser,
@@ -43,6 +44,7 @@ vi.mock("@/app/tasktimer/lib/archieEngine", () => ({
 
 vi.mock("@/app/tasktimer/lib/archieModel", () => ({
   maybeRefineArchieResponse,
+  maybeGenerateArchieDraftSeed,
 }));
 
 function createDraft(): ArchieRecommendationDraft {
@@ -111,6 +113,7 @@ describe("POST /api/archie/query", () => {
     buildDraft.mockClear();
     buildArchieQueryResponse.mockReset();
     maybeRefineArchieResponse.mockReset();
+    maybeGenerateArchieDraftSeed.mockReset();
   });
 
   it("returns deterministic product answers for Free users without Genkit refinement", async () => {
@@ -168,25 +171,52 @@ describe("POST /api/archie/query", () => {
 
   it("allows Pro users to save drafts and use Genkit refinement", async () => {
     const baseResponse = createWorkflowResponse();
-    const refinedResponse = { ...baseResponse, message: "Refined workflow answer." };
+    const generatedSeed = {
+      kind: "schedule_adjustment" as const,
+      summary: "AI-planned draft summary",
+      reasoning: "AI draft reasoning",
+      evidence: ["AI evidence"],
+      proposedChanges: [],
+    };
+    const generatedDraft = {
+      ...generatedSeed,
+      id: "draft-built",
+      createdAt: 123,
+      status: "draft" as const,
+    };
     loadArchieUserPlan.mockResolvedValue("pro");
     buildArchieQueryResponse.mockReturnValue(baseResponse);
-    maybeRefineArchieResponse.mockResolvedValue(refinedResponse);
+    maybeGenerateArchieDraftSeed.mockResolvedValue(generatedSeed);
+    maybeRefineArchieResponse.mockResolvedValue({ ...generatedDraft, mode: "workflow_advice" } as unknown as ArchieQueryResponse);
 
     const { POST } = await import("./route");
     const response = await POST(createRequest("What should I work on next?"));
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(saveArchieDraft).toHaveBeenCalledWith("user-1", baseResponse.draft);
+    expect(maybeGenerateArchieDraftSeed).toHaveBeenCalledWith({
+      userMessage: "What should I work on next?",
+      context: {},
+      fallbackSeed: {
+        kind: baseResponse.draft!.kind,
+        summary: baseResponse.draft!.summary,
+        reasoning: baseResponse.draft!.reasoning,
+        evidence: baseResponse.draft!.evidence,
+        proposedChanges: baseResponse.draft!.proposedChanges,
+        sessionId: baseResponse.draft!.sessionId,
+      },
+    });
+    expect(saveArchieDraft).toHaveBeenCalledWith("user-1", expect.objectContaining({ id: "draft-built" }));
     expect(maybeRefineArchieResponse).toHaveBeenCalledWith({
       userMessage: "What should I work on next?",
-      baseResponse,
-      draft: baseResponse.draft,
+      baseResponse: expect.objectContaining({
+        draftId: "draft-built",
+        draft: expect.objectContaining({ id: "draft-built", summary: "AI-planned draft summary" }),
+      }),
+      draft: expect.objectContaining({ id: "draft-built", summary: "AI-planned draft summary" }),
     });
     expect(writeArchieSession).toHaveBeenCalled();
-    expect(attachArchieDraftSession).toHaveBeenCalledWith("user-1", "draft-1", "session-1");
-    expect(json.message).toBe("Refined workflow answer.");
+    expect(attachArchieDraftSession).toHaveBeenCalledWith("user-1", "draft-built", "session-1");
     expect(json.sessionId).toBe("session-1");
   });
 });

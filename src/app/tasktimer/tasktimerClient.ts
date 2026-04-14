@@ -89,6 +89,7 @@ import {
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { applyScheduledPushAction } from "./lib/pushFunctions";
 import { getTaskTimerPushDeviceId, loadPendingPushAction } from "./lib/pushNotifications";
+import { getMovedScheduleDayValue, getSchedulePlacementDays, isRecurringDailyScheduleTask } from "./lib/schedule-placement";
 
 const ARCHITECT_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
@@ -1991,6 +1992,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return `${minutes}m`;
   }
 
+  function formatScheduleDayLabel(day: (typeof SCHEDULE_DAY_ORDER)[number]) {
+    return SCHEDULE_DAY_LABELS[day] || day;
+  }
+
   function snapScheduleMinutes(totalMinutes: number) {
     return Math.max(
       0,
@@ -2077,6 +2082,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   }
 
+  function schedulePlacementHasOverlapOnAnyDay(
+    taskId: string,
+    days: Array<(typeof SCHEDULE_DAY_ORDER)[number]>,
+    startMinutes: number,
+    durationMinutes: number
+  ) {
+    return days.some((day) => schedulePlacementHasOverlap(taskId, day, startMinutes, durationMinutes));
+  }
+
   function moveTaskOnSchedule(taskIdRaw: string, dayRaw: unknown, rawMinutes: number) {
     const taskId = String(taskIdRaw || "").trim();
     const day = normalizeScheduleDay(dayRaw);
@@ -2087,8 +2101,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     const durationMinutes = getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
-    if (schedulePlacementHasOverlap(taskId, day, startMinutes, durationMinutes)) return;
-    task.plannedStartDay = day;
+    const placementDays = getSchedulePlacementDays(task, day);
+    if (schedulePlacementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, durationMinutes)) return;
+    task.plannedStartDay = getMovedScheduleDayValue(task, day);
     task.plannedStartTime = formatScheduleStoredTime(startMinutes);
     task.plannedStartOpenEnded = false;
     scheduleSelectedDay = day;
@@ -2109,13 +2124,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     if (!task) return null;
     const durationMinutes = getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return null;
+    const placementDays = getSchedulePlacementDays(task, scheduleDragPreviewDay);
     return {
       taskId,
       task,
       day: scheduleDragPreviewDay,
       startMinutes: scheduleDragPreviewStartMinutes,
       durationMinutes,
-      hasOverlap: schedulePlacementHasOverlap(taskId, scheduleDragPreviewDay, scheduleDragPreviewStartMinutes, durationMinutes),
+      hasOverlap: schedulePlacementHasOverlapOnAnyDay(
+        taskId,
+        placementDays,
+        scheduleDragPreviewStartMinutes,
+        durationMinutes
+      ),
     };
   }
 
@@ -2148,12 +2169,27 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
             const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
             const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
             const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
-            return `<button class="scheduleTaskCard${shortClass}" draggable="true" data-schedule-task-id="${escapeHtmlUI(
+            const recurringTask = isRecurringDailyScheduleTask(entry.task);
+            const recurringAction = recurringTask
+              ? `<button class="iconBtn scheduleTaskCardConvertBtn" data-schedule-convert-single-day="${escapeHtmlUI(
+                  String(entry.task.id || "")
+                )}" data-schedule-convert-day="${day}" type="button" aria-label="${escapeHtmlUI(
+                  `Convert ${String(entry.task.name || "Task")} to a single-day task on ${formatScheduleDayLabel(day)}`
+                )}" title="Convert this recurring task to ${formatScheduleDayLabel(day)} only">Single day</button>`
+              : "";
+            const recurringBadge = recurringTask
+              ? `<span class="scheduleTaskCardRecurringBadge" aria-label="Repeats daily">Daily</span>`
+              : "";
+            return `<div class="scheduleTaskCard${shortClass}" draggable="true" data-schedule-task-id="${escapeHtmlUI(
               String(entry.task.id || "")
-            )}" type="button" style="top:${topPx}px;height:${heightPx}px">
+            )}" style="top:${topPx}px;height:${heightPx}px">
+              <div class="scheduleTaskCardTopRow">
+                ${recurringBadge}
+                ${recurringAction}
+              </div>
               <span class="scheduleTaskCardName">${escapeHtmlUI(entry.task.name || "Task")}</span>
               <span class="scheduleTaskCardMeta">${escapeHtmlUI(metaText)}</span>
-            </button>`;
+            </div>`;
           })
           .join("");
         const previewCard =
@@ -2871,6 +2907,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
     registerAppShellEvents();
     on(document as any, "click", (e: any) => {
+      const convertButton = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-convert-single-day]") as HTMLElement | null;
+      if (convertButton) {
+        const taskId = String(convertButton.dataset.scheduleConvertSingleDay || "").trim();
+        const day = normalizeScheduleDay(convertButton.dataset.scheduleConvertDay);
+        const task = tasks.find((entry) => String(entry.id || "") === taskId);
+        if (!taskId || !day || !task || !isRecurringDailyScheduleTask(task)) return;
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        confirm(
+          "Convert To Single Day",
+          `Limit ${task.name || "this task"} to ${formatScheduleDayLabel(day)} only? Its current start time will stay the same.`,
+          {
+            okLabel: "Convert",
+            cancelLabel: "Cancel",
+            onOk: () => {
+              task.plannedStartDay = day;
+              task.plannedStartOpenEnded = false;
+              scheduleSelectedDay = day;
+              save();
+              render();
+              closeConfirm();
+            },
+            onCancel: () => closeConfirm(),
+          }
+        );
+        return;
+      }
       const dayButton = (e?.target as HTMLElement | null)?.closest?.("[data-schedule-day]") as HTMLElement | null;
       if (!dayButton) return;
       const day = normalizeScheduleDay(dayButton.dataset.scheduleDay);

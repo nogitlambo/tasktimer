@@ -1,22 +1,21 @@
 import type { TaskTimerConfirmOptions, TaskTimerConfirmOverlayContext } from "./context";
+import { getVisibleOverlays, hideOverlay, showOverlay } from "./overlay-visibility";
 
 export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContext) {
   const { els } = ctx;
   let confirmDangerMatchValue = "";
 
   function openOverlay(overlay: HTMLElement | null) {
-    if (!overlay) return;
-    overlay.style.display = "flex";
+    showOverlay(overlay);
   }
 
   function closeOverlay(overlay: HTMLElement | null) {
-    if (!overlay) return;
     try {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     } catch {
       // ignore
     }
-    overlay.style.display = "none";
+    hideOverlay(overlay);
   }
 
   function syncConfirmPrimaryToggleUi() {
@@ -116,11 +115,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
 
     syncConfirmDangerInputUi();
 
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "flex";
+    showOverlay(els.confirmOverlay as HTMLElement | null);
   }
 
   function closeConfirm() {
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).style.display = "none";
+    hideOverlay(els.confirmOverlay as HTMLElement | null);
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
@@ -167,10 +166,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   }
 
   function closeTopOverlayIfOpen() {
-    const openOverlays = Array.from(document.querySelectorAll(".overlay")).filter((el) => {
-      const node = el as HTMLElement;
-      return getComputedStyle(node).display !== "none";
-    }) as HTMLElement[];
+    const openOverlays = getVisibleOverlays(document);
     if (!openOverlays.length) return false;
     const top = openOverlays[openOverlays.length - 1];
     if (top.id === "editOverlay") {

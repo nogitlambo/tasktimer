@@ -5,6 +5,7 @@ import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerSessionContext } from "./context";
+import { getDelegatedAction } from "./delegated-actions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1250,11 +1251,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       await resolveTimeGoalCompletion(task, { logHistory: true });
     });
     ctx.on(els.checkpointToastHost, "click", (e: any) => {
-      const btn = e.target?.closest?.("[data-action]");
-      if (!btn) return;
-      const action = btn.getAttribute("data-action");
-      if (action === "closeCheckpointToast") dismissCheckpointToast({ manual: true });
-      else if (action === "jumpToCheckpointTask") dismissCheckpointToastAndJumpToTask();
+      const delegatedAction = getDelegatedAction(e.target, "data-action");
+      if (!delegatedAction) return;
+      const actionHandlers: Record<string, () => void> = {
+        closeCheckpointToast: () => dismissCheckpointToast({ manual: true }),
+        jumpToCheckpointTask: () => dismissCheckpointToastAndJumpToTask(),
+      };
+      actionHandlers[delegatedAction.action]?.();
     });
   }
 

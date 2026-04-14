@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
+import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "@/app/api/shared/auth";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -9,12 +10,7 @@ function asString(value: unknown) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const uid = asString(body.uid);
-    const email = asString(body.email);
-
-    if (!uid) {
-      return NextResponse.json({ error: "A valid user id is required." }, { status: 400 });
-    }
+    const { uid, email } = await verifyFirebaseRequestUser(req, body);
 
     const priceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
     if (!priceId) {
@@ -46,7 +42,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    const message = error instanceof Error && error.message ? error.message : "Could not create checkout session.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof Error && "status" in error) {
+      return createApiAuthErrorResponse(error, "Could not create checkout session.");
+    }
+    return createApiInternalErrorResponse(
+      error,
+      "Could not create checkout session.",
+      "[api/stripe/create-checkout-session] Request failed"
+    );
   }
 }

@@ -6,6 +6,9 @@
     "database": "timebase",
     "rules": "firestore.rules"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "apphosting": {
     "backendId": "tasktimer",
     "rootDir": "/",

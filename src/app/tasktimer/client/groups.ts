@@ -19,6 +19,7 @@ import {
 import { getCalendarWeekStartMs } from "../lib/history";
 import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import type { TaskTimerGroupsContext } from "./context";
+import { hideOverlay, showOverlay } from "./overlay-visibility";
 
 type GroupsBusyResult<T> =
   | { ok: true; value: T; timedOut: false }
@@ -72,8 +73,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       ctx.showUpgradePrompt("Friends and sharing", "pro");
       return;
     }
-    if (!els.friendRequestModal) return;
-    (els.friendRequestModal as HTMLElement).style.display = "flex";
+    showOverlay(els.friendRequestModal as HTMLElement | null);
     if (els.friendRequestEmailInput) els.friendRequestEmailInput.value = "";
     setFriendRequestModalStatus("");
     window.setTimeout(() => {
@@ -86,8 +86,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function closeFriendRequestModal() {
-    if (!els.friendRequestModal) return;
-    (els.friendRequestModal as HTMLElement).style.display = "none";
+    hideOverlay(els.friendRequestModal as HTMLElement | null);
     setFriendRequestModalStatus("");
   }
 
@@ -111,8 +110,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function closeFriendProfileModal() {
-    if (!els.friendProfileModal) return;
-    (els.friendProfileModal as HTMLElement).style.display = "none";
+    hideOverlay(els.friendProfileModal as HTMLElement | null);
     ctx.setActiveFriendProfileUid(null);
     ctx.setActiveFriendProfileName("");
   }
@@ -184,7 +182,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
     ctx.setActiveFriendProfileUid(row.peerUid);
     ctx.setActiveFriendProfileName(row.alias);
-    (els.friendProfileModal as HTMLElement).style.display = "flex";
+    showOverlay(els.friendProfileModal as HTMLElement | null);
   }
 
   function getTaskCreatedAtMs(taskId: string): number | null {

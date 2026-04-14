@@ -113,7 +113,7 @@ function formatPlannedSlot(day: string | null | undefined, time: string | null |
   }
   if (day && time) return `${day.toUpperCase()} at ${time}`;
   if (day) return `${day.toUpperCase()}`;
-  if (time) return `${time}`;
+  if (time) return `Every day at ${time}`;
   return "no scheduled start";
 }
 

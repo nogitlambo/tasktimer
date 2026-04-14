@@ -2,6 +2,8 @@ import { escapeRegExp, newTaskId } from "../lib/ids";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerTasksContext } from "./context";
+import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
+import { buildTaskProgressModel, renderTaskProgressHtml } from "./task-card-view-model";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -68,10 +70,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
       const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
       const msSorted = hasMilestones ? ctx.sortMilestones(t.milestones) : [];
-      const maxValue = hasMilestones ? Math.max(...msSorted.map((m) => +m.hours || 0), 0) : 0;
       const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
-      const maxSec = Math.max(maxValue * sharedTasks.milestoneUnitSec(t), timeGoalSec, 1);
-      const pct = hasMilestones || hasTimeGoal ? Math.min((elapsedSec / maxSec) * 100, 100) : 0;
 
       const taskEl = document.createElement("div");
       const taskId = String(t.id || "");
@@ -88,49 +87,19 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       taskEl.setAttribute("draggable", "true");
 
       const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
-      let progressHTML = "";
-      if (hasMilestones || hasTimeGoal) {
-        let markers = "";
-        const unitSuffix = sharedTasks.milestoneUnitSuffix(t);
-        markers += `
-          <div class="mkLine" style="left:0%"></div>
-          <div class="mkTime mkAch mkEdgeL" style="left:0%">0${unitSuffix}</div>`;
-        const nextPendingIndex = msSorted.findIndex((m) => elapsedSec < (+m.hours || 0) * sharedTasks.milestoneUnitSec(t));
-        const labelTargetIndex = nextPendingIndex >= 0 ? nextPendingIndex : Math.max(0, msSorted.length - 1);
-        msSorted.forEach((m, msIdx) => {
-          const val = +m.hours || 0;
-          const secTarget = val * sharedTasks.milestoneUnitSec(t);
-          const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
-          const reached = elapsedSec >= secTarget;
-          const cls = reached ? "mkAch" : "mkPend";
-          const label = `${val}${unitSuffix}`;
-          const desc = (m.description || "").trim();
-          const edgeCls = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
-          const leftPos = edgeCls === "mkEdgeL" ? 0 : edgeCls === "mkEdgeR" ? 100 : left;
-          const wrapCls = edgeCls && label.length > 8 ? "mkWrap8" : "";
-          const showCheckpointLabel = msIdx === labelTargetIndex;
-          markers += `
-            <div class="mkFlag ${cls}" style="left:${leftPos}%"></div>
-            ${showCheckpointLabel ? `<div class="mkTime ${cls} ${edgeCls} ${wrapCls}" style="left:${leftPos}%">${ctx.escapeHtmlUI(label)}</div>` : ``}
-            ${showCheckpointLabel && desc ? `<div class="mkDesc ${cls} ${edgeCls}" style="left:${leftPos}%">${ctx.escapeHtmlUI(desc)}</div>` : ``}`;
-        });
-        if (hasTimeGoal) {
-          const goalLeft = Math.max(0, Math.min((timeGoalSec / maxSec) * 100, 100));
-          const goalEdgeCls = goalLeft <= 1 ? "mkEdgeL" : goalLeft >= 99 ? "mkEdgeR" : "";
-          const goalLeftPos = goalEdgeCls === "mkEdgeL" ? 0 : goalEdgeCls === "mkEdgeR" ? 100 : goalLeft;
-          markers += `
-            <div class="mkFlag mkGoal ${elapsedSec >= timeGoalSec ? "mkAch" : "mkPend"} ${goalEdgeCls}" style="left:${goalLeftPos}%"></div>`;
-        }
-        progressHTML = `
-          <div class="progressRow">
-            <div class="progressWrap">
-              <div class="progressTrack">
-                <div class="progressFill" style="width:${pct}%;background:${ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(pct) : ctx.getModeColor("mode1")}"></div>
-                ${markers}
-              </div>
-            </div>
-          </div>`;
-      }
+      const progressModel = buildTaskProgressModel({
+        milestones: msSorted,
+        elapsedSec,
+        milestoneUnitSec: sharedTasks.milestoneUnitSec(t),
+        unitSuffix: sharedTasks.milestoneUnitSuffix(t),
+        timeGoalSec,
+      });
+      const progressHTML = renderTaskProgressHtml(progressModel, {
+        fillColor: ctx.getDynamicColorsEnabled()
+          ? ctx.fillBackgroundForPct(progressModel?.pct || 0)
+          : ctx.getModeColor("mode1"),
+        escapeHtml: ctx.escapeHtmlUI,
+      });
 
       const showHistory = openHistoryTaskIds.has(taskId);
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
@@ -474,63 +443,67 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     const i = parseInt(taskEl.dataset.index, 10);
     if (!Number.isFinite(i)) return;
     const taskId = String(taskEl.dataset.taskId || "").trim();
-    const flipBtn = e.target?.closest?.("[data-task-flip]") as HTMLElement | null;
+    const flipBtn = findDelegatedElement(e.target, "[data-task-flip]");
     if (flipBtn && taskId) {
       e?.preventDefault?.();
       e?.stopPropagation?.();
       ctx.setTaskFlipped(taskId, flipBtn.getAttribute("data-task-flip") === "open", taskEl as HTMLElement);
       return;
     }
-    const btn = e.target?.closest?.("[data-action]");
-    if (!btn) {
-      const inTopRow = !!e.target?.closest?.(".row");
-      const inActions = !!e.target?.closest?.(".actions");
+    const delegatedAction = getDelegatedAction(e.target, "data-action");
+    if (!delegatedAction) {
+      const inTopRow = !!findDelegatedElement(e.target, ".row");
+      const inActions = !!findDelegatedElement(e.target, ".actions");
       if (inTopRow && !inActions) ctx.openFocusMode(i);
       return;
     }
-    const action = btn.getAttribute("data-action");
+    const { action } = delegatedAction;
     if ((action === "shareTask" || action === "unshareTask") && !canUseSocialFeatures()) {
       ctx.showUpgradePrompt("Task sharing and friends", "pro");
       return;
     }
-    if (action === "start") startTask(i);
-    else if (action === "stop") stopTask(i);
-    else if (action === "reset") resetTask(i);
-    else if (action === "delete") ctx.deleteTask(i);
-    else if (action === "edit") ctx.openEdit(i);
-    else if (action === "history") openHistory(i);
-    else if (action === "duplicate") duplicateTask(i);
-    else if (action === "editName" || action === "focus") ctx.openFocusMode(i);
-    else if (action === "collapse") toggleCollapse(i);
-    else if (action === "exportTask") ctx.openTaskExportModal(i);
-    else if (action === "shareTask") ctx.openShareTaskModal(i);
-    else if (action === "unshareTask") {
-      const t = ctx.getTasks()[i];
-      if (!t) return;
-      ctx.confirm("Unshare Task", "Unshare this task from all friends?", {
-        okLabel: "Unshare",
-        cancelLabel: "Cancel",
-        onOk: () => {
-          const uid = ctx.currentUid();
-          if (!uid) {
-            ctx.closeConfirm();
-            return;
-          }
-          void ctx
-            .deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
-            .then(async () => {
-              await ctx.refreshOwnSharedSummaries();
-              if (ctx.getCurrentAppPage() === "test2") await ctx.refreshGroupsData();
-              ctx.render();
-            })
-            .finally(() => ctx.closeConfirm());
-        },
-      });
-    } else if (action === "muteCheckpointAlert") {
-      if (taskId) ctx.broadcastCheckpointAlertMute(taskId);
-      ctx.stopCheckpointRepeatAlert();
-      return;
-    }
+    const actionHandlers: Record<string, () => void> = {
+      start: () => startTask(i),
+      stop: () => stopTask(i),
+      reset: () => resetTask(i),
+      delete: () => ctx.deleteTask(i),
+      edit: () => ctx.openEdit(i),
+      history: () => openHistory(i),
+      duplicate: () => duplicateTask(i),
+      editName: () => ctx.openFocusMode(i),
+      focus: () => ctx.openFocusMode(i),
+      collapse: () => toggleCollapse(i),
+      exportTask: () => ctx.openTaskExportModal(i),
+      shareTask: () => ctx.openShareTaskModal(i),
+      unshareTask: () => {
+        const t = ctx.getTasks()[i];
+        if (!t) return;
+        ctx.confirm("Unshare Task", "Unshare this task from all friends?", {
+          okLabel: "Unshare",
+          cancelLabel: "Cancel",
+          onOk: () => {
+            const uid = ctx.currentUid();
+            if (!uid) {
+              ctx.closeConfirm();
+              return;
+            }
+            void ctx
+              .deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
+              .then(async () => {
+                await ctx.refreshOwnSharedSummaries();
+                if (ctx.getCurrentAppPage() === "test2") await ctx.refreshGroupsData();
+                ctx.render();
+              })
+              .finally(() => ctx.closeConfirm());
+          },
+        });
+      },
+      muteCheckpointAlert: () => {
+        if (taskId) ctx.broadcastCheckpointAlertMute(taskId);
+        ctx.stopCheckpointRepeatAlert();
+      },
+    };
+    actionHandlers[action]?.();
     if (taskId) ctx.setTaskFlipped(taskId, false, taskEl as HTMLElement);
   }
 

@@ -25,6 +25,11 @@ type TaskInsight = {
   totalMs: number;
   lastLoggedAtMs: number;
   recentWeekMs: number;
+  recent30dMs: number;
+  recent90dMs: number;
+  activeDays30d: number;
+  sessionCount30d: number;
+  sessionCount90d: number;
   note: string;
   completionDifficulty?: CompletionDifficulty;
 };
@@ -33,6 +38,15 @@ type ProductivitySlot = {
   day: NonNullable<Task["plannedStartDay"]>;
   hour: number;
   totalMs: number;
+};
+
+type TaskSchedulePattern = {
+  task: Task;
+  averageStartMinutes: number;
+  averageDurationMinutes: number;
+  averageEndMinutes: number;
+  activeDays30d: number;
+  sessionCount30d: number;
 };
 
 function normalizeQuestion(value: string) {
@@ -52,6 +66,17 @@ function humanJoin(values: string[]) {
 function formatHour(hour: number) {
   const clamped = Math.max(0, Math.min(23, Math.floor(Number(hour) || 0)));
   return `${String(clamped).padStart(2, "0")}:00`;
+}
+
+function formatTimeOfDay(totalMinutes: number) {
+  const clamped = Math.max(0, Math.min(24 * 60 - 1, Math.round(Number(totalMinutes) || 0)));
+  const hour = Math.floor(clamped / 60);
+  const minute = clamped % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function snapMinutesToQuarterHour(totalMinutes: number) {
+  return Math.max(0, Math.min(24 * 60 - 15, Math.round(Math.max(0, totalMinutes) / 15) * 15));
 }
 
 function getEstimatedDurationMinutes(task: Task) {
@@ -77,11 +102,18 @@ function plannedStartMinutes(task: Task) {
 function buildTaskInsights(context: ArchieWorkspaceContext): TaskInsight[] {
   const now = Date.now();
   const recentWindowStart = now - 7 * 24 * 60 * 60 * 1000;
+  const trailing30dStart = now - 30 * 24 * 60 * 60 * 1000;
+  const trailing90dStart = now - 90 * 24 * 60 * 60 * 1000;
   return context.tasks.map((task) => {
     const rows = Array.isArray(context.historyByTaskId[String(task.id || "")]) ? context.historyByTaskId[String(task.id || "")] : [];
     let totalMs = 0;
     let lastLoggedAtMs = 0;
     let recentWeekMs = 0;
+    let recent30dMs = 0;
+    let recent90dMs = 0;
+    let sessionCount30d = 0;
+    let sessionCount90d = 0;
+    const activeDays30d = new Set<string>();
     const recentDifficulties: CompletionDifficulty[] = [];
     let latestDifficultyTs = 0;
     let latestDifficultyValue: CompletionDifficulty | undefined;
@@ -92,6 +124,15 @@ function buildTaskInsights(context: ArchieWorkspaceContext): TaskInsight[] {
       totalMs += ms;
       if (ts > lastLoggedAtMs) lastLoggedAtMs = ts;
       if (ts >= recentWindowStart) recentWeekMs += ms;
+      if (ts >= trailing30dStart) {
+        recent30dMs += ms;
+        sessionCount30d += 1;
+        activeDays30d.add(new Date(ts).toISOString().slice(0, 10));
+      }
+      if (ts >= trailing90dStart) {
+        recent90dMs += ms;
+        sessionCount90d += 1;
+      }
       if (completionDifficulty) {
         if (ts >= recentWindowStart) recentDifficulties.push(completionDifficulty);
         if (ts > latestDifficultyTs) {
@@ -108,10 +149,197 @@ function buildTaskInsights(context: ArchieWorkspaceContext): TaskInsight[] {
       totalMs,
       lastLoggedAtMs,
       recentWeekMs,
+      recent30dMs,
+      recent90dMs,
+      activeDays30d: activeDays30d.size,
+      sessionCount30d,
+      sessionCount90d,
       note: String(context.focusSessionNotesByTaskId[String(task.id || "")] || "").trim(),
       completionDifficulty: normalizeCompletionDifficulty(averageRecentDifficulty) || latestDifficultyValue,
     };
   });
+}
+
+function buildTaskSchedulePatterns(context: ArchieWorkspaceContext): TaskSchedulePattern[] {
+  const now = Date.now();
+  const trailing30dStart = now - 30 * 24 * 60 * 60 * 1000;
+  return context.tasks
+    .map((task) => {
+      const rows = Array.isArray(context.historyByTaskId[String(task.id || "")]) ? context.historyByTaskId[String(task.id || "")] : [];
+      const eligibleRows = rows.filter((row) => {
+        const ts = Math.max(0, Math.floor(Number(row?.ts || 0)));
+        const ms = Math.max(0, Math.floor(Number(row?.ms || 0)));
+        return ts >= trailing30dStart && ms > 0;
+      });
+      if (!eligibleRows.length) return null;
+      const activeDays = new Set<string>();
+      const totalStartMinutes = eligibleRows.reduce((sum, row) => {
+        const startedAt = new Date(Math.floor(Number(row.ts || 0)));
+        activeDays.add(startedAt.toISOString().slice(0, 10));
+        return sum + startedAt.getHours() * 60 + startedAt.getMinutes();
+      }, 0);
+      const totalDurationMinutes = eligibleRows.reduce((sum, row) => sum + Math.max(1, Number(row.ms || 0) / 60000), 0);
+      const averageStartMinutes = snapMinutesToQuarterHour(totalStartMinutes / eligibleRows.length);
+      const averageDurationMinutes = Math.max(15, snapMinutesToQuarterHour(totalDurationMinutes / eligibleRows.length));
+      return {
+        task,
+        averageStartMinutes,
+        averageDurationMinutes,
+        averageEndMinutes: Math.min(24 * 60, averageStartMinutes + averageDurationMinutes),
+        activeDays30d: activeDays.size,
+        sessionCount30d: eligibleRows.length,
+      } satisfies TaskSchedulePattern;
+    })
+    .filter((entry): entry is TaskSchedulePattern => !!entry);
+}
+
+function averageWeeklyMinutesOverTrailing90d(entry: TaskInsight) {
+  return entry.recent90dMs / 60000 / Math.max(1, 90 / 7);
+}
+
+function currentWeeklyMinutes(entry: TaskInsight) {
+  return entry.recentWeekMs / 60000;
+}
+
+function underServiceScore(entry: TaskInsight) {
+  const currentWeekly = currentWeeklyMinutes(entry);
+  const trailingWeekly = averageWeeklyMinutesOverTrailing90d(entry);
+  const recent30dWeekly = entry.recent30dMs / 60000 / Math.max(1, 30 / 7);
+  const expectedWeekly = Math.max(trailingWeekly, recent30dWeekly, 1);
+  const dropRatio = currentWeekly / expectedWeekly;
+  const inactivityPenalty = entry.lastLoggedAtMs > 0 ? Math.min(60, Math.max(0, (Date.now() - entry.lastLoggedAtMs) / (24 * 60 * 60 * 1000))) : 60;
+  const consistencyPenalty = Math.max(0, 12 - entry.activeDays30d);
+  const sessionPenalty = Math.max(0, 10 - entry.sessionCount90d);
+  return (1 - Math.min(1, dropRatio)) * 100 + inactivityPenalty + consistencyPenalty + sessionPenalty;
+}
+
+function isSchedulePlanningQuery(question: string) {
+  return /(schedule|calendar|daily plan|plan my day|workflow revamp|rebuild my workflow|full revamp|routine|based on .*30 days|based on .*90 days)/i.test(
+    question
+  );
+}
+
+function hasScheduleOverlapForSnapshot(
+  tasks: Task[],
+  candidateTaskId: string,
+  snapshot: { plannedStartDay: Task["plannedStartDay"]; plannedStartTime: string | null; plannedStartOpenEnded: boolean },
+  durationMinutes: number,
+  overrides: Map<string, { plannedStartDay: Task["plannedStartDay"]; plannedStartTime: string | null; plannedStartOpenEnded: boolean }>
+) {
+  if (snapshot.plannedStartOpenEnded) return false;
+  const startMinutes = plannedStartMinutes({
+    id: candidateTaskId,
+    name: "",
+    order: 0,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestones: [],
+    hasStarted: false,
+    plannedStartTime: snapshot.plannedStartTime,
+  });
+  if (startMinutes == null) return false;
+  const candidateDays = snapshot.plannedStartDay ? [snapshot.plannedStartDay] : (["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const);
+  return tasks.some((task) => {
+    const taskId = String(task.id || "");
+    if (taskId === candidateTaskId) return false;
+    const source = overrides.get(taskId) || {
+      plannedStartDay: task.plannedStartDay || null,
+      plannedStartTime: task.plannedStartTime || null,
+      plannedStartOpenEnded: !!task.plannedStartOpenEnded,
+    };
+    if (source.plannedStartOpenEnded) return false;
+    const otherStartMinutes = plannedStartMinutes({
+      id: taskId,
+      name: "",
+      order: 0,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestones: [],
+      hasStarted: false,
+      plannedStartTime: source.plannedStartTime,
+    });
+    if (otherStartMinutes == null) return false;
+    const otherDays = source.plannedStartDay ? [source.plannedStartDay] : (["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const);
+    const overlapsAnyDay = candidateDays.some((day) => otherDays.includes(day));
+    if (!overlapsAnyDay) return false;
+    const otherDuration = getEstimatedDurationMinutes(task);
+    return startMinutes < otherStartMinutes + otherDuration && otherStartMinutes < startMinutes + durationMinutes;
+  });
+}
+
+function buildWorkflowRevampDraft(context: ArchieWorkspaceContext): DraftSeed | null {
+  const schedulePatterns = buildTaskSchedulePatterns(context)
+    .filter((entry) => entry.activeDays30d >= 4 || entry.sessionCount30d >= 6)
+    .sort((a, b) => {
+      if (a.averageStartMinutes !== b.averageStartMinutes) return a.averageStartMinutes - b.averageStartMinutes;
+      if (a.activeDays30d !== b.activeDays30d) return b.activeDays30d - a.activeDays30d;
+      return String(a.task.id || "").localeCompare(String(b.task.id || ""));
+    });
+
+  if (schedulePatterns.length < 2) return null;
+
+  const currentlyScheduledCount = context.tasks.filter((task) => !!String(task.plannedStartTime || "").trim()).length;
+  if (currentlyScheduledCount >= schedulePatterns.length) return null;
+
+  const overrides = new Map<string, { plannedStartDay: Task["plannedStartDay"]; plannedStartTime: string | null; plannedStartOpenEnded: boolean }>();
+  const changes: ArchieDraftChange[] = [];
+  const evidence: string[] = [];
+  let previousEndMinutes = 0;
+
+  schedulePatterns.forEach((pattern) => {
+    const startMinutes = Math.max(pattern.averageStartMinutes, previousEndMinutes);
+    const snappedStartMinutes = snapMinutesToQuarterHour(startMinutes);
+    const snapshot = {
+      plannedStartDay: null as Task["plannedStartDay"],
+      plannedStartTime: formatTimeOfDay(snappedStartMinutes),
+      plannedStartOpenEnded: false,
+    };
+    const durationMinutes = Math.max(15, pattern.averageDurationMinutes);
+    if (hasScheduleOverlapForSnapshot(context.tasks, String(pattern.task.id || ""), snapshot, durationMinutes, overrides)) {
+      return;
+    }
+    overrides.set(String(pattern.task.id || ""), snapshot);
+    previousEndMinutes = snappedStartMinutes + durationMinutes;
+    changes.push({
+      kind: "update_schedule",
+      taskId: String(pattern.task.id || ""),
+      taskName: String(pattern.task.name || "Task"),
+      before: {
+        plannedStartDay: pattern.task.plannedStartDay || null,
+        plannedStartTime: pattern.task.plannedStartTime || null,
+        plannedStartOpenEnded: !!pattern.task.plannedStartOpenEnded,
+      },
+      after: snapshot,
+    });
+    evidence.push(
+      `${pattern.task.name} averaged ${Math.round(pattern.averageDurationMinutes)} minutes, started around ${formatTimeOfDay(
+        pattern.averageStartMinutes
+      )}, and was active on ${pattern.activeDays30d} of the last 30 days.`
+    );
+  });
+
+  if (changes.length < 2) return null;
+
+  const summary = `I prepared a full schedule revamp based on your last 30 days, with daily task slots added for ${changes
+    .map((change) => change.taskName)
+    .slice(0, 3)
+    .join(", ")}${changes.length > 3 ? ", and the rest of your active workflow." : "."}`;
+
+  const reasoning = `Your schedule is currently sparse, but your last 30 days show repeatable start times and session lengths across multiple tasks. Instead of adding one isolated slot, this draft rebuilds your daily workflow around those repeated patterns so each active task has a clear place in the week.`;
+
+  return {
+    kind: "schedule_adjustment",
+    summary,
+    reasoning,
+    evidence,
+    proposedChanges: changes,
+  };
 }
 
 function buildBestProductivitySlot(context: ArchieWorkspaceContext): ProductivitySlot | null {
@@ -214,6 +442,16 @@ function buildDraftReasoning(input: {
 
   if (input.candidate.recentWeekMs <= 0) {
     lines.push(`It also has no logged time in the last 7 days, so the current flow is not naturally bringing you back to it.`);
+  } else if (input.candidate.recent90dMs > input.candidate.recentWeekMs) {
+    lines.push(
+      `Its last 7 days are running below its broader 90-day pattern, so Archie is treating it as under-served rather than inactive overall.`
+    );
+  }
+
+  if (input.candidate.activeDays30d > 0) {
+    lines.push(
+      `${taskName} was active on ${input.candidate.activeDays30d} day${input.candidate.activeDays30d === 1 ? "" : "s"} in the last 30 days.`
+    );
   }
 
   if (input.candidate.note) {
@@ -286,10 +524,20 @@ function buildKnowledgeResponse(question: string): ArchieQueryResponse | null {
   };
 }
 
-export function buildRecommendationDraft(context: ArchieWorkspaceContext): DraftSeed | null {
+export function buildRecommendationDraft(context: ArchieWorkspaceContext, question = ""): DraftSeed | null {
+  const normalizedQuestion = normalizeQuestion(question);
+  if (isSchedulePlanningQuery(normalizedQuestion)) {
+    const workflowRevampDraft = buildWorkflowRevampDraft(context);
+    if (workflowRevampDraft) return workflowRevampDraft;
+  }
   const sortedInsights = buildTaskInsights(context).sort((a, b) => {
     if (a.task.running !== b.task.running) return a.task.running ? -1 : 1;
+    const aScore = underServiceScore(a);
+    const bScore = underServiceScore(b);
+    if (aScore !== bScore) return bScore - aScore;
     if (a.recentWeekMs !== b.recentWeekMs) return a.recentWeekMs - b.recentWeekMs;
+    if (a.recent30dMs !== b.recent30dMs) return a.recent30dMs - b.recent30dMs;
+    if (a.recent90dMs !== b.recent90dMs) return a.recent90dMs - b.recent90dMs;
     const aDifficulty = a.completionDifficulty ?? 3;
     const bDifficulty = b.completionDifficulty ?? 3;
     if (aDifficulty !== bDifficulty) return aDifficulty - bDifficulty;
@@ -308,6 +556,11 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   }
   if (candidate.recentWeekMs <= 0) {
     evidence.push(`${candidate.task.name} has no logged time in the last 7 days.`);
+  } else if (candidate.recent90dMs > candidate.recentWeekMs) {
+    evidence.push(`${candidate.task.name} is below its broader 90-day activity pattern this week.`);
+  }
+  if (candidate.activeDays30d > 0) {
+    evidence.push(`${candidate.task.name} was active on ${candidate.activeDays30d} days in the last 30 days.`);
   }
   if (candidate.note) {
     evidence.push(`Recent focus note: "${noteSnippet(candidate.note)}"`);
@@ -398,7 +651,7 @@ export function buildArchieQueryResponse(
   }
 
   if (isAdviceQuery(normalized)) {
-    const seed = buildRecommendationDraft(context);
+    const seed = buildRecommendationDraft(context, normalized);
     if (!seed) return buildFallbackResponse();
     const draft = createDraft(seed);
     return {
