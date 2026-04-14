@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
-import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "@/app/api/shared/auth";
+import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";

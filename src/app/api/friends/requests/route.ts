@@ -1,8 +1,8 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
-import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "@/app/api/shared/auth";
-import { ApiRateLimitError, enforceUidRateLimit } from "@/app/api/shared/rateLimit";
+import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 function asString(value: unknown, maxLength = 0) {

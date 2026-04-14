@@ -1,7 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
-import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "@/app/api/shared/auth";
+import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 function asString(value: unknown, maxLength = 0) {
