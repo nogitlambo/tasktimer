@@ -26,6 +26,11 @@ import {
 import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./rewards";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeTimeOfDay,
+} from "./productivityPeriod";
 
 export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
@@ -793,6 +798,8 @@ export function buildDefaultCloudPreferences() {
     webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
+    optimalProductivityStartTime: DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+    optimalProductivityEndTime: DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Date.now(),
   };
@@ -970,6 +977,11 @@ function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]
 export function saveCloudPreferences(prefs: UserPreferencesV1) {
   cachedPreferences = {
     ...prefs,
+    optimalProductivityStartTime: normalizeTimeOfDay(
+      prefs?.optimalProductivityStartTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+    ),
+    optimalProductivityEndTime: normalizeTimeOfDay(prefs?.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
     rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
   };
   const uid = currentUid();

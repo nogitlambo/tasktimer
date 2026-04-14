@@ -1,4 +1,11 @@
 import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityPeriod,
+  timestampIsInProductivityPeriod,
+  type OptimalProductivityPeriod,
+} from "./productivityPeriod";
 
 export type InsightEntry = {
   ts: number;
@@ -13,6 +20,7 @@ export type FocusInsightsResult = {
   todayDeltaMs: number;
   weekDeltaMs: number;
   completionDifficultyLabel: string | null;
+  productivityPeriodMs: number;
 };
 
 function startOfTodayMs(nowTs: number): number {
@@ -29,14 +37,26 @@ function startOfWeekMs(refMs: number): number {
   return d.getTime();
 }
 
-export function computeFocusInsights(entries: InsightEntry[], nowTs: number): FocusInsightsResult {
+export function computeFocusInsights(
+  entries: InsightEntry[],
+  nowTs: number,
+  productivityPeriod?: Partial<OptimalProductivityPeriod>
+): FocusInsightsResult {
   const valid = (entries || []).filter((e) => Number.isFinite(+e?.ms) && Number.isFinite(+e?.ts));
   const bestMs = valid.length ? Math.max(...valid.map((e) => Math.max(0, +e.ms || 0))) : 0;
+  const normalizedProductivityPeriod = normalizeOptimalProductivityPeriod({
+    optimalProductivityStartTime: productivityPeriod?.startTime || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+    optimalProductivityEndTime: productivityPeriod?.endTime || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  });
 
   const byWeekday = new Array<number>(7).fill(0);
+  let productivityPeriodMs = 0;
   valid.forEach((e) => {
     const ts = +e.ts || 0;
     byWeekday[new Date(ts).getDay()] += 1;
+    if (timestampIsInProductivityPeriod(ts, normalizedProductivityPeriod)) {
+      productivityPeriodMs += Math.max(0, +e.ms || 0);
+    }
   });
 
   let weekdayIdx = 0;
@@ -89,5 +109,6 @@ export function computeFocusInsights(entries: InsightEntry[], nowTs: number): Fo
     todayDeltaMs: todayMs - yesterdayMs,
     weekDeltaMs: thisWeekMs - lastWeekMs,
     completionDifficultyLabel: completionDifficultyLabel(completionDifficulty),
+    productivityPeriodMs,
   };
 }

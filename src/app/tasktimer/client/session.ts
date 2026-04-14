@@ -515,7 +515,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }))
       .filter((entry) => entry.ts > 0 && entry.ms >= 0);
     if (task.running) entries.push({ ts: nowMs(), ms: getTaskElapsedMs(task), completionDifficulty: undefined });
-    const insights = computeFocusInsights(entries, nowMs());
+    const insights = computeFocusInsights(entries, nowMs(), {
+      startTime: ctx.getOptimalProductivityStartTime(),
+      endTime: ctx.getOptimalProductivityEndTime(),
+    });
     if (els.focusInsightBest) {
       els.focusInsightBest.textContent = insights.bestMs > 0 ? ctx.formatTime(insights.bestMs) : "--";
     }
@@ -538,6 +541,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         els.focusInsightDifficulty.textContent = "No challenge ratings yet";
         els.focusInsightDifficulty.classList.add("is-empty");
       }
+    }
+    if (els.focusInsightProductivityPeriod) {
+      els.focusInsightProductivityPeriod.textContent =
+        insights.productivityPeriodMs > 0 ? ctx.formatTime(insights.productivityPeriodMs) : "--";
+      els.focusInsightProductivityPeriod.classList.toggle("is-empty", insights.productivityPeriodMs <= 0);
     }
   }
 
@@ -776,6 +784,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.focusInsightWeekday) {
       els.focusInsightWeekday.textContent = "No logged sessions yet";
       els.focusInsightWeekday.classList.add("is-empty");
+    }
+    if (els.focusInsightProductivityPeriod) {
+      els.focusInsightProductivityPeriod.textContent = "--";
+      els.focusInsightProductivityPeriod.classList.add("is-empty");
     }
     ctx.render();
     openDeferredFocusModeTimeGoalModal();

@@ -8,6 +8,7 @@ import { searchArchieKnowledge, toCitation, type ArchieKnowledgeMatch } from "./
 import type { UserPreferencesV1, TaskUiConfig } from "./cloudStore";
 import type { HistoryByTaskId, Task } from "./types";
 import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
+import { isMinuteInProductivityPeriod, normalizeOptimalProductivityPeriod } from "./productivityPeriod";
 
 export type ArchieWorkspaceContext = {
   tasks: Task[];
@@ -115,6 +116,11 @@ function buildTaskInsights(context: ArchieWorkspaceContext): TaskInsight[] {
 
 function buildBestProductivitySlot(context: ArchieWorkspaceContext): ProductivitySlot | null {
   const totals = new Map<string, number>();
+  const configuredPeriod = normalizeOptimalProductivityPeriod({
+    optimalProductivityStartTime: context.preferences?.optimalProductivityStartTime,
+    optimalProductivityEndTime: context.preferences?.optimalProductivityEndTime,
+  });
+  const preferredTotals = new Map<string, number>();
   Object.values(context.historyByTaskId).forEach((rows) => {
     (Array.isArray(rows) ? rows : []).forEach((row) => {
       const ts = Math.floor(Number(row?.ts || 0));
@@ -127,10 +133,14 @@ function buildBestProductivitySlot(context: ArchieWorkspaceContext): Productivit
       const hour = date.getHours();
       const key = `${day}:${hour}`;
       totals.set(key, (totals.get(key) || 0) + ms);
+      if (isMinuteInProductivityPeriod(hour * 60, configuredPeriod)) {
+        preferredTotals.set(key, (preferredTotals.get(key) || 0) + ms);
+      }
     });
   });
   let best: ProductivitySlot | null = null;
-  totals.forEach((totalMs, key) => {
+  const eligibleTotals = preferredTotals.size ? preferredTotals : totals;
+  eligibleTotals.forEach((totalMs, key) => {
     const [dayRaw, hourRaw] = key.split(":");
     const day = dayRaw as NonNullable<Task["plannedStartDay"]>;
     const hour = Math.floor(Number(hourRaw || 0));

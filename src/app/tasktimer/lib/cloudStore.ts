@@ -19,6 +19,11 @@ import { normalizeCompletionDifficulty } from "./completionDifficulty";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeTimeOfDay,
+} from "./productivityPeriod";
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
@@ -31,6 +36,8 @@ export type UserPreferencesV1 = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  optimalProductivityStartTime: string;
+  optimalProductivityEndTime: string;
   modeSettings?: Record<string, unknown> | null;
   rewards: RewardProgressV1;
   updatedAtMs: number;
@@ -948,6 +955,14 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
+        optimalProductivityStartTime: normalizeTimeOfDay(
+          prefSnap.get("optimalProductivityStartTime"),
+          DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+        ),
+        optimalProductivityEndTime: normalizeTimeOfDay(
+          prefSnap.get("optimalProductivityEndTime"),
+          DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+        ),
         modeSettings:
           prefSnap.get("modeSettings") && typeof prefSnap.get("modeSettings") === "object"
             ? (prefSnap.get("modeSettings") as Record<string, unknown>)
@@ -1251,6 +1266,14 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
     {
       ...prefs,
       rewards: normalizedRewards,
+      optimalProductivityStartTime: normalizeTimeOfDay(
+        prefs.optimalProductivityStartTime,
+        DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+      ),
+      optimalProductivityEndTime: normalizeTimeOfDay(
+        prefs.optimalProductivityEndTime,
+        DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+      ),
       schemaVersion: 1,
       updatedAtMs: Date.now(),
       updatedAt: serverTimestamp(),
@@ -1293,6 +1316,11 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         : asBool(data.mobilePushAlertsEnabled, false),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
+    optimalProductivityStartTime: normalizeTimeOfDay(
+      data.optimalProductivityStartTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+    ),
+    optimalProductivityEndTime: normalizeTimeOfDay(data.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
     modeSettings: data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null,
     rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Number(data.updatedAtMs || Date.now()),

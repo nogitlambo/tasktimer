@@ -48,6 +48,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadCheckpointAlertSettings: () => void;
+  loadOptimalProductivityPeriodPreference: () => void;
   loadDashboardWidgetState: () => void;
   loadThemePreference: () => void;
   loadMenuButtonStylePreference: () => void;
@@ -321,6 +322,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadAutoFocusOnTaskLaunchSetting();
     options.loadDynamicColorsSetting();
     options.loadCheckpointAlertSettings();
+    options.loadOptimalProductivityPeriodPreference();
     options.loadDashboardWidgetState();
     options.loadThemePreference();
     options.loadMenuButtonStylePreference();

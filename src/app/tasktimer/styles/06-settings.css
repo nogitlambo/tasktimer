@@ -911,6 +911,33 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   padding:8px 0;
   clip-path:none;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .optimalProductivityPeriodInputs{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection .optimalProductivityPeriodInputs label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color: var(--muted);
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsInlineSection input[type="time"]{
+  min-height:38px;
+  border:none;
+  background: transparent;
+  color: var(--text);
+  border-radius:0;
+  font: inherit;
+  padding:8px 0;
+  color-scheme: dark;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea{
   min-height:120px;
   padding:10px 0;

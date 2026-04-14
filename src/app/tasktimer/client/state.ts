@@ -12,6 +12,8 @@ export type TaskTimerStorageKeys = {
   WEB_PUSH_ALERTS_KEY: string;
   CHECKPOINT_ALERT_SOUND_KEY: string;
   CHECKPOINT_ALERT_TOAST_KEY: string;
+  OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
+  OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
   MODE_SETTINGS_KEY: string;
   NAV_STACK_KEY: string;
   FOCUS_SESSION_NOTES_KEY: string;
@@ -49,6 +51,8 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     WEB_PUSH_ALERTS_KEY: `${storageKey}:webPushAlertsEnabled`,
     CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
     CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
+    OPTIMAL_PRODUCTIVITY_START_TIME_KEY: `${storageKey}:optimalProductivityStartTime`,
+    OPTIMAL_PRODUCTIVITY_END_TIME_KEY: `${storageKey}:optimalProductivityEndTime`,
     MODE_SETTINGS_KEY: `${storageKey}:modeSettings`,
     NAV_STACK_KEY: `${storageKey}:navStack`,
     FOCUS_SESSION_NOTES_KEY: `${storageKey}:focusSessionNotes`,
@@ -83,6 +87,8 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
+    optimalProductivityStartTime: "00:00",
+    optimalProductivityEndTime: "23:59",
     rewardProgress: DEFAULT_REWARD_PROGRESS,
     historyByTaskId: {},
     historyRangeDaysByTaskId: {},

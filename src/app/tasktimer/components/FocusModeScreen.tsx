@@ -93,6 +93,12 @@ export default function FocusModeScreen() {
             No challenge ratings yet
           </span>
         </div>
+        <div className="focusInsightRow">
+          <span className="focusInsightLabel">In productivity period</span>
+          <span className="focusInsightValue" id="focusInsightProductivityPeriod">
+            --
+          </span>
+        </div>
       </div>
     </section>
   );

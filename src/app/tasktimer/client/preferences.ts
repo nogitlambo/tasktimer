@@ -2,6 +2,11 @@ import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeTimeOfDay,
+} from "../lib/productivityPeriod";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
@@ -141,6 +146,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
+      optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
+      optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
     });
   }
@@ -280,6 +287,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
+    if (els.optimalProductivityStartTimeInput) {
+      els.optimalProductivityStartTimeInput.value = ctx.getOptimalProductivityStartTime();
+    }
+    if (els.optimalProductivityEndTimeInput) {
+      els.optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
+    }
     els.taskViewList?.classList.toggle("isOn", taskView === "list");
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
@@ -361,6 +374,30 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
+  function applyOptimalProductivityPeriodPreference(nextStart: string, nextEnd: string) {
+    const startTime = normalizeTimeOfDay(nextStart, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME);
+    const endTime = normalizeTimeOfDay(nextEnd, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME);
+    ctx.setOptimalProductivityStartTimeState(startTime);
+    ctx.setOptimalProductivityEndTimeState(endTime);
+    if (els.optimalProductivityStartTimeInput) els.optimalProductivityStartTimeInput.value = startTime;
+    if (els.optimalProductivityEndTimeInput) els.optimalProductivityEndTimeInput.value = endTime;
+  }
+
+  function loadOptimalProductivityPeriodPreference() {
+    const period = preferenceService.loadOptimalProductivityPeriod();
+    applyOptimalProductivityPeriodPreference(period.startTime, period.endTime);
+  }
+
+  function saveOptimalProductivityPeriodPreference() {
+    try {
+      localStorage.setItem(ctx.storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY, ctx.getOptimalProductivityStartTime());
+      localStorage.setItem(ctx.storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY, ctx.getOptimalProductivityEndTime());
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function setThemeMode(next: "purple" | "cyan" | "lime") {
     if ((next === "purple" || next === "lime") && !canUsePremiumThemes()) {
       ctx.showUpgradePrompt(`${next === "purple" ? "Purple" : "Lime"} theme`, "pro");
@@ -383,6 +420,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveDynamicColorsSetting();
     saveMobilePushAlertsSetting();
     saveCheckpointAlertSettings();
+    saveOptimalProductivityPeriodPreference();
     ctx.render();
   }
 
@@ -431,6 +469,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.setDynamicColorsEnabledState(true);
       ctx.setMobilePushAlertsEnabledState(false);
       ctx.setWebPushAlertsEnabledState(false);
+      applyOptimalProductivityPeriodPreference(
+        DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+        DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+      );
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
       void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
@@ -529,12 +571,29 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
+    ctx.on(els.optimalProductivityStartTimeInput, "change", () => {
+      applyOptimalProductivityPeriodPreference(
+        els.optimalProductivityStartTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+        ctx.getOptimalProductivityEndTime()
+      );
+      saveOptimalProductivityPeriodPreference();
+      ctx.render();
+    });
+    ctx.on(els.optimalProductivityEndTimeInput, "change", () => {
+      applyOptimalProductivityPeriodPreference(
+        ctx.getOptimalProductivityStartTime(),
+        els.optimalProductivityEndTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+      );
+      saveOptimalProductivityPeriodPreference();
+      ctx.render();
+    });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
       saveCheckpointAlertSettings();
+      saveOptimalProductivityPeriodPreference();
       ctx.render();
       ctx.closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
@@ -574,6 +633,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadCheckpointAlertSettings,
     saveMobilePushAlertsSetting,
     saveCheckpointAlertSettings,
+    applyOptimalProductivityPeriodPreference,
+    loadOptimalProductivityPeriodPreference,
+    saveOptimalProductivityPeriodPreference,
     setThemeMode,
     setMenuButtonStyle,
     applyMainMode,

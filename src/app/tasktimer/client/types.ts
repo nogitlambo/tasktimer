@@ -83,6 +83,8 @@ export type TaskTimerMutableState = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  optimalProductivityStartTime: string;
+  optimalProductivityEndTime: string;
   rewardProgress: unknown;
   historyByTaskId: HistoryByTaskId;
   historyRangeDaysByTaskId: Record<string, 7 | 14>;

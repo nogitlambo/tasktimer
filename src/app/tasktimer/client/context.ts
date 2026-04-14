@@ -46,6 +46,8 @@ export type TaskTimerCachedPreferences = {
   webPushAlertsEnabled?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
+  optimalProductivityStartTime?: unknown;
+  optimalProductivityEndTime?: unknown;
   modeSettings?: TaskTimerCachedModeSettings;
   rewards?: unknown;
   updatedAtMs?: unknown;
@@ -703,6 +705,8 @@ export type TaskTimerSessionContext = {
   getDynamicColorsEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
+  getOptimalProductivityStartTime: () => string;
+  getOptimalProductivityEndTime: () => string;
   broadcastCheckpointAlertMute: (taskId: string) => void;
   render: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
@@ -820,6 +824,8 @@ export type TaskTimerPreferencesContext = {
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
+    OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
+    OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     MODE_SETTINGS_KEY: string;
     WEEK_STARTING_KEY: string;
@@ -847,6 +853,10 @@ export type TaskTimerPreferencesContext = {
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;
   setCheckpointAlertToastEnabledState: (value: boolean) => void;
+  getOptimalProductivityStartTime: () => string;
+  setOptimalProductivityStartTimeState: (value: string) => void;
+  getOptimalProductivityEndTime: () => string;
+  setOptimalProductivityEndTimeState: (value: string) => void;
   getModeLabels: () => Record<MainMode, string>;
   setModeLabelsState: (value: Record<MainMode, string>) => void;
   getModeEnabled: () => Record<MainMode, boolean>;

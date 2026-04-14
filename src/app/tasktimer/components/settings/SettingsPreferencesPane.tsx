@@ -39,6 +39,19 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="sat">Saturday</option>
             </select>
           </div>
+          <div className="unitRow optimalProductivityPeriodRow" id="optimalProductivityPeriodRow">
+            <span>Optimal Productivity Period</span>
+            <div className="optimalProductivityPeriodInputs" aria-label="Optimal productivity period">
+              <label>
+                <span>Start</span>
+                <input id="optimalProductivityStartTimeInput" type="time" defaultValue="00:00" aria-label="Optimal productivity start time" />
+              </label>
+              <label>
+                <span>End</span>
+                <input id="optimalProductivityEndTimeInput" type="time" defaultValue="23:59" aria-label="Optimal productivity end time" />
+              </label>
+            </div>
+          </div>
           <div className="settingsInlineFooter">
             <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
               Load Defaults

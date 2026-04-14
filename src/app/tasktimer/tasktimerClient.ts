@@ -121,6 +121,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       MENU_BUTTON_STYLE_KEY,
       WEEK_STARTING_KEY,
       TASK_VIEW_KEY,
+      OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
+      OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
       MODE_SETTINGS_KEY,
       NAV_STACK_KEY,
       FOCUS_SESSION_NOTES_KEY,
@@ -213,6 +215,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let webPushAlertsEnabled = initialState.webPushAlertsEnabled;
   let checkpointAlertSoundEnabled = initialState.checkpointAlertSoundEnabled;
   let checkpointAlertToastEnabled = initialState.checkpointAlertToastEnabled;
+  let optimalProductivityStartTime = initialState.optimalProductivityStartTime;
+  let optimalProductivityEndTime = initialState.optimalProductivityEndTime;
   let deferredFocusModeTimeGoalModals: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }> = [];
   let rewardProgress = normalizeRewardProgress(initialState.rewardProgress);
   let rewardSessionTrackersByTaskId: Record<
@@ -1480,6 +1484,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
     getCheckpointAlertSoundEnabled: () => checkpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
+    getOptimalProductivityStartTime: () => optimalProductivityStartTime,
+    getOptimalProductivityEndTime: () => optimalProductivityEndTime,
     render,
     renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
     renderDashboardLiveWidgets: () => renderDashboardLiveWidgetsWithMemo(),
@@ -2458,6 +2464,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       MOBILE_PUSH_ALERTS_KEY,
       WEB_PUSH_ALERTS_KEY,
+      OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
+      OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
       MENU_BUTTON_STYLE_KEY,
       MODE_SETTINGS_KEY,
       WEEK_STARTING_KEY,
@@ -2504,6 +2512,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getCheckpointAlertToastEnabled: () => checkpointAlertToastEnabled,
     setCheckpointAlertToastEnabledState: (value) => {
       checkpointAlertToastEnabled = value;
+    },
+    getOptimalProductivityStartTime: () => optimalProductivityStartTime,
+    setOptimalProductivityStartTimeState: (value) => {
+      optimalProductivityStartTime = value;
+    },
+    getOptimalProductivityEndTime: () => optimalProductivityEndTime,
+    setOptimalProductivityEndTimeState: (value) => {
+      optimalProductivityEndTime = value;
     },
     getModeLabels: () => modeLabels,
     setModeLabelsState: (value) => {
@@ -2578,6 +2594,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadCheckpointAlertSettings,
+    loadOptimalProductivityPeriodPreference,
     registerPreferenceEvents,
   } = preferences;
 
@@ -2749,6 +2766,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting,
     loadCheckpointAlertSettings,
+    loadOptimalProductivityPeriodPreference,
     loadDashboardWidgetState: () => loadDashboardWidgetStateApi(),
     loadThemePreference,
     loadMenuButtonStylePreference,

@@ -2,6 +2,13 @@ import type { UserPreferencesV1 } from "./cloudStore";
 import type { RewardProgressV1 } from "./rewards";
 import type { TaskTimerWorkspaceRepository } from "./workspaceRepository";
 import { normalizeDashboardWeekStart } from "./historyChart";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityPeriod,
+  normalizeTimeOfDay,
+  type OptimalProductivityPeriod,
+} from "./productivityPeriod";
 
 export type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
@@ -11,6 +18,8 @@ export type TaskTimerPreferenceStorageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
+  OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
+  OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
   MODE_SETTINGS_KEY: string;
 };
 
@@ -25,6 +34,8 @@ type PreferencesStateSnapshot = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  optimalProductivityStartTime: string;
+  optimalProductivityEndTime: string;
   rewards: RewardProgressV1;
 };
 
@@ -100,6 +111,11 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       webPushAlertsEnabled: state.webPushAlertsEnabled,
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
+      optimalProductivityStartTime: normalizeTimeOfDay(
+        state.optimalProductivityStartTime,
+        DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+      ),
+      optimalProductivityEndTime: normalizeTimeOfDay(state.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
       rewards: state.rewards,
       updatedAtMs: Date.now(),
     };
@@ -122,6 +138,14 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       snapshot.webPushAlertsEnabled ? "true" : "false",
     );
     safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
+    safeWriteLocalStorage(
+      storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
+      normalizeTimeOfDay(snapshot.optimalProductivityStartTime, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME)
+    );
+    safeWriteLocalStorage(
+      storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
+      normalizeTimeOfDay(snapshot.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME)
+    );
     safeRemoveLocalStorage(storageKeys.MODE_SETTINGS_KEY);
 
     options.setCloudPreferencesCache(snapshot);
@@ -198,6 +222,22 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     };
   }
 
+  function loadOptimalProductivityPeriod(): OptimalProductivityPeriod {
+    const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
+    const startTime =
+      cached?.optimalProductivityStartTime ||
+      safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY) ||
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME;
+    const endTime =
+      cached?.optimalProductivityEndTime ||
+      safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY) ||
+      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME;
+    return normalizeOptimalProductivityPeriod({
+      optimalProductivityStartTime: startTime,
+      optimalProductivityEndTime: endTime,
+    });
+  }
+
   return {
     buildSnapshot,
     persistSnapshot,
@@ -210,6 +250,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadMobilePushAlertsEnabled,
     loadWebPushAlertsEnabled,
     loadCheckpointAlerts,
+    loadOptimalProductivityPeriod,
     normalizeThemeMode,
   };
 }

@@ -24,4 +24,35 @@ describe("computeFocusInsights", () => {
 
     expect(insights.completionDifficultyLabel).toBeNull();
   });
+
+  it("summarizes time logged inside the configured productivity period", () => {
+    const now = new Date(2026, 3, 14, 12, 0).getTime();
+
+    const insights = computeFocusInsights(
+      [
+        { ts: new Date(2026, 3, 14, 9, 30).getTime(), ms: 1800000 },
+        { ts: new Date(2026, 3, 14, 18, 30).getTime(), ms: 3600000 },
+      ],
+      now,
+      { startTime: "09:00", endTime: "10:00" }
+    );
+
+    expect(insights.productivityPeriodMs).toBe(1800000);
+  });
+
+  it("supports overnight productivity periods", () => {
+    const now = new Date(2026, 3, 14, 23, 0).getTime();
+
+    const insights = computeFocusInsights(
+      [
+        { ts: new Date(2026, 3, 14, 22, 30).getTime(), ms: 1800000 },
+        { ts: new Date(2026, 3, 15, 1, 30).getTime(), ms: 2400000 },
+        { ts: new Date(2026, 3, 14, 12, 0).getTime(), ms: 3600000 },
+      ],
+      now,
+      { startTime: "22:00", endTime: "02:00" }
+    );
+
+    expect(insights.productivityPeriodMs).toBe(4200000);
+  });
 });

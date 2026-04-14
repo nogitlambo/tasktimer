@@ -854,13 +854,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
                 </div>
                 <div className="confirmBtns">
                   <button className="btn btn-ghost" type="button" onClick={() => setArchieReviewOpen(false)} disabled={archieBusy}>
-                    Close
+                    Snooze
                   </button>
                   <button className="btn btn-ghost" type="button" onClick={() => void handleDraftDecision("discard")} disabled={archieBusy}>
                     Discard
                   </button>
                   <button className="btn btn-accent" type="button" onClick={() => void handleDraftDecision("apply")} disabled={archieBusy}>
-                    Apply Draft
+                    Implement
                   </button>
                 </div>
               </div>

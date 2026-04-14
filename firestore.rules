@@ -114,6 +114,8 @@ service cloud.firestore {
         "dynamicColorsEnabled",
         "checkpointAlertSoundEnabled",
         "checkpointAlertToastEnabled",
+        "optimalProductivityStartTime",
+        "optimalProductivityEndTime",
         "modeSettings",
         "rewards",
         "updatedAtMs",
@@ -130,6 +132,14 @@ service cloud.firestore {
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)
+      && (!("optimalProductivityStartTime" in request.resource.data) || (
+        request.resource.data.optimalProductivityStartTime is string
+        && request.resource.data.optimalProductivityStartTime.matches("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+      ))
+      && (!("optimalProductivityEndTime" in request.resource.data) || (
+        request.resource.data.optimalProductivityEndTime is string
+        && request.resource.data.optimalProductivityEndTime.matches("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+      ))
       && (!("modeSettings" in request.resource.data) || request.resource.data.modeSettings == null || request.resource.data.modeSettings is map)
       && (!("rewards" in request.resource.data) || request.resource.data.rewards is map)
       && (!("updatedAtMs" in request.resource.data) || request.resource.data.updatedAtMs is int)

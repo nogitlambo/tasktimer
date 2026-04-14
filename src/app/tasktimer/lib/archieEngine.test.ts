@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildArchieQueryResponse, buildRecommendationDraft, type ArchieWorkspaceContext } from "./archieEngine";
+import { DEFAULT_REWARD_PROGRESS } from "./rewards";
 
 function createContext(overrides?: Partial<ArchieWorkspaceContext>): ArchieWorkspaceContext {
   return {
@@ -60,6 +61,26 @@ function createContext(overrides?: Partial<ArchieWorkspaceContext>): ArchieWorks
     },
     ...overrides,
   };
+}
+
+function createPreferences(overrides?: Partial<NonNullable<ArchieWorkspaceContext["preferences"]>>) {
+  return {
+    schemaVersion: 1,
+    theme: "purple",
+    menuButtonStyle: "square",
+    taskView: "list",
+    dynamicColorsEnabled: true,
+    autoFocusOnTaskLaunchEnabled: false,
+    mobilePushAlertsEnabled: false,
+    webPushAlertsEnabled: false,
+    checkpointAlertSoundEnabled: true,
+    checkpointAlertToastEnabled: true,
+    optimalProductivityStartTime: "00:00",
+    optimalProductivityEndTime: "23:59",
+    rewards: DEFAULT_REWARD_PROGRESS,
+    updatedAtMs: 0,
+    ...overrides,
+  } satisfies NonNullable<ArchieWorkspaceContext["preferences"]>;
 }
 
 describe("Archie engine", () => {
@@ -175,6 +196,51 @@ describe("Archie engine", () => {
     expect(draft?.summary).toContain("Admin Cleanup");
     expect(draft?.evidence).toContain("Recent challenge rating: Very Difficult.");
     expect(draft?.reasoning).toContain("very difficult");
+  });
+
+  it("prefers logged work windows inside the configured productivity period", () => {
+    const draft = buildRecommendationDraft(
+      createContext({
+        preferences: createPreferences({
+          optimalProductivityStartTime: "14:00",
+          optimalProductivityEndTime: "15:00",
+        }),
+        historyByTaskId: {
+          "task-a": [
+            { ts: new Date(2026, 3, 7, 9, 15).getTime(), name: "Deep Work", ms: 7200000 },
+            { ts: new Date(2026, 3, 8, 14, 10).getTime(), name: "Deep Work", ms: 3600000 },
+          ],
+          "task-b": [],
+        },
+      })
+    );
+
+    const scheduleChange = draft?.proposedChanges.find((change) => change.kind === "update_schedule");
+    expect(scheduleChange?.kind).toBe("update_schedule");
+    if (scheduleChange?.kind === "update_schedule") {
+      expect(scheduleChange.after.plannedStartTime).toBe("14:00");
+    }
+  });
+
+  it("falls back to the strongest logged window when the configured productivity period has no history", () => {
+    const draft = buildRecommendationDraft(
+      createContext({
+        preferences: createPreferences({
+          optimalProductivityStartTime: "14:00",
+          optimalProductivityEndTime: "15:00",
+        }),
+        historyByTaskId: {
+          "task-a": [{ ts: new Date(2026, 3, 7, 9, 15).getTime(), name: "Deep Work", ms: 7200000 }],
+          "task-b": [],
+        },
+      })
+    );
+
+    const scheduleChange = draft?.proposedChanges.find((change) => change.kind === "update_schedule");
+    expect(scheduleChange?.kind).toBe("update_schedule");
+    if (scheduleChange?.kind === "update_schedule") {
+      expect(scheduleChange.after.plannedStartTime).toBe("09:00");
+    }
   });
 
   it("abstains on unsupported product questions instead of creating a workflow draft", () => {
