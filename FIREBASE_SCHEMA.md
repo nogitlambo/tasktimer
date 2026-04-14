@@ -254,7 +254,7 @@ Subcollection:
 Doc ID patterns:
 
 - Append path: `${ts}-${randomInt}`
-- Replace path: `${ts}-${ms}-${fnv1a32(ts|ms|name)}`
+- Replace path: `${ts}-${ms}-${fnv1a32(ts|ms|name|note|xpDisqualifiedUntilReset|completionDifficulty)}`
 
 Allowed fields (`isHistoryDoc`):
 
@@ -263,6 +263,8 @@ Allowed fields (`isHistoryDoc`):
 - `ms: int`
 - `color: string | null`
 - `note: string | null`
+- `xpDisqualifiedUntilReset: bool`
+- `completionDifficulty: 1 | 2 | 3 | 4 | 5`
 - `createdAt: timestamp`
 
 ---

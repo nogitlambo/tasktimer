@@ -3,6 +3,7 @@
 import { collection, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 
 import type { Task, DeletedTaskMeta } from "./lib/types";
+import type { CompletionDifficulty } from "./lib/completionDifficulty";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
@@ -1860,8 +1861,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     rewardsHistoryApi?.clearRewardSessionTracker(taskIdRaw);
   }
 
-  function appendCompletedSessionHistory(t: Task, completedAtMs: number, elapsedMs: number, noteOverride?: string) {
-    rewardsHistoryApi?.appendCompletedSessionHistory(t, completedAtMs, elapsedMs, noteOverride);
+  function appendCompletedSessionHistory(
+    t: Task,
+    completedAtMs: number,
+    elapsedMs: number,
+    noteOverride?: string,
+    completionDifficulty?: CompletionDifficulty
+  ) {
+    rewardsHistoryApi?.appendCompletedSessionHistory(t, completedAtMs, elapsedMs, noteOverride, completionDifficulty);
   }
 
   function csvEscape(value: unknown): string {

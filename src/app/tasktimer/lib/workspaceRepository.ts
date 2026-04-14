@@ -32,7 +32,10 @@ export function createTaskTimerWorkspaceRepository() {
     loadTasks: () => loadTasks(),
     saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[] }) => saveTasks(tasks, opts),
     loadHistory: () => loadHistory(),
-    appendHistoryEntry: (taskId: string, entry: { ts: number; name: string; ms: number; color?: string; note?: string }) =>
+    appendHistoryEntry: (
+      taskId: string,
+      entry: { ts: number; name: string; ms: number; color?: string; note?: string; completionDifficulty?: 1 | 2 | 3 | 4 | 5 }
+    ) =>
       appendHistoryEntry(taskId, entry),
     saveHistoryLocally: (historyByTaskId: HistoryByTaskId) => saveHistoryLocally(historyByTaskId),
     saveHistory: (historyByTaskId: HistoryByTaskId, opts?: { showIndicator?: boolean; minVisibleMs?: number }) =>

@@ -4,8 +4,10 @@ import type { ArchieRecommendationDraftRequest } from "@/app/tasktimer/lib/archi
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import { buildRecommendationDraft } from "@/app/tasktimer/lib/archieEngine";
 import {
+  assertCanUseArchieAi,
   buildDraft,
   createArchieErrorResponse,
+  loadArchieUserPlan,
   loadArchieWorkspaceContext,
   saveArchieDraft,
   verifyArchieRequestUser,
@@ -17,6 +19,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ArchieRecommendationDraftRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);
+    assertCanUseArchieAi(await loadArchieUserPlan(uid));
     const requestBody: ArchieRecommendationDraftRequest = {
       message: String(body?.message || "").trim(),
       activePage: normalizeArchieAssistantPage(body?.activePage),

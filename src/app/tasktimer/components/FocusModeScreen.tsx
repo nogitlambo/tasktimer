@@ -87,6 +87,12 @@ export default function FocusModeScreen() {
             --
           </span>
         </div>
+        <div className="focusInsightRow">
+          <span className="focusInsightLabel">Recent challenge level</span>
+          <span className="focusInsightValue" id="focusInsightDifficulty">
+            No challenge ratings yet
+          </span>
+        </div>
       </div>
     </section>
   );

@@ -82,7 +82,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       hasStarted: false,
       checkpointSoundEnabled: false,
       checkpointSoundMode: "once",
-      checkpointToastEnabled: false,
+      checkpointToastEnabled: true,
       checkpointToastMode: "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: false,

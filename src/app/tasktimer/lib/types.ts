@@ -1,3 +1,5 @@
+import type { CompletionDifficulty } from "./completionDifficulty";
+
 export type Milestone = {
   hours: number;
   description: string;
@@ -47,6 +49,7 @@ export type HistoryEntry = {
   color?: string;
   note?: string;
   xpDisqualifiedUntilReset?: boolean;
+  completionDifficulty?: CompletionDifficulty;
 };
 
 export type HistoryByTaskId = Record<string, HistoryEntry[]>;

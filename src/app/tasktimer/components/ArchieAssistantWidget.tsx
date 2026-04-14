@@ -37,6 +37,16 @@ const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const ARCHIE_FOCUS_SESSION_NOTES_KEY = `${STORAGE_KEY}:focusSessionNotes`;
+const ARCHIE_PRO_REQUIRED_CODE = "archie/pro-required";
+const ARCHIE_PRO_UPGRADE_MESSAGE =
+  "I can answer product questions on Free. Workflow recommendations, draft changes, and AI-refined responses are included with Pro.";
+const ARCHIE_PRO_UPGRADE_ACTION: ArchieSuggestedAction = { kind: "navigate", label: "Upgrade to Pro", href: "/pricing" };
+
+type ArchieApiErrorResult = {
+  error?: string;
+  code?: string;
+  suggestedAction?: ArchieSuggestedAction;
+};
 
 async function resolveAuthSession(): Promise<{ auth: Auth; user: User; idToken: string } | null> {
   const auth = getFirebaseAuthClient();
@@ -112,11 +122,11 @@ function changeSummary(change: ArchieRecommendationDraft["proposedChanges"][numb
     const beforePosition = change.beforeOrder + 1;
     const afterPosition = change.afterOrder + 1;
     if (afterPosition < beforePosition) {
-      if (afterPosition === 1) return `Move ${change.taskName} to the top of your list so it is easier to pick up next.`;
-      return `Move ${change.taskName} higher in your list, from ${formatOrdinal(beforePosition)} to ${formatOrdinal(afterPosition)} place.`;
+      if (afterPosition === 1) return `Make ${change.taskName} the first task in your list, so it is the easiest one to pick up next.`;
+      return `Make ${change.taskName} the ${formatOrdinal(afterPosition)} task in your list instead of the ${formatOrdinal(beforePosition)}.`;
     }
     if (afterPosition > beforePosition) {
-      return `Move ${change.taskName} lower in your list, from ${formatOrdinal(beforePosition)} to ${formatOrdinal(afterPosition)} place.`;
+      return `Put ${change.taskName} in the ${formatOrdinal(afterPosition)} spot instead of the ${formatOrdinal(beforePosition)}.`;
     }
     return `Keep ${change.taskName} in its current spot in the list.`;
   }
@@ -124,9 +134,9 @@ function changeSummary(change: ArchieRecommendationDraft["proposedChanges"][numb
     const beforeSlot = formatPlannedSlot(change.before.plannedStartDay, change.before.plannedStartTime, change.before.plannedStartOpenEnded);
     const afterSlot = formatPlannedSlot(change.after.plannedStartDay, change.after.plannedStartTime, change.after.plannedStartOpenEnded);
     if (beforeSlot === "no scheduled start") {
-      return `Give ${change.taskName} a clearer place in your week by scheduling it for ${afterSlot}.`;
+      return `Set ${change.taskName} for ${afterSlot} so it has a clear place in your week.`;
     }
-    return `Shift ${change.taskName} from ${beforeSlot} to ${afterSlot} so it fits better into your current flow.`;
+    return `Set ${change.taskName} to ${afterSlot} instead of ${beforeSlot}.`;
   }
   return change.note;
 }
@@ -152,6 +162,18 @@ async function sendArchieTelemetryEvent(input: { idToken: string; sessionId: str
       eventType: input.eventType,
     }),
   });
+}
+
+function buildArchieProUpgradePresentation(result?: ArchieApiErrorResult | null) {
+  return {
+    message: String(result?.error || ARCHIE_PRO_UPGRADE_MESSAGE).trim() || ARCHIE_PRO_UPGRADE_MESSAGE,
+    citations: [],
+    suggestedAction:
+      result?.suggestedAction?.kind === "navigate" && result.suggestedAction.href
+        ? result.suggestedAction
+        : ARCHIE_PRO_UPGRADE_ACTION,
+    draft: undefined,
+  };
 }
 
 export default function ArchieAssistantWidget({ activePage, variant = "desktop" }: ArchieAssistantWidgetProps) {
@@ -372,8 +394,12 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
           focusSessionNotesByTaskId: loadFocusSessionNotesByTaskId(),
         }),
       });
-      const result = (await response.json().catch(() => null)) as (ArchieQueryResponse & { error?: string }) | null;
+      const result = (await response.json().catch(() => null)) as (ArchieQueryResponse & ArchieApiErrorResult) | null;
       if (!response.ok || !result) {
+        if (result?.code === ARCHIE_PRO_REQUIRED_CODE) {
+          presentArchieResponse(buildArchieProUpgradePresentation(result));
+          return;
+        }
         presentArchieResponse({
           message: result?.error || "I hit a problem while checking your workspace. Please try again.",
           citations: [],
@@ -549,8 +575,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
             sessionId: archieSessionId,
           }),
         });
-        const result = (await response.json().catch(() => null)) as { error?: string; appliedCount?: number } | null;
+        const result = (await response.json().catch(() => null)) as (ArchieApiErrorResult & { appliedCount?: number }) | null;
         if (!response.ok) {
+          if (result?.code === ARCHIE_PRO_REQUIRED_CODE) {
+            setArchieReviewOpen(false);
+            presentArchieResponse(buildArchieProUpgradePresentation(result));
+            return;
+          }
           presentArchieResponse({
             message: result?.error || "I could not update that Archie draft.",
             citations: [],
@@ -566,7 +597,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         }
         if (decision === "discard") {
           presentArchieResponse({
-            message: "Draft discarded. Your current task order and schedule stayed unchanged.",
+            message: "Draft discarded. Your workspace stayed unchanged.",
             citations: [],
             suggestedAction: undefined,
             draft: undefined,
@@ -630,8 +661,15 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
             "x-firebase-auth": session.idToken,
           },
         });
-        const result = (await response.json().catch(() => null)) as ArchieRecentDraftResponse | null;
-        if (cancelled || !response.ok) return;
+        const result = (await response.json().catch(() => null)) as (ArchieRecentDraftResponse & ArchieApiErrorResult) | null;
+        if (cancelled) return;
+        if (!response.ok) {
+          if (result?.code === ARCHIE_PRO_REQUIRED_CODE) {
+            setArchieLastOpenDraft(null);
+            setArchieLastOpenDraftSessionId(null);
+          }
+          return;
+        }
         if (!result?.draft) {
           setArchieLastOpenDraft(null);
           setArchieLastOpenDraftSessionId(null);

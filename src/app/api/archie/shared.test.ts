@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ArchieQueryRequest, ArchieQueryResponse } from "@/app/tasktimer/lib/archieAssistant";
 
-import { createArchieSessionTelemetry, createArchieTelemetryEvent } from "./shared";
+import {
+  buildArchieUpgradeResponse,
+  canUseArchieAi,
+  createArchieSessionTelemetry,
+  createArchieTelemetryEvent,
+  normalizeArchieUserPlan,
+} from "./shared";
 
 function createRequest(overrides?: Partial<ArchieQueryRequest>): ArchieQueryRequest {
   return {
@@ -118,5 +124,32 @@ describe("Archie telemetry helpers", () => {
     expect(event.expiresAt).toEqual(new Date("2026-07-13T00:00:00.000Z"));
     expect("rawUserMessage" in event).toBe(false);
     expect("rawAssistantMessage" in event).toBe(false);
+  });
+});
+
+describe("Archie plan helpers", () => {
+  it("normalizes Archie plans to Free unless explicitly Pro", () => {
+    expect(normalizeArchieUserPlan("pro")).toBe("pro");
+    expect(normalizeArchieUserPlan(" PRO ")).toBe("pro");
+    expect(normalizeArchieUserPlan("enterprise")).toBe("free");
+    expect(normalizeArchieUserPlan(null)).toBe("free");
+  });
+
+  it("allows Archie AI only for Pro users", () => {
+    expect(canUseArchieAi("pro")).toBe(true);
+    expect(canUseArchieAi("free")).toBe(false);
+  });
+
+  it("builds a Pro upgrade response with a pricing action", () => {
+    const response = buildArchieUpgradeResponse();
+
+    expect(response.mode).toBe("fallback");
+    expect(response.message).toContain("included with Pro");
+    expect(response.suggestedAction).toEqual({
+      kind: "navigate",
+      label: "Upgrade to Pro",
+      href: "/pricing",
+    });
+    expect(response.draft).toBeUndefined();
   });
 });

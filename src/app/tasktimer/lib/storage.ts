@@ -1,4 +1,5 @@
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
+import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   appendHistoryEntry as appendHistoryEntryToCloud,
@@ -573,7 +574,7 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
       (row) =>
         `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${
           "xpDisqualifiedUntilReset" in (row || {}) ? (row?.xpDisqualifiedUntilReset ? "1" : "0") : ""
-        }`
+        }|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}`
     )
     .join(",");
 }
@@ -587,11 +588,13 @@ function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
     next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
   }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
+  if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   return next;
 }
 

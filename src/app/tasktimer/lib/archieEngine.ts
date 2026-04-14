@@ -7,6 +7,7 @@ import type {
 import { searchArchieKnowledge, toCitation, type ArchieKnowledgeMatch } from "./archieKnowledge";
 import type { UserPreferencesV1, TaskUiConfig } from "./cloudStore";
 import type { HistoryByTaskId, Task } from "./types";
+import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
 
 export type ArchieWorkspaceContext = {
   tasks: Task[];
@@ -24,6 +25,7 @@ type TaskInsight = {
   lastLoggedAtMs: number;
   recentWeekMs: number;
   note: string;
+  completionDifficulty?: CompletionDifficulty;
 };
 
 type ProductivitySlot = {
@@ -79,19 +81,34 @@ function buildTaskInsights(context: ArchieWorkspaceContext): TaskInsight[] {
     let totalMs = 0;
     let lastLoggedAtMs = 0;
     let recentWeekMs = 0;
+    const recentDifficulties: CompletionDifficulty[] = [];
+    let latestDifficultyTs = 0;
+    let latestDifficultyValue: CompletionDifficulty | undefined;
     rows.forEach((row) => {
       const ts = Math.max(0, Math.floor(Number(row?.ts || 0)));
       const ms = Math.max(0, Math.floor(Number(row?.ms || 0)));
+      const completionDifficulty = normalizeCompletionDifficulty(row?.completionDifficulty);
       totalMs += ms;
       if (ts > lastLoggedAtMs) lastLoggedAtMs = ts;
       if (ts >= recentWindowStart) recentWeekMs += ms;
+      if (completionDifficulty) {
+        if (ts >= recentWindowStart) recentDifficulties.push(completionDifficulty);
+        if (ts > latestDifficultyTs) {
+          latestDifficultyTs = ts;
+          latestDifficultyValue = completionDifficulty;
+        }
+      }
     });
+    const averageRecentDifficulty = recentDifficulties.length
+      ? Math.round(recentDifficulties.reduce((sum, value) => sum + value, 0) / recentDifficulties.length)
+      : null;
     return {
       task,
       totalMs,
       lastLoggedAtMs,
       recentWeekMs,
       note: String(context.focusSessionNotesByTaskId[String(task.id || "")] || "").trim(),
+      completionDifficulty: normalizeCompletionDifficulty(averageRecentDifficulty) || latestDifficultyValue,
     };
   });
 }
@@ -135,25 +152,6 @@ function scheduleHasOverlap(tasks: Task[], candidateTaskId: string, day: NonNull
   });
 }
 
-function buildReorderChanges(sortedInsights: TaskInsight[], targetTaskId: string, insertAt: number): ArchieDraftChange[] {
-  const before = [...sortedInsights].sort((a, b) => a.task.order - b.task.order);
-  const movedIndex = before.findIndex((entry) => String(entry.task.id || "") === targetTaskId);
-  if (movedIndex < 0) return [];
-  const after = [...before];
-  const [moved] = after.splice(movedIndex, 1);
-  const boundedInsertAt = Math.max(0, Math.min(after.length, insertAt));
-  after.splice(boundedInsertAt, 0, moved);
-  return after
-    .map((entry, index) => ({
-      beforeOrder: Math.max(0, Math.floor(Number(entry.task.order || 0))),
-      afterOrder: index,
-      taskId: String(entry.task.id || ""),
-      taskName: String(entry.task.name || "Task"),
-    }))
-    .filter((entry) => entry.beforeOrder !== entry.afterOrder)
-    .map((entry) => ({ kind: "reorder_task", ...entry }) satisfies ArchieDraftChange);
-}
-
 function isAdviceQuery(question: string) {
   return /(what should|what next|optimi|improve|adjust|recommend|schedule|workflow|prioriti|reorder|plan my|best time|help me plan)/i.test(question);
 }
@@ -174,10 +172,14 @@ function noteSnippet(note: string) {
   return cleaned.length > 90 ? `${cleaned.slice(0, 87)}...` : cleaned;
 }
 
+function completionDifficultyPhrase(value: unknown) {
+  const label = completionDifficultyLabel(value);
+  return label ? label.toLowerCase() : "";
+}
+
 function buildDraftReasoning(input: {
   candidate: TaskInsight;
   runningTasks: Task[];
-  reorderChanges: ArchieDraftChange[];
   scheduleChanges: Extract<ArchieDraftChange, { kind: "update_schedule" }>[];
   bestSlot: ProductivitySlot | null;
   evidence: string[];
@@ -208,15 +210,19 @@ function buildDraftReasoning(input: {
     lines.push(`Your latest focus note for this task was "${noteSnippet(input.candidate.note)}", so the draft keeps that context in mind.`);
   }
 
+  if (input.candidate.completionDifficulty && input.candidate.completionDifficulty <= 2) {
+    lines.push(
+      `Your recent challenge rating for ${taskName} was ${completionDifficultyPhrase(input.candidate.completionDifficulty)}, so Archie is treating it as a task that may need a better fit.`
+    );
+  }
+
   if (input.scheduleChanges.length && input.bestSlot) {
     lines.push(
       `The schedule change moves it into your strongest logged work window on ${input.bestSlot.day.toUpperCase()} around ${formatHour(input.bestSlot.hour)}, which is the best fit the current history suggests.`
     );
-  } else if (input.reorderChanges.length) {
-    lines.push(`The task reorder lifts it closer to the top of the queue so it fits the next-step flow you are already using.`);
   }
 
-  if (!input.scheduleChanges.length && !input.reorderChanges.length && input.evidence.length) {
+  if (!input.scheduleChanges.length && input.evidence.length) {
     lines.push(input.evidence[0] || "");
   }
 
@@ -274,8 +280,11 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   const sortedInsights = buildTaskInsights(context).sort((a, b) => {
     if (a.task.running !== b.task.running) return a.task.running ? -1 : 1;
     if (a.recentWeekMs !== b.recentWeekMs) return a.recentWeekMs - b.recentWeekMs;
+    const aDifficulty = a.completionDifficulty ?? 3;
+    const bDifficulty = b.completionDifficulty ?? 3;
+    if (aDifficulty !== bDifficulty) return aDifficulty - bDifficulty;
     if (a.lastLoggedAtMs !== b.lastLoggedAtMs) return a.lastLoggedAtMs - b.lastLoggedAtMs;
-    return a.task.order - b.task.order;
+    return String(a.task.id || a.task.name || "").localeCompare(String(b.task.id || b.task.name || ""));
   });
   const candidate = sortedInsights.find((entry) => !entry.task.running);
   if (!candidate) return null;
@@ -293,10 +302,11 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   if (candidate.note) {
     evidence.push(`Recent focus note: "${noteSnippet(candidate.note)}"`);
   }
+  if (candidate.completionDifficulty) {
+    evidence.push(`Recent challenge rating: ${completionDifficultyLabel(candidate.completionDifficulty)}.`);
+  }
 
   const changes: ArchieDraftChange[] = [];
-  const reorderChanges = buildReorderChanges(sortedInsights, String(candidate.task.id || ""), context.tasks.some((task) => task.running) ? 1 : 0);
-  if (reorderChanges.length) changes.push(...reorderChanges);
 
   const bestSlot = buildBestProductivitySlot(context);
   if (bestSlot) {
@@ -335,16 +345,10 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   }
 
   const scheduleChanges = changes.filter((change) => change.kind === "update_schedule");
-  const reorderOnly = changes.every((change) => change.kind === "reorder_task");
-  const kind = scheduleChanges.length
-    ? "schedule_adjustment"
-    : reorderOnly
-      ? "task_prioritization"
-      : "workflow_adjustment";
+  const kind = scheduleChanges.length ? "schedule_adjustment" : "workflow_adjustment";
 
   const summaryParts = [`I prepared a draft to bring ${candidate.task.name} back into the active flow.`];
   if (scheduleChanges.length) summaryParts.push(`It schedules the task closer to your strongest logged work window.`);
-  else if (reorderChanges.length) summaryParts.push(`It moves the task higher in your queue so it is easier to reach.`);
 
   return {
     kind,
@@ -352,7 +356,6 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
     reasoning: buildDraftReasoning({
       candidate,
       runningTasks,
-      reorderChanges,
       scheduleChanges,
       bestSlot,
       evidence,

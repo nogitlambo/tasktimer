@@ -317,6 +317,7 @@ service cloud.firestore {
         "color",
         "note",
         "xpDisqualifiedUntilReset",
+        "completionDifficulty",
         "createdAt"
       ])
       && (!("ts" in request.resource.data) || request.resource.data.ts is int)
@@ -325,6 +326,10 @@ service cloud.firestore {
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
       && (!("note" in request.resource.data) || request.resource.data.note == null || request.resource.data.note is string)
       && (!("xpDisqualifiedUntilReset" in request.resource.data) || request.resource.data.xpDisqualifiedUntilReset is bool)
+      && (!("completionDifficulty" in request.resource.data) || (
+        request.resource.data.completionDifficulty is int
+        && request.resource.data.completionDifficulty in [1, 2, 3, 4, 5]
+      ))
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp);
     }
 

@@ -1,4 +1,5 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
+import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerImportExportContext } from "./context";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -189,6 +190,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
         const ms = Number.isFinite(+entry.ms) ? Math.max(0, +entry.ms) : null;
         if (!ts || !ms) return;
         const note = String(entry.note || "").trim();
+        const completionDifficulty = normalizeCompletionDifficulty(entry.completionDifficulty);
         nextHistory[destId].push({
           name: String(entry.name || ""),
           ms,
@@ -196,6 +198,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
           ...("xpDisqualifiedUntilReset" in entry ? { xpDisqualifiedUntilReset: !!entry.xpDisqualifiedUntilReset } : {}),
           color: entry.color ? String(entry.color) : undefined,
           note: note || undefined,
+          ...(completionDifficulty ? { completionDifficulty } : {}),
         });
       });
     });

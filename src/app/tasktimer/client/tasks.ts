@@ -1,5 +1,6 @@
 import { escapeRegExp, newTaskId } from "../lib/ids";
 import type { DeletedTaskMeta, Task } from "../lib/types";
+import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerTasksContext } from "./context";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -288,14 +289,14 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.render();
   }
 
-  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string }) {
+  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: unknown }) {
     if (!t) return;
     const taskId = String(t.id || "");
     ctx.flushPendingFocusSessionNoteSave(taskId);
     if (!!opts?.logHistory && ctx.canLogSession(t)) {
       const ms = ctx.getTaskElapsedMs(t);
       const completedAtMs = Date.now();
-      if (ms > 0) ctx.appendCompletedSessionHistory(t, completedAtMs, ms, opts?.sessionNote);
+      if (ms > 0) ctx.appendCompletedSessionHistory(t, completedAtMs, ms, opts?.sessionNote, normalizeCompletionDifficulty(opts?.completionDifficulty));
     }
     t.accumulatedMs = 0;
     t.running = false;

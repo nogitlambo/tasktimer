@@ -617,7 +617,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskMilestonesState([]);
     ctx.setAddTaskCheckpointSoundEnabledState(false);
     ctx.setAddTaskCheckpointSoundModeState("once");
-    ctx.setAddTaskCheckpointToastEnabledState(false);
+    ctx.setAddTaskCheckpointToastEnabledState(ctx.getCheckpointAlertToastEnabled());
     ctx.setAddTaskCheckpointToastModeState("auto5s");
     ctx.setAddTaskPresetIntervalsEnabledState(false);
     ctx.setAddTaskPresetIntervalValueState(0);

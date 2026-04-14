@@ -7,7 +7,10 @@ import { maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
 import {
   attachArchieDraftSession,
   buildDraft,
+  buildArchieUpgradeResponse,
+  canUseArchieAi,
   createArchieErrorResponse,
+  loadArchieUserPlan,
   loadArchieWorkspaceContext,
   saveArchieDraft,
   verifyArchieRequestUser,
@@ -29,6 +32,13 @@ export async function POST(req: Request) {
     };
     const context = await loadArchieWorkspaceContext(uid, requestBody);
     const baseResponse = buildArchieQueryResponse(requestBody.message, context, buildDraft);
+    const plan = await loadArchieUserPlan(uid);
+    if (!canUseArchieAi(plan)) {
+      if (baseResponse.mode === "product_answer" || baseResponse.mode === "fallback") {
+        return NextResponse.json(baseResponse);
+      }
+      return NextResponse.json(buildArchieUpgradeResponse());
+    }
     if (baseResponse.draft) {
       await saveArchieDraft(uid, baseResponse.draft);
     }

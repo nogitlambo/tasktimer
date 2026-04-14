@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
 import type { ArchieRecentDraftResponse } from "@/app/tasktimer/lib/archieAssistant";
-import { createArchieErrorResponse, getLatestOpenArchieDraft, verifyArchieRequestUser } from "../../shared";
+import { assertCanUseArchieAi, createArchieErrorResponse, getLatestOpenArchieDraft, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
     const { uid } = await verifyArchieRequestUser(req);
+    assertCanUseArchieAi(await loadArchieUserPlan(uid));
     const draft = await getLatestOpenArchieDraft(uid);
     const response: ArchieRecentDraftResponse = draft
       ? {

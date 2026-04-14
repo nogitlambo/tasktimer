@@ -16,6 +16,7 @@ function createDbWithDrafts(
     createdAt: number;
     status?: "draft" | "applied" | "discarded";
     sessionId?: string | null;
+    proposedChanges?: Array<Record<string, unknown>>;
   }>
 ) {
   return {
@@ -32,7 +33,7 @@ function createDbWithDrafts(
                   summary: entry.summary,
                   reasoning: "Reasoning",
                   evidence: [],
-                  proposedChanges: [],
+                  proposedChanges: entry.proposedChanges ?? [],
                   createdAt: entry.createdAt,
                   status: entry.status ?? "draft",
                   sessionId: entry.sessionId ?? null,
@@ -53,7 +54,7 @@ function createDbWithDrafts(
                         summary: match.summary,
                         reasoning: "Reasoning",
                         evidence: [],
-                        proposedChanges: [],
+                        proposedChanges: match.proposedChanges ?? [],
                         createdAt: match.createdAt,
                         status: match.status ?? "draft",
                         sessionId: match.sessionId ?? null,
@@ -101,5 +102,25 @@ describe("Archie draft retrieval", () => {
     const draft = await getLatestOpenArchieDraft("user-1");
 
     expect(draft).toBeNull();
+  });
+
+  it("ignores legacy reorder-only drafts", async () => {
+    getFirebaseAdminDb.mockReturnValue(
+      createDbWithDrafts([
+        {
+          id: "draft-reorder",
+          summary: "Reorder",
+          createdAt: 300,
+          status: "draft",
+          proposedChanges: [{ kind: "reorder_task", taskId: "task-a", beforeOrder: 4, afterOrder: 1 }],
+        },
+        { id: "draft-schedule", summary: "Schedule", createdAt: 200, status: "draft" },
+      ])
+    );
+
+    const { getLatestOpenArchieDraft } = await import("./shared");
+    const draft = await getLatestOpenArchieDraft("user-1");
+
+    expect(draft?.id).toBe("draft-schedule");
   });
 });

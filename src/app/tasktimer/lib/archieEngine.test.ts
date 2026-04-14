@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildArchieQueryResponse, buildRecommendationDraft, type ArchieWorkspaceContext } from "./archieEngine";
 
@@ -63,14 +63,62 @@ function createContext(overrides?: Partial<ArchieWorkspaceContext>): ArchieWorks
 }
 
 describe("Archie engine", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("creates a conservative recommendation draft from under-served task data", () => {
     const draft = buildRecommendationDraft(createContext());
     expect(draft).not.toBeNull();
     expect(draft?.summary).toContain("Admin Cleanup");
     expect(draft?.proposedChanges.length).toBeGreaterThan(0);
+    expect(draft?.proposedChanges.some((change) => change.kind === "reorder_task")).toBe(false);
     expect(draft?.evidence.some((item) => item.includes("protected morning block"))).toBe(true);
     expect(draft?.reasoning).toContain("active flow");
     expect(draft?.reasoning).toContain("protected morning block");
+  });
+
+  it("does not use Tasks screen display order as a workflow optimization signal", () => {
+    const draft = buildRecommendationDraft(
+      createContext({
+        tasks: [
+          {
+            id: "task-a",
+            name: "Deep Work",
+            order: 99,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: true,
+            plannedStartDay: "mon",
+            plannedStartTime: "09:00",
+            plannedStartOpenEnded: false,
+          },
+          {
+            id: "task-b",
+            name: "Admin Cleanup",
+            order: 0,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: true,
+            plannedStartDay: null,
+            plannedStartTime: null,
+            plannedStartOpenEnded: false,
+          },
+        ],
+      })
+    );
+
+    expect(draft?.proposedChanges.some((change) => change.kind === "reorder_task")).toBe(false);
+    expect(draft?.kind).not.toBe("task_prioritization");
+    expect(draft?.reasoning.toLowerCase()).not.toContain("reorder");
   });
 
   it("answers product questions from curated knowledge with citations", () => {
@@ -109,6 +157,24 @@ describe("Archie engine", () => {
     expect(response.mode).toBe("workflow_advice");
     expect(response.draftId).toBe("draft-2");
     expect(response.suggestedAction?.kind).toBe("reviewDraft");
+  });
+
+  it("uses recent completion difficulty as recommendation evidence", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-14T10:00:00.000Z"));
+
+    const draft = buildRecommendationDraft(
+      createContext({
+        historyByTaskId: {
+          "task-a": [{ ts: new Date("2026-04-14T09:15:00Z").getTime(), name: "Deep Work", ms: 3600000, completionDifficulty: 5 }],
+          "task-b": [{ ts: new Date("2026-04-14T08:15:00Z").getTime(), name: "Admin Cleanup", ms: 3600000, completionDifficulty: 1 }],
+        },
+      })
+    );
+
+    expect(draft?.summary).toContain("Admin Cleanup");
+    expect(draft?.evidence).toContain("Recent challenge rating: Very Difficult.");
+    expect(draft?.reasoning).toContain("very difficult");
   });
 
   it("abstains on unsupported product questions instead of creating a workflow draft", () => {

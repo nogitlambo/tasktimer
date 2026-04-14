@@ -252,7 +252,6 @@ export function useSettingsAvatarState({
       };
       if (!isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, "");
       writeStoredAvatarId(authUserUid, avatarId);
-      notifyAccountAvatarUpdated();
       setAuthError("");
       try {
         await saveUserDocPatch(authUserUid, patch);
@@ -261,8 +260,10 @@ export function useSettingsAvatarState({
           avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
           googlePhotoUrl: isGoogleAvatar ? authGooglePhotoUrl || null : null,
         });
+        notifyAccountAvatarUpdated();
         showAvatarSyncNotice("Avatar saved.");
       } catch (err: unknown) {
+        notifyAccountAvatarUpdated();
         setAuthError(getErrorMessage(err, "Could not save avatar selection to cloud."));
         setAuthStatus("");
         showAvatarSyncNotice("Avatar saved locally. Cloud sync failed.", true);
@@ -305,13 +306,14 @@ export function useSettingsAvatarState({
       setSelectedAvatarId(customAvatarId);
       writeStoredCustomAvatarSrc(authUserUid, dataUrl);
       writeStoredAvatarId(authUserUid, customAvatarId);
-      notifyAccountAvatarUpdated();
       setAuthError("");
       try {
         await saveUserDocPatch(authUserUid, { avatarId: customAvatarId, avatarCustomSrc: dataUrl });
         await syncOwnFriendshipProfile(authUserUid, { avatarId: customAvatarId, avatarCustomSrc: dataUrl });
+        notifyAccountAvatarUpdated();
         showAvatarSyncNotice("Avatar uploaded.");
       } catch (err: unknown) {
+        notifyAccountAvatarUpdated();
         setAuthError(getErrorMessage(err, "Could not save uploaded avatar selection to cloud."));
         setAuthStatus("");
         showAvatarSyncNotice("Avatar uploaded locally. Cloud sync failed.", true);

@@ -135,7 +135,6 @@ function labelFromUser(user: User | null) {
 
 function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
   const normalizedAvatarId = String(avatarId || "").trim();
-  if (avatarCustomSrc) return avatarCustomSrc;
   if (normalizedAvatarId && normalizedAvatarId === customAvatarIdForUid(uid) && avatarCustomSrc) return avatarCustomSrc;
   if (normalizedAvatarId && normalizedAvatarId === googleAvatarIdForUid(uid) && googlePhotoUrl) return googlePhotoUrl;
   if (normalizedAvatarId) {
@@ -354,6 +353,7 @@ export default function DesktopAppRail({
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
+  const currentPlanBadgeLabel = currentPlan === "pro" ? "PRO" : currentPlanLabel;
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
   const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
@@ -470,13 +470,13 @@ export default function DesktopAppRail({
                         View Profile
                       </a>
                       <button
-                        className="dashboardTag dashboardRailProfileTagLink"
+                        className="dashboardTag dashboardRailProfileTagLink dashboardRailProfilePlanBadge"
                         id="rewardsInfoOpenBtn"
                         type="button"
                         aria-label={`Open ${currentPlanLabel} subscription details`}
                         title={`${currentPlanLabel} subscription details`}
                       >
-                        {currentPlanLabel}
+                        {currentPlanBadgeLabel}
                       </button>
                     </div>
                   </div>

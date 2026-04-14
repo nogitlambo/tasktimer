@@ -13,6 +13,7 @@ import type {
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import type { ArchieWorkspaceContext } from "@/app/tasktimer/lib/archieEngine";
 import type { Task, HistoryEntry } from "@/app/tasktimer/lib/types";
+import { normalizeCompletionDifficulty } from "@/app/tasktimer/lib/completionDifficulty";
 import { getRequestIdToken } from "../feedback/shared";
 import {
   canUseFirebaseAdminDefaultCredentials,
@@ -33,8 +34,45 @@ export class ArchieApiError extends Error {
   }
 }
 
+export type ArchieServerPlan = "free" | "pro";
+
 function asString(value: unknown, maxLength = 4000) {
   return String(value || "").trim().slice(0, maxLength);
+}
+
+export function normalizeArchieUserPlan(value: unknown): ArchieServerPlan {
+  return asString(value, 24).toLowerCase() === "pro" ? "pro" : "free";
+}
+
+export function canUseArchieAi(plan: ArchieServerPlan) {
+  return plan === "pro";
+}
+
+export function buildArchieUpgradeResponse(): ArchieQueryResponse {
+  return {
+    mode: "fallback",
+    message:
+      "I can answer product questions on Free. Workflow recommendations, draft changes, and AI-refined responses are included with Pro.",
+    citations: [],
+    confidence: "high",
+    suggestedAction: { kind: "navigate", label: "Upgrade to Pro", href: "/pricing" },
+  };
+}
+
+export async function loadArchieUserPlan(uid: string): Promise<ArchieServerPlan> {
+  const normalizedUid = asString(uid, 120);
+  if (!normalizedUid) return "free";
+  const snap = await getFirebaseAdminDb().collection("users").doc(normalizedUid).get();
+  return normalizeArchieUserPlan(snap.exists ? snap.get("plan") : null);
+}
+
+export function assertCanUseArchieAi(plan: ArchieServerPlan) {
+  if (canUseArchieAi(plan)) return;
+  throw new ArchieApiError(
+    "archie/pro-required",
+    buildArchieUpgradeResponse().message,
+    403
+  );
 }
 
 export function createArchieErrorResponse(error: unknown, fallbackMessage: string) {
@@ -117,6 +155,7 @@ function normalizeTask(raw: Record<string, unknown>): Task {
 }
 
 function normalizeHistoryEntry(raw: Record<string, unknown>): HistoryEntry {
+  const completionDifficulty = normalizeCompletionDifficulty(raw.completionDifficulty);
   return {
     ts: Math.max(0, Math.floor(Number(raw.ts || 0) || 0)),
     name: asString(raw.name, 200),
@@ -124,6 +163,7 @@ function normalizeHistoryEntry(raw: Record<string, unknown>): HistoryEntry {
     color: asString(raw.color, 120) || undefined,
     note: asString(raw.note, 1000) || undefined,
     xpDisqualifiedUntilReset: raw.xpDisqualifiedUntilReset === undefined ? undefined : !!raw.xpDisqualifiedUntilReset,
+    completionDifficulty,
   };
 }
 
@@ -333,7 +373,11 @@ export async function getLatestOpenArchieDraft(uid: string) {
 
   const doc = snap.docs.find((entry) => {
     const status = asString(entry.data()?.status, 24);
-    return !status || status === "draft";
+    const proposedChanges = entry.data()?.proposedChanges;
+    const hasLegacyReorderChange = Array.isArray(proposedChanges)
+      ? proposedChanges.some((change) => change?.kind === "reorder_task")
+      : false;
+    return (!status || status === "draft") && !hasLegacyReorderChange;
   });
   if (!doc) return null;
   return getArchieDraft(uid, doc.id);
@@ -371,9 +415,6 @@ export async function applyArchieDraft(uid: string, body: ArchieRecommendationAp
   let appliedCount = 0;
   draft.proposedChanges.forEach((change) => {
     if (change.kind === "reorder_task") {
-      const ref = db.collection("users").doc(uid).collection("tasks").doc(change.taskId);
-      batch.set(ref, { order: change.afterOrder, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      appliedCount += 1;
       return;
     }
     if (change.kind === "update_schedule") {

@@ -15,6 +15,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { validateUsername } from "@/lib/username";
 import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
+import { normalizeCompletionDifficulty } from "./completionDifficulty";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
@@ -131,11 +132,13 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
     next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
   }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
+  if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   return next;
 }
 
@@ -1127,10 +1130,12 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   const color = entry?.color == null ? null : String(entry.color);
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
   const xpDisqualifiedUntilReset = !!entry?.xpDisqualifiedUntilReset;
+  const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
   const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
   const payload: Record<string, unknown> = { ts, ms, name, xpDisqualifiedUntilReset, createdAt: serverTimestamp() };
   if (color) payload.color = color;
   if (note) payload.note = note;
+  if (completionDifficulty) payload.completionDifficulty = completionDifficulty;
   await setDoc(doc(col, entryId), payload);
 }
 
@@ -1141,7 +1146,8 @@ function historyEntryFingerprint(entry: HistoryEntry): string {
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
   const xpDisqualifiedUntilReset =
     "xpDisqualifiedUntilReset" in (entry || {}) ? (entry?.xpDisqualifiedUntilReset ? "1" : "0") : "";
-  return `${ts}|${ms}|${name}|${note}|${xpDisqualifiedUntilReset}`;
+  const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty) || "";
+  return `${ts}|${ms}|${name}|${note}|${xpDisqualifiedUntilReset}|${completionDifficulty}`;
 }
 
 function fnv1a32(input: string): string {
@@ -1176,6 +1182,9 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
       xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+      ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
+        ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
+        : {}),
     };
     const key = historyEntryFingerprint(normalized);
     if (seen.has(key)) return;
@@ -1193,6 +1202,9 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
         xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
         ...(entry?.color != null ? { color: String(entry.color) } : {}),
         ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+        ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
+          ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
+          : {}),
         createdAt: serverTimestamp(),
       })
     )

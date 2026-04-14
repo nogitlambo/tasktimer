@@ -1,6 +1,9 @@
+import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
+
 export type InsightEntry = {
   ts: number;
   ms: number;
+  completionDifficulty?: CompletionDifficulty;
 };
 
 export type FocusInsightsResult = {
@@ -9,6 +12,7 @@ export type FocusInsightsResult = {
   weekdayName: string | null;
   todayDeltaMs: number;
   weekDeltaMs: number;
+  completionDifficultyLabel: string | null;
 };
 
 function startOfTodayMs(nowTs: number): number {
@@ -56,12 +60,27 @@ export function computeFocusInsights(entries: InsightEntry[], nowTs: number): Fo
   const prevWeekStart = weekStart - 7 * 86400000;
   let thisWeekMs = 0;
   let lastWeekMs = 0;
+  const recentDifficulties: CompletionDifficulty[] = [];
+  let latestDifficultyTs = 0;
+  let latestDifficultyValue: CompletionDifficulty | undefined;
   valid.forEach((e) => {
     const ts = +e.ts || 0;
     const ms = Math.max(0, +e.ms || 0);
     if (ts >= weekStart && ts <= nowTs) thisWeekMs += ms;
     else if (ts >= prevWeekStart && ts < weekStart) lastWeekMs += ms;
+    const completionDifficulty = normalizeCompletionDifficulty(e.completionDifficulty);
+    if (completionDifficulty) {
+      if (ts >= weekStart && ts <= nowTs) recentDifficulties.push(completionDifficulty);
+      if (ts > latestDifficultyTs) {
+        latestDifficultyTs = ts;
+        latestDifficultyValue = completionDifficulty;
+      }
+    }
   });
+  const averageRecentDifficulty = recentDifficulties.length
+    ? Math.round(recentDifficulties.reduce((sum, value) => sum + value, 0) / recentDifficulties.length)
+    : null;
+  const completionDifficulty = normalizeCompletionDifficulty(averageRecentDifficulty) || latestDifficultyValue;
 
   return {
     bestMs,
@@ -69,5 +88,6 @@ export function computeFocusInsights(entries: InsightEntry[], nowTs: number): Fo
     weekdayName: valid.length ? weekdayNames[weekdayIdx] : null,
     todayDeltaMs: todayMs - yesterdayMs,
     weekDeltaMs: thisWeekMs - lastWeekMs,
+    completionDifficultyLabel: completionDifficultyLabel(completionDifficulty),
   };
 }

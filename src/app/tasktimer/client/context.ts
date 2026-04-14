@@ -17,6 +17,7 @@ import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
 import type { RewardProgressV1 } from "../lib/rewards";
+import type { CompletionDifficulty } from "../lib/completionDifficulty";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -418,7 +419,7 @@ export type TaskTimerTasksContext = {
   openFocusMode: (index: number) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
-  appendCompletedSessionHistory: (task: Task, completedAtMs: number, elapsedMs: number, note?: string) => void;
+  appendCompletedSessionHistory: (task: Task, completedAtMs: number, elapsedMs: number, note?: string, completionDifficulty?: CompletionDifficulty) => void;
   resetCheckpointAlertTracking: (taskId: string | null | undefined) => void;
   clearFocusSessionDraft: (taskId: string) => void;
   syncFocusSessionNotesInput: (taskId: string | null) => void;
@@ -730,7 +731,7 @@ export type TaskTimerSessionContext = {
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   resetTask: (index: number) => void;
-  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string }) => void;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty }) => void;
 };
 
 export type TaskTimerDashboardContext = {
