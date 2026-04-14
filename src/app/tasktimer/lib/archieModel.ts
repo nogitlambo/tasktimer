@@ -1,4 +1,5 @@
 import type { ArchieQueryResponse, ArchieRecommendationDraft } from "./archieAssistant";
+import { archieGenkit } from "./archieGenkit";
 
 type ArchieModelInput = {
   userMessage: string;
@@ -11,9 +12,8 @@ function asString(value: unknown) {
 }
 
 export async function maybeRefineArchieResponse(input: ArchieModelInput): Promise<ArchieQueryResponse> {
-  const apiKey = asString(process.env.OPENAI_API_KEY);
-  const model = asString(process.env.ARCHIE_OPENAI_MODEL);
-  if (!apiKey || !model) return input.baseResponse;
+  const model = asString(process.env.ARCHIE_GEMINI_MODEL) || "gemini-2.5-flash";
+  if (!model) return input.baseResponse;
 
   try {
     const guidance = [
@@ -30,20 +30,15 @@ export async function maybeRefineArchieResponse(input: ArchieModelInput): Promis
       .filter(Boolean)
       .join("\n");
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const { text } = await archieGenkit.generate({
+      model,
+      prompt: guidance,
+      config: {
+        temperature: 0.2,
+        maxOutputTokens: 220,
       },
-      body: JSON.stringify({
-        model,
-        input: guidance,
-      }),
     });
-    if (!response.ok) return input.baseResponse;
-    const payload = (await response.json().catch(() => null)) as { output_text?: unknown } | null;
-    const refined = asString(payload?.output_text);
+    const refined = asString(text);
     if (!refined) return input.baseResponse;
     return {
       ...input.baseResponse,

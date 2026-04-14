@@ -869,6 +869,11 @@ service cloud.firestore {
     match /users/{userId}/archieSessions/{sessionId} {
       allow read: if isOwner(userId);
       allow create, update, delete: if false;
+
+      match /events/{eventId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     match /friend_requests/{requestId} {

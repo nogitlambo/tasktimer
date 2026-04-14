@@ -69,6 +69,8 @@ describe("Archie engine", () => {
     expect(draft?.summary).toContain("Admin Cleanup");
     expect(draft?.proposedChanges.length).toBeGreaterThan(0);
     expect(draft?.evidence.some((item) => item.includes("protected morning block"))).toBe(true);
+    expect(draft?.reasoning).toContain("active flow");
+    expect(draft?.reasoning).toContain("protected morning block");
   });
 
   it("answers product questions from curated knowledge with citations", () => {
@@ -81,6 +83,20 @@ describe("Archie engine", () => {
     expect(response.mode).toBe("product_answer");
     expect(response.citations.length).toBeGreaterThan(0);
     expect(response.message.toLowerCase()).toContain("history manager");
+    expect(response.citations[0]?.route).toBe("/history-manager");
+    expect(response.citations[0]?.title).toContain("User Guide");
+  });
+
+  it("returns settings pane citations for settings answers", () => {
+    const response = buildArchieQueryResponse("Where do I change the theme?", createContext(), (seed) => ({
+      ...seed,
+      id: "draft-settings",
+      createdAt: Date.now(),
+      status: "draft",
+    }));
+    expect(response.mode).toBe("product_answer");
+    expect(response.citations[0]?.route).toBe("/settings");
+    expect(response.citations[0]?.settingsPane).toBe("appearance");
   });
 
   it("returns a reviewable draft for workflow questions", () => {
@@ -93,5 +109,29 @@ describe("Archie engine", () => {
     expect(response.mode).toBe("workflow_advice");
     expect(response.draftId).toBe("draft-2");
     expect(response.suggestedAction?.kind).toBe("reviewDraft");
+  });
+
+  it("abstains on unsupported product questions instead of creating a workflow draft", () => {
+    const response = buildArchieQueryResponse("How do I connect Slack to TaskLaunch?", createContext(), (seed) => ({
+      ...seed,
+      id: "draft-3",
+      createdAt: Date.now(),
+      status: "draft",
+    }));
+    expect(response.mode).toBe("fallback");
+    expect(response.draftId).toBeUndefined();
+    expect(response.citations).toEqual([]);
+    expect(response.message.toLowerCase()).toContain("not confident enough");
+  });
+
+  it("abstains when the knowledge match is too weak", () => {
+    const response = buildArchieQueryResponse("What does the assistant know about my spaceship settings?", createContext(), (seed) => ({
+      ...seed,
+      id: "draft-4",
+      createdAt: Date.now(),
+      status: "draft",
+    }));
+    expect(response.mode).toBe("fallback");
+    expect(response.draft).toBeUndefined();
   });
 });

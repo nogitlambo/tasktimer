@@ -99,6 +99,7 @@
 - [`src/app/tasktimer/lib/archieAssistant.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieAssistant.ts)
 - [`src/app/tasktimer/lib/archieEngine.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieEngine.test.ts)
 - [`src/app/tasktimer/lib/archieEngine.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieEngine.ts)
+- [`src/app/tasktimer/lib/archieGenkit.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieGenkit.ts)
 - [`src/app/tasktimer/lib/archieKnowledge.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieKnowledge.ts)
 - [`src/app/tasktimer/lib/archieModel.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/archieModel.ts)
 - [`src/app/tasktimer/lib/avatarCatalog.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/avatarCatalog.ts)

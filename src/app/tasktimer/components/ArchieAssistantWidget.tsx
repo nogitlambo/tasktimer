@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 
 import AppImg from "@/components/AppImg";
@@ -9,6 +10,7 @@ import {
   type ArchieAssistantPage,
   type ArchieKnowledgeCitation,
   type ArchieQueryResponse,
+  type ArchieRecentDraftResponse,
   type ArchieRecommendationDraft,
   type ArchieSuggestedAction,
   isArchieDraftAction,
@@ -32,7 +34,6 @@ const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
 const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
 const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
 const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
-const ARCHIE_INACTIVITY_CLOSE_MS = 30000;
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const ARCHIE_PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 const ARCHIE_FOCUS_SESSION_NOTES_KEY = `${STORAGE_KEY}:focusSessionNotes`;
@@ -85,22 +86,77 @@ function loadFocusSessionNotesByTaskId() {
   }
 }
 
+function formatOrdinal(value: number) {
+  const absolute = Math.abs(Math.trunc(value));
+  const mod100 = absolute % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${absolute}th`;
+  const mod10 = absolute % 10;
+  if (mod10 === 1) return `${absolute}st`;
+  if (mod10 === 2) return `${absolute}nd`;
+  if (mod10 === 3) return `${absolute}rd`;
+  return `${absolute}th`;
+}
+
+function formatPlannedSlot(day: string | null | undefined, time: string | null | undefined, openEnded: boolean | null | undefined) {
+  if (openEnded) {
+    return day ? `${day.toUpperCase()} with an open-ended start` : "an open-ended start";
+  }
+  if (day && time) return `${day.toUpperCase()} at ${time}`;
+  if (day) return `${day.toUpperCase()}`;
+  if (time) return `${time}`;
+  return "no scheduled start";
+}
+
 function changeSummary(change: ArchieRecommendationDraft["proposedChanges"][number]) {
   if (change.kind === "reorder_task") {
-    return `${change.taskName}: move from position ${change.beforeOrder + 1} to ${change.afterOrder + 1}`;
+    const beforePosition = change.beforeOrder + 1;
+    const afterPosition = change.afterOrder + 1;
+    if (afterPosition < beforePosition) {
+      if (afterPosition === 1) return `Move ${change.taskName} to the top of your list so it is easier to pick up next.`;
+      return `Move ${change.taskName} higher in your list, from ${formatOrdinal(beforePosition)} to ${formatOrdinal(afterPosition)} place.`;
+    }
+    if (afterPosition > beforePosition) {
+      return `Move ${change.taskName} lower in your list, from ${formatOrdinal(beforePosition)} to ${formatOrdinal(afterPosition)} place.`;
+    }
+    return `Keep ${change.taskName} in its current spot in the list.`;
   }
   if (change.kind === "update_schedule") {
-    const beforeDay = change.before.plannedStartDay ? change.before.plannedStartDay.toUpperCase() : "none";
-    const afterDay = change.after.plannedStartDay ? change.after.plannedStartDay.toUpperCase() : "none";
-    return `${change.taskName}: ${beforeDay} ${change.before.plannedStartTime || "--"} -> ${afterDay} ${change.after.plannedStartTime || "--"}`;
+    const beforeSlot = formatPlannedSlot(change.before.plannedStartDay, change.before.plannedStartTime, change.before.plannedStartOpenEnded);
+    const afterSlot = formatPlannedSlot(change.after.plannedStartDay, change.after.plannedStartTime, change.after.plannedStartOpenEnded);
+    if (beforeSlot === "no scheduled start") {
+      return `Give ${change.taskName} a clearer place in your week by scheduling it for ${afterSlot}.`;
+    }
+    return `Shift ${change.taskName} from ${beforeSlot} to ${afterSlot} so it fits better into your current flow.`;
   }
   return change.note;
+}
+
+function formatCitationTag(citation: ArchieKnowledgeCitation) {
+  const parts = [citation.title];
+  if (citation.settingsPane) parts.push(`Pane: ${citation.settingsPane}`);
+  else if (citation.route) parts.push(`Route: ${citation.route}`);
+  return parts.join(" | ");
+}
+
+async function sendArchieTelemetryEvent(input: { idToken: string; sessionId: string; draftId?: string | null; eventType: "review_opened" | "apply" | "discard" }) {
+  await fetch("/api/archie/events", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "x-firebase-auth": input.idToken,
+    },
+    body: JSON.stringify({
+      sessionId: input.sessionId,
+      draftId: input.draftId || null,
+      eventType: input.eventType,
+    }),
+  });
 }
 
 export default function ArchieAssistantWidget({ activePage, variant = "desktop" }: ArchieAssistantWidgetProps) {
   const [isArchieBubbleOpen, setIsArchieBubbleOpen] = useState(false);
   const [archieQuestion, setArchieQuestion] = useState("");
-  const [archieDisplayMessage, setArchieDisplayMessage] = useState(ARCHIE_DEFAULT_PROMPT);
   const [archieRenderedMessage, setArchieRenderedMessage] = useState(ARCHIE_DEFAULT_PROMPT);
   const [archieTitleAnimation, setArchieTitleAnimation] = useState<"none" | "prompt" | "response">("none");
   const [archieTitleAnimationKey, setArchieTitleAnimationKey] = useState(0);
@@ -112,13 +168,16 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const [archieBlinkPattern, setArchieBlinkPattern] = useState<ArchieBlinkPattern>("idle");
   const [archieCitations, setArchieCitations] = useState<ArchieKnowledgeCitation[]>([]);
   const [archieDraft, setArchieDraft] = useState<ArchieRecommendationDraft | null>(null);
+  const [archieLastOpenDraft, setArchieLastOpenDraft] = useState<ArchieRecommendationDraft | null>(null);
+  const [archieLastOpenDraftSessionId, setArchieLastOpenDraftSessionId] = useState<string | null>(null);
   const [archieBusy, setArchieBusy] = useState(false);
   const [archieReviewOpen, setArchieReviewOpen] = useState(false);
+  const [archieSessionId, setArchieSessionId] = useState<string | null>(null);
   const archieInputRef = useRef<HTMLTextAreaElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
   const archieBlinkStartTimerRef = useRef<number | null>(null);
   const archieBlinkStopTimerRef = useRef<number | null>(null);
-  const archieInactivityTimerRef = useRef<number | null>(null);
+  const canUsePortal = typeof document !== "undefined";
 
   const clearArchieTimers = useCallback(() => {
     archieTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
@@ -149,18 +208,9 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     }
   }, []);
 
-  const clearArchieInactivityTimer = useCallback(() => {
-    if (archieInactivityTimerRef.current != null) {
-      window.clearTimeout(archieInactivityTimerRef.current);
-      archieInactivityTimerRef.current = null;
-    }
-  }, []);
-
   const resetArchieBubble = useCallback(() => {
     clearArchieTimers();
-    clearArchieInactivityTimer();
     setArchieQuestion("");
-    setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieRenderedMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieTitleAnimation("none");
     setArchieTitleAnimationKey((value) => value + 1);
@@ -171,16 +221,16 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieSessionId(null);
     setArchieBusy(false);
     setArchieReviewOpen(false);
-  }, [clearArchieInactivityTimer, clearArchieTimers]);
+  }, [clearArchieTimers]);
 
   const closeArchieBubble = useCallback(
     (opts?: { animated?: boolean }) => {
       const reducedMotion = prefersReducedMotion();
       const animated = opts?.animated !== false && !reducedMotion;
       clearArchieTimers();
-      clearArchieInactivityTimer();
       if (!animated) {
         setIsArchieBubbleOpen(false);
         resetArchieBubble();
@@ -196,17 +246,8 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         resetArchieBubble();
       }, ARCHIE_OUTLINE_DRAW_MS);
     },
-    [clearArchieInactivityTimer, clearArchieTimers, prefersReducedMotion, queueArchieTimer, resetArchieBubble]
+    [clearArchieTimers, prefersReducedMotion, queueArchieTimer, resetArchieBubble]
   );
-
-  const restartArchieInactivityTimer = useCallback(() => {
-    clearArchieInactivityTimer();
-    if (!isArchieBubbleOpen) return;
-    archieInactivityTimerRef.current = window.setTimeout(() => {
-      archieInactivityTimerRef.current = null;
-      closeArchieBubble({ animated: true });
-    }, ARCHIE_INACTIVITY_CLOSE_MS);
-  }, [clearArchieInactivityTimer, closeArchieBubble, isArchieBubbleOpen]);
 
   const startArchieTyping = useCallback(
     (messageRaw: string, onComplete?: () => void) => {
@@ -226,13 +267,17 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   );
 
   const presentArchieResponse = useCallback(
-    (response: Pick<ArchieQueryResponse, "message" | "citations" | "suggestedAction" | "draft">) => {
+    (response: Pick<ArchieQueryResponse, "message" | "citations" | "suggestedAction" | "draft" | "sessionId">) => {
       const reducedMotion = prefersReducedMotion();
-      setArchieDisplayMessage(response.message);
       setArchieRenderedMessage(reducedMotion ? response.message : "");
       setArchieSuggestedAction(response.suggestedAction || null);
       setArchieCitations(response.citations || []);
       setArchieDraft(response.draft || null);
+      setArchieSessionId(response.sessionId || null);
+      if (response.draft) {
+        setArchieLastOpenDraft({ ...response.draft, sessionId: response.sessionId || null });
+        setArchieLastOpenDraftSessionId(response.sessionId || null);
+      }
       setArchieInputVisible(false);
       setArchieOutlineClosing(false);
       setArchieOutlineAnimating(false);
@@ -254,14 +299,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const startArchiePromptSequence = useCallback(() => {
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
-    clearArchieInactivityTimer();
     setArchieQuestion("");
-    setArchieDisplayMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieRenderedMessage(reducedMotion ? ARCHIE_DEFAULT_PROMPT : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieSessionId(null);
     setArchieReviewOpen(false);
     setArchieOutlineClosing(false);
     setArchieOutlineAnimating(!reducedMotion);
@@ -284,20 +328,19 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         setArchieInputVisible(true);
       });
     }, ARCHIE_OUTLINE_DRAW_MS);
-  }, [clearArchieInactivityTimer, clearArchieTimers, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+  }, [clearArchieTimers, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
 
   const submitArchieQuestion = useCallback(async () => {
     const nextQuestion = String(archieQuestion || "").trim();
     if (!nextQuestion || archieBusy) return;
     setArchieBusy(true);
     clearArchieTimers();
-    clearArchieInactivityTimer();
     setArchieQuestion("");
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieSessionId(null);
     setArchieReviewOpen(false);
-    setArchieDisplayMessage(ARCHIE_LOADING_PROMPT);
     setArchieRenderedMessage(ARCHIE_LOADING_PROMPT);
     setArchieInputVisible(false);
     setArchieOutlineClosing(false);
@@ -350,18 +393,16 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     } finally {
       setArchieBusy(false);
     }
-  }, [activePage, archieBusy, archieQuestion, clearArchieInactivityTimer, clearArchieTimers, presentArchieResponse]);
+  }, [activePage, archieBusy, archieQuestion, clearArchieTimers, presentArchieResponse]);
 
   const showArchieHelpMessage = useCallback((message: string) => {
     const nextMessage = String(message || "").trim();
     if (!nextMessage) return;
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
-    clearArchieInactivityTimer();
     const shouldAnimateOpen = !isArchieBubbleOpen;
     setIsArchieBubbleOpen(true);
     setArchieQuestion("");
-    setArchieDisplayMessage(nextMessage);
     setArchieRenderedMessage(reducedMotion ? nextMessage : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
@@ -401,13 +442,28 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       setArchieTitleAnimation("none");
       setArchieInputVisible(true);
     });
-  }, [clearArchieInactivityTimer, clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+  }, [clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
 
   const handleArchieSuggestedAction = useCallback(() => {
     if (!archieSuggestedAction || typeof window === "undefined") return;
-    restartArchieInactivityTimer();
     if (isArchieDraftAction(archieSuggestedAction)) {
       setArchieReviewOpen(true);
+      if (archieSessionId && archieDraft?.id) {
+        void (async () => {
+          try {
+            const session = await resolveAuthSession();
+            if (!session?.idToken) return;
+            await sendArchieTelemetryEvent({
+              idToken: session.idToken,
+              sessionId: archieSessionId,
+              draftId: archieDraft.id,
+              eventType: "review_opened",
+            });
+          } catch {
+            // Ignore telemetry failures.
+          }
+        })();
+      }
       return;
     }
     if (archieSuggestedAction.kind === "navigate") {
@@ -440,7 +496,30 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     const pathname = String(window.location.pathname || "");
     const onTasksRoute = /\/tasklaunch\/?$/i.test(pathname) || /\/tasklaunch\/index\.html$/i.test(pathname);
     if (!onTasksRoute) window.location.assign("/tasklaunch");
-  }, [archieSuggestedAction, restartArchieInactivityTimer]);
+  }, [archieDraft?.id, archieSessionId, archieSuggestedAction]);
+
+  const handleReopenLastDraft = useCallback(() => {
+    if (!archieLastOpenDraft) return;
+    setArchieDraft(archieLastOpenDraft);
+    setArchieSessionId(archieLastOpenDraftSessionId || archieLastOpenDraft.sessionId || null);
+    setArchieReviewOpen(true);
+    const resolvedSessionId = archieLastOpenDraftSessionId || archieLastOpenDraft.sessionId || null;
+    if (!resolvedSessionId || !archieLastOpenDraft.id) return;
+    void (async () => {
+      try {
+        const session = await resolveAuthSession();
+        if (!session?.idToken) return;
+        await sendArchieTelemetryEvent({
+          idToken: session.idToken,
+          sessionId: resolvedSessionId,
+          draftId: archieLastOpenDraft.id,
+          eventType: "review_opened",
+        });
+      } catch {
+        // Ignore telemetry failures.
+      }
+    })();
+  }, [archieLastOpenDraft, archieLastOpenDraftSessionId]);
 
   const handleDraftDecision = useCallback(
     async (decision: "apply" | "discard") => {
@@ -467,6 +546,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
           body: JSON.stringify({
             draftId: archieDraft.id,
             decision,
+            sessionId: archieSessionId,
           }),
         });
         const result = (await response.json().catch(() => null)) as { error?: string; appliedCount?: number } | null;
@@ -480,6 +560,10 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
           return;
         }
         setArchieReviewOpen(false);
+        if (archieLastOpenDraft?.id === archieDraft.id) {
+          setArchieLastOpenDraft(null);
+          setArchieLastOpenDraftSessionId(null);
+        }
         if (decision === "discard") {
           presentArchieResponse({
             message: "Draft discarded. Your current task order and schedule stayed unchanged.",
@@ -506,7 +590,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         setArchieBusy(false);
       }
     },
-    [archieBusy, archieDraft, presentArchieResponse]
+    [archieBusy, archieDraft, archieLastOpenDraft?.id, archieSessionId, presentArchieResponse]
   );
 
   const handleArchieToggle = useCallback(() => {
@@ -533,13 +617,42 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   }, [archieInputVisible, isArchieBubbleOpen]);
 
   useEffect(() => {
-    if (!isArchieBubbleOpen || archieOutlineClosing) {
-      clearArchieInactivityTimer();
-      return;
-    }
-    restartArchieInactivityTimer();
-    return () => clearArchieInactivityTimer();
-  }, [archieBusy, archieDisplayMessage, archieInputVisible, archieOutlineClosing, archieQuestion, archieSuggestedAction, clearArchieInactivityTimer, isArchieBubbleOpen, restartArchieInactivityTimer]);
+    if (!isArchieBubbleOpen) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const session = await resolveAuthSession();
+        if (!session?.idToken) return;
+        const response = await fetch("/api/archie/recommendations/latest", {
+          method: "GET",
+          credentials: "same-origin",
+          headers: {
+            "x-firebase-auth": session.idToken,
+          },
+        });
+        const result = (await response.json().catch(() => null)) as ArchieRecentDraftResponse | null;
+        if (cancelled || !response.ok) return;
+        if (!result?.draft) {
+          setArchieLastOpenDraft(null);
+          setArchieLastOpenDraftSessionId(null);
+          return;
+        }
+        setArchieLastOpenDraft(result.draft);
+        setArchieLastOpenDraftSessionId(result.sessionId || result.draft.sessionId || null);
+      } catch {
+        // Ignore lookup failures and leave recent-draft UI hidden.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isArchieBubbleOpen]);
+
+  const showReopenLastDraft =
+    isArchieBubbleOpen &&
+    archieInputVisible &&
+    !!archieLastOpenDraft &&
+    (!isArchieDraftAction(archieSuggestedAction) || archieSuggestedAction.draftId === archieLastOpenDraft.id);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -598,7 +711,6 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         <div
           className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}`}
           aria-hidden={!isArchieBubbleOpen}
-          onPointerDown={() => restartArchieInactivityTimer()}
         >
           <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
             <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineTop" />
@@ -620,7 +732,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
             <div className={`desktopRailMascotMeta${archieInputVisible ? " isVisible" : ""}`} aria-label="Archie sources">
               {archieCitations.slice(0, 2).map((citation) => (
                 <span className="desktopRailMascotMetaTag" key={citation.id}>
-                  {citation.title}: {citation.section}
+                  {formatCitationTag(citation)}
                 </span>
               ))}
             </div>
@@ -635,6 +747,17 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               >
                 {archieSuggestedAction.label}
               </button>
+              {showReopenLastDraft && (!archieSuggestedAction || !isArchieDraftAction(archieSuggestedAction)) ? (
+                <button className="btn btn-ghost small desktopRailMascotActionBtn" type="button" onClick={handleReopenLastDraft} disabled={archieBusy}>
+                  Reopen Last Draft
+                </button>
+              ) : null}
+            </div>
+          ) : showReopenLastDraft ? (
+            <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
+              <button className="btn btn-ghost small desktopRailMascotActionBtn" type="button" onClick={handleReopenLastDraft} disabled={archieBusy}>
+                Reopen Last Draft
+              </button>
             </div>
           ) : null}
           <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
@@ -644,11 +767,9 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               value={archieQuestion}
               rows={2}
               onChange={(event) => {
-                restartArchieInactivityTimer();
                 setArchieQuestion(event.target.value);
               }}
               onKeyDown={handleArchieInputKeyDown}
-              onFocus={() => restartArchieInactivityTimer()}
               placeholder={archieBusy ? "Archie is thinking..." : "Ask Archie a question..."}
               aria-label="Ask Archie a question"
               disabled={archieBusy}
@@ -673,51 +794,42 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         </button>
       </div>
 
-      {archieReviewOpen && archieDraft ? (
-        <div className="overlay" onClick={() => setArchieReviewOpen(false)}>
-          <div className="modal archieDraftModal" role="dialog" aria-modal="true" aria-label="Archie Draft Review" onClick={(event) => event.stopPropagation()}>
-            <div className="confirmText">Review Draft</div>
-            <div className="modalSubtext">{archieDraft.summary}</div>
-            <div className="archieDraftSection">
-              <div className="archieDraftSectionTitle">Reasoning</div>
-              <div className="archieDraftReasoning">{archieDraft.reasoning}</div>
-            </div>
-            {archieDraft.evidence.length ? (
-              <div className="archieDraftSection">
-                <div className="archieDraftSectionTitle">Evidence</div>
-                <div className="archieDraftList">
-                  {archieDraft.evidence.map((item, index) => (
-                    <div className="archieDraftListItem" key={`${item}-${index}`}>
-                      {item}
-                    </div>
-                  ))}
+      {archieReviewOpen && archieDraft && canUsePortal
+        ? createPortal(
+            <div className="overlay" style={{ display: "flex" }} onClick={() => setArchieReviewOpen(false)}>
+              <div className="modal archieDraftModal" role="dialog" aria-modal="true" aria-label="Archie Draft Review" onClick={(event) => event.stopPropagation()}>
+                <div className="confirmText">Review Draft</div>
+                <div className="modalSubtext">{archieDraft.summary}</div>
+                <div className="archieDraftSection">
+                  <div className="archieDraftSectionTitle">Reasoning</div>
+                  <div className="archieDraftReasoning">{archieDraft.reasoning}</div>
+                </div>
+                <div className="archieDraftSection">
+                  <div className="archieDraftSectionTitle">Changes</div>
+                  <div className="archieDraftList">
+                    {archieDraft.proposedChanges.map((change, index) => (
+                      <div className="archieDraftListItem" key={`${change.kind}-${index}`}>
+                        {changeSummary(change)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="confirmBtns">
+                  <button className="btn btn-ghost" type="button" onClick={() => setArchieReviewOpen(false)} disabled={archieBusy}>
+                    Close
+                  </button>
+                  <button className="btn btn-ghost" type="button" onClick={() => void handleDraftDecision("discard")} disabled={archieBusy}>
+                    Discard
+                  </button>
+                  <button className="btn btn-accent" type="button" onClick={() => void handleDraftDecision("apply")} disabled={archieBusy}>
+                    Apply Draft
+                  </button>
                 </div>
               </div>
-            ) : null}
-            <div className="archieDraftSection">
-              <div className="archieDraftSectionTitle">Changes</div>
-              <div className="archieDraftList">
-                {archieDraft.proposedChanges.map((change, index) => (
-                  <div className="archieDraftListItem" key={`${change.kind}-${index}`}>
-                    {changeSummary(change)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="confirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={() => setArchieReviewOpen(false)} disabled={archieBusy}>
-                Close
-              </button>
-              <button className="btn btn-ghost" type="button" onClick={() => void handleDraftDecision("discard")} disabled={archieBusy}>
-                Discard
-              </button>
-              <button className="btn btn-accent" type="button" onClick={() => void handleDraftDecision("apply")} disabled={archieBusy}>
-                Apply Draft
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }

@@ -4,7 +4,7 @@ import type {
   ArchieQueryResponse,
   ArchieRecommendationDraft,
 } from "./archieAssistant";
-import { searchArchieKnowledge, toCitation } from "./archieKnowledge";
+import { searchArchieKnowledge, toCitation, type ArchieKnowledgeMatch } from "./archieKnowledge";
 import type { UserPreferencesV1, TaskUiConfig } from "./cloudStore";
 import type { HistoryByTaskId, Task } from "./types";
 
@@ -162,10 +162,65 @@ function isRunningTaskQuery(question: string) {
   return /(currently working|running task|working on now|what am i working on)/i.test(question);
 }
 
+function isProductQuestion(question: string) {
+  return /(how do i|how to|where is|what is|what does|can i|does tasklaunch|in settings|history manager|dashboard|focus mode|appearance|theme|backup|export|import|reset|notifications|privacy|account|user guide|feedback)/i.test(
+    question
+  );
+}
+
 function noteSnippet(note: string) {
   const cleaned = String(note || "").replace(/\s+/g, " ").trim();
   if (!cleaned) return "";
   return cleaned.length > 90 ? `${cleaned.slice(0, 87)}...` : cleaned;
+}
+
+function buildDraftReasoning(input: {
+  candidate: TaskInsight;
+  runningTasks: Task[];
+  reorderChanges: ArchieDraftChange[];
+  scheduleChanges: Extract<ArchieDraftChange, { kind: "update_schedule" }>[];
+  bestSlot: ProductivitySlot | null;
+  evidence: string[];
+}) {
+  const lines: string[] = [];
+  const runningTaskNames = input.runningTasks.map((task) => String(task.name || "Task")).filter(Boolean);
+  const taskName = String(input.candidate.task.name || "Task");
+
+  if (runningTaskNames.length) {
+    lines.push(
+      `${taskName} is currently under-served compared with the rest of your active queue, so this draft brings it forward without interrupting ${humanJoin(runningTaskNames)}.`
+    );
+  } else {
+    lines.push(`${taskName} is currently under-served in your queue, so this draft brings it back into your active flow instead of leaving it buried.`);
+  }
+
+  if (input.candidate.lastLoggedAtMs > 0) {
+    lines.push(`${taskName} has not been logged since ${new Date(input.candidate.lastLoggedAtMs).toLocaleDateString("en-US")}.`);
+  } else {
+    lines.push(`${taskName} has no completed history yet, which is why Archie is treating it as the next task to surface.`);
+  }
+
+  if (input.candidate.recentWeekMs <= 0) {
+    lines.push(`It also has no logged time in the last 7 days, so the current flow is not naturally bringing you back to it.`);
+  }
+
+  if (input.candidate.note) {
+    lines.push(`Your latest focus note for this task was "${noteSnippet(input.candidate.note)}", so the draft keeps that context in mind.`);
+  }
+
+  if (input.scheduleChanges.length && input.bestSlot) {
+    lines.push(
+      `The schedule change moves it into your strongest logged work window on ${input.bestSlot.day.toUpperCase()} around ${formatHour(input.bestSlot.hour)}, which is the best fit the current history suggests.`
+    );
+  } else if (input.reorderChanges.length) {
+    lines.push(`The task reorder lifts it closer to the top of the queue so it fits the next-step flow you are already using.`);
+  }
+
+  if (!input.scheduleChanges.length && !input.reorderChanges.length && input.evidence.length) {
+    lines.push(input.evidence[0] || "");
+  }
+
+  return lines.join(" ");
 }
 
 function buildCurrentWorkResponse(context: ArchieWorkspaceContext): ArchieQueryResponse | null {
@@ -188,17 +243,30 @@ function buildCurrentWorkResponse(context: ArchieWorkspaceContext): ArchieQueryR
   };
 }
 
+function knowledgeMatchConfidence(best: ArchieKnowledgeMatch | undefined, nextBest: ArchieKnowledgeMatch | undefined): ArchieConfidence | null {
+  if (!best) return null;
+  const hasStrongPhraseMatch = best.matchedPhraseCount > 0;
+  const hasConcreteTokenCoverage = best.matchedTokenCount >= 2 && best.matchedTokenCount >= best.unmatchedTokenCount;
+  if (!hasStrongPhraseMatch && !hasConcreteTokenCoverage) return null;
+  if (best.matchedKeywordCount === 0 && best.matchedTokenCount < 2) return null;
+  if (best.score >= 11 && (!nextBest || best.score - nextBest.score >= 3)) return "high";
+  if (best.score >= 7) return "medium";
+  return null;
+}
+
 function buildKnowledgeResponse(question: string): ArchieQueryResponse | null {
-  const hits = searchArchieKnowledge(question);
-  if (!hits.length) return null;
-  const best = hits[0];
-  const confidence: ArchieConfidence = hits.length > 1 ? "medium" : "high";
+  const matches = searchArchieKnowledge(question);
+  if (!matches.length) return null;
+  const best = matches[0];
+  const nextBest = matches[1];
+  const confidence = knowledgeMatchConfidence(best, nextBest);
+  if (!confidence) return null;
   return {
     mode: "product_answer",
-    message: best.content,
-    citations: [toCitation(best)],
+    message: best.entry.answer,
+    citations: [toCitation(best.entry)],
     confidence,
-    suggestedAction: best.suggestedAction,
+    suggestedAction: best.entry.suggestedAction,
   };
 }
 
@@ -211,6 +279,7 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   });
   const candidate = sortedInsights.find((entry) => !entry.task.running);
   if (!candidate) return null;
+  const runningTasks = context.tasks.filter((task) => !!task.running);
 
   const evidence: string[] = [];
   if (candidate.lastLoggedAtMs > 0) {
@@ -280,7 +349,14 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext): Draft
   return {
     kind,
     summary: summaryParts.join(" "),
-    reasoning: evidence.join(" "),
+    reasoning: buildDraftReasoning({
+      candidate,
+      runningTasks,
+      reorderChanges,
+      scheduleChanges,
+      bestSlot,
+      evidence,
+    }),
     evidence,
     proposedChanges: changes,
   };
@@ -290,7 +366,7 @@ export function buildFallbackResponse(): ArchieQueryResponse {
   return {
     mode: "fallback",
     message:
-      "I am not confident enough to answer that yet from TaskLaunch data alone. Ask about tasks, history, settings, or let me recommend a workflow adjustment.",
+      "I am not confident enough to answer that from current TaskLaunch documentation. Ask about a specific feature or ask me for workflow advice.",
     citations: [],
     confidence: "low",
   };
@@ -326,16 +402,7 @@ export function buildArchieQueryResponse(
   const knowledgeResponse = buildKnowledgeResponse(normalized);
   if (knowledgeResponse) return knowledgeResponse;
 
-  const seed = buildRecommendationDraft(context);
-  if (!seed) return buildFallbackResponse();
-  const draft = createDraft(seed);
-  return {
-    mode: "workflow_advice",
-    message: `${draft.summary} I am keeping the recommendation conservative because the question was not specific enough for a stronger claim.`,
-    citations: [],
-    confidence: "low",
-    suggestedAction: { kind: "reviewDraft", label: "Review Draft", draftId: draft.id },
-    draftId: draft.id,
-    draft,
-  };
+  if (isProductQuestion(normalized)) return buildFallbackResponse();
+
+  return buildFallbackResponse();
 }

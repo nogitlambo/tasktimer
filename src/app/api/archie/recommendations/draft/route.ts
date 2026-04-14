@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Archie could not create a recommendation draft from the current workspace.", code: "archie/no-draft" }, { status: 422 });
     }
     const draft = buildDraft(seed);
-    await saveArchieDraft(uid, draft, requestBody.message);
+    await saveArchieDraft(uid, draft);
     return NextResponse.json({ ok: true, draft });
   } catch (error) {
     console.error("[api/archie/recommendations/draft] Request failed", error);

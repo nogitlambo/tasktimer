@@ -5,6 +5,7 @@ import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistan
 import { buildArchieQueryResponse } from "@/app/tasktimer/lib/archieEngine";
 import { maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
 import {
+  attachArchieDraftSession,
   buildDraft,
   createArchieErrorResponse,
   loadArchieWorkspaceContext,
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const startedAt = Date.now();
     const body = (await req.json()) as ArchieQueryRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);
     const requestBody: ArchieQueryRequest = {
@@ -28,15 +30,22 @@ export async function POST(req: Request) {
     const context = await loadArchieWorkspaceContext(uid, requestBody);
     const baseResponse = buildArchieQueryResponse(requestBody.message, context, buildDraft);
     if (baseResponse.draft) {
-      await saveArchieDraft(uid, baseResponse.draft, requestBody.message);
+      await saveArchieDraft(uid, baseResponse.draft);
     }
     const response = await maybeRefineArchieResponse({
       userMessage: requestBody.message,
       baseResponse,
       draft: baseResponse.draft,
     });
-    await writeArchieSession(uid, { request: requestBody, response });
-    return NextResponse.json(response);
+    const sessionId = await writeArchieSession(uid, {
+      request: requestBody,
+      response,
+      latencyMs: Date.now() - startedAt,
+    });
+    if (baseResponse.draft?.id) {
+      await attachArchieDraftSession(uid, baseResponse.draft.id, sessionId);
+    }
+    return NextResponse.json({ ...response, sessionId });
   } catch (error) {
     console.error("[api/archie/query] Request failed", error);
     return createArchieErrorResponse(error, "Archie could not answer that request.");

@@ -4,8 +4,11 @@ import { FieldValue } from "firebase-admin/firestore";
 import type {
   ArchieQueryRequest,
   ArchieQueryResponse,
+  ArchieTelemetryEventRequest,
+  ArchieTelemetryEventType,
   ArchieRecommendationApplyRequest,
   ArchieRecommendationDraft,
+  ArchieDraftKind,
 } from "@/app/tasktimer/lib/archieAssistant";
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import type { ArchieWorkspaceContext } from "@/app/tasktimer/lib/archieEngine";
@@ -132,6 +135,94 @@ function userSessionDoc(uid: string, sessionId: string) {
   return getFirebaseAdminDb().collection("users").doc(uid).collection("archieSessions").doc(sessionId);
 }
 
+function userSessionEventDoc(uid: string, sessionId: string, eventId: string) {
+  return userSessionDoc(uid, sessionId).collection("events").doc(eventId);
+}
+
+const ARCHIE_TELEMETRY_RETENTION_DAYS = 90;
+
+function retentionExpiryDate() {
+  return new Date(Date.now() + ARCHIE_TELEMETRY_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+function isArchieDebugLoggingEnabled() {
+  return process.env.NODE_ENV !== "production" && asString(process.env.ARCHIE_LOG_RAW_TEXT, 8) === "1";
+}
+
+function getArchieTelemetryProvider() {
+  return "genkit-google-genai";
+}
+
+function getArchieTelemetryModel() {
+  return asString(process.env.ARCHIE_GEMINI_MODEL, 120) || "gemini-2.5-flash";
+}
+
+function getArchieGroundingKind(response: ArchieQueryResponse) {
+  if (response.draftId || response.draft) return "draft";
+  if (response.mode === "fallback") return "fallback";
+  if (response.citations.length) return "grounded";
+  return "ungrounded";
+}
+
+function getArchieDraftKind(response: ArchieQueryResponse): ArchieDraftKind | null {
+  return response.draft?.kind || null;
+}
+
+export function createArchieSessionTelemetry(input: {
+  sessionId: string;
+  request: ArchieQueryRequest;
+  response: ArchieQueryResponse;
+  latencyMs: number;
+}) {
+  const debugLoggingEnabled = isArchieDebugLoggingEnabled();
+  return {
+    sessionId: asString(input.sessionId, 120),
+    activePage: normalizeArchieAssistantPage(input.request.activePage),
+    responseMode: input.response.mode,
+    confidence: input.response.confidence,
+    citationIds: input.response.citations.map((citation) => asString(citation.id, 120)).filter(Boolean),
+    citationSources: input.response.citations
+      .map((citation) => asString(citation.title, 200))
+      .filter(Boolean)
+      .slice(0, 8),
+    draftId: input.response.draftId || null,
+    draftKind: getArchieDraftKind(input.response),
+    groundingKind: getArchieGroundingKind(input.response),
+    latencyMs: Math.max(0, Math.floor(Number(input.latencyMs || 0) || 0)),
+    model: getArchieTelemetryModel(),
+    provider: getArchieTelemetryProvider(),
+    debugLoggingEnabled,
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt: retentionExpiryDate(),
+    schemaVersion: 2,
+    ...(debugLoggingEnabled
+      ? {
+          rawUserMessage: asString(input.request.message, 2000),
+          rawAssistantMessage: asString(input.response.message, 4000),
+        }
+      : {}),
+  };
+}
+
+export function createArchieTelemetryEvent(input: {
+  sessionId: string;
+  draftId?: string | null;
+  eventType: ArchieTelemetryEventType;
+  appliedCount?: number;
+  draftKind?: ArchieDraftKind | null;
+}) {
+  return {
+    sessionId: asString(input.sessionId, 120),
+    draftId: asString(input.draftId, 120) || null,
+    eventType: input.eventType,
+    appliedCount: Math.max(0, Math.floor(Number(input.appliedCount || 0) || 0)),
+    draftKind: input.draftKind || null,
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt: retentionExpiryDate(),
+    schemaVersion: 1,
+  };
+}
+
 export async function loadArchieWorkspaceContext(uid: string, requestBody: ArchieQueryRequest): Promise<ArchieWorkspaceContext> {
   const db = getFirebaseAdminDb();
   const tasksSnap = await db.collection("users").doc(uid).collection("tasks").get();
@@ -159,31 +250,49 @@ export async function loadArchieWorkspaceContext(uid: string, requestBody: Archi
   };
 }
 
-export async function saveArchieDraft(uid: string, draft: ArchieRecommendationDraft, sourceMessage: string) {
+export async function saveArchieDraft(uid: string, draft: ArchieRecommendationDraft) {
   await userDraftDoc(uid, draft.id).set({
     ...draft,
-    sourceMessage,
     updatedAt: FieldValue.serverTimestamp(),
     schemaVersion: 1,
   });
 }
 
+export async function attachArchieDraftSession(uid: string, draftId: string, sessionId: string) {
+  const normalizedDraftId = asString(draftId, 120);
+  const normalizedSessionId = asString(sessionId, 120);
+  if (!normalizedDraftId || !normalizedSessionId) return;
+  await userDraftDoc(uid, normalizedDraftId).set(
+    {
+      sessionId: normalizedSessionId,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 export async function writeArchieSession(uid: string, input: {
+  sessionId?: string;
   request: ArchieQueryRequest;
   response: ArchieQueryResponse;
+  latencyMs: number;
 }) {
-  const sessionId = randomUUID();
-  await userSessionDoc(uid, sessionId).set({
-    sessionId,
-    message: asString(input.request.message, 2000),
-    activePage: normalizeArchieAssistantPage(input.request.activePage),
-    responseMode: input.response.mode,
-    confidence: input.response.confidence,
-    citations: input.response.citations,
-    draftId: input.response.draftId || null,
-    createdAt: FieldValue.serverTimestamp(),
-    schemaVersion: 1,
-  });
+  const sessionId = asString(input.sessionId, 120) || randomUUID();
+  await userSessionDoc(uid, sessionId).set(createArchieSessionTelemetry({ sessionId, ...input }));
+  return sessionId;
+}
+
+export async function writeArchieTelemetryEvent(uid: string, input: {
+  sessionId: string | null;
+  draftId?: string | null;
+  eventType: ArchieTelemetryEventType;
+  appliedCount?: number;
+  draftKind?: ArchieDraftKind | null;
+}) {
+  const sessionId = asString(input.sessionId, 120);
+  if (!sessionId) return;
+  const eventId = randomUUID();
+  await userSessionEventDoc(uid, sessionId, eventId).set(createArchieTelemetryEvent({ ...input, sessionId }));
 }
 
 export function buildDraft(seed: Omit<ArchieRecommendationDraft, "id" | "createdAt" | "status">): ArchieRecommendationDraft {
@@ -210,7 +319,24 @@ export async function getArchieDraft(uid: string, draftId: string) {
     proposedChanges: Array.isArray(data.proposedChanges) ? data.proposedChanges : [],
     createdAt: Math.max(0, Math.floor(Number(data.createdAt || 0) || 0)),
     status: data.status === "applied" || data.status === "discarded" ? data.status : "draft",
+    sessionId: asString(data.sessionId, 120) || null,
   } satisfies ArchieRecommendationDraft;
+}
+
+export async function getLatestOpenArchieDraft(uid: string) {
+  const snap = await getFirebaseAdminDb()
+    .collection("users")
+    .doc(uid)
+    .collection("archieDrafts")
+    .orderBy("createdAt", "desc")
+    .get();
+
+  const doc = snap.docs.find((entry) => {
+    const status = asString(entry.data()?.status, 24);
+    return !status || status === "draft";
+  });
+  if (!doc) return null;
+  return getArchieDraft(uid, doc.id);
 }
 
 export async function applyArchieDraft(uid: string, body: ArchieRecommendationApplyRequest) {
@@ -221,6 +347,7 @@ export async function applyArchieDraft(uid: string, body: ArchieRecommendationAp
   const decision = body.decision === "discard" ? "discard" : "apply";
   const draft = await getArchieDraft(uid, draftId);
   const draftRef = userDraftDoc(uid, draftId);
+  const sessionId = asString(body.sessionId, 120) || null;
   if (decision === "discard") {
     await draftRef.set(
       {
@@ -229,6 +356,13 @@ export async function applyArchieDraft(uid: string, body: ArchieRecommendationAp
       },
       { merge: true }
     );
+    await writeArchieTelemetryEvent(uid, {
+      sessionId,
+      draftId,
+      eventType: "discard",
+      appliedCount: 0,
+      draftKind: draft.kind,
+    });
     return { ok: true, decision, appliedCount: 0, draft };
   }
 
@@ -266,5 +400,37 @@ export async function applyArchieDraft(uid: string, body: ArchieRecommendationAp
     { merge: true }
   );
   await batch.commit();
+  await writeArchieTelemetryEvent(uid, {
+    sessionId,
+    draftId,
+    eventType: "apply",
+    appliedCount,
+    draftKind: draft.kind,
+  });
   return { ok: true, decision, appliedCount, draft: { ...draft, status: "applied" as const } };
+}
+
+export async function recordArchieTelemetryEvent(uid: string, body: ArchieTelemetryEventRequest) {
+  const sessionId = asString(body.sessionId, 120);
+  if (!sessionId) {
+    throw new ArchieApiError("archie/invalid-session-id", "A valid Archie session id is required.", 400);
+  }
+  const eventType = body.eventType === "review_opened" || body.eventType === "apply" || body.eventType === "discard" ? body.eventType : null;
+  if (!eventType) {
+    throw new ArchieApiError("archie/invalid-event", "A valid Archie telemetry event is required.", 400);
+  }
+  let draftKind: ArchieDraftKind | null = null;
+  const draftId = asString(body.draftId, 120) || null;
+  if (draftId) {
+    const draft = await getArchieDraft(uid, draftId);
+    draftKind = draft.kind;
+  }
+  await writeArchieTelemetryEvent(uid, {
+    sessionId,
+    draftId,
+    eventType,
+    draftKind,
+    appliedCount: 0,
+  });
+  return { ok: true };
 }

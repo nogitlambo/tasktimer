@@ -22,6 +22,9 @@ export type ArchieKnowledgeCitation = {
   id: string;
   title: string;
   section: string;
+  route?: "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/user-guide" | "/feedback";
+  settingsPane?: ArchieSettingsPane;
+  sourceKind?: "user-guide" | "settings" | "policy";
 };
 
 export type ArchieSuggestedAction =
@@ -67,6 +70,7 @@ export type ArchieRecommendationDraft = {
   proposedChanges: ArchieDraftChange[];
   createdAt: number;
   status?: "draft" | "applied" | "discarded";
+  sessionId?: string | null;
 };
 
 export type ArchieQueryRequest = {
@@ -84,6 +88,7 @@ export type ArchieQueryResponse = {
   suggestedAction?: ArchieSuggestedAction;
   draftId?: string;
   draft?: ArchieRecommendationDraft;
+  sessionId?: string;
 };
 
 export type ArchieRecommendationDraftRequest = ArchieQueryRequest & {
@@ -93,6 +98,21 @@ export type ArchieRecommendationDraftRequest = ArchieQueryRequest & {
 export type ArchieRecommendationApplyRequest = {
   draftId: string;
   decision?: "apply" | "discard";
+  sessionId?: string | null;
+};
+
+export type ArchieRecentDraftResponse = {
+  draft: ArchieRecommendationDraft | null;
+  suggestedAction?: Extract<ArchieSuggestedAction, { kind: "reviewDraft" }>;
+  sessionId?: string | null;
+};
+
+export type ArchieTelemetryEventType = "review_opened" | "apply" | "discard";
+
+export type ArchieTelemetryEventRequest = {
+  sessionId: string;
+  draftId?: string | null;
+  eventType: ArchieTelemetryEventType;
 };
 
 export function normalizeArchieAssistantPage(value: unknown): ArchieAssistantPage {
