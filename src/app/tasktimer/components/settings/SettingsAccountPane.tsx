@@ -238,22 +238,11 @@ export function SettingsAccountPane({
 
           {account.authUserEmail ? (
             <>
-              <div className="settingsInlineSectionHead settingsDeleteAccountHead">
-                <div className="settingsInlineSectionTitle">Delete Account</div>
-              </div>
-              <div className="settingsDetailNote settingsDangerDisclosure">
-                <div className="settingsDangerDisclosureBody">
-                  Deleting your account removes your Firebase sign-in account. Local task and history data on this device is not removed automatically. Use
-                  Reset All if you want to clear local device data.
-                </div>
-                <details className="settingsDangerDisclosureToggle">
-                  <summary className="settingsDangerDisclosureSummary" aria-label="Show delete account button" />
-                  <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions">
-                    <button className="btn btn-warn" type="button" disabled={account.authBusy} onClick={() => account.setShowDeleteAccountConfirm(true)}>
-                      Delete Account
-                    </button>
-                  </div>
-                </details>
+              <div className="settingsDeleteAccountDivider" aria-hidden="true" />
+              <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions">
+                  <button className="btn btn-warn" type="button" disabled={account.authBusy} onClick={() => account.setShowDeleteAccountConfirm(true)}>
+                    Delete Account
+                  </button>
               </div>
             </>
           ) : (
@@ -271,9 +260,6 @@ export function SettingsAccountPane({
         title="Delete Account"
       >
         <p className="settingsInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
-        <p className="settingsInlineConfirmText">
-          Local task and history data on this device are not deleted automatically. Use Reset All separately if needed.
-        </p>
         <div className="footerBtns settingsInlineConfirmBtns">
           <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
             Cancel

@@ -518,6 +518,12 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsDeleteAccountHead{
   padding-top:50px;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDeleteAccountDivider{
+  width:100%;
+  height:1px;
+  margin:18px 0 14px;
+  background: linear-gradient(90deg, rgba(121,226,255,.28), rgba(121,226,255,.12));
+}
 #app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureBody{
   padding:10px 56px 0 12px;
 }
@@ -569,13 +575,13 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureActions{
   display:flex;
   width:100%;
-  justify-content:center;
-  margin-top:20px;
+  justify-content:flex-start;
+  margin-top:0;
   padding:0;
   padding-top:0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosureActions .btn{
-  margin:0 auto;
+  margin:0;
   min-height:28px;
   padding:4px 10px;
 }
@@ -2809,6 +2815,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDanger
   border-color: rgba(240,110,224,.28) !important;
   background: rgba(240,110,224,.06) !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 0 0 1px rgba(212,71,210,.08) !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDeleteAccountDivider{
+  background: linear-gradient(90deg, rgba(240,110,224,.32), rgba(240,110,224,.14));
+}
+#app[aria-label="TaskLaunch Settings"] .settingsInlineFooter.settingsAuthActions.settingsDangerDisclosureActions{
+  justify-content: flex-start !important;
 }
 /* Final Appearance layout override: keep setting labels left and values right on one line. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,

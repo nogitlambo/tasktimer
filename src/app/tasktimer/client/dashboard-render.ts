@@ -40,7 +40,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
+    const shouldShowCenteredLock = isLocked && ctx.getCurrentPlan() === "free";
+    let lockEl = cardEl.querySelector(":scope > .dashboardPlanLockIcon") as HTMLElement | null;
+    if (!lockEl) {
+      lockEl = document.createElement("span");
+      lockEl.className = "dashboardPlanLockIcon";
+      lockEl.setAttribute("aria-hidden", "true");
+      lockEl.textContent = "Lock";
+      cardEl.appendChild(lockEl);
+    }
     cardEl.classList.toggle("isPlanLocked", isLocked);
+    cardEl.classList.toggle("hasCenteredPlanLock", shouldShowCenteredLock);
+    lockEl.hidden = !shouldShowCenteredLock;
     if (isLocked) cardEl.setAttribute("aria-disabled", "true");
     else cardEl.removeAttribute("aria-disabled");
   }

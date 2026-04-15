@@ -66,6 +66,7 @@ import { createTaskTimerDashboardRender } from "./client/dashboard-render";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerSession } from "./client/session";
 import { createTaskTimerTasks } from "./client/tasks";
+import { isSwitchEnabled, setSwitchState } from "./client/control-helpers";
 import { createTaskTimerEditTask } from "./client/edit-task";
 import { createTaskTimerAddTask } from "./client/add-task";
 import { createTaskTimerPreferences } from "./client/preferences";
@@ -79,7 +80,8 @@ import { createTaskTimerImportExport } from "./client/import-export";
 import { createTaskTimerTaskListUi } from "./client/task-list-ui";
 import { createTaskTimerTaskUiPersistence } from "./client/task-ui-persistence";
 import { createTaskTimerRewardsHistory } from "./client/rewards-history";
-import { createTaskTimerRootBootstrap, createTaskTimerStateAccessor } from "./client/root-state";
+import { createTaskTimerMutableStore } from "./client/mutable-store";
+import { createTaskTimerRootBootstrap } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
   DEFAULT_MODE_COLORS,
@@ -140,6 +142,21 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   const runtime = createTaskTimerRuntime();
   const workspaceRepository = createTaskTimerWorkspaceRepository();
+  const cloudSyncState = createTaskTimerMutableStore({
+    cloudRefreshInFlight: initialState.cloudRefreshInFlight,
+    lastCloudRefreshAtMs: initialState.lastCloudRefreshAtMs,
+    deferredCloudRefreshTimer: null as number | null,
+    pendingDeferredCloudRefresh: initialState.pendingDeferredCloudRefresh,
+    lastUiInteractionAtMs: initialState.lastUiInteractionAtMs,
+  });
+  const dashboardBusyState = createTaskTimerMutableStore({
+    stack: initialState.dashboardBusyStack,
+    keySeq: initialState.dashboardBusyKeySeq,
+    overlayActive: initialState.dashboardBusyOverlayActive,
+    restoreFocusEl: initialState.dashboardBusyRestoreFocusEl,
+    shownAtMs: initialState.dashboardBusyShownAtMs,
+    hideTimer: initialState.dashboardBusyHideTimer,
+  });
   const { on } = runtime;
 
   function getCurrentPlan(): TaskTimerPlan {
@@ -151,19 +168,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   const destroy = () => {
-    if (dashboardBusyHideTimer != null) window.clearTimeout(dashboardBusyHideTimer);
+    if (dashboardBusyState.get("hideTimer") != null) window.clearTimeout(dashboardBusyState.get("hideTimer") as number);
     if (unsubscribeCheckpointAlertMuteSignals) {
       unsubscribeCheckpointAlertMuteSignals();
       unsubscribeCheckpointAlertMuteSignals = null;
     }
     sessionApi?.destroySessionRuntime();
-    dashboardBusyHideTimer = null;
-    dashboardBusyStack.length = 0;
+    dashboardBusyState.set("hideTimer", null);
+    dashboardBusyState.get("stack").length = 0;
     setDashboardBusyIndicatorVisible(false);
     deactivateDashboardBusyOverlay();
     destroyTaskTimerRuntime({
       runtime,
-      deferredCloudRefreshTimer,
+      deferredCloudRefreshTimer: cloudSyncState.get("deferredCloudRefreshTimer"),
       checkpointToastAutoCloseTimer,
       checkpointToastCountdownRefreshTimer,
       checkpointBeepQueueTimer,
@@ -353,22 +370,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let workingIndicatorKeySeq = initialState.workingIndicatorKeySeq;
   let workingIndicatorOverlayActive = initialState.workingIndicatorOverlayActive;
   let workingIndicatorRestoreFocusEl = initialState.workingIndicatorRestoreFocusEl;
-  const dashboardBusyStack = initialState.dashboardBusyStack;
-  let dashboardBusyKeySeq = initialState.dashboardBusyKeySeq;
-  let dashboardBusyOverlayActive = initialState.dashboardBusyOverlayActive;
-  let dashboardBusyRestoreFocusEl = initialState.dashboardBusyRestoreFocusEl;
-  let dashboardBusyShownAtMs = initialState.dashboardBusyShownAtMs;
-  let dashboardBusyHideTimer = initialState.dashboardBusyHideTimer;
   let dashboardRefreshPending = false;
   let friendProfileCacheByUid = initialState.friendProfileCacheByUid;
-  let cloudRefreshInFlight = initialState.cloudRefreshInFlight;
-  let lastCloudRefreshAtMs = initialState.lastCloudRefreshAtMs;
   const flippedTaskIds = new Set<string>();
   let lastRenderedTaskFlipMode: MainMode | null = null;
   let lastRenderedTaskFlipView: "list" | "tile" | null = null;
-  let deferredCloudRefreshTimer: number | null = null;
-  let pendingDeferredCloudRefresh = initialState.pendingDeferredCloudRefresh;
-  let lastUiInteractionAtMs = initialState.lastUiInteractionAtMs;
   let historyManagerRefreshInFlight: Promise<void> | null = null;
   let rewardsHistoryApi: ReturnType<typeof createTaskTimerRewardsHistory> | null = null;
   const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
@@ -673,7 +679,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function syncDashboardRefreshButtonUi() {
     const buttonEl = els.dashboardRefreshBtn as HTMLButtonElement | null;
     if (!buttonEl) return;
-    const isBusy = dashboardBusyOverlayActive || dashboardBusyStack.length > 0;
+    const isBusy = dashboardBusyState.get("overlayActive") || dashboardBusyState.get("stack").length > 0;
     const hasVisiblePanels =
       Array.from(
         document.querySelectorAll(
@@ -746,10 +752,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function activateDashboardBusyOverlay() {
-    if (dashboardBusyOverlayActive) return;
-    dashboardBusyOverlayActive = true;
-    dashboardBusyShownAtMs = nowMs();
-    dashboardBusyRestoreFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (dashboardBusyState.get("overlayActive")) return;
+    dashboardBusyState.set("overlayActive", true);
+    dashboardBusyState.set("shownAtMs", nowMs());
+    dashboardBusyState.set("restoreFocusEl", document.activeElement instanceof HTMLElement ? document.activeElement : null);
     getDashboardBusyTargets().forEach((node) => {
       node.setAttribute("data-dashboard-busy-prev-inert", node.hasAttribute("inert") ? "true" : "false");
       node.setAttribute("data-dashboard-busy-prev-aria-hidden", node.getAttribute("aria-hidden") ?? "");
@@ -765,8 +771,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function deactivateDashboardBusyOverlay() {
-    if (!dashboardBusyOverlayActive) return;
-    dashboardBusyOverlayActive = false;
+    if (!dashboardBusyState.get("overlayActive")) return;
+    dashboardBusyState.set("overlayActive", false);
     getDashboardBusyTargets().forEach((node) => {
       const prevInert = node.getAttribute("data-dashboard-busy-prev-inert");
       const prevAriaHidden = node.getAttribute("data-dashboard-busy-prev-aria-hidden");
@@ -777,8 +783,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       if (prevAriaHidden) node.setAttribute("aria-hidden", prevAriaHidden);
       else node.removeAttribute("aria-hidden");
     });
-    const restoreEl = dashboardBusyRestoreFocusEl;
-    dashboardBusyRestoreFocusEl = null;
+    const restoreEl = dashboardBusyState.get("restoreFocusEl");
+    dashboardBusyState.set("restoreFocusEl", null);
     if (restoreEl && restoreEl.isConnected) {
       try {
         restoreEl.focus({ preventScroll: true });
@@ -789,46 +795,52 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function showDashboardBusyIndicator(message = "Refreshing...") {
-    if (dashboardBusyHideTimer != null) {
-      window.clearTimeout(dashboardBusyHideTimer);
-      dashboardBusyHideTimer = null;
+    if (dashboardBusyState.get("hideTimer") != null) {
+      window.clearTimeout(dashboardBusyState.get("hideTimer") as number);
+      dashboardBusyState.set("hideTimer", null);
     }
     const normalizedMessage = String(message || "").trim() || "Refreshing...";
-    const key = dashboardBusyKeySeq + 1;
-    dashboardBusyKeySeq = key;
-    dashboardBusyStack.push({ key, message: normalizedMessage });
-    if (dashboardBusyStack.length === 1) activateDashboardBusyOverlay();
+    const key = dashboardBusyState.get("keySeq") + 1;
+    dashboardBusyState.set("keySeq", key);
+    dashboardBusyState.get("stack").push({ key, message: normalizedMessage });
+    if (dashboardBusyState.get("stack").length === 1) activateDashboardBusyOverlay();
     setDashboardBusyIndicatorVisible(true, normalizedMessage);
     return key;
   }
 
   function hideDashboardBusyIndicator(key?: number) {
-    if (dashboardBusyHideTimer != null) {
-      window.clearTimeout(dashboardBusyHideTimer);
-      dashboardBusyHideTimer = null;
+    if (dashboardBusyState.get("hideTimer") != null) {
+      window.clearTimeout(dashboardBusyState.get("hideTimer") as number);
+      dashboardBusyState.set("hideTimer", null);
     }
     if (typeof key === "number") {
-      const index = dashboardBusyStack.findIndex((entry) => entry.key === key);
-      if (index >= 0) dashboardBusyStack.splice(index, 1);
+      const index = dashboardBusyState.get("stack").findIndex((entry) => entry.key === key);
+      if (index >= 0) dashboardBusyState.get("stack").splice(index, 1);
     } else {
-      dashboardBusyStack.length = 0;
+      dashboardBusyState.get("stack").length = 0;
     }
-    const current = dashboardBusyStack[dashboardBusyStack.length - 1] || null;
+    const current = dashboardBusyState.get("stack")[dashboardBusyState.get("stack").length - 1] || null;
     if (current) {
       setDashboardBusyIndicatorVisible(true, current.message);
       return;
     }
-    const remainingMs = Math.max(0, DASHBOARD_BUSY_MIN_VISIBLE_MS - Math.max(0, nowMs() - dashboardBusyShownAtMs));
-    dashboardBusyHideTimer = window.setTimeout(() => {
-      dashboardBusyHideTimer = null;
-      if (dashboardBusyStack.length) {
-        const latest = dashboardBusyStack[dashboardBusyStack.length - 1] || null;
-        if (latest) setDashboardBusyIndicatorVisible(true, latest.message);
-        return;
-      }
-      setDashboardBusyIndicatorVisible(false);
-      deactivateDashboardBusyOverlay();
-    }, remainingMs);
+    const remainingMs = Math.max(
+      0,
+      DASHBOARD_BUSY_MIN_VISIBLE_MS - Math.max(0, nowMs() - dashboardBusyState.get("shownAtMs"))
+    );
+    dashboardBusyState.set(
+      "hideTimer",
+      window.setTimeout(() => {
+        dashboardBusyState.set("hideTimer", null);
+        if (dashboardBusyState.get("stack").length) {
+          const latest = dashboardBusyState.get("stack")[dashboardBusyState.get("stack").length - 1] || null;
+          if (latest) setDashboardBusyIndicatorVisible(true, latest.message);
+          return;
+        }
+        setDashboardBusyIndicatorVisible(false);
+        deactivateDashboardBusyOverlay();
+      }, remainingMs)
+    );
   }
 
   function renderDashboardWidgetsWithBusy(opts?: DashboardRenderOptions) {
@@ -991,8 +1003,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       dashboardTimelineDensity = value;
     },
     getDashboardWidgetHasRenderedData: () => dashboardWidgetHasRenderedData,
-    getDashboardRefreshHoldActive: () => dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null,
-    getCloudRefreshInFlight: () => cloudRefreshInFlight,
+    getDashboardRefreshHoldActive: () =>
+      dashboardBusyState.get("overlayActive") ||
+      dashboardBusyState.get("stack").length > 0 ||
+      dashboardBusyState.get("hideTimer") != null,
+    getCloudRefreshInFlight: () => cloudSyncState.get("cloudRefreshInFlight"),
     getDynamicColorsEnabled: () => dynamicColorsEnabled,
     getElapsedMs,
     escapeHtmlUI,
@@ -2496,6 +2511,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const preferences = createTaskTimerPreferences({
     els,
     on,
+    toggleSwitchElement: (el, enabled) => setSwitchState(el, enabled),
+    isSwitchOn: (el) => isSwitchEnabled(el),
     storageKeys: {
       THEME_KEY,
       TASK_VIEW_KEY,
@@ -2782,7 +2799,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setFocusSessionNotesInputValue: (value) => {
       if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = value;
     },
-    setFocusSessionNotesSectionOpen: (_open) => {
+    setFocusSessionNotesSectionOpen: () => {
       if (els.focusSessionNotesSection) {
         els.focusSessionNotesSection.setAttribute("data-notes-visible", "true");
       }
@@ -2837,36 +2854,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on,
     nowMs,
     getCapAppPlugin,
-    cloudRefreshInFlight: createTaskTimerStateAccessor(
-      () => cloudRefreshInFlight,
-      (value) => {
-        cloudRefreshInFlight = value;
-      }
-    ),
-    lastCloudRefreshAtMs: createTaskTimerStateAccessor(
-      () => lastCloudRefreshAtMs,
-      (value) => {
-        lastCloudRefreshAtMs = value;
-      }
-    ),
-    pendingDeferredCloudRefresh: createTaskTimerStateAccessor(
-      () => pendingDeferredCloudRefresh,
-      (value) => {
-        pendingDeferredCloudRefresh = value;
-      }
-    ),
-    deferredCloudRefreshTimer: createTaskTimerStateAccessor(
-      () => deferredCloudRefreshTimer,
-      (value) => {
-        deferredCloudRefreshTimer = value;
-      }
-    ),
-    lastUiInteractionAtMs: createTaskTimerStateAccessor(
-      () => lastUiInteractionAtMs,
-      (value) => {
-        lastUiInteractionAtMs = value;
-      }
-    ),
+    cloudRefreshInFlight: cloudSyncState.accessor("cloudRefreshInFlight"),
+    lastCloudRefreshAtMs: cloudSyncState.accessor("lastCloudRefreshAtMs"),
+    pendingDeferredCloudRefresh: cloudSyncState.accessor("pendingDeferredCloudRefresh"),
+    deferredCloudRefreshTimer: cloudSyncState.accessor("deferredCloudRefreshTimer"),
+    lastUiInteractionAtMs: cloudSyncState.accessor("lastUiInteractionAtMs"),
     hydrateUiStateFromCaches,
     syncTimeGoalModalWithTaskState: () => syncTimeGoalModalWithTaskStateApi(),
     render,
@@ -3050,7 +3042,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerImportExportEvents();
 
     on(els.dashboardRefreshBtn, "click", () => {
-      if (dashboardBusyOverlayActive || dashboardBusyStack.length > 0 || dashboardBusyHideTimer != null || dashboardMenuFlipped) return;
+      if (
+        dashboardBusyState.get("overlayActive") ||
+        dashboardBusyState.get("stack").length > 0 ||
+        dashboardBusyState.get("hideTimer") != null ||
+        dashboardMenuFlipped
+      )
+        return;
       setDashboardRefreshPending(false);
       void rehydrateFromCloudAndRender({ force: true });
     });

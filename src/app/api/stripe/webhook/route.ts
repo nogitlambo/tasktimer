@@ -16,6 +16,18 @@ function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function resolveSubscriptionPeriodEndAt(subscription: Stripe.Subscription) {
+  const itemPeriodEndMs = (subscription.items?.data || []).reduce<number | null>((latest, item) => {
+    const nextValue = Number(item?.current_period_end || 0);
+    if (!Number.isFinite(nextValue) || nextValue <= 0) return latest;
+    return latest == null ? nextValue * 1000 : Math.max(latest, nextValue * 1000);
+  }, null);
+  if (itemPeriodEndMs != null) return itemPeriodEndMs;
+
+  const cancelAt = Number(subscription.cancel_at || 0);
+  return Number.isFinite(cancelAt) && cancelAt > 0 ? cancelAt * 1000 : null;
+}
+
 function logStripeWebhook(message: string, details?: Record<string, unknown>) {
   if (details) {
     console.info(`[stripe-webhook] ${message}`, details);
@@ -116,7 +128,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const subscriptionId = asString(subscription.id);
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status);
-  const currentPeriodEndAt = Number(subscription.current_period_end || 0) > 0 ? Number(subscription.current_period_end) * 1000 : null;
+  const currentPeriodEndAt = resolveSubscriptionPeriodEndAt(subscription);
 
   let resolvedUid = uid;
   if (!resolvedUid && customerId) {
@@ -171,7 +183,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const subscriptionId = asString(subscription.id);
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status) || "canceled";
-  const currentPeriodEndAt = Number(subscription.current_period_end || 0) > 0 ? Number(subscription.current_period_end) * 1000 : null;
+  const currentPeriodEndAt = resolveSubscriptionPeriodEndAt(subscription);
   let resolvedUid = uid;
 
   if (!resolvedUid && customerId) {

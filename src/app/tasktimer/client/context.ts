@@ -72,22 +72,32 @@ export type TaskTimerConfirmOptions = {
   onCancel?: (() => void) | null;
 };
 
-export type TaskTimerConfirmOverlayContext = {
+export type TaskTimerBindingsContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
-  getConfirmAction: () => null | (() => void);
-  setConfirmAction: (value: null | (() => void)) => void;
-  getConfirmActionAlt: () => null | (() => void);
-  setConfirmActionAlt: (value: null | (() => void)) => void;
+};
+
+export type TaskTimerOverlayLifecycleContext = {
   closeEdit: (saveChanges: boolean) => void;
   closeElapsedPad: (applyValue: boolean) => void;
   closeTaskExportModal: () => void;
   closeShareTaskModal: () => void;
 };
 
-export type TaskTimerPopupMenuContext = {
-  els: TaskTimerElements;
-  on: TaskTimerRuntime["on"];
+export type TaskTimerSwitchControlContext = {
+  toggleSwitchElement: (el: HTMLElement | null, enabled: boolean) => void;
+  isSwitchOn: (el: HTMLElement | null) => boolean;
+};
+
+export type TaskTimerConfirmOverlayContext = TaskTimerBindingsContext &
+  TaskTimerOverlayLifecycleContext & {
+  getConfirmAction: () => null | (() => void);
+  setConfirmAction: (value: null | (() => void)) => void;
+  getConfirmActionAlt: () => null | (() => void);
+  setConfirmActionAlt: (value: null | (() => void)) => void;
+  };
+
+export type TaskTimerPopupMenuContext = TaskTimerBindingsContext & {
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   navigateToAppRoute: (path: string) => void;
@@ -493,9 +503,8 @@ export type TaskTimerTasksContext = {
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
-export type TaskTimerEditTaskContext = {
-  els: TaskTimerElements;
-  on: TaskTimerRuntime["on"];
+export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
+  TaskTimerSwitchControlContext & {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   getCurrentMode: () => MainMode;
@@ -561,8 +570,6 @@ export type TaskTimerEditTaskContext = {
   getEditTaskTimeGoalMinutesFor: (value: number, unit: "minute" | "hour", period: "day" | "week") => number;
   getAddTaskTimeGoalMinutesState: () => number;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
-  toggleSwitchElement: (el: HTMLElement | null, on: boolean) => void;
-  isSwitchOn: (el: HTMLElement | null) => boolean;
   buildEditDraftSnapshot: (task: Task) => string;
   syncEditTaskDurationReadout: (task?: Task | null) => void;
   maybeToggleEditPresetIntervals: (nextEnabled: boolean) => void;
@@ -572,11 +579,9 @@ export type TaskTimerEditTaskContext = {
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
-};
+  };
 
-export type TaskTimerAddTaskContext = {
-  els: TaskTimerElements;
-  on: TaskTimerRuntime["on"];
+export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   getCurrentMode: () => MainMode;
@@ -817,9 +822,8 @@ export type TaskTimerDashboardRenderContext = {
   getCurrentPlan: () => TaskTimerPlan;
 };
 
-export type TaskTimerPreferencesContext = {
-  els: TaskTimerElements;
-  on: TaskTimerRuntime["on"];
+export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
+  TaskTimerSwitchControlContext & {
   storageKeys: {
     THEME_KEY: string;
     TASK_VIEW_KEY: string;

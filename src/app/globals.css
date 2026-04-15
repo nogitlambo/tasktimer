@@ -108,7 +108,7 @@ body {
 .webSignInLaunchPanel {
   position: relative;
   display: flex;
-  width: min(720px, 100%);
+  width: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -122,13 +122,13 @@ body {
 }
 
 .webSignInAuthPanel {
-  max-width: 560px;
+  max-width: none;
 }
 
 @media (min-width: 900px) {
   .webSignInAuthFrame,
   .webSignInLaunchPanel {
-    width: min(760px, 100%);
+    width: 100%;
   }
 }
 

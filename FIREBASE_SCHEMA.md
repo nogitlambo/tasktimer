@@ -27,11 +27,13 @@ It does not use the default Firestore database.
 
 1. `users`
 2. `userSubscriptions`
-3. `usernames`
-4. `friend_requests`
-5. `friendships`
-6. `userEmailLookup`
-7. `shared_task_summaries`
+3. `retainedSubscriptions`
+4. `usernames`
+5. `friend_requests`
+6. `friendships`
+7. `userEmailLookup`
+8. `shared_task_summaries`
+9. `scheduled_time_goal_pushes`
 
 ---
 
@@ -98,6 +100,7 @@ Allowed fields in the current server write path:
 - `stripeSubscriptionId: string`
 - `stripePriceId: string`
 - `stripeSubscriptionStatus: string`
+- `currentPeriodEndAt: timestamp`
 - `stripeSyncedAt: timestamp`
 - `createdAt: timestamp`
 - `updatedAt: timestamp`
@@ -111,6 +114,44 @@ Notes:
 
 - This is the canonical Firestore storage location for Stripe subscription metadata.
 - The app currently mirrors only `plan` and `planUpdatedAt` into `users/{userId}` for client-side entitlement reads.
+
+---
+
+### `retainedSubscriptions/{normalizedEmail}`
+
+Doc ID:
+
+- `normalizedEmail = lowercase(trim(email))`
+
+Stored by:
+
+- Server/admin account-deletion and billing flows only (`src/app/api/account/retain-subscription-before-delete/route.ts`, `src/app/api/stripe/webhook/route.ts`, `functions/index.js`)
+
+Allowed fields in the current server write path:
+
+- `schemaVersion: 1`
+- `email: string`
+- `stripeCustomerId: string`
+- `stripeSubscriptionId: string`
+- `stripePriceId: string`
+- `stripeSubscriptionStatus: string`
+- `currentPeriodEndAt: timestamp`
+- `plan: "pro"`
+- `sourceUid: string`
+- `retainedAt: timestamp`
+- `updatedAt: timestamp`
+- `stripeSyncedAt: timestamp`
+
+Access:
+
+- No Firestore client rule currently grants client access to this collection
+- Server/admin writes use the Firebase Admin SDK and are not restricted by Firestore client rules
+
+Notes:
+
+- This collection intentionally survives account deletion when a paid subscription is still active.
+- It stores the minimum billing linkage needed to restore `pro` entitlement for a returning user signing in again with the same email before the current paid period ends.
+- It is not user workspace data and should not be deleted as part of normal user Firestore cleanup.
 
 ---
 
@@ -444,11 +485,61 @@ Runtime usage:
 
 ---
 
+### `scheduled_time_goal_pushes/{scheduleDocId}`
+
+Doc ID convention:
+
+- `${ownerUid}__${taskId}`
+
+Allowed fields (`isScheduledTimeGoalPushDoc`):
+
+- `ownerUid: string`
+- `taskId: string`
+- `taskName: string`
+- `notificationKind: string`
+- `eventType: string`
+- `baseEventType: string`
+- `effectiveEventType: string`
+- `dueAtMs: int`
+- `timeGoalMinutes: int | null`
+- `plannedStartDay: string | null`
+- `plannedStartTime: string | null`
+- `plannedStartPushRemindersEnabled: bool`
+- `route: string`
+- `snoozedUntilMs: int | null`
+- `sentAtMs: int | null`
+- `sentDueAtMs: int | null`
+- `lastActionAtMs: int | null`
+- `lastActionByDeviceId: string | null`
+- `lastGapAlertDayKey: string | null`
+- `lastGapAlertStartMs: int | null`
+- `lastGapAlertEndMs: int | null`
+- `activeGapDayKey: string | null`
+- `activeGapStartMs: int | null`
+- `activeGapEndMs: int | null`
+- `postponedGapDayKey: string | null`
+- `postponedGapStartMs: int | null`
+- `postponedGapEndMs: int | null`
+- `createdAt: timestamp`
+- `updatedAt: timestamp`
+- `schemaVersion: int`
+
+Access:
+
+- Read/create/update/delete only by `ownerUid` under client rules
+
+Runtime usage:
+
+- Stores pending scheduled push/reminder state for planned start and time-goal notifications.
+
+---
+
 ### Firestore security summary
 
 - All `users/{userId}` tree data is owner-scoped.
 - Social collections (`friend_requests`, `friendships`, `userEmailLookup`, `shared_task_summaries`) are auth-gated with path/data constraints.
 - Several operations intentionally allow read on non-existent docs for transaction pre-reads (`friend_requests`, `friendships`).
+- Account deletion now uses an explicit server/admin cleanup route (`src/app/api/account/delete-user-data/route.ts`) against the named `timebase` database rather than relying on Firebase’s Delete User Data extension.
 
 ## Firebase Storage
 

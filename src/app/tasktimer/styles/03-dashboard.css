@@ -468,6 +468,35 @@
     0 0 0 1px rgba(255,255,255,.03) inset,
     0 0 18px rgba(53,232,255,.10);
 }
+.dashboardCard.hasCenteredPlanLock::after{
+  content: none;
+}
+.dashboardPlanLockIcon{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(121,226,255,.34);
+  background: rgba(8,13,19,.42);
+  color: transparent;
+  font-size: 0;
+  line-height: 1;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 0 18px rgba(53,232,255,.10);
+  pointer-events: none;
+}
+.dashboardPlanLockIcon::before{
+  content: "\1F512";
+  color: rgba(226,247,255,.96);
+  font-size: 28px;
+  line-height: 1;
+}
 .dashboardCard.isPlanLocked:hover::before,
 .dashboardCard.isPlanLocked:focus-visible::before{
   background:

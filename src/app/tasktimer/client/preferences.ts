@@ -10,6 +10,7 @@ import {
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
+import { bindToggleRow } from "./control-helpers";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -92,10 +93,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (canUseAdvancedTaskConfig()) return true;
     ctx.showUpgradePrompt(featureLabel, "pro");
     return false;
-  }
-
-  function eventTargetClosest(target: EventTarget | null, selector: string) {
-    return target instanceof Element ? target.closest(selector) : null;
   }
 
   function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
@@ -266,24 +263,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
-  function toggleSwitchElement(el: HTMLElement | null | undefined, enabled: boolean) {
-    el?.classList.toggle("on", enabled);
-    el?.setAttribute("aria-checked", String(enabled));
-  }
-
-  function isSwitchOn(el: HTMLElement | null | undefined) {
-    return !!el?.classList.contains("on");
-  }
-
   function syncTaskSettingsUi() {
     const weekStarting = ctx.getWeekStarting();
     const taskView = ctx.getTaskView();
-    toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
-    toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
-    toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
-    toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
-    toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
-    toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
+    ctx.toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
+    ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
+    ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
+    ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
+    ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
+    ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
@@ -503,69 +491,70 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
-    ctx.on(els.taskAutoFocusOnLaunchToggle, "click", () => {
-      ctx.setAutoFocusOnTaskLaunchEnabledState(!ctx.getAutoFocusOnTaskLaunchEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskAutoFocusOnLaunchToggle,
+      row: els.taskAutoFocusOnLaunchToggleRow,
+      ignoreSelector: "#taskAutoFocusOnLaunchToggle",
+      handleToggle: () => {
+        ctx.setAutoFocusOnTaskLaunchEnabledState(!ctx.getAutoFocusOnTaskLaunchEnabled());
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
     });
-    ctx.on(els.taskAutoFocusOnLaunchToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskAutoFocusOnLaunchToggle")) return;
-      ctx.setAutoFocusOnTaskLaunchEnabledState(!ctx.getAutoFocusOnTaskLaunchEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskDynamicColorsToggle,
+      row: els.taskDynamicColorsToggleRow,
+      ignoreSelector: "#taskDynamicColorsToggle",
+      handleToggle: () => {
+        if (!requireAdvancedTaskConfig("Dynamic colors")) return;
+        ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
     });
-    ctx.on(els.taskDynamicColorsToggle, "click", () => {
-      if (!requireAdvancedTaskConfig("Dynamic colors")) return;
-      ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskMobilePushAlertsToggle,
+      row: els.taskMobilePushAlertsToggleRow,
+      ignoreSelector: "#taskMobilePushAlertsToggle",
+      handleToggle: () => {
+        void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
+      },
     });
-    ctx.on(els.taskDynamicColorsToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskDynamicColorsToggle")) return;
-      if (!requireAdvancedTaskConfig("Dynamic colors")) return;
-      ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskWebPushAlertsToggle,
+      row: els.taskWebPushAlertsToggleRow,
+      ignoreSelector: "#taskWebPushAlertsToggle",
+      handleToggle: () => {
+        void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
+      },
     });
-    ctx.on(els.taskMobilePushAlertsToggle, "click", () => {
-      void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskCheckpointSoundToggle,
+      row: els.taskCheckpointSoundToggleRow,
+      ignoreSelector: "#taskCheckpointSoundToggle",
+      handleToggle: () => {
+        const nextValue = !ctx.getCheckpointAlertSoundEnabled();
+        ctx.setCheckpointAlertSoundEnabledState(nextValue);
+        if (!nextValue) ctx.stopCheckpointRepeatAlert();
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
     });
-    ctx.on(els.taskMobilePushAlertsToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskMobilePushAlertsToggle")) return;
-      void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
-    });
-    ctx.on(els.taskWebPushAlertsToggle, "click", () => {
-      void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
-    });
-    ctx.on(els.taskWebPushAlertsToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskWebPushAlertsToggle")) return;
-      void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
-    });
-    ctx.on(els.taskCheckpointSoundToggle, "click", () => {
-      const nextValue = !ctx.getCheckpointAlertSoundEnabled();
-      ctx.setCheckpointAlertSoundEnabledState(nextValue);
-      if (!nextValue) ctx.stopCheckpointRepeatAlert();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskCheckpointSoundToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskCheckpointSoundToggle")) return;
-      const nextValue = !ctx.getCheckpointAlertSoundEnabled();
-      ctx.setCheckpointAlertSoundEnabledState(nextValue);
-      if (!nextValue) ctx.stopCheckpointRepeatAlert();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskCheckpointToastToggle, "click", () => {
-      ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskCheckpointToastToggleRow, "click", (e: Event) => {
-      if (eventTargetClosest(e.target, "#taskCheckpointToastToggle")) return;
-      ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskCheckpointToastToggle,
+      row: els.taskCheckpointToastToggleRow,
+      ignoreSelector: "#taskCheckpointToastToggle",
+      handleToggle: () => {
+        ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
     });
     ctx.on(els.optimalProductivityStartTimeInput, "change", () => {
       applyOptimalProductivityPeriodPreference(
@@ -620,8 +609,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,
     saveAutoFocusOnTaskLaunchSetting,
-    toggleSwitchElement,
-    isSwitchOn,
+    toggleSwitchElement: ctx.toggleSwitchElement,
+    isSwitchOn: ctx.isSwitchOn,
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadMobilePushAlertsSetting,

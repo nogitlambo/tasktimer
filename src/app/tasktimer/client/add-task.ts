@@ -11,7 +11,9 @@ import {
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
 import type { Task } from "../lib/types";
+import { bindToggleRow, eventTargetClosest, setSwitchState } from "./control-helpers";
 import type { TaskTimerAddTaskContext } from "./context";
+import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlannedStartSelectors } from "./planned-start";
 
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
@@ -31,12 +33,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return true;
   }
 
-  function toggleSwitchElement(el: HTMLElement | null, on: boolean) {
-    if (!el) return;
-    el.classList.toggle("on", !!on);
-    el.setAttribute("aria-checked", on ? "true" : "false");
-  }
-
   function setAddTaskError(msg: string) {
     if (!els.addTaskError) return;
     els.addTaskError.textContent = msg;
@@ -52,30 +48,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return ctx.getAddTaskDurationPeriod() === "day" ? value * 60 : value * 60 * 7;
   }
 
-  function padTwo(value: number) {
-    return String(Math.max(0, Math.floor(value || 0))).padStart(2, "0");
-  }
-
-  function parsePlannedStartParts(raw: string | null | undefined) {
-    const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-    const hours24 = match ? Math.max(0, Math.min(23, Number(match[1] || 0))) : 9;
-    const minutes = match ? Math.max(0, Math.min(59, Number(match[2] || 0))) : 0;
-    const meridiem = hours24 >= 12 ? "PM" : "AM";
-    const hour12 = hours24 % 12 || 12;
-    return {
-      hour: padTwo(hour12),
-      minute: padTwo(minutes),
-      meridiem,
-    };
-  }
-
   function readPlannedStartValueFromSelectors() {
-    const hour12 = Math.max(1, Math.min(12, Number(els.addTaskPlannedStartHourSelect?.value || "9") || 9));
-    const minute = Math.max(0, Math.min(59, Number(els.addTaskPlannedStartMinuteSelect?.value || "0") || 0));
-    const meridiem = String(els.addTaskPlannedStartMeridiemSelect?.value || "AM").trim().toUpperCase() === "PM" ? "PM" : "AM";
-    let hours24 = hour12 % 12;
-    if (meridiem === "PM") hours24 += 12;
-    return `${padTwo(hours24)}:${padTwo(minute)}`;
+    return readPlannedStartValue({
+      hourSelect: els.addTaskPlannedStartHourSelect,
+      minuteSelect: els.addTaskPlannedStartMinuteSelect,
+      meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
+    });
   }
 
   function syncPlannedStartValueFromSelectors() {
@@ -92,22 +70,15 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskPlannedStartPrompt) {
       els.addTaskPlannedStartPrompt.textContent = `What time of the day do you plan to start ${taskName}?`;
     }
-    const plannedStartParts = parsePlannedStartParts(ctx.getAddTaskPlannedStartTime() || "09:00");
-    if (els.addTaskPlannedStartHourSelect) {
-      els.addTaskPlannedStartHourSelect.value = plannedStartParts.hour;
-      els.addTaskPlannedStartHourSelect.disabled = openEnded;
-      els.addTaskPlannedStartHourSelect.classList.toggle("isDisabled", openEnded);
-    }
-    if (els.addTaskPlannedStartMinuteSelect) {
-      els.addTaskPlannedStartMinuteSelect.value = plannedStartParts.minute;
-      els.addTaskPlannedStartMinuteSelect.disabled = openEnded;
-      els.addTaskPlannedStartMinuteSelect.classList.toggle("isDisabled", openEnded);
-    }
-    if (els.addTaskPlannedStartMeridiemSelect) {
-      els.addTaskPlannedStartMeridiemSelect.value = plannedStartParts.meridiem;
-      els.addTaskPlannedStartMeridiemSelect.disabled = openEnded;
-      els.addTaskPlannedStartMeridiemSelect.classList.toggle("isDisabled", openEnded);
-    }
+    syncPlannedStartSelectors(
+      {
+        hourSelect: els.addTaskPlannedStartHourSelect,
+        minuteSelect: els.addTaskPlannedStartMinuteSelect,
+        meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
+      },
+      ctx.getAddTaskPlannedStartTime() || "09:00",
+      { disabled: openEnded }
+    );
     if (els.addTaskPlannedStartInput) {
       els.addTaskPlannedStartInput.value = String(ctx.getAddTaskPlannedStartTime() || "09:00");
     }
@@ -243,7 +214,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskTimerSettingsGroup?.classList.toggle("isHidden", !checkpointsEnabled);
     els.addTaskCheckpointAlertsGroup?.classList.toggle("isHidden", !checkpointsEnabled);
 
-    toggleSwitchElement(els.addTaskPresetIntervalsToggle as HTMLElement | null, presetEnabled);
+    setSwitchState(els.addTaskPresetIntervalsToggle as HTMLElement | null, presetEnabled);
     if (els.addTaskPresetIntervalInput) {
       els.addTaskPresetIntervalInput.value = String(Number(ctx.getAddTaskPresetIntervalValue() || 0) || 0);
     }
@@ -256,11 +227,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         : "";
     }
 
-    toggleSwitchElement(
+    setSwitchState(
       els.addTaskCheckpointSoundToggle as HTMLElement | null,
       checkpointsEnabled && !!ctx.getAddTaskCheckpointSoundEnabled()
     );
-    toggleSwitchElement(
+    setSwitchState(
       els.addTaskCheckpointToastToggle as HTMLElement | null,
       checkpointsEnabled && !!ctx.getAddTaskCheckpointToastEnabled()
     );
@@ -757,12 +728,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       );
     });
     ctx.on(document, "click", (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest?.("#addTaskCheckpointInfoBtn")) return;
-      if (target?.closest?.("#addTaskCheckpointInfoDialog")) return;
-      if (target?.closest?.("#addTaskPresetIntervalsInfoBtn")) return;
-      if (target?.closest?.("#addTaskPresetIntervalsInfoDialog")) return;
-      if (!target?.closest?.("#addTaskNameCombo")) setAddTaskNameMenuOpen(false);
+      if (eventTargetClosest(e.target, "#addTaskCheckpointInfoBtn")) return;
+      if (eventTargetClosest(e.target, "#addTaskCheckpointInfoDialog")) return;
+      if (eventTargetClosest(e.target, "#addTaskPresetIntervalsInfoBtn")) return;
+      if (eventTargetClosest(e.target, "#addTaskPresetIntervalsInfoDialog")) return;
+      if (!eventTargetClosest(e.target, "#addTaskNameCombo")) setAddTaskNameMenuOpen(false);
       setAddTaskCheckpointInfoOpen(false);
       setAddTaskPresetIntervalsInfoOpen(false);
     });
@@ -818,34 +788,21 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded?.checked);
       syncAddTaskPlannedStartUi();
     });
-    ctx.on(els.addTaskPresetIntervalsToggle, "click", (e: Event) => {
-      e?.preventDefault?.();
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
-        return;
-      }
-      if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0) return;
-      ctx.setAddTaskPresetIntervalsEnabledState(!ctx.getAddTaskPresetIntervalsEnabled());
-      syncAddTaskCheckpointAlertUi();
-    });
-    ctx.on(els.addTaskPresetIntervalsToggleRow, "click", (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
-        return;
-      }
-      if (
-        !ctx.getAddTaskMilestonesEnabled() ||
-        getAddTaskTimeGoalMinutes() <= 0 ||
-        target?.closest?.("#addTaskPresetIntervalsToggle") ||
-        target?.closest?.("#addTaskPresetIntervalsInfoBtn") ||
-        target?.closest?.("#addTaskPresetIntervalsInfoSlot") ||
-        target?.closest?.("#addTaskPresetIntervalsInfoDialog")
-      ) {
-        return;
-      }
-      ctx.setAddTaskPresetIntervalsEnabledState(!ctx.getAddTaskPresetIntervalsEnabled());
-      syncAddTaskCheckpointAlertUi();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.addTaskPresetIntervalsToggle,
+      row: els.addTaskPresetIntervalsToggleRow,
+      ignoreSelector:
+        "#addTaskPresetIntervalsToggle, #addTaskPresetIntervalsInfoBtn, #addTaskPresetIntervalsInfoSlot, #addTaskPresetIntervalsInfoDialog",
+      handleToggle: () => {
+        if (!canUseAdvancedTaskConfig()) {
+          ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
+          return;
+        }
+        if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0) return;
+        ctx.setAddTaskPresetIntervalsEnabledState(!ctx.getAddTaskPresetIntervalsEnabled());
+        syncAddTaskCheckpointAlertUi();
+      },
     });
     ctx.on(els.addTaskPresetIntervalInput, "input", () => {
       ctx.setAddTaskPresetIntervalValueState(Math.max(0, parseFloat(els.addTaskPresetIntervalInput?.value || "0") || 0));
@@ -857,47 +814,31 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskCheckpointAlertUi();
     });
-    ctx.on(els.addTaskCheckpointSoundToggle, "click", (e: Event) => {
-      e?.preventDefault?.();
-      if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertSoundEnabled()) return;
-      ctx.setAddTaskCheckpointSoundEnabledState(!ctx.getAddTaskCheckpointSoundEnabled());
-      syncAddTaskCheckpointAlertUi();
-    });
-    ctx.on(els.addTaskCheckpointSoundToggleRow, "click", (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        !ctx.getAddTaskMilestonesEnabled() ||
-        getAddTaskTimeGoalMinutes() <= 0 ||
-        !ctx.getCheckpointAlertSoundEnabled() ||
-        target?.closest?.("#addTaskCheckpointSoundToggle")
-      ) {
-        return;
-      }
-      ctx.setAddTaskCheckpointSoundEnabledState(!ctx.getAddTaskCheckpointSoundEnabled());
-      syncAddTaskCheckpointAlertUi();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.addTaskCheckpointSoundToggle,
+      row: els.addTaskCheckpointSoundToggleRow,
+      ignoreSelector: "#addTaskCheckpointSoundToggle",
+      handleToggle: () => {
+        if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertSoundEnabled()) return;
+        ctx.setAddTaskCheckpointSoundEnabledState(!ctx.getAddTaskCheckpointSoundEnabled());
+        syncAddTaskCheckpointAlertUi();
+      },
     });
     ctx.on(els.addTaskCheckpointSoundModeSelect, "change", () => {
       ctx.setAddTaskCheckpointSoundModeState(els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once");
       syncAddTaskCheckpointAlertUi();
     });
-    ctx.on(els.addTaskCheckpointToastToggle, "click", (e: Event) => {
-      e?.preventDefault?.();
-      if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertToastEnabled()) return;
-      ctx.setAddTaskCheckpointToastEnabledState(!ctx.getAddTaskCheckpointToastEnabled());
-      syncAddTaskCheckpointAlertUi();
-    });
-    ctx.on(els.addTaskCheckpointToastToggleRow, "click", (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        !ctx.getAddTaskMilestonesEnabled() ||
-        getAddTaskTimeGoalMinutes() <= 0 ||
-        !ctx.getCheckpointAlertToastEnabled() ||
-        target?.closest?.("#addTaskCheckpointToastToggle")
-      ) {
-        return;
-      }
-      ctx.setAddTaskCheckpointToastEnabledState(!ctx.getAddTaskCheckpointToastEnabled());
-      syncAddTaskCheckpointAlertUi();
+    bindToggleRow({
+      on: ctx.on,
+      control: els.addTaskCheckpointToastToggle,
+      row: els.addTaskCheckpointToastToggleRow,
+      ignoreSelector: "#addTaskCheckpointToastToggle",
+      handleToggle: () => {
+        if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0 || !ctx.getCheckpointAlertToastEnabled()) return;
+        ctx.setAddTaskCheckpointToastEnabledState(!ctx.getAddTaskCheckpointToastEnabled());
+        syncAddTaskCheckpointAlertUi();
+      },
     });
     ctx.on(els.addTaskCheckpointToastModeSelect, "change", () => {
       ctx.setAddTaskCheckpointToastModeState(els.addTaskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s");

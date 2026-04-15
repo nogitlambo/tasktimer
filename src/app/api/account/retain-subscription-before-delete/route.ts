@@ -1,3 +1,5 @@
+import Stripe from "stripe";
+
 import { NextResponse } from "next/server";
 
 import { getStripeServer } from "@/lib/stripeServer";
@@ -17,13 +19,24 @@ function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function resolveSubscriptionPeriodEndAt(subscription: Stripe.Subscription) {
+  const itemPeriodEndMs = (subscription.items?.data || []).reduce<number | null>((latest, item) => {
+    const nextValue = Number(item?.current_period_end || 0);
+    if (!Number.isFinite(nextValue) || nextValue <= 0) return latest;
+    return latest == null ? nextValue * 1000 : Math.max(latest, nextValue * 1000);
+  }, null);
+  if (itemPeriodEndMs != null) return itemPeriodEndMs;
+
+  const cancelAt = Number(subscription.cancel_at || 0);
+  return Number.isFinite(cancelAt) && cancelAt > 0 ? cancelAt * 1000 : null;
+}
+
 async function resolveCurrentPeriodEndAt(subscriptionId: string) {
   const normalizedSubscriptionId = asString(subscriptionId);
   if (!normalizedSubscriptionId) return null;
   const stripe = getStripeServer();
-  const subscription = await stripe.subscriptions.retrieve(normalizedSubscriptionId);
-  const currentPeriodEnd = Number(subscription.current_period_end || 0);
-  return Number.isFinite(currentPeriodEnd) && currentPeriodEnd > 0 ? currentPeriodEnd * 1000 : null;
+  const subscription = (await stripe.subscriptions.retrieve(normalizedSubscriptionId)) as Stripe.Subscription;
+  return resolveSubscriptionPeriodEndAt(subscription);
 }
 
 export async function POST(req: Request) {

@@ -8,7 +8,9 @@ import {
   normalizeTaskConfigMilestones,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
+import { bindToggleRow, setSwitchState } from "./control-helpers";
 import type { TaskTimerEditTaskContext } from "./context";
+import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from "./planned-start";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -16,52 +18,27 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
 
-  function padTwo(value: number) {
-    return String(Math.max(0, Math.floor(value || 0))).padStart(2, "0");
-  }
-
-  function parsePlannedStartParts(raw: string | null | undefined) {
-    const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-    const hours24 = match ? Math.max(0, Math.min(23, Number(match[1] || 0))) : 9;
-    const minutes = match ? Math.max(0, Math.min(59, Number(match[2] || 0))) : 0;
-    const meridiem = hours24 >= 12 ? "PM" : "AM";
-    const hour12 = hours24 % 12 || 12;
-    return {
-      hour: padTwo(hour12),
-      minute: padTwo(minutes),
-      meridiem,
-    };
-  }
-
   function readEditPlannedStartValueFromSelectors() {
-    const hour12 = Math.max(1, Math.min(12, Number(els.editPlannedStartHourSelect?.value || "9") || 9));
-    const minute = Math.max(0, Math.min(59, Number(els.editPlannedStartMinuteSelect?.value || "0") || 0));
-    const meridiem = String(els.editPlannedStartMeridiemSelect?.value || "AM").trim().toUpperCase() === "PM" ? "PM" : "AM";
-    let hours24 = hour12 % 12;
-    if (meridiem === "PM") hours24 += 12;
-    return `${padTwo(hours24)}:${padTwo(minute)}`;
+    return readPlannedStartValueFromSelectors({
+      hourSelect: els.editPlannedStartHourSelect,
+      minuteSelect: els.editPlannedStartMinuteSelect,
+      meridiemSelect: els.editPlannedStartMeridiemSelect,
+    });
   }
 
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
-    const parts = parsePlannedStartParts(currentTask?.plannedStartTime || "09:00");
     const openEnded = !!currentTask?.plannedStartOpenEnded;
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
-    if (els.editPlannedStartHourSelect) {
-      els.editPlannedStartHourSelect.value = parts.hour;
-      els.editPlannedStartHourSelect.disabled = openEnded;
-      els.editPlannedStartHourSelect.classList.toggle("isDisabled", openEnded);
-    }
-    if (els.editPlannedStartMinuteSelect) {
-      els.editPlannedStartMinuteSelect.value = parts.minute;
-      els.editPlannedStartMinuteSelect.disabled = openEnded;
-      els.editPlannedStartMinuteSelect.classList.toggle("isDisabled", openEnded);
-    }
-    if (els.editPlannedStartMeridiemSelect) {
-      els.editPlannedStartMeridiemSelect.value = parts.meridiem;
-      els.editPlannedStartMeridiemSelect.disabled = openEnded;
-      els.editPlannedStartMeridiemSelect.classList.toggle("isDisabled", openEnded);
-    }
+    syncPlannedStartSelectors(
+      {
+        hourSelect: els.editPlannedStartHourSelect,
+        minuteSelect: els.editPlannedStartMinuteSelect,
+        meridiemSelect: els.editPlannedStartMeridiemSelect,
+      },
+      currentTask?.plannedStartTime || "09:00",
+      { disabled: openEnded }
+    );
     if (els.editPlannedStartInput) {
       els.editPlannedStartInput.value = String(currentTask?.plannedStartTime || "09:00");
     }
@@ -73,8 +50,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editPlannedStartPushReminders.disabled = openEnded;
     }
     if (els.editPlannedStartPushRemindersToggle) {
-      els.editPlannedStartPushRemindersToggle.classList.toggle("on", pushRemindersEnabled);
-      els.editPlannedStartPushRemindersToggle.setAttribute("aria-checked", String(pushRemindersEnabled));
+      setSwitchState(els.editPlannedStartPushRemindersToggle, pushRemindersEnabled);
       els.editPlannedStartPushRemindersToggle.toggleAttribute("disabled", openEnded);
       els.editPlannedStartPushRemindersToggle.setAttribute("aria-disabled", String(openEnded));
     }
@@ -961,6 +937,27 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     };
+    const togglePlannedStartPushReminders = () => {
+      const t = getCurrentEditTask();
+      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
+      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
+      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
+      syncEditPlannedStartSelectors(t);
+      syncEditSaveAvailability(t);
+    };
+    const syncCheckpointToggleState = (
+      toggleEl: HTMLElement | null,
+      readEnabled: () => boolean,
+      writeEnabled: (task: Task, enabled: boolean) => void
+    ) => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      if (!readEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
+      ctx.toggleSwitchElement(toggleEl, !ctx.isSwitchOn(toggleEl));
+      writeEnabled(t, ctx.isSwitchOn(toggleEl));
+      ctx.syncEditCheckpointAlertUi(t);
+      ctx.syncEditSaveAvailability(t);
+    };
 
     ctx.on(els.cancelEditBtn, "click", (e: any) => {
       e?.preventDefault?.();
@@ -988,34 +985,22 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
     });
-    ctx.on(els.editPlannedStartPushRemindersToggle, "click", (e: any) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const t = getCurrentEditTask();
-      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
-      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
-      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editPlannedStartPushRemindersRow, "click", (e: any) => {
-      if (e.target?.closest?.("#editPlannedStartPushRemindersToggle")) return;
-      const t = getCurrentEditTask();
-      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
-      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
-      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
+    bindToggleRow({
+      on: ctx.on,
+      control: els.editPlannedStartPushRemindersToggle,
+      row: els.editPlannedStartPushRemindersRow,
+      ignoreSelector: "#editPlannedStartPushRemindersToggle",
+      handleToggle: togglePlannedStartPushReminders,
     });
     ctx.on(els.editNoGoalCheckbox, "change", () => {
       syncEditTimeGoalToggle(ctx.isEditTimeGoalEnabled());
     });
-    ctx.on(els.editTimeGoalToggle, "click", () => {
-      syncEditTimeGoalToggle(!ctx.isEditTimeGoalEnabled());
-    });
-    ctx.on(els.editTimeGoalToggleRow, "click", (e: any) => {
-      if (e.target?.closest?.("#editTimeGoalToggle")) return;
-      syncEditTimeGoalToggle(!ctx.isEditTimeGoalEnabled());
+    bindToggleRow({
+      on: ctx.on,
+      control: els.editTimeGoalToggle,
+      row: els.editTimeGoalToggleRow,
+      ignoreSelector: "#editTimeGoalToggle",
+      handleToggle: () => syncEditTimeGoalToggle(!ctx.isEditTimeGoalEnabled()),
     });
     ctx.on(els.editTaskDurationValueInput, "input", () => {
       const t = getCurrentEditTask();
@@ -1085,25 +1070,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
       confirmEnableElapsedOverride();
     });
-    ctx.on(els.editCheckpointSoundToggle, "click", () => {
-      if (!ctx.getCheckpointAlertSoundEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
-      ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null));
-    });
-    ctx.on(els.editCheckpointSoundToggleRow, "click", (e: any) => {
-      if (!ctx.getCheckpointAlertSoundEnabled() || !ctx.editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointSoundToggle")) return;
-      ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null));
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointSoundEnabled = ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editCheckpointSoundToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointSoundEnabled = ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
+    bindToggleRow({
+      on: ctx.on,
+      control: els.editCheckpointSoundToggle,
+      row: els.editCheckpointSoundToggleRow,
+      ignoreSelector: "#editCheckpointSoundToggle",
+      handleToggle: () =>
+        syncCheckpointToggleState(
+          els.editCheckpointSoundToggle as HTMLElement | null,
+          () => ctx.getCheckpointAlertSoundEnabled(),
+          (task, enabled) => {
+            task.checkpointSoundEnabled = enabled;
+          }
+        ),
     });
     ctx.on(els.editCheckpointSoundModeSelect, "change", () => {
       const t = getCurrentEditTask();
@@ -1112,25 +1091,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     });
-    ctx.on(els.editCheckpointToastToggle, "click", () => {
-      if (!ctx.getCheckpointAlertToastEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
-      ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null));
-    });
-    ctx.on(els.editCheckpointToastToggleRow, "click", (e: any) => {
-      if (!ctx.getCheckpointAlertToastEnabled() || !ctx.editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointToastToggle")) return;
-      ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null));
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointToastEnabled = ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editCheckpointToastToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointToastEnabled = ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
+    bindToggleRow({
+      on: ctx.on,
+      control: els.editCheckpointToastToggle,
+      row: els.editCheckpointToastToggleRow,
+      ignoreSelector: "#editCheckpointToastToggle",
+      handleToggle: () =>
+        syncCheckpointToggleState(
+          els.editCheckpointToastToggle as HTMLElement | null,
+          () => ctx.getCheckpointAlertToastEnabled(),
+          (task, enabled) => {
+            task.checkpointToastEnabled = enabled;
+          }
+        ),
     });
     ctx.on(els.editCheckpointToastModeSelect, "change", () => {
       const t = getCurrentEditTask();
@@ -1139,31 +1112,21 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     });
-    ctx.on(els.editPresetIntervalsToggle, "click", () => {
-      const t = getCurrentEditTask();
-      if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
-        return;
-      }
-      ctx.maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editPresetIntervalsToggleRow, "click", (e: any) => {
-      const t = getCurrentEditTask();
-      if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
-        return;
-      }
-      if (
-        e.target?.closest?.("#editPresetIntervalsToggle") ||
-        e.target?.closest?.("#editPresetIntervalsInfoBtn") ||
-        e.target?.closest?.("#editPresetIntervalsInfoSlot") ||
-        e.target?.closest?.("#editPresetIntervalsInfoDialog")
-      ) return;
-      ctx.maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
-      ctx.syncEditSaveAvailability(t);
+    bindToggleRow({
+      on: ctx.on,
+      control: els.editPresetIntervalsToggle,
+      row: els.editPresetIntervalsToggleRow,
+      ignoreSelector: "#editPresetIntervalsToggle, #editPresetIntervalsInfoBtn, #editPresetIntervalsInfoSlot, #editPresetIntervalsInfoDialog",
+      handleToggle: () => {
+        const t = getCurrentEditTask();
+        if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
+        if (!canUseAdvancedTaskConfig()) {
+          ctx.showUpgradePrompt("Preset checkpoint intervals", "pro");
+          return;
+        }
+        ctx.maybeToggleEditPresetIntervals(!t.presetIntervalsEnabled);
+        ctx.syncEditSaveAvailability(t);
+      },
     });
     ctx.on(els.editPresetIntervalInput, "input", () => {
       const t = getCurrentEditTask();

@@ -1,28 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { HistoryByTaskId, Task } from "../lib/types";
-import { escapeHistoryManagerHtml as escapeHtmlHM } from "../lib/historyManager";
 import type { TaskTimerHistoryManagerContext } from "./context";
-
-type HistoryGenParams = {
-  taskIds: string[];
-  daysBack: number;
-  entriesPerDayMin: number;
-  entriesPerDayMax: number;
-  windowStartMinute: number;
-  windowEndMinute: number;
-  replaceExisting: boolean;
-  generateRandomTimeGoals: boolean;
-};
-
-type HistoryGenTaskGoal = {
-  timeGoalEnabled: boolean;
-  timeGoalValue: number;
-  timeGoalUnit: "minute" | "hour";
-  timeGoalPeriod: "day" | "week";
-  timeGoalMinutes: number;
-  dailyBudgetMinutes: number;
-};
+import {
+  allocateHistoryGenDailyBudgets,
+  buildHistoryGenTaskGoal,
+  formatHistoryGenGoalValue,
+  formatHistoryGenMinute,
+  getHistoryGenWeekKey,
+  parseHistoryGenTimeToMinute,
+} from "./history-manager-generation";
+import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./history-manager-render";
+import {
+  groupSelectedHistoryRowsByTask,
+  type HistoryGenParams,
+  type HistoryGenTaskGoal,
+} from "./history-manager-shared";
 
 type HistoryGenPreview = {
   params: HistoryGenParams;
@@ -33,22 +26,6 @@ type HistoryGenPreview = {
   existingGoalsByTaskId: Record<string, HistoryGenTaskGoal>;
   limitedTaskIds: string[];
 };
-
-function formatHistoryManagerElapsed(msRaw: unknown, formatTwo: (value: number) => string) {
-  const totalSeconds = Math.max(0, Math.floor(Math.max(0, Number(msRaw) || 0) / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${formatTwo(days)}d ${formatTwo(hours)}h ${formatTwo(minutes)}m ${formatTwo(seconds)}s`;
-}
-
-function buildHistoryManagerRowKey(entry: { ts: unknown; ms: unknown; name: unknown }) {
-  const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
-  const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
-  const name = String(entry?.name || "");
-  return `${ts}|${ms}|${name}`;
-}
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
@@ -252,72 +229,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     };
     reader.onerror = () => alert("Could not read the CSV file.");
     reader.readAsText(file);
-  }
-
-  function parseHistoryGenTimeToMinute(value: string): number | null {
-    const raw = String(value || "").trim();
-    const m = raw.match(/^(\d{1,2}):(\d{2})$/);
-    if (!m) return null;
-    const hh = Number(m[1]);
-    const mm = Number(m[2]);
-    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
-    return hh * 60 + mm;
-  }
-
-  function formatHistoryGenMinute(minute: number): string {
-    const clamped = Math.max(0, Math.min(24 * 60 - 1, Math.floor(minute || 0)));
-    const hh = Math.floor(clamped / 60);
-    const mm = clamped % 60;
-    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-  }
-
-  function allocateHistoryGenDailyBudgets(taskCount: number, availableWindowMinutes: number): number[] | null {
-    const unitMinutes = 15;
-    const totalUnits = Math.floor(availableWindowMinutes / unitMinutes);
-    if (taskCount <= 0) return [];
-    if (totalUnits < taskCount) return null;
-    const budgets = Array.from({ length: taskCount }, () => 1);
-    let remainingUnits = totalUnits - taskCount;
-    while (remainingUnits > 0) {
-      budgets[Math.floor(Math.random() * budgets.length)] += 1;
-      remainingUnits -= 1;
-    }
-    return budgets.map((units) => units * unitMinutes);
-  }
-
-  function buildHistoryGenTaskGoal(dailyBudgetMinutes: number): HistoryGenTaskGoal {
-    const timeGoalPeriod: "day" | "week" = Math.random() < 0.5 ? "day" : "week";
-    const periodMinutes = timeGoalPeriod === "week" ? dailyBudgetMinutes * 7 : dailyBudgetMinutes;
-    const timeGoalUnit: "minute" | "hour" = periodMinutes >= 60 && Math.random() < 0.5 ? "hour" : "minute";
-    const timeGoalValue =
-      timeGoalUnit === "hour" ? Math.round((periodMinutes / 60) * 100) / 100 : periodMinutes;
-    const timeGoalMinutes =
-      timeGoalUnit === "hour" ? Math.round(timeGoalValue * 60) : Math.round(timeGoalValue);
-    return {
-      timeGoalEnabled: true,
-      timeGoalValue,
-      timeGoalUnit,
-      timeGoalPeriod,
-      timeGoalMinutes,
-      dailyBudgetMinutes,
-    };
-  }
-
-  function formatHistoryGenGoalValue(value: number): string {
-    return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
-  }
-
-  function getHistoryGenWeekKey(date: Date): string {
-    const local = new Date(date);
-    local.setHours(0, 0, 0, 0);
-    const day = local.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-    local.setDate(local.getDate() + diffToMonday);
-    const y = local.getFullYear();
-    const m = String(local.getMonth() + 1).padStart(2, "0");
-    const d = String(local.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
   }
 
   function readHistoryManagerGenerateParamsFromConfirm(): HistoryGenParams | null {
@@ -720,213 +631,38 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const hmBulkEditMode = ctx.getHmBulkEditMode();
     const hmSortKey = ctx.getHmSortKey();
     const hmSortDir = ctx.getHmSortDir();
-    let hmExpandedTaskGroups = ctx.getHmExpandedTaskGroups();
-    let hmExpandedDateGroups = ctx.getHmExpandedDateGroups();
     if (els.historyManagerGenerateBtn) {
       els.historyManagerGenerateBtn.style.display = ctx.isArchitectUser() ? "" : "none";
     }
     const listEl = document.getElementById("hmList");
     if (!listEl) return;
-    if (listEl.children.length) {
-      const nextTaskGroups = new Set<string>();
-      const nextDateGroups = new Set<string>();
-      listEl.querySelectorAll(".hmGroup[data-task]").forEach((el) => {
-        const taskId = (el as HTMLElement).getAttribute("data-task");
-        if (taskId && (el as HTMLDetailsElement).open) nextTaskGroups.add(taskId);
-      });
-      listEl.querySelectorAll(".hmDateGroup[data-task][data-date]").forEach((el) => {
-        const taskId = (el as HTMLElement).getAttribute("data-task");
-        const dateKey = (el as HTMLElement).getAttribute("data-date");
-        if (taskId && dateKey && (el as HTMLDetailsElement).open) nextDateGroups.add(`${taskId}|${dateKey}`);
-      });
-      hmExpandedTaskGroups = nextTaskGroups;
-      hmExpandedDateGroups = nextDateGroups;
-      ctx.setHmExpandedTaskGroups(nextTaskGroups);
-      ctx.setHmExpandedDateGroups(nextDateGroups);
-    }
-    const hmRowsByTask: Record<string, string[]> = {};
-    const hmRowsByTaskDate: Record<string, string[]> = {};
-    ctx.setHmRowsByTask(hmRowsByTask);
-    ctx.setHmRowsByTaskDate(hmRowsByTaskDate);
-    const taskIdFilter = (() => {
-      try {
-        const p = new URLSearchParams(window.location.search);
-        const raw = (p.get("taskId") || "").trim();
-        return raw || null;
-      } catch {
-        return null;
-      }
-    })();
-
-    const historyByTaskId = ctx.getHistoryByTaskId();
-    let hb: Record<string, any[]> = (historyByTaskId as Record<string, any[]>) || {};
-    if (!hb || typeof hb !== "object") hb = {};
-
-    const idsWithHistory = Object.keys(hb || {}).filter((id) => {
-      const arr = hb[id];
-      return Array.isArray(arr) && arr.length;
+    const renderResult = renderHistoryManagerHtml({
+      existingListEl: listEl,
+      historyByTaskId: (ctx.getHistoryByTaskId() as Record<string, any[]>) || {},
+      tasks: ctx.getTasks(),
+      taskIdFilter: resolveHistoryManagerTaskIdFilter(window.location.search || ""),
+      hmBulkSelectedRows,
+      hmBulkEditMode,
+      hmSortKey,
+      hmSortDir,
+      hmExpandedTaskGroups: ctx.getHmExpandedTaskGroups(),
+      hmExpandedDateGroups: ctx.getHmExpandedDateGroups(),
+      formatTwo: ctx.formatTwo,
+      formatDateTime: ctx.formatDateTime,
+      getTaskMetaForHistoryId,
+      getHistoryEntryNote: (entry) => ctx.getHistoryEntryNote(entry),
     });
-    const filteredIds = taskIdFilter ? idsWithHistory.filter((id) => String(id) === String(taskIdFilter)) : idsWithHistory;
-
-    if (!filteredIds.length) {
-      listEl.innerHTML = taskIdFilter
-        ? `<div class="hmEmpty">No history entries found for this task.</div>`
-        : `<div class="hmEmpty">No history entries found.</div>`;
+    ctx.setHmExpandedTaskGroups(renderResult.expandedTaskGroups);
+    ctx.setHmExpandedDateGroups(renderResult.expandedDateGroups);
+    ctx.setHmRowsByTask(renderResult.rowIdsByTask);
+    ctx.setHmRowsByTaskDate(renderResult.rowIdsByTaskDate);
+    if (renderResult.isEmpty) {
+      listEl.innerHTML = renderResult.emptyHtml;
       return;
     }
-
-    const tasks = ctx.getTasks();
-    const currentOrder = new Map((tasks || []).map((t, index) => [String(t.id), index] as const));
-    filteredIds.sort((a, b) => {
-      const ai = currentOrder.get(String(a));
-      const bi = currentOrder.get(String(b));
-      const aIsCurrent = ai != null;
-      const bIsCurrent = bi != null;
-      if (aIsCurrent && bIsCurrent) return ai - bi;
-      if (aIsCurrent) return -1;
-      if (bIsCurrent) return 1;
-      const ar = hb[a][hb[a].length - 1]?.ts || 0;
-      const br = hb[b][hb[b].length - 1]?.ts || 0;
-      return br - ar;
-    });
-
-    const groups = filteredIds
-      .map((taskId) => {
-        const meta = getTaskMetaForHistoryId(taskId);
-        const arr = (hb[taskId] || []).slice().sort((x: any, y: any) => (y.ts || 0) - (x.ts || 0));
-        const localDateKey = (ts: number) => {
-          const d = new Date(ts);
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, "0");
-          const da = String(d.getDate()).padStart(2, "0");
-          return `${y}-${m}-${da}`;
-        };
-        const localDateLabel = (key: string) => {
-          const [y, m, d] = key.split("-").map((x) => parseInt(x, 10));
-          const dt = new Date(y, (m || 1) - 1, d || 1);
-          try {
-            return dt.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit" });
-          } catch {
-            return key;
-          }
-        };
-
-        const rowsByDate: Record<string, any[]> = {};
-        arr.forEach((e: any) => {
-          const key = localDateKey(+e.ts || 0);
-          if (!rowsByDate[key]) rowsByDate[key] = [];
-          rowsByDate[key].push(e);
-        });
-
-        const dateGroupsHtml = Object.keys(rowsByDate)
-          .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
-          .map((dateKey) => {
-            const entries = (rowsByDate[dateKey] || []).slice().sort((a: any, b: any) => {
-              const av = hmSortKey === "ms" ? +a.ms || 0 : +a.ts || 0;
-              const bv = hmSortKey === "ms" ? +b.ms || 0 : +b.ts || 0;
-              return hmSortDir === "asc" ? av - bv : bv - av;
-            });
-            const rowIds = entries.map((e: any) => `${taskId}|${e.ts}|${e.ms}|${String(e.name || "")}`);
-            hmRowsByTaskDate[`${taskId}|${dateKey}`] = rowIds;
-            if (!hmRowsByTask[taskId]) hmRowsByTask[taskId] = [];
-            hmRowsByTask[taskId].push(...rowIds);
-            const dateChecked = rowIds.length > 0 && rowIds.every((id) => hmBulkSelectedRows.has(id));
-            const rows = entries
-              .map((e: any) => {
-                const dt = ctx.formatDateTime(e.ts);
-                const tm = formatHistoryManagerElapsed(e.ms || 0, ctx.formatTwo);
-                const rowKey = buildHistoryManagerRowKey(e);
-                const rowId = `${taskId}|${rowKey}`;
-                const note = ctx.getHistoryEntryNote(e);
-                const noteCell = note
-                  ? `<button class="hmNoteBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
-                      rowKey
-                    )}" title="${escapeHtmlHM(note)}"><span class="hmNoteBtnText">${escapeHtmlHM(note)}</span></button>`
-                  : `<span class="hmNoteEmpty">-</span>`;
-                const rowCheckbox = hmBulkEditMode
-                  ? `<input class="hmBulkCheckbox hmBulkRowChk" type="checkbox" data-task="${taskId}" data-key="${escapeHtmlHM(
-                      rowKey
-                    )}" ${hmBulkSelectedRows.has(rowId) ? "checked" : ""} />`
-                  : "";
-                return `
-                  <tr>
-                    <td class="hmSelectCell">${rowCheckbox}</td>
-                    <td>${dt}</td>
-                    <td>${tm}</td>
-                    <td class="hmNotesCell">${noteCell}</td>
-                    <td style="text-align:right;">
-                      <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(
-                  rowKey
-                )}" aria-label="Delete log" title="Delete log">&#128465;</button>
-                    </td>
-                  </tr>
-                `;
-              })
-              .join("");
-            const dateOpen = hmExpandedDateGroups.has(`${taskId}|${dateKey}`) ? " open" : "";
-            const dateSortArrow = hmSortKey === "ts" ? (hmSortDir === "asc" ? " ▲" : " ▼") : "";
-            const elapsedSortArrow = hmSortKey === "ms" ? (hmSortDir === "asc" ? " ▲" : " ▼") : "";
-            const dateCheckbox = hmBulkEditMode
-              ? `<input class="hmBulkCheckbox hmBulkDateChk" type="checkbox" data-task="${taskId}" data-date="${dateKey}" ${
-                  dateChecked ? "checked" : ""
-                } />`
-              : "";
-            return `
-              <details class="hmDateGroup" data-task="${taskId}" data-date="${dateKey}"${dateOpen}>
-                <summary class="hmDateHeading">${dateCheckbox}${escapeHtmlHM(localDateLabel(dateKey))}</summary>
-                <table class="hmTable" role="table">
-                  <thead>
-                    <tr>
-                      <th class="hmSelectHead"></th>
-                      <th><button class="hmSortBtn" type="button" data-hm-sort="ts">DATE/TIME${dateSortArrow}</button></th>
-                      <th><button class="hmSortBtn" type="button" data-hm-sort="ms">ELAPSED${elapsedSortArrow}</button></th>
-                      <th class="hmNotesHead">NOTES</th>
-                      <th style="text-align:right;">DELETE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rows}
-                  </tbody>
-                </table>
-              </details>
-            `;
-          })
-          .join("");
-
-        const swatch = `<span class="hmExpandIcon" aria-hidden="true"></span>`;
-        const badge = meta.deleted ? `<span class="hmBadge deleted">Deleted</span>` : ``;
-        const taskRows = hmRowsByTask[taskId] || [];
-        const taskChecked = taskRows.length > 0 && taskRows.every((id) => hmBulkSelectedRows.has(id));
-        const taskCheckbox = hmBulkEditMode
-          ? `<input class="hmBulkCheckbox hmBulkTaskChk" type="checkbox" data-task="${taskId}" ${
-              taskChecked ? "checked" : ""
-            } />`
-          : "";
-
-        const taskOpen = hmExpandedTaskGroups.has(String(taskId)) ? " open" : "";
-        return `
-          <details class="hmGroup" data-task="${taskId}"${taskOpen}>
-            <summary class="hmSummary">
-              <div class="hmTitleRow">
-                ${taskCheckbox}
-                ${swatch}
-                <div class="hmTaskName">${escapeHtmlHM(meta.name || "Task")}</div>
-                ${badge}
-              </div>
-              <div class="hmCount">${arr.length} logs</div>
-            </summary>
-
-            ${dateGroupsHtml}
-          </details>
-        `;
-      })
-      .join("");
-
-    listEl.innerHTML = groups;
-    const validRowIds = new Set<string>();
-    Object.values(hmRowsByTask).forEach((ids) => ids.forEach((id) => validRowIds.add(id)));
+    listEl.innerHTML = renderResult.html;
     hmBulkSelectedRows.forEach((id) => {
-      if (!validRowIds.has(id)) hmBulkSelectedRows.delete(id);
+      if (!renderResult.validRowIds.has(id)) hmBulkSelectedRows.delete(id);
     });
     syncHistoryManagerBulkUi();
   }
@@ -1064,15 +800,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const selected = Array.from(hmBulkSelectedRows);
       if (!selected.length) return;
-      const byTask: Record<string, Set<string>> = {};
-      selected.forEach((id) => {
-        const firstSep = id.indexOf("|");
-        if (firstSep <= 0) return;
-        const taskId = id.slice(0, firstSep);
-        const rowKey = id.slice(firstSep + 1);
-        if (!byTask[taskId]) byTask[taskId] = new Set<string>();
-        byTask[taskId].add(rowKey);
-      });
+      const byTask = groupSelectedHistoryRowsByTask(selected);
       const taskCount = Object.keys(byTask).length;
       const entryCount = selected.length;
       ctx.confirm(

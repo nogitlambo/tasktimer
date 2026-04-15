@@ -76,6 +76,20 @@ Local development should stay on Stripe test mode.
 9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
 10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
 
+## Account Deletion
+
+Account deletion is handled directly by the app and does not require Firebase's Delete User Data extension.
+
+- The authenticated delete flow calls `src/app/api/account/delete-user-data/route.ts` to remove user Firestore data from the named `timebase` database before deleting the Firebase Auth user.
+- The server cleanup route deletes:
+  - `users/{uid}` recursively
+  - `userSubscriptions/{uid}`
+  - `scheduled_time_goal_pushes` owned by the user
+  - friendship/request/share records associated with the user
+  - username and email lookup index rows for the user
+- If the user has an active paid subscription, the delete flow may preserve a minimal `retainedSubscriptions/{normalizedEmail}` record so `pro` can be restored automatically if the same email signs in again before the paid period ends.
+- `retainedSubscriptions/*` is intentionally not part of normal user-data deletion.
+
 ## Firebase Config Hygiene
 
 Firebase client identifiers should be supplied via environment variables or deployment secrets, not committed directly into repo config files.

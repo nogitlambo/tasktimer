@@ -92,18 +92,35 @@ export async function resumePendingDeleteFlow(uid: string) {
 
   if (!auth.currentUser) return { resumed: true };
 
-  await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
-  const idToken = await auth.currentUser.getIdToken().catch(() => "");
-  if (idToken) {
-    await fetch("/api/account/retain-subscription-before-delete", {
+  const callDeleteUserDataRoute = async (idToken: string, targetUid: string) => {
+    const response = await fetch("/api/account/delete-user-data", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-firebase-auth": idToken,
       },
-      body: JSON.stringify({ uid: auth.currentUser.uid }),
-    }).catch(() => {});
+      body: JSON.stringify({ uid: targetUid }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(payload.error || "Could not delete your cloud data.");
+    }
+  };
+
+  await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+  const idToken = await auth.currentUser.getIdToken().catch(() => "");
+  if (!idToken) {
+    return { resumed: true, error: "Your sign-in session is no longer valid. Please sign in again." };
   }
+  await fetch("/api/account/retain-subscription-before-delete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-firebase-auth": idToken,
+    },
+    body: JSON.stringify({ uid: auth.currentUser.uid }),
+  }).catch(() => {});
+  await callDeleteUserDataRoute(idToken, auth.currentUser.uid);
   await deleteUser(auth.currentUser);
   if (typeof window !== "undefined") window.location.assign("/");
   return { resumed: true };
@@ -126,9 +143,27 @@ export async function handleDeleteAccountFlow(user: User) {
     }).catch(() => {});
   };
 
+  const deleteCloudData = async (targetUser: User) => {
+    const idToken = await targetUser.getIdToken();
+    if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+    const response = await fetch("/api/account/delete-user-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-firebase-auth": idToken,
+      },
+      body: JSON.stringify({ uid: targetUser.uid }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(payload.error || "Could not delete your cloud data.");
+    }
+  };
+
   const deleteSignedInUser = async (targetUser: User) => {
     const deleteUid = targetUser.uid;
     await preserveRetainedSubscription(targetUser);
+    await deleteCloudData(targetUser);
     await deleteUser(targetUser);
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
@@ -148,6 +183,10 @@ export async function handleDeleteAccountFlow(user: User) {
     }
 
     const provider = new GoogleAuthProvider();
+    const loginHint = String(user.email || "").trim();
+    if (loginHint) {
+      provider.setCustomParameters({ login_hint: loginHint });
+    }
     if (shouldUseRedirectAuth()) {
       const ref = accountStateDocRef(user.uid);
       if (ref) await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
