@@ -1,0 +1,72 @@
+import { NextResponse } from "next/server";
+
+import { getStripeServer } from "@/lib/stripeServer";
+import {
+  isActiveSubscriptionStatus,
+  isPeriodEndInFuture,
+  loadUserSubscription,
+  upsertRetainedSubscription,
+} from "@/lib/subscriptionStore";
+import {
+  createApiAuthErrorResponse,
+  createApiInternalErrorResponse,
+  verifyFirebaseRequestUser,
+} from "../../shared/auth";
+
+function asString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function resolveCurrentPeriodEndAt(subscriptionId: string) {
+  const normalizedSubscriptionId = asString(subscriptionId);
+  if (!normalizedSubscriptionId) return null;
+  const stripe = getStripeServer();
+  const subscription = await stripe.subscriptions.retrieve(normalizedSubscriptionId);
+  const currentPeriodEnd = Number(subscription.current_period_end || 0);
+  return Number.isFinite(currentPeriodEnd) && currentPeriodEnd > 0 ? currentPeriodEnd * 1000 : null;
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const { uid, email } = await verifyFirebaseRequestUser(req, body);
+    const normalizedEmail = asString(email).toLowerCase();
+    if (!normalizedEmail) {
+      return NextResponse.json({ retained: false, reason: "missing-email" });
+    }
+
+    const subscription = await loadUserSubscription(uid);
+    if (!subscription?.stripeCustomerId || !isActiveSubscriptionStatus(subscription.stripeSubscriptionStatus)) {
+      return NextResponse.json({ retained: false, reason: "no-active-subscription" });
+    }
+
+    let currentPeriodEndAt = subscription.currentPeriodEndAt;
+    if (!isPeriodEndInFuture(currentPeriodEndAt) && subscription.stripeSubscriptionId) {
+      currentPeriodEndAt = await resolveCurrentPeriodEndAt(subscription.stripeSubscriptionId);
+    }
+    if (!isPeriodEndInFuture(currentPeriodEndAt)) {
+      return NextResponse.json({ retained: false, reason: "no-active-period" });
+    }
+
+    await upsertRetainedSubscription({
+      email: normalizedEmail,
+      sourceUid: uid,
+      customerId: subscription.stripeCustomerId,
+      subscriptionId: subscription.stripeSubscriptionId,
+      priceId: subscription.stripePriceId,
+      status: subscription.stripeSubscriptionStatus,
+      currentPeriodEndAt,
+    });
+
+    return NextResponse.json({ retained: true });
+  } catch (error) {
+    if (error instanceof Error && "status" in error) {
+      return createApiAuthErrorResponse(error, "Could not preserve subscription access before deletion.");
+    }
+    return createApiInternalErrorResponse(
+      error,
+      "Could not preserve subscription access before deletion.",
+      "[api/account/retain-subscription-before-delete] Request failed"
+    );
+  }
+}

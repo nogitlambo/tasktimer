@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripeServer } from "@/lib/stripeServer";
 import {
+  deleteRetainedSubscriptionByEmail,
+  findRetainedSubscriptionByStripeCustomerId,
   findUidByStripeCustomerId,
+  hasRetainedSubscriptionEntitlement,
   planFromStripeSubscriptionStatus,
+  upsertRetainedSubscription,
   upsertUserSubscriptionAndPlan,
   type SubscriptionPlan,
 } from "@/lib/subscriptionStore";
@@ -27,6 +31,7 @@ async function upsertUserBillingState(input: {
   subscriptionId?: string;
   priceId?: string;
   status?: string;
+  currentPeriodEndAt?: unknown;
 }) {
   logStripeWebhook("upserting billing state", {
     uid: input.uid,
@@ -35,11 +40,45 @@ async function upsertUserBillingState(input: {
     subscriptionId: input.subscriptionId || "",
     priceId: input.priceId || "",
     status: input.status || "",
+    currentPeriodEndAt: input.currentPeriodEndAt || null,
   });
   await upsertUserSubscriptionAndPlan(input);
   logStripeWebhook("billing state upsert completed", {
     uid: input.uid,
     plan: input.plan,
+  });
+}
+
+async function syncRetainedBillingStateByCustomer(input: {
+  customerId?: string;
+  subscriptionId?: string;
+  priceId?: string;
+  status?: string;
+  currentPeriodEndAt?: unknown;
+}) {
+  const customerId = asString(input.customerId);
+  if (!customerId) return;
+  const retained = await findRetainedSubscriptionByStripeCustomerId(customerId);
+  if (!retained?.email) return;
+
+  const nextRetained = {
+    ...retained,
+    stripeSubscriptionStatus: asString(input.status) || retained.stripeSubscriptionStatus,
+    currentPeriodEndAt: input.currentPeriodEndAt || retained.currentPeriodEndAt,
+  };
+  if (!hasRetainedSubscriptionEntitlement(nextRetained)) {
+    await deleteRetainedSubscriptionByEmail(retained.email);
+    return;
+  }
+
+  await upsertRetainedSubscription({
+    email: retained.email,
+    sourceUid: retained.sourceUid,
+    customerId,
+    subscriptionId: input.subscriptionId || retained.stripeSubscriptionId,
+    priceId: input.priceId || retained.stripePriceId,
+    status: input.status || retained.stripeSubscriptionStatus,
+    currentPeriodEndAt: input.currentPeriodEndAt || retained.currentPeriodEndAt,
   });
 }
 
@@ -77,6 +116,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const subscriptionId = asString(subscription.id);
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status);
+  const currentPeriodEndAt = Number(subscription.current_period_end || 0) > 0 ? Number(subscription.current_period_end) * 1000 : null;
 
   let resolvedUid = uid;
   if (!resolvedUid && customerId) {
@@ -94,13 +134,22 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     subscriptionId,
     priceId,
     status,
+    currentPeriodEndAt,
   });
   if (!resolvedUid) {
+    await syncRetainedBillingStateByCustomer({
+      customerId,
+      subscriptionId,
+      priceId,
+      status,
+      currentPeriodEndAt,
+    });
     logStripeWebhook("skipping subscription create/update because uid could not be resolved", {
       customerId,
       subscriptionId,
       priceId,
       status,
+      currentPeriodEndAt,
     });
     return;
   }
@@ -112,6 +161,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     subscriptionId,
     priceId,
     status,
+    currentPeriodEndAt,
   });
 }
 
@@ -121,6 +171,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const subscriptionId = asString(subscription.id);
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status) || "canceled";
+  const currentPeriodEndAt = Number(subscription.current_period_end || 0) > 0 ? Number(subscription.current_period_end) * 1000 : null;
   let resolvedUid = uid;
 
   if (!resolvedUid && customerId) {
@@ -138,13 +189,22 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     subscriptionId,
     priceId,
     status,
+    currentPeriodEndAt,
   });
   if (!resolvedUid) {
+    await syncRetainedBillingStateByCustomer({
+      customerId,
+      subscriptionId,
+      priceId,
+      status,
+      currentPeriodEndAt,
+    });
     logStripeWebhook("skipping customer.subscription.deleted because uid could not be resolved", {
       customerId,
       subscriptionId,
       priceId,
       status,
+      currentPeriodEndAt,
     });
     return;
   }
@@ -156,6 +216,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     subscriptionId,
     priceId,
     status,
+    currentPeriodEndAt,
   });
 }
 

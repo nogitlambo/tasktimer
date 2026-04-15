@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
 
 import {
   buildUserPlanMirrorWriteData,
+  buildRetainedSubscriptionWriteData,
   buildUserSubscriptionWriteData,
+  hasRetainedSubscriptionEntitlement,
+  normalizeRetainedSubscriptionRecord,
   normalizeUserSubscriptionRecord,
   planFromStripeSubscriptionStatus,
 } from "./subscriptionStore";
@@ -23,6 +26,7 @@ describe("subscriptionStore", () => {
         stripeSubscriptionId: " sub_123 ",
         stripePriceId: " price_123 ",
         stripeSubscriptionStatus: " active ",
+        currentPeriodEndAt: Timestamp.fromMillis(999),
         stripeSyncedAt: syncedAt,
       })
     ).toEqual({
@@ -30,6 +34,7 @@ describe("subscriptionStore", () => {
       stripeSubscriptionId: "sub_123",
       stripePriceId: "price_123",
       stripeSubscriptionStatus: "active",
+      currentPeriodEndAt: Timestamp.fromMillis(999),
       stripeSyncedAt: syncedAt,
       schemaVersion: 1,
     });
@@ -55,6 +60,7 @@ describe("subscriptionStore", () => {
         subscriptionId: "sub_123",
         priceId: "price_123",
         status: "active",
+        currentPeriodEndAt: Timestamp.fromMillis(300),
       },
       createdAt,
       syncedAt
@@ -66,12 +72,13 @@ describe("subscriptionStore", () => {
       stripeSubscriptionId: "sub_123",
       stripePriceId: "price_123",
       stripeSubscriptionStatus: "active",
+      currentPeriodEndAt: Timestamp.fromMillis(300),
       stripeSyncedAt: syncedAt,
       createdAt,
     });
   });
 
-  it("deletes missing optional subscription fields and mirrors a free plan", () => {
+  it("preserves omitted optional subscription fields and mirrors a free plan", () => {
     const subscriptionRow = buildUserSubscriptionWriteData(
       {
         uid: "user_123",
@@ -85,10 +92,70 @@ describe("subscriptionStore", () => {
     const planRow = buildUserPlanMirrorWriteData({ uid: "user_123", plan: "free" }, null);
 
     expect(subscriptionRow.stripeCustomerId).toBe("cus_123");
-    expect(subscriptionRow.stripeSubscriptionId).toEqual(FieldValue.delete());
-    expect(subscriptionRow.stripePriceId).toEqual(FieldValue.delete());
+    expect("stripeSubscriptionId" in subscriptionRow).toBe(false);
+    expect("stripePriceId" in subscriptionRow).toBe(false);
     expect(subscriptionRow.stripeSubscriptionStatus).toBe("canceled");
     expect(planRow.plan).toBe("free");
     expect(planRow.schemaVersion).toBe(1);
+  });
+
+  it("normalizes retained subscription records and validates entitlement windows", () => {
+    const retained = normalizeRetainedSubscriptionRecord({
+      email: " User@Example.com ",
+      stripeCustomerId: " cus_123 ",
+      stripeSubscriptionId: " sub_123 ",
+      stripePriceId: " price_123 ",
+      stripeSubscriptionStatus: " active ",
+      currentPeriodEndAt: Timestamp.fromMillis(5_000),
+      sourceUid: " user_123 ",
+      retainedAt: Timestamp.fromMillis(1_000),
+      updatedAt: Timestamp.fromMillis(2_000),
+    });
+
+    expect(retained).toEqual({
+      email: "user@example.com",
+      stripeCustomerId: "cus_123",
+      stripeSubscriptionId: "sub_123",
+      stripePriceId: "price_123",
+      stripeSubscriptionStatus: "active",
+      currentPeriodEndAt: Timestamp.fromMillis(5_000),
+      plan: "pro",
+      sourceUid: "user_123",
+      retainedAt: Timestamp.fromMillis(1_000),
+      updatedAt: Timestamp.fromMillis(2_000),
+      schemaVersion: 1,
+    });
+    expect(hasRetainedSubscriptionEntitlement(retained, 4_000)).toBe(true);
+    expect(hasRetainedSubscriptionEntitlement(retained, 6_000)).toBe(false);
+  });
+
+  it("builds minimal retained subscription writes", () => {
+    const row = buildRetainedSubscriptionWriteData(
+      {
+        email: "user@example.com",
+        sourceUid: "user_123",
+        customerId: "cus_123",
+        subscriptionId: "sub_123",
+        priceId: "price_123",
+        status: "active",
+        currentPeriodEndAt: Timestamp.fromMillis(300),
+      },
+      Timestamp.fromMillis(100),
+      Timestamp.fromMillis(200)
+    );
+
+    expect(row).toMatchObject({
+      schemaVersion: 1,
+      email: "user@example.com",
+      stripeCustomerId: "cus_123",
+      stripeSubscriptionId: "sub_123",
+      stripePriceId: "price_123",
+      stripeSubscriptionStatus: "active",
+      currentPeriodEndAt: Timestamp.fromMillis(300),
+      plan: "pro",
+      sourceUid: "user_123",
+      retainedAt: Timestamp.fromMillis(100),
+      stripeSyncedAt: Timestamp.fromMillis(200),
+    });
   });
 });

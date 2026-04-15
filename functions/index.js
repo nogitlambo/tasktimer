@@ -58,6 +58,28 @@ function normalizePlan(value) {
   return String(value || "").trim().toLowerCase() === "pro" ? "pro" : "free";
 }
 
+function normalizeEmailKey(value) {
+  return asString(value).toLowerCase();
+}
+
+function isActiveSubscriptionStatus(status) {
+  const activeStatuses = new Set(["trialing", "active", "past_due"]);
+  return activeStatuses.has(asString(status).toLowerCase());
+}
+
+function millisFromTimestampLike(value) {
+  if (value == null) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "object" && typeof value.toMillis === "function") {
+    try {
+      return Number(value.toMillis()) || 0;
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
+
 function planAdminUids() {
   return String(process.env.TASKTIMER_PLAN_ADMIN_UIDS || "")
     .split(",")
@@ -83,6 +105,55 @@ async function upsertUserPlan(uid, plan) {
     updatedAt: FieldValue.serverTimestamp(),
   }, {merge: true});
   return nextPlan;
+}
+
+async function restoreRetainedSubscriptionForUser(uid, email) {
+  const normalizedUid = asString(uid);
+  const normalizedEmail = normalizeEmailKey(email);
+  if (!normalizedUid || !normalizedEmail) return "free";
+
+  const retainedRef = db.collection("retainedSubscriptions").doc(normalizedEmail);
+  const retainedSnap = await retainedRef.get();
+  if (!retainedSnap.exists) return "free";
+
+  const status = asString(retainedSnap.get("stripeSubscriptionStatus")).toLowerCase();
+  const currentPeriodEndAt = retainedSnap.get("currentPeriodEndAt");
+  const currentPeriodEndAtMs = millisFromTimestampLike(currentPeriodEndAt);
+  if (!isActiveSubscriptionStatus(status) || currentPeriodEndAtMs <= Date.now()) {
+    await retainedRef.delete().catch(() => {});
+    return await upsertUserPlan(normalizedUid, "free");
+  }
+
+  const userRef = db.collection("users").doc(normalizedUid);
+  const subscriptionRef = db.collection("userSubscriptions").doc(normalizedUid);
+  const [userSnap, subscriptionSnap] = await Promise.all([userRef.get(), subscriptionRef.get()]);
+  const stripeCustomerId = asString(retainedSnap.get("stripeCustomerId"));
+  if (!stripeCustomerId) {
+    await retainedRef.delete().catch(() => {});
+    return await upsertUserPlan(normalizedUid, "free");
+  }
+
+  const batch = db.batch();
+  batch.set(userRef, {
+    schemaVersion: 1,
+    plan: "pro",
+    planUpdatedAt: FieldValue.serverTimestamp(),
+    createdAt: userSnap.exists ? userSnap.get("createdAt") || FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  batch.set(subscriptionRef, {
+    schemaVersion: 1,
+    stripeCustomerId,
+    stripeSubscriptionId: asString(retainedSnap.get("stripeSubscriptionId")),
+    stripePriceId: asString(retainedSnap.get("stripePriceId")),
+    stripeSubscriptionStatus: status,
+    currentPeriodEndAt,
+    stripeSyncedAt: FieldValue.serverTimestamp(),
+    createdAt: subscriptionSnap.exists ? subscriptionSnap.get("createdAt") || FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  await batch.commit();
+  return "pro";
 }
 
 function asStringMap(value) {
@@ -221,8 +292,10 @@ export const sendPushTest = onCall(protectedCallableOptions, async (request) => 
 
 export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (request) => {
   const uid = asString(request.auth?.uid);
+  const email = normalizeEmailKey(request.auth?.token?.email);
   logger.info("syncCurrentUserPlan App Check", {
     uid: uid || null,
+    email: email || null,
     appId: request.app?.appId || null,
     appCheckAlreadyConsumed: request.app?.alreadyConsumed ?? null,
   });
@@ -235,6 +308,10 @@ export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (reque
     const existingPlan = snap.exists ? asString(snap.get("plan")).toLowerCase() : "";
     if (existingPlan === "free" || existingPlan === "pro") {
       return {ok: true, plan: existingPlan};
+    }
+    const restoredPlan = await restoreRetainedSubscriptionForUser(uid, email);
+    if (restoredPlan === "pro") {
+      return {ok: true, plan: restoredPlan, restoredFromRetention: true};
     }
     const plan = await upsertUserPlan(uid, "free");
     return {ok: true, plan};

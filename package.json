@@ -24,6 +24,7 @@
     "agents:update": "node scripts/docs_sync.mjs --write --target=agents",
     "agents:check": "node scripts/docs_sync.mjs --check --target=agents",
     "subscriptions:migrate": "node scripts/migrate-user-subscriptions.mjs",
+    "subscriptions:reconcile-plans": "node scripts/reconcile-user-plans.mjs",
     "hooks:install": "node scripts/install_git_hooks.mjs",
     "test:unit": "vitest run"
   },

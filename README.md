@@ -72,6 +72,7 @@ Local development should stay on Stripe test mode.
    - `userSubscriptions/{uid}.stripePriceId`
    - `userSubscriptions/{uid}.stripeSubscriptionStatus`
    - `userSubscriptions/{uid}.stripeSyncedAt`
+   - If plan state drifts from billing state, run `npm run subscriptions:reconcile-plans -- --write`
 9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
 10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
 

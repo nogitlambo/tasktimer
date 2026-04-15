@@ -93,6 +93,17 @@ export async function resumePendingDeleteFlow(uid: string) {
   if (!auth.currentUser) return { resumed: true };
 
   await setDoc(ref, { deleteReauthPending: false, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+  const idToken = await auth.currentUser.getIdToken().catch(() => "");
+  if (idToken) {
+    await fetch("/api/account/retain-subscription-before-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-firebase-auth": idToken,
+      },
+      body: JSON.stringify({ uid: auth.currentUser.uid }),
+    }).catch(() => {});
+  }
   await deleteUser(auth.currentUser);
   if (typeof window !== "undefined") window.location.assign("/");
   return { resumed: true };
@@ -102,8 +113,22 @@ export async function handleDeleteAccountFlow(user: User) {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("You must be signed in to delete your account.");
 
+  const preserveRetainedSubscription = async (targetUser: User) => {
+    const idToken = await targetUser.getIdToken();
+    if (!idToken) return;
+    await fetch("/api/account/retain-subscription-before-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-firebase-auth": idToken,
+      },
+      body: JSON.stringify({ uid: targetUser.uid }),
+    }).catch(() => {});
+  };
+
   const deleteSignedInUser = async (targetUser: User) => {
     const deleteUid = targetUser.uid;
+    await preserveRetainedSubscription(targetUser);
     await deleteUser(targetUser);
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
@@ -123,7 +148,6 @@ export async function handleDeleteAccountFlow(user: User) {
     }
 
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
     if (shouldUseRedirectAuth()) {
       const ref = accountStateDocRef(user.uid);
       if (ref) await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
