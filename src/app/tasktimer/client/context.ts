@@ -742,6 +742,8 @@ export type TaskTimerDashboardContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
   syncDashboardRefreshButtonUi: () => void;
+  hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
   getRewardProgress: () => RewardProgressV1;
   getTasks: () => Task[];
   getCurrentAppPage: () => AppPage;

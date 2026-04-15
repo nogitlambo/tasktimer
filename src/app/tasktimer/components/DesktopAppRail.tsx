@@ -474,7 +474,9 @@ export default function DesktopAppRail({
                         View Profile
                       </a>
                       <button
-                        className="dashboardTag dashboardRailProfileTagLink dashboardRailProfilePlanBadge"
+                        className={`dashboardTag dashboardRailProfileTagLink dashboardRailProfilePlanBadge ${
+                          currentPlan === "pro" ? "dashboardRailProfilePlanBadgePro" : "dashboardRailProfilePlanBadgeFree"
+                        }`}
                         id="rewardsInfoOpenBtn"
                         type="button"
                         aria-label={`Open ${currentPlanLabel} subscription details`}

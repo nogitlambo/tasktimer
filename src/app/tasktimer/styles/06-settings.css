@@ -4074,3 +4074,20 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachme
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsDetailText{
   color: rgba(233,216,255,.76);
 }
+
+/* Final Preferences/Appearance/Notifications typography pass: use Ligconsolata-style readable text and normal casing
+   for the primary inline controls shown in these panes. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection option,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection input{
+  font-family: var(--font-readable) !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+}

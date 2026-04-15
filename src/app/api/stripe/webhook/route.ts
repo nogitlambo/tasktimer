@@ -1,52 +1,72 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getStripeServer } from "@/lib/stripeServer";
+import {
+  findUidByStripeCustomerId,
+  planFromStripeSubscriptionStatus,
+  upsertUserSubscriptionAndPlan,
+  type SubscriptionPlan,
+} from "@/lib/subscriptionStore";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function logStripeWebhook(message: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.info(`[stripe-webhook] ${message}`, details);
+    return;
+  }
+  console.info(`[stripe-webhook] ${message}`);
+}
+
 async function upsertUserBillingState(input: {
   uid: string;
-  plan: "free" | "pro";
+  plan: SubscriptionPlan;
   customerId?: string;
   subscriptionId?: string;
   priceId?: string;
   status?: string;
 }) {
-  const db = getFirebaseAdminDb();
-  const userRef = db.collection("users").doc(input.uid);
-  const existing = await userRef.get();
-  const createdAt = existing.exists ? existing.get("createdAt") || FieldValue.serverTimestamp() : FieldValue.serverTimestamp();
-
-  await userRef.set(
-    {
-      schemaVersion: 1,
-      plan: input.plan,
-      planUpdatedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      createdAt,
-      stripeCustomerId: input.customerId || FieldValue.delete(),
-      stripeSubscriptionId: input.subscriptionId || FieldValue.delete(),
-      stripePriceId: input.priceId || FieldValue.delete(),
-      stripeSubscriptionStatus: input.status || FieldValue.delete(),
-      stripeSyncedAt: Timestamp.now(),
-    },
-    { merge: true },
-  );
+  logStripeWebhook("upserting billing state", {
+    uid: input.uid,
+    plan: input.plan,
+    customerId: input.customerId || "",
+    subscriptionId: input.subscriptionId || "",
+    priceId: input.priceId || "",
+    status: input.status || "",
+  });
+  await upsertUserSubscriptionAndPlan(input);
+  logStripeWebhook("billing state upsert completed", {
+    uid: input.uid,
+    plan: input.plan,
+  });
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const uid = asString(session.client_reference_id) || asString(session.metadata?.uid);
-  if (!uid) return;
+  const customerId = asString(session.customer);
+  const subscriptionId = asString(session.subscription);
+  logStripeWebhook("processing checkout.session.completed", {
+    uid,
+    customerId,
+    subscriptionId,
+    checkoutSessionId: asString(session.id),
+  });
+  if (!uid) {
+    logStripeWebhook("skipping checkout.session.completed because uid could not be resolved", {
+      customerId,
+      subscriptionId,
+      checkoutSessionId: asString(session.id),
+    });
+    return;
+  }
 
   await upsertUserBillingState({
     uid,
     plan: "pro",
-    customerId: asString(session.customer),
-    subscriptionId: asString(session.subscription),
+    customerId,
+    subscriptionId,
     status: "checkout_completed",
   });
 }
@@ -60,16 +80,34 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   let resolvedUid = uid;
   if (!resolvedUid && customerId) {
-    const db = getFirebaseAdminDb();
-    const snap = await db.collection("users").where("stripeCustomerId", "==", customerId).limit(1).get();
-    resolvedUid = snap.empty ? "" : snap.docs[0]?.id || "";
+    logStripeWebhook("resolving uid from stripe customer id", {
+      customerId,
+      subscriptionId,
+      eventStatus: status,
+    });
+    resolvedUid = await findUidByStripeCustomerId(customerId);
   }
-  if (!resolvedUid) return;
+  logStripeWebhook("processing subscription create/update", {
+    metadataUid: uid,
+    resolvedUid,
+    customerId,
+    subscriptionId,
+    priceId,
+    status,
+  });
+  if (!resolvedUid) {
+    logStripeWebhook("skipping subscription create/update because uid could not be resolved", {
+      customerId,
+      subscriptionId,
+      priceId,
+      status,
+    });
+    return;
+  }
 
-  const activeStatuses = new Set(["trialing", "active", "past_due"]);
   await upsertUserBillingState({
     uid: resolvedUid,
-    plan: activeStatuses.has(status) ? "pro" : "free",
+    plan: planFromStripeSubscriptionStatus(status),
     customerId,
     subscriptionId,
     priceId,
@@ -80,22 +118,44 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const uid = asString(subscription.metadata?.uid);
   const customerId = asString(subscription.customer);
+  const subscriptionId = asString(subscription.id);
+  const priceId = asString(subscription.items.data[0]?.price?.id);
+  const status = asString(subscription.status) || "canceled";
   let resolvedUid = uid;
 
   if (!resolvedUid && customerId) {
-    const db = getFirebaseAdminDb();
-    const snap = await db.collection("users").where("stripeCustomerId", "==", customerId).limit(1).get();
-    resolvedUid = snap.empty ? "" : snap.docs[0]?.id || "";
+    logStripeWebhook("resolving uid for deleted subscription from stripe customer id", {
+      customerId,
+      subscriptionId,
+      status,
+    });
+    resolvedUid = await findUidByStripeCustomerId(customerId);
   }
-  if (!resolvedUid) return;
+  logStripeWebhook("processing customer.subscription.deleted", {
+    metadataUid: uid,
+    resolvedUid,
+    customerId,
+    subscriptionId,
+    priceId,
+    status,
+  });
+  if (!resolvedUid) {
+    logStripeWebhook("skipping customer.subscription.deleted because uid could not be resolved", {
+      customerId,
+      subscriptionId,
+      priceId,
+      status,
+    });
+    return;
+  }
 
   await upsertUserBillingState({
     uid: resolvedUid,
     plan: "free",
     customerId,
-    subscriptionId: asString(subscription.id),
-    priceId: asString(subscription.items.data[0]?.price?.id),
-    status: asString(subscription.status) || "canceled",
+    subscriptionId,
+    priceId,
+    status,
   });
 }
 
@@ -111,6 +171,10 @@ export async function POST(req: Request) {
     const stripe = getStripeServer();
     const rawBody = await req.text();
     const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    logStripeWebhook("received event", {
+      eventType: event.type,
+      eventId: event.id,
+    });
 
     switch (event.type) {
       case "checkout.session.completed":
@@ -130,6 +194,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   } catch (error) {
     const message = error instanceof Error && error.message ? error.message : "Webhook handling failed.";
+    console.error("[stripe-webhook] webhook handling failed", {
+      message,
+      error,
+    });
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

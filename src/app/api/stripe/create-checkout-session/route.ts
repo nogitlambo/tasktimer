@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
+import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 
 function asString(value: unknown) {
@@ -18,11 +18,8 @@ export async function POST(req: Request) {
     }
 
     const stripe = getStripeServer();
-    const db = getFirebaseAdminDb();
     const appBaseUrl = getAppBaseUrl();
-    const userRef = db.collection("users").doc(uid);
-    const userSnap = await userRef.get();
-    const existingCustomerId = userSnap.exists ? asString(userSnap.get("stripeCustomerId")) : "";
+    const existingCustomerId = await loadStripeCustomerIdForUser(uid);
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

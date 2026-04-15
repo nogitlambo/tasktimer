@@ -1,6 +1,10 @@
+"use client";
+
 import type { CSSProperties } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./PricingSection.module.css";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 const pricingTiers = [
   {
@@ -89,7 +93,47 @@ type PricingSectionProps = {
 };
 
 export default function PricingSection({ mode = "landing" }: PricingSectionProps) {
+  const router = useRouter();
   const isPage = mode === "page";
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+
+  const handleStartProCheckout = async () => {
+    if (checkoutBusy) return;
+    setCheckoutError("");
+
+    const auth = getFirebaseAuthClient();
+    const user = auth?.currentUser || null;
+    const uid = String(user?.uid || "").trim();
+    if (!uid || !user) {
+      router.push("/web-sign-in?checkout=pro");
+      return;
+    }
+
+    setCheckoutBusy(true);
+    try {
+      const idToken = await user.getIdToken();
+      if (!idToken) {
+        throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+      }
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Could not start checkout.");
+      }
+      window.location.assign(data.url);
+    } catch (error: unknown) {
+      setCheckoutError(error instanceof Error && error.message ? error.message : "Could not start checkout.");
+      setCheckoutBusy(false);
+    }
+  };
 
   return (
     <section
@@ -128,6 +172,11 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
           >
             Get Free or Get Pro
           </h2>
+          {checkoutError ? (
+            <div className="mt-4 text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-[#ff8cb8]">
+              {checkoutError}
+            </div>
+          ) : null}
         </div>
 
         <div className="mx-auto grid max-w-[860px] gap-7 lg:grid-cols-2">
@@ -199,8 +248,21 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                 </ul>
 
                 <div className="mt-auto pt-10">
-                  {tier.href ? (
-                    <Link
+                  {tier.name === "Pro" ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleStartProCheckout()}
+                      disabled={checkoutBusy}
+                      className={[
+                        "displayFont block w-full border px-4 py-4 text-center text-[13px] font-black uppercase tracking-[0.14em] transition",
+                        accent.button,
+                        checkoutBusy ? "cursor-wait opacity-85" : "",
+                      ].join(" ")}
+                    >
+                      {checkoutBusy ? "Starting Checkout..." : tier.cta}
+                    </button>
+                  ) : tier.href ? (
+                    <a
                       href={tier.href}
                       className={[
                         "displayFont block w-full border px-4 py-4 text-center text-[13px] font-black uppercase tracking-[0.14em] transition",
@@ -208,7 +270,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                       ].join(" ")}
                     >
                       {tier.cta}
-                    </Link>
+                    </a>
                   ) : (
                     <button
                       type="button"

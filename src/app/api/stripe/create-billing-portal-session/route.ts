@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
+import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 
 function asString(value: unknown) {
@@ -13,9 +13,7 @@ export async function POST(req: Request) {
     const { uid } = await verifyFirebaseRequestUser(req, body);
     const returnPath = asString(body.returnPath) || "/settings?pane=general";
 
-    const db = getFirebaseAdminDb();
-    const userSnap = await db.collection("users").doc(uid).get();
-    const customerId = userSnap.exists ? asString(userSnap.get("stripeCustomerId")) : "";
+    const customerId = await loadStripeCustomerIdForUser(uid);
 
     if (!customerId) {
       return NextResponse.json(

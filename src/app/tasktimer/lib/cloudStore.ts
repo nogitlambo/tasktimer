@@ -190,11 +190,6 @@ const USER_ROOT_ALLOWED_KEYS = new Set([
   "rewardTotalXp",
   "plan",
   "planUpdatedAt",
-  "stripeCustomerId",
-  "stripeSubscriptionId",
-  "stripePriceId",
-  "stripeSubscriptionStatus",
-  "stripeSyncedAt",
   "createdAt",
   "updatedAt",
   "schemaVersion",
@@ -238,11 +233,6 @@ function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | nu
   if (Number.isInteger(source.rewardTotalXp)) next.rewardTotalXp = source.rewardTotalXp;
   if (source.plan === "free" || source.plan === "pro") next.plan = source.plan;
   if (isTimestampLike(source.planUpdatedAt)) next.planUpdatedAt = source.planUpdatedAt;
-  if (typeof source.stripeCustomerId === "string") next.stripeCustomerId = source.stripeCustomerId;
-  if (typeof source.stripeSubscriptionId === "string") next.stripeSubscriptionId = source.stripeSubscriptionId;
-  if (typeof source.stripePriceId === "string") next.stripePriceId = source.stripePriceId;
-  if (typeof source.stripeSubscriptionStatus === "string") next.stripeSubscriptionStatus = source.stripeSubscriptionStatus;
-  if (isTimestampLike(source.stripeSyncedAt)) next.stripeSyncedAt = source.stripeSyncedAt;
   if (isTimestampLike(source.createdAt)) next.createdAt = source.createdAt;
   if (isTimestampLike(source.updatedAt)) next.updatedAt = source.updatedAt;
   if (Number.isInteger(source.schemaVersion)) next.schemaVersion = source.schemaVersion;

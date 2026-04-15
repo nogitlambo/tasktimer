@@ -304,14 +304,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskDynamicColorsToggle.title = lockAdvancedTaskConfig ? "Pro feature: Dynamic colors" : "";
     }
     if (els.taskCheckpointSoundToggle) {
-      (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
-      els.taskCheckpointSoundToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
-      els.taskCheckpointSoundToggle.title = lockAdvancedTaskConfig ? "Pro feature: Checkpoint alerts" : "";
+      (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = false;
+      els.taskCheckpointSoundToggle.setAttribute("aria-disabled", "false");
+      els.taskCheckpointSoundToggle.title = "";
     }
     if (els.taskCheckpointToastToggle) {
-      (els.taskCheckpointToastToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
-      els.taskCheckpointToastToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
-      els.taskCheckpointToastToggle.title = lockAdvancedTaskConfig ? "Pro feature: Checkpoint alerts" : "";
+      (els.taskCheckpointToastToggle as HTMLButtonElement).disabled = false;
+      els.taskCheckpointToastToggle.setAttribute("aria-disabled", "false");
+      els.taskCheckpointToastToggle.title = "";
     }
     const currentEditTask = ctx.getCurrentEditTask();
     if (currentEditTask) ctx.syncEditCheckpointAlertUi(currentEditTask);
@@ -542,7 +542,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
     });
     ctx.on(els.taskCheckpointSoundToggle, "click", () => {
-      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       const nextValue = !ctx.getCheckpointAlertSoundEnabled();
       ctx.setCheckpointAlertSoundEnabledState(nextValue);
       if (!nextValue) ctx.stopCheckpointRepeatAlert();
@@ -551,7 +550,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskCheckpointSoundToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskCheckpointSoundToggle")) return;
-      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       const nextValue = !ctx.getCheckpointAlertSoundEnabled();
       ctx.setCheckpointAlertSoundEnabledState(nextValue);
       if (!nextValue) ctx.stopCheckpointRepeatAlert();
@@ -559,14 +557,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskCheckpointToastToggle, "click", () => {
-      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
     ctx.on(els.taskCheckpointToastToggleRow, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#taskCheckpointToastToggle")) return;
-      if (!requireAdvancedTaskConfig("Checkpoint alert settings")) return;
       ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();

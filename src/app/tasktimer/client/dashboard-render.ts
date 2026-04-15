@@ -107,6 +107,159 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return (ctx.getTasks() || []).filter((task) => !!task);
   }
 
+  function renderLockedTimelineMock(
+    cardEl: HTMLElement | null,
+    listEl: HTMLElement | null,
+    noteEl: HTMLElement | null,
+    summaryEl: HTMLElement | null
+  ) {
+    const mockItems = [
+      { taskName: "Deep Work", label: "08:30 - 10:00", duration: "1h 30m", leftPct: 13, widthPct: 19, colorIndex: 0 },
+      { taskName: "Admin", label: "10:30 - 11:15", duration: "45m", leftPct: 29, widthPct: 10, colorIndex: 2 },
+      { taskName: "Study", label: "14:00 - 15:30", duration: "1h 30m", leftPct: 58, widthPct: 18, colorIndex: 1 },
+    ];
+    if (noteEl) noteEl.textContent = "Example Pro timeline preview";
+    if (listEl) {
+      listEl.innerHTML = mockItems
+        .map(
+          (item) => `
+            <div class="dashboardTimelineLane" role="listitem">
+              <div class="dashboardTimelineLaneInfo">
+                <p class="dashboardTimelineLabel">${ctx.escapeHtmlUI(item.taskName)}</p>
+                <span class="dashboardTimelineDuration">${ctx.escapeHtmlUI(item.duration)}</span>
+              </div>
+              <div class="dashboardTimelineLaneTrack">
+                <span class="dashboardTimelineSegment dashboardTimelineSegmentColor-${item.colorIndex}" style="left:${item.leftPct}%; width:${item.widthPct}%;"></span>
+                <span class="dashboardTimelineMarkerBtn" aria-hidden="true" style="left:${item.leftPct + item.widthPct / 2}%;">
+                  <span class="dashboardTimelineMarker"></span>
+                </span>
+              </div>
+            </div>
+          `
+        )
+        .join("");
+    }
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <div class="dashboardTimelineSummaryCard">
+          <p class="dashboardTimelineSummaryTitle">Pro unlocks personalized timeline suggestions</p>
+          <div class="dashboardTimelineSummaryMeta">
+            <span>Adaptive time blocks</span>
+            <span>History-based timing</span>
+            <span>Density controls</span>
+          </div>
+        </div>
+      `;
+    }
+    if (cardEl) {
+      cardEl.setAttribute("aria-description", "Example Pro timeline preview. Upgrade to view your personalized routine suggestions.");
+    }
+  }
+
+  function renderLockedHeatmapMock(
+    monthLabelEl: HTMLElement | null,
+    weekdaysEl: HTMLElement | null,
+    gridEl: HTMLElement | null
+  ) {
+    if (monthLabelEl) monthLabelEl.textContent = "Past 4 Weeks";
+    if (weekdaysEl) {
+      weekdaysEl.innerHTML = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        .map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`)
+        .join("");
+    }
+    if (!gridEl) return;
+    const levels = [
+      "low", "none", "medium", "none", "high", "medium", "none",
+      "medium", "low", "high", "medium", "none", "low", "none",
+      "none", "medium", "high", "medium", "low", "none", "low",
+      "medium", "none", "high", "medium", "low", "none", "medium",
+    ];
+    gridEl.innerHTML = levels
+      .map((level, idx) => {
+        const day = idx + 1;
+        const activeClass = level === "none" ? "" : " isActive";
+        const styleAttr =
+          level === "high"
+            ? ' style="--heat-color:hsl(18 90% 54%)"'
+            : level === "medium"
+              ? ' style="--heat-color:hsl(42 92% 58%)"'
+              : level === "low"
+                ? ' style="--heat-color:hsl(122 54% 48%)"'
+                : "";
+        return `<span class="dashboardHeatDayCell${activeClass}" data-activity-level="${level}" role="gridcell" aria-hidden="true"${styleAttr}><span class="dashboardHeatDayNum">${day}</span></span>`;
+      })
+      .join("");
+  }
+
+  function renderLockedAvgSessionMock(
+    canvas: HTMLCanvasElement | null,
+    wrap: HTMLElement | null,
+    emptyEl: HTMLElement | null
+  ) {
+    if (!canvas || !wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(220, Math.floor(rect.width || wrap.clientWidth || 320));
+    const height = Math.max(180, Math.floor(rect.height || wrap.clientHeight || 220));
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = "100%";
+    canvas.style.height = `${height}px`;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+
+    const labels = ["Writing", "Study", "Planning", "Review"];
+    const values = [82, 64, 48, 36];
+    const chartLeft = 58;
+    const chartRight = width - 22;
+    const chartTop = 16;
+    const chartBottom = height - 42;
+    const chartWidth = chartRight - chartLeft;
+    const chartHeight = chartBottom - chartTop;
+    const maxValue = Math.max(...values, 1);
+    const stepX = chartWidth / labels.length;
+
+    context.strokeStyle = "rgba(180, 220, 240, 0.12)";
+    context.lineWidth = 1;
+    for (let i = 0; i <= 4; i += 1) {
+      const y = chartTop + (chartHeight / 4) * i;
+      context.beginPath();
+      context.moveTo(chartLeft, y);
+      context.lineTo(chartRight, y);
+      context.stroke();
+    }
+
+    context.font = "10px var(--font-readable), system-ui";
+    context.fillStyle = "rgba(182, 210, 224, 0.72)";
+    context.textAlign = "right";
+    context.textBaseline = "middle";
+    [90, 60, 30, 0].forEach((value, idx) => {
+      const y = chartTop + (chartHeight / 3) * idx;
+      context.fillText(`${value}m`, chartLeft - 10, y);
+    });
+
+    labels.forEach((label, idx) => {
+      const value = values[idx] || 0;
+      const barWidth = Math.min(42, stepX * 0.56);
+      const x = chartLeft + stepX * idx + (stepX - barWidth) / 2;
+      const barHeight = Math.round((value / maxValue) * (chartHeight - 6));
+      const y = chartBottom - barHeight;
+      const gradient = context.createLinearGradient(x, y, x + barWidth, chartBottom);
+      gradient.addColorStop(0, "rgba(53,232,255,0.92)");
+      gradient.addColorStop(1, "rgba(0,207,200,0.7)");
+      context.fillStyle = gradient;
+      context.fillRect(x, y, barWidth, barHeight);
+      context.fillStyle = "rgba(226, 242, 250, 0.82)";
+      context.textAlign = "center";
+      context.textBaseline = "top";
+      context.fillText(label, x + barWidth / 2, chartBottom + 10);
+    });
+
+    if (emptyEl) emptyEl.style.display = "none";
+  }
+
   function cancelMomentumAnimation() {
     if (momentumAnimationStartTimerId != null) {
       window.clearTimeout(momentumAnimationStartTimerId);
@@ -411,20 +564,20 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       dialEl.style.setProperty("--momentum-score", "0");
       dialEl.style.setProperty("--momentum-locked", "1");
       dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
-      arcActiveEl.setAttribute("stroke-dasharray", "0 100");
-      needleEl.style.setProperty("--momentum-needle-deg", `${MOMENTUM_GAUGE_START_DEG}deg`);
-      const lockedDriverScores = [0, 0, 0, 0];
+      arcActiveEl.setAttribute("stroke-dasharray", "68 100");
+      needleEl.style.setProperty("--momentum-needle-deg", "58deg");
+      const lockedDriverScores = [17, 31, 12, 8];
       const lockedSignature = JSON.stringify({
         locked: true,
-        score: "--",
-        status: "Locked",
-        needle: `${MOMENTUM_GAUGE_START_DEG}deg`,
+        score: "68",
+        status: "Example",
+        needle: "58deg",
         drivers: lockedDriverScores,
       });
       if (lastMomentumRenderSignature === lockedSignature) return;
       lastMomentumRenderSignature = lockedSignature;
-      scoreValueEl.textContent = "--";
-      scoreStatusEl.textContent = "Locked";
+      scoreValueEl.textContent = "68";
+      scoreStatusEl.textContent = "Example";
       renderMomentumDriverRows(driverTextsEl, lockedDriverScores);
       return;
     }
@@ -798,8 +951,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         metaEl.textContent = "";
         metaEl.style.display = "none";
       } else {
-        metaEl.textContent = "No daily time goals enabled";
-        metaEl.style.display = "";
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
       }
     }
     if (!deltaEl) return;
@@ -841,13 +994,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = listEl?.closest(".dashboardTimelineCard") as HTMLElement | null;
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
-      if (els.dashboardTimelineNote) {
-        els.dashboardTimelineNote.textContent = "";
-      }
-      if (els.dashboardTimelineList) {
-        els.dashboardTimelineList.innerHTML = "";
-      }
-      if (els.dashboardTimelineSummary) els.dashboardTimelineSummary.textContent = "";
+      renderLockedTimelineMock(cardEl, listEl, noteEl, summaryEl);
       return;
     }
     setDashboardPlanLockedState(cardEl, false);
@@ -1507,9 +1654,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
       setDashboardHeatFlipState(false);
-      if (monthLabelEl) monthLabelEl.textContent = "";
-      if (weekdaysEl) weekdaysEl.innerHTML = "";
-      gridEl.innerHTML = "";
+      renderLockedHeatmapMock(monthLabelEl, weekdaysEl, gridEl);
       return;
     }
     setDashboardPlanLockedState(cardEl, false);
@@ -1737,10 +1882,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!wrap) return;
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
-      if (titleEl) titleEl.textContent = "Avg Session by Task (Pro)";
-      if (emptyEl) {
-        emptyEl.style.display = "none";
-      }
+      if (titleEl) titleEl.textContent = "Avg Session by Task (Example)";
+      if (rangeLabelEl) rangeLabelEl.textContent = "Past 7 Days";
+      renderLockedAvgSessionMock(canvas, wrap, emptyEl);
       return;
     }
     setDashboardPlanLockedState(cardEl, false);

@@ -47,7 +47,7 @@ export type HistoryViewState = {
   slideDir: "left" | "right" | null;
 };
 
-export type DashboardCardSize = "full" | "half" | "quarter" | "eighth";
+export type DashboardCardSize = "full" | "half" | "quarter";
 
 export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";

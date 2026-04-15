@@ -127,14 +127,13 @@ export default function AddTaskOverlay() {
               Time checkpoints are optional milestone markers during a task timer run. Use them to track progress points and
               trigger checkpoint alerts while the task is active.
             </div>
-            <details className="milestones" id="addTaskMsArea">
-              <summary className="milestonesSummary" role="button">
+            <div className="milestones" id="addTaskMsArea">
+              <div className="milestonesSummary">
                 <span className="milestonesSummaryPrimary">Time Checkpoints</span>
                 <span className="milestonesSummaryControls">
                   <div className="switch" id="addTaskMsToggle" role="switch" aria-checked="false" />
-                  <span className="milestonesSummaryCollapseLabel">Show/Hide Checkpoints</span>
                 </span>
-              </summary>
+              </div>
               <div className="toggleRow" id="addTaskPresetIntervalsToggleRow">
                 <span>Use Preset Intervals</span>
                 <div className="switch" id="addTaskPresetIntervalsToggle" role="switch" aria-checked="false" />
@@ -165,7 +164,7 @@ export default function AddTaskOverlay() {
                   + Add Timer Checkpoint
                 </button>
               </div>
-            </details>
+            </div>
 
             <div className="checkpointAlertsGroup" id="addTaskTimerSettingsGroup">
               <div className="checkpointAlertsTitle">Timer Settings</div>

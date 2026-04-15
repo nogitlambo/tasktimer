@@ -1018,6 +1018,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     els,
     on,
     syncDashboardRefreshButtonUi,
+    hasEntitlement,
+    showUpgradePrompt,
     getRewardProgress: () => rewardProgress,
     getTasks: () => tasks,
     getCurrentAppPage: () => currentAppPage,

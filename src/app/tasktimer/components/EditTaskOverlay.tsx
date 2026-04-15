@@ -14,6 +14,38 @@ export default function EditTaskOverlay() {
           <input type="text" id="editName" />
         </div>
 
+        <div className="field editTaskTimeGoalField">
+          <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
+            <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
+            <div className="editTaskTimeGoalToggleWrap">
+              <input id="editNoGoalCheckbox" type="checkbox" hidden />
+              <div className="switch" id="editTimeGoalToggle" role="switch" aria-checked="true" aria-label="Enable time goal" />
+            </div>
+          </div>
+          <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
+            <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
+            <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
+              <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
+                M
+              </button>
+              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
+                H
+              </button>
+            </div>
+            <span className="addTaskDurationPerLabel">per</span>
+            <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
+              <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
+                D
+              </button>
+              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                W
+              </button>
+            </div>
+          </div>
+          <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
+          </div>
+        </div>
+
         <div className="field editPlannedStartField">
           <label>Planned Start Time</label>
           <div className="addTaskPlannedStartSection editPlannedStartSection">
@@ -71,46 +103,13 @@ export default function EditTaskOverlay() {
           </div>
         </div>
 
-        <div className="field editTaskTimeGoalField">
-          <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
-            <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
-            <div className="editTaskTimeGoalToggleWrap">
-              <input id="editNoGoalCheckbox" type="checkbox" hidden />
-              <div className="switch" id="editTimeGoalToggle" role="switch" aria-checked="true" aria-label="Enable time goal" />
-            </div>
-          </div>
-          <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
-            <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
-            <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
-              <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
-                M
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
-                H
-              </button>
-            </div>
-            <span className="addTaskDurationPerLabel">per</span>
-            <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
-              <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
-                D
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
-                W
-              </button>
-            </div>
-          </div>
-          <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
-          </div>
-        </div>
-
-        <details className="milestones" id="msArea">
-          <summary className="milestonesSummary" role="button">
+        <div className="milestones" id="msArea">
+          <div className="milestonesSummary">
             <span className="milestonesSummaryPrimary">Time Checkpoints</span>
             <span className="milestonesSummaryControls">
               <div className="switch" id="msToggle" role="switch" aria-checked="false" />
-              <span className="milestonesSummaryCollapseLabel">Show/Hide</span>
             </span>
-          </summary>
+          </div>
           <div className="toggleRow" id="editPresetIntervalsToggleRow">
             <span>Use Preset Intervals</span>
             <div className="switch" id="editPresetIntervalsToggle" role="switch" aria-checked="false" />
@@ -141,7 +140,7 @@ export default function EditTaskOverlay() {
               + Add Timer Checkpoint
             </button>
           </div>
-        </details>
+        </div>
 
         <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
           <div className="checkpointAlertsTitle">Checkpoint Alerts</div>

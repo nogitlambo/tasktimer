@@ -63,14 +63,15 @@ Local development should stay on Stripe test mode.
    - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
-7. Deploy the latest Firestore rules so `users/{uid}` allows the Stripe billing fields written by the webhook.
+7. Deploy the latest Firestore rules and billing code.
 8. Run a live purchase validation and confirm Firestore updates:
-   - `plan`
-   - `stripeCustomerId`
-   - `stripeSubscriptionId`
-   - `stripePriceId`
-   - `stripeSubscriptionStatus`
-   - `stripeSyncedAt`
+   - `users/{uid}.plan`
+   - `users/{uid}.planUpdatedAt`
+   - `userSubscriptions/{uid}.stripeCustomerId`
+   - `userSubscriptions/{uid}.stripeSubscriptionId`
+   - `userSubscriptions/{uid}.stripePriceId`
+   - `userSubscriptions/{uid}.stripeSubscriptionStatus`
+   - `userSubscriptions/{uid}.stripeSyncedAt`
 9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
 10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
 

@@ -188,8 +188,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function syncEditTaskTimeGoalUi(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
-    const advancedLocked = !canUseAdvancedTaskConfig();
-    if (advancedLocked) setEditTimeGoalEnabled(false);
     const timeGoalEnabled = isEditTimeGoalEnabled();
     const noTimeGoal = !timeGoalEnabled;
     const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
@@ -221,18 +219,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     syncPill(els.editTaskDurationPeriodDay, ctx.getEditTaskDurationPeriod() === "day", !canUseDay);
     syncPill(els.editTaskDurationPeriodWeek, ctx.getEditTaskDurationPeriod() === "week");
     if (els.editTimeGoalToggle) {
-      (els.editTimeGoalToggle as HTMLButtonElement).disabled = advancedLocked;
-      els.editTimeGoalToggle.setAttribute("aria-disabled", String(advancedLocked));
-      els.editTimeGoalToggle.title = advancedLocked ? "Pro feature: Time goals and checkpoints" : "";
+      (els.editTimeGoalToggle as HTMLButtonElement).disabled = false;
+      els.editTimeGoalToggle.setAttribute("aria-disabled", "false");
+      els.editTimeGoalToggle.title = "";
     }
-    if (els.editNoGoalCheckbox) els.editNoGoalCheckbox.disabled = advancedLocked;
+    if (els.editNoGoalCheckbox) els.editNoGoalCheckbox.disabled = false;
     els.editTaskDurationValueInput?.classList.remove("isInvalid");
     syncEditTaskDurationReadout(currentTask);
     const checkpointControlsDisabled = !hasActiveTimeGoal;
     els.msArea?.classList.toggle("isHidden", checkpointControlsDisabled);
-    if (checkpointControlsDisabled && els.msArea && "open" in (els.msArea as HTMLDetailsElement)) {
-      (els.msArea as HTMLDetailsElement).open = false;
-    }
     els.msArea?.classList.toggle("isDisabled", checkpointControlsDisabled || !currentTask?.milestonesEnabled);
     if (els.msToggle) {
       els.msToggle.toggleAttribute("disabled", checkpointControlsDisabled);
@@ -512,15 +507,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.msArea?.classList.toggle("on", enabled);
     els.msArea?.classList.toggle("isHidden", !timeGoalEnabled);
     els.msArea?.classList.toggle("isDisabled", !enabled);
-    if (els.msArea && "open" in (els.msArea as HTMLDetailsElement)) {
-      (els.msArea as HTMLDetailsElement).open = enabled;
-    }
-    const summary = els.msArea?.querySelector?.("summary") as HTMLElement | null;
-    if (summary) {
-      summary.classList.toggle("isDisabled", !enabled);
-      summary.setAttribute("aria-disabled", !enabled ? "true" : "false");
-      summary.tabIndex = enabled ? 0 : -1;
-    }
     els.editPresetIntervalsToggleRow?.classList.toggle("isHidden", !enabled);
     els.editPresetIntervalField?.classList.toggle("isHidden", !enabled || !t.presetIntervalsEnabled);
     els.editPresetIntervalNote?.classList.toggle("isHidden", !enabled);
@@ -844,7 +830,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editAdvancedSection) els.editAdvancedSection.open = !!t.xpDisqualifiedUntilReset;
     ctx.syncEditCheckpointAlertUi(t);
     ctx.syncEditSaveAvailability(t);
-    if (els.msArea && "open" in (els.msArea as any)) (els.msArea as HTMLDetailsElement).open = false;
     ctx.syncEditMilestoneSectionUi(t);
     ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
     ctx.renderMilestoneEditor(t);
@@ -964,10 +949,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function registerEditTaskEvents() {
     const syncEditTimeGoalToggle = (nextEnabled: boolean) => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time goals and checkpoints", "pro");
-        return;
-      }
       const t = getCurrentEditTask();
       if (!t) return;
       ctx.setEditTimeGoalEnabled(nextEnabled);
@@ -975,9 +956,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         t.milestoneTimeUnit = ctx.getEditTaskDurationUnit() === "minute" ? "minute" : "hour";
       }
       ctx.clearEditValidationState();
-      if (!nextEnabled && els.msArea && "open" in (els.msArea as any)) {
-        (els.msArea as HTMLDetailsElement).open = false;
-      }
       ctx.syncEditTaskTimeGoalUi(t);
       ctx.syncEditMilestoneSectionUi(t);
       ctx.syncEditCheckpointAlertUi(t);
@@ -1108,18 +1086,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       confirmEnableElapsedOverride();
     });
     ctx.on(els.editCheckpointSoundToggle, "click", () => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
-        return;
-      }
       if (!ctx.getCheckpointAlertSoundEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
       ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null));
     });
     ctx.on(els.editCheckpointSoundToggleRow, "click", (e: any) => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
-        return;
-      }
       if (!ctx.getCheckpointAlertSoundEnabled() || !ctx.editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointSoundToggle")) return;
       ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null));
       const t = getCurrentEditTask();
@@ -1143,18 +1113,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditSaveAvailability(t);
     });
     ctx.on(els.editCheckpointToastToggle, "click", () => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
-        return;
-      }
       if (!ctx.getCheckpointAlertToastEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
       ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null));
     });
     ctx.on(els.editCheckpointToastToggleRow, "click", (e: any) => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Checkpoint alerts", "pro");
-        return;
-      }
       if (!ctx.getCheckpointAlertToastEnabled() || !ctx.editTaskHasActiveTimeGoal() || e.target?.closest?.("#editCheckpointToastToggle")) return;
       ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, !ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null));
       const t = getCurrentEditTask();
@@ -1245,32 +1207,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       });
     });
 
-    ctx.on(els.msArea?.querySelector?.("summary") as HTMLElement | null, "click", (e: any) => {
-      const t = getCurrentEditTask();
-      if (!els.msArea || !("open" in (els.msArea as any))) return;
-      if (!t || !ctx.editTaskHasActiveTimeGoal() || !t.milestonesEnabled) {
-        e?.preventDefault?.();
-        e?.stopPropagation?.();
-        (els.msArea as HTMLDetailsElement).open = false;
-        return;
-      }
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      (els.msArea as HTMLDetailsElement).open = true;
-    });
     ctx.on(els.msToggle, "click", (e: any) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time checkpoints", "pro");
-        return;
-      }
       const t = getCurrentEditTask();
       if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
       t.milestonesEnabled = !t.milestonesEnabled;
-      if (els.msArea && "open" in (els.msArea as any)) {
-        (els.msArea as HTMLDetailsElement).open = !!t.milestonesEnabled;
-      }
       ctx.syncEditMilestoneSectionUi(t);
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
@@ -1281,10 +1223,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
     });
     ctx.on(els.addMsBtn, "click", () => {
-      if (!canUseAdvancedTaskConfig()) {
-        ctx.showUpgradePrompt("Time checkpoints", "pro");
-        return;
-      }
       const t = getCurrentEditTask();
       if (!t || !ctx.editTaskHasActiveTimeGoal()) {
         if (t) ctx.syncEditCheckpointAlertUi(t);

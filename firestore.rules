@@ -81,11 +81,6 @@ service cloud.firestore {
         "rewardTotalXp",
         "plan",
         "planUpdatedAt",
-        "stripeCustomerId",
-        "stripeSubscriptionId",
-        "stripePriceId",
-        "stripeSubscriptionStatus",
-        "stripeSyncedAt",
         "createdAt",
         "updatedAt",
         "schemaVersion"
@@ -102,11 +97,6 @@ service cloud.firestore {
       && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
       && (!("plan" in request.resource.data) || isValidUserPlanValue(request.resource.data.plan))
       && (!("planUpdatedAt" in request.resource.data) || request.resource.data.planUpdatedAt is timestamp)
-      && (!("stripeCustomerId" in request.resource.data) || request.resource.data.stripeCustomerId is string)
-      && (!("stripeSubscriptionId" in request.resource.data) || request.resource.data.stripeSubscriptionId is string)
-      && (!("stripePriceId" in request.resource.data) || request.resource.data.stripePriceId is string)
-      && (!("stripeSubscriptionStatus" in request.resource.data) || request.resource.data.stripeSubscriptionStatus is string)
-      && (!("stripeSyncedAt" in request.resource.data) || request.resource.data.stripeSyncedAt is timestamp)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
@@ -133,6 +123,7 @@ service cloud.firestore {
         "theme",
         "menuButtonStyle",
         "defaultTaskTimerFormat",
+        "weekStarting",
         "taskView",
         "autoFocusOnTaskLaunchEnabled",
         "mobilePushAlertsEnabled",
@@ -148,9 +139,10 @@ service cloud.firestore {
         "updatedAt"
       ])
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
-      && (!("theme" in request.resource.data) || request.resource.data.theme in ["purple", "cyan"])
+      && (!("theme" in request.resource.data) || request.resource.data.theme in ["purple", "cyan", "lime"])
       && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["parallelogram", "square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
+      && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)
@@ -423,25 +415,6 @@ service cloud.firestore {
       && (!("respondedBy" in request.resource.data) || request.resource.data.respondedBy == null || request.resource.data.respondedBy is string);
     }
 
-    function isFriendRequestCreateDoc() {
-      return isFriendRequestDocShape()
-      && request.resource.data.keys().hasAll([
-        "requestId",
-        "senderUid",
-        "receiverUid",
-        "status",
-        "createdAt",
-        "updatedAt",
-        "respondedAt",
-        "respondedBy"
-      ])
-      && request.resource.data.requestId == ("pending:" + request.resource.data.senderUid + ":" + request.resource.data.receiverUid)
-      && request.resource.data.status == "pending"
-      && request.resource.data.senderUid != request.resource.data.receiverUid
-      && request.resource.data.respondedAt == null
-      && request.resource.data.respondedBy == null;
-    }
-
     function isFriendRequestDecisionUpdate() {
       return isFriendRequestDocShape()
       && request.auth != null
@@ -655,66 +628,6 @@ service cloud.firestore {
       && friendshipExists(request.resource.data.ownerUid, request.resource.data.friendUid);
     }
 
-    function isUserEmailLookupDoc() {
-      return onlyKeys([
-        "uid",
-        "email",
-        "displayName",
-        "createdAt",
-        "updatedAt"
-      ])
-      && request.resource.data.uid is string
-      && request.resource.data.email is string
-      && (!("displayName" in request.resource.data)
-        || request.resource.data.displayName == null
-        || request.resource.data.displayName is string)
-      && (!("createdAt" in request.resource.data)
-        || request.resource.data.createdAt != null)
-      && (!("updatedAt" in request.resource.data)
-        || request.resource.data.updatedAt != null);
-    }
-
-    function canWriteOwnUserEmailLookup() {
-      return request.auth != null
-      && request.resource.data.uid == request.auth.uid
-      && request.auth.token.email != null
-      && request.resource.data.email == request.auth.token.email
-      && (
-        resource == null
-        || (
-          resource.data.uid is string
-          && resource.data.uid == request.auth.uid
-          && resource.data.email is string
-          && resource.data.email == request.auth.token.email
-        )
-      );
-    }
-
-    function isUsernameReservationDoc(usernameKey) {
-      return onlyKeys([
-        "uid",
-        "username",
-        "usernameKey"
-      ])
-      && request.resource.data.uid is string
-      && request.resource.data.username is string
-      && request.resource.data.usernameKey is string
-      && request.resource.data.usernameKey == usernameKey
-      && request.resource.data.username == usernameKey;
-    }
-
-    function canWriteOwnUsernameReservation() {
-      return request.auth != null
-      && request.resource.data.uid == request.auth.uid
-      && (
-        resource == null
-        || (
-          resource.data.uid is string
-          && resource.data.uid == request.auth.uid
-        )
-      );
-    }
-
     function isScheduledTimeGoalPushDoc(scheduleDocId) {
       return onlyKeys([
         "ownerUid",
@@ -782,134 +695,14 @@ service cloud.firestore {
       && scheduleDocId == (request.resource.data.ownerUid + "__" + request.resource.data.taskId);
     }
 
-    function isFeedbackType(value) {
-      return value in ["bug", "general", "feature"];
-    }
-
-    function isFeedbackStatus(value) {
-      return value in ["open", "planned", "in_progress", "shipped", "closed"];
-    }
-
-    function feedbackVotePath(feedbackId, uid) {
-      return /databases/$(database)/documents/feedback_items/$(feedbackId)/votes/$(uid);
-    }
-
-    function isFeedbackItemDocShape() {
-      return onlyKeys([
-        "feedbackId",
-        "ownerUid",
-        "authorDisplayName",
-        "authorEmail",
-        "authorRankThumbnailSrc",
-        "authorCurrentRankId",
-        "isAnonymous",
-        "type",
-        "title",
-        "details",
-        "status",
-        "upvoteCount",
-        "commentCount",
-        "createdAt",
-        "updatedAt",
-        "lastActivityAt",
-        "schemaVersion",
-        "jiraIssueBrowseUrl"
-      ])
-      && request.resource.data.feedbackId is string
-      && request.resource.data.ownerUid is string
-      && (!("authorDisplayName" in request.resource.data) || request.resource.data.authorDisplayName == null || request.resource.data.authorDisplayName is string)
-      && (!("authorEmail" in request.resource.data) || request.resource.data.authorEmail == null || request.resource.data.authorEmail is string)
-      && (!("authorRankThumbnailSrc" in request.resource.data) || request.resource.data.authorRankThumbnailSrc == null || request.resource.data.authorRankThumbnailSrc is string)
-      && (!("authorCurrentRankId" in request.resource.data) || request.resource.data.authorCurrentRankId == null || request.resource.data.authorCurrentRankId is string)
-      && (!("jiraIssueBrowseUrl" in request.resource.data) || request.resource.data.jiraIssueBrowseUrl == null || request.resource.data.jiraIssueBrowseUrl is string)
-      && request.resource.data.isAnonymous is bool
-      && isFeedbackType(request.resource.data.type)
-      && request.resource.data.title is string
-      && request.resource.data.details is string
-      && isFeedbackStatus(request.resource.data.status)
-      && request.resource.data.upvoteCount is int
-      && request.resource.data.commentCount is int
-      && request.resource.data.createdAt is timestamp
-      && request.resource.data.updatedAt is timestamp
-      && request.resource.data.lastActivityAt is timestamp
-      && request.resource.data.schemaVersion is int;
-    }
-
-    function isFeedbackItemCreate(feedbackId) {
-      return isFeedbackItemDocShape()
-      && request.auth != null
-      && request.resource.data.feedbackId == feedbackId
-      && request.resource.data.ownerUid == request.auth.uid
-      && request.resource.data.title.size() > 0
-      && request.resource.data.details.size() > 0
-      && request.resource.data.status == "open"
-      && request.resource.data.upvoteCount == 0
-      && request.resource.data.commentCount == 0
-      && request.resource.data.schemaVersion == 1;
-    }
-
-    function isFeedbackVoteMutation(feedbackId) {
-      return request.auth != null
-      && isFeedbackItemDocShape()
-      && request.resource.data.feedbackId == resource.data.feedbackId
-      && request.resource.data.ownerUid == resource.data.ownerUid
-      && request.resource.data.authorDisplayName == resource.data.authorDisplayName
-      && request.resource.data.authorEmail == resource.data.authorEmail
-      && request.resource.data.authorRankThumbnailSrc == resource.data.authorRankThumbnailSrc
-      && request.resource.data.authorCurrentRankId == resource.data.authorCurrentRankId
-      && request.resource.data.jiraIssueBrowseUrl == resource.data.jiraIssueBrowseUrl
-      && request.resource.data.isAnonymous == resource.data.isAnonymous
-      && request.resource.data.type == resource.data.type
-      && request.resource.data.title == resource.data.title
-      && request.resource.data.details == resource.data.details
-      && request.resource.data.status == resource.data.status
-      && request.resource.data.commentCount == resource.data.commentCount
-      && request.resource.data.createdAt == resource.data.createdAt
-      && request.resource.data.schemaVersion == resource.data.schemaVersion
-      && (
-        (
-          !exists(feedbackVotePath(feedbackId, request.auth.uid))
-          && existsAfter(feedbackVotePath(feedbackId, request.auth.uid))
-          && request.resource.data.upvoteCount == resource.data.upvoteCount + 1
-        )
-        || (
-          exists(feedbackVotePath(feedbackId, request.auth.uid))
-          && !existsAfter(feedbackVotePath(feedbackId, request.auth.uid))
-          && resource.data.upvoteCount > 0
-          && request.resource.data.upvoteCount == resource.data.upvoteCount - 1
-        )
-      );
-    }
-
-    function isFeedbackVoteDoc() {
-      return onlyKeys(["uid", "createdAt"])
-      && request.resource.data.uid is string
-      && request.resource.data.createdAt is timestamp;
-    }
-
-    function isFeedbackVoteCreate(feedbackId, uid) {
-      return request.auth != null
-      && request.auth.uid == uid
-      && isFeedbackVoteDoc()
-      && request.resource.data.uid == uid
-      && exists(/databases/$(database)/documents/feedback_items/$(feedbackId))
-      && getAfter(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount
-        == get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount + 1;
-    }
-
-    function canDeleteFeedbackVote(feedbackId, uid) {
-      return request.auth != null
-      && request.auth.uid == uid
-      && exists(/databases/$(database)/documents/feedback_items/$(feedbackId))
-      && get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount > 0
-      && getAfter(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount
-        == get(/databases/$(database)/documents/feedback_items/$(feedbackId)).data.upvoteCount - 1;
-    }
-
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isUserDoc();
       allow delete: if isOwner(userId);
+    }
+
+    match /userSubscriptions/{userId} {
+      allow read, create, update, delete: if false;
     }
 
     match /users/{userId}/preferences/{docId} {

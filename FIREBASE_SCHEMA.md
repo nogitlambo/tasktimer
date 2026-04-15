@@ -26,11 +26,12 @@ It does not use the default Firestore database.
 ### Top-level collections
 
 1. `users`
-2. `usernames`
-3. `friend_requests`
-4. `friendships`
-5. `userEmailLookup`
-6. `shared_task_summaries`
+2. `userSubscriptions`
+3. `usernames`
+4. `friend_requests`
+5. `friendships`
+6. `userEmailLookup`
+7. `shared_task_summaries`
 
 ---
 
@@ -54,11 +55,6 @@ Allowed fields (`isUserDoc`):
 - `rewardTotalXp: int`
 - `plan: "free" | "pro"`
 - `planUpdatedAt: timestamp`
-- `stripeCustomerId: string`
-- `stripeSubscriptionId: string`
-- `stripePriceId: string`
-- `stripeSubscriptionStatus: string`
-- `stripeSyncedAt: timestamp`
 - `createdAt: timestamp`
 - `updatedAt: timestamp`
 - `schemaVersion: int`
@@ -81,6 +77,40 @@ Notes:
 - `displayName` remains the presentation/profile name.
 - `username` is the claimed handle stored separately from `displayName`.
 - `usernameKey` is the normalized lowercase lookup key for the claimed username.
+- `plan` is mirrored from billing state so the app can read entitlements from `users/{userId}` without reading Stripe metadata directly.
+
+---
+
+### `userSubscriptions/{userId}`
+
+Doc ID:
+
+- `userId = Firebase Auth UID`
+
+Stored by:
+
+- Server/admin billing flows only (`src/app/api/stripe/webhook/route.ts`, `src/lib/subscriptionStore.ts`)
+
+Allowed fields in the current server write path:
+
+- `schemaVersion: 1`
+- `stripeCustomerId: string`
+- `stripeSubscriptionId: string`
+- `stripePriceId: string`
+- `stripeSubscriptionStatus: string`
+- `stripeSyncedAt: timestamp`
+- `createdAt: timestamp`
+- `updatedAt: timestamp`
+
+Access:
+
+- Firestore rules currently deny all client reads/writes for this collection
+- Server/admin writes use the Firebase Admin SDK and are not restricted by Firestore client rules
+
+Notes:
+
+- This is the canonical Firestore storage location for Stripe subscription metadata.
+- The app currently mirrors only `plan` and `planUpdatedAt` into `users/{userId}` for client-side entitlement reads.
 
 ---
 

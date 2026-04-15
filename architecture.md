@@ -160,6 +160,7 @@
 - `agents:update`
 - `docs:check`
 - `docs:update`
+- `docs:userguide:audit`
 - `hooks:install`
 
 ### Workflow Files

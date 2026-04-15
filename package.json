@@ -20,8 +20,10 @@
     "firebase:login-and-rules:deploy": "npm run firebase:login && npm run firebase:rules:deploy",
     "docs:update": "node scripts/docs_sync.mjs --write",
     "docs:check": "node scripts/docs_sync.mjs --check",
+    "docs:userguide:audit": "node scripts/userguide_feature_audit.mjs",
     "agents:update": "node scripts/docs_sync.mjs --write --target=agents",
     "agents:check": "node scripts/docs_sync.mjs --check --target=agents",
+    "subscriptions:migrate": "node scripts/migrate-user-subscriptions.mjs",
     "hooks:install": "node scripts/install_git_hooks.mjs",
     "test:unit": "vitest run"
   },
