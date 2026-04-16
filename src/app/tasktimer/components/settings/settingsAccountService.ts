@@ -11,6 +11,7 @@ import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
 export const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const WEB_SIGN_IN_FALLBACK_URL = "https://tasktimer-prod.firebaseapp.com/web-sign-in";
 
 export function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -30,6 +31,10 @@ function redirectToSignedOutHome() {
     sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");
   } catch {
     // ignore
+  }
+  if (isNativeOrFileRuntime()) {
+    window.location.assign(`${WEB_SIGN_IN_FALLBACK_URL}?signedOut=1`);
+    return;
   }
   window.location.assign(resolveTaskTimerRouteHref("/?signedOut=1"));
 }

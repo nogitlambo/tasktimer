@@ -445,8 +445,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   animation: taskNewGlowFade 3s ease-out forwards;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
-  width:100% !important;
-  min-width:0 !important;
+  width:auto !important;
+  min-width:118px !important;
   display:block !important;
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
@@ -1106,7 +1106,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   flex:0 0 auto;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions #openAddTaskBtn{
-  min-width:136px;
+  min-width:118px;
   white-space:nowrap;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
@@ -1466,9 +1466,16 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openScheduleBtn,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #closeScheduleBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
   min-width:118px;
   white-space:nowrap;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
+  width:118px !important;
+  min-width:118px !important;
+  max-width:118px !important;
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule{
   display:block;

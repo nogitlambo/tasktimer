@@ -181,6 +181,33 @@
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
     align-items:flex-start;
   }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
+    flex-wrap:wrap;
+    row-gap:12px;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
+    width:100%;
+    min-width:0;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
+    width:auto;
+    max-width:100%;
+    margin-left:0;
+    display:inline-flex;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    gap:8px;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
+    width:118px !important;
+    min-width:118px !important;
+    max-width:118px !important;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
+    width:118px !important;
+    min-width:118px !important;
+    max-width:118px !important;
+  }
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
     margin-left:auto;
     gap:8px;
@@ -375,10 +402,18 @@
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRow{
     align-items:flex-start;
   }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .dashboardTopRow.scheduleTopRow{
+    flex-wrap:wrap;
+    row-gap:12px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .dashboardTitleWrap{
+    width:100%;
+    min-width:0;
+  }
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePageHeaderActions{
     width:100%;
     justify-content:flex-start;
-    flex-wrap:nowrap;
+    flex-wrap:wrap;
     gap:8px;
   }
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleMobileDayTabs{

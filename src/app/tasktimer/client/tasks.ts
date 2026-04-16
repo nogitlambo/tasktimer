@@ -197,6 +197,14 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
     ctx.save();
     for (const taskId of openHistoryTaskIds) ctx.renderHistory(taskId);
+    if (openHistoryTaskIds.size) {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (ctx.getCurrentAppPage() !== "tasks") return;
+          for (const taskId of ctx.getOpenHistoryTaskIds()) ctx.renderHistory(taskId);
+        });
+      });
+    }
     if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
     ctx.syncTimeGoalModalWithTaskState();
     ctx.maybeRestorePendingTimeGoalFlow();

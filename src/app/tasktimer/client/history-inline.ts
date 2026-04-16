@@ -50,6 +50,39 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     state.revealTimer = null;
   }
 
+  function clearHistoryLayoutRetry(state: HistoryViewState | undefined) {
+    if (!state || state.layoutRetryRaf == null) return;
+    window.cancelAnimationFrame(state.layoutRetryRaf);
+    state.layoutRetryRaf = null;
+  }
+
+  function queueHistoryLayoutRetry(taskId: string, state: HistoryViewState) {
+    if (state.layoutRetryRaf != null) return;
+    state.layoutRetryRaf = window.requestAnimationFrame(() => {
+      state.layoutRetryRaf = null;
+      if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+      const nextState = ctx.getHistoryViewByTaskId()[taskId];
+      if (!nextState) return;
+      renderHistory(taskId);
+    });
+  }
+
+  function renderAllOpenHistoryChartsAfterLayout(delayMs = 0) {
+    const run = () => {
+      if (ctx.getCurrentAppPage() !== "tasks") return;
+      window.requestAnimationFrame(() => {
+        for (const openTaskId of ctx.getOpenHistoryTaskIds()) {
+          renderHistory(openTaskId);
+        }
+      });
+    };
+    if (delayMs > 0) {
+      window.setTimeout(run, delayMs);
+      return;
+    }
+    run();
+  }
+
   function queueHistoryRevealTimer(state: HistoryViewState, delayMs: number, callback: () => void) {
     clearHistoryRevealTimer(state);
     state.revealTimer = window.setTimeout(() => {
@@ -127,6 +160,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       rangeMode: savedRangeMode,
       revealPhase: "open",
       revealTimer: null,
+      layoutRetryRaf: null,
       editMode: false,
       barRects: [],
       labelHitRects: [],
@@ -161,6 +195,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.cancelAnimationFrame(state.selectionAnimRaf);
       state.selectionAnimRaf = null;
     }
+    clearHistoryLayoutRetry(state);
 
     const prevAbsIndex = state.visualSelectedAbsIndex;
     const switchingTarget = prevAbsIndex !== nextAbsIndex;
@@ -581,7 +616,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
-    if (!canvas || !wrap) return;
+    if (!canvas || !wrap) return false;
     const state = ensureHistoryViewState(taskId);
     wrap.style.touchAction = "pan-y";
     canvas.style.touchAction = "pan-y";
@@ -590,7 +625,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
     const h = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
-    if (w <= 0 || h <= 0) return;
+    if (w <= 0 || h <= 0) {
+      queueHistoryLayoutRetry(taskId, state);
+      return false;
+    }
+    clearHistoryLayoutRetry(state);
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
 
@@ -673,7 +712,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       draw.font = "14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
       draw.textAlign = "center";
       draw.fillText("No entries to display", padL + innerW / 2, padT + innerH / 2);
-      return;
+      return true;
     }
 
     const maxGoalMs = chartMarkers.length ? Math.max(...chartMarkers.map((m) => m.ms || 0), 0) : 0;
@@ -855,6 +894,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       draw.textAlign = "center";
       draw.textBaseline = "alphabetic";
     }
+
+    return true;
   }
 
   function renderHistory(taskId: string) {
@@ -914,8 +955,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       state.slideDir = null;
     }
 
-    drawHistoryChart(slice, start, ui, taskId);
+    const chartDrawn = drawHistoryChart(slice, start, ui, taskId);
     renderHistoryTrashRow(slice, start, ui);
+    if (!chartDrawn) return;
 
     const rangeToggle = ui.root.querySelector(".historyRangeToggle") as HTMLElement | null;
     if (rangeToggle) {
@@ -1000,9 +1042,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }
     const state = ensureHistoryViewState(taskId);
     clearHistoryRevealTimer(state);
+    clearHistoryLayoutRetry(state);
     ctx.getOpenHistoryTaskIds().add(taskId);
     state.revealPhase = prefersReducedMotion() ? "open" : "opening";
     ctx.render();
+    renderAllOpenHistoryChartsAfterLayout();
+    renderAllOpenHistoryChartsAfterLayout(32);
     if (prefersReducedMotion()) return;
     queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
@@ -1010,6 +1055,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (!nextState) return;
       nextState.revealPhase = "open";
       ctx.render();
+      renderAllOpenHistoryChartsAfterLayout();
+      renderAllOpenHistoryChartsAfterLayout(32);
     });
   }
 
@@ -1024,6 +1071,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       ctx.getOpenHistoryTaskIds().delete(taskId);
       if (!state || reducedMotion) {
         clearHistoryRevealTimer(state);
+        clearHistoryLayoutRetry(state);
         delete historyViewByTaskId[taskId];
       } else {
         state.revealPhase = "closing";
@@ -1032,6 +1080,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           if (!nextState || nextState.revealPhase !== "closing") return;
           if (nextState.selectionClearTimer != null) window.clearTimeout(nextState.selectionClearTimer);
           if (nextState.selectionAnimRaf != null) window.cancelAnimationFrame(nextState.selectionAnimRaf);
+          clearHistoryLayoutRetry(nextState);
           delete historyViewByTaskId[taskId];
           ctx.render();
         });
@@ -1044,6 +1093,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
         if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
         clearHistoryRevealTimer(state);
+        clearHistoryLayoutRetry(state);
         delete historyViewByTaskId[k];
       });
     }
