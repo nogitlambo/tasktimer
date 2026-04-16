@@ -4895,3 +4895,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-width: 0 !important;
   align-self: center;
 }
+@media (max-width: 900px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+    min-height: 300px !important;
+  }
+}
+@media (max-width: 520px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
+    grid-column: 1 / -1 !important;
+  }
+}

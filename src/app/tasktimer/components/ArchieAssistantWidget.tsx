@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 
 import AppImg from "@/components/AppImg";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import {
   type ArchieAssistantPage,
   type ArchieKnowledgeCitation,
@@ -41,12 +41,22 @@ const ARCHIE_PRO_REQUIRED_CODE = "archie/pro-required";
 const ARCHIE_PRO_UPGRADE_MESSAGE =
   "I can answer product questions on Free. Workflow recommendations, draft changes, and AI-refined responses are included with Pro.";
 const ARCHIE_PRO_UPGRADE_ACTION: ArchieSuggestedAction = { kind: "navigate", label: "Upgrade to Pro", href: "/pricing" };
+const ARCHIE_API_FALLBACK_ORIGIN = "https://tasktimer-prod.firebaseapp.com";
 
 type ArchieApiErrorResult = {
   error?: string;
   code?: string;
   suggestedAction?: ArchieSuggestedAction;
 };
+
+function resolveArchieApiUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (typeof window !== "undefined") {
+    const origin = String(window.location.origin || "").trim();
+    if (/^https?:/i.test(origin) && !isNativeOrFileRuntime()) return `${origin}${normalizedPath}`;
+  }
+  return `${ARCHIE_API_FALLBACK_ORIGIN}${normalizedPath}`;
+}
 
 async function resolveAuthSession(): Promise<{ auth: Auth; user: User; idToken: string } | null> {
   const auth = getFirebaseAuthClient();
@@ -149,7 +159,7 @@ function formatCitationTag(citation: ArchieKnowledgeCitation) {
 }
 
 async function sendArchieTelemetryEvent(input: { idToken: string; sessionId: string; draftId?: string | null; eventType: "review_opened" | "apply" | "discard" }) {
-  await fetch("/api/archie/events", {
+  await fetch(resolveArchieApiUrl("/api/archie/events"), {
     method: "POST",
     credentials: "same-origin",
     headers: {
@@ -381,7 +391,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         });
         return;
       }
-      const response = await fetch("/api/archie/query", {
+      const response = await fetch(resolveArchieApiUrl("/api/archie/query"), {
         method: "POST",
         credentials: "same-origin",
         headers: {
@@ -562,7 +572,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
           });
           return;
         }
-        const response = await fetch("/api/archie/recommendations/apply", {
+        const response = await fetch(resolveArchieApiUrl("/api/archie/recommendations/apply"), {
           method: "POST",
           credentials: "same-origin",
           headers: {
@@ -654,7 +664,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       try {
         const session = await resolveAuthSession();
         if (!session?.idToken) return;
-        const response = await fetch("/api/archie/recommendations/latest", {
+        const response = await fetch(resolveArchieApiUrl("/api/archie/recommendations/latest"), {
           method: "GET",
           credentials: "same-origin",
           headers: {
