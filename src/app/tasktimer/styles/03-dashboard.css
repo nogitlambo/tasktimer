@@ -4405,14 +4405,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 22%),
-    linear-gradient(180deg, rgba(26,28,32,.98), rgba(20,22,26,.98)) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.03),
-    0 0 0 1px rgba(255,255,255,.015),
-    0 10px 22px rgba(0,0,0,.22) !important;
-  border-color: rgba(255,255,255,.09) !important;
+  background: #17191d !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
   border-radius: 0 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before,
@@ -4434,31 +4430,23 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  border-color: rgba(255,255,255,.09) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 22%),
-    linear-gradient(180deg, rgba(26,28,32,.98), rgba(20,22,26,.98)) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: #17191d !important;
+  background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.03),
-    0 0 0 1px rgba(255,255,255,.015),
-    0 10px 22px rgba(0,0,0,.22) !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
 body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  border-color: rgba(255,255,255,.09) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 22%),
-    linear-gradient(180deg, rgba(26,28,32,.98), rgba(20,22,26,.98)) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: #17191d !important;
+  background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.03),
-    0 0 0 1px rgba(255,255,255,.015),
-    0 10px 22px rgba(0,0,0,.22) !important;
+  box-shadow: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard.isPlanLocked::after{
   background: rgba(8,13,19,.42) !important;
@@ -4592,20 +4580,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  border-color: rgba(219,255,79,.18) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 34%),
-    linear-gradient(135deg, rgba(219,255,79,.06), rgba(13,15,19,.86) 58%) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.05),
-    inset 0 0 0 1px rgba(219,255,79,.06),
-    0 8px 16px rgba(0,0,0,.16),
-    0 18px 34px rgba(0,0,0,.24),
-    0 30px 68px rgba(0,0,0,.42),
-    0 10px 28px rgba(219,255,79,.06),
-    0 0 0 1px rgba(255,255,255,.02) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: #17191d !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout::before{
   background: radial-gradient(circle, rgba(219,255,79,.24) 0%, rgba(219,255,79,0) 70%);

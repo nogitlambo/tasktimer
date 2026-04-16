@@ -747,7 +747,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     <>
       <div className={`desktopRailMascot${variant === "mobile" ? " mobileArchieAssistant" : ""}`}>
         <div
-          className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}`}
+          className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}${archieBusy ? " isBusy" : ""}`}
           aria-hidden={!isArchieBubbleOpen}
         >
           <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
@@ -758,15 +758,23 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
             <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineBottomLeft" />
             <span className="desktopRailMascotBubbleLine desktopRailMascotBubbleLineLeft" />
           </span>
-          <div className="desktopRailMascotBubbleTitle">
-            <span
-              key={archieTitleAnimationKey}
-              className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
-            >
-              {archieRenderedMessage}
-            </span>
-          </div>
-          {archieCitations.length ? (
+          {archieBusy ? (
+            <div className="desktopRailMascotThinkingWrap">
+              <span className="desktopRailMascotThinkingIndicator" aria-live="polite" aria-label="Archie is thinking">
+                Thinking...
+              </span>
+            </div>
+          ) : (
+            <div className="desktopRailMascotBubbleTitle">
+              <span
+                key={archieTitleAnimationKey}
+                className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
+              >
+                {archieRenderedMessage}
+              </span>
+            </div>
+          )}
+          {!archieBusy && archieCitations.length ? (
             <div className={`desktopRailMascotMeta${archieInputVisible ? " isVisible" : ""}`} aria-label="Archie sources">
               {archieCitations.slice(0, 2).map((citation) => (
                 <span className="desktopRailMascotMetaTag" key={citation.id}>
@@ -775,7 +783,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               ))}
             </div>
           ) : null}
-          {archieSuggestedAction ? (
+          {!archieBusy && archieSuggestedAction ? (
             <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
               <button
                 className="btn btn-ghost small desktopRailMascotActionBtn"
@@ -791,29 +799,31 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
                 </button>
               ) : null}
             </div>
-          ) : showReopenLastDraft ? (
+          ) : !archieBusy && showReopenLastDraft ? (
             <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
               <button className="btn btn-ghost small desktopRailMascotActionBtn" type="button" onClick={handleReopenLastDraft} disabled={archieBusy}>
                 Reopen Last Draft
               </button>
             </div>
           ) : null}
-          <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
-            <textarea
-              ref={archieInputRef}
-              className="desktopRailMascotInput"
-              value={archieQuestion}
-              rows={2}
-              onChange={(event) => {
-                setArchieQuestion(event.target.value);
-              }}
-              onKeyDown={handleArchieInputKeyDown}
-              placeholder={archieBusy ? "Archie is thinking..." : "Ask Archie a question..."}
-              aria-label="Ask Archie a question"
-              disabled={archieBusy}
-            />
-            <span className="desktopRailMascotInputCaret" aria-hidden="true" />
-          </span>
+          {!archieBusy ? (
+            <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
+              <textarea
+                ref={archieInputRef}
+                className="desktopRailMascotInput"
+                value={archieQuestion}
+                rows={2}
+                onChange={(event) => {
+                  setArchieQuestion(event.target.value);
+                }}
+                onKeyDown={handleArchieInputKeyDown}
+                placeholder="Ask Archie a question..."
+                aria-label="Ask Archie a question"
+                disabled={archieBusy}
+              />
+              <span className="desktopRailMascotInputCaret" aria-hidden="true" />
+            </span>
+          ) : null}
         </div>
         <button
           className={`desktopRailMascotTrigger${isArchieBubbleOpen ? " isOpen" : ""}`}

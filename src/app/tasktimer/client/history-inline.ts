@@ -35,7 +35,28 @@ type HistoryUI = {
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
   const HISTORY_LOOKBACK_DAYS = 30;
+  const HISTORY_REVEAL_OPEN_MS = 220;
+  const HISTORY_REVEAL_CLOSE_MS = 170;
   const { sharedTasks } = ctx;
+
+  function prefersReducedMotion() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function clearHistoryRevealTimer(state: HistoryViewState | undefined) {
+    if (!state || state.revealTimer == null) return;
+    window.clearTimeout(state.revealTimer);
+    state.revealTimer = null;
+  }
+
+  function queueHistoryRevealTimer(state: HistoryViewState, delayMs: number, callback: () => void) {
+    clearHistoryRevealTimer(state);
+    state.revealTimer = window.setTimeout(() => {
+      state.revealTimer = null;
+      callback();
+    }, delayMs);
+  }
 
   function historyLocalDateKey(tsRaw: unknown) {
     const ts = ctx.normalizeHistoryTimestampMs(tsRaw);
@@ -95,6 +116,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       page: 0,
       rangeDays: savedRangeDays,
       rangeMode: savedRangeMode,
+      revealPhase: "open",
+      revealTimer: null,
       editMode: false,
       barRects: [],
       labelHitRects: [],
@@ -968,20 +991,44 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       closeHistory(taskId);
       return;
     }
+    const state = ensureHistoryViewState(taskId);
+    clearHistoryRevealTimer(state);
     ctx.getOpenHistoryTaskIds().add(taskId);
-    ensureHistoryViewState(taskId);
+    state.revealPhase = prefersReducedMotion() ? "open" : "opening";
     ctx.render();
+    if (prefersReducedMotion()) return;
+    queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
+      if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+      const nextState = ctx.getHistoryViewByTaskId()[taskId];
+      if (!nextState) return;
+      nextState.revealPhase = "open";
+      ctx.render();
+    });
   }
 
   function closeHistory(taskId?: string) {
     if (!taskId || ctx.getHistoryEntryNoteAnchorTaskId() === taskId) closeHistoryEntryNoteOverlay();
+    const reducedMotion = prefersReducedMotion();
     if (taskId) {
       const historyViewByTaskId = ctx.getHistoryViewByTaskId();
       const state = historyViewByTaskId[taskId];
       if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
       if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
       ctx.getOpenHistoryTaskIds().delete(taskId);
-      delete historyViewByTaskId[taskId];
+      if (!state || reducedMotion) {
+        clearHistoryRevealTimer(state);
+        delete historyViewByTaskId[taskId];
+      } else {
+        state.revealPhase = "closing";
+        queueHistoryRevealTimer(state, HISTORY_REVEAL_CLOSE_MS, () => {
+          const nextState = historyViewByTaskId[taskId];
+          if (!nextState || nextState.revealPhase !== "closing") return;
+          if (nextState.selectionClearTimer != null) window.clearTimeout(nextState.selectionClearTimer);
+          if (nextState.selectionAnimRaf != null) window.cancelAnimationFrame(nextState.selectionAnimRaf);
+          delete historyViewByTaskId[taskId];
+          ctx.render();
+        });
+      }
     } else {
       ctx.getOpenHistoryTaskIds().clear();
       const historyViewByTaskId = ctx.getHistoryViewByTaskId();
@@ -989,6 +1036,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const state = historyViewByTaskId[k];
         if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
         if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
+        clearHistoryRevealTimer(state);
         delete historyViewByTaskId[k];
       });
     }

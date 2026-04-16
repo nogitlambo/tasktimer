@@ -255,6 +255,51 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   background: #0d0f13 !important;
   border:none;
 }
+.historyInline.historyInlineMotion{
+  overflow:hidden;
+  transform-origin: top center;
+}
+.historyInline.historyInlineMotion.isOpen{
+  opacity:1;
+  transform: translateY(0);
+}
+.historyInline.historyInlineMotion.isOpening{
+  animation: historyInlineSlideOpen .22s cubic-bezier(.22,.78,.2,1) both;
+}
+.historyInline.historyInlineMotion.isClosing{
+  pointer-events:none;
+  animation: historyInlineSlideClose .17s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes historyInlineSlideOpen{
+  from{
+    opacity:0;
+    transform: translateY(-8px);
+    max-height:0;
+  }
+  to{
+    opacity:1;
+    transform: translateY(0);
+    max-height:520px;
+  }
+}
+@keyframes historyInlineSlideClose{
+  from{
+    opacity:1;
+    transform: translateY(0);
+    max-height:520px;
+  }
+  to{
+    opacity:0;
+    transform: translateY(-6px);
+    max-height:0;
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  .historyInline.historyInlineMotion.isOpening,
+  .historyInline.historyInlineMotion.isClosing{
+    animation:none;
+  }
+}
 .focusModeHead{
   display:grid;
   grid-template-columns:auto 1fr auto;
@@ -1358,13 +1403,9 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
-  border: 0 !important;
-  background: rgba(34, 36, 41, .88) !important;
-  box-shadow:
-    10px 12px 0 rgba(0,0,0,.44),
-    0 24px 42px rgba(0,0,0,.46),
-    -1px -1px 0 rgba(255,255,255,.025),
-    1px 1px 0 rgba(0,0,0,.74) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: #17191d !important;
+  box-shadow: none !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressWrap{
   border: 0 !important;

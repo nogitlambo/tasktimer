@@ -59,6 +59,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     }
     for (const taskId of Array.from(openHistoryTaskIds)) {
       if (!activeTaskIds.has(taskId)) {
+        const staleHistoryState = historyViewByTaskId[taskId];
+        if (staleHistoryState?.revealTimer != null) window.clearTimeout(staleHistoryState.revealTimer);
         openHistoryTaskIds.delete(taskId);
         delete historyViewByTaskId[taskId];
       }
@@ -101,11 +103,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         escapeHtml: ctx.escapeHtmlUI,
       });
 
-      const showHistory = openHistoryTaskIds.has(taskId);
+      const historyState = historyViewByTaskId[taskId];
+      const historyRevealPhase = historyState?.revealPhase || (openHistoryTaskIds.has(taskId) ? "open" : null);
+      const showHistory = openHistoryTaskIds.has(taskId) || historyRevealPhase === "closing";
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const historyHTML = showHistory
         ? `
-          <section class="historyInline" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
+          <section class="historyInline historyInlineMotion${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
             <div class="historyTop">
               <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
               <div class="historyMeta historyTopActions">

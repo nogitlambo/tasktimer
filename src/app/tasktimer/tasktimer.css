@@ -1568,6 +1568,57 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssi
   pointer-events:auto;
 }
 
+#app[aria-label="TaskLaunch App"] .desktopRailMascotBubble.isBusy,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotBubble.isBusy,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotBubble.isBusy{
+  align-content:center;
+  justify-items:center;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotBubble.isBusy .desktopRailMascotThinkingWrap,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotBubble.isBusy .desktopRailMascotThinkingWrap,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotBubble.isBusy .desktopRailMascotThinkingWrap{
+  display:flex;
+  flex:1 1 auto;
+  min-height:100%;
+  width:100%;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotThinkingIndicator,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotThinkingIndicator,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotThinkingIndicator{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:100%;
+  color:inherit;
+  font:inherit;
+  letter-spacing:.03em;
+  text-align:center;
+  animation:archieThinkingBlink 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] .desktopRailMascotThinkingIndicator,
+  #app[aria-label="TaskLaunch Settings"] .desktopRailMascotThinkingIndicator,
+  #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotThinkingIndicator{
+    animation:none;
+  }
+}
+
+@keyframes archieThinkingBlink{
+  0%, 100%{
+    opacity:1;
+  }
+  50%{
+    opacity:.35;
+  }
+}
+
 #app[aria-label="TaskLaunch App"] .desktopRailMascotMetaTag,
 #app[aria-label="TaskLaunch Settings"] .desktopRailMascotMetaTag,
 #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMetaTag{
