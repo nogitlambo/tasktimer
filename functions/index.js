@@ -62,6 +62,8 @@ function normalizeEmailKey(value) {
   return asString(value).toLowerCase();
 }
 
+const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
+
 function isActiveSubscriptionStatus(status) {
   const activeStatuses = new Set(["trialing", "active", "past_due"]);
   return activeStatuses.has(asString(status).toLowerCase());
@@ -80,11 +82,8 @@ function millisFromTimestampLike(value) {
   return 0;
 }
 
-function planAdminUids() {
-  return String(process.env.TASKTIMER_PLAN_ADMIN_UIDS || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+function isAdminAccountEmail(email) {
+  return normalizeEmailKey(email) === ADMIN_ACCOUNT_EMAIL;
 }
 
 async function upsertUserPlan(uid, plan) {
@@ -335,11 +334,11 @@ export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (reque
 
 export const setUserPlanAdmin = onCall({region}, async (request) => {
   const callerUid = asString(request.auth?.uid);
+  const callerEmail = normalizeEmailKey(request.auth?.token?.email);
   if (!callerUid) {
     throw new HttpsError("unauthenticated", "You must be signed in to update a plan.");
   }
-  const adminUids = planAdminUids();
-  if (!adminUids.includes(callerUid)) {
+  if (!isAdminAccountEmail(callerEmail)) {
     throw new HttpsError("permission-denied", "You do not have permission to update plans.");
   }
   const rawData = request.data && typeof request.data === "object" ? request.data : {};
@@ -355,6 +354,7 @@ export const setUserPlanAdmin = onCall({region}, async (request) => {
       : "Unexpected admin plan update failure.";
     logger.error("setUserPlanAdmin failed", {
       callerUid,
+      callerEmail,
       targetUid,
       targetPlan,
       databaseId,

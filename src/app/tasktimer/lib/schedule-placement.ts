@@ -1,6 +1,6 @@
 import type { Task } from "./types";
 
-const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+export const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 export type ScheduleDay = (typeof SCHEDULE_DAY_ORDER)[number];
 

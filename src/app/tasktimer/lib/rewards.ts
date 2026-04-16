@@ -160,7 +160,7 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   architect: "/insignias/architect.png",
 };
 
-export const RANK_OVERRIDE_ADMIN_UID = "mWN9rMhO4xMq410c4E4VYyThw0x2";
+export const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
 
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
   specialist: "/insignias/specialist.png?v=20260402",
@@ -175,6 +175,10 @@ const RANK_BY_ID = new Map(RANK_LADDER.map((rank) => [rank.id, rank] as const));
 const RANK_ID_BY_MODAL_THUMBNAIL = new Map(
   Object.entries(RANK_MODAL_THUMBNAIL_BY_ID).map(([rankId, src]) => [String(src || "").trim(), rankId] as const)
 );
+
+export function isAdminAccountEmail(email: unknown): boolean {
+  return String(email || "").trim().toLowerCase() === ADMIN_ACCOUNT_EMAIL;
+}
 
 export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
   if (!input || typeof input !== "object") return { ...DEFAULT_REWARD_PROGRESS };

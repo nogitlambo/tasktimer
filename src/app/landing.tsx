@@ -61,7 +61,7 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
   const [revealStage, setRevealStage] = useState(0);
   const fullHeroText = "The smarter way to stay productive";
   const supportLineOne =
-    "Built around your natural focus patterns, with intelligent automation that keeps progress effortless and consistent, and AI-driven insights that continuously refine your workflow.";
+    "A task tracking app built to support your natural focus patterns instead of overriding them, intelligent automation that keeps progress effortless and consistent, and AI-driven insights that continuously refine your workflow.";
   const supportLineTwo = "";
 
   useEffect(() => {

@@ -10,13 +10,13 @@ import { AVATAR_CATALOG } from "../lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import RankThumbnail from "./RankThumbnail";
 import {
+  isAdminAccountEmail,
   buildRewardProgressForRankSelection,
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
-  RANK_OVERRIDE_ADMIN_UID,
 } from "../lib/rewards";
 import {
   buildDefaultCloudPreferences,
@@ -249,6 +249,7 @@ export default function DesktopAppRail({
   showMobileFooter = true,
 }: DesktopAppRailProps) {
   const [signedInUserUid, setSignedInUserUid] = useState("");
+  const [signedInUserEmail, setSignedInUserEmail] = useState("");
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
@@ -260,11 +261,13 @@ export default function DesktopAppRail({
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
+    const email = String(user?.email || "").trim().toLowerCase();
     const fallbackLabel = labelFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
 
     if (!uid) {
       setSignedInUserUid("");
+      setSignedInUserEmail("");
       setProfileLabel(fallbackLabel);
       setProfileAvatarSrc(googlePhotoUrl);
       setRankThumbnailSrc("");
@@ -272,6 +275,7 @@ export default function DesktopAppRail({
       return;
     }
     setSignedInUserUid(uid);
+    setSignedInUserEmail(email);
     void syncCurrentUserPlanCache(uid).catch(() => {
       // Keep rendering from the cached/default plan if the plan sync is temporarily unavailable.
     });
@@ -357,7 +361,7 @@ export default function DesktopAppRail({
   const currentPlanBadgeLabel = currentPlan === "pro" ? "PRO" : currentPlanLabel;
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
-  const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
+  const canSelectRankInsignia = isAdminAccountEmail(signedInUserEmail);
   const rankLadderSummary =
     rewardsHeader.xpToNext != null
       ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
@@ -409,7 +413,7 @@ export default function DesktopAppRail({
   }, [billingBusy]);
 
   const handleSelectRankThumbnail = async (rankId: string) => {
-    if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+    if (!signedInUserUid || !isAdminAccountEmail(signedInUserEmail)) return;
     const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
     const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
     const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();

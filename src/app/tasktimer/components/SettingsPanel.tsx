@@ -33,6 +33,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const pushState = useSettingsPushState(accountState.authUserUid);
   const avatarState = useSettingsAvatarState({
     authUserUid: accountState.authUserUid,
+    authUserEmail: accountState.authUserEmail,
     authHasGoogleProvider: accountState.authHasGoogleProvider,
     authGooglePhotoUrl: accountState.authGooglePhotoUrl,
     setAuthError: accountState.setAuthError,

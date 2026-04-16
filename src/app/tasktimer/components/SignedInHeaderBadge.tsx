@@ -10,13 +10,13 @@ import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import {
+  isAdminAccountEmail,
   buildRewardProgressForRankSelection,
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
-  RANK_OVERRIDE_ADMIN_UID,
 } from "../lib/rewards";
 import {
   buildDefaultCloudPreferences,
@@ -50,6 +50,7 @@ function writeStoredRankThumbnailSrc(uid: string, src: string): void {
 export default function SignedInHeaderBadge({ href = "/settings?pane=general" }: SignedInHeaderBadgeProps) {
   const [signedInUserLabel, setSignedInUserLabel] = useState<string | null>(null);
   const [signedInUserUid, setSignedInUserUid] = useState("");
+  const [signedInUserEmail, setSignedInUserEmail] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [headerView, setHeaderView] = useState<"welcome" | "xp">("welcome");
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
@@ -62,6 +63,7 @@ export default function SignedInHeaderBadge({ href = "/settings?pane=general" }:
       const displayName = String(user?.displayName || "").trim();
       const email = String(user?.email || "").trim();
       setSignedInUserLabel(displayName || email || null);
+      setSignedInUserEmail(email.toLowerCase());
       setHeaderView("welcome");
       const uid = String(user?.uid || "").trim();
       setSignedInUserUid(uid);
@@ -129,7 +131,7 @@ export default function SignedInHeaderBadge({ href = "/settings?pane=general" }:
 
   const rewardsHeader = buildRewardsHeaderViewModel(rewardProgress);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
-  const canSelectRankInsignia = signedInUserUid === RANK_OVERRIDE_ADMIN_UID;
+  const canSelectRankInsignia = isAdminAccountEmail(signedInUserEmail);
   const displayedRankLabel = rewardsHeader.rankLabel;
   const headerBadgeLabel =
     headerView === "xp"
@@ -147,7 +149,7 @@ export default function SignedInHeaderBadge({ href = "/settings?pane=general" }:
   };
 
   const handleSelectRankThumbnail = async (rankId: string) => {
-    if (!signedInUserUid || signedInUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+    if (!signedInUserUid || !isAdminAccountEmail(signedInUserEmail)) return;
     const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
     const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
     const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();

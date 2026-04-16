@@ -43,18 +43,34 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.webSignInRoute {
+  display: block !important;
+  min-height: 100dvh;
+  padding: 0 !important;
+}
+
 .displayFont {
   font-family: var(--font-display-ui);
 }
 
 .webSignInPage {
   min-height: 100svh;
+  width: 100%;
+  flex: 1 0 auto;
+  align-self: stretch;
+  margin: 0;
+  max-width: none;
   isolation: isolate;
   background:
     radial-gradient(circle at 18% 18%, rgba(64, 225, 255, 0.18), transparent 34%),
     radial-gradient(circle at 82% 76%, rgba(212, 71, 210, 0.18), transparent 36%),
     linear-gradient(135deg, #05010b 0%, #090411 46%, #02050d 100%);
   font-family: var(--font-display-ui);
+}
+
+body.webSignInRoute .webSignInPage {
+  min-height: 100dvh;
+  width: 100vw;
 }
 
 .webSignInGrid {

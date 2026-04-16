@@ -107,6 +107,15 @@ function WebSignInPageContent() {
   const shouldStartProCheckout = checkoutIntent === "pro";
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.add("webSignInRoute");
+    return () => {
+      document.body.classList.remove("webSignInRoute");
+    };
+  }, []);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "";

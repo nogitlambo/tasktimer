@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import {
+  isAdminAccountEmail,
   buildRewardProgressForRankSelection,
   DEFAULT_REWARD_PROGRESS,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
-  RANK_OVERRIDE_ADMIN_UID,
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
@@ -30,12 +30,14 @@ import type { SettingsAvatarGroup, SettingsAvatarViewModel } from "./types";
 
 export function useSettingsAvatarState({
   authUserUid,
+  authUserEmail,
   authHasGoogleProvider,
   authGooglePhotoUrl,
   setAuthError,
   setAuthStatus,
 }: {
   authUserUid: string | null;
+  authUserEmail: string | null;
   authHasGoogleProvider: boolean;
   authGooglePhotoUrl: string | null;
   setAuthError: (value: string) => void;
@@ -200,7 +202,7 @@ export function useSettingsAvatarState({
   const effectiveSelectedAvatarId = authUserUid ? selectedAvatarId : avatarOptions[0]?.id || "";
   const selectedAvatar = avatarOptions.find((avatar) => avatar.id === effectiveSelectedAvatarId) || avatarOptions[0] || null;
   const currentRankIndex = useMemo(() => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId)), [rewardProgress.currentRankId]);
-  const canSelectRankInsignia = authUserUid === RANK_OVERRIDE_ADMIN_UID;
+  const canSelectRankInsignia = isAdminAccountEmail(authUserEmail);
   const rewardsHeader = useMemo(() => {
     const currentRank = RANK_LADDER.find((rank) => rank.id === rewardProgress.currentRankId);
     const nextRank = RANK_LADDER.find((rank) => rank.minXp > rewardProgress.totalXp);
@@ -215,7 +217,7 @@ export function useSettingsAvatarState({
 
   const onSelectRankThumbnail = useCallback(
     async (rankId: string) => {
-      if (!authUserUid || authUserUid !== RANK_OVERRIDE_ADMIN_UID) return;
+      if (!authUserUid || !isAdminAccountEmail(authUserEmail)) return;
       const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
       const nextThumbnailSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
       setRankThumbnailSrc(nextThumbnailSrc);
@@ -229,7 +231,7 @@ export function useSettingsAvatarState({
         // ignore rank thumbnail save failures from the settings surface
       }
     },
-    [authUserUid, rewardProgress],
+    [authUserEmail, authUserUid, rewardProgress],
   );
 
   const onSelectAvatar = useCallback(

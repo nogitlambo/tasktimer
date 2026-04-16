@@ -8,6 +8,7 @@ import { saveUserRootPatch } from "@/app/tasktimer/lib/cloudStore";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 import { clearScopedStorageState, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
+import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
 export const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
@@ -21,6 +22,16 @@ export function getErrorMessage(err: unknown, fallback: string) {
 
 export function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
+}
+
+function redirectToSignedOutHome() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");
+  } catch {
+    // ignore
+  }
+  window.location.assign(resolveTaskTimerRouteHref("/?signedOut=1"));
 }
 
 export function accountStateDocRef(uid: string) {
@@ -55,14 +66,7 @@ export async function handleSignOutFlow() {
   await waitForPendingTaskSync().catch(() => {});
   await signOut(auth);
   clearScopedStorageState();
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");
-    } catch {
-      // ignore
-    }
-    window.location.assign("/signed-out?signedOut=1");
-  }
+  redirectToSignedOutHome();
 }
 
 export async function resumePendingDeleteFlow(uid: string) {
@@ -122,7 +126,8 @@ export async function resumePendingDeleteFlow(uid: string) {
   }).catch(() => {});
   await callDeleteUserDataRoute(idToken, auth.currentUser.uid);
   await deleteUser(auth.currentUser);
-  if (typeof window !== "undefined") window.location.assign("/");
+  clearScopedStorageState();
+  redirectToSignedOutHome();
   return { resumed: true };
 }
 
@@ -167,7 +172,8 @@ export async function handleDeleteAccountFlow(user: User) {
     await deleteUser(targetUser);
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
-    if (typeof window !== "undefined") window.location.assign("/");
+    clearScopedStorageState();
+    redirectToSignedOutHome();
   };
 
   try {
