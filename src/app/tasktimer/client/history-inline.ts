@@ -83,6 +83,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return arr.slice().sort((a: any, b: any) => historyTsMs(a) - historyTsMs(b));
   }
 
+  function getHistoryWindowForTask(taskId: string) {
+    const allRaw = getHistoryForTask(taskId);
+    if (!allRaw.length) return { allRaw, windowed: allRaw, usesFallbackWindow: false };
+    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+    const windowed = allRaw.filter((entry: any) => historyTsMs(entry) >= cutoffMs);
+    if (windowed.length) return { allRaw, windowed, usesFallbackWindow: false };
+    return { allRaw, windowed: allRaw, usesFallbackWindow: true };
+  }
+
   function formatHistoryChartElapsedLabel(ms: number) {
     const totalSec = Math.max(0, Math.floor((ms || 0) / 1000));
     const days = Math.floor(totalSec / 86400);
@@ -511,9 +520,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function getHistoryDisplayForTask(taskId: string, state: HistoryViewState) {
-    const allRaw = getHistoryForTask(taskId);
-    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-    const all = allRaw.filter((e: any) => historyTsMs(e) >= cutoffMs);
+    const { windowed: all } = getHistoryWindowForTask(taskId);
     if (state.rangeMode !== "day") return all;
 
     const groupedByDay: Array<any> = [];
@@ -856,10 +863,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     if (!ui) return;
     const state = ensureHistoryViewState(taskId);
 
-    const allRaw = getHistoryForTask(taskId);
+    const { windowed: all, usesFallbackWindow } = getHistoryWindowForTask(taskId);
     const rangeDays = state.rangeDays || 7;
-    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-    const all = allRaw.filter((e: any) => historyTsMs(e) >= cutoffMs);
     const distinctDayCount = new Set(all.map((e: any) => historyLocalDateKey(e?.ts))).size;
     const pageSize = historyPageSize(taskId);
     const isDayMode = state.rangeMode === "day";
@@ -879,7 +884,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const summary = isDayMode
           ? `Showing ${slice.length} of ${total} days (${all.length} entries)`
           : `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${distinctDayCount === 1 ? "day" : "days"})`;
-        ui.rangeText.textContent = total > slice.length ? `${summary} - swipe to browse` : summary;
+        const swipeHint = total > slice.length ? " - swipe to browse" : "";
+        const fallbackHint = usesFallbackWindow ? ` (showing older entries outside ${HISTORY_LOOKBACK_DAYS} days)` : "";
+        ui.rangeText.textContent = `${summary}${swipeHint}${fallbackHint}`;
       }
     }
 
