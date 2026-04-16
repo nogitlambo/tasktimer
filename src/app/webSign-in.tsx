@@ -94,7 +94,7 @@ export default function WebSignIn(props: WebSignInProps) {
             className="webSignInAuthPanel relative w-full px-6 pb-4 pt-2 text-left sm:px-8"
           >
             <div className="relative">
-              <p className="displayFont text-center text-[12px] uppercase tracking-[0.22em] text-[#f1c9ff]">
+              <p className="webSignInKicker text-center text-[12px] uppercase tracking-[0.22em]">
                 YOUR DAILY PRODUCTIVITY ENGINE
               </p>
             </div>
@@ -106,7 +106,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   onClick={onToggleEmailLoginForm}
                   aria-expanded={showEmailLoginForm ? "true" : "false"}
                   disabled={authBusy}
-                  className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="webSignInAuthButton webSignInAuthButtonStandard self-center rounded-none"
                 >
                   <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
                     <path
@@ -121,7 +121,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   type="button"
                   onClick={onGoogleSignIn}
                   disabled={authBusy}
-                  className="displayFont flex min-h-[52px] w-full items-center justify-center gap-2 rounded-none bg-[linear-gradient(180deg,rgba(39,20,53,0.96),rgba(24,12,35,0.94))] px-5 py-2 text-base font-bold text-white transition hover:bg-[linear-gradient(180deg,rgba(73,29,97,0.98),rgba(35,15,50,0.96))] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="webSignInAuthButton webSignInAuthButtonStandard self-center rounded-none"
                   style={showEmailLoginForm ? { display: "none" } : undefined}
                 >
                   <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
@@ -157,7 +157,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       placeholder="name@example.com"
                       value={authEmail}
                       onChange={(e) => onAuthEmailChange(e.target.value)}
-                      className="h-11 w-full rounded-none border border-[#d447d2]/36 bg-[rgba(27,14,39,0.92)] px-4 text-sm text-white outline-none placeholder:text-[#d5b3ea]/48 focus:border-[#f06ee0]/58"
+                      className="webSignInAuthInput rounded-none"
                     />
                   </>
                 ) : null}
@@ -168,7 +168,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onToggleEmailLoginForm}
                       disabled={authBusy}
-                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#331345] hover:via-[#4b1d68] hover:to-[#2a1039] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                      className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
                     >
                       Cancel
                     </button>
@@ -178,7 +178,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onSendEmailLink}
                       disabled={authBusy || !isValidAuthEmail}
-                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#ffd7fb] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                      className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
                     >
                       Send Link
                     </button>
@@ -188,19 +188,19 @@ export default function WebSignIn(props: WebSignInProps) {
                       type="button"
                       onClick={onCompleteEmailLink}
                       disabled={authBusy || !isValidAuthEmail}
-                      className="displayFont min-w-[172px] rounded-none border border-[#d447d2]/65 bg-transparent px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#f4d4ff] transition hover:bg-gradient-to-r hover:from-[#d447d2] hover:via-[#b14ae9] hover:to-[#7f5cff] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                      className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
                     >
                       Complete Sign-In
                     </button>
                   ) : null}
                 </div>
 
-                {authStatus ? <div className="text-xs text-[#d3faff]">{authStatus}</div> : null}
-                {authError ? <div className="text-xs text-[#ff9b9b]">{authError}</div> : null}
+                {authStatus ? <div className="webSignInStatus text-xs">{authStatus}</div> : null}
+                {authError ? <div className="webSignInError text-xs">{authError}</div> : null}
               </div>
             ) : (
-              <div className="mt-8 rounded-none bg-[rgba(27,14,39,0.88)] p-4 text-center text-sm text-white/80">
-                Signed in as <span className="font-semibold text-[#d8fbff]">{authUserEmail}</span>. Redirecting...
+              <div className="webSignInSignedIn mt-8 rounded-none p-4 text-center text-sm">
+                Signed in as <strong>{authUserEmail}</strong>. Redirecting...
               </div>
             )}
           </section>

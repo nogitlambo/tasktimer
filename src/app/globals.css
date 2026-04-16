@@ -62,10 +62,11 @@ body.webSignInRoute {
   max-width: none;
   isolation: isolate;
   background:
-    radial-gradient(circle at 18% 18%, rgba(64, 225, 255, 0.18), transparent 34%),
-    radial-gradient(circle at 82% 76%, rgba(212, 71, 210, 0.18), transparent 36%),
-    linear-gradient(135deg, #05010b 0%, #090411 46%, #02050d 100%);
-  font-family: var(--font-display-ui);
+    radial-gradient(circle at 18% 18%, rgba(167, 243, 92, 0.08), transparent 34%),
+    radial-gradient(circle at 82% 76%, rgba(255, 255, 255, 0.05), transparent 36%),
+    linear-gradient(180deg, #06070a 0%, #050608 100%);
+  color: rgba(248, 250, 252, 0.96);
+  font-family: var(--font-readable);
 }
 
 body.webSignInRoute .webSignInPage {
@@ -78,11 +79,11 @@ body.webSignInRoute .webSignInPage {
   position: absolute;
   inset: 0;
   z-index: -2;
-  opacity: 0.38;
+  opacity: 0.42;
   background-image:
-    linear-gradient(rgba(191, 138, 255, 0.11) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(64, 225, 255, 0.09) 1px, transparent 1px);
-  background-size: 68px 68px;
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.16));
 }
 
@@ -100,13 +101,13 @@ body.webSignInRoute .webSignInPage {
 .webSignInGlowTop {
   top: -170px;
   left: -120px;
-  background: rgba(64, 225, 255, 0.7);
+  background: rgba(167, 243, 92, 0.34);
 }
 
 .webSignInGlowBottom {
   right: -140px;
   bottom: -210px;
-  background: rgba(212, 71, 210, 0.72);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .webSignInContainer {
@@ -139,6 +140,98 @@ body.webSignInRoute .webSignInPage {
 
 .webSignInAuthPanel {
   max-width: none;
+}
+
+.webSignInKicker {
+  color: rgba(167, 243, 92, 0.88);
+  font-family: var(--font-display-ui);
+}
+
+.webSignInAuthButton {
+  display: inline-flex;
+  min-height: 50px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(248, 250, 252, 0.96);
+  font-family: var(--font-display-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.webSignInAuthButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.webSignInAuthButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.webSignInAuthButtonCompact {
+  min-width: 172px;
+  width: auto;
+  padding: 0 24px;
+}
+
+.webSignInAuthButtonStandard {
+  min-width: 280px;
+  width: auto;
+  max-width: 100%;
+  padding: 0 24px;
+}
+
+.webSignInAuthInput {
+  height: 44px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(7, 8, 10, 0.86);
+  padding: 0 16px;
+  color: rgba(248, 250, 252, 0.96);
+  font-family: var(--font-readable);
+  font-size: 0.92rem;
+  outline: none;
+}
+
+.webSignInAuthInput::placeholder {
+  color: rgba(248, 250, 252, 0.42);
+}
+
+.webSignInAuthInput:focus {
+  border-color: rgba(167, 243, 92, 0.48);
+}
+
+.webSignInStatus {
+  align-self: center;
+  color: rgba(248, 250, 252, 0.74);
+  font-family: var(--font-readable);
+  text-align: center;
+}
+
+.webSignInError {
+  align-self: center;
+  color: #ff9b9b;
+  font-family: var(--font-readable);
+  text-align: center;
+}
+
+.webSignInSignedIn {
+  background: rgba(7, 8, 10, 0.84);
+  color: rgba(248, 250, 252, 0.74);
+  font-family: var(--font-readable);
+}
+
+.webSignInSignedIn strong {
+  color: rgba(248, 250, 252, 0.96);
+  font-weight: 700;
 }
 
 @media (min-width: 900px) {

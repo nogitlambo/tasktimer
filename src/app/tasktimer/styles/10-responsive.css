@@ -4031,17 +4031,17 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 /* Final dashboard summary-card normalization: quarter by default on desktop, resizable only to quarter/half/full, with aligned internal rows. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard{
   display: grid;
-  grid-template-rows: 26px 42px 22px 14px auto;
+  grid-template-rows: 24px 36px 16px 14px auto;
   align-content: start;
   align-items: start;
-  gap: 8px;
+  gap: 0;
   min-height: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardCardTitle,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardCardTitle{
   align-self: start;
   min-width: 0;
-  min-height: 26px;
+  min-height: 24px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardBigValue,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardXpProgressValue,
@@ -4058,7 +4058,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardBigValue,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardXpProgressValue{
-  min-height: 42px;
+  min-height: 36px;
   display: flex;
   align-items: flex-start;
 }
@@ -4067,7 +4067,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   align-items: flex-end;
   align-self: end;
   width: 100%;
-  height: 22px;
+  height: 16px;
   min-width: 0;
   margin-top: 0 !important;
 }
@@ -4091,7 +4091,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   line-height: 1.18;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryProgressSpacer{
-  height: 12px;
+  height: 10px;
   border-radius: 999px;
   opacity: 0;
   pointer-events: none;
@@ -4109,5 +4109,32 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard[data-dashboard-size="full"]{
     grid-column: span 12 !important;
+  }
+}
+
+/* Final responsive dashboard height normalization */
+@media (max-width: 920px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid{
+    --dashboard-summary-panel-span: 9;
+    --dashboard-pro-panel-span: 18;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "title"
+      "dial"
+      "drivers";
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDialWrap,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid{
+    --dashboard-summary-panel-span: 8;
+    --dashboard-pro-panel-span: 16;
   }
 }

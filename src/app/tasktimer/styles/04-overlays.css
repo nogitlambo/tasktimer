@@ -1463,19 +1463,19 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #addTaskOverlay .addTaskNameToggle{
-  top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  top: 18px;
   line-height: 1;
   padding-top: 0;
-  padding-bottom: 1px;
-  transform: none;
+  padding-bottom: 0;
+  transform: translateY(-50%);
 }
 
 #addTaskOverlay .addTaskNameToggle:hover,
 #addTaskOverlay .addTaskNameToggle:active{
-  transform: none;
+  transform: translateY(-50%);
 }
 
 #addTaskOverlay .addTaskNameMenu{

@@ -11,6 +11,7 @@ type DashboardWidgetRenderSummaryState = {
   deletedTaskMeta: DeletedTaskMeta;
   dynamicColorsEnabled: boolean;
   currentDayKey: string;
+  nowMs: number;
 };
 
 type CreateDashboardRuntimeOptions = {
@@ -43,6 +44,7 @@ function buildSummaryState(options: CreateDashboardRuntimeOptions): DashboardWid
     deletedTaskMeta: options.getDeletedTaskMeta(),
     dynamicColorsEnabled: options.getDynamicColorsEnabled(),
     currentDayKey: localDayKey(options.nowMs()),
+    nowMs: options.nowMs(),
   };
 }
 
