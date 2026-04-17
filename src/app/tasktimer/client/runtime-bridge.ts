@@ -104,6 +104,10 @@ export function handleTaskTimerArchieNavigate(hrefRaw: unknown, options: HandleA
     options.applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
     return;
   }
+  if (href === "/leaderboard") {
+    options.applyAppPage("leaderboard", { pushNavStack: true, syncUrl: "push" });
+    return;
+  }
   options.navigateToAppRoute(href);
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import PricingSection from "./PricingSection";
 
@@ -9,21 +10,36 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050813] text-white">
-      <section className="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-6 pb-16 pt-8 sm:px-8 md:px-12 lg:px-16">
-        <div className="flex items-start justify-end">
-          <Link
-            href="/"
-            className="displayFont inline-flex min-h-[42px] items-center justify-center border border-white/12 bg-white/[0.04] px-4 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/90 transition hover:border-[#2cf6ff]/70 hover:text-[#bdfcff]"
-          >
-            Back Home
+    <main className="landingV2 pricingPageV2">
+      <div className="landingV2Shell">
+        <header className="landingV2Header isVisible">
+          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
+            <Image
+              src="/logo/tasklaunch-logo-v2.png"
+              alt="TaskLaunch"
+              width={1868}
+              height={422}
+              priority
+              className="landingV2BrandLogo"
+            />
           </Link>
-        </div>
 
-        <div className="mx-auto mt-8 flex w-full flex-1 flex-col justify-center">
+          <nav className="landingV2Nav" aria-label="Pricing navigation" />
+
+          <div className="landingV2HeaderActions">
+            <Link href="/" className="landingV2HeaderLink">
+              Home
+            </Link>
+            <Link href="/web-sign-in" className="landingV2LoginLink">
+              Login
+            </Link>
+          </div>
+        </header>
+
+        <div className="pricingPageV2Main">
           <PricingSection mode="page" />
         </div>
-      </section>
+      </div>
     </main>
   );
 }

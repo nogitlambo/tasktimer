@@ -218,6 +218,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     suppressNavStackPush: initialState.suppressNavStackPush,
     lastNativeBackHandledAtMs: initialState.lastNativeBackHandledAtMs,
     dashboardRefreshPending: false,
+    initialAuthHydrating: initialState.initialAuthHydrating,
   });
   const { on } = runtime;
 
@@ -235,6 +236,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       unsubscribeCheckpointAlertMuteSignals = null;
     }
     sessionApi?.destroySessionRuntime();
+    finishInitialAuthHydration();
     dashboardBusyApi.destroy();
     destroyTaskTimerRuntime({
       runtime,
@@ -817,6 +819,42 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   syncDashboardMenuFlipUi = syncDashboardMenuFlipUiBound;
   renderDashboardWidgetsWithBusy = renderDashboardWidgetsWithBusyBound;
   renderDashboardLiveWidgetsWithMemo = renderDashboardLiveWidgetsWithMemoBound;
+
+  function setInitialAuthBusyVisible(isOn: boolean, message?: string) {
+    const overlayEl = els.initialAuthBusyOverlay as HTMLElement | null;
+    const textEl = els.initialAuthBusyText as HTMLElement | null;
+    if (textEl && typeof message === "string" && message.trim()) {
+      textEl.textContent = message.trim();
+    } else if (textEl && !isOn) {
+      textEl.textContent = "Loading your workspace into this session...";
+    }
+    document.body.classList.toggle("isInitialAuthHydrating", !!isOn);
+    if (!overlayEl) return;
+    overlayEl.classList.toggle("isOn", !!isOn);
+    overlayEl.setAttribute("aria-hidden", isOn ? "false" : "true");
+    if (isOn) {
+      try {
+        overlayEl.focus({ preventScroll: true });
+      } catch {
+        overlayEl.focus();
+      }
+    }
+  }
+
+  function startInitialAuthHydration(message = "Loading your workspace into this session...") {
+    appRuntimeState.set("initialAuthHydrating", true);
+    setInitialAuthBusyVisible(true, message);
+  }
+
+  function finishInitialAuthHydration() {
+    appRuntimeState.set("initialAuthHydrating", false);
+    setInitialAuthBusyVisible(false);
+  }
+
+  function isInitialAuthHydrating() {
+    return !!appRuntimeState.get("initialAuthHydrating");
+  }
+  setInitialAuthBusyVisible(isInitialAuthHydrating());
   const {
     renderDashboardPanelMenu: renderDashboardPanelMenuApi,
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
@@ -1584,6 +1622,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     maybeHandlePendingPushAction,
     maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
     currentUid: () => getCurrentTaskTimerUid(),
+    isInitialAuthHydrating,
     showDashboardBusyIndicator,
     hideDashboardBusyIndicator,
     setDashboardRefreshPending,
@@ -1680,6 +1719,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   startTaskTimerRootLifecycle({
     runtime,
     hydrateUiStateFromCaches,
+    startInitialAuthHydration,
+    finishInitialAuthHydration,
     subscribeToCheckpointAlertMuteSignals,
     refreshOwnSharedSummaries,
     reconcileOwnedSharedSummaryStates,
@@ -1705,18 +1746,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
 
   return { destroy };
-}
-
-export function initTaskTimerTasksClient(): TaskTimerClientHandle {
-  return initTaskTimerClient("tasks");
-}
-
-export function initTaskTimerDashboardClient(): TaskTimerClientHandle {
-  return initTaskTimerClient("dashboard");
-}
-
-export function initTaskTimerFriendsClient(): TaskTimerClientHandle {
-  return initTaskTimerClient("test2");
 }
 
 export function initTaskTimerSettingsClient(): TaskTimerClientHandle {

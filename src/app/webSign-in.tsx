@@ -60,7 +60,7 @@ export default function WebSignIn(props: WebSignInProps) {
               <div className="dashboardRefreshBusyArrowStage" aria-hidden="true">
                 <div className="dashboardRefreshBusyArrowShell">
                   <div className="dashboardRefreshBusyArrowBeamBlend" />
-                  <AppImg className="dashboardRefreshBusyArrowGraphic" src="/logo/launch-icon.png" alt="" />
+                  <AppImg className="dashboardRefreshBusyArrowGraphic" src="/logo/launch-icon-original-transparent.png" alt="" />
                 </div>
               </div>
             </div>

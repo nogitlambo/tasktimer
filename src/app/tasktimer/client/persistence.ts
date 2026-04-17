@@ -72,31 +72,6 @@ type CreateTaskTimerPersistenceOptions = {
   normalizeLoadedTask?: (task: Task) => void;
 };
 
-export function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
-  const raw = String(value || "").trim();
-  if (raw === "past30" || raw === "currentMonth") return "past30";
-  if (raw === "currentWeek") return "past7";
-  return "past7";
-}
-
-export function sanitizeDashboardTimelineDensity(value: unknown): DashboardTimelineDensity {
-  const raw = String(value || "").trim();
-  if (raw === "low" || raw === "high") return raw;
-  return "medium";
-}
-
-export function dashboardTimelineDensityLabel(value: DashboardTimelineDensity) {
-  if (value === "low") return "Low";
-  if (value === "high") return "High";
-  return "Medium";
-}
-
-export function getDashboardTimelineDensityTarget(value: DashboardTimelineDensity) {
-  if (value === "low") return 3;
-  if (value === "high") return 7;
-  return 5;
-}
-
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
   function load() {
     const loaded = loadTasks();

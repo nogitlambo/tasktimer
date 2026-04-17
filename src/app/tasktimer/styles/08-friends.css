@@ -672,7 +672,8 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 }
 /* Final dashboard overview override: history-backed full-width flat hero chart. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
-body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2{
+body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2,
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
   background: transparent !important;
 }
 body[data-theme="lime"] #shareTaskModal .shareTaskFriendOption{
@@ -698,4 +699,145 @@ body[data-theme="lime"] .friendSharedTaskCard{
 }
 body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   box-shadow: 0 0 22px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.06);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardShell{
+  width: 100%;
+  max-width: none;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGrid{
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardCard{
+  grid-column: span 4;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard{
+  grid-column: span 12;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(53,232,255,.12), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(12, 18, 28, .96);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardCardEyebrow{
+  margin:0 0 6px;
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color: rgba(188, 214, 230, 0.72);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroMeta,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardPanelText,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText span,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniLabel,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMeta{
+  color: rgba(188, 214, 230, 0.82);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRows,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideList{
+  display:grid;
+  gap:10px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
+  border: 1px solid rgba(134, 170, 196, 0.28);
+  background: rgba(9, 15, 24, 0.64);
+  padding: 12px 14px;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow{
+  display:grid;
+  grid-template-columns: 34px 54px minmax(0, 1fr) auto;
+  gap:12px;
+  align-items:center;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRank{
+  font-family: var(--font-tight);
+  font-size: 24px;
+  font-weight: 800;
+  color: rgba(233, 252, 255, 0.94);
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatar{
+  width: 54px;
+  height: 54px;
+  display:grid;
+  place-items:center;
+  border: 1px solid rgba(121, 226, 255, 0.3);
+  background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.04));
+  font-family: var(--font-tight);
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatarSmall{
+  width: 42px;
+  height: 42px;
+  font-size: 12px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardIdentity,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardName,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStats{
+  display:grid;
+  justify-items:end;
+  gap:4px;
+  text-align:right;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardXp,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideMetric{
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardTrend{
+  color: #7ef0b4;
+  font-size: 12px;
+  font-weight: 700;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem{
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  display:grid;
+  align-items:center;
+  gap:10px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
+  border-color: rgba(219,255,79,.18);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.1), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(18,23,7,.96);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatar{
+  border-color: rgba(219,255,79,.24);
+  background: linear-gradient(180deg, rgba(219,255,79,.14), rgba(255,255,255,.04));
 }

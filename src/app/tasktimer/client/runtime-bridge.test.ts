@@ -45,9 +45,11 @@ describe("runtime-bridge", () => {
     const navigateToAppRoute = vi.fn();
 
     handleTaskTimerArchieNavigate("/dashboard", { applyAppPage, navigateToAppRoute });
+    handleTaskTimerArchieNavigate("/leaderboard", { applyAppPage, navigateToAppRoute });
     handleTaskTimerArchieNavigate("/privacy", { applyAppPage, navigateToAppRoute });
 
     expect(applyAppPage).toHaveBeenCalledWith("dashboard", { pushNavStack: true, syncUrl: "push" });
+    expect(applyAppPage).toHaveBeenCalledWith("leaderboard", { pushNavStack: true, syncUrl: "push" });
     expect(navigateToAppRoute).toHaveBeenCalledWith("/privacy");
   });
 

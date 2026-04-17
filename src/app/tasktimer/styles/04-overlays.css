@@ -1799,6 +1799,119 @@ body[data-theme="purple"] .rewardsInfoText{
   padding: 10px 8px;
 }
 
+/* Final Edit Task landing-palette override:
+   replace the olive modal treatment with the landing page's black/lime language. */
+#editOverlay .modal{
+  background: #000 !important;
+  border: 1px solid rgba(255,255,255,.02) !important;
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+
+#editOverlay .editHead h2,
+#editOverlay label,
+#editOverlay .checkpointAlertsTitle,
+#editOverlay .milestonesSummaryPrimary,
+#editOverlay .milestonesSummaryCollapseLabel,
+#editOverlay .toggleRow > span,
+#editOverlay .addTaskDurationPerLabel,
+#editOverlay .checkpointAlertsNote,
+#editOverlay .editTaskDurationReadout,
+#editOverlay .editTaskTimeGoalToggleText{
+  color: rgba(245,248,244,.88) !important;
+}
+
+#editOverlay input[type="text"],
+#editOverlay input[type="number"],
+#editOverlay select,
+#editOverlay textarea,
+#editOverlay .toggleRow,
+#editOverlay .milestonesSummary,
+#editOverlay .editAdvancedSummary{
+  border-color: rgba(255,255,255,.02) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+  color: rgba(245,248,244,.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+
+#editOverlay input[type="text"]::placeholder,
+#editOverlay input[type="number"]::placeholder,
+#editOverlay textarea::placeholder{
+  color: rgba(245,248,244,.54) !important;
+}
+
+#editOverlay input[type="text"]:focus,
+#editOverlay input[type="number"]:focus,
+#editOverlay select:focus,
+#editOverlay textarea:focus{
+  border-color: rgba(255,255,255,.02) !important;
+  outline: 1px solid rgba(201,255,36,.2) !important;
+  outline-offset: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 0 0 1px rgba(201,255,36,.12) !important;
+}
+
+#editOverlay .editPresetIntervalsInfoDialog{
+  border-color: rgba(201,255,36,.3) !important;
+  background: rgba(5,9,16,.96) !important;
+  color: rgba(245,248,244,.88) !important;
+}
+
+#editOverlay .unitBtn.isOn,
+#editOverlay .timerTypePill.isOn,
+#editOverlay .switch.on{
+  border-color: rgba(201,255,36,.56) !important;
+  background:
+    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
+  color: #f5f8f4 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
+}
+
+#editOverlay .switch.on::after{
+  background: rgba(245,248,244,.98) !important;
+}
+
+#editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
+  + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
+  border-top-color: rgba(201,255,36,.18) !important;
+}
+
+#editOverlay .footerBtns{
+  background: #000 !important;
+  border-top-color: rgba(201,255,36,.18) !important;
+  box-shadow: 0 -12px 18px rgba(0,0,0,.95) !important;
+}
+
+#editOverlay .footerBtns::before{
+  background: #000 !important;
+}
+
+#editOverlay #cancelEditBtn{
+  border-color: rgba(201,255,36,.34) !important;
+  color: rgba(245,248,244,.88) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+}
+
+#editOverlay #saveEditBtn,
+#editOverlay #saveEditBtn:hover,
+#editOverlay #saveEditBtn:focus-visible{
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
+  font-weight: 800;
+}
+
 #elapsedPadOverlay .footerBtns{
   margin-top: 12px;
   display: flex !important;
@@ -2587,4 +2700,117 @@ body[data-theme="lime"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText
 }
 body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(241,255,151,.88);
+}
+
+/* Final-final Edit Task landing-palette override:
+   keep this at EOF so it wins over older cyan/purple/lime modal rules. */
+#editOverlay .modal{
+  background: #000 !important;
+  border: 1px solid rgba(201,255,36,.42) !important;
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(201,255,36,.08) !important;
+}
+
+#editOverlay .editHead h2,
+#editOverlay label,
+#editOverlay .checkpointAlertsTitle,
+#editOverlay .milestonesSummaryPrimary,
+#editOverlay .milestonesSummaryCollapseLabel,
+#editOverlay .toggleRow > span,
+#editOverlay .addTaskDurationPerLabel,
+#editOverlay .checkpointAlertsNote,
+#editOverlay .editTaskDurationReadout,
+#editOverlay .editTaskTimeGoalToggleText{
+  color: rgba(245,248,244,.88) !important;
+}
+
+#editOverlay input[type="text"],
+#editOverlay input[type="number"],
+#editOverlay select,
+#editOverlay textarea,
+#editOverlay .toggleRow,
+#editOverlay .milestonesSummary,
+#editOverlay .editAdvancedSummary{
+  border-color: rgba(201,255,36,.34) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+  color: rgba(245,248,244,.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(201,255,36,.04) !important;
+}
+
+#editOverlay input[type="text"]::placeholder,
+#editOverlay input[type="number"]::placeholder,
+#editOverlay textarea::placeholder{
+  color: rgba(245,248,244,.54) !important;
+}
+
+#editOverlay input[type="text"]:focus,
+#editOverlay input[type="number"]:focus,
+#editOverlay select:focus,
+#editOverlay textarea:focus{
+  border-color: rgba(201,255,36,.66) !important;
+  outline: 1px solid rgba(201,255,36,.2) !important;
+  outline-offset: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 0 1px rgba(201,255,36,.12) !important;
+}
+
+#editOverlay .editPresetIntervalsInfoDialog{
+  border-color: rgba(201,255,36,.3) !important;
+  background: rgba(5,9,16,.96) !important;
+  color: rgba(245,248,244,.88) !important;
+}
+
+#editOverlay .unitBtn.isOn,
+#editOverlay .timerTypePill.isOn,
+#editOverlay .switch.on{
+  border-color: rgba(201,255,36,.56) !important;
+  background:
+    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
+  color: #f5f8f4 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
+}
+
+#editOverlay .switch.on::after{
+  background: rgba(245,248,244,.98) !important;
+}
+
+#editOverlay > .modal > :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection)
+  + :is(.field, .milestones, .checkpointAlertsGroup, .editAdvancedSection){
+  border-top-color: rgba(201,255,36,.18) !important;
+}
+
+#editOverlay .footerBtns{
+  background: #000 !important;
+  border-top-color: rgba(201,255,36,.18) !important;
+  box-shadow: 0 -12px 18px rgba(0,0,0,.95) !important;
+}
+
+#editOverlay .footerBtns::before{
+  background: #000 !important;
+}
+
+#editOverlay #cancelEditBtn{
+  border-color: rgba(201,255,36,.34) !important;
+  color: rgba(245,248,244,.88) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+}
+
+#editOverlay #saveEditBtn,
+#editOverlay #saveEditBtn:hover,
+#editOverlay #saveEditBtn:focus-visible{
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
+  font-weight: 800;
 }

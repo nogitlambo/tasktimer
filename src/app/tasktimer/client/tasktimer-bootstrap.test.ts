@@ -67,18 +67,49 @@ describe("tasktimer-bootstrap", () => {
   it("runs initial hydration immediately for dashboard and marks refresh pending", () => {
     const finishBootstrapUi = vi.fn();
     const setDashboardRefreshPending = vi.fn();
+    const startInitialAuthHydration = vi.fn();
+    const finishInitialAuthHydration = vi.fn();
     const rehydrateFromCloudAndRender = vi.fn(() => Promise.resolve());
 
     runInitialTaskTimerHydration({
       currentAppPage: "dashboard",
       finishBootstrapUi,
       setDashboardRefreshPending,
+      startInitialAuthHydration,
+      finishInitialAuthHydration,
       currentUid: () => "",
       rehydrateFromCloudAndRender,
     });
 
     expect(finishBootstrapUi).toHaveBeenCalledTimes(1);
-    expect(setDashboardRefreshPending).toHaveBeenCalledWith(true);
-    expect(rehydrateFromCloudAndRender).not.toHaveBeenCalled();
+    expect(setDashboardRefreshPending).not.toHaveBeenCalled();
+    expect(rehydrateFromCloudAndRender).toHaveBeenCalledTimes(1);
+  });
+
+  it("hydrates authenticated dashboard before finishing bootstrap and clears the auth loading gate", async () => {
+    const finishBootstrapUi = vi.fn();
+    const setDashboardRefreshPending = vi.fn();
+    const startInitialAuthHydration = vi.fn();
+    const finishInitialAuthHydration = vi.fn();
+    const rehydrateFromCloudAndRender = vi.fn(() => Promise.resolve());
+
+    runInitialTaskTimerHydration({
+      currentAppPage: "dashboard",
+      finishBootstrapUi,
+      setDashboardRefreshPending,
+      startInitialAuthHydration,
+      finishInitialAuthHydration,
+      currentUid: () => "user-1",
+      rehydrateFromCloudAndRender,
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(startInitialAuthHydration).toHaveBeenCalledTimes(1);
+    expect(rehydrateFromCloudAndRender).toHaveBeenCalledTimes(1);
+    expect(finishBootstrapUi).toHaveBeenCalledTimes(1);
+    expect(finishInitialAuthHydration).toHaveBeenCalledTimes(1);
+    expect(setDashboardRefreshPending).not.toHaveBeenCalled();
   });
 });

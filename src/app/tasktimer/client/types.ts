@@ -2,7 +2,7 @@ import type { HistoryByTaskId, DeletedTaskMeta, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 
-export type AppPage = "tasks" | "schedule" | "dashboard" | "test2";
+export type AppPage = "tasks" | "schedule" | "dashboard" | "test2" | "leaderboard";
 
 export type MainMode = "mode1" | "mode2" | "mode3";
 
@@ -214,6 +214,7 @@ export type TaskTimerMutableState = {
   dashboardBusyRestoreFocusEl: HTMLElement | null;
   dashboardBusyShownAtMs: number;
   dashboardBusyHideTimer: number | null;
+  initialAuthHydrating: boolean;
   friendProfileCacheByUid: Record<string, FriendProfile>;
   cloudRefreshInFlight: Promise<void> | null;
   lastCloudRefreshAtMs: number;

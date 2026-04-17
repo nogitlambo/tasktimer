@@ -89,6 +89,8 @@ type RegisterRootEventsOptions = {
 type StartRootLifecycleOptions = {
   runtime: TaskTimerRuntime;
   hydrateUiStateFromCaches: (opts?: { skipDashboardWidgetsRender?: boolean }) => void;
+  startInitialAuthHydration: (message?: string) => void;
+  finishInitialAuthHydration: () => void;
   subscribeToCheckpointAlertMuteSignals: () => void;
   refreshOwnSharedSummaries: () => Promise<unknown>;
   reconcileOwnedSharedSummaryStates: () => void;
@@ -294,6 +296,8 @@ export function startTaskTimerRootLifecycle(options: StartRootLifecycleOptions) 
     finishBootstrapUi,
     setDashboardRefreshPending: options.setDashboardRefreshPending,
     currentUid: options.currentUid,
+    startInitialAuthHydration: options.startInitialAuthHydration,
+    finishInitialAuthHydration: options.finishInitialAuthHydration,
     rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,
   });
 }

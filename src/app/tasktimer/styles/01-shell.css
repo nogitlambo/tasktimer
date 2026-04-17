@@ -95,13 +95,15 @@
   display:none;
 }
 body[data-app-page="dashboard"] .modeSwitchWrap,
-body[data-app-page="test2"] .modeSwitchWrap{
+body[data-app-page="test2"] .modeSwitchWrap,
+body[data-app-page="leaderboard"] .modeSwitchWrap{
   display:none !important;
 }
 body[data-app-page="dashboard"] .appPages{
   padding-left: 0 !important;
 }
-body[data-app-page="test2"] .appPages{
+body[data-app-page="test2"] .appPages,
+body[data-app-page="leaderboard"] .appPages{
   padding-left: 104px !important;
   padding-right: 18px !important;
 }
@@ -269,8 +271,8 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
       rgba(130, 223, 255, 0) 100%
     );
   mix-blend-mode: screen;
-  -webkit-mask-image: url("/logo/launch-icon.png");
-  mask-image: url("/logo/launch-icon.png");
+  -webkit-mask-image: url("/logo/launch-icon-original-transparent.png");
+  mask-image: url("/logo/launch-icon-original-transparent.png");
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;

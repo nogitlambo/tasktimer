@@ -43,7 +43,7 @@ import { saveUserRootPatch } from "../lib/cloudStore";
 import ArchieAssistantWidget from "./ArchieAssistantWidget";
 import RankLadderModal from "./RankLadderModal";
 
-type DesktopRailPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
+type DesktopRailPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "settings" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -60,6 +60,7 @@ type NavItem = {
   desktopId: string;
   mobileId: string;
   href: string;
+  showInMobileFooter?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -91,6 +92,16 @@ const NAV_ITEMS: NavItem[] = [
     href: "/friends",
   },
   {
+    page: "leaderboard",
+    label: "Leaderboard",
+    ariaLabel: "Leaderboard",
+    iconSrc: "/Dashboard.svg",
+    desktopId: "commandCenterLeaderboardBtn",
+    mobileId: "footerLeaderboardBtn",
+    href: "/leaderboard",
+    showInMobileFooter: false,
+  },
+  {
     page: "settings",
     label: "Settings",
     ariaLabel: "Settings",
@@ -107,7 +118,8 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "tasks") return 1;
   if (page === "test2") return 2;
-  if (page === "settings") return 3;
+  if (page === "leaderboard") return 3;
+  if (page === "settings") return 4;
   return -1;
 }
 
@@ -520,7 +532,9 @@ export default function DesktopAppRail({
         <>
           <ArchieAssistantWidget activePage={activePage} variant="mobile" />
           <div className="appFooterNav" aria-label="App pages">
-            {NAV_ITEMS.map((item) => renderMobileNavItem(item, activePage, useClientNavButtons))}
+            {NAV_ITEMS.filter((item) => item.showInMobileFooter !== false).map((item) =>
+              renderMobileNavItem(item, activePage, useClientNavButtons)
+            )}
           </div>
         </>
       ) : null}

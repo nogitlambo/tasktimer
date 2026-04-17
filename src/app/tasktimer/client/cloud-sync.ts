@@ -30,6 +30,7 @@ type CreateTaskTimerCloudSyncOptions = {
   maybeHandlePendingPushAction?: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   currentUid: () => string;
+  isInitialAuthHydrating?: () => boolean;
   showDashboardBusyIndicator?: (message?: string) => number;
   hideDashboardBusyIndicator?: (key?: number) => void;
   setDashboardRefreshPending?: (pending: boolean) => void;
@@ -48,6 +49,8 @@ function hasRemoveHandle(value: unknown): value is CapListenerHandle {
 }
 
 export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOptions) {
+  let lastObservedAuthUid = String(options.currentUid() || "").trim();
+
   function isDashboardPageActive() {
     return typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
   }
@@ -81,8 +84,9 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     const currentInFlight = options.cloudRefreshInFlight.get();
     if (currentInFlight) return currentInFlight;
     const activeDashboardPage = isDashboardPageActive();
+    const initialAuthHydrating = options.isInitialAuthHydrating?.() === true;
     options.setDashboardRefreshPending?.(false);
-    const dashboardBusyKey = activeDashboardPage
+    const dashboardBusyKey = activeDashboardPage && !initialAuthHydrating
       ? options.showDashboardBusyIndicator?.("Refreshing...")
       : undefined;
     const nextInFlight = hydrateStorageFromCloud(opts)
@@ -131,7 +135,9 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
   }
 
   function refreshCloudStateIfStale(minIntervalMs = 3000) {
-    if (isDashboardPageActive()) {
+    const currentMs = options.nowMs();
+    if (currentMs - options.lastCloudRefreshAtMs.get() < minIntervalMs) return;
+    if (isDashboardPageActive() && options.isInitialAuthHydrating?.() !== true) {
       options.setDashboardRefreshPending?.(true);
       return;
     }
@@ -140,8 +146,6 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
       return;
     }
     options.pendingDeferredCloudRefresh.set(false);
-    const currentMs = options.nowMs();
-    if (currentMs - options.lastCloudRefreshAtMs.get() < minIntervalMs) return;
     void rehydrateFromCloudAndRender({ force: true });
   }
 
@@ -161,7 +165,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         scheduleDeferredCloudRefresh(5000);
         return;
       }
-      refreshCloudStateIfStale(0);
+      refreshCloudStateIfStale(1500);
     });
   }
 
@@ -206,8 +210,15 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
 
     const auth = getFirebaseAuthClient();
     if (auth) {
-      options.runtime.removeAuthStateListener = onAuthStateChanged(auth, () => {
+      options.runtime.removeAuthStateListener = onAuthStateChanged(auth, (user) => {
+        const nextUid = String(user?.uid || "").trim();
+        const signedInTransition = !!nextUid && nextUid !== lastObservedAuthUid;
+        lastObservedAuthUid = nextUid;
         syncCloudTaskCollectionListener();
+        if (signedInTransition) {
+          void rehydrateFromCloudAndRender({ force: true });
+          return;
+        }
         refreshCloudStateIfStale(0);
       });
     }

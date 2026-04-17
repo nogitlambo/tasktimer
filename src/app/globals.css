@@ -1024,6 +1024,250 @@ canvas {
   text-decoration: none;
 }
 
+.pricingPageV2 {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.pricingPageV2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image:
+    linear-gradient(var(--landing-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--landing-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  filter: blur(2px);
+}
+
+.pricingPageV2::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.pricingPageV2 .landingV2Shell {
+  position: relative;
+  z-index: 1;
+}
+
+.pricingPageV2 .landingV2Header {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.pricingPageV2 .pricingPageV2Main {
+  flex: 1;
+}
+
+.pricingPageV2 .pricingSectionV2 {
+  position: relative;
+}
+
+.pricingPageV2 .pricingV2Error,
+.pricingPageV2 .pricingV2PlanDescription,
+.pricingPageV2 .pricingV2Billing,
+.pricingPageV2 .pricingV2FinePrint,
+.pricingPageV2 .pricingV2FeatureList {
+  color: var(--landing-muted);
+  font-family: var(--font-readable);
+}
+
+.pricingPageV2 .pricingV2Error {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.pricingPageV2 .pricingV2ErrorBlock {
+  max-width: 1040px;
+  margin: 0 auto 20px;
+}
+
+.pricingPageV2 .pricingV2CardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.pricingPageV2 .pricingV2Card {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 510px;
+  padding: 40px 34px 34px;
+  background: #08090a;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.pricingPageV2 .pricingV2Card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 1px rgba(201, 255, 36, 0.2), 0 24px 48px rgba(0, 0, 0, 0.24);
+}
+
+.pricingPageV2 .pricingV2Card.isFeatured {
+  background: linear-gradient(180deg, rgba(17, 20, 12, 0.98), rgba(8, 10, 6, 0.98));
+}
+
+.pricingPageV2 .pricingV2SectionTitle {
+  margin: 0 0 34px;
+  text-align: center;
+  color: var(--landing-text);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.pricingPageV2 .pricingV2Badge {
+  align-self: center;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid var(--landing-lime);
+  background: rgba(201, 255, 36, 0.08);
+  color: var(--landing-lime);
+  font-size: 0.66rem;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pricingPageV2 .pricingV2CardIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pricingPageV2 .pricingV2PlanNameRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pricingPageV2 .pricingV2PlanName {
+  margin: 0;
+  color: var(--landing-text);
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.pricingPageV2 .pricingV2PlanDescription {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+.pricingPageV2 .pricingV2PriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.pricingPageV2 .pricingV2PriceRow.isHidden {
+  visibility: hidden;
+}
+
+.pricingPageV2 .pricingV2Price {
+  color: var(--landing-lime);
+  font-family: var(--font-archie);
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-weight: 300;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+
+.pricingPageV2 .pricingV2Billing,
+.pricingPageV2 .pricingV2FinePrint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.pricingPageV2 .pricingV2Divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pricingPageV2 .pricingV2FeatureList {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+
+.pricingPageV2 .pricingV2FeatureList li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.pricingPageV2 .pricingV2FeatureIcon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.18rem;
+  color: var(--landing-lime);
+}
+
+.pricingPageV2 .pricingV2FeatureIconSvg {
+  width: 20px;
+  height: 20px;
+}
+
+.pricingPageV2 .pricingV2FeatureIconSvg path {
+  fill: none;
+  stroke: var(--landing-lime);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pricingPageV2 .pricingV2ActionRow {
+  padding-top: 10px;
+}
+
+.pricingPageV2 .pricingV2Button {
+  width: 100%;
+}
+
+.pricingPageV2 .pricingV2ProButton {
+  color: #000;
+  font-weight: 900;
+}
+
+.pricingPageV2 .pricingV2Button.isBusy {
+  cursor: wait;
+  opacity: 0.82;
+}
+
 @keyframes landingV2Marquee {
   from {
     transform: translateX(0);
@@ -1067,6 +1311,11 @@ canvas {
     border-left: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     flex-direction: row;
+  }
+
+  .pricingPageV2 .pricingV2CardGrid {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 }
 
@@ -1126,6 +1375,7 @@ canvas {
   .landingV2 .landingV2Cta {
     grid-template-columns: 1fr;
   }
+
 }
 
 @media (max-width: 560px) {
@@ -1179,6 +1429,10 @@ canvas {
   .landingV2 .landingV2PrimaryBtn,
   .landingV2 .landingV2SecondaryBtn {
     width: 100%;
+  }
+
+  .pricingPageV2 .pricingV2Card {
+    padding: 32px 18px 24px;
   }
 }
 

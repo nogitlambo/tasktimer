@@ -1,6 +1,6 @@
 import type { Task } from "./types";
 
-export type ArchieAssistantPage = "dashboard" | "tasks" | "test2" | "settings" | "none";
+export type ArchieAssistantPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "settings" | "none";
 
 export type ArchieConfidence = "high" | "medium" | "low";
 export type ArchieResponseMode = "product_answer" | "workflow_advice" | "navigation_hint" | "fallback";
@@ -122,7 +122,7 @@ export type ArchieTelemetryEventRequest = {
 
 export function normalizeArchieAssistantPage(value: unknown): ArchieAssistantPage {
   const raw = String(value || "").trim().toLowerCase();
-  if (raw === "dashboard" || raw === "tasks" || raw === "test2" || raw === "settings") return raw;
+  if (raw === "dashboard" || raw === "tasks" || raw === "test2" || raw === "leaderboard" || raw === "settings") return raw;
   return "none";
 }
 

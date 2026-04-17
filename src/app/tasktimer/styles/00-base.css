@@ -82,7 +82,8 @@ body{
   font-weight:900;
 }
 body[data-app-page="dashboard"] #modeSwitch,
-body[data-app-page="test2"] #modeSwitch{
+body[data-app-page="test2"] #modeSwitch,
+body[data-app-page="leaderboard"] #modeSwitch{
   display:none !important;
 }
 .modeBtn{

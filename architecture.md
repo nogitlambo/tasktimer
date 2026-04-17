@@ -26,6 +26,8 @@
 - `/feedback`
 - `/friends`
 - `/history-manager`
+- `/leaderboard`
+- `/playwright-auth-helper`
 - `/pricing`
 - `/privacy`
 - `/settings`
@@ -65,6 +67,7 @@
 
 - [`src/app/tasktimer/client/add-task.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/add-task.ts)
 - [`src/app/tasktimer/client/app-shell.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/app-shell.ts)
+- [`src/app/tasktimer/client/cloud-sync.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/cloud-sync.test.ts)
 - [`src/app/tasktimer/client/cloud-sync.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/cloud-sync.ts)
 - [`src/app/tasktimer/client/confirm-actions.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/confirm-actions.test.ts)
 - [`src/app/tasktimer/client/confirm-actions.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/confirm-actions.ts)

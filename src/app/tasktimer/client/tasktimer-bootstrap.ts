@@ -38,6 +38,8 @@ type InitialHydrationOptions = {
   finishBootstrapUi: () => void;
   setDashboardRefreshPending: (value: boolean) => void;
   currentUid: () => string | null;
+  startInitialAuthHydration: (message?: string) => void;
+  finishInitialAuthHydration: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
 };
 
@@ -89,14 +91,9 @@ export function finishTaskTimerBootstrapUi(options: FinishBootstrapOptions) {
 }
 
 export function runInitialTaskTimerHydration(options: InitialHydrationOptions) {
-  if (options.currentAppPage === "dashboard") {
-    options.finishBootstrapUi();
-    options.setDashboardRefreshPending(true);
-    return;
-  }
-
   const shouldHydrateBeforeInteractiveBoot = !!options.currentUid();
   if (shouldHydrateBeforeInteractiveBoot) {
+    options.startInitialAuthHydration("Loading your workspace into this session...");
     void options
       .rehydrateFromCloudAndRender()
       .catch(() => {
@@ -104,10 +101,12 @@ export function runInitialTaskTimerHydration(options: InitialHydrationOptions) {
       })
       .finally(() => {
         options.finishBootstrapUi();
+        options.finishInitialAuthHydration();
       });
     return;
   }
 
   options.finishBootstrapUi();
+  options.finishInitialAuthHydration();
   void options.rehydrateFromCloudAndRender();
 }

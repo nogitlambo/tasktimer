@@ -3084,6 +3084,20 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   background-image: none !important;
   box-shadow: none !important;
 }
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+  border-color: rgba(241,255,151,.46) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
+  border-color: rgba(255,120,120,.46) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
 /* Final Settings menu hover cleanup: keep hover border-only in all themes. */
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .menuItem:focus-visible{
