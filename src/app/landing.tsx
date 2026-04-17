@@ -10,23 +10,57 @@ const demoHref = "https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu
 const featureCards = [
   {
     code: "F-001",
+    icon: "flow",
     title: "Adaptive task flow",
     description:
       "Shape each day around how you naturally work with flexible task timing, cleaner prioritization, and less friction between intent and action.",
   },
   {
     code: "F-002",
+    icon: "automation",
     title: "Intelligent automation",
     description:
       "Let recurring decisions happen in the background so the app supports momentum instead of pulling attention away from the work itself.",
   },
   {
     code: "F-003",
+    icon: "insight",
     title: "Insight-led refinement",
     description:
       "Use AI-guided patterns, history, and progress context to spot what is helping, what is draining focus, and what should change next.",
   },
 ];
+
+function FeatureIcon({ icon, title }: { icon: "flow" | "automation" | "insight"; title: string }) {
+  if (icon === "flow") {
+    return (
+      <svg viewBox="0 0 56 56" role="img" aria-label={`${title} icon`} className="landingV2FeatureIconSvg">
+        <rect x="7" y="14" width="14" height="14" rx="3" />
+        <rect x="35" y="14" width="14" height="14" rx="3" />
+        <rect x="21" y="32" width="14" height="14" rx="3" />
+        <path d="M21 21h14M28 21v11" />
+      </svg>
+    );
+  }
+
+  if (icon === "automation") {
+    return (
+      <svg viewBox="0 0 56 56" role="img" aria-label={`${title} icon`} className="landingV2FeatureIconSvg">
+        <circle cx="28" cy="28" r="8" />
+        <path d="M28 10v8M28 38v8M10 28h8M38 28h8M16 16l6 6M34 34l6 6M40 16l-6 6M16 40l6-6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 56 56" role="img" aria-label={`${title} icon`} className="landingV2FeatureIconSvg">
+      <path d="M9 41l12-12 8 8 18-18" />
+      <path d="M47 26V14H35" />
+      <circle cx="21" cy="29" r="3" />
+      <circle cx="29" cy="37" r="3" />
+    </svg>
+  );
+}
 
 const principles = [
   {
@@ -99,7 +133,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             <a href="#features">Features</a>
             <a href="#preview">Interface</a>
             <a href="#principles">Principles</a>
-            <a href="#cta">Get Started</a>
           </nav>
 
           <div className="landingV2HeaderActions">
@@ -174,16 +207,17 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
           <div className="landingV2FeatureGrid">
             {featureCards.map((feature) => (
               <article key={feature.code} className="landingV2FeatureCard">
-                <div className="landingV2FeatureCode displayFont">{feature.code}</div>
+                <div className="landingV2FeatureCardHeader">
+                  <span className="landingV2FeatureIcon" aria-hidden="true">
+                    <FeatureIcon icon={feature.icon} title={feature.title} />
+                  </span>
+                  <div className="landingV2FeatureCode displayFont">{feature.code}</div>
+                </div>
                 <h2 className="landingV2FeatureTitle displayFont">{feature.title}</h2>
                 <p className="landingV2FeatureDescription">{feature.description}</p>
               </article>
             ))}
           </div>
-
-          <h2 className="landingV2TickerHeading displayFont">
-            <em>Make progress easier to start, easier to sustain, and easier to trust</em>
-          </h2>
         </section>
 
         <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="preview">
@@ -278,6 +312,10 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               </aside>
             </div>
           </div>
+
+          <h2 className="landingV2TickerHeading displayFont">
+            <em>Make progress easier to start, easier to sustain, and easier to trust</em>
+          </h2>
         </section>
 
         <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="principles">
@@ -299,10 +337,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
         </section>
 
         <section className={`landingV2Cta ${showFinalCta ? "isVisible" : ""}`} id="cta">
-          <div className="landingV2CtaCopy">
-            <span className="landingV2SectionName">Start with a system that supports focus</span>
-          </div>
-
           <div className="landingV2CtaActions">
             <p>
               Move from scattered task capture to a calmer daily workflow with smarter defaults, better timing, and less manual upkeep.
