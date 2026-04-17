@@ -7,7 +7,7 @@ import RankLadderModal from "../RankLadderModal";
 import RankThumbnail from "../RankThumbnail";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
-import type { SettingsAccountViewModel, SettingsAvatarViewModel, SettingsPushViewModel } from "./types";
+import type { SettingsAccountViewModel, SettingsAvatarViewModel } from "./types";
 
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
@@ -29,13 +29,11 @@ export function SettingsAccountPane({
   exiting = false,
   account,
   avatar,
-  push,
 }: {
   active: boolean;
   exiting?: boolean;
   account: SettingsAccountViewModel;
   avatar: SettingsAvatarViewModel;
-  push: SettingsPushViewModel;
 }) {
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -204,18 +202,6 @@ export function SettingsAccountPane({
                 ) : null}
               </div>
               <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
-                {push.canTriggerPushTest ? (
-                  <button
-                    className="btn btn-ghost small settingsPushTestBtn"
-                    type="button"
-                    disabled={account.authBusy || push.pushTestBusy}
-                    onClick={() => void push.onPushTest()}
-                    title="Send a hidden push test to your registered devices"
-                    aria-label="Send push test"
-                  >
-                    {push.pushTestBusy ? "Sending..." : "Push Test"}
-                  </button>
-                ) : null}
                 <button
                   className="btn btn-accent small settingsSignOutBtn"
                   id="signInGoogleBtn"
@@ -226,7 +212,6 @@ export function SettingsAccountPane({
                   Sign Out
                 </button>
               </div>
-              {push.pushTestStatus ? <div className="settingsPushTestStatus">{push.pushTestStatus}</div> : null}
             </div>
           ) : null}
 

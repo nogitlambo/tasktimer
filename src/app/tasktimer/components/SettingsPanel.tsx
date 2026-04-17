@@ -15,7 +15,6 @@ import type { SettingsFeedbackState, SettingsPaneKey } from "./settings/types";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
 import { useSettingsNavItems, useSettingsPaneState } from "./settings/useSettingsPaneState";
-import { useSettingsPushState } from "./settings/useSettingsPushState";
 
 export type { SettingsPaneKey } from "./settings/types";
 
@@ -30,7 +29,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const navItems = useSettingsNavItems();
   const paneState = useSettingsPaneState(initialPane);
   const accountState = useSettingsAccountState();
-  const pushState = useSettingsPushState(accountState.authUserUid);
   const avatarState = useSettingsAvatarState({
     authUserUid: accountState.authUserUid,
     authUserEmail: accountState.authUserEmail,
@@ -80,7 +78,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             </div>
           ) : null}
 
-          <SettingsAccountPane active={paneState.activePane === "general"} exiting={paneState.exitingPane === "general"} account={accountState.account} avatar={avatarState} push={pushState} />
+          <SettingsAccountPane active={paneState.activePane === "general"} exiting={paneState.exitingPane === "general"} account={accountState.account} avatar={avatarState} />
           <SettingsPreferencesPane active={paneState.activePane === "preferences"} exiting={paneState.exitingPane === "preferences"} />
           <SettingsAppearancePane active={paneState.activePane === "appearance"} exiting={paneState.exitingPane === "appearance"} />
           <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />

@@ -704,6 +704,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardShell{
   width: 100%;
   max-width: none;
+  background: #0d0f13;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGrid{
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -712,14 +715,15 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardCard{
   grid-column: span 4;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path: none;
+  overflow: visible;
+  border: 1px solid rgba(255,255,255,.12);
+  background: #17191d;
+  box-shadow: none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard{
   grid-column: span 12;
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(53,232,255,.12), rgba(0,0,0,0) 42%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(12, 18, 28, .96);
+  background: #17191d;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroHead{
   display:flex;
@@ -750,11 +754,12 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
-  border: 1px solid rgba(134, 170, 196, 0.28);
-  background: rgba(9, 15, 24, 0.64);
-  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: #17191d;
+  box-shadow: none;
+  padding: 14px 15px;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path: none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow{
   display:grid;
@@ -773,11 +778,13 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   height: 54px;
   display:grid;
   place-items:center;
-  border: 1px solid rgba(121, 226, 255, 0.3);
-  background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.04));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 0;
+  background: #17191d;
   font-family: var(--font-tight);
   font-weight: 800;
   letter-spacing: .08em;
+  box-shadow: none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatarSmall{
   width: 42px;
@@ -831,13 +838,10 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
-  border-color: rgba(219,255,79,.18);
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.1), rgba(0,0,0,0) 42%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(18,23,7,.96);
+  border-color: rgba(255,255,255,.12);
+  background: #17191d;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatar{
-  border-color: rgba(219,255,79,.24);
-  background: linear-gradient(180deg, rgba(219,255,79,.14), rgba(255,255,255,.04));
+  border-color: rgba(255,255,255,.12);
+  background: #17191d;
 }
