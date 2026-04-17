@@ -59,19 +59,20 @@ export function buildDeleteTaskConfirmOptions(args: {
   };
 }
 
-export function buildScheduleConvertConfirmOptions(args: {
+export function buildScheduleNormalizeConfirmOptions(args: {
   taskName: string;
   dayLabel: string;
-  onConvert: () => void;
+  timeLabel: string;
+  onConfirmNormalize: () => void;
   onCancel: () => void;
 }) {
   return {
-    title: "Convert To Single Day",
-    text: `Limit ${args.taskName || "this task"} to ${args.dayLabel} only? Its current start time will stay the same.`,
+    title: "Normalize Schedule",
+    text: `Apply ${args.timeLabel || "this time"} to every scheduled day for ${args.taskName || "this task"} using ${args.dayLabel} as the reference day?`,
     options: {
-      okLabel: "Convert",
+      okLabel: "Normalize",
       cancelLabel: "Cancel",
-      onOk: args.onConvert,
+      onOk: args.onConfirmNormalize,
       onCancel: args.onCancel,
     } satisfies TaskTimerConfirmOptions,
   };

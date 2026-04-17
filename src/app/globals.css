@@ -535,6 +535,24 @@ canvas {
   opacity: 0.86;
 }
 
+.landingV2 .landingV2TickerHeading {
+  margin: 0 auto;
+  padding: 64px 48px 18px;
+  max-width: 980px;
+  text-align: center;
+  font-size: clamp(1.7rem, 2.4vw, 2.4rem);
+  font-weight: 300;
+  font-style: normal;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--landing-lime);
+}
+
+.landingV2 .landingV2TickerHeading em {
+  font-style: inherit;
+}
+
 .landingV2 .landingV2Section,
 .landingV2 .landingV2Cta {
   padding: 110px 48px;
@@ -912,6 +930,7 @@ canvas {
 .landingV2 .landingV2PrimaryBtn {
   background: var(--landing-lime);
   color: var(--landing-ink);
+  font-weight: 700;
 }
 
 .landingV2 .landingV2SecondaryBtn {

@@ -16,6 +16,14 @@ import { validateUsername } from "@/lib/username";
 import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
+import {
+  getTaskPlannedStartByDay,
+  normalizeScheduleStoredTime,
+  normalizeTaskPlannedStartByDay,
+  SCHEDULE_DAY_ORDER,
+  syncLegacyPlannedStartFields,
+  type ScheduleDay,
+} from "./schedule-placement";
 
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
@@ -529,13 +537,10 @@ function normalizeDayTimeGoalMinutes(task: Task): number | null {
 }
 
 function computePlannedStartPushDueAtMs(task: Task): number | null {
-  const raw = String(task.plannedStartTime || "").trim();
-  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match || task.plannedStartOpenEnded || task.plannedStartPushRemindersEnabled === false) return null;
-  const hours = Math.max(0, Math.min(23, Number(match[1] || 0)));
-  const minutes = Math.max(0, Math.min(59, Number(match[2] || 0)));
-  const plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
-  const dayMap: Record<NonNullable<Task["plannedStartDay"]>, number> = {
+  if (task.plannedStartPushRemindersEnabled === false) return null;
+  const byDay = getTaskPlannedStartByDay(task);
+  if (!byDay) return null;
+  const dayMap: Record<ScheduleDay, number> = {
     sun: 0,
     mon: 1,
     tue: 2,
@@ -545,16 +550,24 @@ function computePlannedStartPushDueAtMs(task: Task): number | null {
     sat: 6,
   };
   const now = new Date();
-  const scheduled = new Date(now);
-  if (plannedStartDay) {
-    const diffDays = (dayMap[plannedStartDay] - scheduled.getDay() + 7) % 7;
+  let nextDueAtMs: number | null = null;
+  for (const day of SCHEDULE_DAY_ORDER) {
+    const time = normalizeScheduleStoredTime(byDay[day]);
+    if (!time) continue;
+    const [, rawHours = "0", rawMinutes = "0"] = time.match(/^(\d{1,2}):(\d{2})$/) || [];
+    const hours = Math.max(0, Math.min(23, Number(rawHours || 0)));
+    const minutes = Math.max(0, Math.min(59, Number(rawMinutes || 0)));
+    const scheduled = new Date(now);
+    const diffDays = (dayMap[day] - scheduled.getDay() + 7) % 7;
     scheduled.setDate(scheduled.getDate() + diffDays);
+    scheduled.setHours(hours, minutes, 0, 0);
+    if (scheduled.getTime() <= now.getTime()) {
+      scheduled.setDate(scheduled.getDate() + 7);
+    }
+    const dueAtMs = scheduled.getTime();
+    if (nextDueAtMs == null || dueAtMs < nextDueAtMs) nextDueAtMs = dueAtMs;
   }
-  scheduled.setHours(hours, minutes, 0, 0);
-  if (scheduled.getTime() <= now.getTime()) {
-    scheduled.setDate(scheduled.getDate() + (plannedStartDay ? 7 : 1));
-  }
-  return scheduled.getTime();
+  return nextDueAtMs;
 }
 
 function computeTimeGoalCompletePushDueAtMs(task: Task): number | null {
@@ -571,8 +584,7 @@ function computeTimeGoalCompletePushDueAtMs(task: Task): number | null {
 function isUnscheduledGapPushCandidate(task: Task): boolean {
   return (
     normalizeDayTimeGoalMinutes(task) != null &&
-    !String(task.plannedStartTime || "").trim() &&
-    !normalizePlannedStartDay(task.plannedStartDay) &&
+    !getTaskPlannedStartByDay(task) &&
     task.plannedStartOpenEnded !== true
   );
 }
@@ -639,6 +651,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
     timeGoalMinutes: timeGoalCompleteDueAtMs != null ? Math.floor(normalizeTimeGoalValue(task.timeGoalMinutes)) : timeGoalMinutes,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+    plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
     route: "/tasklaunch",
     snoozedUntilMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("snoozedUntilMs")) : null,
@@ -676,6 +689,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
         eventType,
         dueAtMs: effectiveDueAtMs,
         plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+        plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
         plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
         route: "/tasklaunch",
         sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing?.get("sentAtMs")) : null,
@@ -749,9 +763,11 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.plannedStartDay = normalizePlannedStartDay(row.plannedStartDay);
   row.plannedStartTime =
     row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
+  row.plannedStartByDay = normalizeTaskPlannedStartByDay(row.plannedStartByDay);
   row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
   row.plannedStartPushRemindersEnabled = row.plannedStartPushRemindersEnabled !== false;
 
+  syncLegacyPlannedStartFields(row as Task);
   return row as Task;
 }
 
@@ -797,6 +813,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime:
       task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
     bgTimeGoalPushEligible: plannedStartPushDueAtMs != null,
@@ -809,11 +826,10 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
 function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
   const row = mapTaskToFirestore(task);
   const legacyTimeGoalAction = "confirmModal";
-  const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, plannedStartDay, ...legacyRow } = row;
+  const { timeGoalAction, bgTimeGoalPushEligible, bgTimeGoalPushDueAtMs, ...legacyRow } = row;
   void timeGoalAction;
   void bgTimeGoalPushEligible;
   void bgTimeGoalPushDueAtMs;
-  void plannedStartDay;
   return {
     ...legacyRow,
     finalCheckpointAction: legacyTimeGoalAction,

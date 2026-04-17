@@ -14,8 +14,7 @@ import {
 import type { AppPage } from "./types";
 
 type ScheduleDay = Task["plannedStartDay"];
-type NonNullScheduleDay = Exclude<ScheduleDay, null>;
-type BasicConfirmOptions = { okLabel?: string; cancelLabel?: string; onOk?: () => void; onCancel?: () => void };
+type NonNullScheduleDay = NonNullable<ScheduleDay>;
 
 type RegisterRootEventsOptions = {
   on: TaskTimerRuntime["on"];
@@ -30,20 +29,14 @@ type RegisterRootEventsOptions = {
   isScheduleRenderableTask: (task: Task) => boolean;
   isRecurringDailyScheduleTask: (task: Task) => boolean;
   formatScheduleDayLabel: (day: NonNullScheduleDay) => string;
-  confirm: (title: string, text: string, opts: BasicConfirmOptions) => void;
-  closeConfirm: () => void;
-  buildConvertSingleDayConfirm: (args: {
-    taskName: string;
-    dayLabel: string;
-    onConvert: () => void;
-    onCancel: () => void;
-  }) => { title: string; text: string; options: BasicConfirmOptions };
   save: () => void;
   render: () => void;
   renderSchedulePage: () => void;
   setScheduleSelectedDay: (day: NonNullScheduleDay) => void;
   setScheduleDragTaskId: (taskId: string | null) => void;
+  setScheduleDragSourceDay: (day: NonNullScheduleDay | null) => void;
   getScheduleDragTaskId: () => string | null;
+  getScheduleDragSourceDay: () => NonNullScheduleDay | null;
   clearScheduleDragPreview: () => void;
   setScheduleDragPointerOffsetMinutes: (value: number) => void;
   resolveScheduleDropStartMinutes: (dropZone: HTMLElement, clientY: unknown) => number;
@@ -51,7 +44,8 @@ type RegisterRootEventsOptions = {
   getScheduleDragPreviewStartMinutes: () => number | null;
   setScheduleDragPreview: (day: NonNullScheduleDay, startMinutes: number) => void;
   currentAppPage: () => AppPage;
-  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number) => void;
+  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => void;
+  toggleTaskScheduleFlexible: (taskId: string) => { status: "missing" | "noop" | "updated"; flexible?: boolean };
   openOverlay: (overlay: HTMLElement | null) => void;
   getTaskView: () => "list" | "tile";
   hasTaskList: () => boolean;
@@ -162,15 +156,14 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     isScheduleRenderableTask: options.isScheduleRenderableTask,
     isRecurringDailyScheduleTask: options.isRecurringDailyScheduleTask,
     formatScheduleDayLabel: options.formatScheduleDayLabel,
-    confirm: options.confirm,
-    closeConfirm: options.closeConfirm,
-    buildConvertSingleDayConfirm: options.buildConvertSingleDayConfirm,
     save: options.save,
     render: options.render,
     setScheduleSelectedDay: options.setScheduleSelectedDay,
     renderSchedulePage: options.renderSchedulePage,
     setScheduleDragTaskId: options.setScheduleDragTaskId,
+    setScheduleDragSourceDay: options.setScheduleDragSourceDay,
     getScheduleDragTaskId: options.getScheduleDragTaskId,
+    getScheduleDragSourceDay: options.getScheduleDragSourceDay,
     clearScheduleDragPreview: options.clearScheduleDragPreview,
     setScheduleDragPointerOffsetMinutes: options.setScheduleDragPointerOffsetMinutes,
     resolveScheduleDropStartMinutes: options.resolveScheduleDropStartMinutes,
@@ -179,6 +172,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     setScheduleDragPreview: options.setScheduleDragPreview,
     currentAppPage: options.currentAppPage,
     moveTaskOnSchedule: options.moveTaskOnSchedule,
+    toggleTaskScheduleFlexible: options.toggleTaskScheduleFlexible,
   });
 
   on(els.rewardsInfoOpenBtn, "click", (event: unknown) => {

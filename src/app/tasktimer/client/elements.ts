@@ -172,6 +172,7 @@ const els = {
   dashboardMomentumScoreValue: documentRef.getElementById("dashboardMomentumScoreValue"),
   dashboardMomentumScoreStatus: documentRef.getElementById("dashboardMomentumScoreStatus"),
   dashboardMomentumDrivers: documentRef.getElementById("dashboardMomentumDrivers"),
+  dashboardMomentumFooterMessage: documentRef.getElementById("dashboardMomentumFooterMessage"),
   dashboardAvgSessionChart: documentRef.getElementById("dashboardAvgSessionChart") as HTMLCanvasElement | null,
   dashboardAvgSessionEmpty: documentRef.getElementById("dashboardAvgSessionEmpty"),
   dashboardAvgSessionTitle: documentRef.getElementById("dashboardAvgSessionTitle"),

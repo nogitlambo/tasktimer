@@ -331,6 +331,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       return;
     }
 
+    const previousPage = ctx.getCurrentAppPage();
     const nextPage: AppPage = page;
 
     applyAppPageSlideDirection(nextPage);
@@ -392,6 +393,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.closeFriendProfileModal();
     ctx.closeFriendRequestModal();
     if (nextPage === "tasks" || nextPage === "schedule") {
+      if (previousPage === "tasks" && nextPage === "schedule") {
+        ctx.requestScheduleEntryScroll();
+      }
       ctx.render();
       if (nextPage === "tasks") {
         window.requestAnimationFrame(() => {

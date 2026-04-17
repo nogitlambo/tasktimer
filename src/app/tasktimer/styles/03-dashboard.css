@@ -4486,7 +4486,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   justify-self: stretch;
   align-self: start;
   width: auto !important;
-  min-width: 240px !important;
+  min-width: 0 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard[data-dashboard-size="half"] .dashboardMomentumDialWrap,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard[data-dashboard-size="full"] .dashboardMomentumDialWrap{
@@ -4494,17 +4494,17 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   justify-self: stretch;
   align-self: start;
   width: auto !important;
-  min-width: 240px !important;
+  min-width: 0 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDial{
   width: 100% !important;
-  min-width: 240px !important;
+  min-width: 0 !important;
   max-width: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard[data-dashboard-size="half"] .dashboardMomentumDial,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard[data-dashboard-size="full"] .dashboardMomentumDial{
   width: 100% !important;
-  min-width: 240px !important;
+  min-width: 0 !important;
   max-width: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg{
@@ -4839,7 +4839,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-height: 0 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard{
+  grid-row: span var(--dashboard-pro-panel-span) !important;
   grid-template-rows: auto minmax(0, 1fr) auto !important;
+  align-content: start !important;
+  overflow: hidden !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineCard{
   grid-template-rows: auto auto minmax(0, 1fr) auto !important;
@@ -4865,94 +4868,280 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatFaceFront{
   height: 100%;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyChartInline{
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
-  grid-row: span var(--dashboard-pro-panel-span) !important;
+  grid-row: span calc(var(--dashboard-pro-panel-span) * 2) !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1.55fr) minmax(180px, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   grid-template-areas:
-    "title title"
-    "dial drivers";
+    "title"
+    "main"
+    "drivers";
   align-items: start !important;
-  gap: 14px !important;
-  min-height: 0 !important;
-  overflow: hidden;
+  align-content: start !important;
+  gap: 0 !important;
+  min-height: 880px !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding-bottom: 18px !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumTitleRow{
   grid-area: title;
   width: 100% !important;
+  padding-bottom: 14px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumMainSection{
+  grid-area: main;
+  display: grid;
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  justify-items: center;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 16px;
+  pointer-events: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDialWrap{
-  grid-area: dial;
+  display: grid !important;
+  position: relative;
+  z-index: 0;
+  width: min(100%, clamp(280px, 58vw, 520px)) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  align-self: center;
+  justify-self: center;
+  justify-items: center;
+  pointer-events: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDial,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg{
+  display: block !important;
   width: 100% !important;
   min-width: 0 !important;
-  align-self: center;
-  justify-self: stretch;
+  max-width: 100% !important;
+  height: auto !important;
+  pointer-events: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
   grid-area: drivers;
+  display: grid !important;
+  grid-template-rows: auto auto;
+  position: relative;
+  z-index: 3;
   width: 100% !important;
   min-width: 0 !important;
-  align-self: center;
+  align-self: start;
+  align-content: start;
+  gap: 16px;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  min-height: max-content !important;
+  overflow: visible !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers{
+  display: grid !important;
+  gap: 12px !important;
+  position: relative;
+  z-index: 4;
+  isolation: isolate;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver{
+  display: block !important;
+  position: relative;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  z-index: 2;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .58em;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(201, 224, 111, .92);
+  box-shadow: 0 0 0 1px rgba(201,224,111,.22), 0 0 8px rgba(201,224,111,.28);
+  pointer-events: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="low"]::before{
+  background: rgba(232, 74, 74, .96);
+  box-shadow: 0 0 0 1px rgba(232,74,74,.24), 0 0 8px rgba(232,74,74,.3);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="lower-mid"]::before{
+  background: rgba(255, 149, 64, .96);
+  box-shadow: 0 0 0 1px rgba(255,149,64,.24), 0 0 8px rgba(255,149,64,.3);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="upper-mid"]::before{
+  background: rgba(255, 214, 87, .96);
+  box-shadow: 0 0 0 1px rgba(255,214,87,.24), 0 0 8px rgba(255,214,87,.3);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="high"]::before{
+  background: rgba(121, 232, 110, .96);
+  box-shadow: 0 0 0 1px rgba(121,232,110,.24), 0 0 8px rgba(121,232,110,.3);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverButton{
+  display: flex;
+  width: 100%;
+  min-height: 24px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto !important;
+  transform: none !important;
+  padding-left: 40px !important;
+  box-sizing: border-box !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverText{
+  display: block !important;
+  min-width: 0 !important;
+  line-height: 1.45;
+  box-sizing: border-box !important;
+  overflow-wrap: anywhere;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver > .dashboardMomentumDriverText{
+  padding-left: 40px !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver.isSelected .dashboardMomentumDriverButton{
+  transform: none !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers.hasSelectedDriver .dashboardMomentumDriver.isSelected{
+  z-index: 1;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers.hasSelectedDriver .dashboardMomentumDriver:not(.isSelected){
+  z-index: 3;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers.hasSelectedDriver .dashboardMomentumDriver:not(.isSelected) .dashboardMomentumDriverButton{
+  opacity: .78 !important;
+  filter: none !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver.isSelected .dashboardMomentumDriverText,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverButton:hover .dashboardMomentumDriverText,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverButton:focus-visible .dashboardMomentumDriverText{
+  color: rgba(248,252,213,.98);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver.isSelected::before{
+  background: #f4d75f;
+  box-shadow: 0 0 0 1px rgba(244,215,95,.28), 0 0 10px rgba(244,215,95,.34);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterBand{
+  position: relative;
+  z-index: 2;
+  display: grid !important;
+  align-self: start;
+  pointer-events: none;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 14px 16px 20px;
+  background:
+    linear-gradient(180deg, rgba(232, 220, 122, .08), rgba(232, 220, 122, .03)),
+    rgba(255,255,255,.03);
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  overflow: visible !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitle{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(235, 223, 123, .9);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
+  margin: 10px 0 0;
+  min-height: 2.9em;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(232,238,247,.82);
 }
 @media (max-width: 900px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
     grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-    min-height: 300px !important;
-    grid-template-columns: 1fr !important;
-    grid-template-rows: auto auto auto !important;
-    grid-template-areas:
-      "title"
-      "dial"
-      "drivers" !important;
-    align-content: start !important;
+    grid-row: span calc(var(--dashboard-pro-panel-span) + 12) !important;
+    min-height: 580px !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumMainSection{
+    justify-items: center;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDialWrap{
+    width: 100% !important;
+    max-width: 100% !important;
     justify-self: center !important;
     align-self: start !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDial{
-    width: min(100%, 300px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg{
     display: block !important;
     width: 100% !important;
-    max-width: 300px !important;
+    max-width: 100% !important;
     height: auto !important;
     margin: 0 auto !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreSummary{
     display: grid !important;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue,
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus,
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers,
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver{
-    display: block !important;
-  }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
-    display: grid !important;
     width: 100% !important;
     justify-self: stretch !important;
     align-self: start !important;
   }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers{
-    display: grid !important;
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterBand{
     width: 100% !important;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver{
-    display: flex !important;
+    margin: 0 !important;
+    padding: 14px 16px 16px;
   }
 }
 @media (max-width: 520px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
     grid-column: 1 / -1 !important;
+    grid-row: span calc(var(--dashboard-pro-panel-span) + 10) !important;
+    min-height: 540px !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDial{
-    width: min(100%, 280px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg{
-    max-width: 280px !important;
+    max-width: 100% !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
+    width: 100% !important;
+    justify-self: stretch !important;
+    align-self: start !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterBand{
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue{
+    font-size: clamp(20px, 7vw, 28px) !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus{
+    font-size: clamp(10px, 2.7vw, 11px) !important;
   }
 }

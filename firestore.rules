@@ -280,6 +280,7 @@ service cloud.firestore {
         "timeGoalMinutes",
         "plannedStartDay",
         "plannedStartTime",
+        "plannedStartByDay",
         "plannedStartOpenEnded",
         "plannedStartPushRemindersEnabled",
         "bgTimeGoalPushEligible",
@@ -325,6 +326,7 @@ service cloud.firestore {
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
       && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
+      && (!("plannedStartByDay" in request.resource.data) || request.resource.data.plannedStartByDay == null || request.resource.data.plannedStartByDay is map)
       && (!("plannedStartOpenEnded" in request.resource.data) || request.resource.data.plannedStartOpenEnded is bool)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
       && (!("bgTimeGoalPushEligible" in request.resource.data) || request.resource.data.bgTimeGoalPushEligible is bool)
@@ -641,6 +643,7 @@ service cloud.firestore {
         "timeGoalMinutes",
         "plannedStartDay",
         "plannedStartTime",
+        "plannedStartByDay",
         "plannedStartPushRemindersEnabled",
         "route",
         "snoozedUntilMs",
@@ -672,6 +675,7 @@ service cloud.firestore {
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes == null || request.resource.data.timeGoalMinutes is int)
       && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
+      && (!("plannedStartByDay" in request.resource.data) || request.resource.data.plannedStartByDay == null || request.resource.data.plannedStartByDay is map)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
       && request.resource.data.route is string
       && (!("snoozedUntilMs" in request.resource.data) || request.resource.data.snoozedUntilMs == null || request.resource.data.snoozedUntilMs is int)

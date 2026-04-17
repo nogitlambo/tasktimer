@@ -263,6 +263,7 @@ export type TaskTimerAppShellContext = {
   closeShareTaskModal: () => void;
   closeFriendProfileModal: () => void;
   closeFriendRequestModal: () => void;
+  requestScheduleEntryScroll: () => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;

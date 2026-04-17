@@ -18,6 +18,8 @@ import {
 import { STORAGE_KEY } from "../lib/storage";
 
 type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
+export type ArchieResponseFeedback = "up" | "down";
+type ArchieCopyState = "idle" | "copied" | "failed";
 
 type ArchieAssistantWidgetProps = {
   activePage: ArchieAssistantPage;
@@ -158,7 +160,64 @@ function formatCitationTag(citation: ArchieKnowledgeCitation) {
   return parts.join(" | ");
 }
 
-async function sendArchieTelemetryEvent(input: { idToken: string; sessionId: string; draftId?: string | null; eventType: "review_opened" | "apply" | "discard" }) {
+export function nextArchieResponseFeedback(
+  currentFeedback: ArchieResponseFeedback | null,
+  requestedFeedback: ArchieResponseFeedback
+) {
+  return currentFeedback === requestedFeedback ? null : requestedFeedback;
+}
+
+export function shouldShowArchieResponseActionRow(input: {
+  busy: boolean;
+  inputVisible: boolean;
+  hasResponseActions: boolean;
+  message: string;
+}) {
+  return !input.busy && input.inputVisible && input.hasResponseActions && !!String(input.message || "").trim();
+}
+
+function createArchieLocalSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `archie-local-${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
+}
+
+async function copyArchieTextToClipboard(textRaw: string) {
+  const text = String(textRaw || "");
+  if (!text) return false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall back to a temporary textarea for runtimes without clipboard access.
+  }
+  if (typeof document === "undefined") return false;
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
+}
+
+async function sendArchieTelemetryEvent(input: {
+  idToken: string;
+  sessionId: string;
+  draftId?: string | null;
+  eventType: "review_opened" | "apply" | "discard" | "response_upvote" | "response_downvote";
+}) {
   await fetch(resolveArchieApiUrl("/api/archie/events"), {
     method: "POST",
     credentials: "same-origin",
@@ -186,6 +245,76 @@ function buildArchieProUpgradePresentation(result?: ArchieApiErrorResult | null)
   };
 }
 
+function ArchieThumbUpIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M8.2 8.2V4.9c0-1 .4-1.9 1.1-2.6l.7-.7 1.1 1.1a2.7 2.7 0 0 1 .7 2.4l-.3 1.8h3.6a1.9 1.9 0 0 1 1.9 2.3l-1 5a2.4 2.4 0 0 1-2.3 1.9H8.2a2 2 0 0 1-1.5-.6V8.2h1.5Zm-4.4 0H6v7.9H3.8a.8.8 0 0 1-.8-.8V9a.8.8 0 0 1 .8-.8Z" />
+    </svg>
+  );
+}
+
+function ArchieThumbDownIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M11.8 11.8v3.3c0 1-.4 1.9-1.1 2.6l-.7.7-1.1-1.1a2.7 2.7 0 0 1-.7-2.4l.3-1.8H4.9A1.9 1.9 0 0 1 3 10.8l1-5A2.4 2.4 0 0 1 6.3 4h5.5c.6 0 1.1.2 1.5.6v7.2h-1.5Zm4.4 0H14v-7.9h2.2c.4 0 .8.4.8.8V11a.8.8 0 0 1-.8.8Z" />
+    </svg>
+  );
+}
+
+function ArchieCopyIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M7 3.5A2.5 2.5 0 0 1 9.5 1h6A2.5 2.5 0 0 1 18 3.5v8A2.5 2.5 0 0 1 15.5 14h-1v1.5A2.5 2.5 0 0 1 12 18H5.5A2.5 2.5 0 0 1 3 15.5v-8A2.5 2.5 0 0 1 5.5 5H7V3.5Zm1.5 1.5h3.5A2.5 2.5 0 0 1 14.5 7.5v5h1A1 1 0 0 0 16.5 11.5v-8a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1V5Zm-3 1.5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1H12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5.5Z" />
+    </svg>
+  );
+}
+
+export function ArchieResponseActionRow(props: {
+  visible: boolean;
+  feedback: ArchieResponseFeedback | null;
+  copyState: ArchieCopyState;
+  onFeedback: (feedback: ArchieResponseFeedback) => void;
+  onCopy: () => void;
+}) {
+  return (
+    <div className={`desktopRailMascotResponseActions${props.visible ? " isVisible" : ""}`} aria-label="Archie response actions">
+      <button
+        className={`desktopRailMascotResponseActionBtn${props.feedback === "up" ? " isSelected" : ""}`}
+        type="button"
+        aria-label="Mark Archie response helpful"
+        title="Helpful"
+        onClick={() => props.onFeedback("up")}
+      >
+        <span className="desktopRailMascotResponseActionIcon">
+          <ArchieThumbUpIcon />
+        </span>
+      </button>
+      <button
+        className={`desktopRailMascotResponseActionBtn${props.feedback === "down" ? " isSelected" : ""}`}
+        type="button"
+        aria-label="Mark Archie response unhelpful"
+        title="Unhelpful"
+        onClick={() => props.onFeedback("down")}
+      >
+        <span className="desktopRailMascotResponseActionIcon">
+          <ArchieThumbDownIcon />
+        </span>
+      </button>
+      <button
+        className={`desktopRailMascotResponseActionBtn${props.copyState !== "idle" ? " isSelected" : ""}`}
+        type="button"
+        aria-label={props.copyState === "copied" ? "Archie response copied" : props.copyState === "failed" ? "Copy Archie response failed" : "Copy Archie response"}
+        title={props.copyState === "copied" ? "Copied" : props.copyState === "failed" ? "Copy failed" : "Copy"}
+        onClick={props.onCopy}
+      >
+        <span className="desktopRailMascotResponseActionIcon">
+          <ArchieCopyIcon />
+        </span>
+      </button>
+    </div>
+  );
+}
+
 export default function ArchieAssistantWidget({ activePage, variant = "desktop" }: ArchieAssistantWidgetProps) {
   const [isArchieBubbleOpen, setIsArchieBubbleOpen] = useState(false);
   const [archieQuestion, setArchieQuestion] = useState("");
@@ -202,6 +331,9 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const [archieDraft, setArchieDraft] = useState<ArchieRecommendationDraft | null>(null);
   const [archieLastOpenDraft, setArchieLastOpenDraft] = useState<ArchieRecommendationDraft | null>(null);
   const [archieLastOpenDraftSessionId, setArchieLastOpenDraftSessionId] = useState<string | null>(null);
+  const [archieHasResponseActions, setArchieHasResponseActions] = useState(false);
+  const [archieResponseFeedback, setArchieResponseFeedback] = useState<ArchieResponseFeedback | null>(null);
+  const [archieCopyState, setArchieCopyState] = useState<ArchieCopyState>("idle");
   const [archieBusy, setArchieBusy] = useState(false);
   const [archieReviewOpen, setArchieReviewOpen] = useState(false);
   const [archieSessionId, setArchieSessionId] = useState<string | null>(null);
@@ -209,6 +341,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const archieTimersRef = useRef<number[]>([]);
   const archieBlinkStartTimerRef = useRef<number | null>(null);
   const archieBlinkStopTimerRef = useRef<number | null>(null);
+  const archieCopyResetTimerRef = useRef<number | null>(null);
   const canUsePortal = typeof document !== "undefined";
 
   const clearArchieTimers = useCallback(() => {
@@ -240,8 +373,16 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     }
   }, []);
 
+  const clearArchieCopyResetTimer = useCallback(() => {
+    if (archieCopyResetTimerRef.current != null) {
+      window.clearTimeout(archieCopyResetTimerRef.current);
+      archieCopyResetTimerRef.current = null;
+    }
+  }, []);
+
   const resetArchieBubble = useCallback(() => {
     clearArchieTimers();
+    clearArchieCopyResetTimer();
     setArchieQuestion("");
     setArchieRenderedMessage(ARCHIE_DEFAULT_PROMPT);
     setArchieTitleAnimation("none");
@@ -253,10 +394,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieHasResponseActions(false);
+    setArchieResponseFeedback(null);
+    setArchieCopyState("idle");
     setArchieSessionId(null);
     setArchieBusy(false);
     setArchieReviewOpen(false);
-  }, [clearArchieTimers]);
+  }, [clearArchieCopyResetTimer, clearArchieTimers]);
 
   const closeArchieBubble = useCallback(
     (opts?: { animated?: boolean }) => {
@@ -301,11 +445,15 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const presentArchieResponse = useCallback(
     (response: Pick<ArchieQueryResponse, "message" | "citations" | "suggestedAction" | "draft" | "sessionId">) => {
       const reducedMotion = prefersReducedMotion();
+      clearArchieCopyResetTimer();
       setArchieRenderedMessage(reducedMotion ? response.message : "");
       setArchieSuggestedAction(response.suggestedAction || null);
       setArchieCitations(response.citations || []);
       setArchieDraft(response.draft || null);
-      setArchieSessionId(response.sessionId || null);
+      setArchieHasResponseActions(true);
+      setArchieResponseFeedback(null);
+      setArchieCopyState("idle");
+      setArchieSessionId(response.sessionId || createArchieLocalSessionId());
       if (response.draft) {
         setArchieLastOpenDraft({ ...response.draft, sessionId: response.sessionId || null });
         setArchieLastOpenDraftSessionId(response.sessionId || null);
@@ -325,18 +473,22 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         setArchieInputVisible(true);
       });
     },
-    [prefersReducedMotion, startArchieTyping]
+    [clearArchieCopyResetTimer, prefersReducedMotion, startArchieTyping]
   );
 
   const startArchiePromptSequence = useCallback(() => {
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
+    clearArchieCopyResetTimer();
     setArchieQuestion("");
     setArchieRenderedMessage(reducedMotion ? ARCHIE_DEFAULT_PROMPT : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieHasResponseActions(false);
+    setArchieResponseFeedback(null);
+    setArchieCopyState("idle");
     setArchieSessionId(null);
     setArchieReviewOpen(false);
     setArchieOutlineClosing(false);
@@ -360,17 +512,21 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
         setArchieInputVisible(true);
       });
     }, ARCHIE_OUTLINE_DRAW_MS);
-  }, [clearArchieTimers, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+  }, [clearArchieCopyResetTimer, clearArchieTimers, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
 
   const submitArchieQuestion = useCallback(async () => {
     const nextQuestion = String(archieQuestion || "").trim();
     if (!nextQuestion || archieBusy) return;
     setArchieBusy(true);
     clearArchieTimers();
+    clearArchieCopyResetTimer();
     setArchieQuestion("");
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieHasResponseActions(false);
+    setArchieResponseFeedback(null);
+    setArchieCopyState("idle");
     setArchieSessionId(null);
     setArchieReviewOpen(false);
     setArchieRenderedMessage(ARCHIE_LOADING_PROMPT);
@@ -429,13 +585,14 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     } finally {
       setArchieBusy(false);
     }
-  }, [activePage, archieBusy, archieQuestion, clearArchieTimers, presentArchieResponse]);
+  }, [activePage, archieBusy, archieQuestion, clearArchieCopyResetTimer, clearArchieTimers, presentArchieResponse]);
 
   const showArchieHelpMessage = useCallback((message: string) => {
     const nextMessage = String(message || "").trim();
     if (!nextMessage) return;
     const reducedMotion = prefersReducedMotion();
     clearArchieTimers();
+    clearArchieCopyResetTimer();
     const shouldAnimateOpen = !isArchieBubbleOpen;
     setIsArchieBubbleOpen(true);
     setArchieQuestion("");
@@ -444,8 +601,12 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieSuggestedAction(null);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieHasResponseActions(true);
+    setArchieResponseFeedback(null);
+    setArchieCopyState("idle");
     setArchieReviewOpen(false);
     setArchieBusy(false);
+    setArchieSessionId(createArchieLocalSessionId());
     setArchieOutlineClosing(false);
     setArchieOutlineAnimating(shouldAnimateOpen && !reducedMotion);
     setArchieOutlineComplete(!shouldAnimateOpen || reducedMotion);
@@ -478,7 +639,42 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       setArchieTitleAnimation("none");
       setArchieInputVisible(true);
     });
-  }, [clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+  }, [clearArchieCopyResetTimer, clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+
+  const handleArchieResponseFeedback = useCallback(
+    (requestedFeedback: ArchieResponseFeedback) => {
+      const nextFeedback = nextArchieResponseFeedback(archieResponseFeedback, requestedFeedback);
+      setArchieResponseFeedback(nextFeedback);
+      if (!nextFeedback || !archieSessionId) return;
+      void (async () => {
+        try {
+          const session = await resolveAuthSession();
+          if (!session?.idToken) return;
+          await sendArchieTelemetryEvent({
+            idToken: session.idToken,
+            sessionId: archieSessionId,
+            eventType: nextFeedback === "up" ? "response_upvote" : "response_downvote",
+          });
+        } catch {
+          // Ignore telemetry failures.
+        }
+      })();
+    },
+    [archieResponseFeedback, archieSessionId]
+  );
+
+  const handleArchieCopyResponse = useCallback(() => {
+    const message = String(archieRenderedMessage || "").trim();
+    if (!message) return;
+    clearArchieCopyResetTimer();
+    void copyArchieTextToClipboard(message).then((ok) => {
+      setArchieCopyState(ok ? "copied" : "failed");
+      archieCopyResetTimerRef.current = window.setTimeout(() => {
+        setArchieCopyState("idle");
+        archieCopyResetTimerRef.current = null;
+      }, 1600);
+    });
+  }, [archieRenderedMessage, clearArchieCopyResetTimer]);
 
   const handleArchieSuggestedAction = useCallback(() => {
     if (!archieSuggestedAction || typeof window === "undefined") return;
@@ -749,9 +945,17 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     () => () => {
       clearArchieTimers();
       clearArchieBlinkTimers();
+      clearArchieCopyResetTimer();
     },
-    [clearArchieBlinkTimers, clearArchieTimers]
+    [clearArchieBlinkTimers, clearArchieCopyResetTimer, clearArchieTimers]
   );
+
+  const showArchieResponseActions = shouldShowArchieResponseActionRow({
+    busy: archieBusy,
+    inputVisible: archieInputVisible,
+    hasResponseActions: archieHasResponseActions,
+    message: archieRenderedMessage,
+  });
 
   return (
     <>
@@ -784,6 +988,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               </span>
             </div>
           )}
+          <ArchieResponseActionRow
+            visible={showArchieResponseActions}
+            feedback={archieResponseFeedback}
+            copyState={archieCopyState}
+            onFeedback={handleArchieResponseFeedback}
+            onCopy={handleArchieCopyResponse}
+          />
           {!archieBusy && archieCitations.length ? (
             <div className={`desktopRailMascotMeta${archieInputVisible ? " isVisible" : ""}`} aria-label="Archie sources">
               {archieCitations.slice(0, 2).map((citation) => (

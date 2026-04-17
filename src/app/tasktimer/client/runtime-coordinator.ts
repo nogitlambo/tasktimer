@@ -1,5 +1,11 @@
 import type { Task } from "../lib/types";
+import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityPeriod,
+  timeOfDayToMinutes,
+} from "../lib/productivityPeriod";
 import { renderTaskTimerSchedulePage } from "./schedule-render";
+import { SCHEDULE_MINUTE_PX } from "./schedule-runtime";
 import {
   clearTaskTimerPendingPushAction,
   handleTaskTimerArchieNavigate,
@@ -16,6 +22,8 @@ type CreateTaskTimerRuntimeCoordinatorOptions = {
   scheduleState: TaskTimerMutableStore<TaskTimerScheduleState>;
   scheduleRuntime: unknown;
   escapeHtmlUI: (value: unknown) => string;
+  getOptimalProductivityStartTime: () => string;
+  getOptimalProductivityEndTime: () => string;
   renderTasksPage: () => void;
   getCloudSyncApi: () =>
     | {
@@ -68,13 +76,63 @@ export function isTaskTimerArchitectUser(options: {
   return String(email || "").trim().toLowerCase() === options.architectEmail.toLowerCase();
 }
 
+function getPresentScheduleDay(): TaskTimerScheduleState["selectedDay"] {
+  const dayIndex = new Date().getDay();
+  switch (dayIndex) {
+    case 0:
+      return "sun";
+    case 1:
+      return "mon";
+    case 2:
+      return "tue";
+    case 3:
+      return "wed";
+    case 4:
+      return "thu";
+    case 5:
+      return "fri";
+    case 6:
+      return "sat";
+    default:
+      return "mon";
+  }
+}
+
 export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntimeCoordinatorOptions) {
+  let pendingScheduleEntryScroll = false;
+
+  function requestScheduleEntryScroll() {
+    pendingScheduleEntryScroll = true;
+  }
+
   function renderSchedulePage() {
+    const scheduleRuntime = options.scheduleRuntime as Parameters<typeof renderTaskTimerSchedulePage>[0]["scheduleRuntime"];
+    const presentDay = pendingScheduleEntryScroll ? getPresentScheduleDay() : null;
+    if (presentDay) {
+      options.scheduleState.set("selectedDay", presentDay);
+    }
     renderTaskTimerSchedulePage({
       els: options.els,
       state: options.scheduleState,
-      scheduleRuntime: options.scheduleRuntime as Parameters<typeof renderTaskTimerSchedulePage>[0]["scheduleRuntime"],
+      scheduleRuntime,
       escapeHtmlUI: options.escapeHtmlUI,
+      getOptimalProductivityStartTime: options.getOptimalProductivityStartTime,
+      getOptimalProductivityEndTime: options.getOptimalProductivityEndTime,
+    });
+    if (!pendingScheduleEntryScroll || !options.els.scheduleGridScroller) return;
+    pendingScheduleEntryScroll = false;
+    const viewModel = scheduleRuntime.buildViewModel();
+    const firstScheduledStartMinutes =
+      viewModel.scheduled.find((entry) => entry.day === presentDay)?.startMinutes ?? null;
+    const period = normalizeOptimalProductivityPeriod({
+      optimalProductivityStartTime: options.getOptimalProductivityStartTime(),
+      optimalProductivityEndTime: options.getOptimalProductivityEndTime(),
+    });
+    const targetMinutes = firstScheduledStartMinutes ?? timeOfDayToMinutes(period.startTime, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME);
+    options.windowRef.requestAnimationFrame(() => {
+      const scroller = options.els.scheduleGridScroller;
+      if (!scroller) return;
+      scroller.scrollTop = Math.max(0, targetMinutes * SCHEDULE_MINUTE_PX - 24);
     });
   }
 
@@ -137,6 +195,7 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
 
   return {
     renderSchedulePage,
+    requestScheduleEntryScroll,
     render,
     rehydrateFromCloudAndRender,
     initCloudRefreshSync,

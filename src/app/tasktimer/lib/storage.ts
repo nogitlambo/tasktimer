@@ -31,6 +31,7 @@ import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
+import { normalizeTaskPlannedStartByDay, syncLegacyPlannedStartFields } from "./schedule-placement";
 import {
   filterPendingSyncEntries,
   PENDING_PREFERENCES_SYNC_TTL_MS,
@@ -215,7 +216,7 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     plannedStartDayRaw === "sun"
       ? plannedStartDayRaw
       : null;
-  return {
+  const normalizedTask: Task = {
     ...taskWithoutMode,
     timeGoalAction,
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
@@ -226,9 +227,36 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
     plannedStartDay,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   };
+  syncLegacyPlannedStartFields(normalizedTask);
+  return normalizedTask;
+}
+
+function hasRenderableScheduleFields(task: Task | null | undefined): boolean {
+  if (!task) return false;
+  if (normalizeTaskPlannedStartByDay(task.plannedStartByDay)) return true;
+  return !!String(task.plannedStartTime || "").trim();
+}
+
+function mergeMissingScheduleFromShadow(task: Task, shadowTask: Task | null | undefined): Task {
+  if (!shadowTask || hasRenderableScheduleFields(task) || !hasRenderableScheduleFields(shadowTask)) return task;
+  const mergedTask = normalizeTaskShape({
+    ...task,
+    plannedStartDay: shadowTask.plannedStartDay ?? null,
+    plannedStartTime: shadowTask.plannedStartTime ?? null,
+    plannedStartByDay: normalizeTaskPlannedStartByDay(shadowTask.plannedStartByDay),
+    plannedStartOpenEnded: !!shadowTask.plannedStartOpenEnded,
+    plannedStartPushRemindersEnabled: shadowTask.plannedStartPushRemindersEnabled !== false,
+  });
+  return mergedTask || task;
+}
+
+function taskNeedsScheduleRepair(task: Task | null | undefined, shadowTask: Task | null | undefined): boolean {
+  if (!task || !shadowTask) return false;
+  return !hasRenderableScheduleFields(task) && hasRenderableScheduleFields(shadowTask);
 }
 
 function emitPreferenceChange() {
@@ -517,6 +545,7 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
     plannedStartDay: task.plannedStartDay == null ? null : String(task.plannedStartDay).trim().toLowerCase() || null,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   });
@@ -696,6 +725,19 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     if (cloudSig === shadowSig) clearPendingHistorySync(taskId);
   });
 
+  const repairedTaskIds = new Set<string>();
+  if (shadowTasks.length) {
+    const shadowTaskById = new Map(shadowTasks.map((task) => [String(task?.id || ""), task] as const));
+    for (let index = 0; index < filteredTasks.length; index += 1) {
+      const task = filteredTasks[index];
+      if (!task) continue;
+      const taskId = String(task.id || "");
+      const shadowTask = shadowTaskById.get(taskId);
+      if (taskNeedsScheduleRepair(task, shadowTask)) repairedTaskIds.add(taskId);
+      filteredTasks[index] = mergeMissingScheduleFromShadow(task, shadowTask);
+    }
+  }
+
   cachedTasks = cloneTasks(filteredTasks);
   cachedHistory = filteredHistory;
   cachedDeletedMeta = nextDeletedMeta;
@@ -728,6 +770,14 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
+  if (repairedTaskIds.size) {
+    const repairedTaskIdList = Array.from(repairedTaskIds).filter(Boolean);
+    if (repairedTaskIdList.length) {
+      const cachedTaskById = new Map(cachedTasks.map((task) => [String(task?.id || ""), task] as const));
+      markPendingTaskSync(repairedTaskIdList);
+      enqueueTaskSync(uid, cachedTaskById, repairedTaskIdList, []);
+    }
+  }
   emitPreferenceChange();
 }
 

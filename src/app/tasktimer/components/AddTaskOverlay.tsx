@@ -102,7 +102,7 @@ export default function AddTaskOverlay() {
                 </div>
                 <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="addTaskPlannedStartOpenEndedRow" htmlFor="addTaskPlannedStartOpenEnded">
                   <input id="addTaskPlannedStartOpenEnded" type="checkbox" />
-                  <span>No Specific Time</span>
+                  <span>Flexible</span>
                 </label>
               </div>
               <input id="addTaskPlannedStartInput" type="hidden" defaultValue="09:00" />

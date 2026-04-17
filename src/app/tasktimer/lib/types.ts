@@ -7,6 +7,9 @@ export type Milestone = {
   createdSeq?: number;
 };
 
+export type TaskPlannedStartDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+export type TaskPlannedStartByDay = Partial<Record<TaskPlannedStartDay, string | null>>;
+
 export type Task = {
   id: string;
   name: string;
@@ -36,8 +39,9 @@ export type Task = {
   timeGoalUnit?: "minute" | "hour";
   timeGoalPeriod?: "day" | "week";
   timeGoalMinutes?: number;
-  plannedStartDay?: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun" | null;
+  plannedStartDay?: TaskPlannedStartDay | null;
   plannedStartTime?: string | null;
+  plannedStartByDay?: TaskPlannedStartByDay | null;
   plannedStartOpenEnded?: boolean;
   plannedStartPushRemindersEnabled?: boolean;
 };

@@ -107,7 +107,12 @@ export type ArchieRecentDraftResponse = {
   sessionId?: string | null;
 };
 
-export type ArchieTelemetryEventType = "review_opened" | "apply" | "discard";
+export type ArchieTelemetryEventType =
+  | "review_opened"
+  | "apply"
+  | "discard"
+  | "response_upvote"
+  | "response_downvote";
 
 export type ArchieTelemetryEventRequest = {
   sessionId: string;

@@ -6,6 +6,7 @@ import type {
 } from "./archieAssistant";
 import { searchArchieKnowledge, toCitation, type ArchieKnowledgeMatch } from "./archieKnowledge";
 import type { UserPreferencesV1, TaskUiConfig } from "./cloudStore";
+import { getTaskScheduledDayEntries } from "./schedule-placement";
 import type { HistoryByTaskId, Task } from "./types";
 import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
 import { isMinuteInProductivityPeriod, normalizeOptimalProductivityPeriod } from "./productivityPeriod";
@@ -226,7 +227,7 @@ function hasScheduleOverlapForSnapshot(
   durationMinutes: number,
   overrides: Map<string, { plannedStartDay: Task["plannedStartDay"]; plannedStartTime: string | null; plannedStartOpenEnded: boolean }>
 ) {
-  if (snapshot.plannedStartOpenEnded) return false;
+  if (snapshot.plannedStartOpenEnded && !snapshot.plannedStartTime) return false;
   const startMinutes = plannedStartMinutes({
     id: candidateTaskId,
     name: "",
@@ -250,6 +251,27 @@ function hasScheduleOverlapForSnapshot(
       plannedStartTime: task.plannedStartTime || null,
       plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     };
+    const otherDuration = getEstimatedDurationMinutes(task);
+    const scheduledEntries = getTaskScheduledDayEntries(task);
+    if (scheduledEntries.length > 0) {
+      return scheduledEntries.some((entry) => {
+        if (!candidateDays.includes(entry.day)) return false;
+        const otherStartMinutes = plannedStartMinutes({
+          id: taskId,
+          name: "",
+          order: 0,
+          accumulatedMs: 0,
+          running: false,
+          startMs: null,
+          collapsed: false,
+          milestonesEnabled: false,
+          milestones: [],
+          hasStarted: false,
+          plannedStartTime: entry.time,
+        });
+        return otherStartMinutes != null && startMinutes < otherStartMinutes + otherDuration && otherStartMinutes < startMinutes + durationMinutes;
+      });
+    }
     if (source.plannedStartOpenEnded) return false;
     const otherStartMinutes = plannedStartMinutes({
       id: taskId,
@@ -268,7 +290,6 @@ function hasScheduleOverlapForSnapshot(
     const otherDays = source.plannedStartDay ? [source.plannedStartDay] : (["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const);
     const overlapsAnyDay = candidateDays.some((day) => otherDays.includes(day));
     if (!overlapsAnyDay) return false;
-    const otherDuration = getEstimatedDurationMinutes(task);
     return startMinutes < otherStartMinutes + otherDuration && otherStartMinutes < startMinutes + durationMinutes;
   });
 }
@@ -382,10 +403,29 @@ function buildBestProductivitySlot(context: ArchieWorkspaceContext): Productivit
 function scheduleHasOverlap(tasks: Task[], candidateTaskId: string, day: NonNullable<Task["plannedStartDay"]>, startMinutes: number, durationMinutes: number) {
   return tasks.some((task) => {
     if (String(task.id || "") === candidateTaskId) return false;
+    const existingDuration = getEstimatedDurationMinutes(task);
+    const scheduledEntries = getTaskScheduledDayEntries(task).filter((entry) => entry.day === day);
+    if (scheduledEntries.length > 0) {
+      return scheduledEntries.some((entry) => {
+        const existingStart = plannedStartMinutes({
+          id: String(task.id || ""),
+          name: "",
+          order: 0,
+          accumulatedMs: 0,
+          running: false,
+          startMs: null,
+          collapsed: false,
+          milestonesEnabled: false,
+          milestones: [],
+          hasStarted: false,
+          plannedStartTime: entry.time,
+        });
+        return existingStart != null && startMinutes < existingStart + existingDuration && existingStart < startMinutes + durationMinutes;
+      });
+    }
     if (task.plannedStartDay !== day || task.plannedStartOpenEnded) return false;
     const existingStart = plannedStartMinutes(task);
     if (existingStart == null) return false;
-    const existingDuration = getEstimatedDurationMinutes(task);
     return startMinutes < existingStart + existingDuration && existingStart < startMinutes + durationMinutes;
   });
 }

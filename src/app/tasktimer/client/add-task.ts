@@ -539,8 +539,14 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.timeGoalUnit = ctx.getAddTaskNoTimeGoal() ? "hour" : ctx.getAddTaskDurationUnit();
     newTask.timeGoalPeriod = ctx.getAddTaskNoTimeGoal() ? "week" : ctx.getAddTaskDurationPeriod();
     newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
-    newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
     newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
+    if (newTask.plannedStartOpenEnded) {
+      newTask.plannedStartTime = null;
+      newTask.plannedStartDay = null;
+      newTask.plannedStartByDay = null;
+    } else {
+      newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
+    }
     ctx.setTasks([...tasks, newTask]);
     closeAddTaskModal();
     ctx.save();

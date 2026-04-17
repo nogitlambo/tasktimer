@@ -1134,6 +1134,32 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
+        const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
+        if (primaryActionBtn) {
+          if (task.running) {
+            primaryActionBtn.className = "btn btn-warn small";
+            primaryActionBtn.dataset.action = "stop";
+            primaryActionBtn.title = "Stop";
+            primaryActionBtn.textContent = "Stop";
+          } else if (elapsedMs > 0) {
+            primaryActionBtn.className = "btn btn-resume small";
+            primaryActionBtn.dataset.action = "start";
+            primaryActionBtn.title = "Resume";
+            primaryActionBtn.textContent = "Resume";
+          } else {
+            primaryActionBtn.className = "btn btn-accent small";
+            primaryActionBtn.dataset.action = "start";
+            primaryActionBtn.title = "Launch";
+            primaryActionBtn.textContent = "Launch";
+          }
+        }
+        const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
+        if (resetBtn) {
+          const resetLabel = task.running ? "Stop task to reset" : "Reset";
+          resetBtn.disabled = !!task.running;
+          resetBtn.title = resetLabel;
+          resetBtn.setAttribute("aria-label", resetLabel);
+        }
         if (task.running) ctx.syncRewardSessionTrackerForTask(task, nowMs());
         processCheckpointAlertsForTask(task, elapsedMs / 1000);
         processedCheckpointTaskIds.add(String(task.id || ""));

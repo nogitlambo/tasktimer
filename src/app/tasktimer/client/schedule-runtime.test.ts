@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Task } from "../lib/types";
 import { createTaskTimerMutableStore } from "./mutable-store";
+import type { TaskTimerMutableStore } from "./mutable-store";
 import {
   createTaskTimerScheduleRuntime,
   normalizeScheduleDay,
   parseScheduleTimeMinutes,
   snapScheduleMinutes,
+  SCHEDULE_MINUTE_PX,
   type TaskTimerScheduleState,
 } from "./schedule-runtime";
 import { buildTaskTimerScheduleGridHtml, renderTaskTimerSchedulePage } from "./schedule-render";
@@ -36,10 +38,33 @@ function makeScheduleState() {
   return createTaskTimerMutableStore<TaskTimerScheduleState>({
     selectedDay: "mon",
     dragTaskId: null,
+    dragSourceDay: null,
     dragPreviewDay: null,
     dragPreviewStartMinutes: null,
     dragPointerOffsetMinutes: 0,
   });
+}
+
+function createRenderContext(
+  state: TaskTimerMutableStore<TaskTimerScheduleState>,
+  runtime: ReturnType<typeof createTaskTimerScheduleRuntime>,
+  overrides?: Partial<{
+    getOptimalProductivityStartTime: () => string;
+    getOptimalProductivityEndTime: () => string;
+  }>
+) {
+  return {
+    els: {
+      scheduleGrid: null,
+      scheduleTrayList: null,
+      scheduleMobileDayTabs: null,
+    },
+    state,
+    scheduleRuntime: runtime,
+    escapeHtmlUI: (value: unknown) => String(value ?? ""),
+    getOptimalProductivityStartTime: overrides?.getOptimalProductivityStartTime ?? (() => "09:00"),
+    getOptimalProductivityEndTime: overrides?.getOptimalProductivityEndTime ?? (() => "17:00"),
+  };
 }
 
 describe("schedule-runtime", () => {
@@ -101,6 +126,216 @@ describe("schedule-runtime", () => {
     expect(overlapSave).not.toHaveBeenCalled();
   });
 
+  it("moves flexible scheduled tasks per day and keeps them flexible", () => {
+    const save = vi.fn();
+    const render = vi.fn();
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        plannedStartOpenEnded: true,
+        plannedStartByDay: {
+          mon: "09:00",
+          tue: "09:00",
+        },
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save,
+      render,
+    });
+
+    runtime.moveTaskOnSchedule("task-a", "wed", 630, "mon");
+
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(true);
+    expect(tasks[0]?.plannedStartByDay).toEqual({
+      tue: "09:00",
+      wed: "10:30",
+    });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves all scheduled days for non-flex tasks", () => {
+    const save = vi.fn();
+    const render = vi.fn();
+    const tasks = [makeTask({ id: "task-a", plannedStartDay: null, plannedStartTime: "09:00", plannedStartOpenEnded: false })];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save,
+      render,
+    });
+
+    runtime.moveTaskOnSchedule("task-a", "wed", 600, "mon");
+
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(false);
+    expect(tasks[0]?.plannedStartByDay).toEqual({
+      mon: "10:00",
+      tue: "10:00",
+      wed: "10:00",
+      thu: "10:00",
+      fri: "10:00",
+      sat: "10:00",
+      sun: "10:00",
+    });
+  });
+
+  it("moves all currently scheduled days for non-flex per-day maps", () => {
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        plannedStartOpenEnded: false,
+        plannedStartByDay: {
+          mon: "09:00",
+          wed: "09:00",
+          fri: "09:00",
+        },
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+
+    runtime.moveTaskOnSchedule("task-a", "wed", 660, "mon");
+
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(false);
+    expect(tasks[0]?.plannedStartByDay).toEqual({
+      mon: "11:00",
+      wed: "11:00",
+      fri: "11:00",
+    });
+  });
+
+  it("toggles flexible mode with the R action", () => {
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        name: "Deep Work",
+        plannedStartByDay: {
+          mon: "09:00",
+          tue: "09:00",
+          wed: "09:00",
+          thu: "09:00",
+          fri: "09:00",
+          sat: "09:00",
+          sun: "09:00",
+        },
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const state = makeScheduleState();
+    const save = vi.fn();
+    const render = vi.fn();
+    const runtime = createTaskTimerScheduleRuntime({
+      state,
+      getTasks: () => tasks,
+      save,
+      render,
+    });
+
+    const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
+    expect(gridHtml).toContain('data-schedule-normalize="task-a"');
+    expect(gridHtml).toContain(">R</button>");
+    expect(gridHtml).toContain("Daily");
+
+    const result = runtime.toggleTaskScheduleFlexible("task-a");
+    expect(result.status).toBe("updated");
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(true);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(render).toHaveBeenCalledTimes(1);
+
+    const toggledGridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
+    expect(toggledGridHtml).toContain("Flex");
+  });
+
+  it("always shows the R action for multi-day schedules and preserves schedule data when toggled", () => {
+    const alignedTasks = [
+      makeTask({
+        id: "task-a",
+        name: "Aligned",
+        plannedStartByDay: {
+          mon: "09:00",
+          tue: "09:00",
+        },
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const alignedState = makeScheduleState();
+    const alignedRuntime = createTaskTimerScheduleRuntime({
+      state: alignedState,
+      getTasks: () => alignedTasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+    const alignedGridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(alignedState, alignedRuntime));
+    expect(alignedGridHtml).toContain('data-schedule-normalize="task-a"');
+    expect(alignedGridHtml).not.toContain("disabled");
+
+    const result = alignedRuntime.toggleTaskScheduleFlexible("task-a");
+    expect(result).toEqual({ status: "updated", flexible: true });
+    expect(alignedTasks[0]?.plannedStartByDay).toEqual({
+      mon: "09:00",
+      tue: "09:00",
+    });
+  });
+
+  it("renders Daily for shared schedules and Flex for flexible schedules", () => {
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        name: "Focus",
+        plannedStartByDay: {
+          mon: "09:00",
+          tue: "09:00",
+          wed: "09:00",
+          thu: "09:00",
+          fri: "09:00",
+          sat: "09:00",
+          sun: "09:00",
+        },
+        plannedStartOpenEnded: false,
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+      makeTask({
+        id: "task-b",
+        name: "Review",
+        plannedStartByDay: {
+          mon: "11:00",
+          tue: "11:00",
+          wed: "11:00",
+          thu: "11:00",
+          fri: "11:00",
+          sat: "11:00",
+          sun: "11:00",
+        },
+        plannedStartOpenEnded: true,
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+    const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(makeScheduleState(), runtime));
+    expect(gridHtml).toContain("Daily");
+    expect(gridHtml).toContain("Flex");
+  });
+
   it("renders planner and tray html from the extracted render module", () => {
     const tasks = [
       makeTask({ id: "task-a", name: "Deep Work", plannedStartDay: null, plannedStartTime: "09:00" }),
@@ -113,19 +348,28 @@ describe("schedule-runtime", () => {
       save: vi.fn(),
       render: vi.fn(),
     });
-    const gridHtml = buildTaskTimerScheduleGridHtml({
-      els: {
-        scheduleGrid: null,
-        scheduleTrayList: null,
-        scheduleMobileDayTabs: null,
-      },
-      state,
-      scheduleRuntime: runtime,
-      escapeHtmlUI: (value) => String(value ?? ""),
-    });
+    const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
+    const daytimeTopPx = 9 * 60 * SCHEDULE_MINUTE_PX;
+    const daytimeHeightPx = (17 * 60 - 9 * 60) * SCHEDULE_MINUTE_PX;
 
     expect(gridHtml).toContain("Deep Work");
     expect(gridHtml).toContain("Daily");
+    expect(gridHtml).toContain(
+      `class="scheduleProductivityHighlightBand" style="top:${daytimeTopPx}px;height:${daytimeHeightPx}px"`
+    );
+
+    const overnightGridHtml = buildTaskTimerScheduleGridHtml(
+      createRenderContext(state, runtime, {
+        getOptimalProductivityStartTime: () => "22:00",
+        getOptimalProductivityEndTime: () => "02:00",
+      })
+    );
+    expect(overnightGridHtml).toContain(
+      `class="scheduleProductivityHighlightBand" style="top:0px;height:${2 * 60 * SCHEDULE_MINUTE_PX}px"`
+    );
+    expect(overnightGridHtml).toContain(
+      `class="scheduleProductivityHighlightBand" style="top:${22 * 60 * SCHEDULE_MINUTE_PX}px;height:${2 * 60 * SCHEDULE_MINUTE_PX}px"`
+    );
 
     const scheduleGrid = { innerHTML: "" } as HTMLElement;
     const scheduleTrayList = { innerHTML: "" } as HTMLElement;
@@ -138,9 +382,45 @@ describe("schedule-runtime", () => {
       state,
       scheduleRuntime: runtime,
       escapeHtmlUI: (value) => String(value ?? ""),
+      getOptimalProductivityStartTime: () => "09:00",
+      getOptimalProductivityEndTime: () => "17:00",
     });
 
     expect(scheduleGrid.innerHTML).toContain("schedulePlanner");
+    expect(scheduleGrid.innerHTML).toContain("scheduleProductivityHighlight");
     expect(scheduleTrayList.innerHTML).toContain("Needs a daily time goal");
+  });
+
+  it("keeps scheduled flexible tasks on the planner and unscheduled flexible tasks in the tray", () => {
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        name: "Flexible Scheduled",
+        plannedStartOpenEnded: true,
+        plannedStartByDay: {
+          mon: "09:00",
+        },
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+      makeTask({
+        id: "task-b",
+        name: "Flexible Unscheduled",
+        plannedStartOpenEnded: true,
+        plannedStartByDay: null,
+        plannedStartDay: null,
+        plannedStartTime: null,
+      }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+
+    const viewModel = runtime.buildViewModel();
+    expect(viewModel.scheduled.map((entry) => entry.task.name)).toContain("Flexible Scheduled");
+    expect(viewModel.unscheduled.map((entry) => entry.task.name)).toContain("Flexible Unscheduled");
   });
 });

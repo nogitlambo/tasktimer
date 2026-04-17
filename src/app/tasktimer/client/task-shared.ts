@@ -1,4 +1,5 @@
 import { sortMilestones } from "../lib/milestones";
+import { normalizeTaskPlannedStartByDay, syncLegacyPlannedStartFields } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 import type { MainMode } from "./types";
 
@@ -95,6 +96,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       timeGoalPeriod: "week",
       timeGoalMinutes: 0,
       plannedStartDay: null,
+      plannedStartByDay: null,
       plannedStartPushRemindersEnabled: true,
     };
     return task;
@@ -120,6 +122,8 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
     task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
+    task.plannedStartByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+    syncLegacyPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
   }
 

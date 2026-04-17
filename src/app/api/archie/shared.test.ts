@@ -125,6 +125,26 @@ describe("Archie telemetry helpers", () => {
     expect("rawUserMessage" in event).toBe(false);
     expect("rawAssistantMessage" in event).toBe(false);
   });
+
+  it("supports response feedback telemetry events", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-14T00:00:00.000Z"));
+
+    const event = createArchieTelemetryEvent({
+      sessionId: "session-4",
+      eventType: "response_upvote",
+    }) as Record<string, unknown>;
+
+    expect(event).toMatchObject({
+      sessionId: "session-4",
+      draftId: null,
+      eventType: "response_upvote",
+      appliedCount: 0,
+      draftKind: null,
+      schemaVersion: 1,
+    });
+    expect(event.expiresAt).toEqual(new Date("2026-07-13T00:00:00.000Z"));
+  });
 });
 
 describe("Archie plan helpers", () => {

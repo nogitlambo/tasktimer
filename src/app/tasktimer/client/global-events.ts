@@ -3,6 +3,7 @@
 import type { Task } from "../lib/types";
 
 type ScheduleDay = Task["plannedStartDay"];
+type NonNullScheduleDay = NonNullable<ScheduleDay>;
 
 type RegisterScheduleEventsOptions = {
   on: (target: EventTarget | null | undefined, event: string, handler: (event: unknown) => void) => void;
@@ -12,28 +13,24 @@ type RegisterScheduleEventsOptions = {
   tasks: () => Task[];
   isScheduleRenderableTask: (task: Task) => boolean;
   isRecurringDailyScheduleTask: (task: Task) => boolean;
-  formatScheduleDayLabel: (day: Exclude<ScheduleDay, null>) => string;
-  confirm: (title: string, text: string, opts: { okLabel?: string; cancelLabel?: string; onOk?: () => void; onCancel?: () => void }) => void;
-  closeConfirm: () => void;
-  buildConvertSingleDayConfirm: (args: { taskName: string; dayLabel: string; onConvert: () => void; onCancel: () => void }) => {
-    title: string;
-    text: string;
-    options: { okLabel?: string; cancelLabel?: string; onOk?: () => void; onCancel?: () => void };
-  };
+  formatScheduleDayLabel: (day: NonNullScheduleDay) => string;
   save: () => void;
   render: () => void;
-  setScheduleSelectedDay: (day: Exclude<ScheduleDay, null>) => void;
+  setScheduleSelectedDay: (day: NonNullScheduleDay) => void;
   renderSchedulePage: () => void;
   setScheduleDragTaskId: (taskId: string | null) => void;
+  setScheduleDragSourceDay: (day: NonNullScheduleDay | null) => void;
   getScheduleDragTaskId: () => string | null;
   clearScheduleDragPreview: () => void;
   setScheduleDragPointerOffsetMinutes: (value: number) => void;
   resolveScheduleDropStartMinutes: (dropZone: HTMLElement, clientY: unknown) => number;
-  getScheduleDragPreviewDay: () => Exclude<ScheduleDay, null> | null;
+  getScheduleDragPreviewDay: () => NonNullScheduleDay | null;
   getScheduleDragPreviewStartMinutes: () => number | null;
-  setScheduleDragPreview: (day: Exclude<ScheduleDay, null>, startMinutes: number) => void;
+  setScheduleDragPreview: (day: NonNullScheduleDay, startMinutes: number) => void;
   currentAppPage: () => string;
-  moveTaskOnSchedule: (taskId: string, day: Exclude<ScheduleDay, null>, startMinutes: number) => void;
+  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => void;
+  getScheduleDragSourceDay: () => NonNullScheduleDay | null;
+  toggleTaskScheduleFlexible: (taskId: string) => { status: "missing" | "noop" | "updated"; flexible?: boolean };
 };
 
 type RegisterWindowRuntimeEventsOptions = {
@@ -62,28 +59,13 @@ type RegisterDashboardShellEventsOptions = {
 
 export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsOptions) {
   options.on(options.documentRef as unknown as EventTarget, "click", (event: any) => {
-    const convertButton = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-convert-single-day]") as HTMLElement | null;
-    if (convertButton) {
-      const taskId = String(convertButton.dataset.scheduleConvertSingleDay || "").trim();
-      const day = options.normalizeScheduleDay(convertButton.dataset.scheduleConvertDay);
-      const task = options.tasks().find((entry) => String(entry.id || "") === taskId);
-      if (!taskId || !day || !task || !options.isRecurringDailyScheduleTask(task)) return;
+    const normalizeButton = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-normalize]") as HTMLElement | null;
+    if (normalizeButton) {
+      const taskId = String(normalizeButton.dataset.scheduleNormalize || "").trim();
+      if (!taskId) return;
       event?.preventDefault?.();
       event?.stopPropagation?.();
-      const confirmConfig = options.buildConvertSingleDayConfirm({
-        taskName: task.name || "this task",
-        dayLabel: options.formatScheduleDayLabel(day),
-        onConvert: () => {
-          task.plannedStartDay = day;
-          task.plannedStartOpenEnded = false;
-          options.setScheduleSelectedDay(day);
-          options.save();
-          options.render();
-          options.closeConfirm();
-        },
-        onCancel: () => options.closeConfirm(),
-      });
-      options.confirm(confirmConfig.title, confirmConfig.text, confirmConfig.options);
+      options.toggleTaskScheduleFlexible(taskId);
       return;
     }
 
@@ -108,6 +90,7 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
     }
     options.setScheduleDragTaskId(taskId);
     options.clearScheduleDragPreview();
+    options.setScheduleDragSourceDay(options.normalizeScheduleDay(source.dataset.scheduleTaskDay) as NonNullScheduleDay | null);
     if (source.classList.contains("scheduleTaskCard")) {
       const rect = source.getBoundingClientRect();
       const pointerOffsetPx = Math.max(0, Math.min(rect.height, (Number(event?.clientY) || 0) - rect.top));
@@ -124,6 +107,7 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
 
   options.on(options.documentRef as unknown as EventTarget, "dragend", (event: any) => {
     options.setScheduleDragTaskId(null);
+    options.setScheduleDragSourceDay(null);
     options.clearScheduleDragPreview();
     (event?.target as HTMLElement | null)?.closest?.("[data-schedule-task-id]")?.classList?.remove?.("isDragging");
     options.documentRef.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
@@ -157,9 +141,10 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
     if (!taskId || !day) return;
     event?.preventDefault?.();
     const startMinutes = options.resolveScheduleDropStartMinutes(dropZone, event?.clientY);
-    options.moveTaskOnSchedule(taskId, day, startMinutes);
+    options.moveTaskOnSchedule(taskId, day, startMinutes, options.getScheduleDragSourceDay());
     options.documentRef.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
     options.setScheduleDragTaskId(null);
+    options.setScheduleDragSourceDay(null);
     options.clearScheduleDragPreview();
   });
 }

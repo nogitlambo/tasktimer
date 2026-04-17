@@ -89,7 +89,7 @@ export default function EditTaskOverlay() {
               </div>
               <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="editPlannedStartOpenEndedRow" htmlFor="editPlannedStartOpenEnded">
                 <input id="editPlannedStartOpenEnded" type="checkbox" />
-                <span>No Specific Time</span>
+                <span>Flexible</span>
               </label>
             </div>
             <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />

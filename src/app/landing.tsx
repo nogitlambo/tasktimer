@@ -123,9 +123,8 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             <h1 className="landingV2HeroTitle displayFont">Task tracking made easy</h1>
 
             <p className="landingV2HeroCopy">
-              A smarter productivity app built to support your natural focus patterns instead of overriding them,
-              intelligent automation that keeps progress effortless and consistent, and AI-driven insights that
-              continuously refine your workflow.
+              Move from scattered task capture to a calmer daily workflow with smarter defaults, better timing, and
+              less manual upkeep.
             </p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
@@ -138,20 +137,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             </div>
           </div>
 
-          <div className="landingV2HeroProof" aria-label="Product highlights">
-            <div className="landingV2ProofItem">
-              <span className="landingV2ProofLabel displayFont">Built for rhythm</span>
-              <p>Plan around real attention shifts instead of pretending every hour feels the same.</p>
-            </div>
-            <div className="landingV2ProofItem">
-              <span className="landingV2ProofLabel displayFont">Automation that helps</span>
-              <p>Recurring structure, guided flows, and less manual upkeep between sessions.</p>
-            </div>
-            <div className="landingV2ProofItem">
-              <span className="landingV2ProofLabel displayFont">Insights that evolve</span>
-              <p>Readable history and AI-backed guidance that steadily improve how you work.</p>
-            </div>
-          </div>
         </section>
 
         <div className={`landingV2Ticker ${showSupporting ? "isVisible" : ""}`} aria-hidden={!showSupporting}>
@@ -195,6 +180,10 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               </article>
             ))}
           </div>
+
+          <h2 className="landingV2TickerHeading displayFont">
+            <em>Make progress easier to start, easier to sustain, and easier to trust</em>
+          </h2>
         </section>
 
         <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="preview">
@@ -312,7 +301,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
         <section className={`landingV2Cta ${showFinalCta ? "isVisible" : ""}`} id="cta">
           <div className="landingV2CtaCopy">
             <span className="landingV2SectionName">Start with a system that supports focus</span>
-            <h2 className="landingV2CtaTitle displayFont">Make progress easier to start, easier to sustain, and easier to trust.</h2>
           </div>
 
           <div className="landingV2CtaActions">

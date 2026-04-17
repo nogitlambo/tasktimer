@@ -630,11 +630,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
     if (momentumDriverBtn) {
       const driverKey = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-driver") || "").trim();
-      const fallbackMessage = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-message") || "").trim();
-      const message = ctx.selectDashboardMomentumDriver(driverKey) || fallbackMessage;
-      if (typeof window !== "undefined" && message) {
-        window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
-      }
+      ctx.selectDashboardMomentumDriver(driverKey);
       e.preventDefault();
       return;
     }
@@ -647,6 +643,15 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
     saveDashboardAvgRange(nextRange);
     renderDashboardWidgets();
+  }
+
+  function handleDashboardGridPointerDown(e: any) {
+    const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
+    if (!momentumDriverBtn) return;
+    const driverKey = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-driver") || "").trim();
+    if (!driverKey) return;
+    ctx.selectDashboardMomentumDriver(driverKey);
+    e.preventDefault();
   }
 
   function handleDashboardPanelMenuClick(e: Event) {
@@ -745,6 +750,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
     ctx.on(els.dashboardGrid, "click", handleDashboardGridClick);
+    ctx.on(els.dashboardGrid, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
     ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);
     ctx.on(els.dashboardGrid, "dragover", handleDashboardDragOver);

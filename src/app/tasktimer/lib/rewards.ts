@@ -880,16 +880,11 @@ function summarizeRecentXpRewards(
 
 export function buildXpProgressArchieMessage(progressInput: unknown, tasks: Task[], nowValue = Date.now()): string {
   const progress = normalizeRewardProgress(progressInput);
-  const rewardsHeader = buildRewardsHeaderViewModel(progress);
   const safeNow = Math.max(0, Math.floor(Number(nowValue || 0) || 0)) || Date.now();
   const recentSummary = summarizeRecentXpRewards(progress, tasks, safeNow);
-  const rankProgressText =
-    rewardsHeader.xpToNext != null
-      ? `You have ${formatWholeXp(rewardsHeader.totalXp)} total, ${rewardsHeader.progressLabel} in your current rank band, and ${formatWholeXp(rewardsHeader.xpToNext)} to the next rank.`
-      : `You have ${formatWholeXp(rewardsHeader.totalXp)} total and you have reached the highest configured rank.`;
 
   if (!(recentSummary.totalXp > 0)) {
-    return `XP Progress shows your total XP and how far you are into your current rank band before the next rank. ${rankProgressText} You have not earned XP in the last 24 hours yet.`;
+    return "In the last 24 hours, you have not earned any XP yet.";
   }
 
   const detailParts: string[] = [];
@@ -916,5 +911,5 @@ export function buildXpProgressArchieMessage(progressInput: unknown, tasks: Task
     detailParts.push(`${formatWholeXp(recentSummary.launchXp)} from launches`);
   }
 
-  return `XP Progress shows your total XP and how far you are into your current rank band before the next rank. ${rankProgressText} In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}.`;
+  return `In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}.`;
 }

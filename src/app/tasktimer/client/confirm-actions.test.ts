@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildDeleteTaskConfirmOptions,
   buildExitAppConfirmOptions,
-  buildScheduleConvertConfirmOptions,
+  buildScheduleNormalizeConfirmOptions,
   buildUpgradePromptConfirmOptions,
 } from "./confirm-actions";
 
@@ -43,28 +43,29 @@ describe("confirm-actions", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("builds exit and schedule-convert confirm actions with the expected labels", () => {
+  it("builds exit and schedule-normalize confirm actions with the expected labels", () => {
     const exitApp = vi.fn();
     const closeConfirm = vi.fn();
-    const convert = vi.fn();
+    const normalize = vi.fn();
     const cancel = vi.fn();
 
     const exitConfig = buildExitAppConfirmOptions({ closeConfirm, exitApp });
-    const convertConfig = buildScheduleConvertConfirmOptions({
+    const convertConfig = buildScheduleNormalizeConfirmOptions({
       taskName: "Task A",
       dayLabel: "Tue",
-      onConvert: convert,
+      timeLabel: "10:15",
+      onConfirmNormalize: normalize,
       onCancel: cancel,
     });
 
     expect(exitConfig.options.okLabel).toBe("Yes");
-    expect(convertConfig.options.okLabel).toBe("Convert");
+    expect(convertConfig.options.okLabel).toBe("Normalize");
     exitConfig.options.onOk?.();
     convertConfig.options.onOk?.();
     convertConfig.options.onCancel?.();
     expect(closeConfirm).toHaveBeenCalledTimes(1);
     expect(exitApp).toHaveBeenCalledTimes(1);
-    expect(convert).toHaveBeenCalledTimes(1);
+    expect(normalize).toHaveBeenCalledTimes(1);
     expect(cancel).toHaveBeenCalledTimes(1);
   });
 });

@@ -456,7 +456,14 @@ export async function recordArchieTelemetryEvent(uid: string, body: ArchieTeleme
   if (!sessionId) {
     throw new ArchieApiError("archie/invalid-session-id", "A valid Archie session id is required.", 400);
   }
-  const eventType = body.eventType === "review_opened" || body.eventType === "apply" || body.eventType === "discard" ? body.eventType : null;
+  const eventType =
+    body.eventType === "review_opened" ||
+    body.eventType === "apply" ||
+    body.eventType === "discard" ||
+    body.eventType === "response_upvote" ||
+    body.eventType === "response_downvote"
+      ? body.eventType
+      : null;
   if (!eventType) {
     throw new ArchieApiError("archie/invalid-event", "A valid Archie telemetry event is required.", 400);
   }

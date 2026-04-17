@@ -1,16 +1,23 @@
 import type { Task } from "../lib/types";
 import {
-  getMovedScheduleDayValue,
   getSchedulePlacementDays,
+  hasTaskScheduledSlots,
+  getTaskPlannedStartByDay,
+  getTaskScheduledDayEntries,
+  getTaskScheduledTime,
+  hasTaskMixedScheduleTimes,
   isRecurringDailyScheduleTask,
   SCHEDULE_DAY_ORDER,
+  syncLegacyPlannedStartFields,
   type ScheduleDay,
 } from "../lib/schedule-placement";
+import type { TaskPlannedStartByDay } from "../lib/types";
 import type { TaskTimerMutableStore } from "./mutable-store";
 
 export type TaskTimerScheduleState = {
   selectedDay: Task["plannedStartDay"];
   dragTaskId: string | null;
+  dragSourceDay: ScheduleDay | null;
   dragPreviewDay: ScheduleDay | null;
   dragPreviewStartMinutes: number | null;
   dragPointerOffsetMinutes: number;
@@ -51,6 +58,11 @@ export function normalizeScheduleDay(raw: unknown): Task["plannedStartDay"] {
   const value = String(raw || "").trim().toLowerCase();
   return SCHEDULE_DAY_ORDER.includes(value as ScheduleDay) ? (value as ScheduleDay) : null;
 }
+
+type NormalizeConflict = {
+  day: ScheduleDay;
+  taskName: string;
+};
 
 export function isScheduleMobileLayout() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
@@ -125,9 +137,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
   }
 
   function getScheduleDaysForTask(task: Task): ScheduleDay[] {
-    const explicitDay = normalizeScheduleDay(task.plannedStartDay);
-    if (explicitDay) return [explicitDay];
-    return [...SCHEDULE_DAY_ORDER];
+    return getTaskScheduledDayEntries(task).map((entry) => entry.day);
   }
 
   function buildViewModel(): TaskTimerScheduleViewModel {
@@ -136,16 +146,18 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
 
     for (const task of options.getTasks()) {
       const durationMinutes = getScheduleTaskDurationMinutes(task);
-      const startMinutes = parseScheduleTimeMinutes(task.plannedStartTime);
-      if (
+      const scheduledEntries = getTaskScheduledDayEntries(task);
+      const hasRenderableSchedule =
         durationMinutes > 0 &&
-        startMinutes != null &&
-        task.plannedStartOpenEnded !== true &&
-        startMinutes + durationMinutes <= 24 * 60
-      ) {
-        const days = getScheduleDaysForTask(task);
-        days.forEach((day) => {
-          scheduled.push({ task, day, startMinutes, durationMinutes });
+        scheduledEntries.some((entry) => {
+          const startMinutes = parseScheduleTimeMinutes(entry.time);
+          return startMinutes != null && startMinutes + durationMinutes <= 24 * 60;
+        });
+      if (hasRenderableSchedule) {
+        scheduledEntries.forEach((entry) => {
+          const startMinutes = parseScheduleTimeMinutes(entry.time);
+          if (startMinutes == null || startMinutes + durationMinutes > 24 * 60) return;
+          scheduled.push({ task, day: entry.day, startMinutes, durationMinutes });
         });
       } else {
         unscheduled.push({ task, canDrop: durationMinutes > 0 });
@@ -182,9 +194,16 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     return days.some((day) => placementHasOverlap(taskId, day, startMinutes, durationMinutes));
   }
 
-  function moveTaskOnSchedule(taskIdRaw: string, dayRaw: unknown, rawMinutes: number) {
+  function setTaskScheduleByDay(task: Task, byDay: TaskPlannedStartByDay, opts?: { flexible?: boolean }) {
+    task.plannedStartByDay = byDay;
+    task.plannedStartOpenEnded = !!opts?.flexible;
+    syncLegacyPlannedStartFields(task);
+  }
+
+  function moveTaskOnSchedule(taskIdRaw: string, dayRaw: unknown, rawMinutes: number, sourceDayRaw?: unknown) {
     const taskId = String(taskIdRaw || "").trim();
     const day = normalizeScheduleDay(dayRaw);
+    const sourceDay = normalizeScheduleDay(sourceDayRaw);
     if (!taskId || !day) return;
     const taskIndex = options.getTasks().findIndex((entry) => String(entry.id || "") === taskId);
     if (taskIndex < 0) return;
@@ -192,17 +211,97 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const durationMinutes = getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
-    const placementDays = getSchedulePlacementDays(task, day);
+    const placementDays = getSchedulePlacementDays(task, day, sourceDay);
     if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, durationMinutes)) return;
-    task.plannedStartDay = getMovedScheduleDayValue(task, day);
-    task.plannedStartTime = formatScheduleStoredTime(startMinutes);
-    task.plannedStartOpenEnded = false;
+    const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
+    const scheduledDays = getScheduleDaysForTask(task);
+    const nextTime = formatScheduleStoredTime(startMinutes);
+    if (sourceDay && nextByDay[sourceDay]) {
+      if (task.plannedStartOpenEnded) {
+        delete nextByDay[sourceDay];
+        nextByDay[day] = nextTime;
+      } else {
+        placementDays.forEach((placementDay) => {
+          nextByDay[placementDay] = nextTime;
+        });
+      }
+    } else if (scheduledDays.length === 1) {
+      nextByDay[day] = nextTime;
+      const onlyScheduledDay = scheduledDays[0];
+      if (onlyScheduledDay && onlyScheduledDay !== day) delete nextByDay[onlyScheduledDay];
+    } else {
+      placementDays.forEach((placementDay) => {
+        nextByDay[placementDay] = nextTime;
+      });
+    }
+    setTaskScheduleByDay(task, nextByDay, { flexible: task.plannedStartOpenEnded === true });
     options.state.set("selectedDay", day);
     options.save();
     options.render();
   }
 
+  function getNormalizeConflicts(taskIdRaw: string, sourceDayRaw: unknown): NormalizeConflict[] {
+    const taskId = String(taskIdRaw || "").trim();
+    const sourceDay = normalizeScheduleDay(sourceDayRaw);
+    if (!taskId || !sourceDay) return [];
+    const task = options.getTasks().find((entry) => String(entry.id || "") === taskId);
+    if (!task) return [];
+    const sourceTime = getTaskScheduledTime(task, sourceDay);
+    if (!sourceTime) return [];
+    const startMinutes = parseScheduleTimeMinutes(sourceTime);
+    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    if (startMinutes == null || !(durationMinutes > 0)) return [];
+    return getScheduleDaysForTask(task)
+      .filter((day) => day !== sourceDay)
+      .flatMap((day) => {
+        const { scheduled } = buildViewModel();
+        const conflicts = scheduled.filter((entry) => {
+          if (String(entry.task.id || "") === taskId) return false;
+          if (entry.day !== day) return false;
+          const endMinutes = startMinutes + durationMinutes;
+          const entryEnd = entry.startMinutes + entry.durationMinutes;
+          return startMinutes < entryEnd && endMinutes > entry.startMinutes;
+        });
+        return conflicts.map((entry) => ({ day, taskName: String(entry.task.name || "Task") || "Task" }));
+      });
+  }
+
+  function normalizeTaskSchedule(taskIdRaw: string, sourceDayRaw: unknown) {
+    const taskId = String(taskIdRaw || "").trim();
+    const sourceDay = normalizeScheduleDay(sourceDayRaw);
+    if (!taskId || !sourceDay) return { status: "missing" as const, conflicts: [] as NormalizeConflict[] };
+    const task = options.getTasks().find((entry) => String(entry.id || "") === taskId);
+    if (!task) return { status: "missing" as const, conflicts: [] as NormalizeConflict[] };
+    const sourceTime = getTaskScheduledTime(task, sourceDay);
+    const scheduledDays = getScheduleDaysForTask(task);
+    if (!sourceTime || scheduledDays.length <= 1 || !hasTaskMixedScheduleTimes(task)) {
+      return { status: "noop" as const, conflicts: [] as NormalizeConflict[] };
+    }
+    const conflicts = getNormalizeConflicts(taskId, sourceDay);
+    if (conflicts.length > 0) return { status: "conflict" as const, conflicts };
+    const nextByDay = Object.fromEntries(scheduledDays.map((day) => [day, sourceTime])) as TaskPlannedStartByDay;
+    setTaskScheduleByDay(task, nextByDay, { flexible: false });
+    options.state.set("selectedDay", sourceDay);
+    options.save();
+    options.render();
+    return { status: "updated" as const, conflicts: [] as NormalizeConflict[] };
+  }
+
+  function toggleTaskScheduleFlexible(taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return { status: "missing" as const };
+    const task = options.getTasks().find((entry) => String(entry.id || "") === taskId);
+    if (!task) return { status: "missing" as const };
+    const hasSchedule = hasTaskScheduledSlots(task);
+    if (!hasSchedule) return { status: "noop" as const };
+    task.plannedStartOpenEnded = !task.plannedStartOpenEnded;
+    options.save();
+    options.render();
+    return { status: "updated" as const, flexible: !!task.plannedStartOpenEnded };
+  }
+
   function clearDragPreview() {
+    options.state.set("dragSourceDay", null);
     options.state.set("dragPreviewDay", null);
     options.state.set("dragPreviewStartMinutes", null);
     options.state.set("dragPointerOffsetMinutes", 0);
@@ -210,6 +309,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
 
   function getDragPreview(taskIdRaw: string | null) {
     const taskId = String(taskIdRaw || "").trim();
+    const dragSourceDay = options.state.get("dragSourceDay");
     const dragPreviewDay = options.state.get("dragPreviewDay");
     const dragPreviewStartMinutes = options.state.get("dragPreviewStartMinutes");
     if (!taskId || !dragPreviewDay || dragPreviewStartMinutes == null) return null;
@@ -217,7 +317,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     if (!task) return null;
     const durationMinutes = getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return null;
-    const placementDays = getSchedulePlacementDays(task, dragPreviewDay);
+    const placementDays = getSchedulePlacementDays(task, dragPreviewDay, dragSourceDay);
     return {
       taskId,
       task,
@@ -241,6 +341,9 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     getVisibleDays,
     buildViewModel,
     moveTaskOnSchedule,
+    normalizeTaskSchedule,
+    toggleTaskScheduleFlexible,
+    getNormalizeConflicts,
     clearDragPreview,
     getDragPreview,
     resolveDropStartMinutes,

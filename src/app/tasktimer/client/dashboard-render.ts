@@ -301,11 +301,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return MOMENTUM_DRIVER_DEFS.map((driver, index) => {
       const rawScore = Math.max(0, Math.min(driver.max, Number(scores[index] || 0)));
       const roundedScore = Math.round(rawScore);
+      const contributionPct = driver.max > 0 ? roundedScore / driver.max : 0;
+      const contributionBand =
+        contributionPct >= 0.75 ? "high" : contributionPct >= 0.5 ? "upper-mid" : contributionPct >= 0.25 ? "lower-mid" : "low";
       return {
         key: driver.key,
         label: driver.label,
         roundedScore,
         max: driver.max,
+        contributionBand,
       };
     });
   }
@@ -319,16 +323,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     driverTextsEl.classList.toggle("hasSelectedDriver", !!opts?.selectedKey);
     driverTextsEl.innerHTML = rows
       .map(
-        (row) => `<li class="dashboardMomentumDriver${row.key === opts?.selectedKey ? " isSelected" : ""}">
+        (row) => `<li class="dashboardMomentumDriver${row.key === opts?.selectedKey ? " isSelected" : ""}" data-dashboard-momentum-band="${ctx.escapeHtmlUI(row.contributionBand)}"${
+          opts?.interactive
+            ? ` data-dashboard-momentum-driver="${ctx.escapeHtmlUI(row.key)}"`
+            : ""
+        }>
           ${
             opts?.interactive
               ? `<button
                   class="dashboardMomentumDriverButton"
                   type="button"
                   data-dashboard-momentum-driver="${ctx.escapeHtmlUI(row.key)}"
-                  data-dashboard-momentum-message="${ctx.escapeHtmlUI(opts.messages?.[row.key] || "")}"
                   aria-pressed="${row.key === opts?.selectedKey ? "true" : "false"}"
-                  title="${ctx.escapeHtmlUI(opts.messages?.[row.key] || `${row.label}: ${row.roundedScore}/${row.max}`)}"
                 >
                   <span class="dashboardMomentumDriverText">${ctx.escapeHtmlUI(`${row.label}: ${row.roundedScore}/${row.max}`)}</span>
                 </button>`
@@ -357,6 +363,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 10 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`
           : "Live Bonus contributed 0 of 10 momentum points because no task is currently running.",
     } satisfies Record<DashboardMomentumDriverKey, string>;
+  }
+
+  function buildMomentumSummaryMessage(momentum: MomentumSnapshot) {
+    const roundedScore = Math.round(momentum.score);
+    const bandLabel = getMomentumBandLabel(roundedScore);
+    const activityDays = momentum.activeDayCount;
+    const loggedThisWeek = formatDashboardDurationShort(momentum.currentWeekLoggedMs);
+    return `Momentum is ${bandLabel.toLowerCase()} at ${roundedScore}/100, driven by ${activityDays} active day${activityDays === 1 ? "" : "s"} this week and ${loggedThisWeek} logged so far.`;
+  }
+
+  function renderMomentumFooterMessage(targetEl: HTMLElement | null, message: string) {
+    if (!targetEl) return;
+    targetEl.textContent = String(message || "").trim();
   }
 
   function getCurrentMomentumDisplayedScore(dialEl: HTMLElement, arcActiveEl: SVGPathElement) {
@@ -406,58 +425,57 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const startScore = getCurrentMomentumDisplayedScore(opts.dialEl, opts.arcActiveEl);
     const startDriverScores = opts.startDriverScores || [0, 0, 0, 0];
     cancelMomentumAnimation();
-    momentumAnimationStartTimerId = window.setTimeout(() => {
-      momentumAnimationStartTimerId = null;
-      renderMomentumDriverRows(opts.driverTextsEl, startDriverScores, {
-        interactive: true,
-        selectedKey: selectedMomentumDriverKey,
-        messages: opts.driverMessages,
-      });
-      applyMomentumVisualState({
-        dialEl: opts.dialEl,
-        arcActiveEl: opts.arcActiveEl,
-        needleEl: opts.needleEl,
-        scoreValueEl: opts.scoreValueEl,
-        scoreStatusEl: opts.scoreStatusEl,
-        score: startScore,
-        ariaBandLabel: opts.targetBandLabel,
-        statusLabel: opts.statusLabel,
-      });
-      momentumAnimationFrameId = window.requestAnimationFrame((firstFrameTime) => {
-        const startTime = firstFrameTime;
-        const tick = (frameTime: number) => {
-          const elapsed = Math.max(0, frameTime - startTime);
-          const progress = Math.max(0, Math.min(1, elapsed / MOMENTUM_ANIMATION_DURATION_MS));
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const displayedScore = startScore + (opts.targetScore - startScore) * eased;
-          const displayedDriverScores = opts.targetDriverScores.map((score, index) => {
-            const startDriverScore = Number(startDriverScores[index] || 0);
-            return startDriverScore + (score - startDriverScore) * eased;
-          });
-          renderMomentumDriverRows(opts.driverTextsEl, progress >= 1 ? opts.targetDriverScores : displayedDriverScores, {
-            interactive: true,
-            selectedKey: selectedMomentumDriverKey,
-            messages: opts.driverMessages,
-          });
-          applyMomentumVisualState({
-            dialEl: opts.dialEl,
-            arcActiveEl: opts.arcActiveEl,
-            needleEl: opts.needleEl,
-            scoreValueEl: opts.scoreValueEl,
-            scoreStatusEl: opts.scoreStatusEl,
-            score: progress >= 1 ? opts.targetScore : displayedScore,
-            ariaBandLabel: opts.targetBandLabel,
-            statusLabel: opts.statusLabel,
-          });
-          if (progress >= 1) {
-            momentumAnimationFrameId = null;
-            return;
-          }
-          momentumAnimationFrameId = window.requestAnimationFrame(tick);
-        };
-        tick(firstFrameTime);
-      });
-    }, 0);
+    renderMomentumDriverRows(opts.driverTextsEl, startDriverScores, {
+      interactive: true,
+      selectedKey: selectedMomentumDriverKey,
+      messages: opts.driverMessages,
+    });
+    applyMomentumVisualState({
+      dialEl: opts.dialEl,
+      arcActiveEl: opts.arcActiveEl,
+      needleEl: opts.needleEl,
+      scoreValueEl: opts.scoreValueEl,
+      scoreStatusEl: opts.scoreStatusEl,
+      score: startScore,
+      ariaBandLabel: opts.targetBandLabel,
+      statusLabel: opts.statusLabel,
+    });
+    momentumAnimationFrameId = window.requestAnimationFrame((firstFrameTime) => {
+      const startTime = firstFrameTime;
+      const tick = (frameTime: number) => {
+        const elapsed = Math.max(0, frameTime - startTime);
+        const progress = Math.max(0, Math.min(1, elapsed / MOMENTUM_ANIMATION_DURATION_MS));
+        const eased = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        const displayedScore = startScore + (opts.targetScore - startScore) * eased;
+        const displayedDriverScores = opts.targetDriverScores.map((score, index) => {
+          const startDriverScore = Number(startDriverScores[index] || 0);
+          return startDriverScore + (score - startDriverScore) * eased;
+        });
+        renderMomentumDriverRows(opts.driverTextsEl, progress >= 1 ? opts.targetDriverScores : displayedDriverScores, {
+          interactive: true,
+          selectedKey: selectedMomentumDriverKey,
+          messages: opts.driverMessages,
+        });
+        applyMomentumVisualState({
+          dialEl: opts.dialEl,
+          arcActiveEl: opts.arcActiveEl,
+          needleEl: opts.needleEl,
+          scoreValueEl: opts.scoreValueEl,
+          scoreStatusEl: opts.scoreStatusEl,
+          score: progress >= 1 ? opts.targetScore : displayedScore,
+          ariaBandLabel: opts.targetBandLabel,
+          statusLabel: opts.statusLabel,
+        });
+        if (progress >= 1) {
+          momentumAnimationFrameId = null;
+          return;
+        }
+        momentumAnimationFrameId = window.requestAnimationFrame(tick);
+      };
+      tick(firstFrameTime);
+    });
   }
 
   function renderDashboardWeeklyGoalsCard() {
@@ -563,6 +581,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const scoreValueEl = els.dashboardMomentumScoreValue as HTMLElement | null;
     const scoreStatusEl = els.dashboardMomentumScoreStatus as HTMLElement | null;
     const driverTextsEl = els.dashboardMomentumDrivers as HTMLElement | null;
+    const footerMessageEl = els.dashboardMomentumFooterMessage as HTMLElement | null;
     if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driverTextsEl) return;
 
     if (!hasAdvancedInsights()) {
@@ -590,6 +609,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       scoreValueEl.textContent = "68";
       scoreStatusEl.textContent = "Example";
       renderMomentumDriverRows(driverTextsEl, lockedDriverScores);
+      renderMomentumFooterMessage(
+        footerMessageEl,
+        "Momentum examples show how recent activity, consistency, weekly progress, and live bonus combine into one score."
+      );
       return;
     }
 
@@ -618,6 +641,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       momentum.activeSessionBonus,
     ];
     const driverMessages = buildMomentumDriverMessages(momentum);
+    const defaultSummaryMessage = buildMomentumSummaryMessage(momentum);
     const selectedDriverIndex = selectedMomentumDriverKey
       ? MOMENTUM_DRIVER_DEFS.findIndex((driver) => driver.key === selectedMomentumDriverKey)
       : -1;
@@ -628,6 +652,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const selectedDriverScore = nextDriverScores[selectedDriverIndex] || 0;
       const selectedDriver = MOMENTUM_DRIVER_DEFS[selectedDriverIndex]!;
       const selectedBandLabel = `${selectedDriver.label} focus`;
+      const selectedSignature = JSON.stringify({
+        locked: false,
+        score,
+        status: bandLabel,
+        selectedDriver: selectedMomentumDriverKey,
+        selectedScore: Math.round(selectedDriverScore),
+        drivers: nextDriverScores.map((value) => Math.round(value)),
+      });
+      const isSameSelectedTarget = lastMomentumRenderSignature === selectedSignature;
+      const shouldSuppressSelectedAnimation = ctx.getDashboardRefreshHoldActive() || !!ctx.getCloudRefreshInFlight();
       lastMomentumRenderSignature = JSON.stringify({
         locked: false,
         score,
@@ -636,20 +670,39 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         selectedScore: Math.round(selectedDriverScore),
         drivers: nextDriverScores.map((value) => Math.round(value)),
       });
-      animateMomentumToScore({
-        dialEl,
-        arcActiveEl,
-        needleEl,
-        scoreValueEl,
-        scoreStatusEl,
-        targetScore: selectedDriverScore,
-        targetBandLabel: selectedBandLabel,
-        driverTextsEl,
-        targetDriverScores: nextDriverScores,
-        driverMessages,
-        statusLabel: selectedDriver.label,
-        startDriverScores: nextDriverScores,
+      renderMomentumDriverRows(driverTextsEl, nextDriverScores, {
+        interactive: true,
+        selectedKey: selectedMomentumDriverKey,
+        messages: driverMessages,
       });
+      renderMomentumFooterMessage(footerMessageEl, driverMessages[selectedDriver.key] || defaultSummaryMessage);
+      if (!isSameSelectedTarget && !shouldSuppressSelectedAnimation) {
+        animateMomentumToScore({
+          dialEl,
+          arcActiveEl,
+          needleEl,
+          scoreValueEl,
+          scoreStatusEl,
+          targetScore: selectedDriverScore,
+          targetBandLabel: selectedBandLabel,
+          driverTextsEl,
+          targetDriverScores: nextDriverScores,
+          driverMessages,
+          startDriverScores: nextDriverScores,
+        });
+      } else {
+        cancelMomentumAnimation();
+        applyMomentumVisualState({
+          dialEl,
+          arcActiveEl,
+          needleEl,
+          scoreValueEl,
+          scoreStatusEl,
+          score: selectedDriverScore,
+          ariaBandLabel: selectedBandLabel,
+          statusLabel: selectedDriver.label,
+        });
+      }
       return;
     }
     const isReturningFromSelectedDriver = lastMomentumRenderSignature.includes('"selectedDriver":');
@@ -675,6 +728,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       !shouldSuppressAnimation &&
       !isSameTarget;
 
+    renderMomentumFooterMessage(footerMessageEl, defaultSummaryMessage);
     if (!shouldAnimate && isSameTarget) return;
 
     lastMomentumRenderSignature = nextSignature;
@@ -700,6 +754,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     cancelMomentumAnimation();
     renderMomentumDriverRows(driverTextsEl, nextDriverScores, { interactive: true, messages: driverMessages });
+    renderMomentumFooterMessage(footerMessageEl, defaultSummaryMessage);
     applyMomentumVisualState({
       dialEl,
       arcActiveEl,

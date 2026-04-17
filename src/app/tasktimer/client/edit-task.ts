@@ -8,6 +8,7 @@ import {
   normalizeTaskConfigMilestones,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
+import { getTaskScheduledDays, hasTaskMixedScheduleTimes, hasTaskScheduledSlots, syncLegacyPlannedStartFields } from "../lib/schedule-placement";
 import { bindToggleRow, setSwitchState } from "./control-helpers";
 import type { TaskTimerEditTaskContext } from "./context";
 import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from "./planned-start";
@@ -29,6 +30,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
     const openEnded = !!currentTask?.plannedStartOpenEnded;
+    const disableForUnscheduledFlexible = openEnded && !hasTaskScheduledSlots(currentTask || ({} as Task));
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
     syncPlannedStartSelectors(
       {
@@ -37,7 +39,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         meridiemSelect: els.editPlannedStartMeridiemSelect,
       },
       currentTask?.plannedStartTime || "09:00",
-      { disabled: openEnded }
+      { disabled: disableForUnscheduledFlexible }
     );
     if (els.editPlannedStartInput) {
       els.editPlannedStartInput.value = String(currentTask?.plannedStartTime || "09:00");
@@ -47,14 +49,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
-      els.editPlannedStartPushReminders.disabled = openEnded;
+      els.editPlannedStartPushReminders.disabled = disableForUnscheduledFlexible;
     }
     if (els.editPlannedStartPushRemindersToggle) {
       setSwitchState(els.editPlannedStartPushRemindersToggle, pushRemindersEnabled);
-      els.editPlannedStartPushRemindersToggle.toggleAttribute("disabled", openEnded);
-      els.editPlannedStartPushRemindersToggle.setAttribute("aria-disabled", String(openEnded));
+      els.editPlannedStartPushRemindersToggle.toggleAttribute("disabled", disableForUnscheduledFlexible);
+      els.editPlannedStartPushRemindersToggle.setAttribute("aria-disabled", String(disableForUnscheduledFlexible));
     }
-    els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", openEnded);
+    els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", disableForUnscheduledFlexible);
   }
 
   function syncEditPlannedStartValueFromSelectors() {
@@ -355,6 +357,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   function cloneTaskForEdit(task: Task): Task {
     return {
       ...task,
+      plannedStartByDay: task.plannedStartByDay ? { ...task.plannedStartByDay } : null,
       milestones: Array.isArray(task.milestones)
         ? task.milestones.map((milestone) => ({
             ...milestone,
@@ -410,6 +413,44 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
     t.milestones = ms;
     syncEditSaveAvailability(t);
+  }
+
+  function finalizeEditSave(sourceTask: Task, t: Task, prevElapsedMs: number) {
+    if (isEditElapsedOverrideEnabled()) {
+      const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
+      const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
+      const hh = ctx.isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
+      const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
+      const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
+      const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
+      t.accumulatedMs = newMs;
+      t.startMs = t.running ? Date.now() : null;
+      if (newMs < prevElapsedMs) ctx.resetCheckpointAlertTracking(t.id);
+      else ctx.clearCheckpointBaseline(t.id);
+    }
+    t.xpDisqualifiedUntilReset = isEditElapsedOverrideEnabled();
+    const timeGoalEnabledForSave = ctx.isEditTimeGoalEnabled();
+    const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
+    t.checkpointSoundEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+    t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
+    t.checkpointToastEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+    t.presetIntervalsEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
+    t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
+    t.timeGoalAction = "confirmModal";
+    t.timeGoalEnabled = timeGoalEnabledForSave;
+    if (!t.timeGoalEnabled) t.milestonesEnabled = false;
+    t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
+    t.timeGoalUnit = ctx.getEditTaskDurationUnit();
+    t.timeGoalPeriod = ctx.getEditTaskDurationPeriod();
+    t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
+    t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
+    sharedTasks.ensureMilestoneIdentity(t);
+    t.milestones = ctx.sortMilestones(t.milestones);
+    delete (t as Task & { mode?: string }).mode;
+    Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
+    ctx.save();
+    void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
+    ctx.render();
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
@@ -856,41 +897,40 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.name = (els.editName?.value || "").trim() || t.name;
       t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
       t.plannedStartTime = readEditPlannedStartValueFromSelectors();
-      if (isEditElapsedOverrideEnabled()) {
-        const dd = Math.max(0, parseInt(els.editD?.value || "0", 10) || 0);
-        const rawH = Math.max(0, parseInt(els.editH?.value || "0", 10) || 0);
-        const hh = ctx.isEditMilestoneUnitDay() ? Math.min(23, rawH) : rawH;
-        const mm = Math.min(59, Math.max(0, parseInt(els.editM?.value || "0", 10) || 0));
-        const ss = Math.min(59, Math.max(0, parseInt(els.editS?.value || "0", 10) || 0));
-        const newMs = (dd * 86400 + hh * 3600 + mm * 60 + ss) * 1000;
-        t.accumulatedMs = newMs;
-        t.startMs = t.running ? Date.now() : null;
-        if (newMs < prevElapsedMs) ctx.resetCheckpointAlertTracking(t.id);
-        else ctx.clearCheckpointBaseline(t.id);
+      if (!t.plannedStartOpenEnded && hasTaskMixedScheduleTimes(sourceTask)) {
+        const sharedTime = readEditPlannedStartValueFromSelectors();
+        const scheduledDays = getTaskScheduledDays(sourceTask);
+        if (scheduledDays.length > 1) {
+          return void ctx.confirm(
+            "Apply Shared Schedule",
+            `Flexible is off, so this task will use the same planned start time on each scheduled day. Apply ${sharedTime} to all scheduled days?`,
+            {
+              okLabel: "Apply",
+              cancelLabel: "Cancel",
+              onOk: () => {
+                const nextByDay = Object.fromEntries(
+                  scheduledDays.map((day: NonNullable<Task["plannedStartDay"]>) => [day, sharedTime])
+                ) as NonNullable<Task["plannedStartByDay"]>;
+                t.plannedStartByDay = nextByDay;
+                t.plannedStartOpenEnded = false;
+                t.plannedStartTime = sharedTime;
+                syncLegacyPlannedStartFields(t, nextByDay);
+                ctx.closeConfirm();
+                finalizeEditSave(sourceTask, t, prevElapsedMs);
+                if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
+                ctx.clearEditValidationState();
+                closeElapsedPad(false);
+                if (els.editAdvancedSection) els.editAdvancedSection.open = false;
+                ctx.setEditIndex(null);
+                ctx.setEditTaskDraft(null);
+                ctx.setEditDraftSnapshot("");
+              },
+              onCancel: () => ctx.closeConfirm(),
+            }
+          );
+        }
       }
-      t.xpDisqualifiedUntilReset = isEditElapsedOverrideEnabled();
-      const timeGoalEnabledForSave = ctx.isEditTimeGoalEnabled();
-      const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
-      t.checkpointSoundEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
-      t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      t.checkpointToastEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
-      t.presetIntervalsEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
-      t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
-      t.timeGoalAction = "confirmModal";
-      t.timeGoalEnabled = timeGoalEnabledForSave;
-      if (!t.timeGoalEnabled) t.milestonesEnabled = false;
-      t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
-      t.timeGoalUnit = ctx.getEditTaskDurationUnit();
-      t.timeGoalPeriod = ctx.getEditTaskDurationPeriod();
-      t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
-      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
-      sharedTasks.ensureMilestoneIdentity(t);
-      t.milestones = ctx.sortMilestones(t.milestones);
-      delete (t as Task & { mode?: string }).mode;
-      Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
-      ctx.save();
-      void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
-      ctx.render();
+      finalizeEditSave(sourceTask, t, prevElapsedMs);
     }
     if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
     ctx.clearEditValidationState();
@@ -939,7 +979,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     };
     const togglePlannedStartPushReminders = () => {
       const t = getCurrentEditTask();
-      if (!t || t.plannedStartOpenEnded || !els.editPlannedStartPushReminders) return;
+      if (!t || (t.plannedStartOpenEnded && !hasTaskScheduledSlots(t)) || !els.editPlannedStartPushReminders) return;
       els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
       syncEditPlannedStartSelectors(t);
@@ -980,7 +1020,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     });
     ctx.on(els.editPlannedStartPushReminders, "change", () => {
       const t = getCurrentEditTask();
-      if (!t || t.plannedStartOpenEnded) return;
+      if (!t || (t.plannedStartOpenEnded && !hasTaskScheduledSlots(t))) return;
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);

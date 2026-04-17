@@ -551,6 +551,7 @@ type CreateAppShellOptionsArgs = {
   closeShareTaskModal: () => void;
   closeFriendProfileModal: () => void;
   closeFriendRequestModal: () => void;
+  requestScheduleEntryScroll: () => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
@@ -1369,6 +1370,7 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     closeShareTaskModal: args.closeShareTaskModal,
     closeFriendProfileModal: args.closeFriendProfileModal,
     closeFriendRequestModal: args.closeFriendRequestModal,
+    requestScheduleEntryScroll: args.requestScheduleEntryScroll,
     render: args.render,
     renderHistory: args.renderHistory,
     renderDashboardWidgets: args.renderDashboardWidgets,

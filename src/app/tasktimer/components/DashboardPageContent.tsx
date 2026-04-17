@@ -167,104 +167,112 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                     <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
                   </section>
 
-                  <section className="dashboardCard dashboardMomentumCard" data-dashboard-id="momentum" aria-label="Momentum overview">
-                    <div className="dashboardMomentumTitleRow">
-                      <div className="dashboardCardTitle">Momentum</div>
-                    </div>
-                    <div className="dashboardMomentumDialWrap">
-                      <div className="dashboardMomentumDial" id="dashboardMomentumDial" role="img" aria-label="Momentum score">
-                        <div className="dashboardMomentumScoreSummary" aria-live="polite">
-                          <div className="dashboardMomentumScoreValue" id="dashboardMomentumScoreValue">0</div>
-                          <div className="dashboardMomentumScoreStatus" id="dashboardMomentumScoreStatus">Low</div>
-                        </div>
-                        <svg className="dashboardMomentumSvg" viewBox="0 0 187 122" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                          <defs>
-                            <linearGradient id="momentumGaugeGradient" x1="22" y1="50" x2="165" y2="50" gradientUnits="userSpaceOnUse">
-                              <stop offset="0%" stopColor="#8f1623" />
-                              <stop offset="12%" stopColor="#e4421f" />
-                              <stop offset="26%" stopColor="#ff7a1c" />
-                              <stop offset="42%" stopColor="#f7a625" />
-                              <stop offset="58%" stopColor="#ffd54a" />
-                              <stop offset="78%" stopColor="#cfe06f" />
-                              <stop offset="100%" stopColor="#a9d65f" />
-                            </linearGradient>
-                            <filter id="momentumGaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                              <feGaussianBlur stdDeviation="0.8" result="blur" />
-                              <feMerge>
-                                <feMergeNode in="blur" />
-                                <feMergeNode in="SourceGraphic" />
-                              </feMerge>
-                            </filter>
-                          </defs>
-                          <path d="M22 79 A72 72 0 0 1 165 79" fill="none" stroke="rgba(82, 95, 125, 0.22)" strokeWidth="17" strokeLinecap="butt" />
-                          <path d="M22 79 A72 72 0 0 1 165 79" id="dashboardMomentumArcActive" fill="none" stroke="url(#momentumGaugeGradient)" strokeWidth="17" strokeLinecap="butt" filter="url(#momentumGaugeGlow)" pathLength="100" strokeDasharray="0 100" />
-                          <path d="M22 79 A72 72 0 0 1 165 79" fill="none" stroke="#4b291f" strokeWidth="1.4" opacity="0.7" />
-                          {(() => {
-                            const centerX = 93.5;
-                            const centerY = 79;
-                            const markerInnerRadius = 55.5;
-                            const markerOuterRadius = 72.5;
-                            const markerValues = [25, 50, 75];
-                            const labelRadius = 46;
-                            return (
-                              <g className="dashboardMomentumMarkers" aria-hidden="true">
-                                {markerValues.map((value) => {
-                                  const ratio = value / 100;
-                                  const angleDeg = 180 - ratio * 180;
-                                  const angleRad = (angleDeg * Math.PI) / 180;
-                                  const x1 = centerX + Math.cos(angleRad) * markerInnerRadius;
-                                  const y1 = centerY - Math.sin(angleRad) * markerInnerRadius;
-                                  const x2 = centerX + Math.cos(angleRad) * markerOuterRadius;
-                                  const y2 = centerY - Math.sin(angleRad) * markerOuterRadius;
-                                  const tierLabel = value === 25 ? "x1.2" : value === 50 ? "x1.5" : value === 75 ? "x2.0" : "";
-                                  const labelX = centerX + Math.cos(angleRad) * labelRadius;
-                                  const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 50 ? 4 : 2);
-                                  return (
-                                    <g key={`momentum-marker-${value}`}>
-                                      <line
-                                        x1={x1}
-                                        y1={y1}
-                                        x2={x2}
-                                        y2={y2}
-                                        stroke="rgba(0, 0, 0, 0.92)"
-                                        strokeWidth="1.35"
-                                        strokeLinecap="round"
-                                        vectorEffect="non-scaling-stroke"
-                                        opacity="0.92"
-                                      />
-                                      {tierLabel ? (
-                                        <text
-                                          x={labelX}
-                                          y={labelY}
-                                          fill="rgba(241, 247, 255, 0.92)"
-                                          fontSize="7.5"
-                                          fontWeight="700"
-                                          letterSpacing="0.08em"
-                                          textAnchor="middle"
-                                          dominantBaseline="alphabetic"
-                                        >
-                                          {tierLabel}
-                                        </text>
-                                      ) : null}
-                                    </g>
-                                  );
-                                })}
-                              </g>
-                            );
-                          })()}
-                        </svg>
-                        <div className="dashboardMomentumNeedle" id="dashboardMomentumNeedle" aria-hidden="true" />
+                    <section className="dashboardCard dashboardMomentumCard" data-dashboard-id="momentum" aria-label="Momentum overview">
+                      <div className="dashboardMomentumTitleRow">
+                        <div className="dashboardCardTitle">Momentum</div>
                       </div>
-                    </div>
-                    <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
-                      <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/25</span></li>
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/45</span></li>
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/20</span></li>
-                        <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
-                      </ul>
+                      <div className="dashboardMomentumMainSection">
+                        <div className="dashboardMomentumDialWrap">
+                          <div className="dashboardMomentumDial" id="dashboardMomentumDial" role="img" aria-label="Momentum score">
+                            <div className="dashboardMomentumScoreSummary" aria-live="polite">
+                              <div className="dashboardMomentumScoreValue" id="dashboardMomentumScoreValue">0</div>
+                              <div className="dashboardMomentumScoreStatus" id="dashboardMomentumScoreStatus">Low</div>
+                            </div>
+                            <svg className="dashboardMomentumSvg" viewBox="0 0 187 122" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                              <defs>
+                                <linearGradient id="momentumGaugeGradient" x1="22" y1="50" x2="165" y2="50" gradientUnits="userSpaceOnUse">
+                                  <stop offset="0%" stopColor="#8f1623" />
+                                  <stop offset="12%" stopColor="#e4421f" />
+                                  <stop offset="26%" stopColor="#ff7a1c" />
+                                  <stop offset="42%" stopColor="#f7a625" />
+                                  <stop offset="58%" stopColor="#ffd54a" />
+                                  <stop offset="78%" stopColor="#cfe06f" />
+                                  <stop offset="100%" stopColor="#a9d65f" />
+                                </linearGradient>
+                                <filter id="momentumGaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                  <feGaussianBlur stdDeviation="0.8" result="blur" />
+                                  <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                  </feMerge>
+                                </filter>
+                              </defs>
+                              <path d="M22 79 A72 72 0 0 1 165 79" fill="none" stroke="rgba(82, 95, 125, 0.22)" strokeWidth="17" strokeLinecap="butt" />
+                              <path d="M22 79 A72 72 0 0 1 165 79" id="dashboardMomentumArcActive" fill="none" stroke="url(#momentumGaugeGradient)" strokeWidth="17" strokeLinecap="butt" filter="url(#momentumGaugeGlow)" pathLength="100" strokeDasharray="0 100" />
+                              <path d="M22 79 A72 72 0 0 1 165 79" fill="none" stroke="#4b291f" strokeWidth="1.4" opacity="0.7" />
+                              {(() => {
+                                const centerX = 93.5;
+                                const centerY = 79;
+                                const markerInnerRadius = 55.5;
+                                const markerOuterRadius = 72.5;
+                                const markerValues = [25, 50, 75];
+                                const labelRadius = 46;
+                                return (
+                                  <g className="dashboardMomentumMarkers" aria-hidden="true">
+                                    {markerValues.map((value) => {
+                                      const ratio = value / 100;
+                                      const angleDeg = 180 - ratio * 180;
+                                      const angleRad = (angleDeg * Math.PI) / 180;
+                                      const x1 = centerX + Math.cos(angleRad) * markerInnerRadius;
+                                      const y1 = centerY - Math.sin(angleRad) * markerInnerRadius;
+                                      const x2 = centerX + Math.cos(angleRad) * markerOuterRadius;
+                                      const y2 = centerY - Math.sin(angleRad) * markerOuterRadius;
+                                      const tierLabel = value === 25 ? "x1.2" : value === 50 ? "x1.5" : value === 75 ? "x2.0" : "";
+                                      const labelX = centerX + Math.cos(angleRad) * labelRadius;
+                                      const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 50 ? 4 : 2);
+                                      return (
+                                        <g key={`momentum-marker-${value}`}>
+                                          <line
+                                            x1={x1}
+                                            y1={y1}
+                                            x2={x2}
+                                            y2={y2}
+                                            stroke="rgba(0, 0, 0, 0.92)"
+                                            strokeWidth="1.35"
+                                            strokeLinecap="round"
+                                            vectorEffect="non-scaling-stroke"
+                                            opacity="0.92"
+                                          />
+                                          {tierLabel ? (
+                                            <text
+                                              x={labelX}
+                                              y={labelY}
+                                              fill="rgba(241, 247, 255, 0.92)"
+                                              fontSize="7.5"
+                                              fontWeight="700"
+                                              letterSpacing="0.08em"
+                                              textAnchor="middle"
+                                              dominantBaseline="alphabetic"
+                                            >
+                                              {tierLabel}
+                                            </text>
+                                          ) : null}
+                                        </g>
+                                      );
+                                    })}
+                                  </g>
+                                );
+                              })()}
+                            </svg>
+                            <div className="dashboardMomentumNeedle" id="dashboardMomentumNeedle" aria-hidden="true" />
+                          </div>
+                        </div>
+                      </div>
+                      <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
+                        <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/25</span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/45</span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/20</span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
+                        </ul>
+                        <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
+                          <div className="dashboardMomentumFooterTitle">Momentum Insight</div>
+                          <p className="dashboardMomentumFooterMessage" id="dashboardMomentumFooterMessage" aria-live="polite">
+                            Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
+                          </p>
+                        </section>
+                      </section>
                     </section>
-                  </section>
 
                   <section className="dashboardCard dashboardAvgSessionCard" data-dashboard-id="avg-session-by-task" aria-label="Average completed session duration by task" data-dashboard-label="Avg session by task">
                     <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">Avg Session by Task (Past 7 Days)</div>

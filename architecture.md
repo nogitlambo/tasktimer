@@ -164,6 +164,7 @@
 - [`src/app/tasktimer/lib/productivityPeriod.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/productivityPeriod.ts)
 - [`src/app/tasktimer/lib/pushFunctions.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/pushFunctions.ts)
 - [`src/app/tasktimer/lib/pushNotifications.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/pushNotifications.ts)
+- [`src/app/tasktimer/lib/rewards.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/rewards.test.ts)
 - [`src/app/tasktimer/lib/rewards.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/rewards.ts)
 - [`src/app/tasktimer/lib/routeHref.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/routeHref.ts)
 - [`src/app/tasktimer/lib/schedule-placement.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/lib/schedule-placement.test.ts)

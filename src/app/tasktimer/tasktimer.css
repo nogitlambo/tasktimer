@@ -1561,6 +1561,80 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssi
   transition:opacity .18s ease;
 }
 
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActions,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActions,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:6px 0 0;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActions.isVisible,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActions.isVisible,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActions.isVisible{
+  opacity:1;
+  pointer-events:auto;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  outline:none;
+  box-shadow:none;
+  color:rgba(214,246,255,.58);
+  background:transparent;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:color .18s ease, opacity .18s ease, transform .18s ease;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn:hover,
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn:hover,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn:focus-visible,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn:hover,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn:focus-visible{
+  color:rgba(234,250,255,.94);
+  background:transparent;
+  box-shadow:none;
+  transform:translateY(-1px);
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn.isSelected,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn.isSelected,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn.isSelected{
+  color:#7ef3ff;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionIcon,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionIcon,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionIcon{
+  display:inline-flex;
+  width:16px;
+  height:16px;
+}
+
+#app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionIcon svg,
+#app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionIcon svg,
+#app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionIcon svg{
+  display:block;
+  width:100%;
+  height:100%;
+  fill:currentColor;
+}
+
 #app[aria-label="TaskLaunch App"] .desktopRailMascotMeta.isVisible,
 #app[aria-label="TaskLaunch Settings"] .desktopRailMascotMeta.isVisible,
 #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotMeta.isVisible{
@@ -1703,6 +1777,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMas
   background:rgba(28,8,29,.42);
 }
 
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn.isSelected,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn.isSelected,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn.isSelected{
+  color:#f08ed9;
+}
+
 body[data-theme="purple"] .archieDraftListItem{
   border-color:rgba(240,110,224,.22);
   background:rgba(25,10,28,.52);
@@ -1719,6 +1799,12 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMasco
   border-color:rgba(219,255,79,.28);
   color:rgba(245,255,204,.88);
   background:rgba(17,22,7,.42);
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopRailMascotResponseActionBtn.isSelected,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopRailMascotResponseActionBtn.isSelected,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotResponseActionBtn.isSelected{
+  color:#dbff4f;
 }
 
 body[data-theme="lime"] .archieDraftListItem{
@@ -1738,6 +1824,24 @@ body[data-theme="lime"] .archieDraftSection{
 }
 
 @media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotResponseActions,
+  #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotResponseActions{
+    margin-top:4px;
+    gap:4px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotResponseActionBtn,
+  #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotResponseActionBtn{
+    width:22px;
+    height:22px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotResponseActionIcon,
+  #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotResponseActionIcon{
+    width:14px;
+    height:14px;
+  }
+
   #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotMeta,
   #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotMeta{
     margin-top:6px;
@@ -1908,4 +2012,210 @@ body[data-theme="lime"] .archieDraftSection{
 }
 .rewardSegmentedBarSegment {
   clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+}
+
+/* Canonical app cursor override:
+   keep the in-app surfaces on a crosshair and replace pointer affordances
+   without disturbing text-selection or drag-specific cursors. */
+#app[aria-label="TaskLaunch App"],
+#app[aria-label="TaskLaunch Settings"],
+#app[aria-label="TaskLaunch User Guide"],
+#app[aria-label="TaskLaunch Feedback"] {
+  cursor: crosshair;
+}
+
+#app[aria-label="TaskLaunch App"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch Settings"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch User Guide"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch Feedback"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+) {
+  cursor: crosshair !important;
+}
+
+#app[aria-label="TaskLaunch App"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch Settings"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch User Guide"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch Feedback"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+) {
+  cursor: crosshair !important;
+}
+
+/* Final mobile Momentum restore:
+   force the gauge and driver text visible below 521px and let the gauge size from the card width. */
+@media (max-width: 520px) {
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto !important;
+    grid-template-areas:
+      "title"
+      "main"
+      "drivers" !important;
+    min-height: 540px !important;
+    align-content: start !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumMainSection {
+    grid-area: main !important;
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-items: center !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDialWrap {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    justify-self: center !important;
+    align-self: start !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDial {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    aspect-ratio: 187 / 122 !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    opacity: 1 !important;
+    margin: 0 auto !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreSummary,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverText {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection {
+    grid-area: drivers !important;
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-self: stretch !important;
+    align-self: start !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers {
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    list-style: none !important;
+  }
+  /* Canonical final Momentum driver spacing lives here because tasktimer.css
+     loads after the split dashboard import and can override 03-dashboard.css. */
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+    position: relative !important;
+    padding-left: 0 !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .58em;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(201, 224, 111, .92);
+    box-shadow: 0 0 0 1px rgba(201,224,111,.22), 0 0 8px rgba(201,224,111,.28);
+    pointer-events: none;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="low"]::before {
+    background: rgba(232, 74, 74, .96);
+    box-shadow: 0 0 0 1px rgba(232,74,74,.24), 0 0 8px rgba(232,74,74,.3);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="lower-mid"]::before {
+    background: rgba(255, 149, 64, .96);
+    box-shadow: 0 0 0 1px rgba(255,149,64,.24), 0 0 8px rgba(255,149,64,.3);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="upper-mid"]::before {
+    background: rgba(255, 214, 87, .96);
+    box-shadow: 0 0 0 1px rgba(255,214,87,.24), 0 0 8px rgba(255,214,87,.3);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver[data-dashboard-momentum-band="high"]::before {
+    background: rgba(121, 232, 110, .96);
+    box-shadow: 0 0 0 1px rgba(121,232,110,.24), 0 0 8px rgba(121,232,110,.3);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverButton,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver > .dashboardMomentumDriverText {
+    padding-left: 40px !important;
+    box-sizing: border-box !important;
+  }
 }
