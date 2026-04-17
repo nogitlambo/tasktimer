@@ -141,24 +141,45 @@ export async function POST(req: Request) {
       throw new FeedbackApiError("feedback/invalid-email", "A feedback email address is required unless submitted anonymously.", 400);
     }
 
-    const jira = await createJiraIssue({
-      uid,
-      type,
-      title,
-      details,
-      isAnonymous,
-      authorEmail,
-      authorDisplayName,
-    });
-
-    const jiraIssueTarget = asString(jira.jiraIssueId, 120) || asString(jira.jiraIssueKey, 120);
-    for (const attachment of attachments) {
-      await uploadJiraIssueAttachment({
-        jiraIssueIdOrKey: jiraIssueTarget,
-        filename: attachment.filename,
-        contentType: attachment.mimeType,
-        data: attachment.data,
+    let jira: Awaited<ReturnType<typeof createJiraIssue>> | null = null;
+    try {
+      jira = await createJiraIssue({
+        uid,
+        type,
+        title,
+        details,
+        isAnonymous,
+        authorEmail,
+        authorDisplayName,
       });
+    } catch (error) {
+      console.error("[api/feedback] Jira issue creation failed; persisting feedback without Jira mirror", {
+        uid,
+        type,
+        error: describeError(error),
+      });
+      jira = null;
+    }
+
+    const jiraIssueTarget = jira ? asString(jira.jiraIssueId, 120) || asString(jira.jiraIssueKey, 120) : "";
+    if (jiraIssueTarget) {
+      for (const attachment of attachments) {
+        try {
+          await uploadJiraIssueAttachment({
+            jiraIssueIdOrKey: jiraIssueTarget,
+            filename: attachment.filename,
+            contentType: attachment.mimeType,
+            data: attachment.data,
+          });
+        } catch (error) {
+          console.error("[api/feedback] Jira attachment upload failed; continuing without attachment mirror", {
+            uid,
+            jiraIssueTarget,
+            filename: attachment.filename,
+            error: describeError(error),
+          });
+        }
+      }
     }
 
     const result = await validateAndRecordFeedbackSubmission({
@@ -179,17 +200,17 @@ export async function POST(req: Request) {
         status: "open",
         upvoteCount: 0,
         commentCount: 0,
-        jiraIssueBrowseUrl: asString(jira.jiraIssueBrowseUrl, 2048) || null,
+        jiraIssueBrowseUrl: asString(jira?.jiraIssueBrowseUrl, 2048) || null,
       },
     });
 
     return NextResponse.json({
       ok: true,
       feedbackId: result.feedbackId,
-      jiraIssueId: jira.jiraIssueId || null,
-      jiraIssueKey: jira.jiraIssueKey || null,
-      jiraIssueBrowseUrl: jira.jiraIssueBrowseUrl || null,
-      deduplicated: jira.deduplicated,
+      jiraIssueId: jira?.jiraIssueId || null,
+      jiraIssueKey: jira?.jiraIssueKey || null,
+      jiraIssueBrowseUrl: jira?.jiraIssueBrowseUrl || null,
+      deduplicated: jira?.deduplicated || false,
     });
   } catch (error) {
     console.error("[api/feedback] Feedback submission failed", {
