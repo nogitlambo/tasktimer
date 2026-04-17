@@ -24,6 +24,7 @@ type RegisterRootEventsOptions = {
   windowRef: Window;
   planChangedEvent: string;
   scheduleMinutePx: number;
+  isScheduleMobileLayout: () => boolean;
   normalizeScheduleDay: (value: unknown) => ScheduleDay;
   tasks: () => Task[];
   isScheduleRenderableTask: (task: Task) => boolean;
@@ -151,6 +152,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     on,
     documentRef,
     scheduleMinutePx: options.scheduleMinutePx,
+    isScheduleMobileLayout: options.isScheduleMobileLayout,
     normalizeScheduleDay: options.normalizeScheduleDay,
     tasks: options.tasks,
     isScheduleRenderableTask: options.isScheduleRenderableTask,

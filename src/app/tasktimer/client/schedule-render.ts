@@ -65,6 +65,7 @@ function buildScheduleProductivityHighlightSegments(ctx: TaskTimerScheduleRender
 
 export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderContext) {
   const visibleDays = ctx.scheduleRuntime.getVisibleDays();
+  const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);
@@ -108,7 +109,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
                 entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
               }">${entry.task.plannedStartOpenEnded ? "Flex" : "Daily"}</span>`
             : "";
-          return `<div class="scheduleTaskCard${shortClass}" draggable="true" data-schedule-task-id="${ctx.escapeHtmlUI(
+          return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")
           )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
             <div class="scheduleTaskCardTopRow">
@@ -155,7 +156,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
     })
     .join("");
 
-  return `<div class="schedulePlanner${typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches ? " isMobile" : ""}">
+  return `<div class="schedulePlanner${isMobileLayout ? " isMobile" : ""}">
     <div class="schedulePlannerHead">
       <div class="schedulePlannerCorner">Time</div>
       <div class="schedulePlannerDays">${visibleDays
@@ -171,6 +172,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
 
 export function renderTaskTimerSchedulePage(ctx: TaskTimerScheduleRenderContext) {
   if (!ctx.els.scheduleGrid || !ctx.els.scheduleTrayList) return;
+  const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   ctx.els.scheduleGrid.innerHTML = buildTaskTimerScheduleGridHtml(ctx);
   const { unscheduled } = ctx.scheduleRuntime.buildViewModel();
   ctx.els.scheduleTrayList.innerHTML = unscheduled.length
@@ -181,7 +183,7 @@ export function renderTaskTimerSchedulePage(ctx: TaskTimerScheduleRenderContext)
               ? ""
               : '<span class="scheduleTrayMeta">Needs a daily time goal before it can be placed.</span>';
           return `<div class="scheduleTrayTask${canDrop ? "" : " isDisabled"}" ${
-            canDrop ? 'draggable="true"' : ""
+            canDrop && !isMobileLayout ? 'draggable="true"' : ""
           } data-schedule-task-id="${ctx.escapeHtmlUI(String(task.id || ""))}">
             <span class="scheduleTrayTaskName">${ctx.escapeHtmlUI(task.name || "Task")}</span>
             ${unsupportedReason}

@@ -99,6 +99,7 @@ import { type ScheduleDay } from "./lib/schedule-placement";
 import {
   createTaskTimerScheduleRuntime,
   formatScheduleDayLabel,
+  isScheduleMobileLayout,
   isScheduleRenderableTask,
   isRecurringDailyScheduleTask,
   normalizeScheduleDay,
@@ -1597,6 +1598,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       windowRef: window,
       planChangedEvent: TASKTIMER_PLAN_CHANGED_EVENT,
       scheduleMinutePx: SCHEDULE_MINUTE_PX,
+      isScheduleMobileLayout,
       normalizeScheduleDay,
       tasks: taskCollectionBindings.getTasks,
       isScheduleRenderableTask,

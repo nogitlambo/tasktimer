@@ -9,6 +9,7 @@ type RegisterScheduleEventsOptions = {
   on: (target: EventTarget | null | undefined, event: string, handler: (event: unknown) => void) => void;
   documentRef: Document;
   scheduleMinutePx: number;
+  isScheduleMobileLayout: () => boolean;
   normalizeScheduleDay: (raw: unknown) => ScheduleDay;
   tasks: () => Task[];
   isScheduleRenderableTask: (task: Task) => boolean;
@@ -59,6 +60,15 @@ type RegisterDashboardShellEventsOptions = {
 
 export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsOptions) {
   options.on(options.documentRef as unknown as EventTarget, "click", (event: any) => {
+    if (options.currentAppPage() === "schedule") {
+      const scheduleCard = (event?.target as HTMLElement | null)?.closest?.(".scheduleTaskCard, .scheduleTrayTask") as HTMLElement | null;
+      if (scheduleCard && !scheduleCard.closest("[data-schedule-normalize]")) {
+        event?.preventDefault?.();
+        event?.stopImmediatePropagation?.();
+        return;
+      }
+    }
+
     const normalizeButton = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-normalize]") as HTMLElement | null;
     if (normalizeButton) {
       const taskId = String(normalizeButton.dataset.scheduleNormalize || "").trim();
@@ -79,6 +89,10 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
   });
 
   options.on(options.documentRef as unknown as EventTarget, "dragstart", (event: any) => {
+    if (options.isScheduleMobileLayout()) {
+      event?.preventDefault?.();
+      return;
+    }
     const source = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-task-id]") as HTMLElement | null;
     if (!source) return;
     const taskId = String(source.dataset.scheduleTaskId || "").trim();
@@ -115,6 +129,7 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
   });
 
   options.on(options.documentRef as unknown as EventTarget, "dragover", (event: any) => {
+    if (options.isScheduleMobileLayout()) return;
     const dropZone = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
     if (!dropZone || !options.getScheduleDragTaskId()) return;
     event?.preventDefault?.();
@@ -134,6 +149,10 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
   });
 
   options.on(options.documentRef as unknown as EventTarget, "drop", (event: any) => {
+    if (options.isScheduleMobileLayout()) {
+      event?.preventDefault?.();
+      return;
+    }
     const dropZone = (event?.target as HTMLElement | null)?.closest?.("[data-schedule-drop-day]") as HTMLElement | null;
     if (!dropZone) return;
     const taskId = options.getScheduleDragTaskId() || String(event?.dataTransfer?.getData?.("text/plain") || "").trim();

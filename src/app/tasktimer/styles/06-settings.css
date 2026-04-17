@@ -2443,6 +2443,31 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
   width: 100%;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 18px 32px rgba(0,0,0,.24);
+  color: rgba(236,247,255,.92);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input::placeholder,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea::placeholder{
+  color: rgba(188,214,230,.58);
+}
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input:focus-visible,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select:focus-visible,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea:focus-visible{
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 18px 32px rgba(0,0,0,.26),
+    0 0 0 1px rgba(117,231,255,.28);
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormField select.isPlaceholderValue{
   color: rgba(188,214,230,.58);
@@ -2470,8 +2495,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.03);
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 18px 32px rgba(0,0,0,.24);
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentMeta{
   min-width: 0;
@@ -2735,11 +2767,16 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   border-left-color:rgba(255,255,255,.82);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  border-color: rgba(221,108,241,.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(221,108,241,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  border-color: rgba(212,71,210,.22);
-  background: rgba(212,71,210,.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(212,71,210,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
   color: rgba(250,233,255,.94);
@@ -2748,11 +2785,16 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttach
   color: rgba(231,208,242,.72);
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  border-color: rgba(86,232,255,.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(86,232,255,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  border-color: rgba(86,232,255,.22);
-  background: rgba(53,232,255,.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(86,232,255,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
   color:rgba(233,216,255,.84);
@@ -3059,24 +3101,27 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   gap: 0;
   width: min(100%, 980px);
   overflow: hidden;
-  border: 1px solid rgba(53,232,255,.24);
+  border: 0;
+  border-radius: 0;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0)),
-    linear-gradient(140deg, rgba(4,14,28,.98), rgba(8,24,38,.94) 38%, rgba(10,18,30,.98));
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(140,246,255,.06),
-    0 18px 40px rgba(0,0,0,.28),
-    0 0 24px rgba(0,220,255,.08);
-  clip-path: polygon(calc(var(--control-slant) * 1.4) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard::after{
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 78% 26%, rgba(53,232,255,.18), transparent 28%),
-    linear-gradient(115deg, transparent 0 52%, rgba(255,255,255,.03) 52% 57%, transparent 57% 100%);
+    radial-gradient(100% 100% at 100% 0%, rgba(255,255,255,.07), rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
   pointer-events: none;
+  opacity: .78;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
   position: relative;
@@ -3087,8 +3132,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   gap: 14px;
   padding: 18px 20px 44px;
   background:
-    linear-gradient(135deg, rgba(14,146,182,.88), rgba(10,108,166,.84) 55%, rgba(7,53,93,.92)),
-    repeating-linear-gradient(120deg, rgba(255,255,255,.12) 0 2px, transparent 2px 52px);
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015) 60%, rgba(255,255,255,0)),
+    linear-gradient(180deg, rgba(6,8,13,.96), rgba(5,7,12,.92));
   overflow: visible;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader::after{
@@ -3096,10 +3141,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(0deg, transparent 0 58%, rgba(255,255,255,.08) 58% 59%, transparent 59% 100%),
-    linear-gradient(90deg, transparent 0 16%, rgba(255,255,255,.12) 16% 16.3%, transparent 16.3% 100%);
-  mix-blend-mode: screen;
-  opacity: .45;
+    linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.1), rgba(255,255,255,0));
+  inset: auto 18px 0;
+  height: 1px;
+  opacity: .5;
   pointer-events: none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandBlock,
@@ -3385,24 +3430,25 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   padding-top: 2px;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard{
-  border-color: rgba(214,96,229,.26);
   background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(145deg, rgba(22,10,34,.98), rgba(38,16,48,.94) 42%, rgba(26,12,38,.98));
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255,185,249,.05),
-    0 18px 40px rgba(0,0,0,.3),
-    0 0 24px rgba(212,71,210,.1);
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(221,108,241,.12),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard::after{
   background:
-    radial-gradient(circle at 78% 26%, rgba(240,110,224,.18), transparent 28%),
-    linear-gradient(115deg, transparent 0 52%, rgba(255,255,255,.03) 52% 57%, transparent 57% 100%);
+    radial-gradient(100% 100% at 100% 0%, rgba(240,110,224,.08), rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
   background:
-    linear-gradient(135deg, rgba(133,39,164,.92), rgba(96,31,144,.9) 58%, rgba(52,16,76,.94)),
-    repeating-linear-gradient(120deg, rgba(255,255,255,.1) 0 2px, transparent 2px 52px);
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015) 60%, rgba(255,255,255,0)),
+    linear-gradient(180deg, rgba(9,6,13,.96), rgba(8,5,12,.92));
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandEyebrow{
   color: rgba(244,220,255,.84);
@@ -3980,21 +4026,25 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsPlanCapa
   color: rgba(252,255,229,.94);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard{
-  border-color: rgba(219,255,79,.18);
   background:
-    radial-gradient(120% 120% at 100% 0%, rgba(219,255,79,.14), rgba(0,0,0,0) 42%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(18,23,7,.96);
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
+    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
+    linear-gradient(180deg, #06080d 0%, #04060b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(219,255,79,.12),
+    0 18px 32px rgba(0,0,0,.34),
+    0 30px 70px rgba(0,0,0,.54);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard::after{
   background:
-    radial-gradient(circle at 78% 26%, rgba(243,255,122,.18), transparent 28%),
-    linear-gradient(115deg, transparent 0 52%, rgba(255,255,255,.03) 52% 57%, transparent 57% 100%);
+    radial-gradient(100% 100% at 100% 0%, rgba(243,255,122,.08), rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
   background:
-    linear-gradient(135deg, rgba(162,194,28,.92), rgba(125,156,18,.9) 58%, rgba(43,58,10,.94)),
-    repeating-linear-gradient(120deg, rgba(255,255,255,.1) 0 2px, transparent 2px 52px);
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015) 60%, rgba(255,255,255,0)),
+    linear-gradient(180deg, rgba(10,13,6,.96), rgba(9,12,5,.92));
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandEyebrow{
   color: rgba(239,248,184,.84);
@@ -4044,13 +4094,17 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountI
   background: linear-gradient(180deg, rgba(252,255,229,.92), rgba(224,239,164,.84));
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  border-color: rgba(219,255,79,.18);
-  background: rgba(18,23,7,.82);
   color: rgba(247,255,212,.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(219,255,79,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  border-color: rgba(214,246,116,.2);
-  background: rgba(214,246,116,.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(214,246,116,.12),
+    0 18px 32px rgba(0,0,0,.24);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
   color: rgba(251,255,227,.94);
