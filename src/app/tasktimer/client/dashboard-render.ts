@@ -413,7 +413,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return 0;
   }
 
-  const MOMENTUM_GAUGE_COLOR_STOPS = [
+  type MomentumGaugeColorStop = {
+    offset: number;
+    rgb: readonly [number, number, number];
+  };
+
+  const MOMENTUM_GAUGE_COLOR_STOPS: readonly MomentumGaugeColorStop[] = [
     { offset: 0, rgb: [143, 22, 35] as const },
     { offset: 12, rgb: [228, 66, 31] as const },
     { offset: 26, rgb: [255, 122, 28] as const },
@@ -421,7 +426,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     { offset: 58, rgb: [255, 213, 74] as const },
     { offset: 78, rgb: [207, 224, 111] as const },
     { offset: 100, rgb: [169, 214, 95] as const },
-  ] as const;
+  ];
 
   function getMomentumGaugeTextColor(score: number) {
     const boundedScore = Math.max(0, Math.min(100, Number(score) || 0));
