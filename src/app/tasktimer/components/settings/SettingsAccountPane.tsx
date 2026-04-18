@@ -201,17 +201,6 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
-              <div className="settingsInlineFooter settingsAuthActions settingsAuthActionsInline">
-                <button
-                  className="btn btn-accent small settingsSignOutBtn"
-                  id="signInGoogleBtn"
-                  type="button"
-                  disabled={account.authBusy}
-                  onClick={() => void account.onSignOut()}
-                >
-                  Sign Out
-                </button>
-              </div>
             </div>
           ) : null}
 

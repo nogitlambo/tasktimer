@@ -54,7 +54,14 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       </div>
 
       <div className={`settingsSplitLayout${paneState.mobileDetailOpen ? " isMobileDetailOpen" : ""}`}>
-        <SettingsNav navItems={navItems} activePane={paneState.activePane} onSelectPane={paneState.selectPane} />
+        <SettingsNav
+          navItems={navItems}
+          activePane={paneState.activePane}
+          onSelectPane={paneState.selectPane}
+          canSignOut={!!accountState.account.authUserEmail}
+          signOutBusy={accountState.account.authBusy}
+          onSignOut={() => void accountState.account.onSignOut()}
+        />
 
         <div
           className={`settingsDetailPanel dashboardCard${paneState.mobileDetailOpen ? " isMobileOpen" : ""}`}

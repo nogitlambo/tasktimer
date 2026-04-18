@@ -4171,3 +4171,16 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetail
   text-transform: none !important;
   letter-spacing: 0.01em !important;
 }
+
+/* Final Settings nav action placement override: keep Sign Out pinned at the bottom of the left nav panel. */
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+  display: flex;
+  flex-direction: column;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+}
