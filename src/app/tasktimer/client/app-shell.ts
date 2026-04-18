@@ -477,6 +477,36 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     handleAppBackNavigation();
   }
 
+  function registerNativeBackFallbackListeners() {
+    const invokeNativeBack = (ev?: any) => {
+      onNativeBackPressed(ev);
+    };
+
+    const onIonBackButton = (ev: any) => {
+      const register = ev?.detail?.register;
+      if (typeof register !== "function") {
+        invokeNativeBack(ev);
+        return;
+      }
+      try {
+        register(1000, (processNext?: () => void) => {
+          invokeNativeBack(ev);
+          try {
+            processNext?.();
+          } catch {
+            // ignore
+          }
+        });
+      } catch {
+        invokeNativeBack(ev);
+      }
+    };
+
+    ctx.on(document as any, "backbutton", invokeNativeBack as any);
+    ctx.on(window as any, "backbutton", invokeNativeBack as any);
+    ctx.on(document as any, "ionBackButton", onIonBackButton as any);
+  }
+
   function initMobileBackHandling() {
     ensureNavStackCurrentScreen();
 
@@ -491,12 +521,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     };
     ctx.on(window, "popstate", onPopState as any);
 
-    let capBackHooked = false;
-
     try {
       const capApp = getCapAppPlugin();
       if (capApp?.addListener) {
-        capBackHooked = true;
         const maybePromise = capApp.addListener("backButton", (ev: any) => {
           onNativeBackPressed(ev);
         });
@@ -514,11 +541,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       // ignore
     }
 
-    if (!capBackHooked) {
-      ctx.on(document as any, "backbutton", (e: any) => {
-        onNativeBackPressed(e);
-      });
-    }
+    registerNativeBackFallbackListeners();
   }
 
   function registerAppShellEvents() {
