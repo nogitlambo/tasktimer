@@ -18,6 +18,7 @@ import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import {
   getTaskPlannedStartByDay,
+  normalizeLocalDateValue,
   normalizeScheduleStoredTime,
   normalizeTaskPlannedStartByDay,
   SCHEDULE_DAY_ORDER,
@@ -86,10 +87,18 @@ function describeError(error: unknown): Record<string, unknown> {
     };
   }
   if (typeof error === "object") {
+    const source = error as Record<string, unknown>;
+    const describedObject: Record<string, unknown> = {};
+    if (typeof source.name === "string" && source.name.trim()) describedObject.name = source.name;
+    if (typeof source.message === "string" && source.message.trim()) describedObject.message = source.message;
+    if ("code" in source) describedObject.code = source.code;
+    if ("stack" in source) describedObject.stack = source.stack ?? null;
+    if ("customData" in source) describedObject.customData = source.customData ?? null;
     try {
-      return { ...(error as Record<string, unknown>) };
+      const spreadObject = { ...source };
+      return Object.keys(spreadObject).length ? { ...describedObject, ...spreadObject } : Object.keys(describedObject).length ? describedObject : { value: String(error) };
     } catch {
-      return { value: String(error) };
+      return Object.keys(describedObject).length ? describedObject : { value: String(error) };
     }
   }
   return { value: error };
@@ -103,6 +112,22 @@ function isPermissionDeniedError(error: unknown): boolean {
 }
 
 const userRootPermissionWarnedUids = new Set<string>();
+const IDENTITY_SYNC_RECENT_WINDOW_MS = 60_000;
+const inFlightIdentitySyncByKey = new Map<string, Promise<void>>();
+const lastSuccessfulIdentitySyncAtByKey = new Map<string, number>();
+
+function normalizeIdentitySyncValue(value: string | null | undefined): string {
+  return String(value || "").trim();
+}
+
+function identitySyncRequestKey(uid: string, email: string | null | undefined, prevEmail: string | null | undefined, displayName: string | null | undefined): string {
+  return [
+    normalizeIdentitySyncValue(uid),
+    normalizeIdentitySyncValue(email).toLowerCase(),
+    normalizeIdentitySyncValue(prevEmail).toLowerCase(),
+    normalizeIdentitySyncValue(displayName),
+  ].join("|");
+}
 
 function dbOrNull() {
   return getFirebaseFirestoreClient();
@@ -252,6 +277,10 @@ function normalizeUserRootPatchForClientWrite(patch: Record<string, unknown> | n
   return sanitizeUserRootFieldsForClientWrite(patch || null);
 }
 
+function patchTouchesIdentityFields(patch: Record<string, unknown>): boolean {
+  return "email" in patch || "displayName" in patch;
+}
+
 function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): string[] {
   if (!data) return [];
   return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
@@ -331,6 +360,7 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
   const idToken = await currentUser?.getIdToken();
+  const authEmail = normalizeEmail(currentUser?.email);
   const authDisplayName =
     options?.displayName !== undefined
       ? options.displayName
@@ -338,6 +368,16 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
         ? null
         : String(currentUser.displayName || "").trim() || null;
   if (!idToken) return;
+  const requestKey = identitySyncRequestKey(uid, authEmail, options?.prevEmail || null, authDisplayName);
+  const now = Date.now();
+  const lastSuccessAt = lastSuccessfulIdentitySyncAtByKey.get(requestKey) || 0;
+  if (now - lastSuccessAt < IDENTITY_SYNC_RECENT_WINDOW_MS) return;
+  const inFlight = inFlightIdentitySyncByKey.get(requestKey);
+  if (inFlight) {
+    await inFlight;
+    return;
+  }
+  const syncPromise = (async () => {
   try {
     const response = await fetch("/api/account/sync-identity", {
       method: "POST",
@@ -354,16 +394,23 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       throw new Error(String(payload.error || "Could not sync user identity lookup."));
     }
+    lastSuccessfulIdentitySyncAtByKey.set(requestKey, Date.now());
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[tasktimer-cloud] Failed to sync account identity index", {
         uid,
+        email: authEmail || null,
         prevEmail: options?.prevEmail || null,
         error: describeError(error),
       });
     }
     throw error;
+  } finally {
+    inFlightIdentitySyncByKey.delete(requestKey);
   }
+  })();
+  inFlightIdentitySyncByKey.set(requestKey, syncPromise);
+  await syncPromise;
 }
 
 type UserRootWriteOptions = {
@@ -432,6 +479,23 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
   const existingCreatedAt = existingData?.createdAt;
   const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
   const sanitizedPatch = normalizeUserRootPatchForClientWrite(options?.patch);
+  const nextEmail =
+    typeof sanitizedPatch.email === "string"
+      ? normalizeEmail(sanitizedPatch.email)
+      : (options?.includeAuthIdentity ? authEmail : prevEmail);
+  const nextDisplayName =
+    "displayName" in sanitizedPatch
+      ? (sanitizedPatch.displayName == null ? null : String(sanitizedPatch.displayName || "").trim() || null)
+      : (options?.includeAuthIdentity ? authDisplayName : (existingData?.displayName == null ? null : String(existingData.displayName || "").trim() || null));
+  const shouldSyncIdentity =
+    !!nextEmail &&
+    (
+      options?.includeAuthIdentity === true ||
+      patchTouchesIdentityFields(sanitizedPatch) ||
+      !prevEmail ||
+      prevEmail !== nextEmail ||
+      normalizeIdentitySyncValue(existingData?.displayName == null ? null : String(existingData.displayName || "").trim() || null) !== normalizeIdentitySyncValue(nextDisplayName)
+    );
   const payload = {
     ...sanitizeUserRootFieldsForClientWrite(existingData),
     ...sanitizedPatch,
@@ -455,17 +519,19 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
     } else {
       await setDoc(root, payload, { merge: true });
     }
-    await syncUserIdentityIndex(uid, {
-      prevEmail: prevEmail || null,
-      displayName: authDisplayName,
-    }).catch((error) => {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[tasktimer-cloud] Continuing without account identity sync", {
-          uid,
-          error: describeError(error),
-        });
-      }
-    });
+    if (shouldSyncIdentity) {
+      await syncUserIdentityIndex(uid, {
+        prevEmail: prevEmail || null,
+        displayName: nextDisplayName,
+      }).catch((error) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[tasktimer-cloud] Continuing without account identity sync", {
+            uid,
+            error: describeError(error),
+          });
+        }
+      });
+    }
     return { wrote: true, rootReadable: true };
   } catch (error) {
     const failureContext = String(options?.failureContext || "User root write").trim() || "User root write";
@@ -760,6 +826,9 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
   row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
   row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
+  row.taskType = row.taskType === "once-off" ? "once-off" : "recurring";
+  row.onceOffDay = row.taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null;
+  row.onceOffTargetDate = row.taskType === "once-off" ? normalizeLocalDateValue(row.onceOffTargetDate) : null;
   row.plannedStartDay = normalizePlannedStartDay(row.plannedStartDay);
   row.plannedStartTime =
     row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
@@ -810,6 +879,9 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    taskType: task.taskType === "once-off" ? "once-off" : "recurring",
+    onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
+    onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime:
       task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
@@ -834,6 +906,15 @@ function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
     ...legacyRow,
     finalCheckpointAction: legacyTimeGoalAction,
   };
+}
+
+function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
+  const legacyRow = mapTaskToLegacyFirestore(task);
+  const { taskType, onceOffDay, onceOffTargetDate, ...compatibilityRow } = legacyRow;
+  void taskType;
+  void onceOffDay;
+  void onceOffTargetDate;
+  return compatibilityRow;
 }
 
 export async function saveUserRootPatch(uid: string, patch: Record<string, unknown>): Promise<void> {
@@ -1050,19 +1131,54 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
         }
         recoveredWithLegacyFallback = true;
       } catch (legacyError) {
-        if (process.env.NODE_ENV !== "production") {
-          const describedLegacyError = describeError(legacyError);
-          console.error("[tasktimer-cloud] Legacy fallback save failed", {
-            uid,
-            taskId: String(task.id || ""),
-            databaseRowKeys: Object.keys(legacyTaskRow),
-            taskRow: legacyTaskRow,
-            error: describedLegacyError,
-            errorMessage: describedLegacyError.message ?? null,
-            errorCode: describedLegacyError.code ?? null,
-          });
+        const describedLegacyError = describeError(legacyError);
+        const shouldRetryCompatibility =
+          describedLegacyError.code === "permission-denied" ||
+          String(describedLegacyError.message || "").toLowerCase().includes("missing or insufficient permissions");
+        if (shouldRetryCompatibility) {
+          const compatibilityTaskRow = mapTaskToCompatibilityFirestore(task);
+          try {
+            await setDoc(ref, await buildSavePayload(compatibilityTaskRow));
+            savedRowKeys = Object.keys(compatibilityTaskRow);
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("[tasktimer-cloud] Saved task with compatibility fallback", {
+                uid,
+                taskId: String(task.id || ""),
+                databaseRowKeys: savedRowKeys,
+              });
+            }
+            recoveredWithLegacyFallback = true;
+          } catch (compatibilityError) {
+            if (process.env.NODE_ENV !== "production") {
+              const describedCompatibilityError = describeError(compatibilityError);
+              console.error("[tasktimer-cloud] Legacy fallback save failed", {
+                uid,
+                taskId: String(task.id || ""),
+                databaseRowKeys: Object.keys(legacyTaskRow),
+                taskRow: legacyTaskRow,
+                compatibilityRowKeys: Object.keys(compatibilityTaskRow),
+                compatibilityTaskRow,
+                error: describedCompatibilityError,
+                errorMessage: describedCompatibilityError.message ?? null,
+                errorCode: describedCompatibilityError.code ?? null,
+              });
+            }
+            throw compatibilityError;
+          }
+        } else {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[tasktimer-cloud] Legacy fallback save failed", {
+              uid,
+              taskId: String(task.id || ""),
+              databaseRowKeys: Object.keys(legacyTaskRow),
+              taskRow: legacyTaskRow,
+              error: describedLegacyError,
+              errorMessage: describedLegacyError.message ?? null,
+              errorCode: describedLegacyError.code ?? null,
+            });
+          }
+          throw legacyError;
         }
-        throw legacyError;
       }
     }
     if (recoveredWithLegacyFallback) {

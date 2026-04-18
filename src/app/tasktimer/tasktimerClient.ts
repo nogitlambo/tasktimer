@@ -345,6 +345,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     addTaskPresetIntervalsEnabled: initialState.addTaskPresetIntervalsEnabled,
     addTaskPresetIntervalValue: initialState.addTaskPresetIntervalValue,
     addTaskWizardStep: initialState.addTaskWizardStep,
+    addTaskType: initialState.addTaskType,
+    addTaskOnceOffDay: initialState.addTaskOnceOffDay,
     addTaskPlannedStartTime: initialState.addTaskPlannedStartTime,
     addTaskPlannedStartOpenEnded: initialState.addTaskPlannedStartOpenEnded,
     addTaskDurationValue: initialState.addTaskDurationValue,

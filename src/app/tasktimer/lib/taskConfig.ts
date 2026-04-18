@@ -14,6 +14,7 @@ type TaskConfigReadoutOptions = {
   durationValue: string;
   durationUnit: DurationUnit;
   durationPeriod: DurationPeriod;
+  taskType?: "recurring" | "once-off";
   noTimeGoal?: boolean;
   [key: string]: unknown;
 };
@@ -40,6 +41,7 @@ export function getAddTaskDurationMaxForPeriod(unit: DurationUnit, period: Durat
 export function getAggregateTimeGoalTotals(tasks: Task[]): AggregateTimeGoalTotals {
   return (Array.isArray(tasks) ? tasks : []).reduce<AggregateTimeGoalTotals>(
     (totals, task) => {
+      if (task?.taskType === "once-off") return totals;
       if (!task?.timeGoalEnabled) return totals;
 
       const timeGoalMinutes = Math.max(0, Number(task.timeGoalMinutes) || 0);
@@ -141,6 +143,7 @@ export function formatAddTaskDurationReadout({
   durationValue,
   durationUnit,
   durationPeriod,
+  taskType,
   noTimeGoal,
 }: TaskConfigReadoutOptions): string {
   if (noTimeGoal) return "No time goal";
@@ -149,6 +152,7 @@ export function formatAddTaskDurationReadout({
   if (!(parsedValue > 0)) return "Set a time goal";
 
   const unitLabel = parsedValue === 1 ? durationUnit : `${durationUnit}s`;
+  if (taskType === "once-off") return `${parsedValue} ${unitLabel} once`;
   const periodLabel = durationPeriod === "day" ? "day" : "week";
   return `${parsedValue} ${unitLabel} per ${periodLabel}`;
 }

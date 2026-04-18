@@ -1,5 +1,10 @@
 import { sortMilestones } from "../lib/milestones";
-import { normalizeTaskPlannedStartByDay, syncLegacyPlannedStartFields } from "../lib/schedule-placement";
+import {
+  hasLocalDatePassed,
+  normalizeLocalDateValue,
+  normalizeTaskPlannedStartByDay,
+  syncLegacyPlannedStartFields,
+} from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 import type { MainMode } from "./types";
 
@@ -72,6 +77,9 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     const task: Task = {
       id: ctx.createId(),
       name,
+      taskType: "recurring",
+      onceOffDay: null,
+      onceOffTargetDate: null,
       order: order || 1,
       accumulatedMs: 0,
       running: false,
@@ -121,8 +129,17 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+    task.taskType = task.taskType === "once-off" ? "once-off" : "recurring";
+    task.onceOffDay = task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null;
+    task.onceOffTargetDate = task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null;
     task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
     task.plannedStartByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+    if (task.taskType === "once-off" && task.onceOffTargetDate && hasLocalDatePassed(task.onceOffTargetDate)) {
+      task.plannedStartDay = null;
+      task.plannedStartTime = null;
+      task.plannedStartByDay = null;
+      task.plannedStartOpenEnded = false;
+    }
     syncLegacyPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
   }

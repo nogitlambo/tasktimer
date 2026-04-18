@@ -58,6 +58,27 @@ describe("TaskTimerPreferencesService", () => {
     expect(service.loadWeekStarting()).toBe("sun");
   });
 
+  it("defaults theme to lime when no cached or local preference exists", () => {
+    vi.stubGlobal("window", {
+      localStorage: createLocalStorageStub(),
+    });
+    const repository = createTaskTimerWorkspaceRepository();
+    const service = createTaskTimerPreferencesService({
+      storageKeys: createStorageKeys(),
+      repository: {
+        ...repository,
+        loadCachedPreferences: () => null,
+        savePreferences: vi.fn(),
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache: vi.fn(),
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(async () => undefined),
+    });
+
+    expect(service.loadThemeMode()).toBe("lime");
+  });
+
   it("loads productivity period from cached preferences and preserves overnight ranges", () => {
     const repository = createTaskTimerWorkspaceRepository();
     const service = createTaskTimerPreferencesService({

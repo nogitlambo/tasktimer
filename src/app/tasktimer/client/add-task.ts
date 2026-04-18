@@ -10,6 +10,7 @@ import {
   getAddTaskDurationMaxForPeriod,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
+import { resolveNextScheduleDayDate, type ScheduleDay } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 import { bindToggleRow, eventTargetClosest, setSwitchState } from "./control-helpers";
 import type { TaskTimerAddTaskContext } from "./context";
@@ -42,10 +43,43 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   function getAddTaskTimeGoalMinutesState() {
     const value = Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     if (!(value > 0) || ctx.getAddTaskNoTimeGoal()) return 0;
+    if (ctx.getAddTaskType() === "once-off") {
+      return ctx.getAddTaskDurationUnit() === "minute" ? value : value * 60;
+    }
     if (ctx.getAddTaskDurationUnit() === "minute") {
       return ctx.getAddTaskDurationPeriod() === "day" ? value : value * 7;
     }
     return ctx.getAddTaskDurationPeriod() === "day" ? value * 60 : value * 60 * 7;
+  }
+
+  function getAddTaskTotalSteps() {
+    return ctx.getAddTaskType() === "once-off" ? 5 : 4;
+  }
+
+  function getAddTaskVisibleStep(step: 1 | 2 | 3 | 4 | 5) {
+    return step;
+  }
+
+  function getAddTaskFinalStep() {
+    return ctx.getAddTaskType() === "once-off" ? 5 : 4;
+  }
+
+  function isOnceOffTaskType() {
+    return ctx.getAddTaskType() === "once-off";
+  }
+
+  function syncAddTaskTypeUi() {
+    const isOnceOff = isOnceOffTaskType();
+    const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean) => {
+      if (!btn) return;
+      btn.classList.toggle("isOn", isOn);
+      btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+    };
+    syncPill(els.addTaskTypeRecurringBtn, !isOnceOff);
+    syncPill(els.addTaskTypeOnceOffBtn, isOnceOff);
+    if (els.addTaskOnceOffDaySelect) {
+      els.addTaskOnceOffDaySelect.value = ctx.getAddTaskOnceOffDay();
+    }
   }
 
   function readPlannedStartValueFromSelectors() {
@@ -141,6 +175,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         durationValue: String(ctx.getAddTaskDurationValue()),
         durationUnit: ctx.getAddTaskDurationUnit(),
         durationPeriod: ctx.getAddTaskDurationPeriod(),
+        taskType: ctx.getAddTaskType(),
         noTimeGoal: ctx.getAddTaskNoTimeGoal(),
         milestonesEnabled: false,
         milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
@@ -318,6 +353,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   function getAddTaskTimeGoalMinutes() {
     const value = Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     if (!(value > 0) || ctx.getAddTaskNoTimeGoal()) return 0;
+    if (ctx.getAddTaskType() === "once-off") {
+      return ctx.getAddTaskDurationUnit() === "minute" ? value : value * 60;
+    }
     if (ctx.getAddTaskDurationUnit() === "minute") {
       return ctx.getAddTaskDurationPeriod() === "day" ? value : value * 7;
     }
@@ -325,6 +363,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function validateAddTaskAggregateTimeGoals() {
+    if (ctx.getAddTaskType() === "once-off") return true;
     if (ctx.getAddTaskNoTimeGoal()) return true;
 
     const proposedMinutes = getAddTaskTimeGoalMinutes();
@@ -379,14 +418,20 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function syncAddTaskDurationUi() {
+    const onceOff = isOnceOffTaskType();
     const noTimeGoal = !!els.addTaskNoGoalCheckbox?.checked;
     ctx.setAddTaskNoTimeGoalState(noTimeGoal);
     if (els.addTaskStep3NextBtn) {
       els.addTaskStep3NextBtn.textContent = noTimeGoal ? "Done" : "Next";
     }
+    els.addTaskDurationPerLabel?.classList.toggle("isHidden", onceOff);
+    els.addTaskDurationPeriodPills?.classList.toggle("isHidden", onceOff);
     els.addTaskDurationRow?.classList.toggle("isDisabled", noTimeGoal);
     els.addTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = noTimeGoal;
+    if (onceOff) {
+      ctx.setAddTaskDurationPeriodState("week");
+    }
     if (noTimeGoal) {
       const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
         if (!btn) return;
@@ -401,7 +446,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncPill(
         els.addTaskDurationPeriodDay,
         ctx.getAddTaskDurationPeriod() === "day",
-        Number(ctx.getAddTaskDurationValue()) > getAddTaskDurationMaxForPeriod(ctx.getAddTaskDurationUnit(), "day")
+        onceOff || Number(ctx.getAddTaskDurationValue()) > getAddTaskDurationMaxForPeriod(ctx.getAddTaskDurationUnit(), "day")
       );
       syncPill(els.addTaskDurationPeriodWeek, ctx.getAddTaskDurationPeriod() === "week");
       syncAddTaskDurationReadout();
@@ -411,7 +456,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     const parsedValue = Math.max(0, Math.floor(parseFloat(els.addTaskDurationValueInput?.value || "0") || 0));
     ctx.setAddTaskDurationValueState(parsedValue);
     const maxDay = getAddTaskDurationMaxForPeriod(ctx.getAddTaskDurationUnit(), "day");
-    const canUseDay = Number(parsedValue) <= maxDay;
+    const canUseDay = !onceOff && Number(parsedValue) <= maxDay;
     ctx.setAddTaskDurationPeriodState(canUseDay && ctx.getAddTaskDurationPeriod() === "day" ? "day" : "week");
     if (els.addTaskDurationValueInput && String(parsedValue || "") !== String(els.addTaskDurationValueInput.value || "")) {
       els.addTaskDurationValueInput.value = String(parsedValue || 0);
@@ -433,26 +478,32 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function syncAddTaskWizardUi() {
     const step = ctx.getAddTaskWizardStep();
+    const onceOff = isOnceOffTaskType();
+    const visibleStep = getAddTaskVisibleStep(step);
     els.addTaskStep1?.classList.toggle("isActive", step === 1);
-    els.addTaskStep2?.classList.toggle("isActive", step === 2);
-    els.addTaskStep3?.classList.toggle("isActive", step === 3);
-    els.addTaskStep4?.classList.toggle("isActive", step === 4);
+    els.addTaskStepOnceOffDay?.classList.toggle("isActive", onceOff && step === 2);
+    els.addTaskStep2?.classList.toggle("isActive", onceOff ? step === 3 : step === 2);
+    els.addTaskStep3?.classList.toggle("isActive", onceOff ? step === 4 : step === 3);
+    els.addTaskStep4?.classList.toggle("isActive", onceOff ? step === 5 : step === 4);
     if (els.addTaskWizardProgress) {
-      els.addTaskWizardProgress.textContent = `Step ${step} of 4`;
+      els.addTaskWizardProgress.textContent = `Step ${visibleStep} of ${getAddTaskTotalSteps()}`;
     }
     els.addTaskStep1NextBtn?.classList.toggle("isHidden", step !== 1);
-    els.addTaskStep2BackBtn?.classList.toggle("isHidden", step !== 2);
-    els.addTaskStep2NextBtn?.classList.toggle("isHidden", step !== 2);
-    els.addTaskStep3BackBtn?.classList.toggle("isHidden", step !== 3);
-    els.addTaskStep3NextBtn?.classList.toggle("isHidden", step !== 3);
-    els.addTaskStep4BackBtn?.classList.toggle("isHidden", step !== 4);
-    els.addTaskConfirmBtn?.classList.toggle("isHidden", step !== 4);
+    els.addTaskStepOnceOffBackBtn?.classList.toggle("isHidden", !(onceOff && step === 2));
+    els.addTaskStepOnceOffNextBtn?.classList.toggle("isHidden", !(onceOff && step === 2));
+    els.addTaskStep2BackBtn?.classList.toggle("isHidden", onceOff ? step !== 3 : step !== 2);
+    els.addTaskStep2NextBtn?.classList.toggle("isHidden", onceOff ? step !== 3 : step !== 2);
+    els.addTaskStep3BackBtn?.classList.toggle("isHidden", onceOff ? step !== 4 : step !== 3);
+    els.addTaskStep3NextBtn?.classList.toggle("isHidden", onceOff ? step !== 4 : step !== 3);
+    els.addTaskStep4BackBtn?.classList.toggle("isHidden", step !== getAddTaskFinalStep());
+    els.addTaskConfirmBtn?.classList.toggle("isHidden", step !== getAddTaskFinalStep());
     if (step !== 1) setAddTaskNameMenuOpen(false);
+    syncAddTaskTypeUi();
     syncAddTaskPlannedStartUi();
     syncAddTaskDurationUi();
   }
 
-  function setAddTaskWizardStep(step: 1 | 2 | 3 | 4) {
+  function setAddTaskWizardStep(step: 1 | 2 | 3 | 4 | 5) {
     ctx.setAddTaskWizardStepState(step);
     clearAddTaskValidationState();
     syncAddTaskWizardUi();
@@ -474,6 +525,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       showAddTaskValidationError("Enter a time amount greater than 0", { duration: true });
       return false;
     }
+    if (isOnceOffTaskType()) return true;
     const maxForPeriod = getAddTaskDurationMaxForPeriod(ctx.getAddTaskDurationUnit(), ctx.getAddTaskDurationPeriod());
     if (Number(ctx.getAddTaskDurationValue()) > maxForPeriod) {
       const unitLabel = ctx.getAddTaskDurationUnit() === "minute" ? "minutes" : "hours";
@@ -482,6 +534,16 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       return false;
     }
     return validateAddTaskAggregateTimeGoals();
+  }
+
+  function validateAddTaskOnceOffDayStep() {
+    const selectedDay = String(els.addTaskOnceOffDaySelect?.value || ctx.getAddTaskOnceOffDay()).trim().toLowerCase();
+    if (!selectedDay) {
+      showAddTaskValidationError("Choose a day for this once-off task.");
+      return false;
+    }
+    ctx.setAddTaskOnceOffDayState(selectedDay as ScheduleDay);
+    return true;
   }
 
   function validateAddTaskStep3() {
@@ -518,6 +580,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function submitAddTaskWizard() {
     const name = (els.addTaskName?.value || "").trim();
+    const onceOff = isOnceOffTaskType();
     rememberCustomTaskName(name);
     setAddTaskError("");
     const tasks = ctx.getTasks();
@@ -534,18 +597,30 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.presetIntervalsEnabled = checkpointingEnabled && !!ctx.getAddTaskPresetIntervalsEnabled();
     newTask.presetIntervalValue = Math.max(0, Number(ctx.getAddTaskPresetIntervalValue()) || 0);
     newTask.timeGoalAction = "confirmModal";
+    newTask.taskType = onceOff ? "once-off" : "recurring";
+    newTask.onceOffDay = onceOff ? (ctx.getAddTaskOnceOffDay() as ScheduleDay) : null;
+    newTask.onceOffTargetDate = onceOff ? resolveNextScheduleDayDate(ctx.getAddTaskOnceOffDay() as ScheduleDay) : null;
     newTask.timeGoalEnabled = !ctx.getAddTaskNoTimeGoal();
     newTask.timeGoalValue = ctx.getAddTaskNoTimeGoal() ? 0 : Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     newTask.timeGoalUnit = ctx.getAddTaskNoTimeGoal() ? "hour" : ctx.getAddTaskDurationUnit();
-    newTask.timeGoalPeriod = ctx.getAddTaskNoTimeGoal() ? "week" : ctx.getAddTaskDurationPeriod();
+    newTask.timeGoalPeriod = ctx.getAddTaskNoTimeGoal() || onceOff ? "week" : ctx.getAddTaskDurationPeriod();
     newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
-    newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
-    if (newTask.plannedStartOpenEnded) {
-      newTask.plannedStartTime = null;
-      newTask.plannedStartDay = null;
-      newTask.plannedStartByDay = null;
+    if (onceOff) {
+      const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
+      const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || "09:00";
+      newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
+      newTask.plannedStartDay = onceOffDay;
+      newTask.plannedStartTime = plannedTime;
+      newTask.plannedStartByDay = { [onceOffDay]: plannedTime };
     } else {
-      newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
+      newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
+      if (newTask.plannedStartOpenEnded) {
+        newTask.plannedStartTime = null;
+        newTask.plannedStartDay = null;
+        newTask.plannedStartByDay = null;
+      } else {
+        newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
+      }
     }
     ctx.setTasks([...tasks, newTask]);
     closeAddTaskModal();
@@ -556,6 +631,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function resetAddTaskWizardState() {
     ctx.setAddTaskWizardStepState(1);
+    ctx.setAddTaskTypeState("recurring");
+    ctx.setAddTaskOnceOffDayState("mon");
     ctx.setAddTaskPlannedStartTimeState("09:00");
     ctx.setAddTaskPlannedStartOpenEndedState(false);
     ctx.setAddTaskDurationValueState(5);
@@ -565,6 +642,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskNoTimeGoalState(false);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = String(5);
     if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
+    if (els.addTaskOnceOffDaySelect) els.addTaskOnceOffDaySelect.value = "mon";
     if (els.addTaskPlannedStartInput) els.addTaskPlannedStartInput.value = "09:00";
     if (els.addTaskPlannedStartOpenEnded) els.addTaskPlannedStartOpenEnded.checked = false;
     setAddTaskCheckpointInfoOpen(false);
@@ -621,12 +699,41 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       if (!validateAddTaskStep1()) return;
       setAddTaskWizardStep(2);
       try {
-        els.addTaskDurationValueInput?.focus();
+        if (isOnceOffTaskType()) {
+          els.addTaskOnceOffDaySelect?.focus();
+        } else {
+          els.addTaskDurationValueInput?.focus();
+        }
       } catch {
         // ignore
       }
     });
-    ctx.on(els.addTaskStep2BackBtn, "click", () => {
+    ctx.on(els.addTaskTypeRecurringBtn, "click", () => {
+      if (ctx.getAddTaskType() === "recurring") return;
+      const currentStep = ctx.getAddTaskWizardStep();
+      ctx.setAddTaskTypeState("recurring");
+      if (currentStep >= 2) {
+        setAddTaskWizardStep(Math.max(2, currentStep - 1) as 1 | 2 | 3 | 4 | 5);
+      } else {
+        syncAddTaskWizardUi();
+      }
+    });
+    ctx.on(els.addTaskTypeOnceOffBtn, "click", () => {
+      if (ctx.getAddTaskType() === "once-off") return;
+      const currentStep = ctx.getAddTaskWizardStep();
+      ctx.setAddTaskTypeState("once-off");
+      if (currentStep >= 2) {
+        const nextStep = currentStep === 2 ? 2 : Math.min(5, currentStep + 1);
+        setAddTaskWizardStep(nextStep as 1 | 2 | 3 | 4 | 5);
+      } else {
+        syncAddTaskWizardUi();
+      }
+    });
+    ctx.on(els.addTaskOnceOffDaySelect, "change", () => {
+      ctx.setAddTaskOnceOffDayState((els.addTaskOnceOffDaySelect?.value || "mon") as ScheduleDay);
+      clearAddTaskValidationState();
+    });
+    ctx.on(els.addTaskStepOnceOffBackBtn, "click", () => {
       setAddTaskWizardStep(1);
       try {
         els.addTaskName?.focus();
@@ -634,9 +741,30 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         // ignore
       }
     });
+    ctx.on(els.addTaskStepOnceOffNextBtn, "click", () => {
+      if (!validateAddTaskOnceOffDayStep()) return;
+      setAddTaskWizardStep(3);
+      try {
+        els.addTaskDurationValueInput?.focus();
+      } catch {
+        // ignore
+      }
+    });
+    ctx.on(els.addTaskStep2BackBtn, "click", () => {
+      setAddTaskWizardStep(isOnceOffTaskType() ? 2 : 1);
+      try {
+        if (isOnceOffTaskType()) {
+          els.addTaskOnceOffDaySelect?.focus();
+        } else {
+          els.addTaskName?.focus();
+        }
+      } catch {
+        // ignore
+      }
+    });
     ctx.on(els.addTaskStep2NextBtn, "click", () => {
       if (!validateAddTaskStep2()) return;
-      setAddTaskWizardStep(3);
+      setAddTaskWizardStep(isOnceOffTaskType() ? 4 : 3);
       try {
         els.addTaskPlannedStartHourSelect?.focus();
       } catch {
@@ -644,7 +772,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       }
     });
     ctx.on(els.addTaskStep3BackBtn, "click", () => {
-      setAddTaskWizardStep(2);
+      setAddTaskWizardStep(isOnceOffTaskType() ? 3 : 2);
       try {
         els.addTaskDurationValueInput?.focus();
       } catch {
@@ -653,16 +781,15 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
     ctx.on(els.addTaskStep3NextBtn, "click", () => {
       if (ctx.getAddTaskNoTimeGoal()) {
-        if (!validateAddTaskStep1()) return;
         submitAddTaskWizard();
         return;
       }
-      setAddTaskWizardStep(4);
+      setAddTaskWizardStep(getAddTaskFinalStep());
     });
     ctx.on(els.addTaskStep4BackBtn, "click", () => {
-      setAddTaskWizardStep(3);
+      setAddTaskWizardStep(isOnceOffTaskType() ? 4 : 3);
       try {
-        els.addTaskDurationValueInput?.focus();
+        els.addTaskPlannedStartHourSelect?.focus();
       } catch {
         // ignore
       }
@@ -696,6 +823,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationPeriodDay, "click", () => {
+      if (isOnceOffTaskType()) return;
       if (!canUseAdvancedTaskConfig()) {
         ctx.showUpgradePrompt("Time goal configuration", "pro");
         return;
@@ -705,6 +833,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskDurationUi();
     });
     ctx.on(els.addTaskDurationPeriodWeek, "click", () => {
+      if (isOnceOffTaskType()) return;
       if (!canUseAdvancedTaskConfig()) {
         ctx.showUpgradePrompt("Time goal configuration", "pro");
         return;
@@ -889,8 +1018,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskForm, "submit", (e: Event) => {
       e.preventDefault();
       clearAddTaskValidationState();
-      if (ctx.getAddTaskWizardStep() !== 4) return;
+      if (ctx.getAddTaskWizardStep() !== getAddTaskFinalStep()) return;
       if (!validateAddTaskStep1()) return;
+      if (isOnceOffTaskType() && !validateAddTaskOnceOffDayStep()) return;
       if (!validateAddTaskStep2()) return;
       if (!validateAddTaskStep3()) return;
       submitAddTaskWizard();

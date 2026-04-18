@@ -34,36 +34,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return ctx.hasEntitlement("advancedTaskConfig");
   }
 
-  function canUsePremiumThemes() {
-    return ctx.getCurrentPlan() === "pro";
-  }
-
   function syncThemeAvailabilityUi() {
-    const premiumThemesLocked = !canUsePremiumThemes();
     const currentTheme = ctx.getThemeMode();
-    const lockedThemeSelected = premiumThemesLocked && (currentTheme === "purple" || currentTheme === "lime");
-
-    if (lockedThemeSelected) {
-      ctx.setThemeModeState("cyan");
-      document.body.setAttribute("data-theme", "cyan");
-    }
-
-    const appliedTheme = lockedThemeSelected ? "cyan" : currentTheme;
-    const lockTitle = premiumThemesLocked ? "Pro feature: Purple and Lime themes" : "";
-
-    if (els.themeSelect) {
-      els.themeSelect.value = appliedTheme;
-      if (premiumThemesLocked && els.themeSelect.value !== "cyan") {
-        els.themeSelect.value = "cyan";
-      }
-      els.themeSelect.title = lockTitle;
-      const purpleOption = els.themeSelect.querySelector('option[value="purple"]') as HTMLOptionElement | null;
-      const limeOption = els.themeSelect.querySelector('option[value="lime"]') as HTMLOptionElement | null;
-      const cyanOption = els.themeSelect.querySelector('option[value="cyan"]') as HTMLOptionElement | null;
-      if (purpleOption) purpleOption.disabled = premiumThemesLocked;
-      if (limeOption) limeOption.disabled = premiumThemesLocked;
-      if (cyanOption) cyanOption.disabled = false;
-    }
+    const appliedTheme = currentTheme;
 
     els.themePurpleBtn?.classList.toggle("isOn", appliedTheme === "purple");
     els.themeCyanBtn?.classList.toggle("isOn", appliedTheme === "cyan");
@@ -73,14 +46,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.themeLimeBtn?.setAttribute("aria-pressed", appliedTheme === "lime" ? "true" : "false");
 
     if (els.themePurpleBtn) {
-      els.themePurpleBtn.disabled = premiumThemesLocked;
-      els.themePurpleBtn.setAttribute("aria-disabled", String(premiumThemesLocked));
-      els.themePurpleBtn.title = lockTitle;
+      els.themePurpleBtn.disabled = false;
+      els.themePurpleBtn.setAttribute("aria-disabled", "false");
+      els.themePurpleBtn.title = "";
     }
     if (els.themeLimeBtn) {
-      els.themeLimeBtn.disabled = premiumThemesLocked;
-      els.themeLimeBtn.setAttribute("aria-disabled", String(premiumThemesLocked));
-      els.themeLimeBtn.title = lockTitle;
+      els.themeLimeBtn.disabled = false;
+      els.themeLimeBtn.setAttribute("aria-disabled", "false");
+      els.themeLimeBtn.title = "";
     }
     if (els.themeCyanBtn) {
       els.themeCyanBtn.disabled = false;
@@ -98,7 +71,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
     const value = String(raw || "").trim().toLowerCase();
     if (value === "lime") return "lime";
-    return value === "cyan" || value === "command" ? "cyan" : "purple";
+    return value === "purple" ? "purple" : value === "cyan" || value === "command" ? "cyan" : "lime";
   }
 
   function sanitizeModeLabel(value: unknown, fallback: string) {
@@ -387,11 +360,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function setThemeMode(next: "purple" | "cyan" | "lime") {
-    if ((next === "purple" || next === "lime") && !canUsePremiumThemes()) {
-      ctx.showUpgradePrompt(`${next === "purple" ? "Purple" : "Lime"} theme`, "pro");
-      syncThemeAvailabilityUi();
-      return;
-    }
     applyTheme(next);
     persistPreferencesToCloud();
   }
@@ -431,10 +399,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.on(els.themePurpleBtn, "click", () => {
       setThemeMode("purple");
     });
-    ctx.on(els.themeSelect, "change", () => {
-      const next = String(els.themeSelect?.value || "cyan").trim().toLowerCase();
-      setThemeMode(next === "lime" ? "lime" : next === "cyan" ? "cyan" : "purple");
-    });
     ctx.on(els.themeCyanBtn, "click", () => {
       setThemeMode("cyan");
     });
@@ -466,7 +430,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
     });
     ctx.on(els.appearanceLoadDefaultsBtn, "click", () => {
-      setThemeMode(canUsePremiumThemes() ? "purple" : "cyan");
+      setThemeMode("lime");
       setMenuButtonStyle("square");
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {

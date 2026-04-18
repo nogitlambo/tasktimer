@@ -11,6 +11,7 @@ import { SettingsNotificationsPane } from "./settings/SettingsNotificationsPane"
 import { SettingsPreferencesPane } from "./settings/SettingsPreferencesPane";
 import { SettingsPrivacyPane } from "./settings/SettingsPrivacyPane";
 import { SettingsAboutPane } from "./settings/SettingsAboutPane";
+import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import type { SettingsFeedbackState, SettingsPaneKey } from "./settings/types";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
@@ -60,7 +61,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           onSelectPane={paneState.selectPane}
           canSignOut={!!accountState.account.authUserEmail}
           signOutBusy={accountState.account.authBusy}
-          onSignOut={() => void accountState.account.onSignOut()}
+          onSignOut={() => accountState.account.setShowSignOutConfirm(true)}
         />
 
         <div
@@ -102,6 +103,23 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           <SettingsDataPane active={paneState.activePane === "data"} exiting={paneState.exitingPane === "data"} />
         </div>
       </div>
+
+      <InlineConfirmModal
+        open={accountState.account.showSignOutConfirm}
+        onClose={() => accountState.account.setShowSignOutConfirm(false)}
+        ariaLabel="Sign Out"
+        title="Sign Out"
+      >
+        <p className="settingsInlineConfirmText">Sign out of your account now?</p>
+        <div className="footerBtns settingsInlineConfirmBtns">
+          <button className="btn btn-ghost" type="button" onClick={() => accountState.account.setShowSignOutConfirm(false)}>
+            Cancel
+          </button>
+          <button className="btn btn-accent" type="button" onClick={() => void accountState.account.onSignOut()} disabled={accountState.account.authBusy}>
+            Sign Out
+          </button>
+        </div>
+      </InlineConfirmModal>
     </div>
   );
 }

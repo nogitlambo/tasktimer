@@ -634,6 +634,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       e.preventDefault();
       return;
     }
+    const momentumDriversArea = els.dashboardMomentumDrivers as HTMLElement | null;
+    const clickedInsideMomentumDrivers = !!momentumDriversArea?.contains(e.target as Node | null);
+    if (ctx.hasSelectedDashboardMomentumDriver() && !clickedInsideMomentumDrivers) {
+      ctx.clearDashboardMomentumDriverSelection();
+    }
     const btn = e.target?.closest?.("[data-dashboard-avg-range-toggle]") as HTMLElement | null;
     if (!btn) return;
     const nextRange: DashboardAvgRange = sanitizeDashboardAvgRange(ctx.getDashboardAvgRange()) === "past30" ? "past7" : "past30";

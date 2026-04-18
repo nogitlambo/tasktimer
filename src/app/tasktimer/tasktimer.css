@@ -2242,6 +2242,26 @@ body[data-theme="lime"] .archieDraftSection{
     background: rgba(121, 232, 110, .96);
     box-shadow: 0 0 0 1px rgba(121,232,110,.24), 0 0 8px rgba(121,232,110,.3);
   }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue[data-dashboard-momentum-band="low"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus[data-dashboard-momentum-band="low"] {
+    color: rgba(232, 74, 74, .96) !important;
+    text-shadow: 0 0 8px rgba(232,74,74,.18);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue[data-dashboard-momentum-band="lower-mid"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus[data-dashboard-momentum-band="lower-mid"] {
+    color: rgba(255, 149, 64, .96) !important;
+    text-shadow: 0 0 8px rgba(255,149,64,.18);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue[data-dashboard-momentum-band="upper-mid"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus[data-dashboard-momentum-band="upper-mid"] {
+    color: rgba(255, 214, 87, .96) !important;
+    text-shadow: 0 0 8px rgba(255,214,87,.16);
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreValue[data-dashboard-momentum-band="high"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreStatus[data-dashboard-momentum-band="high"] {
+    color: rgba(121, 232, 110, .96) !important;
+    text-shadow: 0 0 8px rgba(121,232,110,.18);
+  }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverButton,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriver > .dashboardMomentumDriverText {
     padding-left: 40px !important;

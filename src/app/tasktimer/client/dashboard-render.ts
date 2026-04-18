@@ -79,6 +79,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return "Medium";
   }
 
+  function applyDashboardTrendIndicator(indicatorEl: HTMLElement | null, currentMs: number, previousMs: number) {
+    if (!indicatorEl) return null;
+    indicatorEl.classList.remove("positive", "negative", "neutral");
+    if (!(previousMs > 0)) {
+      indicatorEl.textContent = "--";
+      return null;
+    }
+    const deltaPct = Math.round(((currentMs - previousMs) / previousMs) * 100);
+    indicatorEl.textContent = deltaPct > 0 ? `↑${deltaPct}%` : deltaPct < 0 ? `↓${Math.abs(deltaPct)}%` : "0%";
+    if (deltaPct > 0) indicatorEl.classList.add("positive");
+    else if (deltaPct < 0) indicatorEl.classList.add("negative");
+    else indicatorEl.classList.add("neutral");
+    return deltaPct;
+  }
+
   function getDashboardTimelineDensityTarget(value: DashboardTimelineDensity) {
     if (value === "low") return 3;
     if (value === "high") return 7;
@@ -287,6 +302,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     selectedMomentumDriverResetTimerId = null;
   }
 
+  function clearDashboardMomentumDriverSelection() {
+    if (!selectedMomentumDriverKey && selectedMomentumDriverResetTimerId == null) return;
+    clearSelectedMomentumDriverResetTimer();
+    if (!selectedMomentumDriverKey) return;
+    selectedMomentumDriverKey = null;
+    renderDashboardMomentumCard();
+  }
+
+  function hasSelectedDashboardMomentumDriver() {
+    return !!selectedMomentumDriverKey;
+  }
+
   function sanitizeMomentumDriverKey(value: unknown): DashboardMomentumDriverKey | null {
     const raw = String(value || "").trim();
     return MOMENTUM_DRIVER_DEFS.some((driver) => driver.key === raw) ? (raw as DashboardMomentumDriverKey) : null;
@@ -386,6 +413,51 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return 0;
   }
 
+  const MOMENTUM_GAUGE_COLOR_STOPS = [
+    { offset: 0, rgb: [143, 22, 35] as const },
+    { offset: 12, rgb: [228, 66, 31] as const },
+    { offset: 26, rgb: [255, 122, 28] as const },
+    { offset: 42, rgb: [247, 166, 37] as const },
+    { offset: 58, rgb: [255, 213, 74] as const },
+    { offset: 78, rgb: [207, 224, 111] as const },
+    { offset: 100, rgb: [169, 214, 95] as const },
+  ] as const;
+
+  function getMomentumGaugeTextColor(score: number) {
+    const boundedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    let leftStop = MOMENTUM_GAUGE_COLOR_STOPS[0];
+    let rightStop = MOMENTUM_GAUGE_COLOR_STOPS[MOMENTUM_GAUGE_COLOR_STOPS.length - 1];
+    for (let i = 1; i < MOMENTUM_GAUGE_COLOR_STOPS.length; i += 1) {
+      const stop = MOMENTUM_GAUGE_COLOR_STOPS[i];
+      if (boundedScore <= stop.offset) {
+        leftStop = MOMENTUM_GAUGE_COLOR_STOPS[i - 1];
+        rightStop = stop;
+        break;
+      }
+    }
+    const span = Math.max(1, rightStop.offset - leftStop.offset);
+    const progress = Math.max(0, Math.min(1, (boundedScore - leftStop.offset) / span));
+    const rgb = leftStop.rgb.map((value, index) => Math.round(value + (rightStop.rgb[index] - value) * progress)) as [number, number, number];
+    return {
+      color: `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]})`,
+      textShadow: `0 0 8px rgba(${rgb[0]},${rgb[1]},${rgb[2]},.2)`,
+    };
+  }
+
+  function applyMomentumMultiplierIllumination(dialEl: HTMLElement, score: number) {
+    const boundedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    const multiplierLabels = Array.from(
+      dialEl.querySelectorAll("[data-momentum-multiplier-threshold]")
+    ) as SVGTextElement[];
+    multiplierLabels.forEach((labelEl) => {
+      const threshold = Number(labelEl.getAttribute("data-momentum-multiplier-threshold") || 0);
+      const isLit = Number.isFinite(threshold) && boundedScore >= threshold;
+      labelEl.style.fill = isLit ? "rgba(255, 255, 255, 0.98)" : "rgba(241, 247, 255, 0.38)";
+      labelEl.style.opacity = isLit ? "1" : "0.62";
+      labelEl.style.filter = isLit ? "drop-shadow(0 0 6px rgba(255,255,255,.42))" : "none";
+    });
+  }
+
   function applyMomentumVisualState(opts: {
     dialEl: HTMLElement;
     arcActiveEl: SVGPathElement;
@@ -400,12 +472,23 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const roundedScore = Math.round(boundedScore);
     const displayedBandLabel = getMomentumBandLabel(roundedScore);
     const ariaBandLabel = String(opts.ariaBandLabel || displayedBandLabel).trim() || displayedBandLabel;
+    const displayedBandKey =
+      roundedScore < 25 ? "low" : roundedScore < 50 ? "lower-mid" : roundedScore < 75 ? "upper-mid" : "high";
+    const gaugeTextColor = getMomentumGaugeTextColor(boundedScore);
     opts.dialEl.style.setProperty("--momentum-score", String(boundedScore));
     opts.dialEl.setAttribute("aria-label", `Momentum score ${roundedScore} out of 100, ${ariaBandLabel}`);
+    opts.dialEl.setAttribute("data-dashboard-momentum-band", displayedBandKey);
     opts.scoreValueEl.textContent = String(roundedScore);
+    opts.scoreValueEl.setAttribute("data-dashboard-momentum-band", displayedBandKey);
+    opts.scoreValueEl.style.color = gaugeTextColor.color;
+    opts.scoreValueEl.style.textShadow = gaugeTextColor.textShadow;
     opts.scoreStatusEl.textContent = opts.statusLabel || displayedBandLabel;
+    opts.scoreStatusEl.setAttribute("data-dashboard-momentum-band", displayedBandKey);
+    opts.scoreStatusEl.style.color = gaugeTextColor.color;
+    opts.scoreStatusEl.style.textShadow = gaugeTextColor.textShadow;
     opts.arcActiveEl.setAttribute("stroke-dasharray", `${boundedScore} 100`);
     opts.needleEl.style.setProperty("--momentum-needle-deg", `${getMomentumNeedleDeg(boundedScore)}deg`);
+    applyMomentumMultiplierIllumination(opts.dialEl, boundedScore);
   }
 
   function animateMomentumToScore(opts: {
@@ -486,10 +569,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectionFillEl = els.dashboardWeeklyGoalsProjectionFill as HTMLElement | null;
     const progressFillEl = els.dashboardWeeklyGoalsProgressFill as HTMLElement | null;
     const progressTextEl = els.dashboardWeeklyGoalsProgressText as HTMLElement | null;
+    const trendIndicatorEl = document.getElementById("dashboardWeeklyTrendIndicator") as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
 
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
+    const prevWeekEndMs = weekStartMs;
+    const prevWeekStartMs = prevWeekEndMs - 7 * 86400000;
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task) return false;
       if (!task.timeGoalEnabled) return false;
@@ -517,6 +603,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }, 0);
       return sum + taskWeekMs;
     }, 0);
+    const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      if (!taskId) return sum;
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      const taskPrevWeekMs = entries.reduce((entrySum, entry: any) => {
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
+        if (!Number.isFinite(ms) || ms <= 0) return entrySum;
+        return entrySum + ms;
+      }, 0);
+      return sum + taskPrevWeekMs;
+    }, 0);
 
     const runningMs = goalTasks.reduce((sum, task) => {
       if (!task?.running) return sum;
@@ -528,6 +627,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
     const showProjectionMarker = totalGoalMs > 0 && runningMs > 0;
     const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs);
     if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
@@ -570,6 +670,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     if (progressTextEl) {
       progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
+    }
+    const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
+    if (cardEl) {
+      const trendSummary =
+        trendDeltaPct == null ? "Trend unavailable versus previous week." : `${trendDeltaPct >= 0 ? "+" : ""}${trendDeltaPct}% versus previous week.`;
+      cardEl.setAttribute("aria-label", `Weekly logged time and time goal progress. ${trendSummary}`);
     }
   }
 
@@ -928,6 +1034,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const valueEl = document.getElementById("dashboardTodayHoursValue") as HTMLElement | null;
     const metaEl = document.getElementById("dashboardTodayHoursMeta") as HTMLElement | null;
     const deltaEl = document.getElementById("dashboardTodayHoursDelta") as HTMLElement | null;
+    const trendIndicatorEl = document.getElementById("dashboardTodayTrendIndicator") as HTMLElement | null;
     const progressBarEl = document.getElementById("dashboardTodayHoursProgressBar") as HTMLElement | null;
     const projectionMarkerEl = document.getElementById("dashboardTodayHoursProjectionMarker") as HTMLElement | null;
     const projectionFillEl = document.getElementById("dashboardTodayHoursProjectionFill") as HTMLElement | null;
@@ -999,6 +1106,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdaySameTimeMs);
     applyDashboardGoalProgressUi({
       progressBarEl,
       progressFillEl,
@@ -1020,6 +1128,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         metaEl.textContent = "";
         metaEl.style.display = "none";
       }
+    }
+    const cardEl = trendIndicatorEl?.closest(".dashboardWeekHoursCard") as HTMLElement | null;
+    if (cardEl) {
+      const trendSummary =
+        trendDeltaPct == null ? "Trend unavailable versus this time yesterday." : `${trendDeltaPct > 0 ? "+" : ""}${trendDeltaPct}% versus this time yesterday.`;
+      cardEl.setAttribute("aria-label", `Today's logged time. ${trendSummary}`);
     }
     if (!deltaEl) return;
 
@@ -2106,6 +2220,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardWidgets,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
+    clearDashboardMomentumDriverSelection,
+    hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
   };

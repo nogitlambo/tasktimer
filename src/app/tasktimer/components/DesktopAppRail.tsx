@@ -32,6 +32,7 @@ import {
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
+  ACCOUNT_PROFILE_UPDATED_EVENT,
   customAvatarIdForUid,
   googleAvatarIdForUid,
   readStoredAvatarId,
@@ -304,7 +305,7 @@ export default function DesktopAppRail({
 
     try {
       const snap = await getDoc(doc(db, "users", uid));
-      const alias = snap.exists() ? String(snap.get("alias") || snap.get("displayName") || "").trim() : "";
+      const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || snap.get("displayName") || "").trim() : "";
       const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteRankThumbnailSrc = String(snap.get("rankThumbnailSrc") || storedRankThumbnailSrc).trim();
@@ -315,7 +316,7 @@ export default function DesktopAppRail({
           // Keep rendering from local auth state when cloud sync is unavailable.
         });
       }
-      setProfileLabel(alias || fallbackLabel);
+      setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       setRankThumbnailSrc(remoteRankThumbnailSrc);
       if (remotePlan === "free" || remotePlan === "pro") {
@@ -353,8 +354,10 @@ export default function DesktopAppRail({
       void syncProfileFromUser(auth.currentUser);
     };
     window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, refreshProfile);
+    window.addEventListener(ACCOUNT_PROFILE_UPDATED_EVENT, refreshProfile);
     return () => {
       window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, refreshProfile);
+      window.removeEventListener(ACCOUNT_PROFILE_UPDATED_EVENT, refreshProfile);
       unsubscribe();
     };
   }, [syncProfileFromUser]);
@@ -370,7 +373,7 @@ export default function DesktopAppRail({
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
-  const currentPlanBadgeLabel = currentPlan === "pro" ? "PRO" : currentPlanLabel;
+  const currentPlanBadgeLabel = currentPlan === "pro" ? "Pro Plan" : currentPlanLabel;
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
   const canSelectRankInsignia = isAdminAccountEmail(signedInUserEmail);
@@ -479,7 +482,9 @@ export default function DesktopAppRail({
               >
                 <div className="dashboardProfileHead dashboardRailProfileHead">
                   {profileAvatarSrc ? (
-                    <AppImg className="dashboardAvatarImage dashboardAvatar dashboardRailProfileAvatar" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                    <div className="dashboardAvatar dashboardRailProfileAvatar" aria-hidden="true">
+                      <AppImg className="dashboardAvatarImage dashboardRailProfileAvatarImage" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                    </div>
                   ) : (
                     <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
                   )}

@@ -103,6 +103,7 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
 
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" data-dashboard-label="Today" aria-label="Today's logged time">
                     <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
+                    <div className="dashboardTrendIndicator" id="dashboardTodayTrendIndicator" aria-hidden="true">--</div>
                     <div className="dashboardBigValue" id="dashboardTodayHoursValue">0m</div>
                     <div className="dashboardGoalProgressWrap">
                       <span className="dashboardGoalProjectionMarker" id="dashboardTodayHoursProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
@@ -132,6 +133,7 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
 
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeeklyGoalsCard" data-dashboard-id="weekly-time-goals" data-dashboard-label="This Week" aria-label="Weekly logged time and time goal progress">
                     <div className="dashboardCardTitle">This Week</div>
+                    <div className="dashboardTrendIndicator" id="dashboardWeeklyTrendIndicator" aria-hidden="true">--</div>
                     <div className="dashboardBigValue" id="dashboardWeeklyGoalsValue">0m</div>
                     <div className="dashboardGoalProgressWrap">
                       <span className="dashboardGoalProjectionMarker" id="dashboardWeeklyGoalsProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
@@ -237,6 +239,7 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                                             <text
                                               x={labelX}
                                               y={labelY}
+                                              data-momentum-multiplier-threshold={value}
                                               fill="rgba(241, 247, 255, 0.92)"
                                               fontSize="7.5"
                                               fontWeight="700"

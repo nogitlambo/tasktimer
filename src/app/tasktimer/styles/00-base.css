@@ -656,25 +656,31 @@ body[data-theme="lime"] option:focus{
   cursor:pointer;
   border-radius: 0;
   clip-path: none;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: box-shadow .15s ease, border-color .15s ease, color .15s ease;
 }
 .addTaskNameItem:hover{
-  background: rgba(255,255,255,.08);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
 }
 
 body[data-theme="purple"] .addTaskNameItem:hover,
 body[data-theme="purple"] .addTaskNameItem:focus{
-  background: #3f234f;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(212,71,210,.42);
   color: #fff8ff;
 }
 
 body[data-theme="cyan"] .addTaskNameItem:hover,
 body[data-theme="cyan"] .addTaskNameItem:focus{
-  background: #183846;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(53,232,255,.42);
   color: #eaf7ff;
 }
 body[data-theme="lime"] .addTaskNameItem:hover,
 body[data-theme="lime"] .addTaskNameItem:focus{
-  background: #2f3814;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(239,255,99,.42);
   color: #f7ffd0;
 }
 .categoryFieldRow{
@@ -1747,7 +1753,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   text-transform:uppercase;
 }
 .focusDialTime{
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron);
   font-size:clamp(22px, 10.5cqw, 56px);
   font-weight:700;
   letter-spacing:.06em;
@@ -1762,7 +1768,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   overflow:hidden;
 }
 .focusDialDays{
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron);
   font-size:clamp(14px, 4.8cqw, 24px);
   font-weight:700;
   letter-spacing:.08em;
@@ -2266,26 +2272,26 @@ body[data-theme="lime"] .btn,
 body[data-theme="lime"] .iconBtn,
 body[data-theme="lime"] .menuItem{
   border-color: rgba(220,255,111,.34);
-  background: rgba(29,36,12,.9);
+  background: rgba(18,20,24,.96);
   color:#fbffeb;
 }
 body[data-theme="lime"] .btn-accent,
 body[data-theme="lime"] .unitBtn.isOn,
 body[data-theme="lime"] .modeBtn.isOn,
 body[data-theme="lime"] .timerTypePill.isOn{
-  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
+  background: rgba(18,20,24,.96) !important;
   border-color: rgba(241,255,151,.72) !important;
-  color:#182003 !important;
-  box-shadow: 0 0 0 1px rgba(251,255,184,.22) inset, 0 0 16px rgba(219,255,79,.24) !important;
+  color:#fbffeb !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"] .btn-ghost,
 body[data-theme="lime"] .iconBtn{
-  background: rgba(21,27,11,.9);
+  background: rgba(18,20,24,.96);
   color:#eef7c8;
 }
 body[data-theme="lime"] .switch{
   border-color: rgba(206,240,100,.32) !important;
-  background: rgba(34,42,15,.84) !important;
+  background: rgba(18,20,24,.96) !important;
 }
 body[data-theme="lime"] .switch.on{
   border-color: rgba(241,255,151,.6) !important;
@@ -2296,14 +2302,12 @@ body[data-theme="lime"] .switch.on::after{
 }
 body[data-theme="lime"] .appFooterNav{
   border-top-color: rgba(213,255,102,.26) !important;
-  background:
-    linear-gradient(180deg, rgba(223,255,104,.08), rgba(0,0,0,0)),
-    rgba(11,14,6,.96);
+  background: rgba(18,20,24,.96);
 }
 body[data-theme="lime"] .appFooterBtn.isOn{
   border-color: rgba(241,255,151,.72) !important;
-  background: rgba(219,255,79,.15) !important;
-  box-shadow: 0 0 14px rgba(219,255,79,.18) !important;
+  background: rgba(18,20,24,.96) !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"] select,
 body[data-theme="lime"] input[type="text"],

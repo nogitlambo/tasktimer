@@ -116,7 +116,9 @@ export type TaskTimerMutableState = {
   timeGoalModalTaskId: string | null;
   timeGoalModalFrozenElapsedMs: number;
   timeGoalReminderAtMsByTaskId: Record<string, number>;
-  addTaskWizardStep: 1 | 2 | 3 | 4;
+  addTaskWizardStep: 1 | 2 | 3 | 4 | 5;
+  addTaskType: "recurring" | "once-off";
+  addTaskOnceOffDay: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
   addTaskPlannedStartTime: string;
   addTaskPlannedStartOpenEnded: boolean;
   addTaskDurationValue: number;

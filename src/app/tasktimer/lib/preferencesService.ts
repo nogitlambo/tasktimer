@@ -93,7 +93,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
     const value = String(raw || "").trim().toLowerCase();
     if (value === "lime") return "lime";
-    return value === "cyan" || value === "command" ? "cyan" : "purple";
+    return value === "purple" ? "purple" : value === "cyan" || value === "command" ? "cyan" : "lime";
   }
 
   function buildSnapshot(state: PreferencesStateSnapshot): StoredPreferences {
@@ -122,7 +122,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function persistSnapshot(snapshot: StoredPreferences): void {
-    safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "purple"));
+    safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
     safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
     safeWriteLocalStorage(

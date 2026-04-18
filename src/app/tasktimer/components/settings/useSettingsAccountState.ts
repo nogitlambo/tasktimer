@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
+import { notifyAccountProfileUpdated } from "@/app/tasktimer/lib/accountProfileStorage";
 import { readTaskTimerPlanCacheFromStorage, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "@/app/tasktimer/lib/entitlements";
 import {
   getErrorMessage,
@@ -47,6 +48,7 @@ export function useSettingsAccountState(): {
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
@@ -215,6 +217,7 @@ export function useSettingsAccountState(): {
     setAuthBusy(true);
     setAuthError("");
     setAuthStatus("");
+    setShowSignOutConfirm(false);
     try {
       await handleSignOutFlow();
       setAuthStatus("Signed out.");
@@ -284,6 +287,7 @@ export function useSettingsAccountState(): {
       setAuthUserAlias(result.username);
       setAuthUserAliasDraft(result.username);
       setAuthUserAliasEditing(false);
+      notifyAccountProfileUpdated();
       setAuthStatus("Username updated.");
       markSynced();
     } catch (err: unknown) {
@@ -357,6 +361,8 @@ export function useSettingsAccountState(): {
       syncMessage,
       syncAtMs,
       uidCopyStatus,
+      showSignOutConfirm,
+      setShowSignOutConfirm,
       showDeleteAccountConfirm,
       setShowDeleteAccountConfirm,
       onSignOut,

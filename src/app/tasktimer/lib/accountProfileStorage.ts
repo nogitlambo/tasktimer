@@ -1,6 +1,7 @@
 import { STORAGE_KEY } from "./storage";
 
 export const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
+export const ACCOUNT_PROFILE_UPDATED_EVENT = "tasktimer:accountProfileUpdated";
 
 const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
 const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
@@ -78,4 +79,9 @@ export function writeStoredRankThumbnailSrc(uid: string, src: string): void {
 export function notifyAccountAvatarUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(ACCOUNT_AVATAR_UPDATED_EVENT));
+}
+
+export function notifyAccountProfileUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ACCOUNT_PROFILE_UPDATED_EVENT));
 }

@@ -392,6 +392,10 @@ type CreateAddTaskOptionsArgs = {
     Parameters<typeof createTaskTimerAddTask>[0],
     | "getAddTaskWizardStep"
     | "setAddTaskWizardStepState"
+    | "getAddTaskType"
+    | "setAddTaskTypeState"
+    | "getAddTaskOnceOffDay"
+    | "setAddTaskOnceOffDayState"
     | "getAddTaskPlannedStartTime"
     | "setAddTaskPlannedStartTimeState"
     | "getAddTaskPlannedStartOpenEnded"
@@ -662,6 +666,8 @@ type CreateDashboardOptionsArgs = {
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
+  clearDashboardMomentumDriverSelection: () => void;
+  hasSelectedDashboardMomentumDriver: () => boolean;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
@@ -681,6 +687,8 @@ type CreateDashboardFeatureOptionsArgs = {
     | "renderDashboardTimelineCard"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
+    | "clearDashboardMomentumDriverSelection"
+    | "hasSelectedDashboardMomentumDriver"
     | "openDashboardHeatSummaryCard"
     | "closeDashboardHeatSummaryCard"
   >;
@@ -1472,6 +1480,8 @@ export function createTaskTimerDashboardContext(
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
+    clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
+    hasSelectedDashboardMomentumDriver: args.hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard: args.openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard: args.closeDashboardHeatSummaryCard,
   };
@@ -1487,6 +1497,8 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
+    clearDashboardMomentumDriverSelection,
+    hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
   } = dashboardRenderApi;
@@ -1517,6 +1529,8 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
+      clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),
+      hasSelectedDashboardMomentumDriver: () => hasSelectedDashboardMomentumDriver(),
       openDashboardHeatSummaryCard: (dayKey, dateLabel) =>
         openDashboardHeatSummaryCard(dayKey, dateLabel),
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),

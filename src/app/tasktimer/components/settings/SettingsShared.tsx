@@ -76,8 +76,15 @@ export function SettingsNav({
       </div>
       {canSignOut ? (
         <div className="settingsNavBottomActions">
-          <button className="btn btn-accent small settingsSignOutBtn" id="signInGoogleBtn" type="button" disabled={signOutBusy} onClick={onSignOut}>
-            Sign Out
+          <button
+            className="menuItem settingsNavTile settingsSignOutBtn"
+            id="signInGoogleBtn"
+            type="button"
+            disabled={signOutBusy}
+            onClick={onSignOut}
+          >
+            <AppImg className="settingsMenuItemIcon settingsNavItemIcon" src="/Export.svg" alt="" aria-hidden="true" />
+            <span className="settingsNavRowText">Sign Out</span>
           </button>
         </div>
       ) : null}

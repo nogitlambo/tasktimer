@@ -9,6 +9,33 @@ export function normalizeScheduleDayValue(raw: unknown): ScheduleDay | null {
   return SCHEDULE_DAY_ORDER.includes(value as ScheduleDay) ? (value as ScheduleDay) : null;
 }
 
+export function normalizeLocalDateValue(raw: unknown): string | null {
+  const value = String(raw || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function resolveNextScheduleDayDate(day: ScheduleDay, nowDate = new Date()): string {
+  const start = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+  const currentDay = start.getDay();
+  const targetDay = SCHEDULE_DAY_ORDER.indexOf(day) + 1;
+  const delta = (targetDay - currentDay + 7) % 7;
+  start.setDate(start.getDate() + delta);
+  return formatLocalDate(start);
+}
+
+export function hasLocalDatePassed(localDate: string, nowDate = new Date()): boolean {
+  const normalized = normalizeLocalDateValue(localDate);
+  if (!normalized) return false;
+  return normalized < formatLocalDate(nowDate);
+}
+
 export function normalizeScheduleStoredTime(raw: unknown): string | null {
   const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return null;

@@ -7,6 +7,17 @@ export default function AddTaskOverlay() {
         <div className="addTaskValidationError" id="addTaskError" aria-live="polite" />
         <form id="addTaskForm" autoComplete="off" style={{ display: "flex", flexDirection: "column", gap: 10, margin: 0 }}>
           <section className="addTaskWizardStep isActive" id="addTaskStep1">
+            <div className="addTaskTaskTypeRow" id="addTaskTaskTypeRow">
+              <span className="addTaskTaskTypeLabel">Task Type</span>
+              <div className="unitButtons addTaskTaskTypePills" id="addTaskTaskTypePills" role="group" aria-label="Task type">
+                <button className="btn btn-ghost small unitBtn isOn" id="addTaskTypeRecurringBtn" type="button" aria-pressed="true">
+                  Recurring
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="addTaskTypeOnceOffBtn" type="button" aria-pressed="false">
+                  Once-off
+                </button>
+              </div>
+            </div>
             <div className="addTaskNameCombo" id="addTaskNameCombo">
               <input id="addTaskName" type="text" placeholder="Enter a name for this task or select from list" />
               <button className="btn btn-ghost small addTaskNameToggle" id="addTaskNameToggle" type="button" aria-label="Show task name options">
@@ -26,6 +37,22 @@ export default function AddTaskOverlay() {
             </div>
           </section>
 
+          <section className="addTaskWizardStep" id="addTaskStepOnceOffDay">
+            <div className="addTaskStepPrompt">When do you want to do this task?</div>
+            <div className="field">
+              <label htmlFor="addTaskOnceOffDaySelect">Day</label>
+              <select id="addTaskOnceOffDaySelect" defaultValue="mon">
+                <option value="mon">Monday</option>
+                <option value="tue">Tuesday</option>
+                <option value="wed">Wednesday</option>
+                <option value="thu">Thursday</option>
+                <option value="fri">Friday</option>
+                <option value="sat">Saturday</option>
+                <option value="sun">Sunday</option>
+              </select>
+            </div>
+          </section>
+
           <section className="addTaskWizardStep" id="addTaskStep2">
             <div className="addTaskStepPrompt">How much time to you want to spend on this task?</div>
             <div className="addTaskDurationRow" id="addTaskDurationRow">
@@ -38,7 +65,7 @@ export default function AddTaskOverlay() {
                   Hours
                 </button>
               </div>
-              <span className="addTaskDurationPerLabel">per</span>
+              <span className="addTaskDurationPerLabel" id="addTaskDurationPerLabel">per</span>
               <div className="unitButtons addTaskDurationPills" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
                 <button className="btn btn-ghost small unitBtn" id="addTaskDurationPeriodDay" type="button" aria-pressed="false">
                   Day
@@ -202,6 +229,9 @@ export default function AddTaskOverlay() {
             <button className="btn btn-ghost" id="addTaskCancelBtn" type="button">
               Cancel
             </button>
+            <button className="btn btn-ghost addTaskWizardBackBtn isHidden" id="addTaskStepOnceOffBackBtn" type="button">
+              Back
+            </button>
             <button className="btn btn-ghost addTaskWizardBackBtn isHidden" id="addTaskStep2BackBtn" type="button">
               Back
             </button>
@@ -212,6 +242,9 @@ export default function AddTaskOverlay() {
               Back
             </button>
             <button className="btn btn-accent addTaskWizardNextBtn" id="addTaskStep1NextBtn" type="button">
+              Next
+            </button>
+            <button className="btn btn-accent addTaskWizardNextBtn isHidden" id="addTaskStepOnceOffNextBtn" type="button">
               Next
             </button>
             <button className="btn btn-accent addTaskWizardNextBtn isHidden" id="addTaskStep2NextBtn" type="button">

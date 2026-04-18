@@ -1299,6 +1299,29 @@ body[data-theme="purple"] .rewardsInfoText{
   flex-direction: column;
 }
 
+#addTaskOverlay .addTaskTaskTypeRow{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#addTaskOverlay .addTaskTaskTypeLabel{
+  font-family: var(--font-tight);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(190,240,255,.88);
+}
+
+#addTaskOverlay .addTaskTaskTypePills{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 #addTaskOverlay .addTaskStepPrompt{
   margin: 2px 0 0;
   font-size: 13px;
@@ -1453,6 +1476,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #addTaskOverlay .addTaskNameCombo > input{
   width: 100%;
   margin: 2px 0 0;
+  min-height: 44px;
   font-size: 13px;
   color: rgba(226,246,255,.9);
 }
@@ -1466,16 +1490,18 @@ body[data-theme="purple"] .rewardsInfoText{
   display: flex;
   align-items: center;
   justify-content: center;
-  top: 18px;
+  top: 2px;
+  height: 44px;
+  min-height: 44px;
   line-height: 1;
   padding-top: 0;
   padding-bottom: 0;
-  transform: translateY(-50%);
+  transform: none;
 }
 
 #addTaskOverlay .addTaskNameToggle:hover,
 #addTaskOverlay .addTaskNameToggle:active{
-  transform: translateY(-50%);
+  transform: none;
 }
 
 #addTaskOverlay .addTaskNameMenu{
@@ -1484,6 +1510,9 @@ body[data-theme="purple"] .rewardsInfoText{
   left: auto;
   right: auto;
   margin-top: 6px;
+  border-color: rgba(255,255,255,.08);
+  background: #0d0f13;
+  box-shadow: none;
   max-height: min(40dvh, 280px);
 }
 
@@ -1536,6 +1565,11 @@ body[data-theme="purple"] .rewardsInfoText{
   text-transform: uppercase;
   color: rgba(188,214,230,.76);
   flex: 0 0 auto;
+}
+
+#addTaskOverlay #addTaskDurationPerLabel.isHidden,
+#addTaskOverlay #addTaskDurationPeriodPills.isHidden{
+  display: none !important;
 }
 
 #addTaskOverlay .addTaskStepPromptWithInfo{
@@ -2600,7 +2634,7 @@ body[data-theme="lime"] .dashboardCard{
   border-color: rgba(219,255,79,.18);
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(17,22,8,.94);
+    rgba(18,20,24,.96);
   box-shadow: 0 20px 40px rgba(0,0,0,.34), inset 0 0 0 1px rgba(241,255,151,.05);
 }
 body[data-theme="lime"] #rankLadderOverlay .modal,
@@ -2610,14 +2644,13 @@ body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modal,
 body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modal{
   border-color: rgba(219,255,79,.24);
   background:
-    radial-gradient(140% 120% at 100% 0%, rgba(219,255,79,.12), rgba(0,0,0,0) 42%),
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(16,21,8,.96);
+    rgba(18,20,24,.96);
 }
 body[data-theme="lime"] .rankLadderItem,
 body[data-theme="lime"] .rewardsInfoDetailItem{
   border-color: rgba(219,255,79,.18);
-  background: rgba(21,28,9,.82);
+  background: rgba(18,20,24,.96);
 }
 body[data-theme="lime"] .rankLadderItem.isSelectable:hover,
 body[data-theme="lime"] .rankLadderItem.isSelectable:focus-visible{
@@ -2679,9 +2712,9 @@ body[data-theme="lime"] #addTaskOverlay option:checked:focus{
 body[data-theme="lime"] #editOverlay .unitBtn.isOn,
 body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
   border-color: rgba(241,255,151,.42) !important;
-  background: linear-gradient(180deg, rgba(239,255,122,.28), rgba(130,154,33,.22)) !important;
+  background: rgba(18,20,24,.96) !important;
   color: #f9ffd8 !important;
-  box-shadow: inset 0 0 0 1px rgba(251,255,184,.07), 0 0 10px rgba(219,255,79,.12) !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"] #editOverlay .switch.on{
   background: rgba(219,255,79,.2) !important;

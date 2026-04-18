@@ -31,7 +31,12 @@ import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
-import { normalizeTaskPlannedStartByDay, syncLegacyPlannedStartFields } from "./schedule-placement";
+import {
+  hasLocalDatePassed,
+  normalizeLocalDateValue,
+  normalizeTaskPlannedStartByDay,
+  syncLegacyPlannedStartFields,
+} from "./schedule-placement";
 import {
   filterPendingSyncEntries,
   PENDING_PREFERENCES_SYNC_TTL_MS,
@@ -218,6 +223,9 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       : null;
   const normalizedTask: Task = {
     ...taskWithoutMode,
+    taskType: task.taskType === "once-off" ? "once-off" : "recurring",
+    onceOffDay: task.taskType === "once-off" ? plannedStartDay : null,
+    onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     timeGoalAction,
     xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     timeGoalEnabled: !!task.timeGoalEnabled,
@@ -231,6 +239,12 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
   };
+  if (normalizedTask.taskType === "once-off" && normalizedTask.onceOffTargetDate && hasLocalDatePassed(normalizedTask.onceOffTargetDate)) {
+    normalizedTask.plannedStartDay = null;
+    normalizedTask.plannedStartTime = null;
+    normalizedTask.plannedStartByDay = null;
+    normalizedTask.plannedStartOpenEnded = false;
+  }
   syncLegacyPlannedStartFields(normalizedTask);
   return normalizedTask;
 }
@@ -543,6 +557,9 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
+    taskType: task.taskType === "once-off" ? "once-off" : "recurring",
+    onceOffDay: task.taskType === "once-off" ? String(task.onceOffDay || "").trim().toLowerCase() || null : null,
+    onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     plannedStartDay: task.plannedStartDay == null ? null : String(task.plannedStartDay).trim().toLowerCase() || null,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
@@ -835,7 +852,7 @@ export function subscribeCachedPreferences(
 export function buildDefaultCloudPreferences() {
   return {
     schemaVersion: 1 as const,
-    theme: "purple" as const,
+    theme: "lime" as const,
     menuButtonStyle: "square" as const,
     taskView: "list" as const,
     dynamicColorsEnabled: true,

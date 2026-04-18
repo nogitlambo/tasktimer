@@ -13,6 +13,9 @@ export type TaskPlannedStartByDay = Partial<Record<TaskPlannedStartDay, string |
 export type Task = {
   id: string;
   name: string;
+  taskType?: "recurring" | "once-off";
+  onceOffDay?: TaskPlannedStartDay | null;
+  onceOffTargetDate?: string | null;
   order: number;
   accumulatedMs: number;
   running: boolean;
