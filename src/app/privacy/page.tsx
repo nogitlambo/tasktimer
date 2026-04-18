@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import PrivacyBackButton from "./PrivacyBackButton";
 
-const EFFECTIVE_DATE = "March 20, 2026";
+const EFFECTIVE_DATE = "April 18, 2026";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Read the TaskLaunch privacy policy, including how account, app, and optional social-feature data is handled.",
+  description:
+    "Read the TaskLaunch privacy policy, including how account data, app data, billing data, push notifications, feedback, and launch-update subscriptions are handled.",
   alternates: {
     canonical: "/privacy",
   },
 };
 
-function Section({
+function PolicySection({
   number,
   title,
   children,
@@ -23,12 +25,13 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <h2 className="displayFont text-[0.95rem] font-bold tracking-[0.04em] text-[#79e2ff] [font-family:var(--font-orbitron)] sm:text-[1rem]">
-        <span>{number}. </span>
-        <span>{title}</span>
-      </h2>
-      <div className="space-y-3 text-white">{children}</div>
+    <section className="privacyLandingSection">
+      <div className="landingV2SectionLabel">
+        <span className="landingV2SectionIndex displayFont">{String(number).padStart(2, "0")}</span>
+        <span className="landingV2SectionLine" />
+        <span className="landingV2SectionName">{title}</span>
+      </div>
+      <div className="privacyLandingContent">{children}</div>
     </section>
   );
 }
@@ -41,310 +44,412 @@ function Clause({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 text-white">
-      <span className="font-semibold text-white">({letter})</span>
-      <div className="min-w-0 flex-1">{children}</div>
+    <div className="privacyLandingClause">
+      <span className="privacyLandingClauseKey">({letter})</span>
+      <div>{children}</div>
     </div>
   );
 }
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-[#06080d] px-4 py-6 text-white [font-family:var(--font-geist-sans)] sm:px-6 sm:py-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <section className="border border-[#79e2ff]/20 bg-[#0d0f13] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.28),inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:px-6 sm:py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-white/60 sm:text-[0.72rem]">Legal</p>
-              <h1 className="displayFont mt-1 text-[1.15rem] font-bold uppercase tracking-[0.08em] text-[#8ef2ff] [font-family:var(--font-orbitron)] sm:text-[1.35rem]">
-                TaskLaunch Privacy Policy
-              </h1>
-              <p className="mt-2 max-w-3xl text-[0.82rem] leading-6 text-white/72 sm:text-[0.9rem]">
-                How TaskLaunch collects, stores, and uses account, app, and optional social-feature data.
-              </p>
-            </div>
+    <main className="landingV2 privacyLandingPage">
+      <div className="landingV2Shell">
+        <header className="landingV2Header isVisible">
+          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
+            <AppImg src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" className="landingV2BrandLogo" />
+          </Link>
+
+          <div className="landingV2HeaderActions">
+            <Link href="/" className="landingV2HeaderLink">
+              Home
+            </Link>
             <PrivacyBackButton />
           </div>
-        </section>
+        </header>
 
-        <section className="border border-[#79e2ff]/20 bg-[#0d0f13] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.28),inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:px-6 sm:py-6">
-          <div className="relative mb-5 border-b border-[#79e2ff]/14 pb-4 pr-36 sm:pr-44">
-            <div>
-              <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/58 sm:text-[0.72rem]">Policy overview</p>
-              <p className="mt-1 text-[0.76rem] leading-5 text-white/72 sm:text-[0.82rem]">Effective date: {EFFECTIVE_DATE}</p>
+        <section className="landingV2Hero isVisible" aria-label="TaskLaunch privacy policy hero">
+          <div className="landingV2Grid" aria-hidden="true" />
+          <div className="landingV2HeroMain">
+            <div className="landingV2HeroTag">
+              <span className="landingV2HeroTagDot" />
+              <span>Legal</span>
             </div>
-            <div className="pointer-events-none absolute right-0 top-0 flex h-[22px] w-[120px] items-start justify-end sm:h-[26px] sm:w-[140px]">
-              <AppImg className="block h-full w-full object-contain object-right opacity-90" src="/logo/tasklaunch.svg" alt="TaskLaunch" />
-            </div>
-          </div>
 
-          <div className="space-y-5 text-[0.9rem] leading-8 text-white sm:text-[0.95rem]">
-            <p className="text-white/88">
-              This Privacy Policy applies to all personal information collected by{" "}
-              <a
-                className="font-semibold text-[#79e2ff] underline decoration-[#79e2ff]/55 underline-offset-2"
-                href="https://tasklaunch.app"
-                target="_blank"
-                rel="noreferrer"
-              >
-                TaskLaunch
-              </a>{" "}
-              (we, us, or our) through the TaskLaunch app and related services. TaskLaunch is a task timing, history,
-              and productivity app. Most task, timer, settings, and history data can be stored locally on your device.
-              If you sign in, TaskLaunch also uses Firebase Authentication and Cloud Firestore to provide account
-              features, cloud-backed app data, and optional social features such as friends and shared task summaries.
+            <h1 className="landingV2HeroTitle displayFont">Privacy Policy</h1>
+
+            <p className="landingV2HeroCopy">
+              This policy explains how TaskLaunch collects, stores, uses, shares, and protects personal information
+              across the public website, the signed-in app, and the coming-soon launch-updates form.
             </p>
 
-            <div className="h-px w-full bg-[#79e2ff]/14" />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="border border-[#79e2ff]/16 bg-white/[0.025] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
-                <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/58 sm:text-[0.72rem]">Collection</p>
-                <p className="mt-2 text-[0.82rem] leading-6 text-white/78 sm:text-[0.88rem]">
-                  We collect account details, profile data, app activity, settings, and optional social data depending
-                  on how you use TaskLaunch.
-                </p>
+            <div className="privacyLandingMeta">
+              <div className="privacyLandingMetaCard">
+                <span className="privacyLandingMetaLabel">Effective date</span>
+                <strong>{EFFECTIVE_DATE}</strong>
               </div>
-              <div className="border border-[#79e2ff]/16 bg-white/[0.025] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
-                <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/58 sm:text-[0.72rem]">Storage</p>
-                <p className="mt-2 text-[0.82rem] leading-6 text-white/78 sm:text-[0.88rem]">
-                  TaskLaunch stores much of its runtime data locally, and signed-in flows may also use Firebase
-                  Authentication and Cloud Firestore.
-                </p>
+              <div className="privacyLandingMetaCard">
+                <span className="privacyLandingMetaLabel">Primary region</span>
+                <strong>Australia-first</strong>
               </div>
-            </div>
-
-            <div className="h-px w-full bg-[#79e2ff]/14" />
-
-            <div className="space-y-5">
-              <Section number={1} title="What information do we collect?">
-                <p>
-                  The kinds of personal information that we collect from you depend on how you use TaskLaunch. The
-                  personal information that may be collected and held about you includes account details, profile data,
-                  task and history data, settings, and optional social feature data.
-                </p>
-              </Section>
-
-              <Section number={2} title="Types of information">
-                <p>
-                  Depending on how you use TaskLaunch, the information we collect and store may include information
-                  that identifies you directly, information linked to your account, and app activity data that becomes
-                  personal information once associated with your signed-in profile.
-                </p>
-                <div className="mt-3 space-y-2">
-                  <Clause letter="a">
-                    Email address and sign-in details used for email-link sign-in or Google sign-in.
-                  </Clause>
-                  <Clause letter="b">
-                    Profile data you provide or choose to use, such as username, alias, avatar selection, custom
-                    avatar, Google profile photo, rank thumbnail, and related reward or rank progress fields.
-                  </Clause>
-                  <Clause letter="c">
-                    Task, timer, time-goal, checkpoint, milestone, session-note, history, and deleted-task data.
-                  </Clause>
-                  <Clause letter="d">
-                    Preferences and app state such as theme, menu style, notification settings, dashboard layout, task
-                    UI state, and mode settings.
-                  </Clause>
-                  <Clause letter="e">
-                    Social feature data such as friend invite keys, friend requests, friendship profile information,
-                    and shared task summary data when you choose to use those features.
-                  </Clause>
-                  <Clause letter="f">
-                    Feedback form entries you type into the app, such as email address, feedback type, and message
-                    content, if and when submission handling is enabled.
-                  </Clause>
-                </div>
-              </Section>
-
-              <Section number={3} title="How we collect your personal information">
-                <div className="space-y-2">
-                  <Clause letter="a">
-                    We collect information directly from you when you create an account, sign in, enter profile
-                    details, create or edit tasks, manage settings, use social features, or submit feedback through the
-                    app.
-                  </Clause>
-                  <Clause letter="b">
-                    We collect app-generated information when TaskLaunch stores timers, checkpoints, milestones,
-                    session notes, history entries, dashboard state, and similar runtime data on your device.
-                  </Clause>
-                  <Clause letter="c">
-                    When you sign in, we collect and store cloud-backed account and app records through Firebase
-                    services, including Firebase Authentication and Cloud Firestore.
-                  </Clause>
-                  <Clause letter="d">
-                    If you use Google sign-in, we receive basic Google account profile information made available
-                    through that sign-in flow, such as your email address, display name, and profile photo.
-                  </Clause>
-                </div>
-              </Section>
-
-              <Section number={4} title="Local device storage">
-                <p>
-                  TaskLaunch stores a substantial amount of app data locally on your device or browser storage,
-                  including tasks, timers, history, preferences, mode settings, dashboard and task UI state, draft
-                  notes, avatar selections, and other runtime settings needed to operate the app.
-                </p>
-              </Section>
-
-              <Section number={5} title="Cloud storage when signed in">
-                <p>
-                  When you sign in, TaskLaunch may store data in Firebase services, including Cloud Firestore, so that
-                  your account and selected app data can be associated with your profile and used across supported
-                  signed-in flows.
-                </p>
-                <div className="mt-3 space-y-2">
-                  <Clause letter="a">
-                    User profile records, including email, display name, username, avatar fields, and reward profile
-                    fields.
-                  </Clause>
-                  <Clause letter="b">Preferences, dashboard, task UI, and account-state documents.</Clause>
-                  <Clause letter="c">Tasks, task history entries, and deleted-task records.</Clause>
-                  <Clause letter="d">Username reservation records and user email lookup records.</Clause>
-                  <Clause letter="e">Friend requests, friendship records, and friendship profile data.</Clause>
-                  <Clause letter="f">Shared task summary records for optional sharing features.</Clause>
-                </div>
-              </Section>
-
-              <Section number={6} title="Purpose of collection and use">
-                <div className="space-y-2">
-                  <Clause letter="a">To authenticate users and keep account sessions active.</Clause>
-                  <Clause letter="b">
-                    To provide task timing, history, settings, rewards, and related app features.
-                  </Clause>
-                  <Clause letter="c">To sync signed-in app data across supported usage flows.</Clause>
-                  <Clause letter="d">
-                    To support optional friend, profile, and shared-task features that you choose to use.
-                  </Clause>
-                  <Clause letter="e">
-                    To display your selected profile, avatar, and reward customization within the app.
-                  </Clause>
-                  <Clause letter="f">
-                    To protect service integrity, manage usernames, and prevent account or profile conflicts.
-                  </Clause>
-                  <Clause letter="g">
-                    To review and respond to support or feedback submissions if submission handling is enabled.
-                  </Clause>
-                </div>
-              </Section>
-
-              <Section number={7} title="How data is shared">
-                <div className="space-y-2">
-                  <Clause letter="a">
-                    With Firebase and Google as service providers for authentication and cloud infrastructure.
-                  </Clause>
-                  <Clause letter="b">
-                    With other users you choose to connect with through the app, including friendship profile
-                    information and shared task summary information.
-                  </Clause>
-                  <Clause letter="c">
-                    With legal or regulatory authorities if disclosure is required by law or reasonably necessary to
-                    protect rights, safety, or the integrity of the service.
-                  </Clause>
-                </div>
-                <p className="mt-3">
-                  TaskLaunch does not sell personal information and does not intentionally use personal data for
-                  advertising or ad targeting.
-                </p>
-              </Section>
-
-              <Section number={8} title="Data visible to other users">
-                <p>
-                  If you use friends or sharing features, other users you connect with may see profile-related
-                  information such as your alias, avatar selection, custom avatar, Google profile photo if chosen for
-                  use in-app, rank thumbnail, current rank identifier, and shared task summary information you choose
-                  to make available through those features.
-                </p>
-              </Section>
-
-              <Section number={9} title="Authentication">
-                <p>
-                  TaskLaunch supports email-link sign-in and Google sign-in through Firebase Authentication. If you
-                  sign in with Google, TaskLaunch may access basic Google account profile information made available
-                  through the sign-in flow, such as your email address, display name, and profile photo.
-                </p>
-              </Section>
-
-              <Section number={10} title="Ads">
-                <p>
-                  TaskLaunch does not contain ads. The app is not designed to serve third-party advertising, and it
-                  does not intentionally collect or use personal data for advertising or advertising personalization.
-                </p>
-              </Section>
-
-              <Section number={11} title="Account deletion and local data reset">
-                <div className="space-y-2">
-                  <Clause letter="a">
-                    This page is the public account-deletion information page for TaskLaunch. If you signed in to
-                    TaskLaunch, you can request account deletion in the app from{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Account &gt; Delete Account</strong>.
-                  </Clause>
-                  <Clause letter="b">
-                    To request deletion in the app: sign in to the account you want to remove, open{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Account</strong>, expand the delete
-                    disclosure, and confirm <strong className="font-semibold text-[#79e2ff]">Delete Account</strong>.
-                  </Clause>
-                  <Clause letter="c">
-                    If you cannot access the app, or if you want help with a deletion request, email{" "}
-                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong> and include the email
-                    address used for TaskLaunch sign-in.
-                  </Clause>
-                  <Clause letter="d">
-                    Deleting the signed-in account removes the Firebase Authentication account used by TaskLaunch and
-                    clears the app&apos;s account-state deletion marker used during the delete flow.
-                  </Clause>
-                  <Clause letter="e">
-                    Local task and history data stored on your device is separate and is not automatically removed when
-                    the signed-in account is deleted.
-                  </Clause>
-                  <Clause letter="f">
-                    Local device data can be cleared separately using{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Reset All Data</strong>.
-                  </Clause>
-                  <Clause letter="g">
-                    Unless you separately clear local data, it remains on the device until you remove it with{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Reset All Data</strong> or uninstall the app.
-                  </Clause>
-                  <Clause letter="h">
-                    If you want deletion help beyond the in-app account removal flow, contact{" "}
-                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong>. If additional
-                    cloud-backed app records are identified for your account, they may require manual follow-up rather
-                    than immediate in-app deletion.
-                  </Clause>
-                  <Clause letter="i">
-                    TaskLaunch also provides a way to request deletion of some app data without requiring account
-                    deletion. To remove local task and history data while keeping your sign-in account, use{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Reset All Data</strong>.
-                  </Clause>
-                  <Clause letter="j">
-                    If you want help deleting specific data without deleting your account, email{" "}
-                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong> with the email address
-                    used for TaskLaunch sign-in and a description of the data you want deleted.
-                  </Clause>
-                  <Clause letter="k">
-                    Data deleted through <strong className="font-semibold text-[#79e2ff]">Reset All Data</strong> is
-                    removed from the local device. Using Reset All Data does not itself delete the Firebase
-                    Authentication account.
-                  </Clause>
-                </div>
-              </Section>
-
-              <Section number={12} title="Contact">
-                <div className="space-y-2">
-                  <Clause letter="a">
-                    For privacy questions, data requests, or support, contact{" "}
-                    <strong className="font-semibold text-[#79e2ff]">aniven82@gmail.com</strong>.
-                  </Clause>
-                  <Clause letter="b">
-                    You may also use the in-app{" "}
-                    <strong className="font-semibold text-[#79e2ff]">Settings &gt; Feedback</strong> screen for
-                    general support requests.
-                  </Clause>
-                </div>
-              </Section>
+              <div className="privacyLandingMetaCard">
+                <span className="privacyLandingMetaLabel">Contact</span>
+                <strong>aniven82@gmail.com</strong>
+              </div>
             </div>
           </div>
         </section>
+
+        <section className="privacyLandingSection">
+          <div className="landingV2SectionLabel">
+            <span className="landingV2SectionIndex displayFont">00</span>
+            <span className="landingV2SectionLine" />
+            <span className="landingV2SectionName">Table of contents</span>
+          </div>
+          <div className="privacyLandingToc">
+            {[
+              ["#collection", "Collection and storage"],
+              ["#use", "Use and disclosures"],
+              ["#rights", "Your choices and rights"],
+              ["#billing", "Billing and subscriptions"],
+              ["#feedback", "Feedback and issue tracking"],
+              ["#launch-updates", "Launch-updates signup"],
+              ["#retention", "Retention and deletion"],
+              ["#contact", "Contact"],
+            ].map(([href, label]) => (
+              <a key={href} href={href} className="privacyLandingTocLink displayFont">
+                {label}
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <div className="privacyLandingBody">
+          <PolicySection number={1} title="Introduction">
+            <p>
+              This Privacy Policy applies to TaskLaunch and related services available through{" "}
+              <a href="https://tasklaunch.app" target="_blank" rel="noreferrer">
+                tasklaunch.app
+              </a>
+              . TaskLaunch is a task timing, history, productivity, and account-based app. This policy is written with
+              Australian privacy expectations in mind and describes our current information-handling practices.
+            </p>
+            <p>
+              TaskLaunch includes a public website, a signed-in app experience, optional social features, a public
+              launch-updates signup form, subscription billing flows, feedback submission flows, and push notification
+              features. Different parts of the product collect different information.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={2} title="What information we collect">
+            <div className="privacyLandingStack">
+              <Clause letter="a">
+                Account and identity details such as email address, Firebase Authentication identifiers, and basic
+                Google sign-in profile information where you use Google sign-in.
+              </Clause>
+              <Clause letter="b">
+                Profile data such as display name, username, avatar selections, custom avatar information, rank
+                thumbnail data, and related account customisation fields.
+              </Clause>
+              <Clause letter="c">
+                App content and activity such as tasks, timers, milestones, time goals, session notes, task history,
+                deleted-task data, dashboard state, task UI state, and preferences.
+              </Clause>
+              <Clause letter="d">
+                Social feature data such as friend requests, friendship records, and shared task summary data when you
+                choose to use those features.
+              </Clause>
+              <Clause letter="e">
+                Device and notification data such as push tokens, web push tokens, device identifiers, platform data,
+                app-active state, and notification preferences where push functionality is enabled.
+              </Clause>
+              <Clause letter="f">
+                Billing data such as Stripe customer identifiers, subscription identifiers, subscription plan/status
+                fields, and checkout or retention-related billing records.
+              </Clause>
+              <Clause letter="g">
+                Feedback and support data such as feedback titles, messages, optional screenshots, vote activity,
+                author profile details, and mirrored issue-tracking details where Jira integration is enabled.
+              </Clause>
+              <Clause letter="h">
+                Launch-updates subscription data from the public coming-soon page, including email address, normalized
+                email, and limited request metadata such as user-agent and referrer.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={3} title="How we collect information">
+            <div className="privacyLandingStack" id="collection">
+              <Clause letter="a">
+                Directly from you when you sign in, edit your profile, create tasks, manage preferences, use friends or
+                shared task features, submit feedback, subscribe for launch updates, or interact with billing flows.
+              </Clause>
+              <Clause letter="b">
+                Automatically from app runtime and storage behaviour, including local storage, session storage, app
+                state storage, device registration flows, and push-notification registration flows.
+              </Clause>
+              <Clause letter="c">
+                From third-party service providers used to operate the service, including Firebase Authentication,
+                Cloud Firestore, Google sign-in flows, Stripe billing, and Jira issue mirroring when those integrations
+                are active.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={4} title="Local storage and session storage">
+            <p>
+              TaskLaunch stores a substantial amount of runtime data locally on your device or browser. This can
+              include tasks, history, preferences, navigation state, theme settings, menu style settings, push-related
+              pending actions, account-related temporary state, and other data required to operate the app.
+            </p>
+            <p>
+              We also use session storage for short-lived session or redirect-handling behaviour, such as signed-out
+              redirect bypass handling. Local device storage may remain on your device until you clear it, reset app
+              data, or uninstall the app.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={5} title="Cloud storage and app infrastructure">
+            <p>
+              When you sign in, TaskLaunch uses Firebase services, including Firebase Authentication and Cloud
+              Firestore, to associate app data with your account and support signed-in product features.
+            </p>
+            <div className="privacyLandingStack">
+              <Clause letter="a">Firebase Authentication is used for email-link sign-in and Google sign-in.</Clause>
+              <Clause letter="b">
+                Cloud Firestore may store profile records, preferences, dashboard and task UI state, tasks, task
+                history, deleted-task records, social data, feedback-related records, device records for push
+                notifications, and launch-updates subscription records.
+              </Clause>
+              <Clause letter="c">
+                Some cloud-backed records are created to protect account integrity, such as username reservations and
+                email lookup records.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={6} title="How we use information">
+            <div className="privacyLandingStack" id="use">
+              <Clause letter="a">To authenticate users and provide account access.</Clause>
+              <Clause letter="b">
+                To provide app functionality such as task timing, history, dashboard, preferences, rewards, and social
+                or sharing features.
+              </Clause>
+              <Clause letter="c">
+                To enable device registration and delivery of push notifications where you choose to enable them.
+              </Clause>
+              <Clause letter="d">
+                To operate subscription billing, customer portal access, trial handling, subscription retention, and
+                related payment administration.
+              </Clause>
+              <Clause letter="e">
+                To receive, review, store, and respond to feedback or support submissions and, where enabled, mirror
+                relevant feedback content into Jira.
+              </Clause>
+              <Clause letter="f">
+                To manage the public coming-soon launch-updates list and send release-related communications if that
+                list is used for launch updates.
+              </Clause>
+              <Clause letter="g">
+                To protect the integrity of the service, limit abuse, enforce rate limits, resolve account conflicts,
+                and comply with legal obligations.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={7} title="Third-party services and processors">
+            <div className="privacyLandingStack">
+              <Clause letter="a">
+                Google and Firebase, for authentication, Cloud Firestore storage, and related platform services.
+              </Clause>
+              <Clause letter="b">
+                Stripe, for subscription checkout, billing portal sessions, customer records, subscription state, and
+                related payment administration.
+              </Clause>
+              <Clause letter="c">
+                Atlassian Jira, where enabled, for mirroring feedback submissions and attachments into issue-tracking
+                workflows.
+              </Clause>
+              <Clause letter="d">
+                Notification delivery infrastructure used through Firebase Cloud Messaging and platform push services
+                where push notifications are enabled.
+              </Clause>
+            </div>
+            <p>
+              These providers may process personal information on our behalf to help operate TaskLaunch. We do not sell
+              personal information and we do not intentionally use personal information for third-party advertising or
+              ad targeting.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={8} title="Sharing and disclosure">
+            <div className="privacyLandingStack">
+              <Clause letter="a">
+                We may share information with service providers that help us run the service, as described above.
+              </Clause>
+              <Clause letter="b">
+                If you use social or sharing features, some profile and task-summary information may be visible to
+                other users you choose to connect with.
+              </Clause>
+              <Clause letter="c">
+                We may disclose information where required or authorised by law, or where reasonably necessary to
+                protect rights, safety, platform integrity, or investigate misuse.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={9} title="Push notifications">
+            <p>
+              If you enable mobile or web push notifications, TaskLaunch may store device registration records,
+              notification tokens, device identifiers, platform information, app-active state, and notification
+              preference settings to support sending and managing notifications.
+            </p>
+            <p>
+              You can control push preferences inside the app. Disabling push notifications or removing device
+              registrations may stop future notifications, but previously delivered notifications remain on your device
+              until you clear them yourself.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={10} title="Billing and subscriptions">
+            <div id="billing" />
+            <p>
+              If you start or manage a paid subscription, TaskLaunch uses Stripe for checkout, billing portal access,
+              customer management, and subscription state handling. We may store related billing identifiers and plan
+              status information in our own records to enable entitlement and account management.
+            </p>
+            <p>
+              TaskLaunch does not intentionally store your full payment card details on its own servers. Payment
+              processing is handled by Stripe under Stripe&apos;s own terms and privacy practices.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={11} title="Feedback and issue tracking">
+            <div id="feedback" />
+            <p>
+              If you submit feedback, we may collect the content you submit, your account or author details, optional
+              screenshots, and feedback vote activity. Where Jira integration is enabled, relevant feedback details and
+              attachments may also be mirrored into Jira for product triage and support workflows.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={12} title="Launch-updates subscription list">
+            <div id="launch-updates" />
+            <p>
+              The public coming-soon page includes a launch-updates signup form. If you submit your email through that
+              form, TaskLaunch stores your email address, a normalized email value used for deduplication, and limited
+              request metadata such as user-agent and referrer in Cloud Firestore.
+            </p>
+            <p>
+              We use this information to manage the launch-updates list and avoid duplicate subscriptions. This policy
+              does not promise general-purpose marketing communications beyond launch-related updates supported by that
+              list.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={13} title="Overseas and cross-border handling">
+            <p>
+              TaskLaunch uses service providers whose systems may operate in more than one country. As a result,
+              personal information may be processed, stored, or made accessible outside Australia, including through
+              cloud infrastructure and service-provider systems used to operate authentication, storage, notifications,
+              billing, and issue tracking.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={14} title="Security safeguards">
+            <p>
+              We take reasonable steps in the circumstances to protect the personal information we hold from misuse,
+              interference, loss, and unauthorised access, modification, or disclosure. These steps include using
+              hosted cloud services, account authentication controls, managed platform services, and service-level
+              access controls appropriate to the current product.
+            </p>
+            <p>
+              No internet or cloud-based service can guarantee absolute security, and you should also take care to
+              protect your own devices, browsers, passwords, and sign-in methods.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={15} title="Retention and deletion">
+            <div id="retention" />
+            <div className="privacyLandingStack">
+              <Clause letter="a">
+                Local device data may remain on your device until you clear it, reset data, or uninstall the app.
+              </Clause>
+              <Clause letter="b">
+                Signed-in cloud data may be retained while needed to operate the service, manage subscriptions,
+                maintain service integrity, respond to support or legal issues, or comply with legal requirements.
+              </Clause>
+              <Clause letter="c">
+                Coming-soon subscription records may be retained while needed to manage launch updates or related list
+                administration.
+              </Clause>
+              <Clause letter="d">
+                When information is no longer reasonably needed, we may delete it or de-identify it where practical,
+                subject to operational and legal requirements.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={16} title="Your choices, access, and correction">
+            <div className="privacyLandingStack" id="rights">
+              <Clause letter="a">
+                You can update some account, profile, and preference information directly inside the app.
+              </Clause>
+              <Clause letter="b">
+                You can control push-notification settings inside the app where those features are available.
+              </Clause>
+              <Clause letter="c">
+                You can delete your account from <strong>Settings &gt; Account &gt; Delete Account</strong>.
+              </Clause>
+              <Clause letter="d">
+                You can clear local app data through <strong>Settings &gt; Reset All Data</strong>.
+              </Clause>
+              <Clause letter="e">
+                If you want to request access to or correction of personal information we hold, or you need help with
+                deletion or data questions, contact us using the details below.
+              </Clause>
+            </div>
+          </PolicySection>
+
+          <PolicySection number={17} title="Account deletion and local reset guidance">
+            <p>
+              If you signed in to TaskLaunch, you can request account deletion inside the app from{" "}
+              <strong>Settings &gt; Account &gt; Delete Account</strong>. Deleting the signed-in account removes the
+              Firebase Authentication account used by TaskLaunch and clears the app&apos;s account-state deletion marker
+              used during the delete flow.
+            </p>
+            <p>
+              Local task and history data stored on your device is separate and is not automatically removed when the
+              signed-in account is deleted. You can separately clear local data through{" "}
+              <strong>Settings &gt; Reset All Data</strong>. If you cannot access the app or need help with deletion,
+              email <strong>aniven82@gmail.com</strong> and include the email address used for sign-in.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={18} title="Children">
+            <p>
+              TaskLaunch is not intended for children under 13, and we do not knowingly design the service for use by
+              children as a child-directed product. If you believe a child has provided personal information to
+              TaskLaunch, contact us so we can review the issue.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={19} title="Policy updates">
+            <p>
+              We may update this Privacy Policy from time to time to reflect product changes, operational changes,
+              legal developments, or changes in service providers. When we update this policy, we will change the
+              effective date shown on this page.
+            </p>
+          </PolicySection>
+
+          <PolicySection number={20} title="Contact">
+            <div id="contact" />
+            <p>
+              For privacy questions, data requests, correction requests, deletion help, or general privacy concerns,
+              contact <strong>aniven82@gmail.com</strong>.
+            </p>
+          </PolicySection>
+        </div>
       </div>
     </main>
   );
