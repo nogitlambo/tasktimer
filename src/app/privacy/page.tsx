@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import PrivacyBackButton from "./PrivacyBackButton";
 
 const EFFECTIVE_DATE = "March 20, 2026";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read the TaskLaunch privacy policy, including how account, app, and optional social-feature data is handled.",
+  alternates: {
+    canonical: "/privacy",
+  },
+};
 
 function Section({
   number,

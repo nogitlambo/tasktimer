@@ -4,8 +4,11 @@ import Link from "next/link";
 import PricingSection from "./PricingSection";
 
 export const metadata: Metadata = {
-  title: "TaskLaunch Pricing",
-  description: "Mockup pricing plans for TaskLaunch.",
+  title: "Pricing",
+  description: "Compare TaskLaunch plans and pricing for solo task tracking and advanced productivity features.",
+  alternates: {
+    canonical: "/pricing",
+  },
 };
 
 export default function PricingPage() {
