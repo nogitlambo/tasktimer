@@ -67,16 +67,16 @@ export default function AddTaskOverlay() {
               </div>
               <span className="addTaskDurationPerLabel" id="addTaskDurationPerLabel">per</span>
               <div className="unitButtons addTaskDurationPills" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
-                <button className="btn btn-ghost small unitBtn" id="addTaskDurationPeriodDay" type="button" aria-pressed="false">
+                <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationPeriodDay" type="button" aria-pressed="true">
                   Day
                 </button>
-                <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                <button className="btn btn-ghost small unitBtn" id="addTaskDurationPeriodWeek" type="button" aria-pressed="false">
                   Week
                 </button>
               </div>
             </div>
             <div className="addTaskDurationReadout" id="addTaskDurationReadout">
-              5 hours per week
+              5 hours per day
             </div>
             <label className="addTaskNoGoalRow" htmlFor="addTaskNoGoalCheckbox">
               <input id="addTaskNoGoalCheckbox" type="checkbox" />

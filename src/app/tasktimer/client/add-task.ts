@@ -98,6 +98,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskPlannedStartTimeState(nextValue);
   }
 
+  function commitAddTaskPlannedStartState() {
+    if (ctx.getAddTaskPlannedStartOpenEnded()) return;
+    syncPlannedStartValueFromSelectors();
+  }
+
   function syncAddTaskPlannedStartUi() {
     const openEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
     const taskName = String(els.addTaskName?.value || "").trim() || "this task";
@@ -430,7 +435,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskDurationReadout?.classList.toggle("isDisabled", noTimeGoal);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.disabled = noTimeGoal;
     if (onceOff) {
-      ctx.setAddTaskDurationPeriodState("week");
+      ctx.setAddTaskDurationPeriodState("day");
     }
     if (noTimeGoal) {
       const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
@@ -504,6 +509,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function setAddTaskWizardStep(step: 1 | 2 | 3 | 4 | 5) {
+    commitAddTaskPlannedStartState();
     ctx.setAddTaskWizardStepState(step);
     clearAddTaskValidationState();
     syncAddTaskWizardUi();
@@ -579,6 +585,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function submitAddTaskWizard() {
+    commitAddTaskPlannedStartState();
     const name = (els.addTaskName?.value || "").trim();
     const onceOff = isOnceOffTaskType();
     rememberCustomTaskName(name);
@@ -603,7 +610,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.timeGoalEnabled = !ctx.getAddTaskNoTimeGoal();
     newTask.timeGoalValue = ctx.getAddTaskNoTimeGoal() ? 0 : Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     newTask.timeGoalUnit = ctx.getAddTaskNoTimeGoal() ? "hour" : ctx.getAddTaskDurationUnit();
-    newTask.timeGoalPeriod = ctx.getAddTaskNoTimeGoal() || onceOff ? "week" : ctx.getAddTaskDurationPeriod();
+    newTask.timeGoalPeriod = ctx.getAddTaskNoTimeGoal() ? "week" : onceOff ? "day" : ctx.getAddTaskDurationPeriod();
     newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
     if (onceOff) {
       const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
@@ -638,7 +645,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskDurationValueState(5);
     ctx.setAddTaskDurationUnitState("hour");
     ctx.setAddTaskMilestoneTimeUnitState("hour");
-    ctx.setAddTaskDurationPeriodState("week");
+    ctx.setAddTaskDurationPeriodState("day");
     ctx.setAddTaskNoTimeGoalState(false);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = String(5);
     if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
@@ -917,8 +924,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskPlannedStartUi();
     });
     ctx.on(els.addTaskPlannedStartHourSelect, "change", syncPlannedStartValueFromSelectors);
+    ctx.on(els.addTaskPlannedStartHourSelect, "input", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartMinuteSelect, "change", syncPlannedStartValueFromSelectors);
+    ctx.on(els.addTaskPlannedStartMinuteSelect, "input", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", syncPlannedStartValueFromSelectors);
+    ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartOpenEnded, "change", () => {
       ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded?.checked);
       syncAddTaskPlannedStartUi();

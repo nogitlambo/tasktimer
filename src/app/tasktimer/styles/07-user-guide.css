@@ -385,3 +385,85 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .userGuideNavPa
   background: rgba(18,20,24,.96) !important;
   box-shadow: none !important;
 }
+
+@media (max-width: 980px){
+  .userGuidePage{
+    grid-template-columns: 1fr;
+    gap:10px;
+    padding:12px;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .list{
+    padding-bottom: calc(20px + var(--safe-bottom));
+  }
+}
+
+@media (hover: hover) and (pointer: fine){
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel .settingsNavTile:hover{
+    background: linear-gradient(180deg, rgba(53,232,255,.10), rgba(255,255,255,.02)) !important;
+    border-color: rgba(53,232,255,.34);
+    box-shadow: inset 0 0 0 1px rgba(53,232,255,.10), 0 0 10px rgba(0,220,255,.12);
+    transform: translateY(-1px);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 980px){
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap:10px;
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout{
+    gap:10px;
+    position:relative;
+    overflow-x:hidden;
+    overflow-y:visible;
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel,
+  #app[aria-label="TaskLaunch User Guide"] .userGuideDetailPanel{
+    min-height:0;
+    max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideNavPanel{
+    position:static;
+    padding-left:0;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout:not(.isMobileDetailOpen) .userGuideDetailPanel{
+    display:none;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideNavPanel{
+    display:none;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideSplitLayout.isMobileDetailOpen .userGuideDetailPanel{
+    display:block;
+    animation: settingsDetailSlideIn .22s ease-out;
+  }
+
+  #app[aria-label="TaskLaunch User Guide"] .userGuideMenu .settingsMobileDetailHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+    padding-bottom:8px;
+    border-bottom:1px solid rgba(121,226,255,.14);
+  }
+}
+
+@media (max-width: 480px){
+  .userGuideShotImage{
+    min-height:120px;
+  }
+}

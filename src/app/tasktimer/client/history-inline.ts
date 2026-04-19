@@ -1,24 +1,12 @@
 import type { HistoryViewState } from "./types";
 import type { TaskTimerHistoryInlineContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
+import {
+  buildHistoryEntrySummaryPayload,
+  renderHistoryEntrySummaryHtml,
+} from "./history-entry-summary";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-type HistoryNoteLine = {
-  timeText: string;
-  noteText: string;
-  copyText: string;
-};
-
-type HistoryNoteGroup = {
-  headerText: string;
-  notes: HistoryNoteLine[];
-};
-
-type HistoryEntryNoteOverlayPayload = {
-  notes: HistoryNoteLine[];
-  groups: HistoryNoteGroup[];
-};
 
 type HistoryUI = {
   root: HTMLElement;
@@ -37,7 +25,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_LOOKBACK_DAYS = 30;
   const HISTORY_REVEAL_OPEN_MS = 220;
   const HISTORY_REVEAL_CLOSE_MS = 170;
+  const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
+  const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
   const { sharedTasks } = ctx;
+  const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
 
   function prefersReducedMotion() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
@@ -56,15 +47,51 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     state.layoutRetryRaf = null;
   }
 
-  function queueHistoryLayoutRetry(taskId: string, state: HistoryViewState) {
+  function clearHistoryCanvasResizeObserver(taskId: string) {
+    const existing = historyCanvasResizeObservers.get(taskId);
+    if (!existing) return;
+    existing.observer.disconnect();
+    historyCanvasResizeObservers.delete(taskId);
+  }
+
+  function syncHistoryCanvasResizeObserver(taskId: string, wrap: HTMLElement | null) {
+    if (!taskId || !wrap || typeof ResizeObserver === "undefined") return;
+    const existing = historyCanvasResizeObservers.get(taskId);
+    if (existing?.element === wrap) return;
+    if (existing) {
+      existing.observer.disconnect();
+      historyCanvasResizeObservers.delete(taskId);
+    }
+    const observer = new ResizeObserver(() => {
+      if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+      renderHistory(taskId);
+    });
+    observer.observe(wrap);
+    historyCanvasResizeObservers.set(taskId, { observer, element: wrap });
+  }
+
+  function queueHistoryLayoutRetry(taskId: string, state: HistoryViewState, attemptsRemaining = HISTORY_LAYOUT_RETRY_MAX_FRAMES) {
     if (state.layoutRetryRaf != null) return;
     state.layoutRetryRaf = window.requestAnimationFrame(() => {
       state.layoutRetryRaf = null;
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
       const nextState = ctx.getHistoryViewByTaskId()[taskId];
       if (!nextState) return;
-      renderHistory(taskId);
+      const chartDrawn = renderHistory(taskId);
+      if (!chartDrawn && attemptsRemaining > 1) {
+        queueHistoryLayoutRetry(taskId, nextState, attemptsRemaining - 1);
+      }
     });
+  }
+
+  function scheduleHistoryOpenSettledRenders(taskId: string) {
+    for (const delayMs of HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS) {
+      window.setTimeout(() => {
+        if (ctx.getCurrentAppPage() !== "tasks") return;
+        if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+        renderHistory(taskId);
+      }, delayMs);
+    }
   }
 
   function renderAllOpenHistoryChartsAfterLayout(delayMs = 0) {
@@ -285,91 +312,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
   }
 
-  function getHistorySingleEntryNoteGroup(displayEntry: any): HistoryNoteGroup | null {
-    const note = getHistoryEntryNote(displayEntry);
-    if (!note) return null;
-    const ts = ctx.normalizeHistoryTimestampMs(displayEntry?.ts);
-    return {
-      headerText: "",
-      notes: [
-        {
-          timeText: ts > 0 ? ctx.formatDateTime(ts) : "Saved session note",
-          noteText: note,
-          copyText: note,
-        },
-      ],
-    };
-  }
-
-  function getHistoryNoteLinesForDisplay(taskId: string, displayEntry: any, rangeMode: "entries" | "day"): HistoryNoteLine[] {
-    const singleNote = getHistoryEntryNote(displayEntry);
-    if (rangeMode !== "day") {
-      if (!singleNote) return [];
-      const ts = ctx.normalizeHistoryTimestampMs(displayEntry?.ts);
-      return [
-        {
-          timeText: ts > 0 ? ctx.formatDateTime(ts) : "Saved session note",
-          noteText: singleNote,
-          copyText: singleNote,
-        },
-      ];
-    }
-
-    const dayKey = historyLocalDateKey(displayEntry?.ts);
-    if (!dayKey) return [];
-    return getHistoryForTask(taskId)
-      .filter((entry: any) => historyLocalDateKey(entry?.ts) === dayKey)
-      .map((entry: any) => {
-        const note = getHistoryEntryNote(entry);
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        if (!note) return null;
-        return {
-          ts,
-          timeText: ts > 0 ? ctx.formatDateTime(ts) : "Saved session note",
-          noteText: note,
-          copyText: note,
-        };
-      })
-      .filter((entry): entry is { ts: number; timeText: string; noteText: string; copyText: string } => !!entry)
-      .sort((a, b) => b.ts - a.ts)
-      .map((entry) => ({ timeText: entry.timeText, noteText: entry.noteText, copyText: entry.copyText }));
-  }
-
-  function getHistoryEntryNoteOverlayPayload(
-    taskId: string,
-    displayEntry: any,
-    rangeMode: "entries" | "day",
-    lockedAbsIndexes?: Set<number> | null
-  ): HistoryEntryNoteOverlayPayload {
-    if (rangeMode === "day") {
-      return { notes: getHistoryNoteLinesForDisplay(taskId, displayEntry, rangeMode), groups: [] };
-    }
-    const lockedIndexes = lockedAbsIndexes ? Array.from(lockedAbsIndexes.values()).sort((a, b) => a - b) : [];
-    if (lockedIndexes.length >= 2) {
-      const state = ensureHistoryViewState(taskId);
-      const displayEntries = getHistoryDisplayForTask(taskId, state);
-      const groups = lockedIndexes
-        .map((absIndex) => getHistorySingleEntryNoteGroup(displayEntries[absIndex]))
-        .filter((group): group is HistoryNoteGroup => !!group);
-      return { notes: [], groups };
-    }
-    const singleGroup = getHistorySingleEntryNoteGroup(displayEntry);
-    return { notes: singleGroup ? singleGroup.notes : [], groups: [] };
-  }
-
-  function renderHistoryEntryNoteItems(notes: HistoryNoteLine[]) {
-    return notes
-      .map(
-        (note, index) => `<div class="historyEntryNoteItem${index < notes.length - 1 ? " historyEntryNoteItem-spaced" : ""}">
-            <div class="historyEntryNoteLine"><span class="historyEntryNoteTime">${ctx.escapeHtmlUI(note.timeText)}</span><span class="historyEntryNoteSep"> - </span><span class="historyEntryNoteText">${ctx.escapeHtmlUI(note.noteText)}</span></div>
-            <div class="historyEntryNoteCopyCell">
-              <button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${ctx.escapeHtmlUI(note.copyText)}">Copy</button>
-            </div>
-          </div>`
-      )
-      .join("");
-  }
-
   async function copyTextToClipboard(textRaw: string) {
     const text = String(textRaw || "");
     if (!text) return false;
@@ -495,36 +437,24 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return !!el.closest?.(".historyCanvasWrap");
   }
 
-  function openHistoryEntryNoteOverlay(
-    taskId: string,
-    displayEntry: any,
-    rangeMode: "entries" | "day" = "entries",
-    lockedAbsIndexes?: Set<number> | null
-  ) {
-    const payload = getHistoryEntryNoteOverlayPayload(taskId, displayEntry, rangeMode, lockedAbsIndexes);
-    const notes = payload.notes;
-    const groups = payload.groups;
-    const hasGroups = groups.length > 0;
-    const totalNoteCount = hasGroups ? groups.reduce((sum, group) => sum + group.notes.length, 0) : notes.length;
-    if (!totalNoteCount) {
+  function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
+    const payload = buildHistoryEntrySummaryPayload({
+      entries,
+      formatDateTime: ctx.formatDateTime,
+      formatTwo: ctx.formatTwo,
+      getEntryNote: getHistoryEntryNote,
+    });
+    if (!payload) {
       closeHistoryEntryNoteOverlay();
       return;
     }
-    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Task Notes";
-    if (els.historyEntryNoteMeta) els.historyEntryNoteMeta.textContent = "";
+    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = payload.titleText;
+    if (els.historyEntryNoteMeta) {
+      els.historyEntryNoteMeta.textContent = payload.metaText;
+      (els.historyEntryNoteMeta as HTMLElement).style.display = payload.metaText ? "" : "none";
+    }
     if (els.historyEntryNoteBody) {
-      els.historyEntryNoteBody.innerHTML = hasGroups
-        ? groups
-            .map(
-              (group, index) => `<section class="historyEntryNoteGroup${
-                index < groups.length - 1 ? " historyEntryNoteGroup-spaced" : ""
-              }">
-                ${group.headerText ? `<div class="historyEntryNoteGroupHeader">${ctx.escapeHtmlUI(group.headerText)}</div>` : ""}
-                ${renderHistoryEntryNoteItems(group.notes)}
-              </section>`
-            )
-            .join("")
-        : renderHistoryEntryNoteItems(notes);
+      els.historyEntryNoteBody.innerHTML = renderHistoryEntrySummaryHtml(payload, ctx.escapeHtmlUI);
     }
     ctx.setHistoryEntryNoteAnchorTaskId(taskId);
     ctx.openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
@@ -541,17 +471,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       closeHistoryEntryNoteOverlay();
       return;
     }
-    const display = getHistoryDisplayForTask(taskId, nextState);
-    if (!display.length) {
+    const selectedEntries = getHistorySummaryEntries(taskId, nextState, lockedIndexes[0], nextState.lockedAbsIndexes);
+    if (!selectedEntries.length) {
       closeHistoryEntryNoteOverlay();
       return;
     }
-    const displayEntry = display[lockedIndexes[0]];
-    if (!displayEntry) {
-      closeHistoryEntryNoteOverlay();
-      return;
-    }
-    openHistoryEntryNoteOverlay(taskId, displayEntry, nextState.rangeMode, nextState.lockedAbsIndexes);
+    openHistoryEntryNoteOverlay(taskId, selectedEntries);
   }
 
   function getHistoryDisplayForTask(taskId: string, state: HistoryViewState) {
@@ -580,6 +505,34 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       }
     });
     return groupedByDay;
+  }
+
+  function getHistorySummaryEntries(
+    taskId: string,
+    state: HistoryViewState,
+    primaryAbsIndex: number,
+    lockedAbsIndexes?: Set<number> | null
+  ) {
+    const display = getHistoryDisplayForTask(taskId, state);
+    const selectedIndexes = lockedAbsIndexes?.size
+      ? Array.from(lockedAbsIndexes.values()).sort((a, b) => a - b)
+      : [primaryAbsIndex];
+    if (state.rangeMode === "day") {
+      const dayKeys = new Set(
+        selectedIndexes.map((absIndex) => historyLocalDateKey(display[absIndex]?.ts)).filter((key) => !!key)
+      );
+      if (!dayKeys.size) {
+        const singleDisplayEntry = display[primaryAbsIndex];
+        return singleDisplayEntry ? [singleDisplayEntry] : [];
+      }
+      return getHistoryForTask(taskId)
+        .filter((entry: any) => dayKeys.has(historyLocalDateKey(entry?.ts)))
+        .sort((a: any, b: any) => historyTsMs(b) - historyTsMs(a));
+    }
+
+    return selectedIndexes
+      .map((absIndex) => display[absIndex])
+      .filter((entry) => !!entry);
   }
 
   function renderHistoryTrashRow(slice: any[], absStartIndex: number, ui: HistoryUI) {
@@ -617,6 +570,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
     if (!canvas || !wrap) return false;
+    syncHistoryCanvasResizeObserver(taskId, wrap);
     const state = ensureHistoryViewState(taskId);
     wrap.style.touchAction = "pan-y";
     canvas.style.touchAction = "pan-y";
@@ -899,9 +853,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function renderHistory(taskId: string) {
-    if (!taskId) return;
+    if (!taskId) return false;
     const ui = getHistoryUi(taskId);
-    if (!ui) return;
+    if (!ui) return false;
     const state = ensureHistoryViewState(taskId);
 
     const { windowed: all, usesFallbackWindow } = getHistoryWindowForTask(taskId);
@@ -957,7 +911,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     const chartDrawn = drawHistoryChart(slice, start, ui, taskId);
     renderHistoryTrashRow(slice, start, ui);
-    if (!chartDrawn) return;
+    if (!chartDrawn) return false;
 
     const rangeToggle = ui.root.querySelector(".historyRangeToggle") as HTMLElement | null;
     if (rangeToggle) {
@@ -999,6 +953,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       pinBtn.setAttribute("aria-disabled", String(!hasHistoryEntitlement));
       pinBtn.title = hasHistoryEntitlement ? pinBtn.title : "Pro feature: Pin chart";
     }
+    return true;
   }
 
   function openHistoryAnalysisModal(taskId: string) {
@@ -1048,6 +1003,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.render();
     renderAllOpenHistoryChartsAfterLayout();
     renderAllOpenHistoryChartsAfterLayout(32);
+    scheduleHistoryOpenSettledRenders(taskId);
     if (prefersReducedMotion()) return;
     queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
@@ -1057,6 +1013,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       ctx.render();
       renderAllOpenHistoryChartsAfterLayout();
       renderAllOpenHistoryChartsAfterLayout(32);
+      scheduleHistoryOpenSettledRenders(taskId);
     });
   }
 
@@ -1072,6 +1029,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (!state || reducedMotion) {
         clearHistoryRevealTimer(state);
         clearHistoryLayoutRetry(state);
+        clearHistoryCanvasResizeObserver(taskId);
         delete historyViewByTaskId[taskId];
       } else {
         state.revealPhase = "closing";
@@ -1081,6 +1039,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           if (nextState.selectionClearTimer != null) window.clearTimeout(nextState.selectionClearTimer);
           if (nextState.selectionAnimRaf != null) window.cancelAnimationFrame(nextState.selectionAnimRaf);
           clearHistoryLayoutRetry(nextState);
+          clearHistoryCanvasResizeObserver(taskId);
           delete historyViewByTaskId[taskId];
           ctx.render();
         });
@@ -1094,6 +1053,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
         clearHistoryRevealTimer(state);
         clearHistoryLayoutRetry(state);
+        clearHistoryCanvasResizeObserver(k);
         delete historyViewByTaskId[k];
       });
     }
@@ -1334,9 +1294,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           startHistorySelectionAnimation(taskId, null);
           const ui = getHistoryUi(taskId);
           if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
-          const display = getHistoryDisplayForTask(taskId, state);
-          const entry = display[hit.abs];
-          if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode, state.lockedAbsIndexes);
+          const selectedEntries = getHistorySummaryEntries(taskId, state, hit.abs, state.lockedAbsIndexes);
+          if (selectedEntries.length) openHistoryEntryNoteOverlay(taskId, selectedEntries);
         } else {
           state.selectedRelIndex = hit.rel;
           state.selectedAbsIndex = hit.abs;
@@ -1392,9 +1351,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         }
       }
       if (hitAbs == null) return;
-      const display = getHistoryDisplayForTask(taskId, state);
-      const entry = display[hitAbs];
-      if (entry) openHistoryEntryNoteOverlay(taskId, entry, state.rangeMode, state.lockedAbsIndexes);
+      const selectedEntries = getHistorySummaryEntries(taskId, state, hitAbs, state.lockedAbsIndexes);
+      if (selectedEntries.length) openHistoryEntryNoteOverlay(taskId, selectedEntries);
     });
 
     let swipeStartX: number | null = null;

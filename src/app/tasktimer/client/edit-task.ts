@@ -1,4 +1,4 @@
-import type { Task } from "../lib/types";
+import type { Task, TaskPlannedStartByDay } from "../lib/types";
 import {
   formatAggregateTimeGoalValidationMessage,
   formatAddTaskDurationReadout,
@@ -12,7 +12,10 @@ import {
   getTaskScheduledDays,
   hasTaskMixedScheduleTimes,
   hasTaskScheduledSlots,
+  normalizeScheduleStoredTime,
+  normalizeTaskPlannedStartByDay,
   resolveNextScheduleDayDate,
+  SCHEDULE_DAY_ORDER,
   type ScheduleDay,
   syncLegacyPlannedStartFields,
 } from "../lib/schedule-placement";
@@ -504,6 +507,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     } else {
       t.onceOffDay = null;
       t.onceOffTargetDate = null;
+      normalizeRecurringScheduleFieldsForSave(t, sourceTask);
     }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
@@ -512,6 +516,47 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
+  }
+
+  function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?: Task | null) {
+    if (task.taskType !== "recurring") return;
+
+    const normalizedByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+    const normalizedPlannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
+
+    if (task.plannedStartOpenEnded) {
+      if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
+      return;
+    }
+
+    if (!normalizedPlannedStartTime) {
+      if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
+      return;
+    }
+
+    if (normalizedByDay) {
+      const scheduledDays = SCHEDULE_DAY_ORDER.filter((day) => !!normalizeScheduleStoredTime(normalizedByDay[day]));
+      const nextByDay = Object.fromEntries(
+        scheduledDays.map((day) => [day, normalizedPlannedStartTime])
+      ) as TaskPlannedStartByDay;
+      syncLegacyPlannedStartFields(task, nextByDay);
+      return;
+    }
+
+    const sourceByDay = normalizeTaskPlannedStartByDay(sourceTask?.plannedStartByDay);
+    if (sourceByDay) {
+      const scheduledDays = getTaskScheduledDays(sourceTask || task);
+      const nextByDay = Object.fromEntries(
+        scheduledDays.map((day) => [day, normalizedPlannedStartTime])
+      ) as TaskPlannedStartByDay;
+      syncLegacyPlannedStartFields(task, nextByDay);
+      return;
+    }
+
+    task.plannedStartDay = null;
+    task.plannedStartByDay = null;
+    task.plannedStartTime = normalizedPlannedStartTime;
+    syncLegacyPlannedStartFields(task);
   }
 
   function syncEditCheckpointAlertUi(t: Task) {

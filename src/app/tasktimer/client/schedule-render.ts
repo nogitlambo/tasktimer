@@ -8,7 +8,6 @@ import {
 } from "../lib/productivityPeriod";
 import {
   createTaskTimerScheduleRuntime,
-  formatScheduleDayLabel,
   formatScheduleDurationMinutes,
   formatScheduleMinutes,
   isRecurringDailyScheduleTask,
@@ -102,7 +101,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
                 entry.task.plannedStartOpenEnded
                   ? `Disable flexible scheduling for ${String(entry.task.name || "Task")}`
                   : `Enable flexible scheduling for ${String(entry.task.name || "Task")}`
-              )}">R</button>`
+              )}">${entry.task.plannedStartOpenEnded ? "Flexible" : "Recurring"}</button>`
             : "";
           const recurringBadge = recurringTask
             ? `<span class="scheduleTaskCardRecurringBadge" aria-label="${

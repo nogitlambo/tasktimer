@@ -116,6 +116,16 @@ type XpProgressArchieOptions = {
   momentumEntitled?: boolean;
 };
 
+type RewardMomentumContext = {
+  historyByTaskId?: HistoryByTaskId;
+  tasks?: Task[];
+  weekStarting?: DashboardWeekStart;
+  dashboardIncludedModes?: Record<MomentumMode, boolean>;
+  isModeEnabled?: (mode: MomentumMode) => boolean;
+  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
+  momentumEntitled?: boolean;
+};
+
 export const XP_PER_TASK_LAUNCH = 5;
 export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
 export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
@@ -516,8 +526,9 @@ export function getRewardWeekProgress(
   };
 }
 
-function getCompletionMultiplier(context: CompletedSessionXpContext, awardedAt: number): number {
-  if (!context.momentumEntitled) return 1;
+function resolveRewardMultiplier(context: RewardMomentumContext | null | undefined, awardedAt: number): number {
+  if (!context?.momentumEntitled) return 1;
+  if (!context.historyByTaskId || !context.tasks || !context.weekStarting) return 1;
   if (!context.dashboardIncludedModes || !context.isModeEnabled || !context.taskModeOf) return 1;
   return computeMomentumSnapshot({
     tasks: context.tasks,
@@ -592,7 +603,8 @@ export function awardDailyConsistencyBonus(
   progress: RewardProgressV1,
   historyByTaskId: HistoryByTaskId,
   dayKey: string,
-  awardedAt: number
+  awardedAt: number,
+  momentumContext?: RewardMomentumContext
 ): RewardAwardResult {
   const previous = normalizeRewardProgress(progress);
   const normalizedDayKey = String(dayKey || "").trim() || localDayKey(awardedAt);
@@ -603,7 +615,11 @@ export function awardDailyConsistencyBonus(
   if (!state.qualified) return awardEntries(previous, [], 0);
   const sourceKey = `daily:${normalizedDayKey}`;
   if (existingSources.has(sourceKey)) return awardEntries(previous, [], 0);
-  return awardEntries(previous, [buildBonusLedgerEntry("dailyConsistency", awardedTs, DAILY_CONSISTENCY_XP, 1, sourceKey)], 0);
+  return awardEntries(
+    previous,
+    [buildBonusLedgerEntry("dailyConsistency", awardedTs, DAILY_CONSISTENCY_XP, resolveRewardMultiplier(momentumContext, awardedTs), sourceKey)],
+    0
+  );
 }
 
 export function awardWeeklyGoalBonuses(
@@ -611,21 +627,30 @@ export function awardWeeklyGoalBonuses(
   historyByTaskId: HistoryByTaskId,
   tasks: Task[],
   weekStarting: DashboardWeekStart,
-  awardedAt: number
+  awardedAt: number,
+  momentumContext?: RewardMomentumContext
 ): RewardAwardResult {
   const previous = normalizeRewardProgress(progress);
   const awardedTs = clampAwardTimestamp(previous, awardedAt);
   if (!awardedTs) return awardEntries(previous, [], 0);
   const existingSources = getExistingSourceKeys(previous);
   const weekProgress = getRewardWeekProgress(historyByTaskId, tasks, weekStarting, awardedTs);
+  const multiplier = resolveRewardMultiplier(
+    momentumContext || {
+      historyByTaskId,
+      tasks,
+      weekStarting,
+    },
+    awardedTs
+  );
   const entries: RewardLedgerEntry[] = [];
   if (weekProgress.reached60) {
     const sourceKey = `weekly60:${weekProgress.weekKey}`;
-    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal60", awardedTs, WEEKLY_GOAL_60_XP, 1, sourceKey));
+    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal60", awardedTs, WEEKLY_GOAL_60_XP, multiplier, sourceKey));
   }
   if (weekProgress.reached100) {
     const sourceKey = `weekly100:${weekProgress.weekKey}`;
-    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal100", awardedTs, WEEKLY_GOAL_100_XP, 1, sourceKey));
+    if (!existingSources.has(sourceKey)) entries.push(buildBonusLedgerEntry("weeklyGoal100", awardedTs, WEEKLY_GOAL_100_XP, multiplier, sourceKey));
   }
   return awardEntries(previous, entries, 0);
 }
@@ -641,7 +666,7 @@ export function awardCompletedSessionXp(progress: RewardProgressV1, context: Com
   const eligibleMs = getSessionEligibleMs(context.elapsedMs, !!context.xpDisqualifiedUntilReset);
   const existingSources = getExistingSourceKeys(previous);
   const entries: RewardLedgerEntry[] = [];
-  const completionMultiplier = getCompletionMultiplier(context, awardedAt);
+  const completionMultiplier = resolveRewardMultiplier(context, awardedAt);
   const normalizedSegments = normalizeSessionSegments(context, awardedAt, completionMultiplier);
 
   if (eligibleMs > 0) {

@@ -7,6 +7,7 @@ import {
   getTaskScheduledTime,
   hasTaskMixedScheduleTimes,
   isRecurringDailyScheduleTask,
+  normalizeTaskPlannedStartByDay,
   SCHEDULE_DAY_ORDER,
   syncLegacyPlannedStartFields,
   type ScheduleDay,
@@ -294,7 +295,18 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     if (!task) return { status: "missing" as const };
     const hasSchedule = hasTaskScheduledSlots(task);
     if (!hasSchedule) return { status: "noop" as const };
-    task.plannedStartOpenEnded = !task.plannedStartOpenEnded;
+    const nextFlexible = !task.plannedStartOpenEnded;
+    if (nextFlexible && !normalizeTaskPlannedStartByDay(task.plannedStartByDay)) {
+      const scheduledEntries = getTaskScheduledDayEntries(task);
+      if (scheduledEntries.length > 0) {
+        const nextByDay = Object.fromEntries(scheduledEntries.map((entry) => [entry.day, entry.time])) as TaskPlannedStartByDay;
+        setTaskScheduleByDay(task, nextByDay, { flexible: true });
+      } else {
+        task.plannedStartOpenEnded = true;
+      }
+    } else {
+      task.plannedStartOpenEnded = nextFlexible;
+    }
     options.save();
     options.render();
     return { status: "updated" as const, flexible: !!task.plannedStartOpenEnded };

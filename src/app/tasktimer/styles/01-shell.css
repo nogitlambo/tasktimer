@@ -35,6 +35,9 @@
   z-index:3;
   backdrop-filter: blur(10px);
 }
+.topbar.topbarBrandOnly{
+  grid-template-columns: minmax(0, 1fr);
+}
 .brand{
   display:flex;
   align-items:center;

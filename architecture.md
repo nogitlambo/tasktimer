@@ -88,6 +88,8 @@
 - [`src/app/tasktimer/client/friend-avatar.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/friend-avatar.ts)
 - [`src/app/tasktimer/client/global-events.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/global-events.ts)
 - [`src/app/tasktimer/client/groups.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/groups.ts)
+- [`src/app/tasktimer/client/history-entry-summary.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-entry-summary.test.ts)
+- [`src/app/tasktimer/client/history-entry-summary.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-entry-summary.ts)
 - [`src/app/tasktimer/client/history-inline.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-inline.ts)
 - [`src/app/tasktimer/client/history-manager-generation.test.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-manager-generation.test.ts)
 - [`src/app/tasktimer/client/history-manager-generation.ts`](/S:/Apps/repo/tasktimer-app/src/app/tasktimer/client/history-manager-generation.ts)

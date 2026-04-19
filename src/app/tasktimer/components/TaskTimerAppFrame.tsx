@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
-import SignedInHeaderBadge from "./SignedInHeaderBadge";
 import DesktopAppRail from "./DesktopAppRail";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "test2" | "leaderboard";
@@ -16,12 +15,10 @@ export default function TaskTimerAppFrame({ activePage, children }: TaskTimerApp
   const railPage = activePage === "schedule" ? "tasks" : activePage;
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch App">
-      <div className="topbar">
+      <div className="topbar topbarBrandOnly">
         <div className="brand">
           <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
-
-        <SignedInHeaderBadge />
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage={railPage} useClientNavButtons={true} showMobileFooter={false} />

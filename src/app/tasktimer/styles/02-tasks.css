@@ -431,6 +431,21 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   transform: translateZ(0);
   will-change: background-color, border-color, color, box-shadow;
 }
+
+@media (max-width: 980px){
+  .checkpointToastHost{
+    padding:10px;
+  }
+
+  .checkpointToast{
+    width:min(680px, calc(100vw - 20px));
+  }
+
+  .checkpointToastActions{
+    grid-template-columns: 1fr;
+  }
+}
+
 .checkpointToastClose{
   white-space:nowrap;
 }
@@ -445,8 +460,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   animation: taskNewGlowFade 3s ease-out forwards;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
-  width:auto !important;
-  min-width:118px !important;
   display:block !important;
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .task{
@@ -1104,10 +1117,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   align-items:center;
   justify-content:flex-end;
   flex:0 0 auto;
-}
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions #openAddTaskBtn{
-  min-width:118px;
-  white-space:nowrap;
+  gap:10px;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
   margin-left:auto;
@@ -1454,26 +1464,15 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
   color: rgba(225,240,158,.68);
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskPageHeaderActions{
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
   display:inline-flex;
   align-items:center;
   justify-content:flex-end;
   flex-wrap:nowrap;
   gap:8px;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openScheduleBtn,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #closeScheduleBtn,
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
-  min-width:118px;
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(#openScheduleBtn, #closeScheduleBtn, #openAddTaskBtn, #scheduleAddTaskBtn){
   white-space:nowrap;
-}
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
-  width:118px !important;
-  min-width:118px !important;
-  max-width:118px !important;
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule{
   display:block;
@@ -1909,65 +1908,86 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
     rgba(52,26,11,.42);
   box-shadow:inset 0 0 0 1px rgba(255,171,117,.16);
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill{
-  min-width:112px;
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill{
   white-space:nowrap;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
-  color:#f7fdff !important;
-  transform:translateY(1px);
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenHeaderBtn,
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenHeaderBtn:hover,
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenHeaderBtn:focus-visible,
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenHeaderBtn:active{
+  border-color:transparent !important;
+  box-shadow:none;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenHeaderPipe,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenHeaderPipe{
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(.taskScreenIconBtnImage, .taskScreenIconBtnSvg){
+  width:18px;
+  height:18px;
+  display:block;
+  margin:0 auto;
+  flex:0 0 auto;
+}
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnImage{
+  object-fit:contain;
+  object-position:center;
+  filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,.16));
+}
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnSvg{
+  fill:none;
+  stroke:rgba(63,233,255,.95);
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter: drop-shadow(0 0 6px rgba(0,190,255,.35));
+}
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnPlus{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  flex:0 0 auto;
-  margin-inline:2px;
-  color:rgba(235,243,255,.62);
+  width:18px;
+  height:18px;
+  color:rgba(63,233,255,.95);
   font-family:var(--font-tight);
-  font-size:14px;
+  font-size:18px;
   font-weight:700;
-  letter-spacing:.06em;
+  line-height:18px;
+  text-shadow:0 0 8px rgba(0,220,255,.5);
+  flex:0 0 auto;
 }
-body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
-body[data-theme="cyan"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
-  border-color:rgba(117,231,255,.34) !important;
-  background:
-    linear-gradient(180deg, rgba(53,232,255,.1), rgba(11,33,40,.18)) !important;
-  box-shadow:
-    0 0 10px rgba(60,223,255,.06),
-    inset 0 2px 5px rgba(4,18,24,.42),
-    inset 0 0 0 1px rgba(117,231,255,.12),
-    inset 0 -1px 0 rgba(170,247,255,.08) !important;
+#app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill.isOn{
+  color:#f7fdff !important;
+  border-color: rgba(117,231,255,.42) !important;
 }
-body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
-body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
-  border-color:rgba(214,120,255,.32) !important;
-  background:
-    linear-gradient(180deg, rgba(214,120,255,.1), rgba(33,16,42,.2)) !important;
-  box-shadow:
-    0 0 10px rgba(214,120,255,.05),
-    inset 0 2px 5px rgba(20,8,29,.46),
-    inset 0 0 0 1px rgba(214,120,255,.1),
-    inset 0 -1px 0 rgba(242,194,255,.08) !important;
+body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill.isOn{
+  border-color: rgba(117,231,255,.42) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
 }
-body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill.isOn,
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .taskScreenPill.isOn{
-  border-color:rgba(214,246,116,.34) !important;
-  background: rgba(18,20,24,.96) !important;
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill.isOn{
+  border-color: rgba(214,120,255,.42) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnSvg{
+  stroke:rgba(240,197,255,.94);
+  filter: drop-shadow(0 0 6px rgba(214,120,255,.34));
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnPlus{
+  color:rgba(240,197,255,.94);
+  text-shadow:0 0 8px rgba(214,120,255,.42);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill.isOn{
+  border-color: rgba(214,246,116,.42) !important;
+  background: rgba(255,255,255,.01) !important;
   color:#fbffe3 !important;
   box-shadow: none !important;
 }
 
-body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openScheduleBtn,
-body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #closeScheduleBtn,
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleAddTaskBtn{
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(#openScheduleBtn, #closeScheduleBtn, #openAddTaskBtn, #scheduleAddTaskBtn){
   background: rgba(18,20,24,.96) !important;
   box-shadow: none !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(.taskScreenIconBtnSvg, .taskScreenIconBtnPlus){
+  stroke:#fbffe3;
+  color:#fbffe3;
+  text-shadow:none;
+  filter:none;
 }
 
 /* Final task progress block clipping. */

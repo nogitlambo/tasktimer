@@ -16,6 +16,10 @@ import {
   type HistoryGenParams,
   type HistoryGenTaskGoal,
 } from "./history-manager-shared";
+import {
+  buildHistoryEntrySummaryPayload,
+  renderHistoryEntrySummaryHtml,
+} from "./history-entry-summary";
 
 type HistoryGenPreview = {
   params: HistoryGenParams;
@@ -114,15 +118,20 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown }) {
-    const note = ctx.getHistoryEntryNote(entry);
-    if (!note) return;
-    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = "Session Note";
+    const payload = buildHistoryEntrySummaryPayload({
+      entries: [entry],
+      formatDateTime: ctx.formatDateTime,
+      formatTwo: ctx.formatTwo,
+      getEntryNote: ctx.getHistoryEntryNote,
+    });
+    if (!payload) return;
+    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = payload.titleText;
     if (els.historyEntryNoteMeta) {
-      els.historyEntryNoteMeta.textContent = ctx.formatDateTime(Number(entry?.ts) || 0);
-      (els.historyEntryNoteMeta as HTMLElement).style.display = "";
+      els.historyEntryNoteMeta.textContent = payload.metaText;
+      (els.historyEntryNoteMeta as HTMLElement).style.display = payload.metaText ? "" : "none";
     }
     if (els.historyEntryNoteBody) {
-      els.historyEntryNoteBody.textContent = note;
+      els.historyEntryNoteBody.innerHTML = renderHistoryEntrySummaryHtml(payload, ctx.escapeHtmlUI);
     }
     ctx.openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
   }

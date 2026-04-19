@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AppImg from "@/components/AppImg";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
@@ -76,17 +77,46 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <p className="dashboardKicker">Tasks</p>
               </div>
               <div className="taskPageHeaderActions">
-                <button className="btn btn-ghost small taskScreenPill isOn" data-screen-pill="tasks" aria-current="page" role="tab" type="button">
-                  Tasks
+                <button
+                  className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
+                  data-screen-pill="tasks"
+                  aria-current="page"
+                  aria-label="Tasks"
+                  title="Tasks"
+                  role="tab"
+                  type="button"
+                >
+                  <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
                 </button>
-                <button className="btn btn-ghost small taskScreenPill" id="openScheduleBtn" data-screen-pill="schedule" role="tab" type="button">
-                  Schedule
+                <button
+                  className="iconBtn taskScreenPill taskScreenHeaderBtn"
+                  id="openScheduleBtn"
+                  data-screen-pill="schedule"
+                  aria-label="Schedule"
+                  title="Schedule"
+                  role="tab"
+                  type="button"
+                >
+                  <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                    <path d="M3.5 9.5h17" />
+                    <path d="M8 3.75v3.5" />
+                    <path d="M16 3.75v3.5" />
+                    <path d="M8 13h3" />
+                    <path d="M13 13h3" />
+                    <path d="M8 17h3" />
+                  </svg>
                 </button>
-                <span className="taskScreenHeaderPipe" aria-hidden="true">
-                  |
-                </span>
-                <button className="btn btn-ghost small taskScreenPill" id="openAddTaskBtn" type="button">
-                  + Add Task
+                <button
+                  className="iconBtn taskScreenPill taskScreenHeaderBtn"
+                  id="openAddTaskBtn"
+                  aria-label="Add Task"
+                  title="Add Task"
+                  type="button"
+                >
+                  <span className="taskScreenIconBtnPlus" aria-hidden="true">
+                    +
+                  </span>
                 </button>
               </div>
             </div>

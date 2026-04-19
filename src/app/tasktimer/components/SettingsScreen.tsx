@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import AppImg from "@/components/AppImg";
 import SettingsPanel, { type SettingsPaneKey } from "./SettingsPanel";
-import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 
@@ -39,11 +38,10 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Settings">
-      <div className="topbar" aria-label="TaskLaunch header">
+      <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
         <div className="brand">
           <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
-        <SignedInHeaderBadge />
       </div>
       <div className="list settingsPageList" style={{ paddingTop: 18 }}>
         <div className="settingsSceneBackdrop" aria-hidden="true">

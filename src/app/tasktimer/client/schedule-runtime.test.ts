@@ -245,7 +245,7 @@ describe("schedule-runtime", () => {
 
     const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
     expect(gridHtml).toContain('data-schedule-normalize="task-a"');
-    expect(gridHtml).toContain(">R</button>");
+    expect(gridHtml).toContain(">Recurring</button>");
     expect(gridHtml).toContain("Daily");
 
     const result = runtime.toggleTaskScheduleFlexible("task-a");
@@ -255,7 +255,35 @@ describe("schedule-runtime", () => {
     expect(render).toHaveBeenCalledTimes(1);
 
     const toggledGridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
+    expect(toggledGridHtml).toContain(">Flexible</button>");
     expect(toggledGridHtml).toContain("Flex");
+  });
+
+  it("materializes legacy daily schedules when enabling flexible mode", () => {
+    const tasks = [makeTask({ id: "task-a", name: "Deep Work", plannedStartDay: null, plannedStartTime: "09:00" })];
+    const state = makeScheduleState();
+    const save = vi.fn();
+    const render = vi.fn();
+    const runtime = createTaskTimerScheduleRuntime({
+      state,
+      getTasks: () => tasks,
+      save,
+      render,
+    });
+
+    const result = runtime.toggleTaskScheduleFlexible("task-a");
+
+    expect(result).toEqual({ status: "updated", flexible: true });
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(true);
+    expect(tasks[0]?.plannedStartByDay).toEqual({
+      mon: "09:00",
+      tue: "09:00",
+      wed: "09:00",
+      thu: "09:00",
+      fri: "09:00",
+      sat: "09:00",
+      sun: "09:00",
+    });
   });
 
   it("always shows the R action for multi-day schedules and preserves schedule data when toggled", () => {

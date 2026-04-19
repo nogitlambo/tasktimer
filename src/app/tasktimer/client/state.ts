@@ -124,7 +124,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskPlannedStartOpenEnded: false,
     addTaskDurationValue: 5,
     addTaskDurationUnit: "hour",
-    addTaskDurationPeriod: "week",
+    addTaskDurationPeriod: "day",
     focusSessionNotesByTaskId: {},
     addTaskNoTimeGoal: false,
     elapsedPadTarget: null,

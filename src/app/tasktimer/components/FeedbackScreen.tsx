@@ -10,7 +10,6 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { createFeedbackItem, type FeedbackAttachmentUploadInput, type FeedbackType } from "../lib/feedbackStore";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
-import SignedInHeaderBadge from "./SignedInHeaderBadge";
 
 const FEEDBACK_ATTACHMENT_MAX_DIMENSION = 1600;
 
@@ -276,11 +275,10 @@ export default function FeedbackScreen() {
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Feedback">
-      <div className="topbar" aria-label="TaskLaunch header">
+      <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
         <div className="brand">
           <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
-        <SignedInHeaderBadge />
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage="none" useClientNavButtons={false} showMobileFooter />

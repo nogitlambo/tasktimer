@@ -1,5 +1,7 @@
 "use client";
 
+import AppImg from "@/components/AppImg";
+
 const DAY_BUTTONS = [
   { value: "mon", label: "Mon" },
   { value: "tue", label: "Tue" },
@@ -22,17 +24,46 @@ export default function SchedulePageContent({ active }: SchedulePageContentProps
           <p className="dashboardKicker">Schedule</p>
         </div>
         <div className="taskPageHeaderActions schedulePageHeaderActions">
-          <button className="btn btn-ghost small taskScreenPill" id="closeScheduleBtn" data-screen-pill="tasks" role="tab" type="button">
-            Tasks
+          <button
+            className="iconBtn taskScreenPill taskScreenHeaderBtn"
+            id="closeScheduleBtn"
+            data-screen-pill="tasks"
+            aria-label="Tasks"
+            title="Tasks"
+            role="tab"
+            type="button"
+          >
+            <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
           </button>
-          <button className="btn btn-ghost small taskScreenPill isOn" data-screen-pill="schedule" aria-current="page" role="tab" type="button">
-            Schedule
+          <button
+            className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
+            data-screen-pill="schedule"
+            aria-current="page"
+            aria-label="Schedule"
+            title="Schedule"
+            role="tab"
+            type="button"
+          >
+            <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+              <path d="M3.5 9.5h17" />
+              <path d="M8 3.75v3.5" />
+              <path d="M16 3.75v3.5" />
+              <path d="M8 13h3" />
+              <path d="M13 13h3" />
+              <path d="M8 17h3" />
+            </svg>
           </button>
-          <span className="taskScreenHeaderPipe" aria-hidden="true">
-            |
-          </span>
-          <button className="btn btn-ghost small taskScreenPill" id="scheduleAddTaskBtn" type="button">
-            + Add Task
+          <button
+            className="iconBtn taskScreenPill taskScreenHeaderBtn"
+            id="scheduleAddTaskBtn"
+            aria-label="Add Task"
+            title="Add Task"
+            type="button"
+          >
+            <span className="taskScreenIconBtnPlus" aria-hidden="true">
+              +
+            </span>
           </button>
         </div>
       </div>

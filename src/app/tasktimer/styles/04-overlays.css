@@ -1887,40 +1887,43 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay{
   z-index: 96;
-  background: transparent;
-  backdrop-filter: none;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 0;
-  pointer-events: none;
+  background: rgba(0,0,0,.56);
+  backdrop-filter: blur(2px);
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  pointer-events: auto;
 }
 
 #historyEntryNoteOverlay .modal{
-  background: #0d0f13;
-  border: 1px solid rgba(53,232,255,.26);
+  background: #17191d;
+  border: 1px solid rgba(255,255,255,.12);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  position: fixed;
-  left: var(--history-note-left, 14px);
-  top: var(--history-note-top, 14px);
-  width: fit-content;
-  min-width: min(320px, calc(100vw - 28px));
-  max-width: min(560px, calc(100vw - 28px));
-  min-height: 120px;
-  max-height: calc(100vh - 28px);
-  padding: 12px 12px 10px;
+  clip-path: none;
+  position: relative;
+  left: auto;
+  top: auto;
+  width: min(760px, calc(100vw - 36px));
+  min-width: min(520px, calc(100vw - 36px));
+  min-height: min(420px, calc(100vh - 36px));
+  max-height: calc(100vh - 36px);
+  padding: 22px 22px 18px;
   margin: 0;
-  overflow: hidden;
+  overflow: auto;
   pointer-events: auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 18px 34px rgba(0,0,0,.34),
+    0 30px 68px rgba(0,0,0,.42);
 }
 
 #historyEntryNoteOverlay .historyEntryNoteHeader{
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 #historyEntryNoteOverlay{
-  background: transparent;
+  background: rgba(0,0,0,.56);
 }
 
 #historyEntryNoteOverlay::before{
@@ -1929,19 +1932,139 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntryNoteHeader h2{
   margin: 0;
+  font-size: 22px;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteHeader .modalSubtext{
-  margin: 3px 0 0;
+  margin: 6px 0 0;
+  font-size: 13px;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteTime{
   font-weight: 800;
 }
 
+#historyEntryNoteOverlay .historyEntryNoteBody{
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  color: rgba(241,249,255,.94);
+  font-size: inherit;
+  line-height: inherit;
+}
+
 #historyEntryNoteOverlay .confirmBtns{
-  margin-top: 10px;
+  margin-top: 16px;
   justify-content: center;
+}
+
+#historyEntryNoteOverlay .historyEntrySummarySectionTitle{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent3);
+}
+
+#historyEntryNoteOverlay .historyEntrySummarySectionTitle-overview{
+  margin-bottom: -2px;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryField{
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryLabel{
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent3);
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryValue{
+  min-width: 0;
+  color: rgba(241,249,255,.94);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteRow{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock{
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteText{
+  min-width: 0;
+  color: rgba(230,245,255,.9);
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteActions{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryDivider{
+  height: 1px;
+  background: rgba(255,255,255,.08);
+}
+
+@media (max-width: 640px){
+  #historyEntryNoteOverlay{
+    padding: 10px;
+  }
+
+  #historyEntryNoteOverlay .modal{
+    width: min(100vw - 20px, 1120px);
+    min-width: 0;
+    min-height: 0;
+    max-height: calc(100vh - 20px);
+    padding: 16px 16px 14px;
+  }
+
+  #historyEntryNoteOverlay .historyEntrySummaryGrid{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #historyEntryNoteOverlay .historyEntrySummaryNoteRow{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
+    justify-content: flex-start;
+  }
 }
 
 body[data-theme="purple"] .task,

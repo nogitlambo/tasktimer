@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildXpProgressArchieMessage, type RewardProgressV1 } from "./rewards";
+import {
+  awardDailyConsistencyBonus,
+  awardTaskLaunchXp,
+  awardWeeklyGoalBonuses,
+  buildXpProgressArchieMessage,
+  type RewardProgressV1,
+} from "./rewards";
+import type { HistoryByTaskId } from "./types";
 import type { Task } from "./types";
 
 function createTask(overrides?: Partial<Task>): Task {
@@ -30,6 +37,147 @@ function createProgress(overrides?: Partial<RewardProgressV1>): RewardProgressV1
     ...overrides,
   };
 }
+
+function createMomentumContext(tasks: Task[], historyByTaskId: HistoryByTaskId, now: number) {
+  void now;
+  return {
+    historyByTaskId,
+    tasks,
+    weekStarting: "monday" as const,
+    dashboardIncludedModes: { mode1: true, mode2: false, mode3: false },
+    isModeEnabled: () => true,
+    taskModeOf: () => "mode1" as const,
+    momentumEntitled: true,
+  };
+}
+
+describe("reward helper multipliers", () => {
+  it("multiplies daily consistency bonus when momentum is entitled and context is present", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const dayKey = "2026-04-17";
+    const task = createTask({
+      running: true,
+      startMs: now - 30 * 60 * 1000,
+      timeGoalEnabled: true,
+      timeGoalMinutes: 180,
+      timeGoalPeriod: "week",
+    });
+    const historyByTaskId: HistoryByTaskId = {
+      [task.id]: [
+        { ts: now - 5 * 60 * 60 * 1000, name: task.name, ms: 20 * 60 * 1000 },
+        { ts: now - 30 * 60 * 1000, name: task.name, ms: 20 * 60 * 1000 },
+        { ts: now - 26 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+        { ts: now - 50 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+      ],
+    };
+
+    const award = awardDailyConsistencyBonus(createProgress(), historyByTaskId, dayKey, now, createMomentumContext([task], historyByTaskId, now));
+
+    expect(award.amount).toBe(6);
+    expect(award.next.awardLedger).toEqual([
+      expect.objectContaining({
+        reason: "dailyConsistency",
+        baseXp: 3,
+        multiplier: 2,
+        xp: 6,
+        sourceKey: `daily:${dayKey}`,
+      }),
+    ]);
+  });
+
+  it("falls back to 1x daily consistency bonus without entitlement", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const historyByTaskId: HistoryByTaskId = {
+      "task-1": [
+        { ts: now - 3 * 60 * 60 * 1000, name: "Deep Work", ms: 20 * 60 * 1000 },
+        { ts: now - 20 * 60 * 1000, name: "Deep Work", ms: 20 * 60 * 1000 },
+      ],
+    };
+
+    const award = awardDailyConsistencyBonus(createProgress(), historyByTaskId, "2026-04-17", now, {
+      ...createMomentumContext([createTask()], historyByTaskId, now),
+      momentumEntitled: false,
+    });
+
+    expect(award.amount).toBe(3);
+    expect(award.next.awardLedger[0]).toEqual(
+      expect.objectContaining({
+        baseXp: 3,
+        multiplier: 1,
+        xp: 3,
+      })
+    );
+  });
+
+  it("falls back to 1x daily consistency bonus when momentum context is incomplete", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const historyByTaskId: HistoryByTaskId = {
+      "task-1": [
+        { ts: now - 3 * 60 * 60 * 1000, name: "Deep Work", ms: 20 * 60 * 1000 },
+        { ts: now - 20 * 60 * 1000, name: "Deep Work", ms: 20 * 60 * 1000 },
+      ],
+    };
+
+    const award = awardDailyConsistencyBonus(createProgress(), historyByTaskId, "2026-04-17", now, {
+      historyByTaskId,
+      momentumEntitled: true,
+    });
+
+    expect(award.amount).toBe(3);
+    expect(award.next.awardLedger[0]).toEqual(
+      expect.objectContaining({
+        baseXp: 3,
+        multiplier: 1,
+        xp: 3,
+      })
+    );
+  });
+
+  it("multiplies weekly goal bonuses when momentum is entitled and context is present", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const task = createTask({
+      timeGoalEnabled: true,
+      timeGoalMinutes: 180,
+      timeGoalPeriod: "week",
+    });
+    const historyByTaskId: HistoryByTaskId = {
+      [task.id]: [
+        { ts: now - 30 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+        { ts: now - 26 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+        { ts: now - 50 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+      ],
+    };
+
+    const award = awardWeeklyGoalBonuses(createProgress(), historyByTaskId, [task], "monday", now, createMomentumContext([task], historyByTaskId, now));
+
+    expect(award.amount).toBe(24);
+    expect(award.next.awardLedger).toEqual([
+      expect.objectContaining({
+        reason: "weeklyGoal60",
+        baseXp: 4,
+        multiplier: 2,
+        xp: 8,
+      }),
+      expect.objectContaining({
+        reason: "weeklyGoal100",
+        baseXp: 8,
+        multiplier: 2,
+        xp: 16,
+      }),
+    ]);
+  });
+
+  it("does not activate dormant launch XP awards", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const progress = createProgress();
+
+    const award = awardTaskLaunchXp(progress, { taskId: "task-1", awardedAt: now });
+
+    expect(award.amount).toBe(0);
+    expect(award.next.awardLedger).toEqual([]);
+    expect(award.next.totalXp).toBe(progress.totalXp);
+  });
+});
 
 describe("buildXpProgressArchieMessage", () => {
   it("reports when no XP was earned in the last 24 hours", () => {
