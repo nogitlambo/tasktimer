@@ -388,6 +388,10 @@ function hasFreshForegroundWebDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => !row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
 
+function hasFreshForegroundNativeDevice(deviceRows, nowMs) {
+  return deviceRows.some((row) => row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
+}
+
 function hasFreshForegroundDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
@@ -622,11 +626,12 @@ async function sendScheduledTaskNotification({
   const prefs = await loadUserPushPreferences(uid);
   const deviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
+  const hasForegroundNativeDevice = hasFreshForegroundNativeDevice(deviceRows, nowMs);
   const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
   if (!deviceRows.length) {
     return {status: "no-devices"};
   }
-  if (skipIfForeground && hasFreshForegroundDevice(deviceRows, nowMs)) {
+  if (skipIfForeground && hasFreshForegroundDevice(deviceRows, nowMs) && !allowWeb) {
     return {
       status: "foreground",
       successCount: 0,
@@ -640,7 +645,7 @@ async function sendScheduledTaskNotification({
   const responses = [];
   const invalidRows = [];
 
-  if (nativeRows.length) {
+  if (nativeRows.length && !(skipIfForeground && hasForegroundNativeDevice)) {
     const nativeResponse = await messaging.sendEachForMulticast({
       tokens: nativeRows.map((row) => row.token),
       android: {
@@ -652,7 +657,7 @@ async function sendScheduledTaskNotification({
     invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse));
   }
 
-  if (allowWeb && webRows.length && !hasForegroundWebDevice) {
+  if (allowWeb && webRows.length && !(skipIfForeground && hasForegroundWebDevice)) {
     const webResponse = await messaging.sendEachForMulticast({
       tokens: webRows.map((row) => row.token),
       notification: {
@@ -679,9 +684,9 @@ async function sendScheduledTaskNotification({
     failureCount: acc.failureCount + item.failureCount,
   }), {successCount: 0, failureCount: 0});
 
-  if (!response.successCount && !response.failureCount && hasForegroundWebDevice) {
+  if (!response.successCount && !response.failureCount && skipIfForeground && (hasForegroundNativeDevice || hasForegroundWebDevice)) {
     return {
-      status: nativeRows.length ? "sent" : "foreground",
+      status: hasForegroundWebDevice && !hasForegroundNativeDevice ? "foreground" : "sent",
       successCount: 0,
       failureCount: 0,
       invalidTokenCount: invalidRows.length,
@@ -1006,7 +1011,7 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
     payloadData,
     webTitle: "Time Goal Reached",
     webBody: `Return to TaskLaunch to view XP awarded for ${taskName}.`,
-    allowWeb: false,
+    allowWeb: true,
     skipIfForeground: true,
   });
 
@@ -1282,3 +1287,8 @@ export const sendDueTimeGoalPushes = onSchedule(
     });
   }
 );
+
+export const __testing = {
+  sendScheduledTaskNotification,
+  processDueTimeGoalCompleteTask,
+};

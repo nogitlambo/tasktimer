@@ -77,36 +77,38 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <p className="dashboardKicker">Tasks</p>
               </div>
               <div className="taskPageHeaderActions">
-                <button
-                  className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
-                  data-screen-pill="tasks"
-                  aria-current="page"
-                  aria-label="Tasks"
-                  title="Tasks"
-                  role="tab"
-                  type="button"
-                >
-                  <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-                </button>
-                <button
-                  className="iconBtn taskScreenPill taskScreenHeaderBtn"
-                  id="openScheduleBtn"
-                  data-screen-pill="schedule"
-                  aria-label="Schedule"
-                  title="Schedule"
-                  role="tab"
-                  type="button"
-                >
-                  <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-                    <path d="M3.5 9.5h17" />
-                    <path d="M8 3.75v3.5" />
-                    <path d="M16 3.75v3.5" />
-                    <path d="M8 13h3" />
-                    <path d="M13 13h3" />
-                    <path d="M8 17h3" />
-                  </svg>
-                </button>
+                <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
+                  <button
+                    className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
+                    data-screen-pill="tasks"
+                    aria-current="page"
+                    aria-label="Tasks"
+                    title="Tasks"
+                    role="tab"
+                    type="button"
+                  >
+                    <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
+                  </button>
+                  <button
+                    className="iconBtn taskScreenPill taskScreenHeaderBtn"
+                    id="openScheduleBtn"
+                    data-screen-pill="schedule"
+                    aria-label="Schedule"
+                    title="Schedule"
+                    role="tab"
+                    type="button"
+                  >
+                    <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                      <path d="M3.5 9.5h17" />
+                      <path d="M8 3.75v3.5" />
+                      <path d="M16 3.75v3.5" />
+                      <path d="M8 13h3" />
+                      <path d="M13 13h3" />
+                      <path d="M8 17h3" />
+                    </svg>
+                  </button>
+                </div>
                 <button
                   className="iconBtn taskScreenPill taskScreenHeaderBtn"
                   id="openAddTaskBtn"
