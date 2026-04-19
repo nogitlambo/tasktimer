@@ -162,7 +162,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 }
                 <button class="iconBtn" data-action="reset" title="${t.running ? "Stop task to reset" : "Reset"}" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>
                 <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#8942;</button>
+                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>
             </div>
             ${progressHTML}

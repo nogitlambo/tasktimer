@@ -58,6 +58,13 @@
 
 ## Styling guardrails
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`.
+- `src/app/tasktimer/styles/*` is the authoritative editing surface for TaskTimer UI rules.
+- `src/app/tasktimer/tasktimer.css` is an import-only bundle entrypoint; do not add route/component rules there.
+- Prefer the owner split file for new edits:
+  - dashboard: `03-dashboard.css` and `10-responsive.css`
+  - overlays/modals: `04-overlays.css`
+  - settings/account/about/rank ladder: `06-settings.css`
+  - desktop rail and Archie: `09-desktop-rail.css` and `10-responsive.css`
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure purple/cyan theme parity when introducing new visual elements.
 - New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
@@ -65,7 +72,7 @@
 - User Guide must not inherit shared `.menu` width caps; keep route-scoped full-width overrides under `#app[aria-label="TaskTimer User Guide"]`.
 - User Guide right detail/topic content should use full available panel width.
 - User Guide topic list buttons should match Settings module list style (flat treatment; no extra shading unless explicitly requested).
-- `tasktimer.css` contains repeated route/media blocks; place final authoritative route-specific overrides in the last applicable route-scoped block to avoid later overrides.
+- Do not add new `Final`, `Canonical`, or `authoritative` catch-all override blocks to `tasktimer.css`; keep ownership local to the split file that owns the component/route.
 - Prefer route-scoped selectors (`#app[aria-label="..."]`) for Settings/User Guide changes.
 - For all newly added modals and pages, always apply current app styling by default:
   - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
@@ -120,7 +127,8 @@
 - After edits, check for:
   - Type/build syntax issues in touched files.
   - ID/className regressions that can break client-side bindings.
-  - `data-*` action hook regressions (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
+- `data-*` action hook regressions (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
+- CSS ownership regressions via `npm run css:audit:tasktimer`.
   - Page/route navigation regressions between `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, `/feedback`.
   - History Manager behavior regressions: bulk selection propagation (task -> date -> rows), sortable columns, and delete summary accuracy.
   - Pinned history behavior: pinned chart reopens on Tasks page and persists via `${STORAGE_KEY}:pinnedHistoryTaskIds`.

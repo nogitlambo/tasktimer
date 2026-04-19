@@ -2379,6 +2379,297 @@ body[data-theme="lime"] .userGuideIcon{
     invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%)
     drop-shadow(0 0 8px rgba(219,255,79,.34)) !important;
 }
+
+/* Migrated from retired tasktimer tail: app-wide typography, reward bar clipping, and cursor authority. */
+#app input:not([type]),
+#app input[type="text"],
+#app input[type="email"],
+#app input[type="number"],
+#app input[type="password"],
+#app input[type="search"],
+#app input[type="tel"],
+#app input[type="url"],
+#app textarea,
+#app select,
+#app option,
+#app optgroup,
+#editOverlay input:not([type]),
+#editOverlay input[type="text"],
+#editOverlay input[type="email"],
+#editOverlay input[type="number"],
+#editOverlay input[type="password"],
+#editOverlay input[type="search"],
+#editOverlay input[type="tel"],
+#editOverlay input[type="url"],
+#editOverlay textarea,
+#editOverlay select,
+#editOverlay option,
+#editOverlay optgroup,
+.desktopRailMascotInput,
+.addTaskNameItem {
+  font-family: var(--font-archie) !important;
+}
+
+#app,
+#app :where(
+  p,
+  span,
+  a,
+  button,
+  summary,
+  li,
+  td,
+  th,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  small,
+  strong,
+  em,
+  div
+),
+#editOverlay,
+#editOverlay :where(
+  p,
+  span,
+  a,
+  button,
+  summary,
+  li,
+  td,
+  th,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  small,
+  strong,
+  em,
+  div
+) {
+  font-family: var(--font-archie) !important;
+}
+
+#app :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  .displayFont,
+  .menuTitle,
+  .settingsDetailTitle,
+  .settingsInlineSectionTitle,
+  .dashboardCardTitle,
+  .dashboardPanelTitle,
+  .dashboardWidgetTitle,
+  .desktopRailTitle,
+  .desktopRailBubbleTitle,
+  .hmTitle,
+  .modal h1,
+  .modal h2,
+  .modal h3,
+  .modalTitle,
+  .sectionTitle,
+  .field > label,
+  .toggleRow > span,
+  .unitRow > span
+),
+#editOverlay :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  .displayFont,
+  .editHead,
+  .editHead *,
+  .field > label,
+  .toggleRow > span,
+  .unitRow > span,
+  .checkpointAlertsTitle,
+  .editTaskTimeGoalHeaderLabel,
+  .milestonesSummaryPrimary,
+  .milestonesSummaryCollapseLabel
+) {
+  font-family: var(--font-orbitron) !important;
+}
+
+#app :where(
+  .desktopAppRail .dashboardRailMenuLabel,
+  .desktopAppRail .dashboardRailSectionLabel,
+  .desktopAppRail .dashboardProfileName,
+  .settingsNavPanel .settingsNavRowText,
+  #appPageTasks .task .time,
+  #appPageTasks .task .time *,
+  #appPageTasks .task .timeBoxValue,
+  #appPageTasks .task .timeBoxValue *,
+  #appPageTasks .task .actions .btn[data-action="start"],
+  #appPageTasks .task .actions .btn[data-action="stop"]
+) {
+  font-family: var(--font-orbitron) !important;
+}
+
+#app[aria-label="TaskLaunch App"],
+#app[aria-label="TaskLaunch Settings"],
+#app[aria-label="TaskLaunch User Guide"],
+#app[aria-label="TaskLaunch Feedback"] {
+  cursor: crosshair;
+}
+
+#app[aria-label="TaskLaunch App"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch Settings"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch User Guide"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+),
+#app[aria-label="TaskLaunch Feedback"] :where(
+  .historyCanvasWrap,
+  .historyChartInline,
+  #historyChart
+) {
+  cursor: crosshair !important;
+}
+
+#app[aria-label="TaskLaunch App"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch Settings"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch User Guide"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+),
+#app[aria-label="TaskLaunch Feedback"] :where(
+  .btn,
+  .iconBtn,
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [data-action],
+  [data-history-action],
+  [data-menu],
+  [data-move-mode]
+) {
+  cursor: crosshair !important;
+}
+
+@media (max-width: 980px){
+  .focusCheckpointLabelDesc{
+    display:none;
+  }
+}
+
+@media (max-width: 360px){
+  #focusModeScreen{
+    padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
+      calc(8px + var(--safe-left));
+  }
+
+  .focusDialWrap{
+    padding:20px 4px 72px;
+  }
+
+  .focusCheckpointToggleTop{
+    margin: 16px 0 28px;
+  }
+
+  .focusTaskTitle{
+    margin-top:6px;
+    margin-bottom:16px;
+    font-size:14px;
+    letter-spacing:.1em;
+  }
+
+  .focusDialTime{
+    font-size:clamp(24px, 9vw, 36px);
+  }
+
+  .focusDialDays{
+    font-size:clamp(16px, 5vw, 22px);
+  }
+
+  .focusInsights,
+  .focusSessionNotes{
+    width:100%;
+    margin:20px auto 0;
+    padding:10px 10px;
+  }
+
+  .focusSessionNotes{
+    margin-top: 2px;
+  }
+
+  .focusSessionNotesSummary{
+    align-items:flex-start;
+  }
+
+  .focusSessionNotesCollapseLabel{
+    font-size: 9px;
+  }
+
+  .focusInsightRow{
+    gap:8px;
+  }
+
+  .focusInsightLabel,
+  .focusInsightValue{
+    font-size:11px;
+  }
+
+  .focusSessionNotesInput{
+    min-height: 66px;
+  }
+}
+
 @keyframes signedInHeaderBadgeXpSlideIn{
   from{
     opacity:0;

@@ -653,10 +653,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function handleDashboardGridPointerDown(e: any) {
     const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
     if (!momentumDriverBtn) return;
-    const driverKey = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-driver") || "").trim();
-    if (!driverKey) return;
-    ctx.selectDashboardMomentumDriver(driverKey);
-    e.preventDefault();
+    // Driver selection is handled on click. Triggering it here as well causes the
+    // momentum gauge animation to cancel and restart within the same interaction.
   }
 
   function handleDashboardPanelMenuClick(e: Event) {
@@ -746,7 +744,14 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardXpProgressHelpBtn, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const message = buildXpProgressArchieMessage(ctx.getRewardProgress(), ctx.getTasks());
+      const message = buildXpProgressArchieMessage(ctx.getRewardProgress(), ctx.getTasks(), Date.now(), {
+        historyByTaskId: ctx.getHistoryByTaskId(),
+        weekStarting: ctx.getWeekStarting(),
+        dashboardIncludedModes: ctx.getDashboardIncludedModes(),
+        isModeEnabled: ctx.isModeEnabled,
+        taskModeOf: ctx.taskModeOf,
+        momentumEntitled: ctx.hasEntitlement("advancedInsights"),
+      });
       if (typeof window === "undefined" || !String(message || "").trim()) return;
       window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
     });

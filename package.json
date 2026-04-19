@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "fonts:check": "node scripts/check-font-contract.mjs",
+    "css:audit:tasktimer": "node scripts/audit-tasktimer-css.mjs",
     "android:java:check": "node scripts/check-android-java.mjs",
     "android:sync": "npm run android:java:check && npm run build:android && npx cap sync android",
     "android:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",

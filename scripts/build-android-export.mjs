@@ -1,4 +1,4 @@
-import { mkdir, rename } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -13,16 +13,18 @@ async function restoreApiDir() {
   if (existsSync(apiDir)) {
     throw new Error(`Cannot restore API routes because ${apiDir} already exists.`);
   }
-  await rename(stagedApiDir, apiDir);
+  await cp(stagedApiDir, apiDir, { recursive: true, force: true });
+  await rm(stagedApiDir, { recursive: true, force: true });
 }
 
 async function stageApiDir() {
   if (!existsSync(apiDir)) return false;
   await mkdir(stagingRoot, { recursive: true });
   if (existsSync(stagedApiDir)) {
-    throw new Error(`Staging path already exists: ${stagedApiDir}`);
+    await rm(stagedApiDir, { recursive: true, force: true });
   }
-  await rename(apiDir, stagedApiDir);
+  await cp(apiDir, stagedApiDir, { recursive: true, force: true });
+  await rm(apiDir, { recursive: true, force: true });
   return true;
 }
 

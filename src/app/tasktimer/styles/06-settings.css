@@ -2049,9 +2049,11 @@ body[data-theme="purple"] .historyMeta{
   gap:12px;
   min-height:190px;
   padding:16px 12px 14px;
-  border:1px solid rgba(148,163,184,0.24);
+  border:1px solid rgba(255,255,255,.12);
   border-radius:0;
-  background:rgba(255,255,255,0.04);
+  background:#17191d;
+  background-image:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
   text-align:center;
 }
 #app[aria-label="TaskLaunch App"] button.rankLadderItem,
@@ -2062,8 +2064,10 @@ body[data-theme="purple"] .historyMeta{
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectable:hover,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isSelectable:hover{
-  border-color:rgba(34,211,238,0.58);
+  border-color:rgba(255,255,255,.2);
   transform:translateY(-1px);
+  background:#17191d;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectable:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isSelectable:focus-visible{
@@ -2072,19 +2076,38 @@ body[data-theme="purple"] .historyMeta{
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked{
-  border-color:rgba(56,189,248,0.34);
-  background:rgba(34,211,238,0.08);
+  background:#17191d;
+  border-color:rgba(255,255,255,.08);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+  opacity:.62;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectedThumbnail,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isSelectedThumbnail{
-  border-color:rgba(6,182,212,0.88);
-  box-shadow:0 0 0 1px rgba(6,182,212,0.2) inset;
+  border-color:rgba(255,255,255,.24);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isCurrent{
-  border-color:rgba(34,211,238,0.7);
-  box-shadow:0 0 0 1px rgba(34,211,238,0.18) inset;
-  background:rgba(34,211,238,0.14);
+  background:#17191d;
+  border-color:var(--accent3);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent3) 24%, transparent);
+  opacity:1;
+}
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemTitle,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isCurrent .rankLadderItemTitle,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemMeta,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isCurrent .rankLadderItemMeta,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemBadgePlaceholder,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isCurrent .rankLadderItemBadgePlaceholder{
+  opacity:1;
+}
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemMeta,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemMeta,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder{
+  opacity:.7;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
@@ -2095,8 +2118,8 @@ body[data-theme="purple"] .historyMeta{
   min-width:84px;
   height:84px;
   border-radius:0;
-  border:1px solid rgba(148,163,184,0.3);
-  background:rgba(13,15,19,0.9);
+  border:none;
+  background:transparent;
   color:#e5f6ff;
   font-size:12px;
   font-weight:800;
@@ -2108,6 +2131,17 @@ body[data-theme="purple"] .historyMeta{
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
+  border:none !important;
+  outline:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+#app[aria-label="TaskLaunch App"] .rankThumbnailPlaceholderShell,
+#app[aria-label="TaskLaunch Settings"] .rankThumbnailPlaceholderShell{
+  width:auto !important;
+  height:auto !important;
+  overflow:visible !important;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadgeImage,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgeImage{
@@ -2116,15 +2150,28 @@ body[data-theme="purple"] .historyMeta{
   display:block;
   object-fit:contain;
   object-position:center;
+  border:none !important;
+  outline:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  transform:scale(1.06);
+  transform-origin:center;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadgePlaceholder,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadgePlaceholder{
-  width:74px !important;
-  height:74px !important;
-  display:grid;
-  place-items:center;
+  width:auto !important;
+  height:auto !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  min-width:0;
+  min-height:0;
   border-radius:0;
-  background:transparent;
+  border:none !important;
+  outline:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
   color:inherit;
   font:inherit;
 }
@@ -2171,12 +2218,16 @@ body[data-theme="purple"] .historyMeta{
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemMeta{
   margin-top:auto;
   color:rgba(226,232,240,0.82);
-  font-size:12px;
+  font-size:11px;
+  white-space:nowrap;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
-  border-color: rgba(214,96,229,.28);
-  background: rgba(19,10,28,.94);
+  background: transparent;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent),
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked:not(.isCurrent){
+  border-color:rgba(255,255,255,.08);
 }
 @media (max-width: 700px){
   #app[aria-label="TaskLaunch App"] .rankLadderList,
@@ -3785,6 +3836,103 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   }
 }
 
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+    max-width:min(260px, 48vw);
+  }
+}
+
+@media (max-width: 960px){
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
+    max-width:min(200px, 46vw);
+    gap:6px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaWrap,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeInsigniaWrap{
+    width:18px;
+    height:18px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgePaneXp.isOn,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgePaneXp.isOn{
+    grid-template-columns:minmax(0, 1fr);
+  }
+
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTitle,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTitle{
+    font-size:10px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeMeta,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeMeta{
+    font-size:9px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeTrack,
+  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadgeTrack{
+    width:clamp(72px, 14vw, 104px);
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
+    grid-template-columns:1fr;
+    gap:16px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountRankCol{
+    margin-left: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .list{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol{
+    order:1;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAccountRankCol{
+    order:2;
+  }
+}
+
 #app[aria-label="TaskLaunch Settings"] #taskWeekStartingRow{
   justify-content: space-between;
 }
@@ -4472,3 +4620,100 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   opacity: .55;
   cursor: default;
 }
+
+/* Migrated from tasktimer.css tail: settings detail list authority rules. */
+/* Final Settings right-pane Help Center and Data option rows: standard list buttons, not tiles. */
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataList,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataList{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:2px !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem{
+  width:min(100%, 252px) !important;
+  max-width:252px !important;
+  min-width:0 !important;
+  min-height:46px !important;
+  aspect-ratio:auto !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  padding:10px 14px !important;
+  margin:0 !important;
+  border:1px solid transparent !important;
+  border-radius:0 !important;
+  clip-path:none !important;
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  text-align:left !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemIcon,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemIcon{
+  display:none !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+  width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  min-height:24px !important;
+  font-family:var(--font-readable) !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+  line-height:1.2 !important;
+  letter-spacing:.04em !important;
+  text-transform:none !important;
+  text-align:left !important;
+  color:rgba(228,248,255,.94) !important;
+  transform:translateY(-1px);
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
+  border-color:rgba(53,232,255,.48) !important;
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemDanger .settingsMenuItemText{
+  color:#ff8a8a !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemDanger:hover,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemDanger:focus-visible{
+  border-color:rgba(255,77,77,.48) !important;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
+  border-color:rgba(209,118,247,.48) !important;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+  color:rgba(247,255,212,.94) !important;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
+  border-color:rgba(219,255,79,.48) !important;
+}
+

@@ -30,6 +30,13 @@ export default function RankLadderModal(props: RankLadderModalProps) {
 
   if (!open) return null;
 
+  const displayRanks = Array.from({ length: Math.ceil(RANK_LADDER.length / 4) }, (_, rowIndex) =>
+    RANK_LADDER.slice(rowIndex * 4, rowIndex * 4 + 4).map((rank, columnIndex) => ({
+      rank,
+      index: rowIndex * 4 + columnIndex,
+    }))
+  ).reverse().flat();
+
   return (
     <div className="overlay" id="rankLadderOverlay" onClick={onClose}>
       <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
@@ -38,7 +45,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
           {rankLabel} is your current rank at {totalXp} XP. {rankSummary}
         </p>
         <div className="rankLadderList" role="list" aria-label="Available ranks">
-          {RANK_LADDER.map((rank, index) => {
+          {displayRanks.map(({ rank, index }) => {
             const isCurrent = rank.id === currentRankId;
             const isUnlocked = index <= currentRankIndex;
             const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
@@ -53,6 +60,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                     className="rankLadderItemBadgeShell"
                     imageClassName="rankLadderItemBadgeImage"
                     placeholderClassName="rankLadderItemBadgePlaceholder"
+                    forcePlaceholder
                     alt=""
                     size={34}
                     aria-hidden
@@ -61,11 +69,8 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                 <div className="rankLadderItemBody">
                   <div className="rankLadderItemTitleRow">
                     <span className="rankLadderItemTitle">{rank.label}</span>
-                    {isSelectedThumbnail ? <span className="rankLadderItemFlag">Selected</span> : null}
-                    {isCurrent ? <span className="rankLadderItemFlag">Current</span> : null}
-                    {!isCurrent && isUnlocked ? <span className="rankLadderItemFlag">Unlocked</span> : null}
                   </div>
-                  <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>
+                  {rank.id === "unranked" ? null : <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>}
                 </div>
               </>
             );

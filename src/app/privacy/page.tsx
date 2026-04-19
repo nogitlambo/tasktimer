@@ -4,8 +4,6 @@ import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import PrivacyBackButton from "./PrivacyBackButton";
 
-const EFFECTIVE_DATE = "April 18, 2026";
-
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
@@ -79,24 +77,10 @@ export default function PrivacyPolicyPage() {
             <h1 className="landingV2HeroTitle displayFont">Privacy Policy</h1>
 
             <p className="landingV2HeroCopy">
-              This policy explains how TaskLaunch collects, stores, uses, shares, and protects personal information
-              across the public website, the signed-in app, and the coming-soon launch-updates form.
+              This page explains what information TaskLaunch handles, where that information comes from, how it is
+              used inside the product, and what choices are currently available based on the features implemented in
+              this app.
             </p>
-
-            <div className="privacyLandingMeta">
-              <div className="privacyLandingMetaCard">
-                <span className="privacyLandingMetaLabel">Effective date</span>
-                <strong>{EFFECTIVE_DATE}</strong>
-              </div>
-              <div className="privacyLandingMetaCard">
-                <span className="privacyLandingMetaLabel">Primary region</span>
-                <strong>Australia-first</strong>
-              </div>
-              <div className="privacyLandingMetaCard">
-                <span className="privacyLandingMetaLabel">Contact</span>
-                <strong>aniven82@gmail.com</strong>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -106,7 +90,7 @@ export default function PrivacyPolicyPage() {
             <span className="landingV2SectionLine" />
             <span className="landingV2SectionName">Table of contents</span>
           </div>
-          <div className="privacyLandingToc">
+          <ul className="privacyLandingToc">
             {[
               ["#collection", "Collection and storage"],
               ["#use", "Use and disclosures"],
@@ -117,63 +101,65 @@ export default function PrivacyPolicyPage() {
               ["#retention", "Retention and deletion"],
               ["#contact", "Contact"],
             ].map(([href, label]) => (
-              <a key={href} href={href} className="privacyLandingTocLink displayFont">
-                {label}
-              </a>
+              <li key={href}>
+                <a href={href} className="privacyLandingTocLink">
+                  {label}
+                </a>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         <div className="privacyLandingBody">
           <PolicySection number={1} title="Introduction">
             <p>
-              This Privacy Policy applies to TaskLaunch and related services available through{" "}
+              This Privacy Policy applies to TaskLaunch features made available through{" "}
               <a href="https://tasklaunch.app" target="_blank" rel="noreferrer">
                 tasklaunch.app
-              </a>
-              . TaskLaunch is a task timing, history, productivity, and account-based app. This policy is written with
-              Australian privacy expectations in mind and describes our current information-handling practices.
+              </a>{" "}
+              and the related signed-in app experience. It is written to describe the information-handling behavior
+              that can be inferred from the current codebase and deployed product flows.
             </p>
             <p>
-              TaskLaunch includes a public website, a signed-in app experience, optional social features, a public
-              launch-updates signup form, subscription billing flows, feedback submission flows, and push notification
-              features. Different parts of the product collect different information.
+              TaskLaunch currently includes a public website, authenticated task and dashboard features, settings and
+              account controls, social and sharing features, push notifications, feedback submission tools, Stripe
+              billing flows, and a launch-updates signup form. Different features handle different categories of data.
             </p>
           </PolicySection>
 
           <PolicySection number={2} title="What information we collect">
             <div className="privacyLandingStack">
               <Clause letter="a">
-                Account and identity details such as email address, Firebase Authentication identifiers, and basic
-                Google sign-in profile information where you use Google sign-in.
+                Sign-in and account details such as Firebase Authentication identifiers, email address, and Google
+                account profile details returned during Google sign-in.
               </Clause>
               <Clause letter="b">
-                Profile data such as display name, username, avatar selections, custom avatar information, rank
-                thumbnail data, and related account customisation fields.
+                Profile and account customisation data such as display name, username, username reservation data,
+                avatar selections, uploaded custom avatar data, and rank thumbnail information shown in the app.
               </Clause>
               <Clause letter="c">
-                App content and activity such as tasks, timers, milestones, time goals, session notes, task history,
-                deleted-task data, dashboard state, task UI state, and preferences.
+                Task and productivity data such as tasks, timers, milestones, time goals, notes, task history, deleted
+                task records, dashboard state, schedule data, reward progress, and related app preferences.
               </Clause>
               <Clause letter="d">
-                Social feature data such as friend requests, friendship records, and shared task summary data when you
-                choose to use those features.
+                Social data such as friend requests, friendship records, and shared task summary records when you use
+                friends or sharing features.
               </Clause>
               <Clause letter="e">
-                Device and notification data such as push tokens, web push tokens, device identifiers, platform data,
-                app-active state, and notification preferences where push functionality is enabled.
+                Device and notification data such as push registration tokens, device identifiers, platform markers,
+                app-active state, and push preference settings when notification features are enabled.
               </Clause>
               <Clause letter="f">
-                Billing data such as Stripe customer identifiers, subscription identifiers, subscription plan/status
-                fields, and checkout or retention-related billing records.
+                Billing data such as Stripe customer IDs, subscription IDs, price IDs, subscription status, and related
+                entitlement or retention records used to manage paid access.
               </Clause>
               <Clause letter="g">
-                Feedback and support data such as feedback titles, messages, optional screenshots, vote activity,
-                author profile details, and mirrored issue-tracking details where Jira integration is enabled.
+                Feedback data such as feedback title, message content, attached PNG screenshots, vote records, and
+                author-related fields unless feedback is submitted anonymously.
               </Clause>
               <Clause letter="h">
-                Launch-updates subscription data from the public coming-soon page, including email address, normalized
-                email, and limited request metadata such as user-agent and referrer.
+                Launch-updates signup data such as email address, normalized email, request source, user-agent, and
+                referrer captured when the public signup form is used.
               </Clause>
             </div>
           </PolicySection>
@@ -181,78 +167,80 @@ export default function PrivacyPolicyPage() {
           <PolicySection number={3} title="How we collect information">
             <div className="privacyLandingStack" id="collection">
               <Clause letter="a">
-                Directly from you when you sign in, edit your profile, create tasks, manage preferences, use friends or
-                shared task features, submit feedback, subscribe for launch updates, or interact with billing flows.
+                Directly from you when you sign in, edit profile settings, create and manage tasks, use social
+                features, configure notifications, submit feedback, start billing flows, or join the launch-updates
+                list.
               </Clause>
               <Clause letter="b">
-                Automatically from app runtime and storage behaviour, including local storage, session storage, app
-                state storage, device registration flows, and push-notification registration flows.
+                Automatically through app runtime behavior such as local storage, session storage, Firebase client
+                state, push registration, and cloud sync between the signed-in client and backend services.
               </Clause>
               <Clause letter="c">
-                From third-party service providers used to operate the service, including Firebase Authentication,
-                Cloud Firestore, Google sign-in flows, Stripe billing, and Jira issue mirroring when those integrations
-                are active.
+                From service providers that support the product, including Firebase Authentication, Cloud Firestore,
+                Google sign-in flows, Firebase Cloud Messaging, Stripe, and optional Jira mirroring for feedback.
               </Clause>
             </div>
           </PolicySection>
 
           <PolicySection number={4} title="Local storage and session storage">
             <p>
-              TaskLaunch stores a substantial amount of runtime data locally on your device or browser. This can
-              include tasks, history, preferences, navigation state, theme settings, menu style settings, push-related
-              pending actions, account-related temporary state, and other data required to operate the app.
+              TaskLaunch stores a substantial amount of runtime data locally on your browser or device. Based on the
+              current implementation, this can include task state, history-related state, navigation state, theme and
+              menu style preferences, notification preferences, pending push action state, mode settings, and other app
+              behavior needed to continue the user experience on the same device.
             </p>
             <p>
-              We also use session storage for short-lived session or redirect-handling behaviour, such as signed-out
-              redirect bypass handling. Local device storage may remain on your device until you clear it, reset app
-              data, or uninstall the app.
+              Session storage is also used for short-lived browser behavior, including signed-out redirect bypass
+              handling and related auth transition state. Local data can remain on your device until you clear it,
+              reset app data, clear browser storage, or uninstall the app.
             </p>
           </PolicySection>
 
           <PolicySection number={5} title="Cloud storage and app infrastructure">
             <p>
-              When you sign in, TaskLaunch uses Firebase services, including Firebase Authentication and Cloud
-              Firestore, to associate app data with your account and support signed-in product features.
+              When you sign in, TaskLaunch uses Firebase services to support account access and cloud-backed app
+              features. Current code paths show Firebase Authentication for sign-in and Cloud Firestore for many
+              account, task, feedback, subscription, social, and notification-related records.
             </p>
             <div className="privacyLandingStack">
               <Clause letter="a">Firebase Authentication is used for email-link sign-in and Google sign-in.</Clause>
               <Clause letter="b">
-                Cloud Firestore may store profile records, preferences, dashboard and task UI state, tasks, task
-                history, deleted-task records, social data, feedback-related records, device records for push
-                notifications, and launch-updates subscription records.
+                Cloud Firestore records can include user profile fields, tasks, task history, deleted task data,
+                preferences, friend and sharing records, feedback items, feedback limit records, push device records,
+                subscription records, and launch-updates signup records.
               </Clause>
               <Clause letter="c">
-                Some cloud-backed records are created to protect account integrity, such as username reservations and
-                email lookup records.
+                Some additional records are created to support account integrity and lookup behavior, including username
+                reservation records and user email lookup records.
               </Clause>
             </div>
           </PolicySection>
 
           <PolicySection number={6} title="How we use information">
             <div className="privacyLandingStack" id="use">
-              <Clause letter="a">To authenticate users and provide account access.</Clause>
+              <Clause letter="a">To sign users in, keep sessions working, and provide access to account-backed features.</Clause>
               <Clause letter="b">
-                To provide app functionality such as task timing, history, dashboard, preferences, rewards, and social
-                or sharing features.
+                To operate app functionality such as tasks, timing, dashboard views, preferences, history, scheduling,
+                rewards, friends, and shared task summaries.
               </Clause>
               <Clause letter="c">
-                To enable device registration and delivery of push notifications where you choose to enable them.
+                To register devices, store push settings, and send notification traffic where those features are
+                enabled.
               </Clause>
               <Clause letter="d">
-                To operate subscription billing, customer portal access, trial handling, subscription retention, and
-                related payment administration.
+                To start and manage subscription checkout, billing portal sessions, entitlement state, and subscription
+                retention logic tied to Stripe-backed billing.
               </Clause>
               <Clause letter="e">
-                To receive, review, store, and respond to feedback or support submissions and, where enabled, mirror
-                relevant feedback content into Jira.
+                To receive and manage feedback, apply submission and voting limits, and optionally mirror feedback into
+                Jira when that integration is enabled.
               </Clause>
               <Clause letter="f">
-                To manage the public coming-soon launch-updates list and send release-related communications if that
-                list is used for launch updates.
+                To operate the launch-updates signup list and prevent duplicate subscriptions to that list.
               </Clause>
               <Clause letter="g">
-                To protect the integrity of the service, limit abuse, enforce rate limits, resolve account conflicts,
-                and comply with legal obligations.
+                To support account deletion, cloud cleanup, abuse controls, and other integrity or operational checks
+                implemented in the app and backend routes.
               </Clause>
             </div>
           </PolicySection>
@@ -260,112 +248,116 @@ export default function PrivacyPolicyPage() {
           <PolicySection number={7} title="Third-party services and processors">
             <div className="privacyLandingStack">
               <Clause letter="a">
-                Google and Firebase, for authentication, Cloud Firestore storage, and related platform services.
+                Google and Firebase are used for authentication, data storage, app infrastructure, and push delivery
+                support.
               </Clause>
               <Clause letter="b">
-                Stripe, for subscription checkout, billing portal sessions, customer records, subscription state, and
-                related payment administration.
+                Stripe is used for subscription checkout, customer records, billing portal access, and subscription
+                lifecycle events.
               </Clause>
               <Clause letter="c">
-                Atlassian Jira, where enabled, for mirroring feedback submissions and attachments into issue-tracking
-                workflows.
+                Atlassian Jira may receive mirrored feedback details and screenshot attachments when Jira integration is
+                configured and working.
               </Clause>
               <Clause letter="d">
-                Notification delivery infrastructure used through Firebase Cloud Messaging and platform push services
-                where push notifications are enabled.
+                Platform push delivery services may be involved when Firebase Cloud Messaging sends notifications to
+                supported web or mobile devices.
               </Clause>
             </div>
             <p>
-              These providers may process personal information on our behalf to help operate TaskLaunch. We do not sell
-              personal information and we do not intentionally use personal information for third-party advertising or
-              ad targeting.
+              These services help operate TaskLaunch features. This page only describes their use as they appear in the
+              current product code and does not replace the separate terms or privacy policies of those providers.
             </p>
           </PolicySection>
 
           <PolicySection number={8} title="Sharing and disclosure">
             <div className="privacyLandingStack">
               <Clause letter="a">
-                We may share information with service providers that help us run the service, as described above.
+                Information may be shared with service providers that support authentication, hosting, storage,
+                notifications, billing, and feedback processing.
               </Clause>
               <Clause letter="b">
-                If you use social or sharing features, some profile and task-summary information may be visible to
-                other users you choose to connect with.
+                If you use friends or sharing features, some profile and task-summary information can be visible to
+                users connected through those features.
               </Clause>
               <Clause letter="c">
-                We may disclose information where required or authorised by law, or where reasonably necessary to
-                protect rights, safety, platform integrity, or investigate misuse.
+                Information may also be disclosed when needed to enforce product integrity, respond to misuse, satisfy
+                legal requirements, or complete account deletion and subscription-management workflows.
               </Clause>
             </div>
           </PolicySection>
 
           <PolicySection number={9} title="Push notifications">
             <p>
-              If you enable mobile or web push notifications, TaskLaunch may store device registration records,
-              notification tokens, device identifiers, platform information, app-active state, and notification
-              preference settings to support sending and managing notifications.
+              If you enable web or mobile push notifications, TaskLaunch can store per-device records under your
+              account, including token values, device IDs, provider information, native-or-web indicators, app-active
+              state, and timestamps used for delivery logic.
             </p>
             <p>
-              You can control push preferences inside the app. Disabling push notifications or removing device
-              registrations may stop future notifications, but previously delivered notifications remain on your device
-              until you clear them yourself.
+              Push preference settings are also stored so the app can determine whether mobile or web push should be
+              used. If you disable notifications or remove access at the device level, future notifications may stop,
+              but notifications already delivered to your device remain under that device&apos;s own controls.
             </p>
           </PolicySection>
 
           <PolicySection number={10} title="Billing and subscriptions">
             <div id="billing" />
             <p>
-              If you start or manage a paid subscription, TaskLaunch uses Stripe for checkout, billing portal access,
-              customer management, and subscription state handling. We may store related billing identifiers and plan
-              status information in our own records to enable entitlement and account management.
+              If you use paid subscription features, TaskLaunch can create Stripe checkout sessions and Stripe billing
+              portal sessions tied to your account. The application stores subscription-related identifiers and status
+              fields needed to determine entitlement and preserve subscription access during some account-deletion
+              flows.
             </p>
             <p>
-              TaskLaunch does not intentionally store your full payment card details on its own servers. Payment
-              processing is handled by Stripe under Stripe&apos;s own terms and privacy practices.
+              Current code supports storage of Stripe customer IDs, subscription IDs, price IDs, status fields, and
+              related subscription timing fields. TaskLaunch does not intentionally store full payment card details on
+              its own servers.
             </p>
           </PolicySection>
 
           <PolicySection number={11} title="Feedback and issue tracking">
             <div id="feedback" />
             <p>
-              If you submit feedback, we may collect the content you submit, your account or author details, optional
-              screenshots, and feedback vote activity. Where Jira integration is enabled, relevant feedback details and
-              attachments may also be mirrored into Jira for product triage and support workflows.
+              If you submit feedback, TaskLaunch stores the feedback title and message, and it can also accept PNG
+              screenshot attachments. Depending on whether you submit anonymously, related author data can include your
+              email address, display name, rank thumbnail, and current rank ID.
+            </p>
+            <p>
+              The current implementation also records vote activity and submission-rate controls. When Jira mirroring is
+              configured, the app may create or update a Jira issue and upload screenshot attachments there as well.
             </p>
           </PolicySection>
 
           <PolicySection number={12} title="Launch-updates subscription list">
             <div id="launch-updates" />
             <p>
-              The public coming-soon page includes a launch-updates signup form. If you submit your email through that
-              form, TaskLaunch stores your email address, a normalized email value used for deduplication, and limited
-              request metadata such as user-agent and referrer in Cloud Firestore.
+              The public launch-updates signup form stores the submitted email address and a normalized copy of that
+              address in Cloud Firestore. The current backend also records the request source, user-agent, referrer,
+              and created/updated timestamps for that signup entry.
             </p>
             <p>
-              We use this information to manage the launch-updates list and avoid duplicate subscriptions. This policy
-              does not promise general-purpose marketing communications beyond launch-related updates supported by that
-              list.
+              This data is used to manage the launch-updates list and reduce duplicate entries. This section describes
+              the current signup implementation only and should not be read as a promise of broader marketing practices.
             </p>
           </PolicySection>
 
           <PolicySection number={13} title="Overseas and cross-border handling">
             <p>
-              TaskLaunch uses service providers whose systems may operate in more than one country. As a result,
-              personal information may be processed, stored, or made accessible outside Australia, including through
-              cloud infrastructure and service-provider systems used to operate authentication, storage, notifications,
-              billing, and issue tracking.
+              TaskLaunch relies on third-party infrastructure providers whose systems can operate across multiple
+              countries. Because Firebase, Stripe, and related provider systems may process or store data outside the
+              country where you use the app, some information may be handled on cross-border infrastructure.
             </p>
           </PolicySection>
 
           <PolicySection number={14} title="Security safeguards">
             <p>
-              We take reasonable steps in the circumstances to protect the personal information we hold from misuse,
-              interference, loss, and unauthorised access, modification, or disclosure. These steps include using
-              hosted cloud services, account authentication controls, managed platform services, and service-level
-              access controls appropriate to the current product.
+              The product uses managed authentication, hosted infrastructure, and service-level access controls offered
+              by the providers integrated into the app. The codebase also includes account verification, authenticated
+              API routes, and deletion flows intended to limit unauthorized access to account data.
             </p>
             <p>
-              No internet or cloud-based service can guarantee absolute security, and you should also take care to
-              protect your own devices, browsers, passwords, and sign-in methods.
+              No internet-connected service can guarantee absolute security. You should also protect your own devices,
+              sign-in methods, and browser or app environment.
             </p>
           </PolicySection>
 
@@ -373,19 +365,21 @@ export default function PrivacyPolicyPage() {
             <div id="retention" />
             <div className="privacyLandingStack">
               <Clause letter="a">
-                Local device data may remain on your device until you clear it, reset data, or uninstall the app.
+                Local device data can remain until you reset the app, clear browser or device storage, or uninstall the
+                app.
               </Clause>
               <Clause letter="b">
-                Signed-in cloud data may be retained while needed to operate the service, manage subscriptions,
-                maintain service integrity, respond to support or legal issues, or comply with legal requirements.
+                Cloud-backed account data can remain while needed to operate the signed-in product, maintain
+                subscriptions, enforce rate limits, support feedback workflows, or complete deletion and integrity
+                operations.
               </Clause>
               <Clause letter="c">
-                Coming-soon subscription records may be retained while needed to manage launch updates or related list
-                administration.
+                Launch-updates signup records can remain while needed to manage that signup list.
               </Clause>
               <Clause letter="d">
-                When information is no longer reasonably needed, we may delete it or de-identify it where practical,
-                subject to operational and legal requirements.
+                Current account-deletion code removes cloud-backed user records including user data, subscription
+                records, friend requests, friendships, shared task summaries, authored feedback, feedback votes,
+                feedback limits, scheduled push records, usernames, and user email lookup records.
               </Clause>
             </div>
           </PolicySection>
@@ -393,60 +387,58 @@ export default function PrivacyPolicyPage() {
           <PolicySection number={16} title="Your choices, access, and correction">
             <div className="privacyLandingStack" id="rights">
               <Clause letter="a">
-                You can update some account, profile, and preference information directly inside the app.
+                You can update some account and profile details inside the app, including username and avatar-related
+                settings.
               </Clause>
               <Clause letter="b">
-                You can control push-notification settings inside the app where those features are available.
+                You can control web and mobile push preferences inside the app where those features are available.
               </Clause>
               <Clause letter="c">
                 You can delete your account from <strong>Settings &gt; Account &gt; Delete Account</strong>.
               </Clause>
               <Clause letter="d">
-                You can clear local app data through <strong>Settings &gt; Reset All Data</strong>.
+                You can reset local app data from <strong>Settings &gt; Reset All Data</strong>.
               </Clause>
               <Clause letter="e">
-                If you want to request access to or correction of personal information we hold, or you need help with
-                deletion or data questions, contact us using the details below.
+                If you need help correcting data, understanding deletion behavior, or raising a privacy question, use
+                the contact details shown below.
               </Clause>
             </div>
           </PolicySection>
 
           <PolicySection number={17} title="Account deletion and local reset guidance">
             <p>
-              If you signed in to TaskLaunch, you can request account deletion inside the app from{" "}
-              <strong>Settings &gt; Account &gt; Delete Account</strong>. Deleting the signed-in account removes the
-              Firebase Authentication account used by TaskLaunch and clears the app&apos;s account-state deletion marker
-              used during the delete flow.
+              The current account-deletion flow removes the Firebase Authentication account and then calls backend
+              cleanup routes to delete cloud-backed records tied to that account. The app also includes logic to retain
+              some subscription access information before deletion when an active subscription exists.
             </p>
             <p>
-              Local task and history data stored on your device is separate and is not automatically removed when the
-              signed-in account is deleted. You can separately clear local data through{" "}
-              <strong>Settings &gt; Reset All Data</strong>. If you cannot access the app or need help with deletion,
-              email <strong>aniven82@gmail.com</strong> and include the email address used for sign-in.
+              Local app data on your device is separate from cloud deletion. If you want to remove locally stored task
+              and preference data from the same device, use <strong>Settings &gt; Reset All Data</strong> in addition
+              to any account-deletion action.
             </p>
           </PolicySection>
 
           <PolicySection number={18} title="Children">
             <p>
-              TaskLaunch is not intended for children under 13, and we do not knowingly design the service for use by
-              children as a child-directed product. If you believe a child has provided personal information to
-              TaskLaunch, contact us so we can review the issue.
+              The current codebase does not indicate that TaskLaunch is designed as a children&apos;s product. If you
+              believe personal information relating to a child has been submitted through the product, contact TaskLaunch
+              using the address below so the issue can be reviewed.
             </p>
           </PolicySection>
 
           <PolicySection number={19} title="Policy updates">
             <p>
-              We may update this Privacy Policy from time to time to reflect product changes, operational changes,
-              legal developments, or changes in service providers. When we update this policy, we will change the
-              effective date shown on this page.
+              This page may be updated as product behavior, integrations, or data flows change. When updates are made,
+              the revised version will be posted on this page.
             </p>
           </PolicySection>
 
           <PolicySection number={20} title="Contact">
             <div id="contact" />
             <p>
-              For privacy questions, data requests, correction requests, deletion help, or general privacy concerns,
-              contact <strong>aniven82@gmail.com</strong>.
+              For privacy questions, deletion help, or requests relating to information handled by the current
+              TaskLaunch product, contact <strong>aniven82@gmail.com</strong>.
             </p>
           </PolicySection>
         </div>

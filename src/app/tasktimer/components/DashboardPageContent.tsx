@@ -269,7 +269,22 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                           <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
                         </ul>
                         <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
-                          <div className="dashboardMomentumFooterTitle">Momentum Insight</div>
+                          <div className="dashboardMomentumFooterTitle">
+                            <span className="dashboardMomentumFooterTitleIcon" aria-hidden="true">
+                              <svg viewBox="0 0 24 24" focusable="false">
+                                <circle cx="12" cy="12" r="4.25" />
+                                <path d="M12 3.5v3" />
+                                <path d="M12 17.5v3" />
+                                <path d="M3.5 12h3" />
+                                <path d="M17.5 12h3" />
+                                <path d="M6 6l2.2 2.2" />
+                                <path d="M15.8 15.8 18 18" />
+                                <path d="M6 18l2.2-2.2" />
+                                <path d="M15.8 8.2 18 6" />
+                              </svg>
+                            </span>
+                            <span>Momentum Insight</span>
+                          </div>
                           <p className="dashboardMomentumFooterMessage" id="dashboardMomentumFooterMessage" aria-live="polite">
                             Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
                           </p>

@@ -75,6 +75,7 @@ function HomeContent() {
   const [showActions, setShowActions] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
+  const [allowSignedOutLanding, setAllowSignedOutLanding] = useState(false);
   const [checkedSignedOutBypass, setCheckedSignedOutBypass] = useState(false);
   const [resolvedLanding, setResolvedLanding] = useState<"classic" | "v2" | null>(null);
 
@@ -129,6 +130,7 @@ function HomeContent() {
     }
     const timer = window.setTimeout(() => {
       if (shouldBypass) {
+        setAllowSignedOutLanding(true);
         setBypassAutoRedirect(true);
         const auth = getFirebaseAuthClient();
         if (auth) {
@@ -143,7 +145,7 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
-    if (!checkedSignedOutBypass || !isNativeRuntime || hasRedirected || typeof window === "undefined") return;
+    if (!checkedSignedOutBypass || !isNativeRuntime || hasRedirected || allowSignedOutLanding || typeof window === "undefined") return;
     const qs = window.location.search || "";
     const hash = window.location.hash || "";
     const timer = window.setTimeout(() => {
@@ -151,7 +153,7 @@ function HomeContent() {
       router.replace(`${NATIVE_WEB_SIGN_IN_ROUTE}${qs}${hash}`);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [checkedSignedOutBypass, hasRedirected, isNativeRuntime, router]);
+  }, [allowSignedOutLanding, checkedSignedOutBypass, hasRedirected, isNativeRuntime, router]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -223,7 +225,7 @@ function HomeContent() {
     showActions,
   };
 
-  if (isNativeRuntime) return null;
+  if (isNativeRuntime && !allowSignedOutLanding) return null;
   if (!effectiveLanding) return null;
 
   return isExperimentalLanding ? (

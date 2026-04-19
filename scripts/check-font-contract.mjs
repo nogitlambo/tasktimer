@@ -48,8 +48,14 @@ function main() {
 
   assertMatch(
     globals,
-    /--font-readable:\s*var\(--font-orbitron\),\s*"Segoe UI Variable",\s*"Segoe UI",\s*Arial,\s*sans-serif;/m,
-    "globals.css must keep --font-readable mapped to Orbitron."
+    /--font-archie:\s*[^;]+;/m,
+    "globals.css must define --font-archie."
+  );
+
+  assertMatch(
+    globals,
+    /--font-readable:\s*var\(--font-archie\);/m,
+    "globals.css must keep --font-readable mapped to --font-archie."
   );
 
   assertMatch(

@@ -52,7 +52,9 @@ describe("buildXpProgressArchieMessage", () => {
 
     const message = buildXpProgressArchieMessage(progress, [createTask()], now);
 
-    expect(message).toBe("In the last 24 hours, you have not earned any XP yet.");
+    expect(message).toBe(
+      "In the last 24 hours, you have not earned any XP yet. You are currently earning XP at the standard 1x rate."
+    );
     expect(message).not.toContain("rank band");
     expect(message).not.toContain("next rank");
   });
@@ -102,8 +104,52 @@ describe("buildXpProgressArchieMessage", () => {
     expect(message).toContain("In the last 24 hours, you earned 35 XP");
     expect(message).toContain("25 XP from session time on Deep Work");
     expect(message).toContain("10 XP from daily consistency");
+    expect(message).toContain("You are currently earning XP at the standard 1x rate.");
     expect(message).not.toContain("99 XP");
     expect(message).not.toContain("rank band");
     expect(message).not.toContain("next rank");
+  });
+
+  it("reports the active multiplier when momentum boosts XP", () => {
+    const now = new Date("2026-04-17T12:00:00.000Z").getTime();
+    const task = createTask({
+      running: true,
+      startMs: now - 30 * 60 * 1000,
+      timeGoalEnabled: true,
+      timeGoalMinutes: 180,
+      timeGoalPeriod: "week",
+    });
+    const progress = createProgress({
+      awardLedger: [
+        {
+          ts: now - 2 * 60 * 60 * 1000,
+          dayKey: "2026-04-17",
+          taskId: task.id,
+          xp: 25,
+          baseXp: 25,
+          multiplier: 1,
+          eligibleMs: 3_600_000,
+          reason: "session",
+          sourceKey: "recent-session",
+        },
+      ],
+    });
+
+    const message = buildXpProgressArchieMessage(progress, [task], now, {
+      historyByTaskId: {
+        [task.id]: [
+          { ts: now - 30 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+          { ts: now - 26 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+          { ts: now - 50 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
+        ],
+      },
+      weekStarting: "monday",
+      dashboardIncludedModes: { mode1: true, mode2: false, mode3: false },
+      isModeEnabled: () => true,
+      taskModeOf: () => "mode1",
+      momentumEntitled: true,
+    });
+
+    expect(message).toContain("You are currently earning XP at a 2x multiplier.");
   });
 });

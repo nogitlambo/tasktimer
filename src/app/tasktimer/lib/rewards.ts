@@ -107,6 +107,15 @@ type XpReasonSummary = {
   launchXp: number;
 };
 
+type XpProgressArchieOptions = {
+  historyByTaskId?: HistoryByTaskId;
+  weekStarting?: DashboardWeekStart;
+  dashboardIncludedModes?: Record<MomentumMode, boolean>;
+  isModeEnabled?: (mode: MomentumMode) => boolean;
+  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
+  momentumEntitled?: boolean;
+};
+
 export const XP_PER_TASK_LAUNCH = 5;
 export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
 export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
@@ -149,6 +158,10 @@ export const RANK_LADDER: RankDefinition[] = [
   { id: "ascendent", label: "Ascendent", minXp: 4800 },
   { id: "commander", label: "Commander", minXp: 5800 },
   { id: "architect", label: "Architect", minXp: 7000 },
+  { id: "overseer", label: "Overseer", minXp: 8500 },
+  { id: "visionary", label: "Visionary", minXp: 10200 },
+  { id: "sovereign", label: "Sovereign", minXp: 12100 },
+  { id: "mythic", label: "Mythic", minXp: 14200 },
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
@@ -878,13 +891,43 @@ function summarizeRecentXpRewards(
   return summary;
 }
 
-export function buildXpProgressArchieMessage(progressInput: unknown, tasks: Task[], nowValue = Date.now()): string {
+function formatXpRateLabel(multiplier: number): string {
+  const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+  if (Math.abs(safeMultiplier - 1) < 0.001) return "You are currently earning XP at the standard 1x rate.";
+  const formatted = Number.isInteger(safeMultiplier) ? String(safeMultiplier) : safeMultiplier.toFixed(1).replace(/\.0$/, "");
+  return `You are currently earning XP at a ${formatted}x multiplier.`;
+}
+
+function getXpProgressRateSummary(tasks: Task[], nowValue: number, opts?: XpProgressArchieOptions): string {
+  if (!opts?.momentumEntitled) return formatXpRateLabel(1);
+  if (!opts.historyByTaskId || !opts.weekStarting || !opts.dashboardIncludedModes || !opts.isModeEnabled || !opts.taskModeOf) {
+    return formatXpRateLabel(1);
+  }
+  const multiplier = computeMomentumSnapshot({
+    tasks,
+    historyByTaskId: opts.historyByTaskId,
+    weekStarting: opts.weekStarting,
+    includedModes: opts.dashboardIncludedModes,
+    isModeEnabled: opts.isModeEnabled,
+    taskModeOf: opts.taskModeOf,
+    nowValue,
+  }).multiplier;
+  return formatXpRateLabel(multiplier);
+}
+
+export function buildXpProgressArchieMessage(
+  progressInput: unknown,
+  tasks: Task[],
+  nowValue = Date.now(),
+  opts?: XpProgressArchieOptions
+): string {
   const progress = normalizeRewardProgress(progressInput);
   const safeNow = Math.max(0, Math.floor(Number(nowValue || 0) || 0)) || Date.now();
   const recentSummary = summarizeRecentXpRewards(progress, tasks, safeNow);
+  const rateSummary = getXpProgressRateSummary(tasks, safeNow, opts);
 
   if (!(recentSummary.totalXp > 0)) {
-    return "In the last 24 hours, you have not earned any XP yet.";
+    return `In the last 24 hours, you have not earned any XP yet. ${rateSummary}`;
   }
 
   const detailParts: string[] = [];
@@ -911,5 +954,5 @@ export function buildXpProgressArchieMessage(progressInput: unknown, tasks: Task
     detailParts.push(`${formatWholeXp(recentSummary.launchXp)} from launches`);
   }
 
-  return `In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}.`;
+  return `In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}. ${rateSummary}`;
 }

@@ -619,8 +619,6 @@ canvas {
   height: 56px;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(201, 242, 58, 0.4);
-  background: linear-gradient(180deg, rgba(201, 242, 58, 0.14), rgba(201, 242, 58, 0.03));
 }
 
 .landingV2 .landingV2FeatureIconSvg {
@@ -962,6 +960,11 @@ canvas {
   transform: translateY(0);
 }
 
+.landingV2 .landingV2ActionsCentered {
+  justify-content: center;
+  padding-top: 24px;
+}
+
 .landingV2 .landingV2PrimaryBtn,
 .landingV2 .landingV2SecondaryBtn {
   display: inline-flex;
@@ -1109,6 +1112,11 @@ canvas {
   min-height: 100svh;
 }
 
+.privacyLandingPage .landingV2HeroTitle {
+  max-width: 14ch;
+  font-size: clamp(1.675rem, 4vw, 3.5rem);
+}
+
 .privacyLandingPage .landingV2Hero {
   min-height: auto;
   grid-template-columns: minmax(0, 1fr);
@@ -1120,30 +1128,6 @@ canvas {
   padding-bottom: 8px;
 }
 
-.privacyLandingMeta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  width: 100%;
-  max-width: 880px;
-}
-
-.privacyLandingMetaCard {
-  display: grid;
-  gap: 6px;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.privacyLandingMetaLabel {
-  font-family: var(--font-display-ui);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--landing-muted);
-}
-
 .privacyLandingBody {
   display: grid;
   gap: 0;
@@ -1151,28 +1135,29 @@ canvas {
 
 .privacyLandingToc {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   max-width: 980px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--landing-text);
+}
+
+.privacyLandingToc li {
+  margin: 0;
 }
 
 .privacyLandingTocLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  display: inline;
   color: var(--landing-text);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-family: var(--font-display-ui);
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
   text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+  text-transform: none;
+  transition: color 160ms ease;
 }
 
 .privacyLandingTocLink:hover {
-  border-color: var(--landing-lime);
   color: var(--landing-lime);
 }
 
@@ -1650,12 +1635,12 @@ canvas {
     grid-template-columns: 1fr;
   }
 
-  .privacyLandingMeta {
-    grid-template-columns: 1fr;
+  .privacyLandingPage .landingV2HeroTitle {
+    font-size: clamp(1.3rem, 5vw, 2.2rem);
   }
 
   .privacyLandingToc {
-    grid-template-columns: 1fr;
+    padding-left: 18px;
   }
 
   .privacyLandingSection {

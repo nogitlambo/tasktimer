@@ -793,6 +793,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskCollectionBindings,
       currentAppPageBinding,
       appRuntimeState,
+      preferencesState,
       dashboardLayoutBindings,
       getCloudDashboardCache: () => cacheRuntimeState.get("cloudDashboardCache"),
       setCloudDashboardCache: (value: unknown) => {
@@ -805,6 +806,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
       getModeLabel: (mode) => getModeLabel(mode),
       isModeEnabled: (mode) => isModeEnabled(mode),
+      taskModeOf,
     },
   });
   const {

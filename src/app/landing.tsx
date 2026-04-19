@@ -18,23 +18,23 @@ const featureCards: Array<{
   {
     code: "F-001",
     icon: "flow",
-    title: "Adaptive task flow",
+    title: "Adaptive Task Flow",
     description:
-      "Shape each day around how you naturally work with flexible task timing, cleaner prioritization, and less friction between intent and action.",
+      "TaskLaunch aligns with how you naturally operate, turning your energy, timing, and habits into a system where starting and progressing feels effortless instead of forced.",
   },
   {
     code: "F-002",
     icon: "automation",
-    title: "Intelligent automation",
+    title: "Intelligent Automation",
     description:
-      "Let recurring decisions happen in the background so the app supports momentum instead of pulling attention away from the work itself.",
+      "Routine decisions and admin fade into the background, creating a frictionless environment where momentum builds and your attention stays on meaningful work.",
   },
   {
     code: "F-003",
     icon: "insight",
-    title: "Insight-led refinement",
+    title: "Insight-led Refinement",
     description:
-      "Use AI-guided patterns, history, and progress context to spot what is helping, what is draining focus, and what should change next.",
+      "AI continuously interprets your patterns and progress to surface what’s working, eliminate drag, and guide smarter next moves without disrupting your flow.",
   },
 ];
 
@@ -68,33 +68,6 @@ function FeatureIcon({ icon, title }: { icon: FeatureIconName; title: string }) 
     </svg>
   );
 }
-
-const principles = [
-  {
-    code: "P-01",
-    title: "Support natural focus",
-    description:
-      "TaskLaunch is built to work with your energy, timing, and existing habits instead of forcing a rigid productivity routine.",
-  },
-  {
-    code: "P-02",
-    title: "Reduce maintenance work",
-    description:
-      "The system should remove repetitive admin so more of your attention stays on deciding, doing, and finishing meaningful tasks.",
-  },
-  {
-    code: "P-03",
-    title: "Keep progress legible",
-    description:
-      "Clear history, momentum, and task context make it easier to trust the system and easier to keep going when your day shifts.",
-  },
-  {
-    code: "P-04",
-    title: "Guide without overriding",
-    description:
-      "Automation and AI should clarify decisions and refine workflows, not fight the user for control of how work gets done.",
-  },
-];
 
 export default function Landing({ showTitlePhase, showActions }: LandingExperimentalProps) {
   const [revealStage, setRevealStage] = useState(0);
@@ -139,7 +112,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
           <nav className="landingV2Nav" aria-label="Landing navigation">
             <a href="#features">Features</a>
             <a href="#preview">Interface</a>
-            <a href="#principles">Principles</a>
           </nav>
 
           <div className="landingV2HeaderActions">
@@ -220,7 +192,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
                   <span className="landingV2FeatureIcon" aria-hidden="true">
                     <FeatureIcon icon={feature.icon} title={feature.title} />
                   </span>
-                  <div className="landingV2FeatureCode displayFont">{feature.code}</div>
                 </div>
                 <h2 className="landingV2FeatureTitle displayFont">{feature.title}</h2>
                 <p className="landingV2FeatureDescription">{feature.description}</p>
@@ -325,39 +296,13 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
           <h2 className="landingV2TickerHeading displayFont">
             <em>Make progress easier to start, easier to sustain, and easier to trust</em>
           </h2>
-        </section>
-
-        <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="principles">
-          <div className="landingV2SectionLabel">
-            <span className="landingV2SectionIndex displayFont">03</span>
-            <span className="landingV2SectionLine" />
-            <span className="landingV2SectionName">Design principles</span>
-          </div>
-
-          <div className="landingV2PrinciplesGrid">
-            {principles.map((principle) => (
-              <article key={principle.code} className="landingV2PrincipleCard">
-                <div className="landingV2PrincipleCode displayFont">{principle.code}</div>
-                <h2 className="landingV2PrincipleTitle displayFont">{principle.title}</h2>
-                <p className="landingV2PrincipleDescription">{principle.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className={`landingV2Cta ${showFinalCta ? "isVisible" : ""}`} id="cta">
-          <div className="landingV2CtaActions">
-            <p>
-              Move from scattered task capture to a calmer daily workflow with smarter defaults, better timing, and less manual upkeep.
-            </p>
-            <div className="landingV2Actions isVisible">
-              <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
-                Get Started
-              </Link>
-              <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
-                Watch Demo
-              </Link>
-            </div>
+          <div className={`landingV2Actions landingV2ActionsCentered ${showFinalCta ? "isVisible" : ""}`}>
+            <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
+              Get Started
+            </Link>
+            <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
+              Watch Demo
+            </Link>
           </div>
         </section>
 

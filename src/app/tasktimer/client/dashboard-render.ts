@@ -512,6 +512,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }) {
     const startScore = getCurrentMomentumDisplayedScore(opts.dialEl, opts.arcActiveEl);
     const startDriverScores = opts.startDriverScores || [0, 0, 0, 0];
+    const driverScoresChanged = opts.targetDriverScores.some((score, index) => {
+      const startDriverScore = Number(startDriverScores[index] || 0);
+      return Math.abs(score - startDriverScore) >= 0.5;
+    });
     cancelMomentumAnimation();
     renderMomentumDriverRows(opts.driverTextsEl, startDriverScores, {
       interactive: true,
@@ -537,15 +541,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           ? 4 * progress * progress * progress
           : 1 - Math.pow(-2 * progress + 2, 3) / 2;
         const displayedScore = startScore + (opts.targetScore - startScore) * eased;
-        const displayedDriverScores = opts.targetDriverScores.map((score, index) => {
-          const startDriverScore = Number(startDriverScores[index] || 0);
-          return startDriverScore + (score - startDriverScore) * eased;
-        });
-        renderMomentumDriverRows(opts.driverTextsEl, progress >= 1 ? opts.targetDriverScores : displayedDriverScores, {
-          interactive: true,
-          selectedKey: selectedMomentumDriverKey,
-          messages: opts.driverMessages,
-        });
         applyMomentumVisualState({
           dialEl: opts.dialEl,
           arcActiveEl: opts.arcActiveEl,
@@ -557,6 +552,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           statusLabel: opts.statusLabel,
         });
         if (progress >= 1) {
+          if (driverScoresChanged) {
+            renderMomentumDriverRows(opts.driverTextsEl, opts.targetDriverScores, {
+              interactive: true,
+              selectedKey: selectedMomentumDriverKey,
+              messages: opts.driverMessages,
+            });
+          }
           momentumAnimationFrameId = null;
           return;
         }

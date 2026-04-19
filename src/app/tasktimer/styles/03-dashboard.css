@@ -2172,6 +2172,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   height:26px;
   min-width:26px;
   padding:0;
+  border-color: transparent;
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -4967,6 +4968,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   height: auto !important;
   pointer-events: none !important;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumSvg{
+  position: relative !important;
+  z-index: 2 !important;
+  overflow: visible !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumScoreSummary{
+  position: absolute !important;
+  z-index: 4 !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumNeedle{
+  z-index: 3 !important;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
   grid-area: drivers;
   display: grid !important;
@@ -5101,11 +5114,33 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   overflow: visible !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: rgba(235, 223, 123, .9);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitleIcon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+  flex: 0 0 auto;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitleIcon svg{
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
   margin: 10px 0 0;
@@ -5184,3 +5219,353 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     font-size: clamp(10px, 2.7vw, 11px) !important;
   }
 }
+
+/* Final authoritative momentum mobile layout:
+   older flex-based momentum rules in this file can otherwise push the gauge below the
+   visible card area on narrow screens. Keep the current SVG/text layout in a simple grid. */
+@media (max-width: 900px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    align-content: flex-start !important;
+    justify-content: flex-start !important;
+    row-gap: 0 !important;
+    column-gap: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumTitleRow{
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    align-self: start !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumMainSection{
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    align-self: start !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDialWrap{
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    width: min(100%, 320px) !important;
+    justify-self: center !important;
+    align-self: start !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriversTextSection{
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+}
+
+/* Migrated from tasktimer.css tail: dashboard heatmap and reward authority rules. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive {
+  appearance: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    filter 0.16s ease;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:hover {
+  filter: brightness(1.04);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatDayCell.isInteractive:focus-visible {
+  outline: 2px solid rgba(124, 232, 255, 0.96);
+  outline-offset: 2px;
+  border-color: rgba(124, 232, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(124, 232, 255, 0.16), 0 0 20px rgba(0, 220, 255, 0.16);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell {
+  border-radius: 0 !important;
+  overflow: hidden;
+  clip-path: polygon(9% 0, 100% 0, 100% 74%, 91% 100%, 0 100%, 0 26%) !important;
+}
+
+/* Heatmap day-number readability override kept with dashboard ownership. */
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayNum {
+  color: #000 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-shadow: none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell.isFiller .dashboardHeatDayNum {
+  color: rgba(0, 0, 0, 0.35) !important;
+  text-shadow: none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatWeekdays > span {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.rewardSegmentedBar {
+  --reward-bar-segment: 18px;
+  --reward-bar-gap: 3px;
+  --reward-bar-track-base: #041318;
+  --reward-bar-track-fill: rgba(18, 111, 122, 0.18);
+  --reward-bar-gap-color: rgba(4, 15, 20, 0.32);
+  --reward-bar-fill-mid: #35e8ff;
+  --reward-bar-fill-deep: #00cfc8;
+  --reward-bar-fill-glow: rgba(0, 220, 255, 0.18);
+  --reward-bar-skew: var(--control-slant, 8px);
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+  border-radius: 0;
+  clip-path: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--reward-bar-track-fill) 0 calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      var(--reward-bar-gap-color) calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+    var(--reward-bar-track-base);
+}
+
+.rewardSegmentedBarFill {
+  position: absolute;
+  inset: 1px auto 1px 1px;
+  z-index: 2;
+  min-width: 0;
+  display: block;
+  clip-path: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--reward-bar-fill-mid) 0,
+      var(--reward-bar-fill-deep) calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      transparent calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(203, 255, 255, 0.05),
+    0 0 4px var(--reward-bar-fill-glow);
+}
+
+.rewardSegmentedBarTrack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--reward-bar-gap);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.rewardSegmentedBarSegment {
+  min-width: 0;
+}
+
+body[data-theme="purple"] .rewardSegmentedBar {
+  --reward-bar-track-base: #110c1b;
+  --reward-bar-track-fill: rgba(101, 59, 160, 0.18);
+  --reward-bar-gap-color: rgba(18, 10, 29, 0.32);
+  --reward-bar-fill-mid: #d447d2;
+  --reward-bar-fill-deep: #f06ee0;
+  --reward-bar-fill-glow: rgba(212, 71, 210, 0.18);
+}
+
+body[data-control-style="parallelogram"] .rewardSegmentedBar,
+body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
+  clip-path: polygon(var(--reward-bar-skew) 0, 100% 0, calc(100% - var(--reward-bar-skew)) 100%, 0 100%);
+}
+
+.rewardSegmentedBar {
+  --reward-bar-block-cut: 6px;
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+}
+
+.rewardSegmentedBarFill {
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+  -webkit-mask-image: repeating-linear-gradient(
+    90deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+  mask-image: repeating-linear-gradient(
+    90deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+}
+
+.rewardSegmentedBarSegment {
+  clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
+}
+
+.dashboardHeatCard {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 332px;
+  min-width: 0;
+  overflow: hidden;
+  perspective: 1800px;
+}
+
+.dashboardHeatFlipScene {
+  position: relative;
+  display: grid;
+  align-self: stretch;
+  justify-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  min-height: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 560ms cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+
+.dashboardHeatCard.isFlipped .dashboardHeatFlipScene {
+  transform: rotateY(180deg);
+}
+
+.dashboardHeatFace {
+  min-width: 0;
+  min-height: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.dashboardHeatFaceFront {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 100%;
+  height: 100%;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.dashboardHeatFaceBack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+  padding: 0;
+  overflow: hidden;
+  transform: rotateY(180deg);
+}
+
+.dashboardHeatCard:not(.isFlipped) .dashboardHeatFaceBack {
+  pointer-events: none;
+}
+
+.dashboardHeatCard.isFlipped .dashboardHeatFaceFront {
+  pointer-events: none;
+}
+
+.dashboardHeatDetailHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dashboardHeatDetailCopy {
+  min-width: 0;
+}
+
+.dashboardHeatDetailCopy .dashboardCardTitle {
+  margin-bottom: 0;
+}
+
+@media (max-width: 980px) {
+  .dashboardGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .dashboardProfileCard,
+  .dashboardStreakCard,
+  .dashboardStatCard,
+  .dashboardMainGraphCard,
+  .dashboardAvgSessionCard,
+  .dashboardDonutCard,
+  .dashboardTimelineCard,
+  .dashboardHeatCard {
+    grid-column: span 3;
+  }
+
+  .dashboardCard[data-dashboard-size="full"] { grid-column: span 6; }
+  .dashboardCard[data-dashboard-size="half"] { grid-column: span 3; }
+  .dashboardCard[data-dashboard-size="quarter"] { grid-column: span 2; }
+  .dashboardCard[data-dashboard-size="eighth"] { grid-column: span 2; }
+}
+
+@media (max-width: 640px) {
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell,
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShowcase,
+  #app[aria-label="TaskLaunch App"] #appPageDashboard .appPagePlaceholder {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboardProfileCard,
+  .dashboardStreakCard,
+  .dashboardStatCard,
+  .dashboardMainGraphCard,
+  .dashboardAvgSessionCard,
+  .dashboardDonutCard,
+  .dashboardTimelineCard,
+  .dashboardHeatCard {
+    grid-column: auto;
+  }
+
+  .dashboardCard[data-dashboard-size="full"],
+  .dashboardCard[data-dashboard-size="half"],
+  .dashboardCard[data-dashboard-size="quarter"],
+  .dashboardCard[data-dashboard-size="eighth"] {
+    grid-column: auto;
+  }
+}
+

@@ -631,9 +631,10 @@ type CreateDashboardOptionsArgs = {
   hasEntitlement: Parameters<typeof createTaskTimerDashboard>[0]["hasEntitlement"];
   showUpgradePrompt: Parameters<typeof createTaskTimerDashboard>[0]["showUpgradePrompt"];
   rewardState: MutableStore;
-  taskCollectionBindings: { getTasks: () => Task[] };
+  taskCollectionBindings: { getTasks: () => Task[]; getHistoryByTaskId: () => HistoryByTaskId };
   currentAppPageBinding: { getCurrentAppPage: () => AppPage };
   appRuntimeState: MutableStore;
+  preferencesState: MutableStore;
   syncDashboardMenuFlipUi: () => void;
   dashboardLayoutBindings: Pick<
     Parameters<typeof createTaskTimerDashboard>[0],
@@ -662,6 +663,7 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   getModeLabel: (mode: MainMode) => string;
   isModeEnabled: (mode: MainMode) => boolean;
+  taskModeOf: (task: Task | null | undefined) => MainMode;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
@@ -1465,6 +1467,8 @@ export function createTaskTimerDashboardContext(
     showUpgradePrompt: args.showUpgradePrompt,
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     getTasks: args.taskCollectionBindings.getTasks,
+    getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
+    getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getCurrentAppPage: args.currentAppPageBinding.getCurrentAppPage,
     getDashboardMenuFlipped: () => asType<boolean>(args.appRuntimeState.get("dashboardMenuFlipped")),
     setDashboardMenuFlipped: (value) => args.appRuntimeState.set("dashboardMenuFlipped", value),
@@ -1476,6 +1480,7 @@ export function createTaskTimerDashboardContext(
     saveCloudDashboard: args.saveCloudDashboard,
     getModeLabel: args.getModeLabel,
     isModeEnabled: args.isModeEnabled,
+    taskModeOf: args.taskModeOf,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
