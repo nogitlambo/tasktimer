@@ -5,6 +5,14 @@ export default function EditTaskOverlay() {
       <div className="modal" role="dialog" aria-modal="true" aria-label="Edit Task">
         <div className="editHead">
           <h2>Edit Task</h2>
+          <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
+            <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">
+              Recurring
+            </button>
+            <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
+              Once-off
+            </button>
+          </div>
         </div>
 
         <div className="editValidationError" id="editValidationError" aria-live="polite" />
@@ -49,6 +57,18 @@ export default function EditTaskOverlay() {
         <div className="field editPlannedStartField">
           <label>Planned Start Time</label>
           <div className="addTaskPlannedStartSection editPlannedStartSection">
+            <div className="field editTaskOnceOffDayField isHidden" id="editTaskOnceOffDayField">
+              <label htmlFor="editTaskOnceOffDaySelect">Day</label>
+              <select id="editTaskOnceOffDaySelect" defaultValue="mon">
+                <option value="mon">Monday</option>
+                <option value="tue">Tuesday</option>
+                <option value="wed">Wednesday</option>
+                <option value="thu">Thursday</option>
+                <option value="fri">Friday</option>
+                <option value="sat">Saturday</option>
+                <option value="sun">Sunday</option>
+              </select>
+            </div>
             <div className="addTaskPlannedStartSelectorRow">
               <div className="addTaskPlannedStartTimeCluster">
                 <select id="editPlannedStartHourSelect" aria-label="Edit start hour" defaultValue="09">
@@ -91,15 +111,16 @@ export default function EditTaskOverlay() {
                 <input id="editPlannedStartOpenEnded" type="checkbox" />
                 <span>Flexible</span>
               </label>
+              <label
+                className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
+                id="editPlannedStartPushRemindersRow"
+                htmlFor="editPlannedStartPushReminders"
+              >
+                <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
+                <span>Enable Push Reminders</span>
+              </label>
             </div>
             <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
-            <div className="addTaskPlannedStartCheckboxRow toggleRow" id="editPlannedStartPushRemindersRow">
-              <span>Enable Push Reminders</span>
-              <div className="addTaskPlannedStartToggleWrap">
-                <input id="editPlannedStartPushReminders" type="checkbox" hidden defaultChecked />
-                <div className="switch on" id="editPlannedStartPushRemindersToggle" role="switch" aria-checked="true" />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -137,7 +158,7 @@ export default function EditTaskOverlay() {
           <div className="milestonesBody">
             <div id="msList" />
             <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-              + Add Timer Checkpoint
+              + Add Checkpoint
             </button>
           </div>
         </div>

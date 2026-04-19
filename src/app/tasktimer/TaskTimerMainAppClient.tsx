@@ -73,8 +73,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           <section className={`appPage appPageTasks${initialPage === "tasks" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="dashboardTopRow">
               <div className="dashboardTitleWrap">
-                <p className="dashboardKicker">Launchpad</p>
-                <h2 className="dashboardTitle">Tasks</h2>
+                <p className="dashboardKicker">Tasks</p>
               </div>
               <div className="taskPageHeaderActions">
                 <button className="btn btn-ghost small taskScreenPill isOn" data-screen-pill="tasks" aria-current="page" role="tab" type="button">
@@ -105,8 +104,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             <div className="dashboardShell" id="groupsFriendsSection">
               <div className="dashboardTopRow">
                 <div className="dashboardTitleWrap">
-                  <p className="dashboardKicker">Community</p>
-                  <h2 className="dashboardTitle">Friends</h2>
+                  <p className="dashboardKicker">Friends</p>
                 </div>
                 <div className="dashboardEditActions">
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
@@ -166,8 +164,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             <div className="dashboardShell leaderboardShell">
               <div className="dashboardTopRow">
                 <div className="dashboardTitleWrap">
-                  <p className="dashboardKicker">Community</p>
-                  <h2 className="dashboardTitle">Leaderboard</h2>
+                  <p className="dashboardKicker">Leaderboard</p>
                 </div>
               </div>
 

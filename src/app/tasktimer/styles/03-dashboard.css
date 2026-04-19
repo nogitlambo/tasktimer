@@ -108,6 +108,7 @@
   justify-content:flex-end;
   margin-left:auto;
   position:relative;
+  transform: translateY(-4px);
 }
 .dashboardRefreshBtn{
   position:relative;
@@ -118,6 +119,21 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
+}
+.dashboardRefreshBtn,
+.dashboardRefreshBtn:hover,
+.dashboardRefreshBtn:focus-visible,
+.dashboardRefreshBtn:active,
+.dashboardPanelMenuBtn,
+.dashboardPanelMenuBtn:hover,
+.dashboardPanelMenuBtn:focus-visible,
+.dashboardPanelMenuBtn:active,
+#dashboardEditBtn,
+#dashboardEditBtn:hover,
+#dashboardEditBtn:focus-visible,
+#dashboardEditBtn:active{
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .dashboardRefreshBtn:disabled{
   opacity:.42;
@@ -159,8 +175,8 @@
   }
 }
 .dashboardRefreshBtn.isPending{
-  border-color: rgba(53,232,255,.5);
-  box-shadow: 0 0 10px rgba(53,232,255,.16);
+  border-color: transparent;
+  box-shadow: none;
 }
 .dashboardRefreshBtn.isPending::after{
   content:"";
@@ -194,15 +210,17 @@
   padding:0;
 }
 .dashboardPanelMenuBtn[aria-expanded="true"]{
-  border-color: rgba(53,232,255,.5);
-  box-shadow: 0 0 10px rgba(53,232,255,.16);
+  border-color: transparent;
+  box-shadow: none;
 }
 .dashboardPanelMenuIcon{
-  display:inline-flex;
+  display:block;
   align-items:center;
   justify-content:center;
   width:12px;
   height:10px;
+  margin:auto;
+  flex:0 0 auto;
   background:
     linear-gradient(currentColor, currentColor) center top / 12px 2px no-repeat,
     linear-gradient(currentColor, currentColor) center center / 12px 2px no-repeat,
@@ -396,8 +414,8 @@
 }
 #dashboardEditBtn.isOn{
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
-  border-color: rgba(53,232,255,.5);
-  box-shadow: 0 0 10px rgba(53,232,255,.25);
+  border-color: transparent;
+  box-shadow: none;
 }
 .dashboardGrid{
   display:grid;
@@ -1220,6 +1238,10 @@ body[data-theme="purple"] .dashboardTitle,
 body[data-theme="purple"] .menuTitle{
   color:#f7f1ff;
 }
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRefreshBtn.isPending::after{
+  background: rgba(240,110,224,.96);
+  box-shadow: 0 0 10px rgba(212,71,210,.32);
+}
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle{
   color: rgba(245,235,255,.92) !important;
 }
@@ -1250,6 +1272,10 @@ body[data-theme="lime"] .time,
 body[data-theme="lime"] .dashboardTitle,
 body[data-theme="lime"] .menuTitle{
   color:#faffd9;
+}
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRefreshBtn.isPending::after{
+  background: rgba(241,255,151,.98);
+  box-shadow: 0 0 10px rgba(219,255,79,.34);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .dashboardAvgRangeToggle{
   color: rgba(246,255,204,.92) !important;

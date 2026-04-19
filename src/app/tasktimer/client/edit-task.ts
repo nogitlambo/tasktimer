@@ -8,8 +8,15 @@ import {
   normalizeTaskConfigMilestones,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
-import { getTaskScheduledDays, hasTaskMixedScheduleTimes, hasTaskScheduledSlots, syncLegacyPlannedStartFields } from "../lib/schedule-placement";
-import { bindToggleRow, setSwitchState } from "./control-helpers";
+import {
+  getTaskScheduledDays,
+  hasTaskMixedScheduleTimes,
+  hasTaskScheduledSlots,
+  resolveNextScheduleDayDate,
+  type ScheduleDay,
+  syncLegacyPlannedStartFields,
+} from "../lib/schedule-placement";
+import { bindToggleRow } from "./control-helpers";
 import type { TaskTimerEditTaskContext } from "./context";
 import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from "./planned-start";
 
@@ -29,8 +36,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
+    const onceOff = currentTask?.taskType === "once-off";
     const openEnded = !!currentTask?.plannedStartOpenEnded;
-    const disableForUnscheduledFlexible = openEnded && !hasTaskScheduledSlots(currentTask || ({} as Task));
+    const disableForUnscheduledFlexible = !onceOff && openEnded && !hasTaskScheduledSlots(currentTask || ({} as Task));
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
     syncPlannedStartSelectors(
       {
@@ -46,16 +54,13 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
     if (els.editPlannedStartOpenEnded) {
       els.editPlannedStartOpenEnded.checked = openEnded;
+      els.editPlannedStartOpenEnded.disabled = !!onceOff;
     }
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
       els.editPlannedStartPushReminders.disabled = disableForUnscheduledFlexible;
     }
-    if (els.editPlannedStartPushRemindersToggle) {
-      setSwitchState(els.editPlannedStartPushRemindersToggle, pushRemindersEnabled);
-      els.editPlannedStartPushRemindersToggle.toggleAttribute("disabled", disableForUnscheduledFlexible);
-      els.editPlannedStartPushRemindersToggle.setAttribute("aria-disabled", String(disableForUnscheduledFlexible));
-    }
+    els.editPlannedStartOpenEndedRow?.classList.toggle("isDisabled", !!onceOff);
     els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", disableForUnscheduledFlexible);
   }
 
@@ -68,6 +73,28 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editPlannedStartInput.value = nextValue;
     }
     syncEditSaveAvailability(t);
+  }
+
+  function syncEditTaskTypeUi(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    const taskType = currentTask?.taskType === "once-off" ? "once-off" : "recurring";
+    const isOnceOff = taskType === "once-off";
+    const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean) => {
+      if (!btn) return;
+      btn.classList.toggle("isOn", isOn);
+      btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+    };
+    syncPill(els.editTaskTypeRecurringBtn, taskType === "recurring");
+    syncPill(els.editTaskTypeOnceOffBtn, taskType === "once-off");
+    els.editTaskOnceOffDayField?.classList.toggle("isHidden", !isOnceOff);
+    if (els.editTaskOnceOffDaySelect) {
+      els.editTaskOnceOffDaySelect.value = String(currentTask?.onceOffDay || currentTask?.plannedStartDay || "mon");
+    }
+  }
+
+  function isOnceOffTaskType(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    return currentTask?.taskType === "once-off";
   }
 
   function canUseAdvancedTaskConfig() {
@@ -112,6 +139,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       durationValue,
       durationUnit,
       durationPeriod,
+      taskType: currentTask?.taskType === "once-off" ? "once-off" : "recurring",
       noTimeGoal,
       milestonesEnabled: !!currentTask?.milestonesEnabled,
       milestoneTimeUnit: currentTask?.milestoneTimeUnit === "minute" ? "minute" : "hour",
@@ -157,6 +185,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   function getEditTaskTimeGoalMinutes() {
     const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
     if (!(value > 0) || !isEditTimeGoalEnabled()) return 0;
+    if (isOnceOffTaskType()) {
+      return ctx.getEditTaskDurationUnit() === "minute" ? value : value * 60;
+    }
     return getEditTaskTimeGoalMinutesFor(value, ctx.getEditTaskDurationUnit(), ctx.getEditTaskDurationPeriod());
   }
 
@@ -166,6 +197,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function syncEditTaskTimeGoalUi(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
+    const onceOff = isOnceOffTaskType(currentTask);
     const timeGoalEnabled = isEditTimeGoalEnabled();
     const noTimeGoal = !timeGoalEnabled;
     const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
@@ -177,13 +209,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (timeGoalEnabled && els.editTaskDurationValueInput) {
       const parsedValue = Math.max(0, Math.floor(parseFloat(els.editTaskDurationValueInput.value || "0") || 0));
       const maxDay = getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), "day");
-      const canUseDay = Number(parsedValue) <= maxDay;
+      const canUseDay = !onceOff && Number(parsedValue) <= maxDay;
       if (String(parsedValue || "") !== String(els.editTaskDurationValueInput.value || "")) {
         els.editTaskDurationValueInput.value = String(parsedValue || 0);
       }
       ctx.setEditTaskDurationPeriod(canUseDay && ctx.getEditTaskDurationPeriod() === "day" ? "day" : "week");
     }
-    const canUseDay = Number(els.editTaskDurationValueInput?.value || 0) <= getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), "day");
+    els.editTaskDurationRow?.querySelector(".addTaskDurationPerLabel")?.classList.toggle("isHidden", onceOff);
+    els.editTaskDurationPeriodDay?.closest("#editTaskDurationPeriodPills")?.classList.toggle("isHidden", onceOff);
+    const canUseDay = !onceOff && Number(els.editTaskDurationValueInput?.value || 0) <= getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), "day");
     const syncPill = (btn: HTMLButtonElement | null | undefined, isOn: boolean, hidden = false) => {
       if (!btn) return;
       btn.classList.toggle("isOn", isOn);
@@ -263,33 +297,43 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editTaskDurationValueInput?.classList.add("isInvalid");
       return false;
     }
-    const max = getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), ctx.getEditTaskDurationPeriod());
-    if (value > max) {
-      els.editTaskDurationValueInput?.classList.add("isInvalid");
-      return false;
-    }
-    const aggregateValidation = getEditAggregateTimeGoalValidation();
-    if (aggregateValidation?.shouldBlock) {
-      els.editTaskDurationValueInput?.classList.add("isInvalid");
-      return false;
+    if (!isOnceOffTaskType()) {
+      const max = getAddTaskDurationMaxForPeriod(ctx.getEditTaskDurationUnit(), ctx.getEditTaskDurationPeriod());
+      if (value > max) {
+        els.editTaskDurationValueInput?.classList.add("isInvalid");
+        return false;
+      }
+      const aggregateValidation = getEditAggregateTimeGoalValidation();
+      if (aggregateValidation?.shouldBlock) {
+        els.editTaskDurationValueInput?.classList.add("isInvalid");
+        return false;
+      }
     }
     return true;
   }
 
+  function validateEditOnceOffDay(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    if (!currentTask || currentTask.taskType !== "once-off") return true;
+    return !!String(els.editTaskOnceOffDaySelect?.value || currentTask.onceOffDay || "").trim();
+  }
+
   function buildEditTimeGoalDraft(task: Task | null | undefined): Task | null {
     if (!task) return null;
+    const onceOff = task.taskType === "once-off";
     return {
       ...task,
       timeGoalEnabled: isEditTimeGoalEnabled(),
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       timeGoalUnit: ctx.getEditTaskDurationUnit(),
-      timeGoalPeriod: ctx.getEditTaskDurationPeriod(),
+      timeGoalPeriod: onceOff ? "week" : ctx.getEditTaskDurationPeriod(),
       timeGoalMinutes: getEditTaskTimeGoalMinutes(),
     };
   }
 
   function getEditAggregateTimeGoalValidation(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
+    if (currentTask?.taskType === "once-off" || !isEditTimeGoalEnabled()) return null;
     const replacementTask = buildEditTimeGoalDraft(currentTask);
     if (!replacementTask) return null;
 
@@ -441,9 +485,26 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (!t.timeGoalEnabled) t.milestonesEnabled = false;
     t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
     t.timeGoalUnit = ctx.getEditTaskDurationUnit();
-    t.timeGoalPeriod = ctx.getEditTaskDurationPeriod();
-    t.timeGoalMinutes = ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
+    t.timeGoalPeriod = t.taskType === "once-off" ? "week" : ctx.getEditTaskDurationPeriod();
+    t.timeGoalMinutes = t.taskType === "once-off"
+      ? t.timeGoalUnit === "minute"
+        ? t.timeGoalValue
+        : t.timeGoalValue * 60
+      : ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
     t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
+    if (t.taskType === "once-off") {
+      const onceOffDay = String(els.editTaskOnceOffDaySelect?.value || t.onceOffDay || t.plannedStartDay || "mon").trim().toLowerCase() as ScheduleDay;
+      const plannedTime = String(readEditPlannedStartValueFromSelectors() || t.plannedStartTime || "09:00").trim() || "09:00";
+      t.onceOffDay = onceOffDay;
+      t.onceOffTargetDate = resolveNextScheduleDayDate(onceOffDay);
+      t.plannedStartOpenEnded = false;
+      t.plannedStartDay = onceOffDay;
+      t.plannedStartTime = plannedTime;
+      t.plannedStartByDay = { [onceOffDay]: plannedTime };
+    } else {
+      t.onceOffDay = null;
+      t.onceOffTargetDate = null;
+    }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
     delete (t as Task & { mode?: string }).mode;
@@ -583,6 +644,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       return;
     }
     const invalidTimeGoal = !validateEditTimeGoal();
+    const invalidOnceOffDay = !validateEditOnceOffDay(task);
     const aggregateValidation = getEditAggregateTimeGoalValidation(task);
     const checkpointingActive = !!task.milestonesEnabled && editTaskHasActiveTimeGoal();
     const noCheckpoints = checkpointingActive && (!Array.isArray(task.milestones) || task.milestones.length === 0);
@@ -591,7 +653,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       (sharedTasks.hasNonPositiveCheckpoint(task.milestones) ||
         sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, sharedTasks.milestoneUnitSec(task), getEditTaskTimeGoalMinutes()));
     const invalidPresetInterval = checkpointingActive && !!task.presetIntervalsEnabled && !sharedTasks.hasValidPresetInterval(task);
-    const blocked = invalidTimeGoal || !!aggregateValidation?.shouldBlock || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
+    const blocked = invalidTimeGoal || invalidOnceOffDay || !!aggregateValidation?.shouldBlock || noCheckpoints || invalidCheckpointTimes || invalidPresetInterval;
     els.saveEditBtn.disabled = blocked;
     els.saveEditBtn.title = blocked ? "Resolve validation issues before saving" : "Save Changes";
     if (!blocked) return;
@@ -822,6 +884,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditIndex(i);
     ctx.setEditTaskDraft(t);
     if (els.editName) els.editName.value = t.name || "";
+    if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
+    syncEditTaskTypeUi(t);
     syncEditPlannedStartSelectors(t);
     ctx.setEditTimeGoalEnabled(!!t.timeGoalEnabled);
     if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
@@ -867,6 +931,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (saveChanges && t && sourceTask) {
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
       const aggregateValidation = getEditAggregateTimeGoalValidation(t);
+      if (!validateEditOnceOffDay(t)) {
+        return void ctx.showEditValidationError(t, "Choose a day for this once-off task.");
+      }
       if (!ctx.validateEditTimeGoal()) {
         return void ctx.showEditValidationError(
           t,
@@ -977,14 +1044,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     };
-    const togglePlannedStartPushReminders = () => {
-      const t = getCurrentEditTask();
-      if (!t || (t.plannedStartOpenEnded && !hasTaskScheduledSlots(t)) || !els.editPlannedStartPushReminders) return;
-      els.editPlannedStartPushReminders.checked = !els.editPlannedStartPushReminders.checked;
-      t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
-    };
     const syncCheckpointToggleState = (
       toggleEl: HTMLElement | null,
       readEnabled: () => boolean,
@@ -1008,6 +1067,33 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       closeEdit(true);
     });
     ctx.on(els.editName, "input", handleEditNameInput);
+    ctx.on(els.editTaskTypeRecurringBtn, "click", () => {
+      const t = getCurrentEditTask();
+      if (!t || t.taskType === "recurring") return;
+      t.taskType = "recurring";
+      t.onceOffDay = null;
+      t.onceOffTargetDate = null;
+      syncEditTaskTypeUi(t);
+      syncEditPlannedStartSelectors(t);
+      ctx.syncEditTaskTimeGoalUi(t);
+      ctx.syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editTaskTypeOnceOffBtn, "click", () => {
+      const t = getCurrentEditTask();
+      if (!t || t.taskType === "once-off") return;
+      t.taskType = "once-off";
+      t.onceOffDay = (String(t.onceOffDay || t.plannedStartDay || "mon").trim().toLowerCase() || "mon") as ScheduleDay;
+      syncEditTaskTypeUi(t);
+      syncEditPlannedStartSelectors(t);
+      ctx.syncEditTaskTimeGoalUi(t);
+      ctx.syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editTaskOnceOffDaySelect, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      t.onceOffDay = String(els.editTaskOnceOffDaySelect?.value || "mon").trim().toLowerCase() as ScheduleDay;
+      ctx.syncEditSaveAvailability(t);
+    });
     ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
@@ -1024,13 +1110,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
-    });
-    bindToggleRow({
-      on: ctx.on,
-      control: els.editPlannedStartPushRemindersToggle,
-      row: els.editPlannedStartPushRemindersRow,
-      ignoreSelector: "#editPlannedStartPushRemindersToggle",
-      handleToggle: togglePlannedStartPushReminders,
     });
     ctx.on(els.editNoGoalCheckbox, "change", () => {
       syncEditTimeGoalToggle(ctx.isEditTimeGoalEnabled());

@@ -35,8 +35,7 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
               <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
                 <div className="dashboardTopRow">
                   <div className="dashboardTitleWrap">
-                    <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
-                    <h2 className="dashboardTitle">DASHBOARD</h2>
+                    <p className="dashboardKicker">Dashboard</p>
                   </div>
                   <div className="dashboardEditActions">
                     <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
@@ -363,11 +362,10 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
               </div>
               <div className="dashboardShellFace dashboardShellFaceBack" id="dashboardShellBack" aria-hidden="true" inert={true}>
                 <div className="dashboardBackPanel">
-                  <div className="dashboardTopRow dashboardBackTopRow">
-                    <div className="dashboardTitleWrap">
-                      <p className="dashboardKicker">PRODUCTIVITY OVERVIEW</p>
-                      <h2 className="dashboardTitle">DASHBOARD</h2>
-                    </div>
+                <div className="dashboardTopRow dashboardBackTopRow">
+                  <div className="dashboardTitleWrap">
+                    <p className="dashboardKicker">Dashboard</p>
+                  </div>
                     <div className="dashboardBackActions">
                       <button className="iconBtn dashboardFlipBackBtn" id="dashboardPanelMenuBackBtn" type="button" aria-label="Back to dashboard" title="Back to dashboard" aria-expanded="true">
                         &#8594;

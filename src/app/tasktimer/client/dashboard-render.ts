@@ -348,28 +348,53 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   ) {
     const rows = buildMomentumDriverRows(scores);
     driverTextsEl.classList.toggle("hasSelectedDriver", !!opts?.selectedKey);
-    driverTextsEl.innerHTML = rows
-      .map(
-        (row) => `<li class="dashboardMomentumDriver${row.key === opts?.selectedKey ? " isSelected" : ""}" data-dashboard-momentum-band="${ctx.escapeHtmlUI(row.contributionBand)}"${
-          opts?.interactive
-            ? ` data-dashboard-momentum-driver="${ctx.escapeHtmlUI(row.key)}"`
-            : ""
-        }>
-          ${
-            opts?.interactive
-              ? `<button
-                  class="dashboardMomentumDriverButton"
-                  type="button"
-                  data-dashboard-momentum-driver="${ctx.escapeHtmlUI(row.key)}"
-                  aria-pressed="${row.key === opts?.selectedKey ? "true" : "false"}"
-                >
-                  <span class="dashboardMomentumDriverText">${ctx.escapeHtmlUI(`${row.label}: ${row.roundedScore}/${row.max}`)}</span>
-                </button>`
-              : `<span class="dashboardMomentumDriverText">${ctx.escapeHtmlUI(`${row.label}: ${row.roundedScore}/${row.max}`)}</span>`
-          }
-        </li>`
-      )
-      .join("");
+    while (driverTextsEl.children.length > rows.length) {
+      driverTextsEl.removeChild(driverTextsEl.lastElementChild as Element);
+    }
+    rows.forEach((row, index) => {
+      let rowEl = driverTextsEl.children[index] as HTMLLIElement | undefined;
+      if (!rowEl) {
+        rowEl = document.createElement("li");
+        rowEl.className = "dashboardMomentumDriver";
+        driverTextsEl.appendChild(rowEl);
+      }
+      rowEl.classList.toggle("isSelected", row.key === opts?.selectedKey);
+      rowEl.setAttribute("data-dashboard-momentum-band", row.contributionBand);
+      if (opts?.interactive) rowEl.setAttribute("data-dashboard-momentum-driver", row.key);
+      else rowEl.removeAttribute("data-dashboard-momentum-driver");
+
+      const rowText = `${row.label}: ${row.roundedScore}/${row.max}`;
+      if (opts?.interactive) {
+        let buttonEl = rowEl.querySelector(".dashboardMomentumDriverButton") as HTMLButtonElement | null;
+        let textEl = rowEl.querySelector(".dashboardMomentumDriverText") as HTMLSpanElement | null;
+        if (!buttonEl) {
+          rowEl.textContent = "";
+          buttonEl = document.createElement("button");
+          buttonEl.className = "dashboardMomentumDriverButton";
+          buttonEl.type = "button";
+          textEl = document.createElement("span");
+          textEl.className = "dashboardMomentumDriverText";
+          buttonEl.appendChild(textEl);
+          rowEl.appendChild(buttonEl);
+        } else if (!textEl) {
+          textEl = document.createElement("span");
+          textEl.className = "dashboardMomentumDriverText";
+          buttonEl.appendChild(textEl);
+        }
+        buttonEl.setAttribute("data-dashboard-momentum-driver", row.key);
+        buttonEl.setAttribute("aria-pressed", row.key === opts?.selectedKey ? "true" : "false");
+        textEl.textContent = rowText;
+      } else {
+        let textEl = rowEl.querySelector(".dashboardMomentumDriverText") as HTMLSpanElement | null;
+        if (!textEl || textEl.parentElement !== rowEl) {
+          rowEl.textContent = "";
+          textEl = document.createElement("span");
+          textEl.className = "dashboardMomentumDriverText";
+          rowEl.appendChild(textEl);
+        }
+        textEl.textContent = rowText;
+      }
+    });
   }
 
   function buildMomentumDriverMessages(momentum: MomentumSnapshot) {

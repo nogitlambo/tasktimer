@@ -555,6 +555,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   .appFooterBtn {
     min-height: 74px;
     padding: 6px 4px;
+    border-color: transparent !important;
   }
 
   .appFooterIconImage {

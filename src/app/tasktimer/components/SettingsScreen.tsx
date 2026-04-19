@@ -9,6 +9,7 @@ const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 export default function SettingsScreen({ initialPane = null }: { initialPane?: SettingsPaneKey | null } = {}) {
   useEffect(() => {
     let timerId: number | null = null;
+    document.body.setAttribute("data-route-root", "settings");
     try {
       const raw = window.sessionStorage.getItem(RAIL_TRANSITION_STORAGE_KEY);
       if (!raw) return;
@@ -30,6 +31,9 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
       if (timerId != null) window.clearTimeout(timerId);
       document.body.classList.remove("isRouteSlideEntering");
       document.body.removeAttribute("data-route-slide-direction");
+      if (document.body.getAttribute("data-route-root") === "settings") {
+        document.body.removeAttribute("data-route-root");
+      }
     };
   }, []);
 

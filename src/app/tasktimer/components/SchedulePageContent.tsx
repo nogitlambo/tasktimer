@@ -19,8 +19,7 @@ export default function SchedulePageContent({ active }: SchedulePageContentProps
     <section className={`appPage appPageSchedule${active ? " appPageOn" : ""}`} id="appPageSchedule" aria-label="Schedule page">
       <div className="dashboardTopRow scheduleTopRow">
         <div className="dashboardTitleWrap">
-          <p className="dashboardKicker">Launchpad</p>
-          <h2 className="dashboardTitle">Schedule</h2>
+          <p className="dashboardKicker">Schedule</p>
         </div>
         <div className="taskPageHeaderActions schedulePageHeaderActions">
           <button className="btn btn-ghost small taskScreenPill" id="closeScheduleBtn" data-screen-pill="tasks" role="tab" type="button">

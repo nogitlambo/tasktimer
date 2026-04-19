@@ -1,4 +1,14 @@
 /* Generated from tasktimer.css split. */
+body[data-route-root="settings"]{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+body[data-route-root="settings"]::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 #app[aria-label="TaskLaunch Settings"],
 #app[aria-label="TaskLaunch User Guide"],
 #app[aria-label="TaskLaunch History Manager"]{
@@ -10,6 +20,15 @@
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling: touch;
+}
+#app[aria-label="TaskLaunch Settings"]{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#app[aria-label="TaskLaunch Settings"]::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
 }
 #app[aria-label="TaskLaunch Settings"] .list{
   min-height:100%;
@@ -182,6 +201,14 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsNavPanel::-webkit-scrollbar,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPanel::-webkit-scrollbar{
+  width:0;
+  height:0;
+  display:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
   padding:12px 8px 12px 0;
@@ -2394,474 +2421,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 #app[aria-label="TaskLaunch Settings"] #rankLadderOverlay{
   display: flex;
 }
-#app[aria-label="TaskLaunch Feedback"]{
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  --feedback-mobile-footer-height: 72px;
-  --feedback-mobile-footer-space: calc(var(--feedback-mobile-footer-height) + var(--safe-bottom));
-}
-#app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
-#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
-  min-width: 0;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  background: transparent !important;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain{
-  width: 100%;
-  min-width: 0;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  background: transparent !important;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-  margin: 0;
-  width: 100%;
-  max-width: none;
-  padding: 18px;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  clip-path: none !important;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow{
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 6px 0 18px;
-  margin-bottom: 0;
-  width: min(980px, 100%);
-  margin-left: auto;
-  margin-right: auto;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageActions{
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-  width: min(980px, 100%);
-  margin: 0 auto;
-  padding: 22px 22px 20px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormHead{
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormIcon{
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormHeadCopy{
-  min-width: 0;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormTitle{
-  font-family: var(--font-tight);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: rgba(226,247,255,.96);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext{
-  margin: 4px 0 0;
-  color: rgba(188,214,230,.78);
-  font-size: 12px;
-  font-family: var(--font-geist-sans);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField{
-  min-width: 0;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormNote,
-#app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote,
-#app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote,
-#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusy .confirmText{
-  font-family: var(--font-geist-sans);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
-    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
-    linear-gradient(180deg, #06080d 0%, #04060b 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(255,255,255,.02),
-    0 18px 32px rgba(0,0,0,.24);
-  color: rgba(236,247,255,.92);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input::placeholder,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea::placeholder{
-  color: rgba(188,214,230,.58);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input:focus-visible,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select:focus-visible,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea:focus-visible{
-  outline: none;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    inset 0 0 0 1px rgba(255,255,255,.03),
-    0 18px 32px rgba(0,0,0,.26),
-    0 0 0 1px rgba(117,231,255,.28);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select.isPlaceholderValue{
-  color: rgba(188,214,230,.58);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow{
-  margin: 0;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding-left: 0;
-  padding-right: 0;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField > label,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow > span,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions .btn{
-  font-family: var(--font-orbitron);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentList{
-  display: grid;
-  gap: 10px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 0;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
-    radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
-    linear-gradient(180deg, #06080d 0%, #04060b 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(255,255,255,.02),
-    0 18px 32px rgba(0,0,0,.24);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentMeta{
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-family: var(--font-geist-sans);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(226,247,255,.94);
-  overflow-wrap: anywhere;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
-  font-size: 11px;
-  color: rgba(188,214,230,.74);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentRemoveBtn{
-  flex: 0 0 auto;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormNote{
-  margin-top: 2px;
-}
-
-@media (max-width: 640px){
-  #app[aria-label="TaskLaunch Feedback"] .topbar{
-    padding-top: calc(12px + var(--safe-top));
-    padding-left: calc(12px + var(--safe-left));
-    padding-right: calc(12px + var(--safe-right));
-  }
-  #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
-    padding-bottom: var(--feedback-mobile-footer-space);
-    min-height: calc(100dvh - var(--safe-top));
-    box-sizing: border-box;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-    padding: 12px calc(14px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(14px + var(--safe-left));
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
-    padding: 16px;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackFormHead{
-    align-items: flex-start;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackFormActions{
-    justify-content: stretch;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackFormActions .btn{
-    width: 100%;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
-    align-items:flex-start;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
-    width:100%;
-    align-items:flex-start;
-    flex-direction:column;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterWrap{
-    margin-left:0;
-    width:100%;
-    justify-content:stretch;
-    gap:10px;
-  }
-  #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterPills{
-    width:100%;
-    gap:6px;
-  }
-}
-
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell,
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
-  border: none !important;
-  box-shadow: none !important;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormNote{
-  display: none !important;
-}
-
-/* Final Feedback route cleanup: keep scrolling inside the route shell so native bars remain hard stops. */
-#app[aria-label="TaskLaunch Feedback"]{
-  overflow: hidden;
-  overflow-x: hidden;
-  min-height: 100dvh;
-  height: 100dvh !important;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
-#app[aria-label="TaskLaunch Feedback"] .desktopAppMain,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-  min-height: 0;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .desktopAppShell,
-#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
-  height: 100%;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
-#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-  height: auto;
-  overflow: visible;
-}
-
-#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  border: 1px solid rgba(121,226,255,.24);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
-    rgba(9,11,18,.72);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSections{
-  display:grid;
-  gap:18px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSection{
-  display:grid;
-  gap:10px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSection + .feedbackBoardSection{
-  padding-top:26px;
-  border-top:1px solid rgba(255,255,255,.12);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTools{
-  margin-left:auto;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:flex-end;
-  gap:12px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead-withFilter{
-  flex-wrap:wrap;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionTitle{
-  flex:1 1 auto;
-  text-align:center;
-  font-size:13px;
-  letter-spacing:.08em;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  min-width:0;
-  color:rgba(188,214,230,.82);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterWrap{
-  margin-left:auto;
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  width:100%;
-  gap:12px;
-  padding-bottom:8px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterLabel{
-  white-space:nowrap;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterPills{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:8px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilterPill{
-  min-width:0;
-  white-space:nowrap;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadges{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:24px;
-  padding:4px 9px;
-  border:1px solid rgba(255,255,255,.6);
-  background:rgba(255,255,255,.04);
-  color:rgba(241,248,255,.96);
-  font-family:var(--font-tight);
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-bug{
-  border-color:rgba(255,64,64,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-feature{
-  border-color:rgba(255,232,64,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeType-general{
-  border-color:rgba(255,255,255,.96);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-open{
-  border-color:rgba(122,244,255,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-planned{
-  border-color:rgba(188,220,255,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-in_progress{
-  border-color:rgba(255,204,76,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-shipped{
-  border-color:rgba(102,255,170,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadgeStatus-closed{
-  border-color:rgba(255,118,118,1);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardList{
-  display:grid;
-  gap:10px;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionEmpty{
-  margin:0;
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem{
-  border:1px solid rgba(255,255,255,.16);
-  border-left-width:4px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
-    rgba(9,11,18,.62);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem-bug{
-  border-left-color:rgba(255,98,98,.92);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem-feature{
-  border-left-color:rgba(255,220,92,.92);
-}
-#app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem-general{
-  border-left-color:rgba(255,255,255,.82);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(221,108,241,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(212,71,210,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
-  color: rgba(250,233,255,.94);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
-  color: rgba(231,208,242,.72);
-}
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(86,232,255,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(86,232,255,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardFilter{
-  color:rgba(233,216,255,.84);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardBadge{
-  background:rgba(255,255,255,.05);
-}
-body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem{
-  border-color:rgba(221,108,241,.18);
-}
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardItem{
-  border-color:rgba(121,226,255,.18);
-}
 /* Final Notifications override: keep checkpoint toggle rows flat with no extra framed group. */
 #app[aria-label="TaskLaunch Settings"] .checkpointAlertsGroup{
   display:flex;
@@ -3804,6 +3363,19 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
 }
 
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell,
+#app[aria-label="TaskLaunch Settings"] .list.settingsPageList{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell::-webkit-scrollbar,
+#app[aria-label="TaskLaunch Settings"] .list.settingsPageList::-webkit-scrollbar{
+  width:0;
+  height:0;
+  display:none;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell,
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell.dashboardShell{
   border: none !important;
   outline: none !important;
@@ -3922,6 +3494,65 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
     width: 100% !important;
     max-width: none !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
+    padding-bottom: calc(12px + var(--safe-bottom)) !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+    width: min(100%, 320px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions{
+    justify-content: center !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavExitBtn{
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
+    align-items: center;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+    justify-content: center !important;
+    text-align: center !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
+    width: auto !important;
+    text-align: center !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavItemIcon{
+    display: none !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+    margin-top: auto !important;
+    padding-top: 12px;
+    padding-bottom: max(2px, var(--safe-bottom));
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(13,15,19,0), rgba(13,15,19,.94) 22%, rgba(13,15,19,.98));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions .settingsSignOutBtn{
+    justify-content: center !important;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol{
@@ -4327,26 +3958,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountI
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBarcode span{
   background: linear-gradient(180deg, rgba(252,255,229,.92), rgba(224,239,164,.84));
 }
-body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
-  color: rgba(247,255,212,.96);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(219,255,79,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(214,246,116,.12),
-    0 18px 32px rgba(0,0,0,.24);
-}
-body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
-  color: rgba(251,255,227,.94);
-}
-body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
-  color: rgba(229,240,190,.72);
-}
-
 /* Final Notifications typography override: match the compact all-caps settings language used by Preferences. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsDetailText,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsNotificationsPane .settingsInlineSectionTitle,
@@ -4715,5 +4326,259 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
   border-color:rgba(219,255,79,.48) !important;
+}
+
+/* Responsive Settings shell authority migrated from 10-responsive.css. */
+@media (max-width: 980px){
+  #app[aria-label="TaskLaunch Settings"] .list{
+    padding-bottom: calc(20px + var(--safe-bottom));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
+    margin:0;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    position:static;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+    min-height:0;
+    max-height:none;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+    min-height:86px;
+    aspect-ratio:1/1;
+    padding:10px 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
+    font-size:11px;
+    text-align:center;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 980px){
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    grid-template-columns: 244px minmax(0, 1fr);
+    gap:10px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    position:sticky;
+    top:0;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+    min-height:44px;
+    aspect-ratio:auto;
+    padding:9px 10px;
+    justify-content:flex-start;
+    text-align:left;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavRowText{
+    font-size:11px;
+    text-align:left;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
+    grid-template-columns: 1fr;
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
+    min-height:63px;
+    padding:6px 5px;
+    border-radius:0;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
+    max-width:30px;
+    max-height:30px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
+    font-size:9px;
+    letter-spacing:.04em;
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"] .list{
+    padding-bottom: calc(16px + var(--safe-bottom));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
+    padding:10px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    gap:10px;
+    position:relative;
+    overflow-x:hidden;
+    overflow-y:visible;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
+  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
+    min-height:0;
+    max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-bottom: calc(14px + var(--safe-bottom));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+    width:min(100%, 420px);
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions{
+    justify-content:center;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+    width:100%;
+    min-height:44px;
+    aspect-ratio:auto;
+    flex-direction:row;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    padding:10px 12px;
+    text-align:left;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
+    text-align:left;
+    font-size:12px;
+    line-height:1.15;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+    position:sticky;
+    bottom:0;
+    margin-top:auto;
+    padding-top:12px;
+    padding-bottom: max(2px, var(--safe-bottom));
+    background: linear-gradient(180deg, rgba(13,15,19,0), rgba(13,15,19,.94) 22%, rgba(13,15,19,.98));
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
+    display:none;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsNavPanel{
+    display:none;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsDetailPanel{
+    display:block;
+    animation: settingsDetailSlideIn .22s ease-out;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsMobileDetailHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+    padding-bottom:8px;
+    border-bottom:1px solid rgba(121,226,255,.14);
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsMobileBackBtn{
+    min-width:72px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
+    grid-template-columns: 1fr;
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
+    min-height:57px;
+    padding:6px 3px;
+    border-radius:0;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
+    max-width:26px;
+    max-height:26px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
+    font-size:8px;
+    letter-spacing:.03em;
+  }
+
+  .settingsMenu .menuTitle{
+    font-size:18px;
+  }
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    margin:18px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    padding-left: 0;
+  }
 }
 

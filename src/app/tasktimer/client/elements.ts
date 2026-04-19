@@ -304,6 +304,10 @@ const els = {
 
   editOverlay: documentRef.getElementById("editOverlay"),
   editName: documentRef.getElementById("editName") as HTMLInputElement | null,
+  editTaskTypeRecurringBtn: documentRef.getElementById("editTaskTypeRecurringBtn") as HTMLButtonElement | null,
+  editTaskTypeOnceOffBtn: documentRef.getElementById("editTaskTypeOnceOffBtn") as HTMLButtonElement | null,
+  editTaskOnceOffDayField: documentRef.getElementById("editTaskOnceOffDayField"),
+  editTaskOnceOffDaySelect: documentRef.getElementById("editTaskOnceOffDaySelect") as HTMLSelectElement | null,
   editPlannedStartHourSelect: documentRef.getElementById("editPlannedStartHourSelect") as HTMLSelectElement | null,
   editPlannedStartMinuteSelect: documentRef.getElementById("editPlannedStartMinuteSelect") as HTMLSelectElement | null,
   editPlannedStartMeridiemSelect: documentRef.getElementById("editPlannedStartMeridiemSelect") as HTMLSelectElement | null,
@@ -313,7 +317,6 @@ const els = {
   editPlannedStartOpenEndedToggle: documentRef.getElementById("editPlannedStartOpenEndedToggle"),
   editPlannedStartPushReminders: documentRef.getElementById("editPlannedStartPushReminders") as HTMLInputElement | null,
   editPlannedStartPushRemindersRow: documentRef.getElementById("editPlannedStartPushRemindersRow"),
-  editPlannedStartPushRemindersToggle: documentRef.getElementById("editPlannedStartPushRemindersToggle"),
   editTaskDurationRow: documentRef.getElementById("editTaskDurationRow"),
   editTaskDurationValueInput: documentRef.getElementById("editTaskDurationValueInput") as HTMLInputElement | null,
   editTaskDurationUnitMinute: documentRef.getElementById("editTaskDurationUnitMinute") as HTMLButtonElement | null,

@@ -704,6 +704,20 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
   text-align: right;
 }
+
+@media (max-width: 900px){
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+    text-align: left;
+  }
+}
 /* Final dashboard overview override: history-backed full-width flat hero chart. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
 body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2,

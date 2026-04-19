@@ -58,91 +58,12 @@
     gap:10px;
     padding:12px;
   }
-  #app[aria-label="TaskLaunch Settings"] .list{
-    padding-bottom: calc(20px + var(--safe-bottom));
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
-    margin:0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
-    grid-template-columns: 1fr;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
-    position:static;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
-    min-height:0;
-    max-height:none;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
-    display:grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
-    min-height:86px;
-    aspect-ratio:1/1;
-    padding:10px 8px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
-    font-size:11px;
-    text-align:center;
-  }
   #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(20px + var(--safe-bottom));
   }
 }
 
 @media (min-width: 641px) and (max-width: 980px){
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
-    grid-template-columns: 244px minmax(0, 1fr);
-    gap:10px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
-    position:sticky;
-    top:0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
-    min-height:44px;
-    aspect-ratio:auto;
-    padding:9px 10px;
-    justify-content:flex-start;
-    text-align:left;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavRowText{
-    font-size:11px;
-    text-align:left;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
-    grid-template-columns: 1fr;
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
-    min-height:63px;
-    padding:6px 5px;
-    border-radius:0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
-    max-width:30px;
-    max-height:30px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
-    font-size:9px;
-    letter-spacing:.04em;
-  }
 }
 
 @media (max-width: 640px){
@@ -248,99 +169,18 @@
   .footerBtns .btn{
     flex:1 1 100%;
   }
+  #editOverlay .footerBtns{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items:center;
+  }
+  #editOverlay .footerBtns .btn{
+    flex:0 1 auto;
+    width:100%;
+  }
   .row2,
   .row3{
     flex-direction:column;
-  }
-  #app[aria-label="TaskLaunch Settings"] .list{
-    padding-bottom: calc(16px + var(--safe-bottom));
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
-    padding:10px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
-    gap:10px;
-    position:relative;
-    overflow-x:hidden;
-    overflow-y:visible;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel,
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
-    min-height:0;
-    max-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
-    overflow-y:auto;
-    overflow-x:hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
-    width:100%;
-    min-height:44px;
-    aspect-ratio:auto;
-    flex-direction:row;
-    align-items:center;
-    justify-content:flex-start;
-    gap:8px;
-    padding:10px 12px;
-    text-align:left;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
-    text-align:left;
-    font-size:12px;
-    line-height:1.15;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
-    display:none;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsNavPanel{
-    display:none;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout.isMobileDetailOpen .settingsDetailPanel{
-    display:block;
-    animation: settingsDetailSlideIn .22s ease-out;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMobileDetailHead{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    margin-bottom:10px;
-    padding-bottom:8px;
-    border-bottom:1px solid rgba(121,226,255,.14);
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsMobileBackBtn{
-    min-width:72px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
-    grid-template-columns: 1fr;
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap:8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
-    min-height:57px;
-    padding:6px 3px;
-    border-radius:0;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
-    max-width:26px;
-    max-height:26px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
-    font-size:8px;
-    letter-spacing:.03em;
-  }
-  .settingsMenu .menuTitle{
-    font-size:18px;
   }
   #app[aria-label="TaskLaunch User Guide"] .list{
     padding-bottom: calc(16px + var(--safe-bottom));
@@ -1097,12 +937,6 @@
   }
 }
 
-@media (min-width: 981px){
-  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
-    margin:18px;
-  }
-}
-
 /* Desktop rail theme parity: keep desktop nav rail aligned with the active purple/cyan theme. */
 
 @media (min-width: 981px){
@@ -1448,20 +1282,6 @@
   }
 }
 
-@media (max-width: 900px){
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
-    grid-template-columns: 1fr;
-  }
-
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
-    grid-template-columns: 1fr;
-  }
-
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
-    text-align: left;
-  }
-}
-
 /* Final desktop-rail profile override: keep profile chrome theme-aware on desktop. */
 
 @media (min-width: 981px){
@@ -1624,16 +1444,6 @@
     white-space: normal;
     margin-top: 0 !important;
     line-height: 1.1;
-  }
-}
-
-@media (min-width: 981px){
-  /* Final Settings-nav padding override: align the desktop Settings nav with the desktop app shell rail edge. */
-  #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
-    grid-template-columns: 252px minmax(0, 1fr);
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
-    padding-left: 0;
   }
 }
 
@@ -4321,14 +4131,14 @@ body[data-theme="lime"] .archieDraftSection{
 @media (max-width: 640px) {
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard {
     grid-column: 1 / -1 !important;
-    grid-row: span calc((var(--dashboard-pro-panel-span) * 2) + 6) !important;
+    grid-row: auto !important;
     display: flex !important;
     flex-direction: column !important;
     flex-wrap: nowrap !important;
     align-items: stretch !important;
     align-content: flex-start !important;
     justify-content: flex-start !important;
-    min-height: 0 !important;
+    min-height: 640px !important;
     height: auto !important;
     overflow: visible !important;
   }
@@ -4396,16 +4206,18 @@ body[data-theme="lime"] .archieDraftSection{
     width: 100% !important;
     height: auto !important;
     min-width: 0 !important;
-    min-height: 0 !important;
+    min-height: max-content !important;
     justify-self: stretch !important;
     align-self: start !important;
+    margin-top: 12px !important;
+    overflow: visible !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterBand {
     display: block !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
-    margin: 12px 0 0 !important;
+    margin: 16px 0 0 !important;
     overflow: visible !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDrivers {

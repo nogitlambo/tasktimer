@@ -290,8 +290,7 @@ export default function FeedbackScreen() {
               <div className="dashboardShell feedbackPageShell">
                 <div className="dashboardTopRow feedbackPageTopRow">
                   <div className="dashboardTitleWrap">
-                    <p className="dashboardKicker">Support</p>
-                    <h2 className="dashboardTitle">Feedback</h2>
+                    <p className="dashboardKicker">Feedback</p>
                   </div>
                   <div className="feedbackPageActions">
                     <button className="btn btn-ghost small feedbackBackBtn" type="button" onClick={handleBack}>
