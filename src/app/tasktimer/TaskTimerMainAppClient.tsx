@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AppImg from "@/components/AppImg";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
@@ -49,7 +50,10 @@ const LEADERBOARD_RIVALS = [
 ];
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
+  const searchParams = useSearchParams();
+  const [highlightParam, setHighlightParam] = useState<string | null>(null);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [isHighlighting, setIsHighlighting] = useState(false);
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
 
   useEffect(() => {
@@ -66,6 +70,40 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const highlight = searchParams.get("highlight");
+    if (highlight) {
+      setHighlightParam(highlight);
+      setIsHighlighting(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isHighlighting && highlightParam === "addTask") {
+      const appElement = document.getElementById("app");
+      if (appElement) {
+        appElement.classList.add("hasHighlight");
+      }
+
+      const addTaskBtn = document.getElementById("openAddTaskBtn");
+      if (addTaskBtn) {
+        addTaskBtn.classList.add("highlighted");
+      }
+
+      const handleClickOutside = () => {
+        setIsHighlighting(false);
+      };
+
+      addTaskBtn?.addEventListener("click", handleClickOutside);
+
+      return () => {
+        addTaskBtn?.removeEventListener("click", handleClickOutside);
+        appElement?.classList.remove("hasHighlight");
+        addTaskBtn?.classList.remove("highlighted");
+      };
+    }
+  }, [isHighlighting, highlightParam]);
 
   return (
     <>

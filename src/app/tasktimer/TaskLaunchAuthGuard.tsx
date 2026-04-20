@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
@@ -11,6 +11,7 @@ type GuardStatus = "checking" | "authed";
 
 export default function TaskLaunchAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [status, setStatus] = useState<GuardStatus>(() => {
     const auth = getFirebaseAuthClient();
     return auth?.currentUser ? "authed" : "checking";
@@ -46,12 +47,24 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         setStatus("authed");
+        // Check onboarding status for non-onboarding routes
+        if (pathname !== "/onboarding") {
+          try {
+            const onboardingCompleted = window.localStorage.getItem(`${STORAGE_KEY}:onboardingCompleted`);
+            if (onboardingCompleted !== "true") {
+              router.replace("/onboarding");
+              return;
+            }
+          } catch {
+            // Ignore localStorage errors
+          }
+        }
         return;
       }
       router.replace("/");
     });
     return () => unsub();
-  }, [router]);
+  }, [router, pathname]);
 
   useEffect(() => {
     const syncPreference = (mobileEnabled: boolean, webEnabled: boolean) => {
