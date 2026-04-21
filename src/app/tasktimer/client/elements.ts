@@ -150,6 +150,7 @@ const els = {
   commandCenterDashboardBtn: documentRef.getElementById("commandCenterDashboardBtn") as HTMLButtonElement | null,
   commandCenterGroupsBtn: documentRef.getElementById("commandCenterGroupsBtn") as HTMLButtonElement | null,
   commandCenterLeaderboardBtn: documentRef.getElementById("commandCenterLeaderboardBtn") as HTMLButtonElement | null,
+  commandCenterHistoryBtn: documentRef.getElementById("commandCenterHistoryBtn") as HTMLButtonElement | null,
   commandCenterSettingsBtn: documentRef.getElementById("commandCenterSettingsBtn") as HTMLElement | null,
   rewardsInfoOpenBtn: documentRef.getElementById("rewardsInfoOpenBtn") as HTMLButtonElement | null,
   rewardsInfoOverlay: documentRef.getElementById("rewardsInfoOverlay") as HTMLElement | null,

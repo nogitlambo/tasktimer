@@ -45,7 +45,7 @@ import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
 import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
 import RankLadderModal from "./RankLadderModal";
 
-type DesktopRailPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "settings" | "none";
+type DesktopRailPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "history" | "settings" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -104,6 +104,16 @@ const NAV_ITEMS: NavItem[] = [
     showInMobileFooter: false,
   },
   {
+    page: "history",
+    label: "History",
+    ariaLabel: "History Manager",
+    iconSrc: "/History_Manager.svg",
+    desktopId: "commandCenterHistoryBtn",
+    mobileId: "footerHistoryBtn",
+    href: "/history-manager",
+    showInMobileFooter: false,
+  },
+  {
     page: "settings",
     label: "Settings",
     ariaLabel: "Settings",
@@ -123,7 +133,8 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "tasks") return 1;
   if (page === "test2") return 2;
   if (page === "leaderboard") return 3;
-  if (page === "settings") return 4;
+  if (page === "history") return 4;
+  if (page === "settings") return 5;
   return -1;
 }
 
@@ -185,7 +196,7 @@ function renderDesktopNavItem(
     ...(isActive ? { "aria-current": "page" as const } : {}),
   };
 
-  if (useClientNavButtons && item.page !== "settings") {
+  if (useClientNavButtons && item.page !== "settings" && item.page !== "history") {
     return (
       <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button" onClick={opts?.onClick}>
         <AppImg
@@ -280,6 +291,7 @@ export default function DesktopAppRail({
   showDesktopRail = true,
   showMobileFooter = true,
 }: DesktopAppRailProps) {
+  const archieActivePage = activePage === "history" ? "none" : activePage;
   const [onboardingState, setOnboardingState] = useState<ArchieOnboardingUiState | null>(null);
   const [signedInUserUid, setSignedInUserUid] = useState("");
   const [signedInUserEmail, setSignedInUserEmail] = useState("");
@@ -510,7 +522,7 @@ export default function DesktopAppRail({
           </div>
 
           <div className="desktopRailMiddleSection">
-            <ArchieAssistantWidget activePage={activePage} onOnboardingStepChange={setOnboardingState} />
+            <ArchieAssistantWidget activePage={archieActivePage} onOnboardingStepChange={setOnboardingState} />
           </div>
 
           <div className="desktopRailBottomSection">
@@ -578,7 +590,7 @@ export default function DesktopAppRail({
 
       {showMobileFooter ? (
         <>
-          <ArchieAssistantWidget activePage={activePage} variant="mobile" />
+          <ArchieAssistantWidget activePage={archieActivePage} variant="mobile" />
           <div className="appFooterNav" aria-label="App pages">
             {NAV_ITEMS.filter((item) => item.showInMobileFooter !== false).map((item) =>
               renderMobileNavItem(item, activePage, useClientNavButtons)

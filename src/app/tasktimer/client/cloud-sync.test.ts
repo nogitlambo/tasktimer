@@ -28,6 +28,7 @@ vi.mock("@/lib/firebaseClient", () => ({
 describe("cloud-sync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     const bodyAttributes = new Map<string, string>();
     const body = {
       setAttribute: (name: string, value: string) => {
@@ -161,5 +162,58 @@ describe("cloud-sync", () => {
 
     expect(setDashboardRefreshPending).toHaveBeenCalledWith(true);
     expect(mocks.hydrateStorageFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("clears dashboard busy state when a manual dashboard refresh times out", async () => {
+    vi.useFakeTimers();
+    Object.assign(window, {
+      setTimeout,
+      clearTimeout,
+    });
+    mocks.hydrateStorageFromCloud.mockImplementation(() => new Promise(() => {}));
+
+    const runtime = createTaskTimerRuntime();
+    const cloudRefreshState = createTaskTimerMutableStore({
+      cloudRefreshInFlight: null as Promise<void> | null,
+      lastCloudRefreshAtMs: 0,
+      pendingDeferredCloudRefresh: false,
+      deferredCloudRefreshTimer: null as number | null,
+      lastUiInteractionAtMs: 0,
+    });
+    const showDashboardBusyIndicator = vi.fn(() => 7);
+    const hideDashboardBusyIndicator = vi.fn();
+    const setDashboardRefreshPending = vi.fn();
+
+    const api = createTaskTimerCloudSync({
+      runtime,
+      on: runtime.on,
+      nowMs: () => 1000,
+      getCapAppPlugin: () => null,
+      cloudRefreshInFlight: cloudRefreshState.accessor("cloudRefreshInFlight"),
+      lastCloudRefreshAtMs: cloudRefreshState.accessor("lastCloudRefreshAtMs"),
+      pendingDeferredCloudRefresh: cloudRefreshState.accessor("pendingDeferredCloudRefresh"),
+      deferredCloudRefreshTimer: cloudRefreshState.accessor("deferredCloudRefreshTimer"),
+      lastUiInteractionAtMs: cloudRefreshState.accessor("lastUiInteractionAtMs"),
+      hydrateUiStateFromCaches: vi.fn(),
+      syncTimeGoalModalWithTaskState: vi.fn(),
+      render: vi.fn(),
+      renderDashboardWidgets: vi.fn(),
+      maybeHandlePendingTaskJump: vi.fn(),
+      maybeHandlePendingPushAction: vi.fn(),
+      maybeRestorePendingTimeGoalFlow: vi.fn(),
+      currentUid: () => "user-1",
+      showDashboardBusyIndicator,
+      hideDashboardBusyIndicator,
+      setDashboardRefreshPending,
+    });
+
+    void api.rehydrateFromCloudAndRender({ force: true });
+    await vi.advanceTimersByTimeAsync(15000);
+    await Promise.resolve();
+
+    expect(showDashboardBusyIndicator).toHaveBeenCalledWith("Refreshing...");
+    expect(hideDashboardBusyIndicator).toHaveBeenCalledWith(7);
+    expect(setDashboardRefreshPending).toHaveBeenCalledWith(true);
+    expect(cloudRefreshState.get("cloudRefreshInFlight")).toBeNull();
   });
 });

@@ -49,7 +49,9 @@ function hasRemoveHandle(value: unknown): value is CapListenerHandle {
 }
 
 export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOptions) {
+  const CLOUD_REFRESH_TIMEOUT_MS = 15000;
   let lastObservedAuthUid = String(options.currentUid() || "").trim();
+  let activeRefreshRequestId = 0;
 
   function isDashboardPageActive() {
     return typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
@@ -83,15 +85,28 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     if (options.runtime.destroyed) return Promise.resolve();
     const currentInFlight = options.cloudRefreshInFlight.get();
     if (currentInFlight) return currentInFlight;
+    const requestId = activeRefreshRequestId + 1;
+    activeRefreshRequestId = requestId;
     const activeDashboardPage = isDashboardPageActive();
     const initialAuthHydrating = options.isInitialAuthHydrating?.() === true;
     options.setDashboardRefreshPending?.(false);
     const dashboardBusyKey = activeDashboardPage && !initialAuthHydrating
       ? options.showDashboardBusyIndicator?.("Refreshing...")
       : undefined;
-    const nextInFlight = hydrateStorageFromCloud(opts)
+    let refreshTimedOut = false;
+    let refreshTimeoutId: number | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      refreshTimeoutId = window.setTimeout(() => {
+        refreshTimedOut = true;
+        reject(new Error("TaskTimer cloud refresh timed out."));
+      }, CLOUD_REFRESH_TIMEOUT_MS);
+    });
+    const nextInFlight = Promise.race([
+      hydrateStorageFromCloud(opts),
+      timeoutPromise,
+    ])
       .then(() => {
-        if (options.runtime.destroyed) return;
+        if (options.runtime.destroyed || activeRefreshRequestId !== requestId) return;
         options.hydrateUiStateFromCaches({ skipDashboardWidgetsRender: activeDashboardPage });
         options.syncTimeGoalModalWithTaskState();
         if (!activeDashboardPage) {
@@ -107,8 +122,17 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
       })
       .catch(() => {
         // Keep current in-memory state when cloud refresh is unavailable.
+        if (refreshTimedOut && activeDashboardPage && activeRefreshRequestId === requestId) {
+          options.setDashboardRefreshPending?.(true);
+        }
       })
       .finally(() => {
+        if (activeRefreshRequestId !== requestId) return;
+        activeRefreshRequestId = 0;
+        if (refreshTimeoutId != null) {
+          window.clearTimeout(refreshTimeoutId);
+          refreshTimeoutId = null;
+        }
         if (typeof dashboardBusyKey === "number") {
           options.hideDashboardBusyIndicator?.(dashboardBusyKey);
         }

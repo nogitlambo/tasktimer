@@ -22,6 +22,7 @@ type TaskTimerDashboardBusyOptions = {
 
 export function createTaskTimerDashboardBusy(options: TaskTimerDashboardBusyOptions) {
   const { state } = options;
+  const DASHBOARD_BUSY_FAILSAFE_MS = 20000;
 
   function isBusy() {
     return state.get("overlayActive") || state.get("stack").length > 0;
@@ -97,6 +98,15 @@ export function createTaskTimerDashboardBusy(options: TaskTimerDashboardBusyOpti
     state.get("stack").push({ key, message: normalizedMessage });
     if (state.get("stack").length === 1) activateOverlay();
     setIndicatorVisible(true, normalizedMessage);
+    state.set(
+      "hideTimer",
+      window.setTimeout(() => {
+        state.set("hideTimer", null);
+        state.get("stack").length = 0;
+        setIndicatorVisible(false);
+        deactivateOverlay();
+      }, DASHBOARD_BUSY_FAILSAFE_MS)
+    );
     return key;
   }
 

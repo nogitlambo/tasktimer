@@ -592,6 +592,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       e?.preventDefault?.();
       applyAppPage("leaderboard", { pushNavStack: true, syncUrl: "push" });
     });
+    ctx.on(ctx.els.commandCenterHistoryBtn, "click", (e: any) => {
+      if (e?.defaultPrevented) return;
+      e?.preventDefault?.();
+      navigateToAppRoute("/history-manager");
+    });
     ctx.on(ctx.els.commandCenterSettingsBtn, "click", (e: any) => {
       dispatchOnboardingModuleClick("settings");
       if (e?.defaultPrevented) return;
