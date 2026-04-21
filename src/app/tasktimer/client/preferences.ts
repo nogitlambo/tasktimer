@@ -78,29 +78,16 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return fallback;
   }
 
-  function getModeLabel(mode: MainMode) {
-    return ctx.defaultModeLabels[mode] || ctx.defaultModeLabels.mode1;
-  }
-
   function getModeColor(mode: MainMode) {
     return ctx.defaultModeColors[mode];
   }
 
   function applyModeAccent(mode: MainMode) {
-    const nextMode = mode === "mode2" || mode === "mode3" ? "mode1" : mode;
-    document.documentElement.style.setProperty("--mode-accent", getModeColor(nextMode));
+    document.documentElement.style.setProperty("--mode-accent", getModeColor(mode));
     document.documentElement.style.setProperty("--mode1-accent", getModeColor("mode1"));
-    document.documentElement.style.setProperty("--mode2-accent", getModeColor("mode2"));
-    document.documentElement.style.setProperty("--mode3-accent", getModeColor("mode3"));
-  }
-
-  function isModeEnabled(mode: MainMode) {
-    return mode === "mode1";
   }
 
   function syncModeLabelsUi() {
-    ctx.setModeLabelsState({ ...ctx.defaultModeLabels });
-    ctx.setModeEnabledState({ mode1: true, mode2: false, mode3: false });
     if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
   }
 
@@ -136,13 +123,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadModeLabels() {
-    ctx.setModeLabelsState({ ...ctx.defaultModeLabels });
-    ctx.setModeEnabledState({ mode1: true, mode2: false, mode3: false });
-    try {
-      localStorage.removeItem(ctx.storageKeys.MODE_SETTINGS_KEY);
-    } catch {
-      // ignore
-    }
+    syncModeLabelsUi();
   }
 
   function applyTheme(mode: "purple" | "cyan" | "lime") {
@@ -381,10 +362,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function applyMainMode(mode: MainMode) {
-    const nextMode = mode === "mode2" || mode === "mode3" ? "mode1" : mode;
-    ctx.setCurrentModeState(nextMode);
-    ctx.setEditMoveTargetModeState("mode1");
-    applyModeAccent(nextMode);
+    applyModeAccent(mode);
     document.body.setAttribute("data-main-mode", "mode1");
     els.mode1View?.classList.toggle("modeViewOn", true);
     ctx.render();
@@ -551,10 +529,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   return {
     normalizeThemeMode,
     sanitizeModeLabel,
-    getModeLabel,
     getModeColor,
     applyModeAccent,
-    isModeEnabled,
     syncModeLabelsUi,
     saveModeSettings,
     buildCloudPreferencesSnapshot,

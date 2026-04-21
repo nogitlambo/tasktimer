@@ -34,6 +34,7 @@ It does not use the default Firestore database.
 7. `userEmailLookup`
 8. `shared_task_summaries`
 9. `scheduled_time_goal_pushes`
+10. `leaderboardProfiles`
 
 ---
 
@@ -183,6 +184,54 @@ Runtime usage:
 
 - Used as the reservation/uniqueness index for claimed usernames
 - Queried by username availability and username claim endpoints
+
+---
+
+### `leaderboardProfiles/{userId}`
+
+Doc ID:
+
+- `userId = Firebase Auth UID`
+
+Purpose:
+
+- Public-safe global leaderboard snapshot for the `/leaderboard` screen
+- Mirrors only the fields that other authenticated users are allowed to read
+- Complements, but does not replace, the owner-only `users/{userId}` profile document
+
+Allowed fields (`isLeaderboardProfileDoc`):
+
+- `uid: string`
+- `username: string | null`
+- `displayLabel: string | null`
+- `avatarId: string | null`
+- `avatarCustomSrc: string | null`
+- `googlePhotoUrl: string | null`
+- `rankThumbnailSrc: string | null`
+- `rewardCurrentRankId: string | null`
+- `rewardTotalXp: int`
+- `streakDays: int`
+- `totalFocusMs: int`
+- `weeklyXpGain: int`
+- `updatedAt: timestamp`
+- `schemaVersion: int`
+
+Access:
+
+- Read by authenticated users
+- Create/update/delete only by the owner (`request.auth.uid == userId`)
+
+Runtime usage:
+
+- Queried by the global leaderboard screen for top rankings, nearby rivals, and rising users
+- Synced by the TaskTimer client after auth hydration and whenever rewards/history/live-session data changes enough to affect leaderboard metrics
+
+Notes:
+
+- This collection intentionally excludes private fields such as `email`.
+- `rewardTotalXp` is the primary global ranking field.
+- `weeklyXpGain` powers the “Rising this week” leaderboard panel.
+- `totalFocusMs` and `streakDays` are derived from finalized history plus any active live session.
 
 ---
 

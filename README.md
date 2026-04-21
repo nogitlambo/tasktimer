@@ -32,7 +32,8 @@ npm run hooks:install
 
 - `docs:update` regenerates the managed docs files.
 - `docs:check` fails when generated docs are stale.
-- `hooks:install` configures Git to use the repo-managed `.githooks/pre-commit` hook so docs update automatically before commits.
+- `hooks:install` configures Git to use the repo-managed `.githooks/pre-commit` hook so docs update automatically only when committing on `main`.
+- Commits on non-`main` branches do not auto-regenerate `AGENTS.md` or `architecture.md`; run `npm run docs:update` manually if you want to refresh them there.
 
 ## Stripe Environments
 

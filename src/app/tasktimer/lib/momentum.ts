@@ -2,8 +2,6 @@ import { localDayKey } from "./history";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
 import type { HistoryByTaskId, Task } from "./types";
 
-export type MomentumMode = "mode1" | "mode2" | "mode3";
-
 export type MomentumSnapshot = {
   score: number;
   bandLabel: string;
@@ -25,9 +23,6 @@ export type MomentumComputationContext = {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
   weekStarting: DashboardWeekStart;
-  includedModes: Record<MomentumMode, boolean>;
-  isModeEnabled: (mode: MomentumMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MomentumMode;
   nowValue?: number;
 };
 
@@ -58,11 +53,7 @@ export function getMomentumMultiplier(score: number): number {
 
 export function computeMomentumSnapshot(ctx: MomentumComputationContext): MomentumSnapshot {
   const nowValue = Math.max(0, Math.floor(Number(ctx.nowValue || 0) || 0)) || Date.now();
-  const includedTasks = (Array.isArray(ctx.tasks) ? ctx.tasks : []).filter((task) => {
-    if (!task) return false;
-    const mode = ctx.taskModeOf(task);
-    return ctx.isModeEnabled(mode) && !!ctx.includedModes[mode];
-  });
+  const includedTasks = (Array.isArray(ctx.tasks) ? ctx.tasks : []).filter((task) => !!task);
   const includedTaskIds = new Set<string>();
   includedTasks.forEach((task) => {
     const taskId = String(task?.id || "").trim();
@@ -127,7 +118,7 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
   }
   const activeDaysScore = Math.max(0, Math.min(27, (activeDayKeys.size / 5) * 27));
   const streakScore = Math.max(0, Math.min(18, (trailingStreak / 4) * 18));
-  const consistencyScore = activeDaysScore + streakScore;
+  const consistencyScore = trailingStreak >= 2 ? activeDaysScore + streakScore : 0;
 
   const weeklyProgressRatio = currentWeekGoalMs > 0 ? currentWeekLoggedMs / currentWeekGoalMs : 0;
   const weeklyProgressScore = Math.max(0, Math.min(20, weeklyProgressRatio * 20));

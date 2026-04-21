@@ -5,6 +5,7 @@ export type DashboardRenderSummaryInput = {
   historyByTaskId: HistoryByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
   dynamicColorsEnabled: boolean;
+  onboardingPreviewActive: boolean;
   currentDayKey: string;
   nowMs: number;
 };
@@ -16,6 +17,7 @@ export type DashboardRenderSummary = {
   deletedTaskCount: number;
   currentDayKey: string;
   dynamicColorsEnabled: boolean;
+  onboardingPreviewActive: boolean;
   fullSignature: string;
   liveSignature: string;
 };
@@ -56,12 +58,14 @@ export function buildDashboardRenderSummary(input: DashboardRenderSummaryInput):
     deletedKeys,
     currentDayKey: input.currentDayKey,
     dynamicColorsEnabled: !!input.dynamicColorsEnabled,
+    onboardingPreviewActive: !!input.onboardingPreviewActive,
   });
 
   const liveSignature = JSON.stringify({
     runningTaskIds,
     runningTaskLiveTotals,
     currentDayKey: input.currentDayKey,
+    onboardingPreviewActive: !!input.onboardingPreviewActive,
   });
 
   return {
@@ -71,6 +75,7 @@ export function buildDashboardRenderSummary(input: DashboardRenderSummaryInput):
     deletedTaskCount: deletedKeys.length,
     currentDayKey: input.currentDayKey,
     dynamicColorsEnabled: !!input.dynamicColorsEnabled,
+    onboardingPreviewActive: !!input.onboardingPreviewActive,
     fullSignature,
     liveSignature,
   };

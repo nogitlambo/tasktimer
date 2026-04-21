@@ -123,12 +123,12 @@
   margin: 0;
 }
 
-#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyArrowStage {
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyProgress {
   margin-top: 0;
 }
 
-#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyArrowShell {
-  width: 42px;
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusyProgress {
+  width: min(132px, 100%);
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardList {

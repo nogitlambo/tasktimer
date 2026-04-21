@@ -1,10 +1,9 @@
-import type { HistoryByTaskId, DeletedTaskMeta, Task } from "../lib/types";
+import type { HistoryByTaskId, DeletedTaskMeta, LiveSessionsByTaskId, Task } from "../lib/types";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 
 export type AppPage = "tasks" | "schedule" | "dashboard" | "test2" | "leaderboard";
-
-export type MainMode = "mode1" | "mode2" | "mode3";
+export type MainMode = "mode1";
 
 export type TaskTimerClientHandle = {
   destroy: () => void;
@@ -64,9 +63,6 @@ export type DashboardRenderOptions = {
 export type TaskTimerMutableState = {
   deletedTaskMeta: DeletedTaskMeta;
   tasks: Task[];
-  currentMode: MainMode;
-  modeLabels: Record<MainMode, string>;
-  modeEnabled: Record<MainMode, boolean>;
   editIndex: number | null;
   editDraftSnapshot: string;
   focusCheckpointSig: string;
@@ -90,6 +86,7 @@ export type TaskTimerMutableState = {
   optimalProductivityEndTime: string;
   rewardProgress: unknown;
   historyByTaskId: HistoryByTaskId;
+  liveSessionsByTaskId: LiveSessionsByTaskId;
   historyRangeDaysByTaskId: Record<string, 7 | 14>;
   historyRangeModeByTaskId: Record<string, "entries" | "day">;
   focusModeTaskId: string | null;
@@ -135,7 +132,6 @@ export type TaskTimerMutableState = {
   } | null;
   elapsedPadDraft: string;
   elapsedPadOriginal: string;
-  editMoveTargetMode: MainMode;
   dashboardEditMode: boolean;
   dashboardDragEl: HTMLElement | null;
   taskDragEl: HTMLElement | null;
@@ -143,7 +139,6 @@ export type TaskTimerMutableState = {
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
-  dashboardIncludedModes: Record<MainMode, boolean>;
   dashboardAvgRange: DashboardAvgRange;
   dashboardTimelineDensity: DashboardTimelineDensity;
   dashboardMenuFlipped: boolean;
@@ -223,12 +218,12 @@ export type TaskTimerMutableState = {
   pendingDeferredCloudRefresh: boolean;
   lastUiInteractionAtMs: number;
   dashboardWidgetHasRenderedData: {
-    tasksCompleted: boolean;
-    momentum: boolean;
-    focusTrend: boolean;
-    heatCalendar: boolean;
-    modeDistribution: boolean;
-    avgSession: boolean;
-    timeline: boolean;
-  };
+      tasksCompleted: boolean;
+      momentum: boolean;
+      focusTrend: boolean;
+      heatCalendar: boolean;
+      modeDistribution: boolean;
+      avgSession: boolean;
+      timeline: boolean;
+    };
 };

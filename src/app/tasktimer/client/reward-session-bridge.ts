@@ -53,6 +53,18 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     clearRewardSessionTracker(taskIdRaw: string | null | undefined) {
       options.getRewardsHistoryApi()?.clearRewardSessionTracker(taskIdRaw);
     },
+    upsertLiveSession(task: Task, opts?: { elapsedMs?: number; note?: string }) {
+      options.getRewardsHistoryApi()?.upsertLiveSession(task, opts);
+    },
+    syncLiveSessionForTask(task: Task | null | undefined, nowValue?: number) {
+      options.getRewardsHistoryApi()?.syncLiveSessionForTask(task, nowValue);
+    },
+    finalizeLiveSession(
+      task: Task,
+      opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }
+    ) {
+      return options.getRewardsHistoryApi()?.finalizeLiveSession(task, opts) ?? 0;
+    },
     appendCompletedSessionHistory(
       task: Task,
       completedAtMs: number,

@@ -1,7 +1,8 @@
-import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
+import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
+  clearLiveSession as clearLiveSessionInCloud,
   appendHistoryEntry as appendHistoryEntryToCloud,
   ensureUserProfileIndex,
   deleteDeletedTaskMeta,
@@ -11,6 +12,7 @@ import {
   loadPreferences,
   loadTaskUi,
   replaceTaskHistory,
+  saveLiveSession as saveLiveSessionToCloud,
   saveDashboard,
   savePreferences,
   saveTaskUi,
@@ -19,6 +21,10 @@ import {
   subscribeToTaskCollection,
   type UserPreferencesV1,
 } from "./cloudStore";
+import {
+  buildLeaderboardMetricsSnapshot,
+  saveLeaderboardProfile,
+} from "./leaderboard";
 import {
   clearTaskTimerPlanStorage,
   writeTaskTimerPlanToStorage,
@@ -48,12 +54,14 @@ export const HISTORY_KEY = "taskticker_history_v1";
 export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
 const SHADOW_TASKS_KEY = `${STORAGE_KEY}:shadow:tasks`;
 const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
+const SHADOW_LIVE_SESSIONS_KEY = `${STORAGE_KEY}:shadow:liveSessions`;
 const SHADOW_DELETED_META_KEY = `${STORAGE_KEY}:shadow:deletedMeta`;
 const SHADOW_PREFERENCES_KEY = `${STORAGE_KEY}:shadow:preferences`;
 const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
+const PENDING_LIVE_SESSION_SYNC_KEY = `${STORAGE_KEY}:pendingLiveSessionSync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
@@ -179,6 +187,7 @@ function scopedUid(): string {
 
 let cachedTasks: Task[] = [];
 let cachedHistory: HistoryByTaskId = {};
+let cachedLiveSessions: LiveSessionsByTaskId = {};
 let cachedDeletedMeta: DeletedTaskMeta = {};
 type CachedPreferences = UserPreferencesV1 | null;
 
@@ -194,8 +203,16 @@ const queuedTaskUpsertsById = new Map<string, Task>();
 const queuedTaskDeletes = new Set<string>();
 let inFlightHistoryQueueSync: Promise<void> | null = null;
 const queuedHistoryReplacementsByTaskId = new Map<string, HistoryEntry[]>();
+let inFlightLiveSessionQueueSync: Promise<void> | null = null;
+const queuedLiveSessionUpsertsByTaskId = new Map<string, LiveTaskSession>();
+const queuedLiveSessionClears = new Set<string>();
+let inFlightLeaderboardProfileSync: Promise<void> | null = null;
+let queuedLeaderboardProfileSync = false;
+let leaderboardProfileSyncTimer: number | null = null;
+let lastSuccessfulLeaderboardProfileSignature = "";
 const preferenceListeners = new Set<(prefs: CachedPreferences) => void>();
 const inFlightTaskSyncs = new Set<Promise<void>>();
+const LEADERBOARD_PROFILE_SYNC_DEBOUNCE_MS = 500;
 
 function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
   const tracked = promise.finally(() => {
@@ -208,8 +225,9 @@ function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
   const timeGoalAction = "confirmModal";
-  const taskWithoutMode = { ...(task as Task & { mode?: unknown }) };
+  const taskWithoutMode = { ...(task as Task & { mode?: unknown; xpDisqualifiedUntilReset?: unknown }) };
   delete taskWithoutMode.mode;
+  delete taskWithoutMode.xpDisqualifiedUntilReset;
   const plannedStartDayRaw = String(task.plannedStartDay || "").trim().toLowerCase();
   const plannedStartDay =
     plannedStartDayRaw === "mon" ||
@@ -227,7 +245,6 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     onceOffDay: task.taskType === "once-off" ? plannedStartDay : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     timeGoalAction,
-    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     timeGoalEnabled: !!task.timeGoalEnabled,
     timeGoalValue: Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0,
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
@@ -342,6 +359,45 @@ function loadShadowHistory(uid = scopedUid()): HistoryByTaskId {
   return next;
 }
 
+function normalizeLiveTaskSession(row: unknown): LiveTaskSession | null {
+  if (!row || typeof row !== "object") return null;
+  const taskId = String((row as LiveTaskSession).taskId || "").trim();
+  const sessionId = String((row as LiveTaskSession).sessionId || "").trim();
+  if (!taskId || !sessionId) return null;
+  const startedAtMs = Math.max(0, Math.floor(Number((row as LiveTaskSession).startedAtMs || 0) || 0));
+  const updatedAtMs = Math.max(startedAtMs, Math.floor(Number((row as LiveTaskSession).updatedAtMs || 0) || startedAtMs));
+  const elapsedMs = Math.max(0, Math.floor(Number((row as LiveTaskSession).elapsedMs || 0) || 0));
+  const name = String((row as LiveTaskSession).name || "").trim() || "Task";
+  const color = typeof (row as LiveTaskSession).color === "string" && String((row as LiveTaskSession).color).trim()
+    ? String((row as LiveTaskSession).color).trim()
+    : undefined;
+  const note = typeof (row as LiveTaskSession).note === "string" && String((row as LiveTaskSession).note).trim()
+    ? String((row as LiveTaskSession).note).trim()
+    : undefined;
+  return {
+    sessionId,
+    taskId,
+    name,
+    startedAtMs,
+    updatedAtMs,
+    elapsedMs,
+    status: "running",
+    ...(color ? { color } : {}),
+    ...(note ? { note } : {}),
+  };
+}
+
+function loadShadowLiveSessions(uid = scopedUid()): LiveSessionsByTaskId {
+  const parsed = loadScopedShadowData<LiveSessionsByTaskId>(SHADOW_LIVE_SESSIONS_KEY, uid, {});
+  if (!parsed || typeof parsed !== "object") return {};
+  const next: LiveSessionsByTaskId = {};
+  Object.keys(parsed).forEach((taskId) => {
+    const session = normalizeLiveTaskSession(parsed[taskId]);
+    if (session) next[taskId] = session;
+  });
+  return next;
+}
+
 function loadShadowDeletedMeta(uid = scopedUid()): DeletedTaskMeta {
   const parsed = loadScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, uid, {});
   return parsed && typeof parsed === "object" ? parsed : {};
@@ -397,6 +453,15 @@ function saveShadowHistory(historyByTaskId: HistoryByTaskId): void {
       .filter((row): row is HistoryEntry => !!row);
   });
   saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, scopedUid(), next);
+}
+
+function saveShadowLiveSessions(liveSessionsByTaskId: LiveSessionsByTaskId): void {
+  const next: LiveSessionsByTaskId = {};
+  Object.keys(liveSessionsByTaskId || {}).forEach((taskId) => {
+    const session = normalizeLiveTaskSession(liveSessionsByTaskId[taskId]);
+    if (session) next[taskId] = session;
+  });
+  saveScopedShadowData<LiveSessionsByTaskId>(SHADOW_LIVE_SESSIONS_KEY, scopedUid(), next);
 }
 
 function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
@@ -547,7 +612,6 @@ function taskSignature(task: Task | null | undefined): string {
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     timeGoalAction: "confirmModal",
-    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number(task.presetIntervalValue || 0),
     presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
@@ -614,16 +678,49 @@ function clearPendingHistorySync(taskId: string): void {
   savePendingMap(PENDING_HISTORY_SYNC_KEY, next);
 }
 
+function markPendingLiveSessionSync(taskIds: string[]): void {
+  if (!taskIds.length) return;
+  const next = loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY);
+  const ts = nowMs();
+  taskIds.forEach((taskId) => {
+    if (!taskId) return;
+    next[taskId] = ts;
+  });
+  savePendingMap(PENDING_LIVE_SESSION_SYNC_KEY, next);
+}
+
+function clearPendingLiveSessionSync(taskId: string): void {
+  if (!taskId) return;
+  const next = loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY);
+  if (!next[taskId]) return;
+  delete next[taskId];
+  savePendingMap(PENDING_LIVE_SESSION_SYNC_KEY, next);
+}
+
 function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
   const arr = Array.isArray(rows) ? rows : [];
   return arr
     .map(
       (row) =>
-        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${
-          "xpDisqualifiedUntilReset" in (row || {}) ? (row?.xpDisqualifiedUntilReset ? "1" : "0") : ""
-        }|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}`
+        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}`
     )
     .join(",");
+}
+
+function liveSessionSignature(session: LiveTaskSession | null | undefined): string {
+  const normalized = normalizeLiveTaskSession(session);
+  if (!normalized) return "";
+  return [
+    normalized.sessionId,
+    normalized.taskId,
+    normalized.name,
+    normalized.startedAtMs,
+    normalized.updatedAtMs,
+    normalized.elapsedMs,
+    normalized.note || "",
+    normalized.color || "",
+    normalized.status,
+  ].join("|");
 }
 
 function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
@@ -636,9 +733,6 @@ function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
-  if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
-    next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
-  }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
@@ -658,6 +752,7 @@ function cloneTasks(tasks: Task[] | null | undefined): Task[] {
 
 cachedTasks = cloneTasks(loadShadowTasks());
 cachedHistory = loadShadowHistory();
+cachedLiveSessions = loadShadowLiveSessions();
 cachedDeletedMeta = loadShadowDeletedMeta();
 cachedPreferences = loadShadowPreferences(scopedUid());
 cachedDashboard = loadShadowDashboard();
@@ -668,6 +763,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     const retainedUid = scopedUid();
     cachedTasks = loadShadowTasks(retainedUid);
     cachedHistory = loadShadowHistory(retainedUid);
+    cachedLiveSessions = loadShadowLiveSessions(retainedUid);
     cachedDeletedMeta = loadShadowDeletedMeta(retainedUid);
     cachedPreferences = loadShadowPreferences(retainedUid);
     cachedDashboard = loadShadowDashboard();
@@ -686,12 +782,15 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   writeTaskTimerPlanToStorage(snapshot.plan, { uid });
   const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
   const nextHistory = snapshot.historyByTaskId || {};
+  const nextLiveSessions = snapshot.liveSessionsByTaskId || {};
   const nextDeletedMeta = snapshot.deletedTaskMeta || {};
   const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
   const pendingTaskSync = loadPendingMap(PENDING_TASK_SYNC_KEY);
   const pendingHistorySync = loadPendingMap(PENDING_HISTORY_SYNC_KEY);
+  const pendingLiveSessionSync = loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY);
   const shadowTasks = loadShadowTasks(uid);
   const shadowHistory = loadShadowHistory(uid);
+  const shadowLiveSessions = loadShadowLiveSessions(uid);
 
   const filteredTasks = nextTasks.filter((task) => !pendingTaskDeletes[String(task?.id || "")]);
   const filteredHistory: HistoryByTaskId = { ...nextHistory };
@@ -718,6 +817,18 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       filteredHistory[taskId] = Array.isArray(shadowHistory[taskId]) ? shadowHistory[taskId] : [];
     }
   });
+  const filteredLiveSessions: LiveSessionsByTaskId = { ...nextLiveSessions };
+  Object.keys(pendingTaskDeletes).forEach((taskId) => {
+    delete filteredLiveSessions[taskId];
+  });
+  Object.keys(pendingLiveSessionSync).forEach((taskId) => {
+    if (Object.prototype.hasOwnProperty.call(shadowLiveSessions, taskId)) {
+      const session = normalizeLiveTaskSession(shadowLiveSessions[taskId]);
+      if (session) filteredLiveSessions[taskId] = session;
+    } else {
+      delete filteredLiveSessions[taskId];
+    }
+  });
 
   const cloudTaskIdSet = new Set(nextTasks.map((task) => String(task?.id || "")));
   Object.keys(pendingTaskDeletes).forEach((taskId) => {
@@ -741,6 +852,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     const shadowSig = historyRowsSignature(shadowHistory[taskId] || []);
     if (cloudSig === shadowSig) clearPendingHistorySync(taskId);
   });
+  Object.keys(pendingLiveSessionSync).forEach((taskId) => {
+    const cloudSig = liveSessionSignature(nextLiveSessions[taskId]);
+    const shadowSig = liveSessionSignature(shadowLiveSessions[taskId]);
+    if (cloudSig === shadowSig) clearPendingLiveSessionSync(taskId);
+  });
 
   const repairedTaskIds = new Set<string>();
   if (shadowTasks.length) {
@@ -757,9 +873,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
 
   cachedTasks = cloneTasks(filteredTasks);
   cachedHistory = filteredHistory;
+  cachedLiveSessions = filteredLiveSessions;
   cachedDeletedMeta = nextDeletedMeta;
   saveShadowTasks(cachedTasks);
   saveShadowHistory(cachedHistory);
+  saveShadowLiveSessions(cachedLiveSessions);
   saveShadowDeletedMeta(cachedDeletedMeta);
   const shadowPreferences = loadShadowPreferences(uid);
   const cloudPreferences = snapshot.preferences || null;
@@ -795,6 +913,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       enqueueTaskSync(uid, cachedTaskById, repairedTaskIdList, []);
     }
   }
+  scheduleLeaderboardProfileSync(uid);
   emitPreferenceChange();
 }
 
@@ -802,20 +921,29 @@ export function clearScopedStorageState(): void {
   hydratedUid = "";
   cachedTasks = [];
   cachedHistory = {};
+  cachedLiveSessions = {};
   cachedDeletedMeta = {};
   cachedPreferences = null;
   cachedDashboard = null;
   cachedTaskUi = null;
+  queuedLeaderboardProfileSync = false;
+  lastSuccessfulLeaderboardProfileSignature = "";
+  if (leaderboardProfileSyncTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(leaderboardProfileSyncTimer);
+    leaderboardProfileSyncTimer = null;
+  }
   if (typeof window !== "undefined") {
     try {
       window.localStorage.removeItem(SHADOW_TASKS_KEY);
       window.localStorage.removeItem(SHADOW_HISTORY_KEY);
+      window.localStorage.removeItem(SHADOW_LIVE_SESSIONS_KEY);
       window.localStorage.removeItem(SHADOW_DELETED_META_KEY);
       window.localStorage.removeItem(SHADOW_PREFERENCES_KEY);
       window.localStorage.removeItem(SHADOW_DASHBOARD_KEY);
       window.localStorage.removeItem(PENDING_TASK_DELETES_KEY);
       window.localStorage.removeItem(PENDING_TASK_SYNC_KEY);
       window.localStorage.removeItem(PENDING_HISTORY_SYNC_KEY);
+      window.localStorage.removeItem(PENDING_LIVE_SESSION_SYNC_KEY);
       window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
       window.localStorage.removeItem(ACTIVE_UID_KEY);
     } catch {
@@ -906,6 +1034,56 @@ function debugLogCloudQueue(
   } catch {
     // ignore debug logging failures
   }
+}
+
+function leaderboardProfileSyncSignature() {
+  try {
+    return JSON.stringify({
+      history: cachedHistory || {},
+      liveSessions: cachedLiveSessions || {},
+      rewards: normalizeRewardProgress(cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS),
+    });
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function flushQueuedLeaderboardProfileSync(uid: string): void {
+  if (inFlightLeaderboardProfileSync || !queuedLeaderboardProfileSync) return;
+  const signature = leaderboardProfileSyncSignature();
+  if (signature === lastSuccessfulLeaderboardProfileSignature) {
+    queuedLeaderboardProfileSync = false;
+    return;
+  }
+  queuedLeaderboardProfileSync = false;
+  const syncPromise = (async () => {
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: cachedHistory || {},
+      liveSessionsByTaskId: cachedLiveSessions || {},
+      rewards: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
+    });
+    await saveLeaderboardProfile(uid, snapshot);
+    lastSuccessfulLeaderboardProfileSignature = signature;
+  })()
+    .catch(() => {
+      queuedLeaderboardProfileSync = true;
+    })
+    .finally(() => {
+      inFlightLeaderboardProfileSync = null;
+      if (queuedLeaderboardProfileSync) scheduleLeaderboardProfileSync(uid);
+    });
+  inFlightLeaderboardProfileSync = syncPromise;
+}
+
+function scheduleLeaderboardProfileSync(uidRaw?: string): void {
+  const uid = String(uidRaw || currentUid() || "").trim();
+  if (!uid) return;
+  queuedLeaderboardProfileSync = true;
+  if (leaderboardProfileSyncTimer != null || inFlightLeaderboardProfileSync) return;
+  leaderboardProfileSyncTimer = window.setTimeout(() => {
+    leaderboardProfileSyncTimer = null;
+    flushQueuedLeaderboardProfileSync(uid);
+  }, LEADERBOARD_PROFILE_SYNC_DEBOUNCE_MS);
 }
 
 function flushQueuedCloudPreferences(uid: string): void {
@@ -1037,6 +1215,67 @@ function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]
   flushQueuedHistorySync(uid);
 }
 
+function flushQueuedLiveSessionSync(uid: string): void {
+  if (inFlightLiveSessionQueueSync) return;
+  if (!queuedLiveSessionUpsertsByTaskId.size && !queuedLiveSessionClears.size) return;
+  debugLogCloudQueue("tasks", "start", {
+    uid,
+    liveSessionUpserts: queuedLiveSessionUpsertsByTaskId.size,
+    liveSessionClears: queuedLiveSessionClears.size,
+  });
+  const syncPromise = (async () => {
+    while (queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) {
+      const nextClearTaskId = queuedLiveSessionClears.values().next().value as string | undefined;
+      if (nextClearTaskId) {
+        queuedLiveSessionClears.delete(nextClearTaskId);
+        queuedLiveSessionUpsertsByTaskId.delete(nextClearTaskId);
+        try {
+          await clearLiveSessionInCloud(uid, nextClearTaskId);
+          clearPendingLiveSessionSync(nextClearTaskId);
+        } catch {
+          queuedLiveSessionClears.add(nextClearTaskId);
+          break;
+        }
+        continue;
+      }
+      const nextEntry = queuedLiveSessionUpsertsByTaskId.entries().next().value as [string, LiveTaskSession] | undefined;
+      if (!nextEntry) break;
+      const [taskId, session] = nextEntry;
+      queuedLiveSessionUpsertsByTaskId.delete(taskId);
+      try {
+        await saveLiveSessionToCloud(uid, session);
+        clearPendingLiveSessionSync(taskId);
+      } catch {
+        queuedLiveSessionUpsertsByTaskId.set(taskId, session);
+        break;
+      }
+    }
+  })().finally(() => {
+    inFlightLiveSessionQueueSync = null;
+    if (queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) {
+      const activeUid = currentUid();
+      if (activeUid) flushQueuedLiveSessionSync(activeUid);
+    }
+  });
+  inFlightLiveSessionQueueSync = syncPromise;
+}
+
+function enqueueLiveSessionUpsert(uid: string, session: LiveTaskSession): void {
+  const taskId = String(session.taskId || "").trim();
+  if (!taskId) return;
+  queuedLiveSessionClears.delete(taskId);
+  queuedLiveSessionUpsertsByTaskId.set(taskId, session);
+  flushQueuedLiveSessionSync(uid);
+}
+
+function enqueueLiveSessionClear(uid: string, taskIdRaw: string): void {
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId) return;
+  queuedLiveSessionUpsertsByTaskId.delete(taskId);
+  queuedLiveSessionClears.add(taskId);
+  flushQueuedLiveSessionSync(uid);
+}
+
 export function saveCloudPreferences(prefs: UserPreferencesV1) {
   cachedPreferences = {
     ...prefs,
@@ -1059,6 +1298,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
   queuedPreferencesSyncSnapshot = cachedPreferences;
   debugLogCloudQueue("preferences", "enqueue", { uid });
   flushQueuedCloudPreferences(uid);
+  scheduleLeaderboardProfileSync(uid);
 }
 
 export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard>) {
@@ -1127,6 +1367,10 @@ export function loadHistory(): HistoryByTaskId {
   return cachedHistory && typeof cachedHistory === "object" ? cachedHistory : {};
 }
 
+export function loadLiveSessions(): LiveSessionsByTaskId {
+  return cachedLiveSessions && typeof cachedLiveSessions === "object" ? cachedLiveSessions : {};
+}
+
 type SaveHistoryOptions = {
   showIndicator?: boolean;
 };
@@ -1149,6 +1393,8 @@ export function saveHistoryLocally(historyByTaskId: HistoryByTaskId): string[] {
   cachedHistory = nextHistory;
   saveShadowHistory(cachedHistory);
   markPendingHistorySync(touchedTaskIds);
+  const uid = currentUid();
+  if (uid && touchedTaskIds.length) scheduleLeaderboardProfileSync(uid);
   return touchedTaskIds;
 }
 
@@ -1169,8 +1415,51 @@ export function hasPendingTaskOrHistorySync(): boolean {
   return (
     Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).length > 0 ||
     Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).length > 0 ||
-    Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).length > 0
+    Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).length > 0 ||
+    Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).length > 0
   );
+}
+
+export function saveLiveSessionLocally(session: LiveTaskSession | null): void {
+  const taskId = String(session?.taskId || "").trim();
+  const next = { ...(cachedLiveSessions || {}) };
+  if (taskId && session) {
+    const normalized = normalizeLiveTaskSession(session);
+    if (normalized) {
+      next[taskId] = normalized;
+      markPendingLiveSessionSync([taskId]);
+    }
+  } else if (taskId) {
+    delete next[taskId];
+    markPendingLiveSessionSync([taskId]);
+  }
+  cachedLiveSessions = next;
+  saveShadowLiveSessions(cachedLiveSessions);
+  const uid = currentUid();
+  if (uid && taskId) scheduleLeaderboardProfileSync(uid);
+}
+
+export function saveLiveSession(session: LiveTaskSession): void {
+  const normalized = normalizeLiveTaskSession(session);
+  if (!normalized) return;
+  saveLiveSessionLocally(normalized);
+  const uid = currentUid();
+  if (!uid) return;
+  enqueueLiveSessionUpsert(uid, normalized);
+}
+
+export function clearLiveSession(taskIdRaw: string): void {
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId) return;
+  const next = { ...(cachedLiveSessions || {}) };
+  delete next[taskId];
+  cachedLiveSessions = next;
+  saveShadowLiveSessions(cachedLiveSessions);
+  markPendingLiveSessionSync([taskId]);
+  const uid = currentUid();
+  if (uid) scheduleLeaderboardProfileSync(uid);
+  if (!uid) return;
+  enqueueLiveSessionClear(uid, taskId);
 }
 
 export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {

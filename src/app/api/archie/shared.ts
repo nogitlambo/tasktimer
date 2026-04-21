@@ -137,7 +137,6 @@ function normalizeTask(raw: Record<string, unknown>): Task {
       raw.finalCheckpointAction === "continue" || raw.finalCheckpointAction === "resetLog" || raw.finalCheckpointAction === "resetNoLog"
         ? raw.finalCheckpointAction
         : "confirmModal",
-    xpDisqualifiedUntilReset: !!raw.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: raw.presetIntervalsEnabled === undefined ? undefined : !!raw.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(raw.presetIntervalValue)) ? Number(raw.presetIntervalValue) : undefined,
     presetIntervalLastMilestoneId: typeof raw.presetIntervalLastMilestoneId === "string" ? raw.presetIntervalLastMilestoneId : null,
@@ -162,7 +161,6 @@ function normalizeHistoryEntry(raw: Record<string, unknown>): HistoryEntry {
     ms: Math.max(0, Math.floor(Number(raw.ms || 0) || 0)),
     color: asString(raw.color, 120) || undefined,
     note: asString(raw.note, 1000) || undefined,
-    xpDisqualifiedUntilReset: raw.xpDisqualifiedUntilReset === undefined ? undefined : !!raw.xpDisqualifiedUntilReset,
     completionDifficulty,
   };
 }

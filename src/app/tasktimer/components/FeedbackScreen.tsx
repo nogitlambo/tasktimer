@@ -399,11 +399,8 @@ export default function FeedbackScreen() {
                   {feedbackSubmitting ? (
                     <div className="feedbackSubmitBusy" role="status" aria-live="polite" aria-atomic="true">
                       <p className="modalSubtext confirmText">Submitting feedback...</p>
-                      <div className="dashboardRefreshBusyArrowStage feedbackSubmitBusyArrowStage" aria-hidden="true">
-                        <div className="dashboardRefreshBusyArrowShell feedbackSubmitBusyArrowShell">
-                          <div className="dashboardRefreshBusyArrowBeamBlend" />
-                          <AppImg className="dashboardRefreshBusyArrowGraphic feedbackSubmitBusyArrowGraphic" src="/logo/launch-icon-original-transparent.png" alt="" />
-                        </div>
+                      <div className="dashboardRefreshBusyProgress feedbackSubmitBusyProgress" aria-hidden="true">
+                        <span className="dashboardRefreshBusyProgressBar" />
                       </div>
                     </div>
                   ) : null}

@@ -1,5 +1,11 @@
 #!/bin/sh
 
+branch_name="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+
+if [ "$branch_name" != "main" ]; then
+  exit 0
+fi
+
 npm run docs:update
 status=$?
 if [ "$status" -ne 0 ]; then

@@ -14,29 +14,14 @@ export type TaskTimerStorageKeys = {
   CHECKPOINT_ALERT_TOAST_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
-  MODE_SETTINGS_KEY: string;
   NAV_STACK_KEY: string;
   FOCUS_SESSION_NOTES_KEY: string;
   NAV_STACK_MAX: number;
   NATIVE_BACK_DEBOUNCE_MS: number;
 };
 
-export const DEFAULT_MODE_LABELS: Record<MainMode, string> = {
-  mode1: "Mode 1",
-  mode2: "Mode 2",
-  mode3: "Mode 3",
-};
-
-export const DEFAULT_MODE_ENABLED: Record<MainMode, boolean> = {
-  mode1: true,
-  mode2: true,
-  mode3: true,
-};
-
 export const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
   mode1: "#00CFC8",
-  mode2: "#3A86FF",
-  mode3: "#FF6B6B",
 };
 
 export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorageKeys {
@@ -53,7 +38,6 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: `${storageKey}:optimalProductivityStartTime`,
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: `${storageKey}:optimalProductivityEndTime`,
-    MODE_SETTINGS_KEY: `${storageKey}:modeSettings`,
     NAV_STACK_KEY: `${storageKey}:navStack`,
     FOCUS_SESSION_NOTES_KEY: `${storageKey}:focusSessionNotes`,
     NAV_STACK_MAX: 50,
@@ -65,9 +49,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
   return {
     deletedTaskMeta: {},
     tasks: [],
-    currentMode: "mode1",
-    modeLabels: { ...DEFAULT_MODE_LABELS },
-    modeEnabled: { ...DEFAULT_MODE_ENABLED },
     editIndex: null,
     editDraftSnapshot: "",
     focusCheckpointSig: "",
@@ -91,6 +72,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     optimalProductivityEndTime: "23:59",
     rewardProgress: DEFAULT_REWARD_PROGRESS,
     historyByTaskId: {},
+    liveSessionsByTaskId: {},
     historyRangeDaysByTaskId: {},
     historyRangeModeByTaskId: {},
     focusModeTaskId: null,
@@ -131,7 +113,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     elapsedPadMilestoneRef: null,
     elapsedPadDraft: "",
     elapsedPadOriginal: "",
-    editMoveTargetMode: "mode1",
     dashboardEditMode: false,
     dashboardDragEl: null,
     taskDragEl: null,
@@ -139,7 +120,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardCardSizes: {},
     dashboardCardSizesDraftBeforeEdit: null,
     dashboardCardVisibility: {},
-    dashboardIncludedModes: { mode1: true, mode2: true, mode3: true },
     dashboardAvgRange: "past7",
     dashboardTimelineDensity: "medium",
     dashboardMenuFlipped: false,

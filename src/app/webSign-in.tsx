@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import AppImg from "@/components/AppImg";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -41,8 +40,6 @@ export default function WebSignIn(props: WebSignInProps) {
   if (showLaunchingScreen) {
     return (
       <main className="webSignInPage relative min-h-screen overflow-hidden text-white">
-        <div className="webSignInGlow webSignInGlowTop" aria-hidden="true" />
-        <div className="webSignInGlow webSignInGlowBottom" aria-hidden="true" />
         <div className="webSignInGrid" aria-hidden="true" />
         <div className="webSignInContainer">
           <section className="webSignInLaunchPanel">
@@ -57,23 +54,32 @@ export default function WebSignIn(props: WebSignInProps) {
             <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
               <h2 className="sr-only">Launching TaskLaunch</h2>
               <p className="modalSubtext confirmText">Launching TaskLaunch...</p>
-              <div className="dashboardRefreshBusyArrowStage" aria-hidden="true">
-                <div className="dashboardRefreshBusyArrowShell">
-                  <div className="dashboardRefreshBusyArrowBeamBlend" />
-                  <AppImg className="dashboardRefreshBusyArrowGraphic" src="/logo/launch-icon-original-transparent.png" alt="" />
-                </div>
+              <div className="dashboardRefreshBusyProgress" aria-hidden="true">
+                <span className="dashboardRefreshBusyProgressBar" />
               </div>
             </div>
           </section>
         </div>
+        <footer className="webSignInFooter" aria-label="Security disclaimer">
+          <p className="webSignInFooterText">
+            This site is protected by reCAPTCHA Enterprise and the TaskLaunch{" "}
+            <a
+              className="webSignInFooterLink"
+              href="https://tasklaunch.app/privacy"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Privacy Policy
+            </a>{" "}
+            and Terms of Service apply.
+          </p>
+        </footer>
       </main>
     );
   }
 
   return (
     <main className="webSignInPage relative min-h-screen overflow-hidden text-white">
-      <div className="webSignInGlow webSignInGlowTop" aria-hidden="true" />
-      <div className="webSignInGlow webSignInGlowBottom" aria-hidden="true" />
       <div className="webSignInGrid" aria-hidden="true" />
 
       <div className="webSignInContainer">
@@ -106,43 +112,47 @@ export default function WebSignIn(props: WebSignInProps) {
                   onClick={onToggleEmailLoginForm}
                   aria-expanded={showEmailLoginForm ? "true" : "false"}
                   disabled={authBusy}
-                  className="webSignInAuthButton webSignInAuthButtonStandard self-center rounded-none"
+                  className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
                 >
-                  <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
-                    <path
-                      fill="currentColor"
-                      d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z"
-                    />
-                  </svg>
-                  <span>Login with email</span>
+                  <span className="webSignInAuthButtonIcon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
+                      <path
+                        fill="currentColor"
+                        d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z"
+                      />
+                    </svg>
+                  </span>
+                  <span className="webSignInAuthButtonLabel">Continue with email</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={onGoogleSignIn}
                   disabled={authBusy}
-                  className="webSignInAuthButton webSignInAuthButtonStandard self-center rounded-none"
+                  className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
                   style={showEmailLoginForm ? { display: "none" } : undefined}
                 >
-                  <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" aria-hidden="true">
-                    <path
-                      fill="#EA4335"
-                      d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"
-                    />
-                    <path
-                      fill="#4285F4"
-                      d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"
-                    />
-                  </svg>
-                  <span>Login with Google</span>
+                  <span className="webSignInAuthButtonIcon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
+                      <path
+                        fill="#EA4335"
+                        d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"
+                      />
+                      <path
+                        fill="#4285F4"
+                        d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"
+                      />
+                    </svg>
+                  </span>
+                  <span className="webSignInAuthButtonLabel">Continue with Google</span>
                 </button>
 
                 {showEmailLoginForm ? (
@@ -157,12 +167,12 @@ export default function WebSignIn(props: WebSignInProps) {
                       placeholder="name@example.com"
                       value={authEmail}
                       onChange={(e) => onAuthEmailChange(e.target.value)}
-                      className="webSignInAuthInput rounded-none"
+                      className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
                     />
                   </>
                 ) : null}
 
-                <div className="flex flex-wrap justify-end gap-2">
+                <div className="webSignInAuthActions flex flex-wrap justify-center gap-2">
                   {showEmailLoginForm ? (
                     <button
                       type="button"
@@ -206,6 +216,20 @@ export default function WebSignIn(props: WebSignInProps) {
           </section>
         </section>
       </div>
+      <footer className="webSignInFooter" aria-label="Security disclaimer">
+        <p className="webSignInFooterText">
+          This site is protected by reCAPTCHA Enterprise and the TaskLaunch{" "}
+          <a
+            className="webSignInFooterLink"
+            href="https://tasklaunch.app/privacy"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Privacy Policy
+          </a>{" "}
+          and Terms of Service apply.
+        </p>
+      </footer>
     </main>
   );
 }

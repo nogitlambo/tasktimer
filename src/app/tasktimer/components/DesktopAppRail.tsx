@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -41,7 +41,8 @@ import {
   writeStoredRankThumbnailSrc,
 } from "../lib/accountProfileStorage";
 import { saveUserRootPatch } from "../lib/cloudStore";
-import ArchieAssistantWidget from "./ArchieAssistantWidget";
+import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
+import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
 import RankLadderModal from "./RankLadderModal";
 
 type DesktopRailPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "settings" | "none";
@@ -113,6 +114,8 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "settings");
+
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 
 function railPageOrder(page: DesktopRailPage) {
@@ -168,17 +171,23 @@ function initialsFromLabel(label: string) {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
-function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useClientNavButtons: boolean) {
+function renderDesktopNavItem(
+  item: NavItem,
+  activePage: DesktopRailPage,
+  useClientNavButtons: boolean,
+  opts?: { onClick?: ((event: ReactMouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void) | undefined }
+) {
   const isActive = activePage === item.page;
   const commonProps = {
     className: `btn btn-ghost small dashboardRailMenuBtn${isActive ? " isOn" : ""}`,
     "aria-label": item.ariaLabel,
+    "data-nav-page": item.page,
     ...(isActive ? { "aria-current": "page" as const } : {}),
   };
 
   if (useClientNavButtons && item.page !== "settings") {
     return (
-      <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button">
+      <button key={item.desktopId} {...commonProps} id={item.desktopId} type="button" onClick={opts?.onClick}>
         <AppImg
           className="dashboardRailMenuIconImage"
           src={item.iconSrc}
@@ -191,7 +200,17 @@ function renderDesktopNavItem(item: NavItem, activePage: DesktopRailPage, useCli
   }
 
   return (
-    <a key={item.desktopId} {...commonProps} id={item.desktopId} href={item.href} onClick={() => rememberRailTransition(activePage, item.page)}>
+    <a
+      key={item.desktopId}
+      {...commonProps}
+      id={item.desktopId}
+      href={item.href}
+      onClick={(event) => {
+        opts?.onClick?.(event);
+        if (event.defaultPrevented) return;
+        rememberRailTransition(activePage, item.page);
+      }}
+    >
       <AppImg
         className="dashboardRailMenuIconImage"
         src={item.iconSrc}
@@ -261,6 +280,7 @@ export default function DesktopAppRail({
   showDesktopRail = true,
   showMobileFooter = true,
 }: DesktopAppRailProps) {
+  const [onboardingState, setOnboardingState] = useState<ArchieOnboardingUiState | null>(null);
   const [signedInUserUid, setSignedInUserUid] = useState("");
   const [signedInUserEmail, setSignedInUserEmail] = useState("");
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
@@ -397,6 +417,17 @@ export default function DesktopAppRail({
     window.open("/pricing", "_blank", "noopener,noreferrer");
   }, []);
 
+  const handleDesktopNavClick = useCallback(
+    (page: DesktopRailPage, event?: { preventDefault?: () => void }) => {
+      const onboardingModuleStep = onboardingModuleStepFromNavPage(page);
+      if (!onboardingModuleStep) return;
+      if (onboardingState?.step === "settings" && onboardingState.awaitingClick && onboardingModuleStep === "settings") {
+        event?.preventDefault?.();
+      }
+    },
+    [onboardingState]
+  );
+
   const handleOpenBillingPortal = useCallback(async () => {
     const auth = getFirebaseAuthClient();
     const currentUser = auth?.currentUser || null;
@@ -460,18 +491,26 @@ export default function DesktopAppRail({
   return (
     <>
       {showDesktopRail ? (
-        <aside className="dashboardRail desktopAppRail" aria-label="TaskLaunch navigation">
+        <aside
+          className="dashboardRail desktopAppRail"
+          aria-label="TaskLaunch navigation"
+          data-onboarding-step={onboardingState?.step || undefined}
+          data-onboarding-awaiting-click={onboardingState?.awaitingClick ? "true" : undefined}
+          data-onboarding-dashboard-panel-step={onboardingState?.dashboardPanelStep || undefined}
+        >
           <div className="desktopRailTopSection">
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">
-              {NAV_ITEMS.map((item) =>
-                renderDesktopNavItem(item, activePage, useClientNavButtons)
+              {DESKTOP_NAV_ITEMS.map((item) =>
+                renderDesktopNavItem(item, activePage, useClientNavButtons, {
+                  onClick: (event) => handleDesktopNavClick(item.page, event),
+                })
               )}
             </nav>
           </div>
 
           <div className="desktopRailMiddleSection">
-            <ArchieAssistantWidget activePage={activePage} />
+            <ArchieAssistantWidget activePage={activePage} onOnboardingStepChange={setOnboardingState} />
           </div>
 
           <div className="desktopRailBottomSection">
@@ -491,8 +530,12 @@ export default function DesktopAppRail({
                   <div className="dashboardRailProfileIdentity">
                     <div className="dashboardProfileName">{profileLabel}</div>
                     <div className="dashboardTagRow dashboardRailProfileTags">
-                      <a className="dashboardTag dashboardRailProfileTagLink" href="/settings?pane=general">
-                        View Profile
+                      <a
+                        className="dashboardTag dashboardRailProfileTagLink"
+                        href="/settings?pane=general"
+                        onClick={() => rememberRailTransition(activePage, "settings")}
+                      >
+                        Settings
                       </a>
                       <button
                         className={`dashboardTag dashboardRailProfileTagLink dashboardRailProfilePlanBadge ${

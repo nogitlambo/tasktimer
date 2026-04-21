@@ -1,5 +1,6 @@
 export const ADD_TASK_PRESET_NAMES = [
   "Exercise",
+  "Marketing",
   "Meditation",
   "Reading",
   "Running",

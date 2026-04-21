@@ -1,4 +1,5 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import type { LiveSessionsByTaskId } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
@@ -32,7 +33,6 @@ type CreateGroupsOptionsArgs = {
     getHistoryByTaskId: () => HistoryByTaskId;
   };
   appRuntimeState: MutableStore;
-  modeState: MutableStore;
   groupsState: MutableStore;
   openFriendSharedTaskUids: Set<string>;
   getCurrentUid: () => string | null;
@@ -42,7 +42,6 @@ type CreateGroupsOptionsArgs = {
   closeConfirm: () => void;
   confirm: Parameters<typeof createTaskTimerGroups>[0]["confirm"];
   escapeHtmlUI: (value: unknown) => string;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   showWorkingIndicator: (message: string) => number;
   hideWorkingIndicator: (key?: number) => void;
@@ -60,12 +59,8 @@ type CreatePreferencesOptionsArgs = {
   els: Parameters<typeof createTaskTimerPreferences>[0]["els"];
   on: Parameters<typeof createTaskTimerPreferences>[0]["on"];
   preferencesState: MutableStore;
-  modeState: MutableStore;
-  editTaskState: MutableStore;
   rewardState: MutableStore;
   storageKeys: Parameters<typeof createTaskTimerPreferences>[0]["storageKeys"];
-  defaultModeLabels: Parameters<typeof createTaskTimerPreferences>[0]["defaultModeLabels"];
-  defaultModeEnabled: Parameters<typeof createTaskTimerPreferences>[0]["defaultModeEnabled"];
   defaultModeColors: Parameters<typeof createTaskTimerPreferences>[0]["defaultModeColors"];
   toggleSwitchElement: Parameters<typeof createTaskTimerPreferences>[0]["toggleSwitchElement"];
   isSwitchOn: Parameters<typeof createTaskTimerPreferences>[0]["isSwitchOn"];
@@ -88,12 +83,10 @@ type CreatePreferencesOptionsArgs = {
   getCurrentEditTask: () => Task | null;
   syncEditCheckpointAlertUi: (task: Task) => void;
   clearTaskFlipStates: () => void;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   render: () => void;
   renderDashboardPanelMenu: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
-  ensureDashboardIncludedModesValid: () => void;
   closeOverlay: Parameters<typeof createTaskTimerPreferences>[0]["closeOverlay"];
   closeConfirm: () => void;
   confirm: Parameters<typeof createTaskTimerPreferences>[0]["confirm"];
@@ -113,6 +106,8 @@ type CreatePersistenceOptionsArgs = {
     setTasks: (value: Task[]) => void;
     getHistoryByTaskId: () => HistoryByTaskId;
     setHistoryByTaskId: (value: HistoryByTaskId) => void;
+    getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
+    setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   };
   historyUiState: MutableStore;
   focusState: MutableStore;
@@ -156,7 +151,6 @@ type CreatePersistenceOptionsArgs = {
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: () => void;
   maybeRepairHistoryNotesInCloudAfterHydrate: () => void;
-  taskModeOf: (task: Task) => MainMode;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   normalizeLoadedTask: (task: Task) => void;
@@ -171,6 +165,7 @@ type CreateHistoryManagerOptionsArgs = {
     setTasks: (value: Task[]) => void;
     getHistoryByTaskId: () => HistoryByTaskId;
     setHistoryByTaskId: (value: HistoryByTaskId) => void;
+    getLiveSessionsByTaskId: () => Record<string, unknown>;
     getDeletedTaskMeta: () => DeletedTaskMeta;
     setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   };
@@ -235,6 +230,7 @@ type CreateHistoryInlineOptionsArgs = {
   formatTime: (value: number) => string;
   formatTwo: (value: number) => string;
   formatDateTime: (value: number) => string;
+  getHistoryEntryNote: (entry: unknown) => string;
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
@@ -257,7 +253,6 @@ type CreateTasksOptionsArgs = {
     setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   };
   appRuntimeState: MutableStore;
-  modeState: MutableStore;
   preferencesState: MutableStore;
   rewardState: MutableStore;
   historyUiState: MutableStore;
@@ -276,8 +271,6 @@ type CreateTasksOptionsArgs = {
     | "setEditTaskDurationPeriod"
     | "getEditDraftSnapshot"
     | "setEditDraftSnapshot"
-    | "getEditMoveTargetMode"
-    | "setEditMoveTargetMode"
     | "getElapsedPadTarget"
     | "setElapsedPadTarget"
     | "getElapsedPadMilestoneRef"
@@ -314,6 +307,8 @@ type CreateTasksOptionsArgs = {
   openRewardSessionSegment: Parameters<typeof createTaskTimerTasks>[0]["openRewardSessionSegment"];
   closeRewardSessionSegment: Parameters<typeof createTaskTimerTasks>[0]["closeRewardSessionSegment"];
   clearRewardSessionTracker: Parameters<typeof createTaskTimerTasks>[0]["clearRewardSessionTracker"];
+  upsertLiveSession: Parameters<typeof createTaskTimerTasks>[0]["upsertLiveSession"];
+  finalizeLiveSession: Parameters<typeof createTaskTimerTasks>[0]["finalizeLiveSession"];
   openFocusMode: (index: number) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
@@ -327,8 +322,6 @@ type CreateTasksOptionsArgs = {
   setResetTaskConfirmBusy: (busy: boolean, logging: boolean) => void;
   syncConfirmPrimaryToggleUi: () => void;
   cloneTaskForEdit: (task: Task) => Task;
-  getModeLabel: (mode: MainMode) => string;
-  isModeEnabled: (mode: MainMode) => boolean;
   setEditTimeGoalEnabled: (enabled: boolean) => void;
   syncEditTaskTimeGoalUi: (task: Task) => void;
   syncEditCheckpointAlertUi: (task: Task) => void;
@@ -387,7 +380,6 @@ type CreateAddTaskOptionsArgs = {
   on: Parameters<typeof createTaskTimerAddTask>[0]["on"];
   sharedTasks: Parameters<typeof createTaskTimerAddTask>[0]["sharedTasks"];
   taskCollectionBindings: { getTasks: () => Task[]; setTasks: (value: Task[]) => void };
-  modeState: MutableStore;
   addTaskStateBindings: Pick<
     Parameters<typeof createTaskTimerAddTask>[0],
     | "getAddTaskWizardStep"
@@ -455,6 +447,7 @@ type CreateSessionOptionsArgs = {
   getTasks: () => Task[];
   appRuntimeState: MutableStore;
   getHistoryByTaskId: () => HistoryByTaskId;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   preferencesState: MutableStore;
   dashboardUiState: MutableStore;
   rewardState: MutableStore;
@@ -521,12 +514,11 @@ type CreateSessionOptionsArgs = {
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
-  isModeEnabled: (mode: MainMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getHistoryEntryNote: (entry: unknown) => string;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
+  syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
   hasEntitlement: Parameters<typeof createTaskTimerSession>[0]["hasEntitlement"];
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
@@ -576,6 +568,7 @@ type CreateDashboardRenderOptionsArgs = {
     getHistoryByTaskId: () => HistoryByTaskId;
     getDeletedTaskMeta: () => DeletedTaskMeta;
   };
+  rewardState: MutableStore;
   preferencesState: MutableStore;
   dashboardUiState: MutableStore;
   dashboardWidgetHasRenderedData: {
@@ -589,12 +582,10 @@ type CreateDashboardRenderOptionsArgs = {
   };
   dashboardBusyState: MutableStore;
   cloudSyncState: MutableStore;
+  getIsOnboardingDashboardPreview: () => boolean;
   getElapsedMs: (task: Task) => number;
   escapeHtmlUI: (value: unknown) => string;
   normalizeHistoryTimestampMs: (value: unknown) => number;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  isModeEnabled: (mode: MainMode) => boolean;
-  getModeLabel: (mode: MainMode) => string;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
   hasEntitlement: Parameters<typeof createTaskTimerDashboardRender>[0]["hasEntitlement"];
@@ -611,6 +602,7 @@ type CreateDashboardRuntimeOptionsArgs = {
   };
   preferencesState: MutableStore;
   appRuntimeState: MutableStore;
+  getIsOnboardingDashboardPreview: () => boolean;
   setLastDashboardLiveSignature: (value: string) => void;
   getLastDashboardLiveSignature: () => string;
   isDashboardBusy: () => boolean;
@@ -650,8 +642,6 @@ type CreateDashboardOptionsArgs = {
     | "setDashboardCardSizesDraftBeforeEdit"
     | "getDashboardCardVisibility"
     | "setDashboardCardVisibility"
-    | "getDashboardIncludedModes"
-    | "setDashboardIncludedModes"
     | "getDashboardAvgRange"
     | "setDashboardAvgRange"
     | "getDashboardTimelineDensity"
@@ -661,9 +651,6 @@ type CreateDashboardOptionsArgs = {
   setCloudDashboardCache: (value: unknown) => void;
   loadCachedDashboard: () => unknown;
   saveCloudDashboard: (value: unknown) => void;
-  getModeLabel: (mode: MainMode) => string;
-  isModeEnabled: (mode: MainMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
@@ -700,17 +687,16 @@ type CreateRewardsHistoryOptionsArgs = {
   rewardSessionTrackersStorageKey: string;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
+  setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   preferencesState: MutableStore;
-  dashboardUiState: MutableStore;
   rewardState: MutableStore;
   focusBindings: { getFocusModeTaskId: () => string | null };
   setCloudPreferencesCache: (value: UserPreferencesV1 | null) => void;
   getCurrentPlan: () => Parameters<typeof createTaskTimerRewardsHistory>[0]["getCurrentPlan"] extends () => infer T ? T : never;
   hasEntitlement: Parameters<typeof createTaskTimerRewardsHistory>[0]["hasEntitlement"];
   currentUid: () => string | null;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  isModeEnabled: (mode: MainMode) => boolean;
   getTaskElapsedMs: (task: Task) => number;
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   captureSessionNoteSnapshot: (taskId?: string | null) => string;
@@ -719,6 +705,8 @@ type CreateRewardsHistoryOptionsArgs = {
   syncFocusSessionNotesInput: (taskId: string | null) => void;
   syncFocusSessionNotesAccordion: (taskId: string | null) => void;
   appendHistoryEntry: Parameters<typeof createTaskTimerRewardsHistory>[0]["appendHistoryEntry"];
+  saveLiveSession: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveLiveSession"];
+  clearLiveSession: Parameters<typeof createTaskTimerRewardsHistory>[0]["clearLiveSession"];
   saveHistoryLocally: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveHistoryLocally"];
   buildDefaultCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["buildDefaultCloudPreferences"];
   saveCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveCloudPreferences"];
@@ -734,14 +722,12 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId as Parameters<typeof createTaskTimerGroups>[0]["getHistoryByTaskId"],
     getCurrentUid: args.getCurrentUid,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
-    getCurrentMode: () => asType<MainMode>(args.modeState.get("currentMode")),
     applyMainMode: args.applyMainMode,
     applyAppPage: args.applyAppPage as Parameters<typeof createTaskTimerGroups>[0]["applyAppPage"],
     render: args.render,
     closeConfirm: args.closeConfirm,
     confirm: args.confirm,
     escapeHtmlUI: args.escapeHtmlUI,
-    taskModeOf: (task) => (task ? args.taskModeOf(task) : "mode1"),
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
     showWorkingIndicator: args.showWorkingIndicator,
     hideWorkingIndicator: args.hideWorkingIndicator,
@@ -822,8 +808,6 @@ export function createTaskTimerPreferencesContext(
     toggleSwitchElement: args.toggleSwitchElement,
     isSwitchOn: args.isSwitchOn,
     storageKeys: args.storageKeys,
-    defaultModeLabels: args.defaultModeLabels,
-    defaultModeEnabled: args.defaultModeEnabled,
     defaultModeColors: args.defaultModeColors,
     getThemeMode: () => asType<"purple" | "cyan" | "lime">(args.preferencesState.get("themeMode")),
     setThemeModeState: (value) => {
@@ -873,22 +857,6 @@ export function createTaskTimerPreferencesContext(
     setOptimalProductivityEndTimeState: (value) => {
       args.preferencesState.set("optimalProductivityEndTime", value);
     },
-    getModeLabels: () => asType<Record<MainMode, string>>(args.modeState.get("modeLabels")),
-    setModeLabelsState: (value) => {
-      args.modeState.set("modeLabels", value);
-    },
-    getModeEnabled: () => asType<Record<MainMode, boolean>>(args.modeState.get("modeEnabled")),
-    setModeEnabledState: (value) => {
-      args.modeState.set("modeEnabled", value);
-    },
-    getCurrentMode: () => asType<MainMode>(args.modeState.get("currentMode")),
-    setCurrentModeState: (value) => {
-      args.modeState.set("currentMode", value);
-    },
-    getEditMoveTargetMode: () => asType<MainMode>(args.editTaskState.get("editMoveTargetMode")),
-    setEditMoveTargetModeState: (value) => {
-      args.editTaskState.set("editMoveTargetMode", value);
-    },
     getRewardProgress: () => args.rewardState.get("rewardProgress"),
     normalizeRewardProgress: args.normalizeRewardProgress,
     currentUid: args.getCurrentUid,
@@ -907,12 +875,10 @@ export function createTaskTimerPreferencesContext(
     getCurrentEditTask: args.getCurrentEditTask,
     syncEditCheckpointAlertUi: args.syncEditCheckpointAlertUi,
     clearTaskFlipStates: args.clearTaskFlipStates,
-    taskModeOf: args.taskModeOf,
     save: args.save,
     render: args.render,
     renderDashboardPanelMenu: args.renderDashboardPanelMenu,
     renderDashboardWidgets: args.renderDashboardWidgets,
-    ensureDashboardIncludedModesValid: args.ensureDashboardIncludedModesValid,
     closeOverlay: args.closeOverlay,
     closeConfirm: args.closeConfirm,
     confirm: args.confirm,
@@ -935,6 +901,8 @@ export function createTaskTimerPersistenceContext(
     setTasks: args.taskCollectionBindings.setTasks,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId as Parameters<typeof createTaskTimerPersistence>[0]["getHistoryByTaskId"],
     setHistoryByTaskId: args.taskCollectionBindings.setHistoryByTaskId as Parameters<typeof createTaskTimerPersistence>[0]["setHistoryByTaskId"],
+    getLiveSessionsByTaskId: args.taskCollectionBindings.getLiveSessionsByTaskId as Parameters<typeof createTaskTimerPersistence>[0]["getLiveSessionsByTaskId"],
+    setLiveSessionsByTaskId: args.taskCollectionBindings.setLiveSessionsByTaskId as Parameters<typeof createTaskTimerPersistence>[0]["setLiveSessionsByTaskId"],
     getHistoryRangeDaysByTaskId: () => asType<Record<string, 7 | 14>>(args.historyUiState.get("historyRangeDaysByTaskId")),
     setHistoryRangeDaysByTaskId: (value) => {
       args.historyUiState.set("historyRangeDaysByTaskId", value);
@@ -992,7 +960,6 @@ export function createTaskTimerPersistenceContext(
     applyDashboardEditMode: args.applyDashboardEditMode,
     renderDashboardWidgets: args.renderDashboardWidgets,
     maybeRepairHistoryNotesInCloudAfterHydrate: args.maybeRepairHistoryNotesInCloudAfterHydrate,
-    taskModeOf: args.taskModeOf,
     jumpToTaskById: args.jumpToTaskById,
     maybeRestorePendingTimeGoalFlow: args.maybeRestorePendingTimeGoalFlow,
     normalizeLoadedTask: args.normalizeLoadedTask,
@@ -1110,6 +1077,7 @@ export function createTaskTimerHistoryInlineContext(
     formatTime: args.formatTime,
     formatTwo: args.formatTwo,
     formatDateTime: args.formatDateTime,
+    getHistoryEntryNote: args.getHistoryEntryNote,
     escapeHtmlUI: args.escapeHtmlUI,
     sortMilestones: args.sortMilestones,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
@@ -1128,7 +1096,6 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     ...args.taskCollectionBindings,
     getCurrentUid: args.currentUid,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
-    getCurrentMode: () => asType<MainMode>(args.modeState.get("currentMode")),
     getTaskView: () => asType<"list" | "tile">(args.preferencesState.get("taskView")),
     getCurrentTileColumnCount: () => asType<number>(args.appRuntimeState.get("currentTileColumnCount")),
     setCurrentTileColumnCount: (value) => args.appRuntimeState.set("currentTileColumnCount", value),
@@ -1170,6 +1137,8 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     openRewardSessionSegment: args.openRewardSessionSegment,
     closeRewardSessionSegment: args.closeRewardSessionSegment,
     clearRewardSessionTracker: args.clearRewardSessionTracker,
+    upsertLiveSession: args.upsertLiveSession,
+    finalizeLiveSession: args.finalizeLiveSession,
     openFocusMode: args.openFocusMode,
     closeFocusMode: args.closeFocusMode,
     canLogSession: args.canLogSession,
@@ -1183,8 +1152,6 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     setResetTaskConfirmBusy: args.setResetTaskConfirmBusy,
     syncConfirmPrimaryToggleUi: args.syncConfirmPrimaryToggleUi,
     cloneTaskForEdit: args.cloneTaskForEdit,
-    getModeLabel: args.getModeLabel,
-    isModeEnabled: args.isModeEnabled,
     setEditTimeGoalEnabled: args.setEditTimeGoalEnabled,
     syncEditTaskTimeGoalUi: args.syncEditTaskTimeGoalUi,
     syncEditCheckpointAlertUi: args.syncEditCheckpointAlertUi,
@@ -1245,7 +1212,6 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     on: args.on,
     sharedTasks: args.sharedTasks,
     getTasks: args.taskCollectionBindings.getTasks,
-    getCurrentMode: () => asType<MainMode>(args.modeState.get("currentMode")),
     setTasks: args.taskCollectionBindings.setTasks,
     ...args.addTaskStateBindings,
     getAddTaskCustomNames: () => asType<string[]>(args.preferencesState.get("addTaskCustomNames")),
@@ -1277,8 +1243,8 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getTasks: args.getTasks,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getHistoryByTaskId: args.getHistoryByTaskId,
+    getLiveSessionsByTaskId: () => asType<Parameters<typeof createTaskTimerSession>[0]["getLiveSessionsByTaskId"] extends () => infer T ? T : never>(args.getLiveSessionsByTaskId()),
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
-    getDashboardIncludedModes: () => asType<Record<MainMode, boolean>>(args.dashboardUiState.get("dashboardIncludedModes")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     getCurrentUid: args.getCurrentUid,
     ...args.focusBindings,
@@ -1338,12 +1304,11 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getModeColor: args.getModeColor,
     fillBackgroundForPct: args.fillBackgroundForPct,
     sortMilestones: args.sortMilestones,
-    isModeEnabled: args.isModeEnabled,
-    taskModeOf: args.taskModeOf,
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
     getHistoryEntryNote: args.getHistoryEntryNote,
     syncSharedTaskSummariesForTask: args.syncSharedTaskSummariesForTask,
     syncRewardSessionTrackerForTask: args.syncRewardSessionTrackerForTask,
+    syncLiveSessionForTask: args.syncLiveSessionForTask,
     hasEntitlement: args.hasEntitlement,
     startTask: args.startTask,
     stopTask: args.stopTask,
@@ -1400,11 +1365,11 @@ export function createTaskTimerDashboardRenderContext(
 ): Parameters<typeof createTaskTimerDashboardRender>[0] {
   return {
     els: args.els,
+    getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     getTasks: args.taskCollectionBindings.getTasks,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
-    getDashboardIncludedModes: () => asType<Record<MainMode, boolean>>(args.dashboardUiState.get("dashboardIncludedModes")),
     getDashboardAvgRange: () => asType<DashboardAvgRange>(args.dashboardUiState.get("dashboardAvgRange")),
     setDashboardAvgRange: (value) => args.dashboardUiState.set("dashboardAvgRange", value),
     getDashboardTimelineDensity: () => asType<DashboardTimelineDensity>(args.dashboardUiState.get("dashboardTimelineDensity")),
@@ -1415,13 +1380,11 @@ export function createTaskTimerDashboardRenderContext(
       asType<Array<unknown>>(args.dashboardBusyState.get("stack")).length > 0 ||
       args.dashboardBusyState.get("hideTimer") != null,
     getCloudRefreshInFlight: () => asType<Promise<void> | null>(args.cloudSyncState.get("cloudRefreshInFlight")),
+    getIsOnboardingDashboardPreview: args.getIsOnboardingDashboardPreview,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getElapsedMs: args.getElapsedMs,
     escapeHtmlUI: args.escapeHtmlUI,
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
-    taskModeOf: args.taskModeOf,
-    isModeEnabled: args.isModeEnabled,
-    getModeLabel: args.getModeLabel,
     getModeColor: args.getModeColor,
     addRangeMsToLocalDayMap: args.addRangeMsToLocalDayMap,
     hasEntitlement: args.hasEntitlement,
@@ -1439,6 +1402,7 @@ export function createTaskTimerDashboardRuntimeContext(
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
+    getIsOnboardingDashboardPreview: args.getIsOnboardingDashboardPreview,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getDashboardMenuFlipped: () => asType<boolean>(args.appRuntimeState.get("dashboardMenuFlipped")),
     getDashboardRefreshPending: () => asType<boolean>(args.appRuntimeState.get("dashboardRefreshPending")),
@@ -1478,9 +1442,6 @@ export function createTaskTimerDashboardContext(
     setCloudDashboardCache: args.setCloudDashboardCache,
     loadCachedDashboard: args.loadCachedDashboard,
     saveCloudDashboard: args.saveCloudDashboard,
-    getModeLabel: args.getModeLabel,
-    isModeEnabled: args.isModeEnabled,
-    taskModeOf: args.taskModeOf,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
@@ -1558,9 +1519,13 @@ export function createTaskTimerRewardsHistoryContext(
     rewardSessionTrackersStorageKey: args.rewardSessionTrackersStorageKey,
     getTasks: args.getTasks,
     getHistoryByTaskId: args.getHistoryByTaskId,
+    getLiveSessionsByTaskId: () =>
+      asType<Parameters<typeof createTaskTimerRewardsHistory>[0]["getLiveSessionsByTaskId"] extends () => infer T ? T : never>(
+        args.getLiveSessionsByTaskId()
+      ),
+    setLiveSessionsByTaskId: (value) => args.setLiveSessionsByTaskId(value),
     getDeletedTaskMeta: args.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
-    getDashboardIncludedModes: () => asType<Record<MainMode, boolean>>(args.dashboardUiState.get("dashboardIncludedModes")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     setRewardProgress: (value) => args.rewardState.set("rewardProgress", value),
     getRewardSessionTrackersByTaskId: () =>
@@ -1577,8 +1542,6 @@ export function createTaskTimerRewardsHistoryContext(
     getCurrentPlan: args.getCurrentPlan,
     hasEntitlement: args.hasEntitlement,
     currentUid: args.currentUid,
-    taskModeOf: args.taskModeOf,
-    isModeEnabled: args.isModeEnabled,
     getTaskElapsedMs: args.getTaskElapsedMs,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
     captureSessionNoteSnapshot: args.captureSessionNoteSnapshot,
@@ -1587,6 +1550,8 @@ export function createTaskTimerRewardsHistoryContext(
     syncFocusSessionNotesInput: args.syncFocusSessionNotesInput,
     syncFocusSessionNotesAccordion: args.syncFocusSessionNotesAccordion,
     appendHistoryEntry: args.appendHistoryEntry,
+    saveLiveSession: args.saveLiveSession,
+    clearLiveSession: args.clearLiveSession,
     saveHistoryLocally: args.saveHistoryLocally,
     buildDefaultCloudPreferences: args.buildDefaultCloudPreferences,
     saveCloudPreferences: args.saveCloudPreferences,

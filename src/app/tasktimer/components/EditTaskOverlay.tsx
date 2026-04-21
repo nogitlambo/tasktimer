@@ -3,243 +3,211 @@ export default function EditTaskOverlay() {
   return (
     <div className="overlay" id="editOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Edit Task">
-        <div className="editHead">
-          <h2>Edit Task</h2>
-          <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
-            <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">
-              Recurring
-            </button>
-            <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
-              Once-off
-            </button>
-          </div>
-        </div>
-
-        <div className="editValidationError" id="editValidationError" aria-live="polite" />
-
-        <div className="field">
-          <label htmlFor="editName">Task Name</label>
-          <input type="text" id="editName" />
-        </div>
-
-        <div className="field editTaskTimeGoalField">
-          <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
-            <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
-            <div className="editTaskTimeGoalToggleWrap">
-              <input id="editNoGoalCheckbox" type="checkbox" hidden />
-              <div className="switch" id="editTimeGoalToggle" role="switch" aria-checked="true" aria-label="Enable time goal" />
+        <div className="editTaskModalFrame">
+          <div className="editTaskModalHeader">
+            <div className="editHead">
+              <h2>Edit Task</h2>
             </div>
+            <div className="editValidationError" id="editValidationError" aria-live="polite" />
           </div>
-          <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
-            <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
-            <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
-              <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
-                M
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
-                H
-              </button>
-            </div>
-            <span className="addTaskDurationPerLabel">per</span>
-            <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
-              <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
-                D
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
-                W
-              </button>
-            </div>
-          </div>
-          <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
-          </div>
-        </div>
-
-        <div className="field editPlannedStartField">
-          <label>Planned Start Time</label>
-          <div className="addTaskPlannedStartSection editPlannedStartSection">
-            <div className="field editTaskOnceOffDayField isHidden" id="editTaskOnceOffDayField">
-              <label htmlFor="editTaskOnceOffDaySelect">Day</label>
-              <select id="editTaskOnceOffDaySelect" defaultValue="mon">
-                <option value="mon">Monday</option>
-                <option value="tue">Tuesday</option>
-                <option value="wed">Wednesday</option>
-                <option value="thu">Thursday</option>
-                <option value="fri">Friday</option>
-                <option value="sat">Saturday</option>
-                <option value="sun">Sunday</option>
-              </select>
-            </div>
-            <div className="addTaskPlannedStartSelectorRow">
-              <div className="addTaskPlannedStartTimeCluster">
-                <select id="editPlannedStartHourSelect" aria-label="Edit start hour" defaultValue="09">
-                  <option value="01">01</option>
-                  <option value="02">02</option>
-                  <option value="03">03</option>
-                  <option value="04">04</option>
-                  <option value="05">05</option>
-                  <option value="06">06</option>
-                  <option value="07">07</option>
-                  <option value="08">08</option>
-                  <option value="09">09</option>
-                  <option value="10">10</option>
-                  <option value="11">11</option>
-                  <option value="12">12</option>
-                </select>
-                <span className="addTaskPlannedStartSeparator" aria-hidden="true">
-                  :
-                </span>
-                <select id="editPlannedStartMinuteSelect" aria-label="Edit start minute" defaultValue="00">
-                  <option value="00">00</option>
-                  <option value="05">05</option>
-                  <option value="10">10</option>
-                  <option value="15">15</option>
-                  <option value="20">20</option>
-                  <option value="25">25</option>
-                  <option value="30">30</option>
-                  <option value="35">35</option>
-                  <option value="40">40</option>
-                  <option value="45">45</option>
-                  <option value="50">50</option>
-                  <option value="55">55</option>
-                </select>
-                <select id="editPlannedStartMeridiemSelect" aria-label="Edit start time meridiem" defaultValue="AM">
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
-              <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="editPlannedStartOpenEndedRow" htmlFor="editPlannedStartOpenEnded">
-                <input id="editPlannedStartOpenEnded" type="checkbox" />
-                <span>Flexible</span>
-              </label>
-              <label
-                className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
-                id="editPlannedStartPushRemindersRow"
-                htmlFor="editPlannedStartPushReminders"
-              >
-                <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
-                <span>Enable Push Reminders</span>
-              </label>
-            </div>
-            <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
-          </div>
-        </div>
-
-        <div className="milestones" id="msArea">
-          <div className="milestonesSummary">
-            <span className="milestonesSummaryPrimary">Time Checkpoints</span>
-            <span className="milestonesSummaryControls">
-              <div className="switch" id="msToggle" role="switch" aria-checked="false" />
-            </span>
-          </div>
-          <div className="toggleRow" id="editPresetIntervalsToggleRow">
-            <span>Use Preset Intervals</span>
-            <div className="switch" id="editPresetIntervalsToggle" role="switch" aria-checked="false" />
-            <span className="presetIntervalsInfoSlot" id="editPresetIntervalsInfoSlot">
-              <button
-                className="iconBtn editPresetIntervalsInfoBtn"
-                id="editPresetIntervalsInfoBtn"
-                type="button"
-                aria-label="What are preset intervals?"
-                aria-expanded="false"
-                aria-controls="editPresetIntervalsInfoDialog"
-              >
-                ?
-              </button>
-              <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
-                Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
-              </div>
-            </span>
-          </div>
-          <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
-            <label htmlFor="editPresetIntervalInput">Preset interval</label>
-            <input id="editPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
-          </div>
-          <p className="checkpointAlertsNote" id="editPresetIntervalNote" style={{ display: "none" }} />
-          <div className="milestonesBody">
-            <div id="msList" />
-            <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-              + Add Checkpoint
-            </button>
-          </div>
-        </div>
-
-        <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
-          <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
-          <div className="toggleRow" id="editCheckpointSoundToggleRow">
-            <span>Sound Alert</span>
-            <div className="switch" id="editCheckpointSoundToggle" role="switch" aria-checked="false" />
-          </div>
-          <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointSoundModeField">
-            <label htmlFor="editCheckpointSoundModeSelect">Sound Alert Behaviour</label>
-            <select id="editCheckpointSoundModeSelect" defaultValue="once">
-              <option value="once">Sound alert once only (default)</option>
-              <option value="repeat">Wait for user to dismiss sound alert</option>
-            </select>
-          </div>
-          <div className="toggleRow" id="editCheckpointToastToggleRow">
-            <span>Toast Alert</span>
-            <div className="switch" id="editCheckpointToastToggle" role="switch" aria-checked="false" />
-          </div>
-          <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointToastModeField">
-            <label htmlFor="editCheckpointToastModeSelect">Toast Alert Behaviour</label>
-            <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
-              <option value="auto5s">Dismiss toast alert after 5 seconds (default)</option>
-              <option value="manual">Wait for user to dismiss toast alert</option>
-            </select>
-          </div>
-          <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
-        </div>
-
-        <details className="editAdvancedSection" id="editAdvancedSection">
-          <summary className="milestonesSummary editAdvancedSummary" role="button">
-            <span className="milestonesSummaryPrimary">Advanced</span>
-            <span className="milestonesSummaryControls">
-              <span className="milestonesSummaryCollapseLabel">Show/Hide Advanced</span>
-            </span>
-          </summary>
-          <div className="editAdvancedBody">
+          <div className="editTaskModalBody">
             <div className="field">
-              <div className="toggleRow">
-                <span>Override Elapsed Time</span>
-                <div className="switch" id="editOverrideElapsedToggle" role="switch" aria-checked="false" />
+              <label htmlFor="editName">Task Name</label>
+              <input type="text" id="editName" />
+            </div>
+
+            <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
+              <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">
+                Recurring
+              </button>
+              <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
+                Once-off
+              </button>
+            </div>
+
+            <div className="field editTaskTimeGoalField">
+              <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
+                <label className="editTaskTimeGoalToggleWrap" htmlFor="editTimeGoalToggle">
+                  <input id="editTimeGoalToggle" type="checkbox" aria-label="Enable time goal" defaultChecked />
+                  <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
+                </label>
+                <input id="editNoGoalCheckbox" type="checkbox" hidden />
               </div>
-              <div className="row3 overrideElapsedRow" id="editOverrideElapsedFields">
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="editD" style={{ textTransform: "none", letterSpacing: 0 }}>
-                    Days
-                  </label>
-                  <input type="number" id="editD" min={0} step={1} />
+              <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
+                <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
+                <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
+                  <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
+                    Min
+                  </button>
+                  <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
+                    Hour
+                  </button>
                 </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="editH" style={{ textTransform: "none", letterSpacing: 0 }}>
-                    Hours
-                  </label>
-                  <input type="number" id="editH" min={0} step={1} />
+                <span className="addTaskDurationPerLabel">per</span>
+                <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
+                  <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
+                    Day
+                  </button>
+                  <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                    Week
+                  </button>
                 </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="editM" style={{ textTransform: "none", letterSpacing: 0 }}>
-                    Minutes
-                  </label>
-                  <input type="number" id="editM" min={0} max={59} step={1} />
-                </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="editS" style={{ textTransform: "none", letterSpacing: 0 }}>
-                    Seconds
-                  </label>
-                  <input type="number" id="editS" min={0} max={59} step={1} />
-                </div>
+              </div>
+              <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
               </div>
             </div>
-          </div>
-        </details>
 
-        <div className="footerBtns">
-          <button className="btn btn-ghost" id="cancelEditBtn" type="button">
-            Cancel
-          </button>
-          <button className="btn btn-accent" id="saveEditBtn" type="button">
-            Save
-          </button>
+            <div className="field editPlannedStartField">
+              <label>Planned Start Time</label>
+              <div className="addTaskPlannedStartSection editPlannedStartSection">
+                <div className="field editTaskOnceOffDayField isHidden" id="editTaskOnceOffDayField">
+                  <label htmlFor="editTaskOnceOffDaySelect">Day</label>
+                  <select id="editTaskOnceOffDaySelect" defaultValue="mon">
+                    <option value="mon">Monday</option>
+                    <option value="tue">Tuesday</option>
+                    <option value="wed">Wednesday</option>
+                    <option value="thu">Thursday</option>
+                    <option value="fri">Friday</option>
+                    <option value="sat">Saturday</option>
+                    <option value="sun">Sunday</option>
+                  </select>
+                </div>
+                <div className="addTaskPlannedStartSelectorRow">
+                  <div className="addTaskPlannedStartTimeCluster">
+                    <select id="editPlannedStartHourSelect" aria-label="Edit start hour" defaultValue="09">
+                      <option value="01">01</option>
+                      <option value="02">02</option>
+                      <option value="03">03</option>
+                      <option value="04">04</option>
+                      <option value="05">05</option>
+                      <option value="06">06</option>
+                      <option value="07">07</option>
+                      <option value="08">08</option>
+                      <option value="09">09</option>
+                      <option value="10">10</option>
+                      <option value="11">11</option>
+                      <option value="12">12</option>
+                    </select>
+                    <span className="addTaskPlannedStartSeparator" aria-hidden="true">
+                      :
+                    </span>
+                    <select id="editPlannedStartMinuteSelect" aria-label="Edit start minute" defaultValue="00">
+                      <option value="00">00</option>
+                      <option value="05">05</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
+                      <option value="25">25</option>
+                      <option value="30">30</option>
+                      <option value="35">35</option>
+                      <option value="40">40</option>
+                      <option value="45">45</option>
+                      <option value="50">50</option>
+                      <option value="55">55</option>
+                    </select>
+                    <select id="editPlannedStartMeridiemSelect" aria-label="Edit start time meridiem" defaultValue="AM">
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                  <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="editPlannedStartOpenEndedRow" htmlFor="editPlannedStartOpenEnded">
+                    <input id="editPlannedStartOpenEnded" type="checkbox" />
+                    <span>Flexible</span>
+                  </label>
+                  <label
+                    className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
+                    id="editPlannedStartPushRemindersRow"
+                    htmlFor="editPlannedStartPushReminders"
+                  >
+                    <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
+                    <span>Enable Push Reminders</span>
+                  </label>
+                </div>
+                <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
+              </div>
+            </div>
+
+            <div className="milestones" id="msArea">
+              <div className="milestonesSummary">
+                <label className="editTaskCheckpointToggleWrap" htmlFor="msToggle">
+                  <input id="msToggle" type="checkbox" aria-label="Enable time checkpoints" />
+                  <span className="milestonesSummaryPrimary">Time Checkpoints</span>
+                </label>
+              </div>
+              <div className="toggleRow" id="editPresetIntervalsToggleRow">
+                <label className="editTaskInlineCheckboxLabel" htmlFor="editPresetIntervalsToggle">
+                  <input id="editPresetIntervalsToggle" type="checkbox" aria-label="Use preset intervals" />
+                  <span>Use Preset Intervals</span>
+                </label>
+                <span className="presetIntervalsInfoSlot" id="editPresetIntervalsInfoSlot">
+                  <button
+                    className="iconBtn editPresetIntervalsInfoBtn"
+                    id="editPresetIntervalsInfoBtn"
+                    type="button"
+                    aria-label="What are preset intervals?"
+                    aria-expanded="false"
+                    aria-controls="editPresetIntervalsInfoDialog"
+                  >
+                    ?
+                  </button>
+                  <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
+                    Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
+                  </div>
+                </span>
+              </div>
+              <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
+                <label htmlFor="editPresetIntervalInput">Preset interval</label>
+                <input id="editPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
+              </div>
+              <p className="checkpointAlertsNote" id="editPresetIntervalNote" style={{ display: "none" }} />
+              <div className="milestonesBody">
+                <div id="msList" />
+                <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+                  + Add Checkpoint
+                </button>
+              </div>
+            </div>
+
+            <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
+              <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
+              <div className="toggleRow" id="editCheckpointSoundToggleRow">
+                <label className="editTaskInlineCheckboxLabel" htmlFor="editCheckpointSoundToggle">
+                  <input id="editCheckpointSoundToggle" type="checkbox" aria-label="Enable sound alert" />
+                  <span>Sound Alert</span>
+                </label>
+              </div>
+              <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointSoundModeField">
+                <label htmlFor="editCheckpointSoundModeSelect">Sound Alert Behaviour</label>
+                <select id="editCheckpointSoundModeSelect" defaultValue="once">
+                  <option value="once">Sound alert once only (default)</option>
+                  <option value="repeat">Wait for user to dismiss sound alert</option>
+                </select>
+              </div>
+              <div className="toggleRow" id="editCheckpointToastToggleRow">
+                <label className="editTaskInlineCheckboxLabel" htmlFor="editCheckpointToastToggle">
+                  <input id="editCheckpointToastToggle" type="checkbox" aria-label="Enable toast alert" />
+                  <span>Toast Alert</span>
+                </label>
+              </div>
+              <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointToastModeField">
+                <label htmlFor="editCheckpointToastModeSelect">Toast Alert Behaviour</label>
+                <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
+                  <option value="auto5s">Dismiss toast alert after 5 seconds (default)</option>
+                  <option value="manual">Wait for user to dismiss toast alert</option>
+                </select>
+              </div>
+              <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
+            </div>
+
+            <div className="footerBtns">
+              <button className="btn btn-ghost" id="cancelEditBtn" type="button">
+                Cancel
+              </button>
+              <button className="btn btn-accent" id="saveEditBtn" type="button">
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

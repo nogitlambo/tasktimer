@@ -165,21 +165,24 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               const rowKey = buildHistoryManagerRowKey(entry);
               const rowId = `${taskId}|${rowKey}`;
               const note = getHistoryEntryNote(entry);
+              const isLiveSession = !!entry?.isLiveSession;
               const noteCell = note
                 ? `<button class="hmNoteBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" title="${escapeHtmlHM(note)}"><span class="hmNoteBtnText">${escapeHtmlHM(note)}</span></button>`
                 : '<span class="hmNoteEmpty">-</span>';
-              const rowCheckbox = hmBulkEditMode
+              const rowCheckbox = hmBulkEditMode && !isLiveSession
                 ? `<input class="hmBulkCheckbox hmBulkRowChk" type="checkbox" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" ${hmBulkSelectedRows.has(rowId) ? "checked" : ""} />`
                 : "";
+              const dateTimeCell = isLiveSession ? `${formatDateTime(entry.ts)} (Live)` : formatDateTime(entry.ts);
+              const deleteCell = isLiveSession
+                ? '<span class="hmNoteEmpty">-</span>'
+                : `<button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" aria-label="Delete log" title="Delete log">&#128465;</button>`;
               return `
                 <tr>
                   <td class="hmSelectCell">${rowCheckbox}</td>
-                  <td>${formatDateTime(entry.ts)}</td>
+                  <td>${dateTimeCell}</td>
                   <td>${formatHistoryManagerElapsed(entry.ms || 0, formatTwo)}</td>
                   <td class="hmNotesCell">${noteCell}</td>
-                  <td style="text-align:right;">
-                    <button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" aria-label="Delete log" title="Delete log">&#128465;</button>
-                  </td>
+                  <td style="text-align:right;">${deleteCell}</td>
                 </tr>
               `;
             })

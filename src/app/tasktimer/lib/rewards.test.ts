@@ -43,10 +43,7 @@ function createMomentumContext(tasks: Task[], historyByTaskId: HistoryByTaskId, 
   return {
     historyByTaskId,
     tasks,
-    weekStarting: "monday" as const,
-    dashboardIncludedModes: { mode1: true, mode2: false, mode3: false },
-    isModeEnabled: () => true,
-    taskModeOf: () => "mode1" as const,
+    weekStarting: "mon" as const,
     momentumEntitled: true,
   };
 }
@@ -148,7 +145,7 @@ describe("reward helper multipliers", () => {
       ],
     };
 
-    const award = awardWeeklyGoalBonuses(createProgress(), historyByTaskId, [task], "monday", now, createMomentumContext([task], historyByTaskId, now));
+    const award = awardWeeklyGoalBonuses(createProgress(), historyByTaskId, [task], "mon", now, createMomentumContext([task], historyByTaskId, now));
 
     expect(award.amount).toBe(24);
     expect(award.next.awardLedger).toEqual([
@@ -291,10 +288,7 @@ describe("buildXpProgressArchieMessage", () => {
           { ts: now - 50 * 60 * 60 * 1000, name: task.name, ms: 90 * 60 * 1000 },
         ],
       },
-      weekStarting: "monday",
-      dashboardIncludedModes: { mode1: true, mode2: false, mode3: false },
-      isModeEnabled: () => true,
-      taskModeOf: () => "mode1",
+      weekStarting: "mon",
       momentumEntitled: true,
     });
 

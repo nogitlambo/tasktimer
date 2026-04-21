@@ -1,6 +1,5 @@
 "use client";
 
-import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
 import { SettingsDetailPane } from "./SettingsShared";
 
 const FEATURE_POINTS = [
@@ -48,20 +47,6 @@ export function SettingsAboutPane({ active, exiting = false }: { active: boolean
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </section>
-        <section className="settingsInlineSection">
-          <div className="settingsInlineSectionTitle">Quick Links</div>
-          <div className="settingsAboutQuickLinks">
-            <a className="btn btn-ghost small" href={resolveTaskTimerRouteHref("/user-guide")}>
-              Open User Guide
-            </a>
-            <a className="btn btn-ghost small" href={resolveTaskTimerRouteHref("/feedback")}>
-              Send Feedback
-            </a>
-            <a className="btn btn-ghost small" href={resolveTaskTimerRouteHref("/privacy")}>
-              View Privacy
-            </a>
-          </div>
         </section>
       </div>
     </SettingsDetailPane>

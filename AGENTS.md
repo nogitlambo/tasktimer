@@ -16,20 +16,15 @@
 - Main stylesheet in active use is `src/app/tasktimer/tasktimer.css`.
 - Auth behavior is centralized in `src/lib/firebaseClient.ts`; detect native/mobile runtime with `Capacitor.isNativePlatform()` (or `file:`), not `!!window.Capacitor`.
 
-## Modes and categories
-- Task categories are implemented as three internal modes: `mode1`, `mode2`, `mode3`.
-- Default/reset mode labels are `Mode 1`, `Mode 2`, `Mode 3` (UI may display `Default Mode` for mode1 in Configure Modes).
-- Mode/category settings persist via localStorage key `${STORAGE_KEY}:modeSettings`.
-- Legacy fallback key `${STORAGE_KEY}:modeLabels` is still read for backward compatibility.
-- Mode 1 is always enabled; Mode 2 and Mode 3 can be enabled/disabled in Category Manager.
+## Tasks model
+- TaskTimer now uses a single task list; legacy mode/category behavior is obsolete and should not be reintroduced.
 
 ## Settings and overlays
 - Settings UI is shared via `src/app/tasktimer/components/SettingsPanel.tsx` and used on `/settings`.
 - On `/settings`, auto-select `Account` (`general`) only on desktop/wide layouts where nav + detail panels are shown together.
 - On mobile/narrow layouts (list-first view), do not auto-select a pane by default.
 - Keep Settings default-pane behavior as initial-render only; do not force-reset pane selection on viewport resize.
-- Category Manager is implemented as an overlay in `src/app/tasktimer/components/InfoOverlays.tsx` and opened via `data-menu="categoryManager"`.
-- Common overlays and controls depend on stable IDs (e.g. `aboutOverlay`, `howtoOverlay`, `appearanceOverlay`, `categoryManagerOverlay`, `confirmOverlay`, `historyAnalysisOverlay`).
+- Common overlays and controls depend on stable IDs (e.g. `aboutOverlay`, `howtoOverlay`, `appearanceOverlay`, `confirmOverlay`, `historyAnalysisOverlay`).
 - History Manager supports bulk edit, hierarchical checkbox selection, and sortable Date/Time + Elapsed columns.
 - Inline history analysis now uses `data-history-action="analyse"` and is enabled only when 2+ columns are lock-selected.
 - In Account pane, Delete Account warning text stays always visible.
@@ -37,15 +32,13 @@
 
 ## Persistent state keys
 - `${STORAGE_KEY}`: primary task storage key (via `lib/storage.ts`).
-- `${STORAGE_KEY}:modeSettings`: mode labels/enabled states/colors.
-- `${STORAGE_KEY}:modeLabels`: legacy mode label fallback.
 - `${STORAGE_KEY}:theme`: `purple`/`cyan` (legacy values may still be normalized on read).
 - `${STORAGE_KEY}:customTaskNames`: recent custom Add Task names.
 - `${STORAGE_KEY}:pinnedHistoryTaskIds`: pinned inline task history charts.
 
 ## Critical UI contracts
 - Footer tabs control top-level app page switching; keep IDs stable (`footerDashboardBtn`, `footerTasksBtn`, `footerTest1Btn`, `footerTest2Btn`, `footerSettingsBtn`).
-- Mode switch and Add Task controls should only be visible on the Tasks page.
+- Add Task controls should only be visible on the Tasks page.
 - Inline task history is wired via `data-history-action` handlers and includes actions like `manage`, `close`, and `pin`.
 - History Manager back action is expected to return to `/settings`.
 - Settings exit button `#closeMenuBtn` label is `Close` and exits to dashboard fallback (`/tasklaunch?page=dashboard`) when no overlay/nav stack is active.
@@ -162,7 +155,6 @@
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
 - `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
 - `MOBILE_PUSH_ALERTS_KEY = `${storageKey}:mobilePushAlertsEnabled``
-- `MODE_SETTINGS_KEY = `${storageKey}:modeSettings``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
 - `OPTIMAL_PRODUCTIVITY_END_TIME_KEY = `${storageKey}:optimalProductivityEndTime``
 - `OPTIMAL_PRODUCTIVITY_START_TIME_KEY = `${storageKey}:optimalProductivityStartTime``

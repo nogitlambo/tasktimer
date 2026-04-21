@@ -856,7 +856,7 @@
   position:absolute;
   inset:0;
   border-radius:50%;
-  background: conic-gradient(var(--mode1-accent) 0 48%, var(--mode2-accent) 48% 72%, var(--mode3-accent) 72% 100%);
+  background: conic-gradient(var(--mode1-accent) 0 100%);
   -webkit-mask: radial-gradient(circle at center, transparent 58%, #000 60%);
   mask: radial-gradient(circle at center, transparent 58%, #000 60%);
 }
@@ -906,8 +906,6 @@
   margin-right:0;
 }
 .dashboardLegend .dot.mode1{ background: var(--mode1-accent); }
-.dashboardLegend .dot.mode2{ background: var(--mode2-accent); }
-.dashboardLegend .dot.mode3{ background: var(--mode3-accent); }
 .dashboardTimeline{
   --dashboard-timeline-note-color: rgba(188,214,230,.72);
   --dashboard-timeline-track-border: rgba(117,231,255,.18);

@@ -1,6 +1,6 @@
-import type { HistoryByTaskId, HistoryEntry, Task, DeletedTaskMeta } from "../lib/types";
-import { cleanupHistory, loadHistory, loadTasks, saveHistory, saveTasks } from "../lib/storage";
-import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
+import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
+import { cleanupHistory, loadHistory, loadLiveSessions, loadTasks, saveHistory, saveTasks } from "../lib/storage";
+import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 
 type PersistOptions = { deletedTaskIds?: string[] };
@@ -17,6 +17,8 @@ type CreateTaskTimerPersistenceOptions = {
   setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
+  setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;
   setHistoryRangeDaysByTaskId: (value: Record<string, 7 | 14>) => void;
   getHistoryRangeModeByTaskId: () => Record<string, "entries" | "day">;
@@ -57,7 +59,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadModeLabels: () => void;
   backfillHistoryColorsFromSessionLogic: () => void;
   syncModeLabelsUi: () => void;
-  applyMainMode: (mode: "mode1" | "mode2" | "mode3") => void;
+  applyMainMode: (mode: MainMode) => void;
   applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   applyDashboardOrderFromStorage: () => void;
   applyDashboardCardSizes: () => void;
@@ -66,7 +68,6 @@ type CreateTaskTimerPersistenceOptions = {
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   maybeRepairHistoryNotesInCloudAfterHydrate?: () => void;
-  taskModeOf: (task: Task) => "mode1" | "mode2" | "mode3";
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   normalizeLoadedTask?: (task: Task) => void;
@@ -79,27 +80,12 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       options.setTasks([]);
       return;
     }
-    const deletedTaskIds: string[] = [];
     const migratedTasks = loaded.filter((task) => {
-      const legacyMode = String((task as Task & { mode?: unknown }).mode || "mode1").trim();
-      const keepTask = legacyMode !== "mode2" && legacyMode !== "mode3";
-      if (!keepTask) {
-        const taskId = String(task?.id || "").trim();
-        if (taskId) deletedTaskIds.push(taskId);
-        return false;
-      }
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
       return true;
     });
     options.setTasks(migratedTasks);
-    if (!deletedTaskIds.length) return;
-    const cleanedHistory = cleanupHistory(loadHistory());
-    deletedTaskIds.forEach((taskId) => {
-      delete cleanedHistory[taskId];
-    });
-    options.setHistoryByTaskId(cleanedHistory);
-    saveHistory(cleanedHistory, { showIndicator: false });
-    saveTasks(migratedTasks, { deletedTaskIds });
+    options.setLiveSessionsByTaskId(loadLiveSessions());
   }
 
   function save(opts?: PersistOptions) {
@@ -251,6 +237,10 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     }
   }
 
+  function loadLiveSessionsIntoMemory() {
+    options.setLiveSessionsByTaskId(loadLiveSessions());
+  }
+
   function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
     return Object.values(history || {}).some(
       (rows) => Array.isArray(rows) && rows.some((row) => typeof row?.note === "string" && row.note.trim())
@@ -287,6 +277,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.primeDashboardCacheFromShadow();
     options.setDeletedTaskMeta(options.loadDeletedMeta());
     loadHistoryIntoMemory();
+    loadLiveSessionsIntoMemory();
     options.setFocusSessionNotesByTaskId(options.loadFocusSessionNotes());
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();

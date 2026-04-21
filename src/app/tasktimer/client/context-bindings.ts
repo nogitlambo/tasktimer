@@ -4,7 +4,6 @@ import type {
   DashboardAvgRange,
   DashboardCardSize,
   DashboardTimelineDensity,
-  MainMode,
 } from "./types";
 
 type DashboardLayoutState = {
@@ -14,7 +13,6 @@ type DashboardLayoutState = {
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
-  dashboardIncludedModes: Record<MainMode, boolean>;
   dashboardAvgRange: DashboardAvgRange;
   dashboardTimelineDensity: DashboardTimelineDensity;
 };
@@ -36,7 +34,6 @@ type EditState = {
     | null;
   elapsedPadDraft: string;
   elapsedPadOriginal: string;
-  editMoveTargetMode: MainMode;
 };
 
 type AddTaskState = {
@@ -98,10 +95,6 @@ export function createTaskTimerDashboardLayoutBindings(
     setDashboardCardVisibility: (value: Record<string, boolean>) => {
       dashboardUiState.set("dashboardCardVisibility", value);
     },
-    getDashboardIncludedModes: () => dashboardUiState.get("dashboardIncludedModes"),
-    setDashboardIncludedModes: (value: Record<MainMode, boolean>) => {
-      dashboardUiState.set("dashboardIncludedModes", value);
-    },
     getDashboardAvgRange: () => dashboardUiState.get("dashboardAvgRange"),
     setDashboardAvgRange: (value: DashboardAvgRange) => {
       dashboardUiState.set("dashboardAvgRange", value);
@@ -134,10 +127,6 @@ export function createTaskTimerEditStateBindings(editTaskState: TaskTimerMutable
     getEditTaskDurationPeriod: () => editTaskState.get("editTaskDurationPeriod"),
     setEditTaskDurationPeriod: (value: "day" | "week") => {
       editTaskState.set("editTaskDurationPeriod", value);
-    },
-    getEditMoveTargetMode: () => editTaskState.get("editMoveTargetMode"),
-    setEditMoveTargetMode: (value: MainMode) => {
-      editTaskState.set("editMoveTargetMode", value);
     },
     getElapsedPadTarget: () => editTaskState.get("elapsedPadTarget"),
     setElapsedPadTarget: (value: HTMLInputElement | null) => {

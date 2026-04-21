@@ -22,6 +22,8 @@ export type HistoryManagerRowEntry = {
   ts: unknown;
   ms: unknown;
   name: unknown;
+  isLiveSession?: unknown;
+  liveSessionId?: unknown;
 };
 
 export function formatHistoryManagerElapsed(msRaw: unknown, formatTwo: (value: number) => string) {
@@ -37,7 +39,11 @@ export function buildHistoryManagerRowKey(entry: HistoryManagerRowEntry) {
   const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
   const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
   const name = String(entry?.name || "");
-  return `${ts}|${ms}|${name}`;
+  const liveSuffix =
+    entry?.isLiveSession && String(entry?.liveSessionId || "").trim()
+      ? `|live:${String(entry.liveSessionId).trim()}`
+      : "";
+  return `${ts}|${ms}|${name}${liveSuffix}`;
 }
 
 export function groupSelectedHistoryRowsByTask(selectedRowIds: string[]) {

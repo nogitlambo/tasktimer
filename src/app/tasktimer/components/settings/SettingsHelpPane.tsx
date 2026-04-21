@@ -14,6 +14,13 @@ export function SettingsHelpPane({ active, exiting = false }: { active: boolean;
             </button>
             <a
               className="menuItem settingsDataListItem"
+              href={resolveTaskTimerRouteHref("/privacy")}
+              aria-label="Privacy Policy"
+            >
+              <MenuIconLabel icon="/About.svg" label="Privacy Policy" />
+            </a>
+            <a
+              className="menuItem settingsDataListItem"
               id="commandCenterFeedbackBtn"
               href={resolveTaskTimerRouteHref("/feedback")}
               aria-label="Feedback"

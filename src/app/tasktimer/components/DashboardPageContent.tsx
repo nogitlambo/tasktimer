@@ -1,6 +1,5 @@
 "use client";
-
-import AppImg from "@/components/AppImg";
+import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
 
 const dashboardPanelOptions = [
   { id: "xp-progress", label: "XP Progress" },
@@ -26,13 +25,22 @@ type DashboardPageContentProps = {
 };
 
 export default function DashboardPageContent({ rewardsHeader, active }: DashboardPageContentProps) {
+  const handleOnboardingAdvanceClick = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
+  };
+
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
         <div className="dashboardMain">
           <div className="dashboardShell">
             <div className="dashboardShellScene" id="dashboardShellScene">
-              <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
+              <div
+                className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
+                id="dashboardShellContent"
+                onClick={handleOnboardingAdvanceClick}
+              >
                 <div className="dashboardTopRow">
                   <div className="dashboardTitleWrap">
                     <p className="dashboardKicker">Dashboard</p>
@@ -405,11 +413,8 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
               <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
                 <h2 className="sr-only">Refreshing</h2>
                 <p className="modalSubtext confirmText" id="dashboardRefreshBusyText">Refreshing...</p>
-                <div className="dashboardRefreshBusyArrowStage" aria-hidden="true">
-                  <div className="dashboardRefreshBusyArrowShell">
-                    <div className="dashboardRefreshBusyArrowBeamBlend" />
-                    <AppImg className="dashboardRefreshBusyArrowGraphic" src="/logo/launch-icon-original-transparent.png" alt="" />
-                  </div>
+                <div className="dashboardRefreshBusyProgress" aria-hidden="true">
+                  <span className="dashboardRefreshBusyProgressBar" />
                 </div>
               </div>
             </div>

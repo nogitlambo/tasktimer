@@ -1,8 +1,28 @@
 # TaskLaunch Privacy Policy Skeleton
 
-Internal drafting scaffold for the public `/privacy` page and any longer-form privacy policy work.
+Internal drafting scaffold for the public `/privacy` page.
 
-This file uses the structure of a modern privacy policy as a guide only. It is not legal advice, and it should not be copied verbatim into the public site without review.
+This file should track the current live page format in `src/app/privacy/page.tsx` so future edits preserve the existing structure, numbering, and public-safe wording style.
+
+This is not legal advice.
+
+## Current Page Format
+
+The live privacy page currently follows this top-level structure:
+
+1. Hero tag: `TASKLAUNCH`
+2. Page title: `Privacy Policy`
+3. Hero subline: `UPDATED: [MONTH DAY, YEAR]`
+4. Table of contents section:
+   - section label number is `00`
+   - TOC entries use the same visual pattern as section headings
+   - TOC entries include two-digit numbers and exact section titles
+5. Numbered policy sections:
+   - `01` through `20`
+   - each section uses the same heading format:
+     - two-digit number
+     - divider line
+     - uppercase section label styling
 
 ## Drafting Rules
 
@@ -13,282 +33,399 @@ This file uses the structure of a modern privacy policy as a guide only. It is n
 - If the code does not prove a fact, mark it as a placeholder instead of guessing.
 - Replace all bracketed placeholders before publication.
 - Keep public claims narrower than internal assumptions.
+- Match the live page tone:
+  - direct;
+  - implementation-grounded;
+  - conservative;
+  - no marketing language.
+- Prefer wording like `current implementation`, `current code paths`, and `currently includes` where appropriate.
+
+## Formatting Rules For The Public Page
+
+- Preserve the hero structure:
+  - `TASKLAUNCH`
+  - `Privacy Policy`
+  - `UPDATED: [DATE]`
+- Preserve the numbered TOC format.
+- Preserve the exact section numbering pattern with zero-padded display in the TOC and section labels.
+- Keep TOC labels identical to the actual section titles.
+- Keep section anchors and TOC links in sync.
+- Keep the current `PolicySection` / `Clause` style structure in mind when editing page content.
+- Use plain paragraphs for simple sections and clause lists for multi-part sections.
 
 ## Placeholders To Resolve
 
-- `[LEGAL_ENTITY_NAME]`
-- `[TRADE_NAME_IF_DIFFERENT]`
-- `[EFFECTIVE_DATE]`
-- `[PRIMARY_JURISDICTION]`
-- `[MAILING_ADDRESS]`
-- `[PRIVACY_CONTACT_EMAIL]`
-- `[DPO_OR_PRIVACY_CONTACT_NAME_IF_ANY]`
-- `[AGE_THRESHOLD_IF_NOT_13]`
+- `[UPDATED_DATE]`
+- `[LEGAL_ENTITY_NAME_IF_NEEDED]`
+- `[PRIMARY_JURISDICTION_IF_FORMALLY_DEFINED]`
+- `[MAILING_ADDRESS_IF_PUBLISHED]`
 - `[RETENTION_SCHEDULE_IF_FORMALLY_DEFINED]`
 - `[ADDITIONAL_PROVIDER_LIST_IF_ANY]`
 
-## 1. Overview
+## Current Live Section Order
+
+The live page currently uses this exact numbering and title set:
+
+- `00` Table of contents
+- `01` Introduction
+- `02` What information we collect
+- `03` How we collect information
+- `04` Local storage and session storage
+- `05` Cloud storage and app infrastructure
+- `06` How we use information
+- `07` Third-party services and processors
+- `08` Sharing and disclosure
+- `09` Push notifications
+- `10` Billing and subscriptions
+- `11` Feedback and issue tracking
+- `12` Launch-updates subscription list
+- `13` Overseas and cross-border handling
+- `14` Security safeguards
+- `15` Retention and deletion
+- `16` Your choices, access, and correction
+- `17` Account deletion and local reset guidance
+- `18` Children
+- `19` Policy updates
+- `20` Contact
+
+## Current TOC Anchor Map
+
+The live page currently maps TOC entries to these section anchors:
+
+- `#introduction`
+- `#what-information-we-collect`
+- `#how-we-collect-information`
+- `#local-storage-and-session-storage`
+- `#cloud-storage-and-app-infrastructure`
+- `#how-we-use-information`
+- `#third-party-services-and-processors`
+- `#sharing-and-disclosure`
+- `#push-notifications`
+- `#billing-and-subscriptions`
+- `#feedback-and-issue-tracking`
+- `#launch-updates-subscription-list`
+- `#overseas-and-cross-border-handling`
+- `#security-safeguards`
+- `#retention-and-deletion`
+- `#your-choices-access-and-correction`
+- `#account-deletion-and-local-reset-guidance`
+- `#children`
+- `#policy-updates`
+- `#contact`
+
+Legacy inner anchors still exist in some sections and should not be broken casually:
+
+- `#collection`
+- `#use`
+- `#billing`
+- `#feedback`
+- `#launch-updates`
+- `#retention`
+- `#rights`
+
+## Section-By-Section Drafting Skeleton
+
+### 01. Introduction
 
 Purpose:
-Explain what the product is, which surfaces are covered, and that the document describes current information-handling practices.
+Explain which product surfaces are covered and that the policy describes current information-handling behavior.
 
-Draft notes:
-- Covered surfaces likely include:
-  - public website;
-  - authenticated app routes;
-  - feedback flows;
-  - billing flows;
-  - launch-updates signup;
-  - push notification features.
-- Avoid claiming coverage for products or services that do not exist in the codebase.
+Current live pattern:
+- paragraph describing covered surfaces and current-code basis;
+- paragraph describing the current feature set at a high level.
 
-Template:
+### 02. What information we collect
 
-> This Privacy Policy explains how `[LEGAL_ENTITY_NAME]` handles information in connection with `[TRADE_NAME_IF_DIFFERENT or product name]`. It applies to the public website, signed-in application features, and other related product flows identified in this policy.
+Purpose:
+List the actual categories of information supported by the current implementation.
 
-## 2. Information We Collect
-
-List only data types supported by current implementation.
+Current live pattern:
+- clause list `(a)` through `(h)`.
 
 Current code-backed categories:
-- Sign-in/account data:
-  - Firebase Authentication UID;
-  - email address;
-  - Google sign-in profile details returned by auth flows.
-- Profile/account customization:
-  - display name;
-  - username;
-  - username reservation/lookup records;
-  - avatar selection;
-  - custom avatar data;
-  - rank thumbnail / rank-related display fields.
-- Task/productivity data:
-  - tasks;
-  - timers;
-  - milestones;
-  - notes;
-  - history;
-  - deleted-task data;
-  - dashboard state;
-  - preferences;
-  - schedule/reward-related state.
-- Social data:
-  - friend requests;
-  - friendships;
-  - shared task summaries.
-- Device/notification data:
-  - device IDs;
-  - push tokens;
-  - provider markers;
-  - native/web flags;
-  - app-active state;
-  - push preferences.
-- Billing data:
-  - Stripe customer ID;
-  - subscription ID;
-  - price ID;
-  - subscription status;
-  - subscription timing/retention fields.
-- Feedback data:
-  - title;
-  - details;
-  - vote records;
-  - PNG screenshot attachments;
-  - author email/display metadata unless anonymous;
-  - Jira issue linkage when enabled.
-- Launch-updates signup data:
-  - email;
-  - normalized email;
-  - source;
-  - user-agent;
-  - referrer;
-  - timestamps.
+- sign-in and account details;
+- profile and account customisation data;
+- task and productivity data;
+- social data;
+- device and notification data;
+- billing data;
+- feedback data;
+- launch-updates signup data.
 
-## 3. Sources Of Information
+### 03. How we collect information
 
-Template categories:
-- Directly from the user.
-- Automatically from device/app/browser behavior.
-- From integrated service providers.
+Purpose:
+Explain direct collection, automatic collection, and provider-derived collection.
 
-Current provider examples:
-- Firebase Authentication;
-- Cloud Firestore;
-- Firebase Cloud Messaging;
-- Stripe;
-- Jira integration when enabled.
+Current live pattern:
+- clause list `(a)` through `(c)`.
 
-## 4. Local Storage, Session Storage, And Device State
+### 04. Local storage and session storage
+
+Purpose:
+Explain browser/device-local storage and session storage behavior.
+
+Current live pattern:
+- two paragraphs.
+
+Drafting guidance:
+- state that the current implementation primarily uses browser or device-local storage mechanisms such as local storage, session storage where applicable, and IndexedDB-backed persistence;
+- explain that these mechanisms support signed-in state, app preferences, runtime state, and navigation continuity;
+- do not claim that the product uses `no cookies` unless that has been separately verified across all enabled providers and deployment environments;
+- if cookies are mentioned, describe them conservatively as possible provider-side or browser-side technologies associated with authentication, security, or abuse-prevention services rather than as the app's primary storage layer.
 
 Current code-backed examples:
-- theme;
-- menu style;
-- task view state;
+- task/runtime state;
+- history-related state;
+- navigation state;
+- theme and menu style preferences;
+- notification preferences;
+- pending push action state;
 - mode settings;
-- local task/runtime data;
-- push preference flags;
-- navigation stack;
-- signed-out redirect bypass;
-- pending push action/task identifiers.
+- signed-out redirect bypass state.
+- Firebase Auth persistence uses IndexedDB and browser-local persistence in the current web implementation.
 
-Drafting note:
-- Do not promise that every locally stored key is listed exhaustively unless audited and maintained.
+### 05. Cloud storage and app infrastructure
 
-## 5. How We Use Information
+Purpose:
+Describe Firebase-backed account and app storage behavior.
+
+Current live pattern:
+- one paragraph;
+- clause list `(a)` through `(c)`.
+
+Current code-backed systems:
+- Firebase Authentication;
+- Cloud Firestore;
+- account lookup and username reservation records.
+- Firebase App Check with reCAPTCHA Enterprise is initialized on web in the current implementation.
+
+### 06. How we use information
+
+Purpose:
+Describe the operational uses of collected information.
+
+Current live pattern:
+- clause list `(a)` through `(g)`.
 
 Current code-backed purposes:
-- sign-in and session handling;
-- account-backed feature access;
-- task timing/history/dashboard/productivity features;
-- preferences and UI continuity;
-- social/sharing features;
-- notification registration and delivery;
-- billing, entitlement, and subscription portal access;
-- feedback intake and issue mirroring;
-- launch-updates list management;
-- deletion, rate limiting, abuse prevention, and integrity operations.
+- sign-in and account access;
+- app functionality;
+- device registration and push delivery;
+- billing and subscription management;
+- feedback workflows;
+- launch-updates list operations;
+- deletion, abuse controls, and integrity checks.
 
-## 6. Sharing And Disclosure
+### 07. Third-party services and processors
 
-Code-backed sharing buckets:
-- infrastructure/service providers;
-- other users through friends/sharing features;
-- operational/legal/integrity disclosures.
+Purpose:
+List the major external providers used by the current product.
 
-Avoid unsupported claims like:
-- “we never share any data with anyone”;
-- “we comply with every global privacy regime”;
-- “we only process data in one country”.
+Current live pattern:
+- clause list `(a)` through `(d)`;
+- short follow-up paragraph.
 
-## 7. Third-Party Services
+Drafting guidance:
+- include a conservative statement that third-party services used for authentication, security, billing, or issue tracking may use cookies or similar technologies under their own implementations;
+- avoid stating that all third-party cookie use is known exhaustively unless separately verified for the live deployment;
+- avoid promising a cookie-consent banner unless the business has decided to implement one or non-essential cookies are intentionally introduced.
 
 Known integrations from code:
 - Google / Firebase;
 - Stripe;
-- Atlassian Jira when enabled.
+- Atlassian Jira when enabled;
+- push delivery infrastructure.
 
-Optional template wording:
+### 08. Sharing and disclosure
 
-> Third-party providers operate under their own terms and privacy notices. This policy describes how the product uses those integrations, not the provider policies themselves.
+Purpose:
+Describe the bounded ways information may be shared or disclosed.
 
-## 8. Billing And Payments
+Current live pattern:
+- clause list `(a)` through `(c)`.
+
+Code-backed sharing buckets:
+- service providers;
+- other users through social/sharing features;
+- legal, integrity, misuse, or deletion workflows.
+
+### 09. Push notifications
+
+Purpose:
+Describe per-device records and push preference handling.
+
+Current live pattern:
+- two paragraphs.
+
+### 10. Billing and subscriptions
+
+Purpose:
+Describe Stripe-backed billing flows and stored subscription state.
+
+Current live pattern:
+- two paragraphs.
 
 Code-backed facts:
-- Stripe checkout sessions are created.
-- Stripe billing portal sessions are created.
-- Subscription state is stored in app records.
-- Full card details are not intentionally stored on TaskLaunch servers.
+- Stripe checkout sessions are created;
+- Stripe billing portal sessions are created;
+- subscription-related identifiers and status fields are stored;
+- full card details are not intentionally stored on TaskLaunch servers.
 
-Do not add claims about taxes, invoicing law, refund rights, or processor certifications unless separately confirmed.
+### 11. Feedback and issue tracking
 
-## 9. Feedback And Support
+Purpose:
+Describe feedback submission content, author data, votes, and Jira mirroring.
 
-Code-backed facts:
-- signed-in feedback is required;
-- anonymous option exists;
-- PNG attachments are accepted;
-- author metadata may be stored when not anonymous;
-- Jira mirroring may occur;
-- rate limits and vote records exist.
+Current live pattern:
+- two paragraphs.
 
-## 10. Push Notifications
+### 12. Launch-updates subscription list
 
-Code-backed facts:
-- web and mobile push preference flags exist;
-- device records are stored under user device subcollections;
-- scheduled push documents exist;
-- invalid device tokens may be cleaned up.
+Purpose:
+Describe the email signup list implementation.
 
-## 11. Retention And Deletion
+Current live pattern:
+- two paragraphs.
 
-Code-backed public-safe points:
-- local data stays until the user clears or resets it;
-- cloud data remains while needed for product operation and related workflows;
-- launch-updates signup records remain while needed for that list;
-- account deletion removes a defined set of cloud-backed records.
+Current code-backed data:
+- submitted email;
+- normalized email;
+- source;
+- user-agent;
+- referrer;
+- created/updated timestamps.
 
-Deletion scope visible in code currently includes:
+### 13. Overseas and cross-border handling
+
+Purpose:
+Describe cross-border handling conservatively based on provider infrastructure.
+
+Current live pattern:
+- one paragraph.
+
+### 14. Security safeguards
+
+Purpose:
+Describe security at a high level without unverifiable promises.
+
+Current live pattern:
+- two paragraphs.
+
+Safe wording themes:
+- managed authentication;
+- hosted infrastructure;
+- service-level access controls;
+- authenticated API routes;
+- account deletion flows.
+
+Avoid claims like:
+- `military-grade security`
+- `fully secure`
+- `fully encrypted at every layer`
+
+### 15. Retention and deletion
+
+Purpose:
+Describe local retention, cloud retention, signup-list retention, and current deletion flow scope.
+
+Current live pattern:
+- clause list `(a)` through `(d)`.
+
+Current deletion scope visible in code includes:
 - user document tree;
-- user subscription record;
-- scheduled time-goal push records;
+- subscription records;
+- scheduled push records;
 - friend requests;
 - friendships;
 - shared task summaries;
-- authored feedback trees;
-- feedback votes by user;
+- authored feedback;
+- feedback votes;
 - feedback limits;
-- username record;
-- user email lookup record.
+- usernames;
+- user email lookup records.
 
-Drafting note:
-- Phrase this as “current deletion flow removes…” rather than “all data is always permanently deleted everywhere immediately”.
+Draft conservatively:
+- prefer `current account-deletion code removes...`
+- avoid `all data is instantly and permanently deleted everywhere`
 
-## 12. User Choices And Controls
+### 16. Your choices, access, and correction
 
-Code-backed controls:
-- update username;
-- update avatar/custom avatar;
-- toggle web/mobile push;
+Purpose:
+Describe user controls currently available in the product.
+
+Current live pattern:
+- clause list `(a)` through `(e)`.
+
+Current code-backed controls:
+- update username and avatar-related settings;
+- control web/mobile push preferences;
 - delete account;
-- reset local app data.
+- reset local app data;
+- contact support for help.
 
-Potential placeholders if policy becomes more formal:
-- `[EXPORT_MECHANISM_IF_ANY]`
-- `[DATA_ACCESS_REQUEST_PROCESS]`
-- `[CORRECTION_REQUEST_PROCESS]`
+### 17. Account deletion and local reset guidance
 
-## 13. Security
+Purpose:
+Explain the distinction between cloud deletion and local reset.
 
-Safe, code-grounded wording should stay high-level:
-- managed auth;
-- authenticated backend routes;
-- hosted infrastructure;
-- provider access controls.
+Current live pattern:
+- two paragraphs.
 
-Avoid unverifiable promises such as:
-- “military-grade security”;
-- “fully encrypted at every layer”;
-- “completely secure”.
+### 18. Children
 
-## 14. Children
+Purpose:
+Use conservative non-child-directed wording unless a formal age-position changes.
 
-Use conservative wording unless a formal product age decision exists.
+Current live pattern:
+- one paragraph.
 
-Template:
+### 19. Policy updates
 
-> The product is not intended to be a child-directed service. If you believe a child has provided personal information through the product, contact `[PRIVACY_CONTACT_EMAIL]`.
+Purpose:
+Explain that the page may change as product behavior changes.
 
-## 15. International / Cross-Border Handling
+Current live pattern:
+- one paragraph.
 
-Code-backed basis:
-- major providers operate multi-region infrastructure.
+### 20. Contact
 
-Template:
+Purpose:
+Provide the live privacy contact point.
 
-> Because integrated service providers may process data in multiple countries, information may be handled outside your local jurisdiction.
+Current live pattern:
+- one paragraph.
 
-## 16. Policy Updates
+Current public contact:
+- `support@tasklaunch.app`
 
-Template:
+## Hero Copy Skeleton
 
-> We may update this policy as product behavior, integrations, or legal/business decisions change. The latest version will be posted on this page with an updated effective date where used.
+When updating the live page hero, use this structure:
 
-## 17. Contact
+- Tag:
+  - `TASKLAUNCH`
+- Title:
+  - `Privacy Policy`
+- Subline:
+  - `UPDATED: [MONTH DAY, YEAR]`
 
-Template:
-
-> For privacy questions or data-related requests, contact `[PRIVACY_CONTACT_EMAIL]`.
-
-Optional additions if confirmed:
-- mailing address;
-- support portal;
-- designated privacy contact name.
+Do not reintroduce the older descriptive overview paragraph unless the live design changes back to that format.
 
 ## Public Page Editing Checklist
 
-- Preserve the current privacy page layout and simple document structure.
-- Keep TOC anchors and section IDs in sync.
+- Preserve the current hero format:
+  - `TASKLAUNCH`
+  - `Privacy Policy`
+  - `UPDATED: [DATE]`
+- Preserve the `00` TOC section.
+- Keep TOC labels identical to section titles.
+- Keep TOC numbering and section numbering synchronized.
+- Keep section IDs and TOC hrefs synchronized.
+- Preserve any legacy inner anchors unless there is a deliberate cleanup.
 - Remove or narrow any statement the code does not support.
-- Prefer “current implementation” wording for technical behaviors.
+- Prefer `current implementation` wording for technical behavior.
+- Do not publish a blanket `we do not use cookies` statement based on the current repo alone.
+- If the public page discusses cookies, distinguish first-party app storage from possible third-party authentication/security provider technologies.
 - Do not copy text from third-party privacy policies.
-- Run lint/type checks on touched files after edits.
+- Re-check `src/app/privacy/page.tsx` before making legal/content edits so this skeleton does not drift again.

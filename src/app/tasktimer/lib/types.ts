@@ -32,7 +32,6 @@ export type Task = {
   checkpointToastMode?: "auto5s" | "auto3s" | "manual";
   timeGoalAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
   finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
-  xpDisqualifiedUntilReset?: boolean;
   presetIntervalsEnabled?: boolean;
   presetIntervalValue?: number;
   presetIntervalLastMilestoneId?: string | null;
@@ -55,11 +54,32 @@ export type HistoryEntry = {
   ms: number;
   color?: string;
   note?: string;
-  xpDisqualifiedUntilReset?: boolean;
   completionDifficulty?: CompletionDifficulty;
 };
 
 export type HistoryByTaskId = Record<string, HistoryEntry[]>;
+
+export type LiveTaskSession = {
+  sessionId: string;
+  taskId: string;
+  name: string;
+  startedAtMs: number;
+  elapsedMs: number;
+  note?: string;
+  color?: string;
+  status: "running";
+  updatedAtMs: number;
+};
+
+export type LiveSessionsByTaskId = Record<string, LiveTaskSession>;
+
+export type ProjectedHistoryEntry = HistoryEntry & {
+  isLiveSession?: boolean;
+  liveSessionId?: string;
+  liveSessionStatus?: "running";
+};
+
+export type ProjectedHistoryByTaskId = Record<string, ProjectedHistoryEntry[]>;
 
 export type DeletedTaskMeta = Record<
   string,

@@ -14,16 +14,18 @@ export const metadata: Metadata = {
 };
 
 function PolicySection({
+  id,
   number,
   title,
   children,
 }: {
+  id?: string;
   number: number;
   title: string;
   children: ReactNode;
 }) {
   return (
-    <section className="privacyLandingSection">
+    <section className="privacyLandingSection" id={id}>
       <div className="landingV2SectionLabel">
         <span className="landingV2SectionIndex displayFont">{String(number).padStart(2, "0")}</span>
         <span className="landingV2SectionLine" />
@@ -59,9 +61,6 @@ export default function PrivacyPolicyPage() {
           </Link>
 
           <div className="landingV2HeaderActions">
-            <Link href="/" className="landingV2HeaderLink">
-              Home
-            </Link>
             <PrivacyBackButton />
           </div>
         </header>
@@ -71,16 +70,12 @@ export default function PrivacyPolicyPage() {
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />
-              <span>Legal</span>
+              <span>TASKLAUNCH</span>
             </div>
 
             <h1 className="landingV2HeroTitle displayFont">Privacy Policy</h1>
 
-            <p className="landingV2HeroCopy">
-              This page explains what information TaskLaunch handles, where that information comes from, how it is
-              used inside the product, and what choices are currently available based on the features implemented in
-              this app.
-            </p>
+            <p className="landingV2HeroCopy">UPDATED: APRIL 21, 2026</p>
           </div>
         </section>
 
@@ -92,18 +87,32 @@ export default function PrivacyPolicyPage() {
           </div>
           <ul className="privacyLandingToc">
             {[
-              ["#collection", "Collection and storage"],
-              ["#use", "Use and disclosures"],
-              ["#rights", "Your choices and rights"],
-              ["#billing", "Billing and subscriptions"],
-              ["#feedback", "Feedback and issue tracking"],
-              ["#launch-updates", "Launch-updates signup"],
-              ["#retention", "Retention and deletion"],
-              ["#contact", "Contact"],
-            ].map(([href, label]) => (
+              ["#introduction", "01", "Introduction"],
+              ["#what-information-we-collect", "02", "What information we collect"],
+              ["#how-we-collect-information", "03", "How we collect information"],
+              ["#local-storage-and-session-storage", "04", "Local storage and session storage"],
+              ["#cloud-storage-and-app-infrastructure", "05", "Cloud storage and app infrastructure"],
+              ["#how-we-use-information", "06", "How we use information"],
+              ["#third-party-services-and-processors", "07", "Third-party services and processors"],
+              ["#sharing-and-disclosure", "08", "Sharing and disclosure"],
+              ["#push-notifications", "09", "Push notifications"],
+              ["#billing-and-subscriptions", "10", "Billing and subscriptions"],
+              ["#feedback-and-issue-tracking", "11", "Feedback and issue tracking"],
+              ["#launch-updates-subscription-list", "12", "Launch-updates subscription list"],
+              ["#overseas-and-cross-border-handling", "13", "Overseas and cross-border handling"],
+              ["#security-safeguards", "14", "Security safeguards"],
+              ["#retention-and-deletion", "15", "Retention and deletion"],
+              ["#your-choices-access-and-correction", "16", "Your choices, access, and correction"],
+              ["#account-deletion-and-local-reset-guidance", "17", "Account deletion and local reset guidance"],
+              ["#children", "18", "Children"],
+              ["#policy-updates", "19", "Policy updates"],
+              ["#contact", "20", "Contact"],
+            ].map(([href, number, label]) => (
               <li key={href}>
                 <a href={href} className="privacyLandingTocLink">
-                  {label}
+                  <span className="landingV2SectionIndex displayFont">{number}</span>
+                  <span className="landingV2SectionLine" />
+                  <span className="landingV2SectionName">{label}</span>
                 </a>
               </li>
             ))}
@@ -111,7 +120,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <div className="privacyLandingBody">
-          <PolicySection number={1} title="Introduction">
+          <PolicySection id="introduction" number={1} title="Introduction">
             <p>
               This Privacy Policy applies to TaskLaunch features made available through{" "}
               <a href="https://tasklaunch.app" target="_blank" rel="noreferrer">
@@ -127,7 +136,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={2} title="What information we collect">
+          <PolicySection id="what-information-we-collect" number={2} title="What information we collect">
             <div className="privacyLandingStack">
               <Clause letter="a">
                 Sign-in and account details such as Firebase Authentication identifiers, email address, and Google
@@ -164,7 +173,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={3} title="How we collect information">
+          <PolicySection id="how-we-collect-information" number={3} title="How we collect information">
             <div className="privacyLandingStack" id="collection">
               <Clause letter="a">
                 Directly from you when you sign in, edit profile settings, create and manage tasks, use social
@@ -182,25 +191,32 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={4} title="Local storage and session storage">
+          <PolicySection id="local-storage-and-session-storage" number={4} title="Local storage and session storage">
             <p>
               TaskLaunch stores a substantial amount of runtime data locally on your browser or device. Based on the
-              current implementation, this can include task state, history-related state, navigation state, theme and
-              menu style preferences, notification preferences, pending push action state, mode settings, and other app
-              behavior needed to continue the user experience on the same device.
+              current implementation, this primarily includes browser or device-local storage mechanisms such as local
+              storage, session storage where applicable, and IndexedDB-backed persistence. This can include task state,
+              history-related state, navigation state, theme and menu style preferences, notification preferences,
+              pending push action state, mode settings, and other app behavior needed to continue the user experience
+              on the same device.
             </p>
             <p>
               Session storage is also used for short-lived browser behavior, including signed-out redirect bypass
-              handling and related auth transition state. Local data can remain on your device until you clear it,
-              reset app data, clear browser storage, or uninstall the app.
+              handling and related auth transition state. Current web auth persistence also relies on browser-local
+              persistence and IndexedDB-backed state. TaskLaunch does not treat cookies as its primary app storage
+              layer, but some authentication, security, or abuse-prevention services used with the product may use
+              cookies or similar technologies under their own implementations. Local data can remain on your device
+              until you clear it, reset app data, clear browser storage, or uninstall the app.
             </p>
           </PolicySection>
 
-          <PolicySection number={5} title="Cloud storage and app infrastructure">
+          <PolicySection id="cloud-storage-and-app-infrastructure" number={5} title="Cloud storage and app infrastructure">
             <p>
               When you sign in, TaskLaunch uses Firebase services to support account access and cloud-backed app
               features. Current code paths show Firebase Authentication for sign-in and Cloud Firestore for many
-              account, task, feedback, subscription, social, and notification-related records.
+              account, task, feedback, subscription, social, and notification-related records. Current web
+              implementation also initializes Firebase App Check with reCAPTCHA Enterprise for security and abuse
+              prevention support.
             </p>
             <div className="privacyLandingStack">
               <Clause letter="a">Firebase Authentication is used for email-link sign-in and Google sign-in.</Clause>
@@ -216,7 +232,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={6} title="How we use information">
+          <PolicySection id="how-we-use-information" number={6} title="How we use information">
             <div className="privacyLandingStack" id="use">
               <Clause letter="a">To sign users in, keep sessions working, and provide access to account-backed features.</Clause>
               <Clause letter="b">
@@ -245,7 +261,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={7} title="Third-party services and processors">
+          <PolicySection id="third-party-services-and-processors" number={7} title="Third-party services and processors">
             <div className="privacyLandingStack">
               <Clause letter="a">
                 Google and Firebase are used for authentication, data storage, app infrastructure, and push delivery
@@ -267,10 +283,12 @@ export default function PrivacyPolicyPage() {
             <p>
               These services help operate TaskLaunch features. This page only describes their use as they appear in the
               current product code and does not replace the separate terms or privacy policies of those providers.
+              Third-party services used for authentication, security, billing, or issue tracking may also use cookies
+              or similar technologies under their own implementations.
             </p>
           </PolicySection>
 
-          <PolicySection number={8} title="Sharing and disclosure">
+          <PolicySection id="sharing-and-disclosure" number={8} title="Sharing and disclosure">
             <div className="privacyLandingStack">
               <Clause letter="a">
                 Information may be shared with service providers that support authentication, hosting, storage,
@@ -287,7 +305,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={9} title="Push notifications">
+          <PolicySection id="push-notifications" number={9} title="Push notifications">
             <p>
               If you enable web or mobile push notifications, TaskLaunch can store per-device records under your
               account, including token values, device IDs, provider information, native-or-web indicators, app-active
@@ -300,7 +318,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={10} title="Billing and subscriptions">
+          <PolicySection id="billing-and-subscriptions" number={10} title="Billing and subscriptions">
             <div id="billing" />
             <p>
               If you use paid subscription features, TaskLaunch can create Stripe checkout sessions and Stripe billing
@@ -315,7 +333,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={11} title="Feedback and issue tracking">
+          <PolicySection id="feedback-and-issue-tracking" number={11} title="Feedback and issue tracking">
             <div id="feedback" />
             <p>
               If you submit feedback, TaskLaunch stores the feedback title and message, and it can also accept PNG
@@ -328,7 +346,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={12} title="Launch-updates subscription list">
+          <PolicySection id="launch-updates-subscription-list" number={12} title="Launch-updates subscription list">
             <div id="launch-updates" />
             <p>
               The public launch-updates signup form stores the submitted email address and a normalized copy of that
@@ -341,7 +359,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={13} title="Overseas and cross-border handling">
+          <PolicySection id="overseas-and-cross-border-handling" number={13} title="Overseas and cross-border handling">
             <p>
               TaskLaunch relies on third-party infrastructure providers whose systems can operate across multiple
               countries. Because Firebase, Stripe, and related provider systems may process or store data outside the
@@ -349,7 +367,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={14} title="Security safeguards">
+          <PolicySection id="security-safeguards" number={14} title="Security safeguards">
             <p>
               The product uses managed authentication, hosted infrastructure, and service-level access controls offered
               by the providers integrated into the app. The codebase also includes account verification, authenticated
@@ -361,7 +379,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={15} title="Retention and deletion">
+          <PolicySection id="retention-and-deletion" number={15} title="Retention and deletion">
             <div id="retention" />
             <div className="privacyLandingStack">
               <Clause letter="a">
@@ -384,7 +402,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={16} title="Your choices, access, and correction">
+          <PolicySection id="your-choices-access-and-correction" number={16} title="Your choices, access, and correction">
             <div className="privacyLandingStack" id="rights">
               <Clause letter="a">
                 You can update some account and profile details inside the app, including username and avatar-related
@@ -406,7 +424,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </PolicySection>
 
-          <PolicySection number={17} title="Account deletion and local reset guidance">
+          <PolicySection id="account-deletion-and-local-reset-guidance" number={17} title="Account deletion and local reset guidance">
             <p>
               The current account-deletion flow removes the Firebase Authentication account and then calls backend
               cleanup routes to delete cloud-backed records tied to that account. The app also includes logic to retain
@@ -419,7 +437,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={18} title="Children">
+          <PolicySection id="children" number={18} title="Children">
             <p>
               The current codebase does not indicate that TaskLaunch is designed as a children&apos;s product. If you
               believe personal information relating to a child has been submitted through the product, contact TaskLaunch
@@ -427,18 +445,17 @@ export default function PrivacyPolicyPage() {
             </p>
           </PolicySection>
 
-          <PolicySection number={19} title="Policy updates">
+          <PolicySection id="policy-updates" number={19} title="Policy updates">
             <p>
               This page may be updated as product behavior, integrations, or data flows change. When updates are made,
               the revised version will be posted on this page.
             </p>
           </PolicySection>
 
-          <PolicySection number={20} title="Contact">
-            <div id="contact" />
+          <PolicySection id="contact" number={20} title="Contact">
             <p>
               For privacy questions, deletion help, or requests relating to information handled by the current
-              TaskLaunch product, contact <strong>aniven82@gmail.com</strong>.
+              TaskLaunch product, contact <strong>support@tasklaunch.app</strong>.
             </p>
           </PolicySection>
         </div>

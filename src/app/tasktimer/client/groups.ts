@@ -543,7 +543,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const friendUids = getSharedFriendUidsForTask(taskId);
     if (!friendUids.length) return;
     const metrics = computeTaskSharingMetrics(taskId);
-    const taskMode = ctx.taskModeOf(task);
     await Promise.all(
       friendUids.map((friendUid) =>
         upsertSharedTaskSummary({
@@ -551,7 +550,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           friendUid,
           taskId,
           taskName: String(task.name || ""),
-          taskMode,
           timerState: task.running ? "running" : "stopped",
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
@@ -632,7 +630,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     if (!shareTask) return;
     const metrics = computeTaskSharingMetrics(activeTaskId);
-    const taskMode = ctx.taskModeOf(shareTask);
     const writes = await Promise.all(
       targets.map((friendUid) =>
         upsertSharedTaskSummary({
@@ -640,7 +637,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           friendUid,
           taskId: activeTaskId,
           taskName: String(shareTask.name || ""),
-          taskMode,
           timerState: shareTask.running ? "running" : "stopped",
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
@@ -968,13 +964,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       friendNameByUid.set(friendUid, alias || friendUid);
     });
 
-    const sharedByTaskId = new Map<string, { taskId: string; taskName: string; taskMode: "mode1" | "mode2" | "mode3"; friendLabels: string[] }>();
+    const sharedByTaskId = new Map<string, { taskId: string; taskName: string; friendLabels: string[] }>();
     ownSharedSummaries.forEach((entry) => {
       const taskId = String(entry.taskId || "").trim();
       if (!taskId) return;
       const friendLabel = friendNameByUid.get(entry.friendUid) || String(entry.friendUid || "").trim() || "Unknown friend";
-      const taskMode: "mode1" | "mode2" | "mode3" =
-        entry.taskMode === "mode2" || entry.taskMode === "mode3" ? entry.taskMode : "mode1";
       const existing = sharedByTaskId.get(taskId);
       if (existing) {
         if (existing.friendLabels.indexOf(friendLabel) === -1) existing.friendLabels.push(friendLabel);
@@ -983,7 +977,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       sharedByTaskId.set(taskId, {
         taskId,
         taskName: String(entry.taskName || "").trim() || "Untitled task",
-        taskMode,
         friendLabels: [friendLabel],
       });
     });
@@ -992,9 +985,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .sort((a, b) => a.taskName.localeCompare(b.taskName, undefined, { sensitivity: "base" }))
       .map((entry) => {
         const friendLabel = entry.friendLabels.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })).join(", ");
-        return `<div class="friendSharedTaskCard isJumpCard friendSharedTaskCardMode-${ctx.escapeHtmlUI(
-          entry.taskMode
-        )}" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
+        return `<div class="friendSharedTaskCard isJumpCard" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
           <div class="friendSharedTaskInfo">
             <div class="friendSharedTaskTitle">${ctx.escapeHtmlUI(entry.taskName)}</div>
             <div class="friendSharedTaskMeta">Shared with: ${ctx.escapeHtmlUI(friendLabel)}</div>

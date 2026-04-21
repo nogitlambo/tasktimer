@@ -13,6 +13,7 @@ describe("history entry summary payload", () => {
         {
           ts: 1700000000000,
           ms: 3600000,
+          name: "Deep Work",
           note: "Deep focus block",
           completionDifficulty: 4,
         },
@@ -23,7 +24,7 @@ describe("history entry summary payload", () => {
     });
 
     expect(payload).not.toBeNull();
-    expect(payload?.titleText).toBe("Session Summary");
+    expect(payload?.titleText).toBe("Deep Work");
     expect(payload?.aggregate).toBeNull();
     expect(payload?.sessions).toHaveLength(1);
     expect(payload?.sessions[0]).toMatchObject({
@@ -33,6 +34,10 @@ describe("history entry summary payload", () => {
       timeGoalText: "Not tracked",
       xpText: "Not tracked",
     });
+    const html = renderHistoryEntrySummaryHtml(payload!, escapeHtml);
+    expect(html).not.toContain("Activity Summary");
+    expect(html).toContain("Session 1");
+    expect(html).toContain("Deep focus block");
   });
 
   it("builds aggregate totals and preserves safe xp derivation when all sessions are known", () => {
@@ -41,15 +46,15 @@ describe("history entry summary payload", () => {
         {
           ts: 1700000000000,
           ms: 1800000,
+          name: "Deep Work",
           note: "",
-          xpDisqualifiedUntilReset: true,
           completionDifficulty: 1,
         },
         {
           ts: 1699990000000,
           ms: 900000,
+          name: "Deep Work",
           note: "Quick wrap-up",
-          xpDisqualifiedUntilReset: true,
           completionDifficulty: 5,
         },
       ],
@@ -58,13 +63,14 @@ describe("history entry summary payload", () => {
       getEntryNote: (entry) => String(entry?.note || ""),
     });
 
-    expect(payload?.titleText).toBe("Session Summaries");
+    expect(payload?.titleText).toBe("Deep Work");
     expect(payload?.aggregate).toMatchObject({
       sessionCountText: "2 sessions",
-      xpText: "0 XP",
+      xpText: "Not tracked",
       timeGoalText: "Not tracked",
     });
     expect(payload?.sessions[0].noteText).toBe("No session note.");
+    expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Activity Summary");
     expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Session 1");
     expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Quick wrap-up");
   });

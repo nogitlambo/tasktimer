@@ -11,7 +11,7 @@ import type {
   HistoryViewState,
   MainMode,
 } from "./types";
-import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, Task } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
@@ -113,9 +113,10 @@ export type TaskTimerRewardsHistoryContext = {
   rewardSessionTrackersStorageKey: string;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
+  setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
-  getDashboardIncludedModes: () => Record<MainMode, boolean>;
   getRewardProgress: () => RewardProgressV1;
   setRewardProgress: (value: RewardProgressV1) => void;
   getRewardSessionTrackersByTaskId: () => Record<
@@ -146,8 +147,6 @@ export type TaskTimerRewardsHistoryContext = {
   getCurrentPlan: () => TaskTimerPlan;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   currentUid: () => string | null;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  isModeEnabled: (mode: MainMode) => boolean;
   getTaskElapsedMs: (task: Task) => number;
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   captureSessionNoteSnapshot: (taskId?: string | null) => string;
@@ -156,6 +155,8 @@ export type TaskTimerRewardsHistoryContext = {
   syncFocusSessionNotesInput: (taskId: string | null) => void;
   syncFocusSessionNotesAccordion: (taskId: string | null) => void;
   appendHistoryEntry: (taskId: string, entry: Record<string, unknown>) => void;
+  saveLiveSession: (session: LiveTaskSession) => void;
+  clearLiveSession: (taskId: string) => void;
   saveHistoryLocally: (history: HistoryByTaskId) => void;
   buildDefaultCloudPreferences: () => UserPreferencesV1;
   saveCloudPreferences: (prefs: UserPreferencesV1) => void;
@@ -222,17 +223,13 @@ export type TaskTimerTaskListUiContext = {
   runtime: TaskTimerRuntime;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
-  getCurrentMode: () => MainMode;
   getCurrentAppPage: () => AppPage;
   getTaskView: () => "list" | "tile";
   getTaskDragEl: () => HTMLElement | null;
   setTaskDragEl: (value: HTMLElement | null) => void;
   getFlippedTaskIds: () => Set<string>;
-  getLastRenderedTaskFlipMode: () => MainMode | null;
-  setLastRenderedTaskFlipMode: (value: MainMode | null) => void;
   getLastRenderedTaskFlipView: () => "list" | "tile" | null;
   setLastRenderedTaskFlipView: (value: "list" | "tile" | null) => void;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   render: () => void;
 };
@@ -290,14 +287,12 @@ export type TaskTimerGroupsContext = {
   getHistoryByTaskId: () => HistoryByTaskId;
   getCurrentUid: () => string | null;
   getCurrentAppPage: () => AppPage;
-  getCurrentMode: () => MainMode;
   applyMainMode: (mode: MainMode) => void;
   applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   render: () => void;
   closeConfirm: () => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   escapeHtmlUI: (value: unknown) => string;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   showWorkingIndicator: (message: string) => number;
   hideWorkingIndicator: (key?: number) => void;
@@ -352,7 +347,6 @@ export type TaskTimerTasksContext = {
   setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   getCurrentUid: () => string | null;
   getCurrentAppPage: () => AppPage;
-  getCurrentMode: () => MainMode;
   getTaskView: () => "list" | "tile";
   getCurrentTileColumnCount: () => number;
   setCurrentTileColumnCount: (value: number) => void;
@@ -376,8 +370,6 @@ export type TaskTimerTasksContext = {
   setEditTaskDurationPeriod: (value: "day" | "week") => void;
   getEditDraftSnapshot: () => string;
   setEditDraftSnapshot: (value: string) => void;
-  getEditMoveTargetMode: () => MainMode;
-  setEditMoveTargetMode: (value: MainMode) => void;
   getElapsedPadTarget: () => HTMLInputElement | null;
   setElapsedPadTarget: (value: HTMLInputElement | null) => void;
   getElapsedPadMilestoneRef: () =>
@@ -429,6 +421,8 @@ export type TaskTimerTasksContext = {
   openRewardSessionSegment: (task: Task | null | undefined, startMs?: number | null) => void;
   closeRewardSessionSegment: (task: Task | null | undefined, endMs?: number | null) => void;
   clearRewardSessionTracker: (taskId: string | null | undefined) => void;
+  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; note?: string }) => void;
+  finalizeLiveSession: (task: Task, opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }) => number;
   openFocusMode: (index: number) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
@@ -442,8 +436,6 @@ export type TaskTimerTasksContext = {
   setResetTaskConfirmBusy: (busy: boolean, logging: boolean) => void;
   syncConfirmPrimaryToggleUi: () => void;
   cloneTaskForEdit: (task: Task) => Task;
-  getModeLabel: (mode: MainMode) => string;
-  isModeEnabled: (mode: MainMode) => boolean;
   setEditTimeGoalEnabled: (enabled: boolean) => void;
   syncEditTaskTimeGoalUi: (task: Task) => void;
   syncEditCheckpointAlertUi: (task: Task) => void;
@@ -508,7 +500,6 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   TaskTimerSwitchControlContext & {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
-  getCurrentMode: () => MainMode;
   getEditIndex: () => number | null;
   setEditIndex: (value: number | null) => void;
   getEditTaskDraft: () => Task | null;
@@ -518,8 +509,6 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   setEditTaskDurationUnit: (value: "minute" | "hour") => void;
   getEditTaskDurationPeriod: () => "day" | "week";
   setEditTaskDurationPeriod: (value: "day" | "week") => void;
-  getEditMoveTargetMode: () => MainMode;
-  setEditMoveTargetMode: (value: MainMode) => void;
   getElapsedPadTarget: () => HTMLInputElement | null;
   setElapsedPadTarget: (value: HTMLInputElement | null) => void;
   getElapsedPadMilestoneRef: () =>
@@ -552,8 +541,6 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;
   cloneTaskForEdit: (task: Task) => Task;
-  getModeLabel: (mode: MainMode) => string;
-  isModeEnabled: (mode: MainMode) => boolean;
   escapeHtmlUI: (value: unknown) => string;
   setEditTimeGoalEnabled: (enabled: boolean) => void;
   isEditTimeGoalEnabled: () => boolean;
@@ -585,7 +572,6 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
 export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
-  getCurrentMode: () => MainMode;
   setTasks: (value: Task[]) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
@@ -660,8 +646,8 @@ export type TaskTimerSessionContext = {
   getTasks: () => Task[];
   getCurrentAppPage: () => AppPage;
   getHistoryByTaskId: () => HistoryByTaskId;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   getWeekStarting: () => DashboardWeekStart;
-  getDashboardIncludedModes: () => Record<MainMode, boolean>;
   getRewardProgress: () => RewardProgressV1;
   getCurrentUid: () => string | null;
   getFocusModeTaskId: () => string | null;
@@ -735,12 +721,11 @@ export type TaskTimerSessionContext = {
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
-  isModeEnabled: (mode: MainMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getHistoryEntryNote: (entry: unknown) => string;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
+  syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
@@ -774,8 +759,6 @@ export type TaskTimerDashboardContext = {
   setDashboardCardSizesDraftBeforeEdit: (value: Record<string, DashboardCardSize> | null) => void;
   getDashboardCardVisibility: () => Record<string, boolean>;
   setDashboardCardVisibility: (value: Record<string, boolean>) => void;
-  getDashboardIncludedModes: () => Record<MainMode, boolean>;
-  setDashboardIncludedModes: (value: Record<MainMode, boolean>) => void;
   getDashboardAvgRange: () => DashboardAvgRange;
   setDashboardAvgRange: (value: DashboardAvgRange) => void;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
@@ -784,9 +767,6 @@ export type TaskTimerDashboardContext = {
   setCloudDashboardCache: (value: unknown) => void;
   loadCachedDashboard: () => unknown;
   saveCloudDashboard: (value: unknown) => void;
-  getModeLabel: (mode: MainMode) => string;
-  isModeEnabled: (mode: MainMode) => boolean;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
@@ -799,11 +779,11 @@ export type TaskTimerDashboardContext = {
 
 export type TaskTimerDashboardRenderContext = {
   els: TaskTimerElements;
+  getRewardProgress: () => RewardProgressV1;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
-  getDashboardIncludedModes: () => Record<MainMode, boolean>;
   getDashboardAvgRange: () => DashboardAvgRange;
   setDashboardAvgRange: (value: DashboardAvgRange) => void;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
@@ -819,13 +799,11 @@ export type TaskTimerDashboardRenderContext = {
   };
   getDashboardRefreshHoldActive: () => boolean;
   getCloudRefreshInFlight: () => Promise<void> | null;
+  getIsOnboardingDashboardPreview: () => boolean;
   getDynamicColorsEnabled: () => boolean;
   getElapsedMs: (task: Task) => number;
   escapeHtmlUI: (value: unknown) => string;
   normalizeHistoryTimestampMs: (value: unknown) => number;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  isModeEnabled: (mode: MainMode) => boolean;
-  getModeLabel: (mode: MainMode) => string;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
@@ -843,11 +821,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
-    MODE_SETTINGS_KEY: string;
     WEEK_STARTING_KEY: string;
   };
-  defaultModeLabels: Record<MainMode, string>;
-  defaultModeEnabled: Record<MainMode, boolean>;
   defaultModeColors: Record<MainMode, string>;
   getThemeMode: () => "purple" | "cyan" | "lime";
   setThemeModeState: (value: "purple" | "cyan" | "lime") => void;
@@ -873,14 +848,6 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setOptimalProductivityStartTimeState: (value: string) => void;
   getOptimalProductivityEndTime: () => string;
   setOptimalProductivityEndTimeState: (value: string) => void;
-  getModeLabels: () => Record<MainMode, string>;
-  setModeLabelsState: (value: Record<MainMode, string>) => void;
-  getModeEnabled: () => Record<MainMode, boolean>;
-  setModeEnabledState: (value: Record<MainMode, boolean>) => void;
-  getCurrentMode: () => MainMode;
-  setCurrentModeState: (value: MainMode) => void;
-  getEditMoveTargetMode: () => MainMode;
-  setEditMoveTargetModeState: (value: MainMode) => void;
   getRewardProgress: () => unknown;
   normalizeRewardProgress: (value: unknown) => unknown;
   currentUid: () => string | null;
@@ -899,12 +866,10 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   getCurrentEditTask: () => Task | null;
   syncEditCheckpointAlertUi: (task: Task) => void;
   clearTaskFlipStates: () => void;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   render: () => void;
   renderDashboardPanelMenu: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
-  ensureDashboardIncludedModesValid: () => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   closeConfirm: () => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
@@ -1008,6 +973,7 @@ export type TaskTimerHistoryInlineContext = {
   formatTime: (value: number) => string;
   formatTwo: (value: number) => string;
   formatDateTime: (value: number) => string;
+  getHistoryEntryNote: (entry: unknown) => string;
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;

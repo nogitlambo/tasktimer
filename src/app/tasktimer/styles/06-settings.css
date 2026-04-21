@@ -1101,12 +1101,6 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #taskSettingsOverlay .modal h3,
 #taskSettingsOverlay .modal h4,
 #taskSettingsOverlay .modal label,
-#categoryManagerOverlay .modal,
-#categoryManagerOverlay .modal h1,
-#categoryManagerOverlay .modal h2,
-#categoryManagerOverlay .modal h3,
-#categoryManagerOverlay .modal h4,
-#categoryManagerOverlay .modal label,
 #contactOverlay .modal{
   font-family: var(--font-readable);
 }

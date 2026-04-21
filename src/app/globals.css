@@ -61,10 +61,7 @@ body.webSignInRoute {
   margin: 0;
   max-width: none;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(167, 243, 92, 0.08), transparent 34%),
-    radial-gradient(circle at 82% 76%, rgba(255, 255, 255, 0.05), transparent 36%),
-    linear-gradient(180deg, #06070a 0%, #050608 100%);
+  background: linear-gradient(180deg, #06070a 0%, #050608 100%);
   color: rgba(248, 250, 252, 0.96);
   font-family: var(--font-readable);
 }
@@ -87,29 +84,6 @@ body.webSignInRoute .webSignInPage {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.16));
 }
 
-.webSignInGlow {
-  pointer-events: none;
-  position: absolute;
-  z-index: -1;
-  width: 520px;
-  height: 520px;
-  border-radius: 999px;
-  filter: blur(72px);
-  opacity: 0.28;
-}
-
-.webSignInGlowTop {
-  top: -170px;
-  left: -120px;
-  background: rgba(167, 243, 92, 0.34);
-}
-
-.webSignInGlowBottom {
-  right: -140px;
-  bottom: -210px;
-  background: rgba(255, 255, 255, 0.16);
-}
-
 .webSignInContainer {
   position: relative;
   z-index: 1;
@@ -118,7 +92,7 @@ body.webSignInRoute .webSignInPage {
   width: 100%;
   align-items: center;
   justify-content: center;
-  padding: 48px;
+  padding: 48px 48px 96px;
 }
 
 .webSignInAuthFrame,
@@ -157,7 +131,7 @@ body.webSignInRoute .webSignInPage {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: transparent;
   color: rgba(248, 250, 252, 0.96);
-  font-family: var(--font-display-ui);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.16em;
@@ -189,6 +163,50 @@ body.webSignInRoute .webSignInPage {
   padding: 0 24px;
 }
 
+.webSignInAuthButtonPrimary {
+  position: relative;
+  min-height: 44px;
+  justify-content: center;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 10px 24px rgba(0, 0, 0, 0.34),
+    0 3px 8px rgba(0, 0, 0, 0.28);
+  padding: 0 18px;
+  color: rgba(248, 250, 252, 0.96);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.webSignInAuthButtonPrimary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 14px 30px rgba(0, 0, 0, 0.38),
+    0 4px 10px rgba(0, 0, 0, 0.3);
+  opacity: 1;
+}
+
+.webSignInAuthButtonIcon {
+  position: absolute;
+  left: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.webSignInAuthButtonLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-left: 52px;
+}
+
 .webSignInAuthInput {
   height: 44px;
   width: 100%;
@@ -201,12 +219,23 @@ body.webSignInRoute .webSignInPage {
   outline: none;
 }
 
+.webSignInAuthInputStandard {
+  min-width: 280px;
+  width: min(280px, 100%);
+  max-width: 100%;
+  padding: 0 16px;
+}
+
 .webSignInAuthInput::placeholder {
   color: rgba(248, 250, 252, 0.42);
 }
 
 .webSignInAuthInput:focus {
   border-color: rgba(167, 243, 92, 0.48);
+}
+
+.webSignInAuthActions {
+  justify-content: center;
 }
 
 .webSignInStatus {
@@ -234,6 +263,36 @@ body.webSignInRoute .webSignInPage {
   font-weight: 700;
 }
 
+.webSignInFooter {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 1;
+  width: min(720px, calc(100% - 32px));
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.webSignInFooterText {
+  margin: 0;
+  color: rgba(248, 250, 252, 0.58);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.webSignInFooterLink {
+  color: inherit;
+  text-decoration-line: underline !important;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.webSignInFooterLink:hover {
+  color: inherit;
+}
+
 @media (min-width: 900px) {
   .webSignInAuthFrame,
   .webSignInLaunchPanel {
@@ -243,17 +302,22 @@ body.webSignInRoute .webSignInPage {
 
 @media (max-width: 640px) {
   .webSignInContainer {
-    padding: 32px 22px;
+    padding: 32px 22px 92px;
   }
 
   .webSignInLogo {
     width: 280px;
   }
+
+  .webSignInFooter {
+    bottom: 18px;
+    width: min(560px, calc(100% - 24px));
+  }
 }
 
 @media (max-width: 420px) {
   .webSignInContainer {
-    padding: 28px 16px;
+    padding: 28px 16px 88px;
   }
 
   .webSignInLogo {
@@ -1113,6 +1177,7 @@ canvas {
 }
 
 .privacyLandingPage .landingV2HeroTitle {
+  margin-bottom: 32px;
   max-width: 14ch;
   font-size: clamp(1.675rem, 4vw, 3.5rem);
 }
@@ -1124,8 +1189,13 @@ canvas {
 }
 
 .privacyLandingPage .landingV2HeroMain {
+  gap: 12px;
   max-width: 920px;
   padding-bottom: 8px;
+}
+
+.privacyLandingPage .landingV2HeroCopy {
+  margin: 0;
 }
 
 .privacyLandingBody {
@@ -1147,18 +1217,33 @@ canvas {
 }
 
 .privacyLandingTocLink {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
   color: var(--landing-text);
-  font-family: var(--font-display-ui);
-  font-size: 0.84rem;
-  letter-spacing: 0.08em;
   text-decoration: none;
-  text-transform: none;
-  transition: color 160ms ease;
+  transition: color 160ms ease, opacity 160ms ease;
 }
 
 .privacyLandingTocLink:hover {
   color: var(--landing-lime);
+  opacity: 0.92;
+}
+
+.privacyLandingTocLink .landingV2SectionIndex,
+.privacyLandingTocLink .landingV2SectionName {
+  color: inherit;
+}
+
+.privacyLandingTocLink .landingV2SectionIndex {
+  width: 2.6ch;
+  flex: 0 0 2.6ch;
+  text-align: right;
+}
+
+.privacyLandingTocLink .landingV2SectionLine {
+  width: 54px;
+  flex: 0 0 54px;
 }
 
 .privacyLandingSection {

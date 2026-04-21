@@ -13,8 +13,6 @@
   --accent:#00CFC8;
   --mode-accent:#00CFC8;
   --mode1-accent:#00CFC8;
-  --mode2-accent:#3A86FF;
-  --mode3-accent:#FF6B6B;
   --accent2:#00B8B2;
   --accent3:#35e8ff;
   --warn:#ff4d4d;
@@ -825,9 +823,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .switch.on{ background: rgba(0,207,200,.25); border-color: rgba(0,207,200,.35); }
 .switch.on::after{ left:26px; background: var(--accent); }
-.overrideElapsedRow.isDisabled{
-  display:none;
-}
 .milestones{
   display:none;
   margin-top:12px;
@@ -971,7 +966,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .historyTop{
   display:flex;
-  align-items:center;
+  align-items:baseline;
   justify-content:space-between;
   gap:12px;
   margin-bottom:12px;
@@ -983,13 +978,25 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .historyTopActions{
   margin-left:auto;
+  display:flex;
+  align-items:baseline;
   justify-content:flex-end;
+}
+.historyTopDivider{
+  width:1px;
+  height:16px;
+  margin:0 10px 0 2px;
+  background: rgba(235,245,255,.18);
+  flex:0 0 auto;
+  align-self:center;
 }
 .historyTitle{
   font-family:var(--font-tight);
   font-weight:700;
-  font-size:17px;
-  letter-spacing:.1px;
+  font-size:12px;
+  line-height:1;
+  letter-spacing:.06em;
+  text-transform:uppercase;
 }
 .historyPinBtn{
   margin-left:8px;
@@ -1006,19 +1013,27 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .historyClearLockBtn{
   margin-left:8px;
-  padding:0 6px;
-  min-width:20px;
-  height:20px;
-  border:1px solid rgba(255,77,77,.45);
-  background: rgba(255,77,77,.14);
-  color: rgba(255,130,130,.98);
+  padding:0 10px;
+  min-width:auto;
+  height:30px;
+  border:none !important;
+  background: transparent !important;
+  box-shadow:none !important;
+  color: rgba(235,245,255,.92);
   font-size:12px;
   line-height:1;
   cursor:pointer;
   vertical-align:middle;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  align-self:baseline;
 }
 .historyClearLockBtn:hover{
-  background: rgba(255,77,77,.2);
+  background: rgba(235,245,255,.18) !important;
 }
 .historyPinBtn.isOn{
   border:none;
@@ -1161,10 +1176,49 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   cursor:not-allowed;
 }
 .historyTopIconBtn{
-  border:none !important;
-  background: transparent !important;
-  box-shadow:none !important;
-}
+    border:none !important;
+    background: transparent !important;
+    box-shadow:none !important;
+  }
+.historyManageBtn{
+    min-width:auto;
+    height:30px;
+    padding:0 10px;
+    border:none !important;
+    background: transparent !important;
+    box-shadow:none !important;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+.historyManageBtn:hover,
+.historyManageBtn:focus-visible{
+    background: rgba(235,245,255,.18) !important;
+  }
+.historyViewSummaryBtn{
+    min-width:auto;
+    height:30px;
+    padding:0 10px;
+    border:none !important;
+    background: transparent !important;
+    box-shadow:none !important;
+    font-size:12px;
+    line-height:1;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    align-self:baseline;
+  }
+.historyViewSummaryBtn:hover,
+.historyViewSummaryBtn:focus-visible{
+    background: rgba(235,245,255,.18) !important;
+  }
+.historyViewSummaryBtn:disabled,
+.historyViewSummaryBtn[aria-disabled="true"]{
+    opacity:.45;
+    cursor:not-allowed;
+  }
 .historyBest{
   margin-top:12px;
   color: rgba(255,255,255,.70);
@@ -2511,6 +2565,10 @@ body[data-theme="lime"] .userGuideIcon{
   #appPageTasks .task .time *,
   #appPageTasks .task .timeBoxValue,
   #appPageTasks .task .timeBoxValue *,
+  #focusModeScreen .focusDialTime,
+  #focusModeScreen .focusDialTime *,
+  #focusModeScreen .focusDialDays,
+  #focusModeScreen .focusDialDays *,
   #appPageTasks .task .actions .btn[data-action="start"],
   #appPageTasks .task .actions .btn[data-action="stop"]
 ) {

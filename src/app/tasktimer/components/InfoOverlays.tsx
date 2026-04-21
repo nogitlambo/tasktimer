@@ -65,14 +65,6 @@ export default function InfoOverlays() {
       <InfoOverlayFrame overlayId="taskSettingsOverlay" ariaLabel="Task Settings" title="Task Settings">
         <p className="modalSubtext">Task settings are now available in Settings &gt; Preferences.</p>
       </InfoOverlayFrame>
-
-      <InfoOverlayFrame
-        overlayId="categoryManagerOverlay"
-        ariaLabel="Categories removed"
-        title="Categories Removed"
-      >
-        <p className="modalSubtext">TaskTimer now uses a single task list and categories are no longer available.</p>
-      </InfoOverlayFrame>
     </>
   );
 }

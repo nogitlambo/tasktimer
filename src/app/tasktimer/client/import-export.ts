@@ -38,8 +38,14 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   }
 
   function buildExportTaskSnapshot(task: Task) {
+    const taskSnapshot = {
+      ...(task as Task & {
+        xpDisqualifiedUntilReset?: unknown;
+      }),
+    };
+    delete taskSnapshot.xpDisqualifiedUntilReset;
     return {
-      ...task,
+      ...taskSnapshot,
       milestonesEnabled: !!task.milestonesEnabled,
       milestoneTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestones: ctx.sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((milestone) => ({
@@ -138,7 +144,6 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.checkpointToastEnabled = !!rawTask.checkpointToastEnabled;
     nextTask.checkpointToastMode = rawTask.checkpointToastMode === "manual" ? "manual" : "auto5s";
     nextTask.timeGoalAction = "confirmModal";
-    nextTask.xpDisqualifiedUntilReset = !!rawTask.xpDisqualifiedUntilReset;
     nextTask.presetIntervalsEnabled = !!rawTask.presetIntervalsEnabled;
     nextTask.presetIntervalValue = ctx.getPresetIntervalValueNum(rawTask as Task);
     nextTask.presetIntervalLastMilestoneId = rawTask.presetIntervalLastMilestoneId
@@ -195,7 +200,6 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
           name: String(entry.name || ""),
           ms,
           ts,
-          ...("xpDisqualifiedUntilReset" in entry ? { xpDisqualifiedUntilReset: !!entry.xpDisqualifiedUntilReset } : {}),
           color: entry.color ? String(entry.color) : undefined,
           note: note || undefined,
           ...(completionDifficulty ? { completionDifficulty } : {}),

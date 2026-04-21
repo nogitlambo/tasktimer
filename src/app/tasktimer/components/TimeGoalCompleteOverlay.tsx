@@ -31,6 +31,9 @@ export default function TimeGoalCompleteOverlay() {
           </div>
         </fieldset>
         <div className="confirmBtns timeGoalCompleteActionGrid">
+          <button className="btn btn-ghost" id="timeGoalCompleteAddNoteBtn" type="button">
+            Add Note
+          </button>
           <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button" disabled>
             Close
           </button>

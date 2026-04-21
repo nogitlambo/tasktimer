@@ -60,7 +60,6 @@ export type SharedTaskSummary = {
   friendUid: string;
   taskId: string;
   taskName: string;
-  taskMode: "mode1" | "mode2" | "mode3";
   timerState: "running" | "stopped";
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
@@ -81,7 +80,6 @@ export type SharedTaskSummaryInput = {
   friendUid: string;
   taskId: string;
   taskName: string;
-  taskMode: "mode1" | "mode2" | "mode3";
   timerState: "running" | "stopped";
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
@@ -216,8 +214,6 @@ function asFriendship(id: string, row: Record<string, unknown>): Friendship {
 function asSharedTaskSummary(id: string, row: Record<string, unknown>): SharedTaskSummary {
   const timerStateRaw = String(row.timerState || "").trim().toLowerCase();
   const timerState: "running" | "stopped" = timerStateRaw === "running" ? "running" : "stopped";
-  const taskModeRaw = String(row.taskMode || "").trim();
-  const taskMode: "mode1" | "mode2" | "mode3" = taskModeRaw === "mode2" || taskModeRaw === "mode3" ? taskModeRaw : "mode1";
   const rawTrend = Array.isArray(row.focusTrend7dMs) ? row.focusTrend7dMs : [];
   const focusTrend7dMs = new Array(7).fill(0).map((_, i) => Math.max(0, Math.floor(Number(rawTrend[i] || 0))));
   return {
@@ -226,7 +222,6 @@ function asSharedTaskSummary(id: string, row: Record<string, unknown>): SharedTa
     friendUid: String(row.friendUid || ""),
     taskId: String(row.taskId || ""),
     taskName: String(row.taskName || ""),
-    taskMode,
     timerState,
     focusTrend7dMs,
     checkpointScaleMs: row.checkpointScaleMs == null ? null : Math.max(0, Number(row.checkpointScaleMs || 0)),
@@ -352,7 +347,6 @@ export async function upsertSharedTaskSummary(
     const friendUid = String(summary.friendUid || "").trim();
     const taskId = String(summary.taskId || "").trim();
     const taskName = String(summary.taskName || "").trim();
-    const taskMode: "mode1" | "mode2" | "mode3" = summary.taskMode === "mode2" || summary.taskMode === "mode3" ? summary.taskMode : "mode1";
     const timerState: "running" | "stopped" = summary.timerState === "running" ? "running" : "stopped";
     const focusTrend7dMs = new Array(7)
       .fill(0)
@@ -377,7 +371,6 @@ export async function upsertSharedTaskSummary(
       friendUid,
       taskId,
       taskName,
-      taskMode,
       timerState,
       focusTrend7dMs,
       checkpointScaleMs,

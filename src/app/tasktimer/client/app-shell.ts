@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { ONBOARDING_MODULE_CLICK_EVENT, onboardingModuleStepFromNavPage } from "../lib/onboarding";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
 
@@ -236,6 +237,12 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
   function ensureNavStackCurrentScreen() {
     pushCurrentScreenToNavStack();
+  }
+
+  function dispatchOnboardingModuleClick(pageRaw: string) {
+    const step = onboardingModuleStepFromNavPage(pageRaw);
+    if (!step) return;
+    window.dispatchEvent(new CustomEvent(ONBOARDING_MODULE_CLICK_EVENT, { detail: { step } }));
   }
 
   function navigateToAppRoute(path: string) {
@@ -558,26 +565,36 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       navigateToAppRoute("/settings");
     });
 
-    ctx.on(ctx.els.commandCenterTasksBtn, "click", () =>
-      applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" })
-    );
+    ctx.on(ctx.els.commandCenterTasksBtn, "click", (e: any) => {
+      dispatchOnboardingModuleClick("tasks");
+      if (e?.defaultPrevented) return;
+      applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
+    });
     ctx.on(ctx.els.openScheduleBtn, "click", () => applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.scheduleAddTaskBtn, "click", () => {
       ctx.els.openAddTaskBtn?.click();
     });
-    ctx.on(ctx.els.commandCenterDashboardBtn, "click", () =>
-      applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
-    );
+    ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
+      dispatchOnboardingModuleClick("dashboard");
+      if (e?.defaultPrevented) return;
+      applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" });
+    });
     ctx.on(ctx.els.commandCenterGroupsBtn, "click", (e: any) => {
+      dispatchOnboardingModuleClick("test2");
+      if (e?.defaultPrevented) return;
       e?.preventDefault?.();
       applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
     });
     ctx.on(ctx.els.commandCenterLeaderboardBtn, "click", (e: any) => {
+      dispatchOnboardingModuleClick("leaderboard");
+      if (e?.defaultPrevented) return;
       e?.preventDefault?.();
       applyAppPage("leaderboard", { pushNavStack: true, syncUrl: "push" });
     });
     ctx.on(ctx.els.commandCenterSettingsBtn, "click", (e: any) => {
+      dispatchOnboardingModuleClick("settings");
+      if (e?.defaultPrevented) return;
       e?.preventDefault?.();
       navigateToAppRoute("/settings");
     });

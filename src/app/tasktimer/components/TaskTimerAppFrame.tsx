@@ -29,11 +29,8 @@ export default function TaskTimerAppFrame({ activePage, children }: TaskTimerApp
         <div className="initialAuthBusyPanel" role="status" aria-live="polite" aria-atomic="true">
           <h2 className="sr-only">Loading your workspace</h2>
           <p className="modalSubtext confirmText" id="initialAuthBusyText">Loading your workspace into this session...</p>
-          <div className="dashboardRefreshBusyArrowStage initialAuthBusyArrowStage" aria-hidden="true">
-            <div className="dashboardRefreshBusyArrowShell initialAuthBusyArrowShell">
-              <div className="dashboardRefreshBusyArrowBeamBlend" />
-              <AppImg className="dashboardRefreshBusyArrowGraphic initialAuthBusyArrowGraphic" src="/logo/launch-icon-original-transparent.png" alt="" />
-            </div>
+          <div className="dashboardRefreshBusyProgress initialAuthBusyProgress" aria-hidden="true">
+            <span className="dashboardRefreshBusyProgressBar" />
           </div>
         </div>
       </div>

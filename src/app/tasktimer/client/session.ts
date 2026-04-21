@@ -249,16 +249,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function clearTaskTimeGoalFlow(taskId?: string | null) {
     const normalizedTaskId = String(taskId || "").trim();
-    if (normalizedTaskId && ctx.getTimeGoalModalTaskId() === normalizedTaskId) {
+    const activeModalTaskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
+    if (normalizedTaskId && activeModalTaskId === normalizedTaskId) {
       ctx.setTimeGoalModalTaskId(null);
       ctx.setTimeGoalModalFrozenElapsedMs(0);
     }
     if (
       !normalizedTaskId ||
-      ctx.getTimeGoalModalTaskId() == null ||
-      normalizedTaskId === String(ctx.getTimeGoalModalTaskId() || "").trim()
+      !activeModalTaskId ||
+      normalizedTaskId === activeModalTaskId
     ) {
       clearPendingTimeGoalFlow();
+      ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
     }
@@ -342,13 +344,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       taskId: String(task.id || "").trim() || null,
       awardedAt: nowMs(),
       elapsedMs: safeElapsedMs,
-      xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
-      dashboardIncludedModes: ctx.getDashboardIncludedModes(),
-      isModeEnabled: ctx.isModeEnabled,
-      taskModeOf: ctx.taskModeOf,
       momentumEntitled: ctx.hasEntitlement("advancedInsights"),
     });
     return Math.max(0, Math.floor(Number(award.amount || 0) || 0));
@@ -419,8 +417,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           completionDifficulty: pending.completionDifficulty,
         });
       }
-      if (pending.completionDifficulty && pending.step === "saveNote") openTimeGoalSaveNoteChoice(task);
-      else if (pending.completionDifficulty && pending.step === "note") openTimeGoalNoteModal(task);
+      if (pending.step === "saveNote") openTimeGoalSaveNoteChoice(task);
+      else if (pending.step === "note") openTimeGoalNoteModal(task);
       return;
     }
     if (String(ctx.getTimeGoalModalTaskId() || "").trim()) return;
@@ -751,7 +749,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const activeEl = document.activeElement as HTMLElement | null;
     if (focusScreenEl && activeEl && focusScreenEl.contains(activeEl)) {
       if (els.footerTasksBtn && typeof els.footerTasksBtn.focus === "function") els.footerTasksBtn.focus();
-      else if (els.mode1Btn && typeof els.mode1Btn.focus === "function") els.mode1Btn.focus();
+      else if (els.openAddTaskBtn && typeof els.openAddTaskBtn.focus === "function") els.openAddTaskBtn.focus();
       else if (typeof activeEl.blur === "function") activeEl.blur();
     }
     const closingFocusTaskId = String(ctx.getFocusModeTaskId() || "").trim();
@@ -1160,7 +1158,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           resetBtn.title = resetLabel;
           resetBtn.setAttribute("aria-label", resetLabel);
         }
-        if (task.running) ctx.syncRewardSessionTrackerForTask(task, nowMs());
+        if (task.running) {
+          ctx.syncRewardSessionTrackerForTask(task, nowMs());
+          ctx.syncLiveSessionForTask(task, nowMs());
+        }
         processCheckpointAlertsForTask(task, elapsedMs / 1000);
         processedCheckpointTaskIds.add(String(task.id || ""));
       });
@@ -1168,7 +1169,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     tasks.forEach((task) => {
       const taskId = String(task.id || "");
       if (!taskId || processedCheckpointTaskIds.has(taskId)) return;
-      if (task.running) ctx.syncRewardSessionTrackerForTask(task, nowMs());
+      if (task.running) {
+        ctx.syncRewardSessionTrackerForTask(task, nowMs());
+        ctx.syncLiveSessionForTask(task, nowMs());
+      }
       processCheckpointAlertsForTask(task, getElapsedMs(task) / 1000);
     });
     if (ctx.getCheckpointAutoResetDirty()) {
@@ -1243,6 +1247,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();
       if (task) await resolveTimeGoalCompletion(task, { logHistory: true });
+    });
+    ctx.on(els.timeGoalCompleteAddNoteBtn, "click", () => {
+      const task = getActiveTimeGoalModalTask();
+      if (task) openTimeGoalNoteModal(task);
     });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {
       const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;

@@ -9,9 +9,11 @@ import {
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
 import { computeMomentumSnapshot, getMomentumBandLabel, type MomentumSnapshot } from "../lib/momentum";
+import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
+import { ONBOARDING_DASHBOARD_PREVIEW } from "../lib/dashboardOnboardingPreview";
 import type { TaskTimerDashboardRenderContext } from "./context";
-import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDensity, MainMode } from "./types";
+import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -79,6 +81,57 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return "Medium";
   }
 
+  function isOnboardingDashboardPreviewActive() {
+    return ctx.getIsOnboardingDashboardPreview();
+  }
+
+  function applyMockTrendIndicator(indicatorEl: HTMLElement | null, deltaPct: number) {
+    if (!indicatorEl) return;
+    indicatorEl.classList.remove("positive", "negative", "neutral");
+    const roundedDeltaPct = Math.round(Number(deltaPct) || 0);
+    indicatorEl.textContent =
+      roundedDeltaPct > 0 ? `+${roundedDeltaPct}%` : roundedDeltaPct < 0 ? `-${Math.abs(roundedDeltaPct)}%` : "0%";
+    if (roundedDeltaPct > 0) indicatorEl.classList.add("positive");
+    else if (roundedDeltaPct < 0) indicatorEl.classList.add("negative");
+    else indicatorEl.classList.add("neutral");
+  }
+
+  function renderOnboardingXpProgressCard() {
+    const cardEl = document.querySelector("#appPageDashboard .dashboardXpProgressCard") as HTMLElement | null;
+    const valueEl = cardEl?.querySelector(".dashboardXpProgressValue strong") as HTMLElement | null;
+    const progressBarEl = cardEl?.querySelector(".dashboardXpProgressTrack") as HTMLElement | null;
+    const progressFillEl = cardEl?.querySelector(".dashboardXpProgressFill") as HTMLElement | null;
+    const metaEl = cardEl?.querySelector(".dashboardXpProgressMeta span") as HTMLElement | null;
+    const rewardsHeader = isOnboardingDashboardPreviewActive()
+      ? {
+          totalXp: ONBOARDING_DASHBOARD_PREVIEW.xpProgress.totalXp,
+          progressPct: ONBOARDING_DASHBOARD_PREVIEW.xpProgress.progressPct,
+          xpToNext: ONBOARDING_DASHBOARD_PREVIEW.xpProgress.xpToNext,
+        }
+      : (() => {
+          const liveHeader = buildRewardsHeaderViewModel(ctx.getRewardProgress());
+          return {
+            totalXp: liveHeader.totalXp,
+            progressPct: liveHeader.progressPct,
+            xpToNext: liveHeader.xpToNext,
+          };
+        })();
+    if (valueEl) valueEl.textContent = `${rewardsHeader.totalXp} XP`;
+    if (progressFillEl) progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+    if (progressBarEl) {
+      progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
+      progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
+    }
+    if (metaEl) metaEl.textContent = rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached";
+    if (cardEl) {
+      const cardSummary =
+        rewardsHeader.xpToNext != null
+          ? `${rewardsHeader.totalXp} XP total and ${rewardsHeader.xpToNext} XP to the next rank.`
+          : `${rewardsHeader.totalXp} XP total and max rank reached.`;
+      cardEl.setAttribute("aria-label", `XP progress. ${cardSummary}`);
+    }
+  }
+
   function applyDashboardTrendIndicator(indicatorEl: HTMLElement | null, currentMs: number, previousMs: number) {
     if (!indicatorEl) return null;
     indicatorEl.classList.remove("positive", "negative", "neutral");
@@ -137,16 +190,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     cardEl: HTMLElement | null,
     listEl: HTMLElement | null,
     noteEl: HTMLElement | null,
-    summaryEl: HTMLElement | null
+    summaryEl: HTMLElement | null,
+    opts?: { locked?: boolean }
   ) {
-    const mockItems = [
-      { taskName: "Deep Work", label: "08:30 - 10:00", duration: "1h 30m", leftPct: 13, widthPct: 19, colorIndex: 0 },
-      { taskName: "Admin", label: "10:30 - 11:15", duration: "45m", leftPct: 29, widthPct: 10, colorIndex: 2 },
-      { taskName: "Study", label: "14:00 - 15:30", duration: "1h 30m", leftPct: 58, widthPct: 18, colorIndex: 1 },
-    ];
-    if (noteEl) noteEl.textContent = "Example Pro timeline preview";
+    const { items, note, summaryTitle, summaryMeta } = ONBOARDING_DASHBOARD_PREVIEW.timeline;
+    if (noteEl) noteEl.textContent = note;
     if (listEl) {
-      listEl.innerHTML = mockItems
+      listEl.innerHTML = items
         .map(
           (item) => `
             <div class="dashboardTimelineLane" role="listitem">
@@ -168,17 +218,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (summaryEl) {
       summaryEl.innerHTML = `
         <div class="dashboardTimelineSummaryCard">
-          <p class="dashboardTimelineSummaryTitle">Pro unlocks personalized timeline suggestions</p>
+          <p class="dashboardTimelineSummaryTitle">${ctx.escapeHtmlUI(summaryTitle)}</p>
           <div class="dashboardTimelineSummaryMeta">
-            <span>Adaptive time blocks</span>
-            <span>History-based timing</span>
-            <span>Density controls</span>
+            ${summaryMeta.map((item) => `<span>${ctx.escapeHtmlUI(item)}</span>`).join("")}
           </div>
         </div>
       `;
     }
     if (cardEl) {
-      cardEl.setAttribute("aria-description", "Example Pro timeline preview. Upgrade to view your personalized routine suggestions.");
+      if (opts?.locked === false) cardEl.removeAttribute("aria-description");
+      else {
+        cardEl.setAttribute("aria-description", "Example Pro timeline preview. Upgrade to view your personalized routine suggestions.");
+      }
     }
   }
 
@@ -187,20 +238,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     weekdaysEl: HTMLElement | null,
     gridEl: HTMLElement | null
   ) {
-    if (monthLabelEl) monthLabelEl.textContent = "Past 4 Weeks";
+    if (monthLabelEl) monthLabelEl.textContent = ONBOARDING_DASHBOARD_PREVIEW.heatmap.monthLabel;
     if (weekdaysEl) {
       weekdaysEl.innerHTML = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         .map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`)
         .join("");
     }
     if (!gridEl) return;
-    const levels = [
-      "low", "none", "medium", "none", "high", "medium", "none",
-      "medium", "low", "high", "medium", "none", "low", "none",
-      "none", "medium", "high", "medium", "low", "none", "low",
-      "medium", "none", "high", "medium", "low", "none", "medium",
-    ];
-    gridEl.innerHTML = levels
+    gridEl.innerHTML = ONBOARDING_DASHBOARD_PREVIEW.heatmap.levels
       .map((level, idx) => {
         const day = idx + 1;
         const activeClass = level === "none" ? "" : " isActive";
@@ -403,9 +448,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       .map((ms, index) => `${formatDashboardDurationShort(ms)} ${recentLabels[index]}`)
       .join(", ");
     const weeklyPct = momentum.currentWeekGoalMs > 0 ? Math.round((momentum.currentWeekLoggedMs / momentum.currentWeekGoalMs) * 100) : null;
+    const consistencyMessage =
+      momentum.trailingStreak >= 2
+        ? `Consistency contributed ${Math.round(momentum.consistencyScore)} of 45 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`
+        : `Consistency contributed 0 of 45 momentum points because momentum streaks start at 2 consecutive days. You currently have ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`;
     return {
       recentActivity: `Recent Activity contributed ${Math.round(momentum.recentActivityScore)} of 25 momentum points from ${recentText}.`,
-      consistency: `Consistency contributed ${Math.round(momentum.consistencyScore)} of 45 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`,
+      consistency: consistencyMessage,
       weeklyProgress:
         weeklyPct == null
           ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points. Add weekly or daily time goals to give this driver more signal.`
@@ -604,6 +653,35 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const trendIndicatorEl = document.getElementById("dashboardWeeklyTrendIndicator") as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
 
+    if (isOnboardingDashboardPreviewActive()) {
+      const preview = ONBOARDING_DASHBOARD_PREVIEW.weeklyGoals;
+      applyMockTrendIndicator(trendIndicatorEl, preview.trendPct);
+      if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(preview.totalMs);
+      if (metaEl) {
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
+      }
+      applyDashboardGoalProgressUi({
+        progressBarEl,
+        progressFillEl,
+        projectionFillEl,
+        projectionMarkerEl,
+        goalTotalMs: preview.goalTotalMs,
+        loggedMs: preview.loggedMs,
+        projectedMs: preview.projectedMs,
+        runningMs: preview.runningMs,
+        emptyLabel: "Weekly time goal progress: no weekly time goals enabled",
+        activeLabel: "Weekly time goal progress",
+        projectedLabel: "projected if running tasks are logged",
+      });
+      if (progressTextEl) progressTextEl.textContent = preview.progressLabel;
+      const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
+      if (cardEl) {
+        cardEl.setAttribute("aria-label", `Weekly logged time and time goal progress. +${preview.trendPct}% versus previous week.`);
+      }
+      return;
+    }
+
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
     const prevWeekEndMs = weekStartMs;
@@ -722,6 +800,44 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const footerMessageEl = els.dashboardMomentumFooterMessage as HTMLElement | null;
     if (!cardEl || !dialEl || !arcActiveEl || !needleEl || !scoreValueEl || !scoreStatusEl || !driverTextsEl) return;
 
+    if (isOnboardingDashboardPreviewActive()) {
+      const preview = ONBOARDING_DASHBOARD_PREVIEW.momentum;
+      clearSelectedMomentumDriverResetTimer();
+      cancelMomentumAnimation();
+      lastMomentumAnimatedTargetScore = preview.score;
+      lastMomentumAnimatedTargetBand = preview.statusLabel;
+      setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
+      dialEl.style.setProperty("--momentum-locked", hasAdvancedInsights() ? "0" : "1");
+      const selectedMessage = selectedMomentumDriverKey ? preview.driverMessages[selectedMomentumDriverKey] : null;
+      renderMomentumDriverRows(driverTextsEl, preview.driverScores, {
+        interactive: true,
+        selectedKey: selectedMomentumDriverKey,
+        messages: preview.driverMessages,
+      });
+      renderMomentumFooterMessage(footerMessageEl, selectedMessage || preview.summaryMessage);
+      const nextSignature = JSON.stringify({
+        preview: true,
+        locked: !hasAdvancedInsights(),
+        score: preview.score,
+        status: preview.statusLabel,
+        selectedDriver: selectedMomentumDriverKey,
+        drivers: preview.driverScores,
+      });
+      if (lastMomentumRenderSignature === nextSignature) return;
+      lastMomentumRenderSignature = nextSignature;
+      applyMomentumVisualState({
+        dialEl,
+        arcActiveEl,
+        needleEl,
+        scoreValueEl,
+        scoreStatusEl,
+        score: preview.score,
+        ariaBandLabel: `${preview.statusLabel} momentum`,
+        statusLabel: preview.statusLabel,
+      });
+      return;
+    }
+
     if (!hasAdvancedInsights()) {
       cancelMomentumAnimation();
       clearSelectedMomentumDriverResetTimer();
@@ -762,9 +878,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       tasks: ctx.getTasks(),
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
-      includedModes: ctx.getDashboardIncludedModes(),
-      isModeEnabled: ctx.isModeEnabled,
-      taskModeOf: ctx.taskModeOf,
       nowValue,
     });
     const score = momentum.score;
@@ -979,6 +1092,23 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const valueEl = document.getElementById("dashboardTasksCompletedValue") as HTMLElement | null;
     const metaEl = document.getElementById("dashboardTasksCompletedMeta") as HTMLElement | null;
     const cardEl = valueEl?.closest(".dashboardTasksCompletedCard") as HTMLElement | null;
+
+    if (isOnboardingDashboardPreviewActive()) {
+      const preview = ONBOARDING_DASHBOARD_PREVIEW.tasksCompleted;
+      if (valueEl) valueEl.textContent = String(preview.total);
+      if (metaEl) {
+        metaEl.textContent = preview.metaLabel;
+        metaEl.style.display = "";
+      }
+      if (cardEl) {
+        cardEl.setAttribute(
+          "aria-label",
+          `Task completion. ${preview.total} goal completions this week: ${preview.dailyCompletedDays} daily and ${preview.weeklyCompletedTasks} weekly.`
+        );
+      }
+      return;
+    }
+
     const historyByTaskId = ctx.getHistoryByTaskId();
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
@@ -1072,6 +1202,39 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectionFillEl = document.getElementById("dashboardTodayHoursProjectionFill") as HTMLElement | null;
     const progressFillEl = document.getElementById("dashboardTodayHoursProgressFill") as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
+
+    if (isOnboardingDashboardPreviewActive()) {
+      const preview = ONBOARDING_DASHBOARD_PREVIEW.today;
+      if (titleEl) titleEl.textContent = "Today";
+      if (valueEl) valueEl.textContent = formatDashboardDurationShort(preview.totalMs);
+      applyMockTrendIndicator(trendIndicatorEl, preview.trendPct);
+      applyDashboardGoalProgressUi({
+        progressBarEl,
+        progressFillEl,
+        projectionFillEl,
+        projectionMarkerEl,
+        goalTotalMs: preview.goalTotalMs,
+        loggedMs: preview.loggedMs,
+        projectedMs: preview.projectedMs,
+        runningMs: preview.runningMs,
+        emptyLabel: "Today's time goal progress: no daily time goals enabled",
+        activeLabel: "Today's time goal progress",
+        projectedLabel: "projected if running tasks are logged",
+      });
+      if (metaEl) {
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
+      }
+      if (deltaEl) {
+        deltaEl.classList.remove("positive", "negative");
+        deltaEl.textContent = preview.deltaLabel;
+        deltaEl.classList.add("positive");
+      }
+      const cardEl = trendIndicatorEl?.closest(".dashboardWeekHoursCard") as HTMLElement | null;
+      if (cardEl) cardEl.setAttribute("aria-label", `Today's logged time. +${preview.trendPct}% versus this time yesterday.`);
+      return;
+    }
+
     const nowValue = nowMs();
     const todayStartDate = new Date(nowValue);
     todayStartDate.setHours(0, 0, 0, 0);
@@ -1204,9 +1367,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const noteEl = els.dashboardTimelineNote as HTMLElement | null;
     const summaryEl = els.dashboardTimelineSummary as HTMLElement | null;
     const cardEl = listEl?.closest(".dashboardTimelineCard") as HTMLElement | null;
+    if (isOnboardingDashboardPreviewActive()) {
+      setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
+      renderLockedTimelineMock(cardEl, listEl, noteEl, summaryEl, { locked: !hasAdvancedInsights() });
+      return;
+    }
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
-      renderLockedTimelineMock(cardEl, listEl, noteEl, summaryEl);
+      renderLockedTimelineMock(cardEl, listEl, noteEl, summaryEl, { locked: true });
       return;
     }
     setDashboardPlanLockedState(cardEl, false);
@@ -1720,9 +1888,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       tasks: ctx.getTasks(),
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
-      includedModes: ctx.getDashboardIncludedModes(),
-      isModeEnabled: ctx.isModeEnabled,
-      taskModeOf: ctx.taskModeOf,
       nowValue: nowMs(),
     });
     const message = buildMomentumDriverMessages(momentum)[nextKey] || null;
@@ -1863,6 +2028,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = els.dashboardHeatCard as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
     if (!gridEl) return;
+    if (isOnboardingDashboardPreviewActive()) {
+      setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
+      setDashboardHeatFlipState(false);
+      renderLockedHeatmapMock(monthLabelEl, weekdaysEl, gridEl);
+      return;
+    }
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
       setDashboardHeatFlipState(false);
@@ -2024,57 +2195,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return `${clean.slice(0, Math.max(1, maxChars - 1))}...`;
   }
 
-  function renderDashboardModeDistribution() {
-    const donutEl = els.dashboardModeDonut as HTMLElement | null;
-    const centerEl = els.dashboardModeDonutCenter as HTMLElement | null;
-    const mode1LabelEl = els.dashboardMode1Label as HTMLElement | null;
-    const mode2LabelEl = els.dashboardMode2Label as HTMLElement | null;
-    const mode3LabelEl = els.dashboardMode3Label as HTMLElement | null;
-    const mode1ValueEl = els.dashboardMode1Value as HTMLElement | null;
-    const mode2ValueEl = els.dashboardMode2Value as HTMLElement | null;
-    const mode3ValueEl = els.dashboardMode3Value as HTMLElement | null;
-
-    if (mode1LabelEl) mode1LabelEl.textContent = ctx.getModeLabel("mode1");
-    if (mode2LabelEl) mode2LabelEl.textContent = ctx.getModeLabel("mode2");
-    if (mode3LabelEl) mode3LabelEl.textContent = ctx.getModeLabel("mode3");
-
-    const totalsMs: Record<MainMode, number> = { mode1: 0, mode2: 0, mode3: 0 };
-    getDashboardFilteredTasks().forEach((task) => {
-      const mode = ctx.taskModeOf(task);
-      totalsMs[mode] += Math.max(0, ctx.getElapsedMs(task));
-    });
-    const totalMs = totalsMs.mode1 + totalsMs.mode2 + totalsMs.mode3;
-    if (shouldHoldDashboardWidget("modeDistribution", totalMs > 0)) return;
-
-    const percentages: Record<MainMode, number> =
-      totalMs > 0
-        ? {
-            mode1: (totalsMs.mode1 / totalMs) * 100,
-            mode2: (totalsMs.mode2 / totalMs) * 100,
-            mode3: (totalsMs.mode3 / totalMs) * 100,
-          }
-        : { mode1: 0, mode2: 0, mode3: 0 };
-
-    if (mode1ValueEl) mode1ValueEl.textContent = `${Math.round(percentages.mode1)}%`;
-    if (mode2ValueEl) mode2ValueEl.textContent = `${Math.round(percentages.mode2)}%`;
-    if (mode3ValueEl) mode3ValueEl.textContent = `${Math.round(percentages.mode3)}%`;
-
-    if (centerEl) {
-      const dominantPct = Math.round(Math.max(percentages.mode1, percentages.mode2, percentages.mode3));
-      centerEl.textContent = `${dominantPct}%`;
-    }
-
-    if (!donutEl) return;
-    if (totalMs <= 0) {
-      donutEl.style.background =
-        "conic-gradient(var(--mode1-accent) 0 33.333%, var(--mode2-accent) 33.333% 66.666%, var(--mode3-accent) 66.666% 100%)";
-      return;
-    }
-    const mode1End = percentages.mode1;
-    const mode2End = percentages.mode1 + percentages.mode2;
-    donutEl.style.background = `conic-gradient(var(--mode1-accent) 0 ${mode1End}%, var(--mode2-accent) ${mode1End}% ${mode2End}%, var(--mode3-accent) ${mode2End}% 100%)`;
-  }
-
   let dashboardAvgSessionMeasureRetryPending = false;
 
   function renderDashboardAvgSessionChart() {
@@ -2092,6 +2212,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!canvas) return;
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
     if (!wrap) return;
+    if (isOnboardingDashboardPreviewActive()) {
+      setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
+      if (titleEl) titleEl.textContent = "Avg Session by Task (Example)";
+      if (rangeLabelEl) rangeLabelEl.textContent = "Past 7 Days";
+      renderLockedAvgSessionMock(canvas, wrap, emptyEl);
+      return;
+    }
     if (!hasAdvancedInsights()) {
       setDashboardPlanLockedState(cardEl, true);
       if (titleEl) titleEl.textContent = "Avg Session by Task (Example)";
@@ -2214,6 +2341,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
+    renderOnboardingXpProgressCard();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -2246,7 +2374,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardTimelineCard,
     renderDashboardFocusTrend,
     renderDashboardHeatCalendar,
-    renderDashboardModeDistribution,
     renderDashboardAvgSessionChart,
     renderDashboardLiveWidgets,
     renderDashboardWidgets,

@@ -18,9 +18,11 @@ import {
   refreshHistoryFromCloud,
   loadHistory,
   appendHistoryEntry,
+  clearLiveSession,
   saveHistoryLocally,
   saveHistory,
   saveHistoryAndWait,
+  saveLiveSession,
   loadDeletedMeta,
   saveDeletedMeta,
   cleanupHistory,
@@ -38,6 +40,11 @@ import {
   normalizeRewardProgress,
 } from "./lib/rewards";
 import {
+  ONBOARDING_STATE_CHANGED_EVENT,
+  readOnboardingStatusForCurrentSession,
+  readOnboardingStepForCurrentSession,
+} from "./lib/onboarding";
+import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
@@ -47,7 +54,6 @@ import {
 import type {
   AppPage,
   DashboardRenderOptions,
-  MainMode,
   TaskTimerClientHandle,
   TaskTimerMutableState,
 } from "./client/types";
@@ -91,10 +97,9 @@ import {
 } from "./client/root-runtime";
 import {
   DEFAULT_MODE_COLORS,
-  DEFAULT_MODE_ENABLED,
-  DEFAULT_MODE_LABELS,
 } from "./client/state";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { type ScheduleDay } from "./lib/schedule-placement";
 import {
   createTaskTimerScheduleRuntime,
@@ -117,6 +122,7 @@ import {
 } from "./client/reward-session-bridge";
 import { createTaskTimerRuntimeActions } from "./client/runtime-actions";
 import { createTaskTimerTaskDelete } from "./client/task-delete";
+import { projectHistoryWithLiveSessions } from "./client/live-session-history";
 import {
   createTaskTimerAddTaskStateBindings,
   createTaskTimerDashboardLayoutBindings,
@@ -160,7 +166,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       TASK_VIEW_KEY,
       OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
       OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
-      MODE_SETTINGS_KEY,
       NAV_STACK_KEY,
       FOCUS_SESSION_NOTES_KEY,
       NAV_STACK_MAX,
@@ -230,6 +235,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
   }
 
+  function getIsOnboardingDashboardPreview() {
+    const user = getFirebaseAuthClient()?.currentUser || null;
+    return (
+      readOnboardingStatusForCurrentSession(user) === "active"
+      && readOnboardingStepForCurrentSession(user) === "dashboard"
+    );
+  }
+
   const destroy = () => {
     if (unsubscribeCheckpointAlertMuteSignals) {
       unsubscribeCheckpointAlertMuteSignals();
@@ -265,11 +278,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     deletedTaskMeta: initialState.deletedTaskMeta,
     tasks: initialState.tasks,
     historyByTaskId: initialState.historyByTaskId,
-  });
-  const modeState = createTaskTimerMutableStore({
-    currentMode: initialState.currentMode,
-    modeLabels: initialState.modeLabels,
-    modeEnabled: initialState.modeEnabled,
+    liveSessionsByTaskId: initialState.liveSessionsByTaskId,
   });
   const focusState = createTaskTimerMutableStore({
     focusCheckpointSig: initialState.focusCheckpointSig,
@@ -366,7 +375,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     elapsedPadMilestoneRef: initialState.elapsedPadMilestoneRef,
     elapsedPadDraft: initialState.elapsedPadDraft,
     elapsedPadOriginal: initialState.elapsedPadOriginal,
-    editMoveTargetMode: initialState.editMoveTargetMode,
   });
   const dashboardUiState = createTaskTimerMutableStore({
     dashboardEditMode: initialState.dashboardEditMode,
@@ -375,13 +383,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardCardSizes: initialState.dashboardCardSizes,
     dashboardCardSizesDraftBeforeEdit: initialState.dashboardCardSizesDraftBeforeEdit,
     dashboardCardVisibility: initialState.dashboardCardVisibility,
-    dashboardIncludedModes: initialState.dashboardIncludedModes,
     dashboardAvgRange: initialState.dashboardAvgRange,
     dashboardTimelineDensity: initialState.dashboardTimelineDensity,
   });
   const taskListRuntimeState = createTaskTimerMutableStore({
     taskDragEl: initialState.taskDragEl,
-    lastRenderedTaskFlipMode: null as MainMode | null,
     lastRenderedTaskFlipView: null as "list" | "tile" | null,
   });
   const checkpointToastQueue = initialState.checkpointToastQueue;
@@ -472,7 +478,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const els = collectTaskTimerElements(document);
   const sharedTaskApi = createTaskTimerSharedTask({
     createId: () => cryptoRandomId(),
-    getCurrentMode: () => modeState.get("currentMode"),
     getEditTimeGoalDraft: () => ({
       value: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       unit: editTaskState.get("editTaskDurationUnit"),
@@ -481,7 +486,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
   const {
     makeTask,
-    taskModeOf,
     normalizeLoadedTask,
     ensureMilestoneIdentity,
     hasValidPresetInterval,
@@ -552,7 +556,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let resetAllOpenHistoryChartSelections = () => {};
   let renderHistory: (taskId: string) => void = () => {};
   let isTaskSharedByOwner: (taskId: string) => boolean = () => false;
-  let applyMainMode: (mode: MainMode) => void = () => {};
+  let applyMainMode: (mode: "mode1") => void = () => {};
   const taskCollectionBindings = {
     getTasks: () => taskDataState.get("tasks"),
     setTasks: (value: TaskTimerMutableState["tasks"]) => {
@@ -562,11 +566,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setHistoryByTaskId: (value: TaskTimerMutableState["historyByTaskId"]) => {
       taskDataState.set("historyByTaskId", value);
     },
+    getLiveSessionsByTaskId: () => taskDataState.get("liveSessionsByTaskId"),
+    setLiveSessionsByTaskId: (value: TaskTimerMutableState["liveSessionsByTaskId"]) => {
+      taskDataState.set("liveSessionsByTaskId", value);
+    },
     getDeletedTaskMeta: () => taskDataState.get("deletedTaskMeta"),
     setDeletedTaskMeta: (value: TaskTimerMutableState["deletedTaskMeta"]) => {
       taskDataState.set("deletedTaskMeta", value);
     },
   };
+  const getProjectedHistoryByTaskId = () =>
+    projectHistoryWithLiveSessions(
+      taskCollectionBindings.getHistoryByTaskId() as TaskTimerMutableState["historyByTaskId"],
+      taskCollectionBindings.getLiveSessionsByTaskId() as TaskTimerMutableState["liveSessionsByTaskId"]
+    );
   const renderBindings = {
     render,
     renderDashboardWidgets: (opts?: DashboardRenderOptions) => renderDashboardWidgetsWithBusy(opts),
@@ -615,7 +628,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     runtime,
     getTasks: taskCollectionBindings.getTasks,
     setTasks: taskCollectionBindings.setTasks,
-    getCurrentMode: () => modeState.get("currentMode"),
     ...currentAppPageBinding,
     getTaskView: () => preferencesState.get("taskView"),
     getTaskDragEl: () => taskListRuntimeState.get("taskDragEl"),
@@ -623,15 +635,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskListRuntimeState.set("taskDragEl", value);
     },
     getFlippedTaskIds: () => flippedTaskIds,
-    getLastRenderedTaskFlipMode: () => taskListRuntimeState.get("lastRenderedTaskFlipMode"),
-    setLastRenderedTaskFlipMode: (value) => {
-      taskListRuntimeState.set("lastRenderedTaskFlipMode", value);
-    },
     getLastRenderedTaskFlipView: () => taskListRuntimeState.get("lastRenderedTaskFlipView"),
     setLastRenderedTaskFlipView: (value) => {
       taskListRuntimeState.set("lastRenderedTaskFlipView", value);
     },
-    taskModeOf,
     ...renderBindings,
   });
   const {
@@ -691,9 +698,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     createTaskTimerGroupsContext({
       els,
       on,
-      taskCollectionBindings,
+      taskCollectionBindings: {
+        ...taskCollectionBindings,
+        getHistoryByTaskId: getProjectedHistoryByTaskId,
+      },
       appRuntimeState,
-      modeState,
       groupsState,
       openFriendSharedTaskUids,
       getCurrentUid: () => getCurrentTaskTimerUid(),
@@ -703,7 +712,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeConfirm,
       confirm,
       escapeHtmlUI,
-      taskModeOf,
       normalizeHistoryTimestampMs,
       showWorkingIndicator,
       hideWorkingIndicator,
@@ -739,18 +747,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   } = createTaskTimerDashboardFeature({
     dashboardRender: {
       els,
-      taskCollectionBindings,
+      taskCollectionBindings: {
+        ...taskCollectionBindings,
+        getHistoryByTaskId: getProjectedHistoryByTaskId,
+      },
+      rewardState,
       preferencesState,
       dashboardUiState,
       dashboardWidgetHasRenderedData,
       dashboardBusyState,
       cloudSyncState,
+      getIsOnboardingDashboardPreview,
       getElapsedMs,
       escapeHtmlUI,
       normalizeHistoryTimestampMs,
-      taskModeOf,
-      isModeEnabled: (mode) => isModeEnabled(mode),
-      getModeLabel: (mode) => getModeLabel(mode),
       getModeColor: (mode) => getModeColor(mode),
       addRangeMsToLocalDayMap: (dayMap, startMs, endMs) => addRangeMsToLocalDayMap(dayMap, startMs, endMs, localDayKey),
       hasEntitlement,
@@ -759,9 +769,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardRuntime: {
       documentRef: document,
       nowMs,
-      taskCollectionBindings,
+      taskCollectionBindings: {
+        ...taskCollectionBindings,
+        getHistoryByTaskId: getProjectedHistoryByTaskId,
+      },
       preferencesState,
       appRuntimeState,
+      getIsOnboardingDashboardPreview,
       setLastDashboardLiveSignature: (value) => {
         cacheRuntimeState.set("lastDashboardLiveSignature", value);
       },
@@ -790,7 +804,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       hasEntitlement,
       showUpgradePrompt,
       rewardState,
-      taskCollectionBindings,
+      taskCollectionBindings: {
+        ...taskCollectionBindings,
+        getHistoryByTaskId: getProjectedHistoryByTaskId,
+      },
       currentAppPageBinding,
       appRuntimeState,
       preferencesState,
@@ -804,9 +821,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const nextDashboard = value as NonNullable<ReturnType<typeof loadCachedDashboard>>;
         if (nextDashboard) saveCloudDashboard(nextDashboard);
       },
-      getModeLabel: (mode) => getModeLabel(mode),
-      isModeEnabled: (mode) => isModeEnabled(mode),
-      taskModeOf,
     },
   });
   const {
@@ -877,9 +891,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els,
       on,
       sharedTasks: sharedTaskApi,
-      taskCollectionBindings,
+      taskCollectionBindings: {
+        ...taskCollectionBindings,
+        getHistoryByTaskId: getProjectedHistoryByTaskId,
+      },
       appRuntimeState,
-      modeState,
       preferencesState,
       rewardState,
       historyUiState,
@@ -916,6 +932,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openRewardSessionSegment: (task, startMsRaw) => rewardSessionBridge.openRewardSessionSegment(task, startMsRaw),
       closeRewardSessionSegment: (task, endMsRaw) => rewardSessionBridge.closeRewardSessionSegment(task, endMsRaw),
       clearRewardSessionTracker: (taskIdRaw) => rewardSessionBridge.clearRewardSessionTracker(taskIdRaw),
+      upsertLiveSession: (task, opts) => rewardSessionBridge.upsertLiveSession(task, opts),
+      finalizeLiveSession: (task, opts) => rewardSessionBridge.finalizeLiveSession(task, opts),
       openFocusMode: (index) => sessionApi?.openFocusMode(index),
       closeFocusMode: () => sessionApi?.closeFocusMode(),
       canLogSession: (task) => rewardSessionBridge.canLogSession(task),
@@ -930,8 +948,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setResetTaskConfirmBusy,
       syncConfirmPrimaryToggleUi,
       cloneTaskForEdit: (task) => editTaskApi?.cloneTaskForEdit(task) ?? task,
-      getModeLabel: (mode) => getModeLabel(mode),
-      isModeEnabled: (mode) => isModeEnabled(mode),
       setEditTimeGoalEnabled: (enabled) => editTaskApi?.setEditTimeGoalEnabled(enabled),
       syncEditTaskTimeGoalUi: (task) => editTaskApi?.syncEditTaskTimeGoalUi(task),
       syncEditCheckpointAlertUi: (task) => editTaskApi?.syncEditCheckpointAlertUi(task),
@@ -1001,7 +1017,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       on,
       sharedTasks: sharedTaskApi,
       taskCollectionBindings,
-      modeState,
       addTaskStateBindings,
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
@@ -1040,6 +1055,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getTasks: taskCollectionBindings.getTasks,
       appRuntimeState,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
+      getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
       preferencesState,
       dashboardUiState,
       rewardState,
@@ -1118,12 +1134,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getModeColor: (mode) => getModeColor(mode),
       fillBackgroundForPct,
       sortMilestones,
-      isModeEnabled: (mode) => isModeEnabled(mode),
-      taskModeOf,
       normalizeHistoryTimestampMs,
       getHistoryEntryNote: (entry) => runtimeActions.getHistoryEntryNote(entry),
       syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
       syncRewardSessionTrackerForTask: (task, nowValue) => syncRewardSessionTrackerForRunningTask(task, nowValue),
+      syncLiveSessionForTask: (task, nowValue) => rewardSessionBridge.syncLiveSessionForTask(task, nowValue),
       hasEntitlement,
       startTask: (index) => startTaskApi(index),
       stopTask: (index) => stopTaskApi(index),
@@ -1178,10 +1193,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   runtimeActions = createTaskTimerRuntimeActions({
     els,
     getTasks: taskCollectionBindings.getTasks,
-    getCurrentMode: () => modeState.get("currentMode"),
     getFocusModeTaskId: () => focusState.get("focusModeTaskId"),
-    taskModeOf,
-    applyMainMode,
     applyAppPage,
     persistenceApi: () => persistenceApi,
     sessionApi: () => sessionApi,
@@ -1192,9 +1204,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       rewardSessionTrackersStorageKey: REWARD_SESSION_TRACKERS_KEY,
       getTasks: taskCollectionBindings.getTasks,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
+      getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
+      setLiveSessionsByTaskId: (value) => {
+        taskCollectionBindings.setLiveSessionsByTaskId(value as TaskTimerMutableState["liveSessionsByTaskId"]);
+      },
       getDeletedTaskMeta: taskCollectionBindings.getDeletedTaskMeta,
       preferencesState,
-      dashboardUiState,
       rewardState,
       focusBindings,
       setCloudPreferencesCache: (value: Parameters<typeof saveCloudPreferences>[0] | null) => {
@@ -1204,8 +1219,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCurrentPlan,
       hasEntitlement,
       currentUid: () => getCurrentTaskTimerUid(),
-      taskModeOf: (task) => taskModeOf(task),
-      isModeEnabled: (mode) => isModeEnabled(mode),
       getTaskElapsedMs: (task) => getTaskElapsedMs(task),
       sessionColorForTaskMs,
       captureSessionNoteSnapshot: (taskId) => runtimeActions.captureSessionNoteSnapshot(taskId),
@@ -1214,6 +1227,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncFocusSessionNotesInput: (taskId) => runtimeActions.syncFocusSessionNotesInput(taskId),
       syncFocusSessionNotesAccordion: (taskId) => runtimeActions.syncFocusSessionNotesAccordion(taskId),
       appendHistoryEntry: (taskId, entry) => appendHistoryEntry(taskId, entry as any),
+      saveLiveSession: (session) => saveLiveSession(session as any),
+      clearLiveSession: (taskId) => clearLiveSession(taskId),
       saveHistoryLocally,
       buildDefaultCloudPreferences: () => buildDefaultCloudPreferences(),
       saveCloudPreferences: (prefs) => saveCloudPreferences(prefs),
@@ -1371,6 +1386,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       formatTime,
       formatTwo,
       formatDateTime,
+      getHistoryEntryNote: (entry) => runtimeActions.getHistoryEntryNote(entry),
       escapeHtmlUI,
       sortMilestones,
       sessionColorForTaskMs,
@@ -1392,8 +1408,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       els,
       on,
       preferencesState,
-      modeState,
-      editTaskState,
       rewardState,
       toggleSwitchElement: (el, enabled) => setSwitchState(el, enabled),
       isSwitchOn: (el) => isSwitchEnabled(el),
@@ -1406,11 +1420,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
         OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
         MENU_BUTTON_STYLE_KEY,
-        MODE_SETTINGS_KEY,
         WEEK_STARTING_KEY,
       },
-      defaultModeLabels: DEFAULT_MODE_LABELS,
-      defaultModeEnabled: DEFAULT_MODE_ENABLED,
       defaultModeColors: DEFAULT_MODE_COLORS,
       normalizeRewardProgress,
       getCurrentUid: () => getCurrentTaskTimerUid(),
@@ -1432,12 +1443,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCurrentEditTask: () => editTaskApi?.getCurrentEditTask() ?? null,
       syncEditCheckpointAlertUi: (task) => editTaskApi?.syncEditCheckpointAlertUi(task),
       clearTaskFlipStates,
-      taskModeOf,
       save: renderBindings.save,
       render,
       renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,
-      ensureDashboardIncludedModesValid: () => ensureDashboardIncludedModesValidApi(),
       closeOverlay: overlayBindings.closeOverlay,
       closeConfirm: overlayBindings.closeConfirm,
       confirm: overlayBindings.confirm,
@@ -1451,9 +1460,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   );
   preferencesApi = preferences;
   const {
-    getModeLabel,
     getModeColor,
-    isModeEnabled,
     syncModeLabelsUi,
     loadModeLabels,
     loadThemePreference,
@@ -1490,7 +1497,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     on,
     sharedTasks: sharedTaskApi,
     getTasks: taskCollectionBindings.getTasks,
-    getCurrentMode: () => modeState.get("currentMode"),
     ...editStateBindings,
     getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
     getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
@@ -1500,8 +1506,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     confirm: overlayBindings.confirm,
     closeConfirm: overlayBindings.closeConfirm,
     cloneTaskForEdit: (task) => editTaskApi?.cloneTaskForEdit(task) ?? task,
-    getModeLabel,
-    isModeEnabled,
     escapeHtmlUI,
     setEditTimeGoalEnabled: (enabled) => editTaskApi?.setEditTimeGoalEnabled(enabled),
     isEditTimeGoalEnabled: () => editTaskApi?.isEditTimeGoalEnabled() ?? false,
@@ -1601,7 +1605,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         sessionRuntimeState.set("historyNoteCloudRepairAttempted", true);
         saveHistory(taskCollectionBindings.getHistoryByTaskId(), { showIndicator: false });
       },
-      taskModeOf,
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
       normalizeLoadedTask,
@@ -1747,6 +1750,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setDashboardRefreshPending,
     currentUid: () => getCurrentTaskTimerUid(),
     rehydrateFromCloudAndRender,
+  });
+
+  runtime.on(window as any, ONBOARDING_STATE_CHANGED_EVENT, () => {
+    if (appRuntimeState.get("currentAppPage") !== "dashboard") return;
+    renderDashboardWidgetsWithBusy();
   });
 
   return { destroy };

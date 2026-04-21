@@ -1,5 +1,6 @@
 import type { TaskTimerDashboardContext } from "./context";
 import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
+import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
 import { buildXpProgressArchieMessage } from "../lib/rewards";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -101,9 +102,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return null;
   }
 
-  function ensureDashboardIncludedModesValid() {
-    ctx.setDashboardIncludedModes({ mode1: true, mode2: false, mode3: false });
-  }
+  function ensureDashboardIncludedModesValid() {}
 
   function collectDashboardPanelMeta() {
     const out = [] as Array<{ panel: HTMLElement; panelId: string; label: string }>;
@@ -737,6 +736,13 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.setDashboardDragEl(null);
   }
 
+  function handleDashboardOnboardingClick(event: Event) {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest("#appPageDashboard")) return;
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
+  }
+
   function registerDashboardEvents() {
     ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     ctx.on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
@@ -747,9 +753,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const message = buildXpProgressArchieMessage(ctx.getRewardProgress(), ctx.getTasks(), Date.now(), {
         historyByTaskId: ctx.getHistoryByTaskId(),
         weekStarting: ctx.getWeekStarting(),
-        dashboardIncludedModes: ctx.getDashboardIncludedModes(),
-        isModeEnabled: ctx.isModeEnabled,
-        taskModeOf: ctx.taskModeOf,
         momentumEntitled: ctx.hasEntitlement("advancedInsights"),
       });
       if (typeof window === "undefined" || !String(message || "").trim()) return;
@@ -760,6 +763,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
     ctx.on(els.dashboardGrid, "click", handleDashboardGridClick);
+    ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick);
     ctx.on(els.dashboardGrid, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
     ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);

@@ -1,16 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Task } from "../lib/types";
-import type { AppPage, MainMode } from "./types";
+import type { AppPage } from "./types";
 import type { TaskTimerElements } from "./elements";
 
 type CreateTaskTimerRuntimeActionsOptions = {
   els: Pick<TaskTimerElements, "taskList" | "focusModeScreen">;
   getTasks: () => Task[];
-  getCurrentMode: () => MainMode;
   getFocusModeTaskId: () => string | null;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
-  applyMainMode: (mode: MainMode) => void;
   applyAppPage: (page: AppPage, opts?: { syncUrl?: "replace" | "push" | false }) => void;
   persistenceApi: () =>
     | {
@@ -59,8 +56,6 @@ export function createTaskTimerRuntimeActions(options: CreateTaskTimerRuntimeAct
     ) {
       options.sessionApi()?.closeFocusMode();
     }
-    const mode = options.taskModeOf(task);
-    if (options.getCurrentMode() !== mode) options.applyMainMode(mode);
     options.applyAppPage("tasks", { syncUrl: "push" });
     window.setTimeout(() => {
       const list = options.els.taskList;

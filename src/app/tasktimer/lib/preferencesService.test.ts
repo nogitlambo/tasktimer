@@ -13,7 +13,6 @@ function createStorageKeys() {
     WEB_PUSH_ALERTS_KEY: "webPush",
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: "optimalStart",
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: "optimalEnd",
-    MODE_SETTINGS_KEY: "mode",
   };
 }
 

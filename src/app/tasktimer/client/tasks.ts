@@ -110,15 +110,15 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       const historyHTML = showHistory
         ? `
           <section class="historyInline historyInlineMotion${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
-            <div class="historyTop">
-              <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
-              <div class="historyMeta historyTopActions">
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="analyse" title="${canUseAdvancedHistory() ? "Analysis" : "Pro feature: Analysis"}" aria-label="${canUseAdvancedHistory() ? "Analysis" : "Pro feature: Analysis"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128269;</button>
-                <button class="iconBtn historyActionIconBtn historyTopIconBtn" type="button" data-history-action="manage" title="${canUseAdvancedHistory() ? "Manage" : "Pro feature: History Manager"}" aria-label="${canUseAdvancedHistory() ? "Manage" : "Pro feature: History Manager"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#9881;</button>
-                <button class="historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">X</button>
-                <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" aria-label="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128204;</button>
+              <div class="historyTop">
+                <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
+                <div class="historyMeta historyTopActions">
+                  <span class="historyTopDivider" aria-hidden="true"></span>
+                  <button class="btn btn-ghost small historyViewSummaryBtn" type="button" data-history-action="viewSummary" title="View Summary" aria-label="View Summary">View Summary</button>
+                  <button class="btn btn-ghost small historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">Clear</button>
+                  <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" aria-label="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128204;</button>
+                </div>
               </div>
-            </div>
             <div class="historyCanvasWrap"><canvas class="historyChartInline"></canvas></div>
             <div class="historyTrashRow"></div>
             <div class="historyRangeRow">
@@ -246,6 +246,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     t.startMs = Date.now();
     t.hasStarted = true;
     ctx.openRewardSessionSegment(t, t.startMs);
+    ctx.upsertLiveSession(t, { elapsedMs: 0 });
     ctx.clearCheckpointBaseline(t.id);
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
@@ -262,6 +263,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.flushPendingFocusSessionNoteSave(String(t.id || ""));
     ctx.closeRewardSessionSegment(t, Date.now());
     t.accumulatedMs = ctx.getElapsedMs(t);
+    ctx.finalizeLiveSession(t, { elapsedMs: t.accumulatedMs });
     t.running = false;
     t.startMs = null;
     ctx.clearCheckpointBaseline(t.id);
@@ -274,16 +276,15 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!t) return;
     const taskId = String(t.id || "");
     ctx.flushPendingFocusSessionNoteSave(taskId);
-    if (!!opts?.logHistory && ctx.canLogSession(t)) {
-      const ms = ctx.getTaskElapsedMs(t);
-      const completedAtMs = Date.now();
-      if (ms > 0) ctx.appendCompletedSessionHistory(t, completedAtMs, ms, opts?.sessionNote, normalizeCompletionDifficulty(opts?.completionDifficulty));
-    }
+    ctx.finalizeLiveSession(t, {
+      elapsedMs: ctx.getTaskElapsedMs(t),
+      note: opts?.sessionNote,
+      completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
+    });
     t.accumulatedMs = 0;
     t.running = false;
     t.startMs = null;
     t.hasStarted = false;
-    t.xpDisqualifiedUntilReset = false;
     ctx.clearTaskTimeGoalFlow(taskId);
     ctx.clearRewardSessionTracker(taskId);
     ctx.resetCheckpointAlertTracking(t.id);
@@ -311,32 +312,20 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     const t = ctx.getTasks()[i];
     if (!t || t.running) return;
     const shouldExitFocusModeAfterReset = String(ctx.getFocusModeTaskId() || "").trim() === String(t.id || "").trim();
-    const applyResetTaskConfirmState = () => {
-      const shouldLog = !!els.confirmDeleteAll?.checked;
-      ctx.setResetTaskConfirmBusy(false, shouldLog);
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
-      if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", shouldLog);
-      ctx.syncConfirmPrimaryToggleUi();
-    };
     const clearResetTaskConfirmState = () => {
-      if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = null;
       ctx.setResetTaskConfirmBusy(false, false);
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetTaskConfirm");
     };
     ctx.confirm("Reset Task", "Reset timer to zero?", {
       okLabel: "Reset",
       cancelLabel: "Cancel",
-      checkboxLabel: "Log this entry",
-      checkboxChecked: true,
       onOk: async () => {
-        const doLog = !!els.confirmDeleteAll?.checked;
-        ctx.setResetTaskConfirmBusy(true, doLog);
+        ctx.setResetTaskConfirmBusy(true, false);
         const sessionNote = ctx.captureResetActionSessionNote(String(t.id || ""));
         if (sessionNote) ctx.setFocusSessionDraft(String(t.id || ""), sessionNote);
         try {
-          resetTaskStateImmediate(t, { logHistory: doLog, sessionNote });
+          resetTaskStateImmediate(t, { logHistory: true, sessionNote });
           ctx.save();
-          if (!doLog) void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
           ctx.closeConfirm();
           if (shouldExitFocusModeAfterReset) ctx.closeFocusMode();
           else ctx.render();
@@ -349,8 +338,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         ctx.closeConfirm();
       },
     });
-    applyResetTaskConfirmState();
-    if (els.confirmDeleteAll) els.confirmDeleteAll.onchange = applyResetTaskConfirmState;
+    ctx.setResetTaskConfirmBusy(false, false);
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
   }
 
   function resetAll() {

@@ -3,7 +3,7 @@ import { awardCompletedSessionXp } from "../lib/rewards";
 import { computeMomentumSnapshot } from "../lib/momentum";
 import { localDayKey } from "../lib/history";
 import { nowMs } from "../lib/time";
-import type { Task } from "../lib/types";
+import type { LiveTaskSession, Task } from "../lib/types";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 
@@ -16,6 +16,9 @@ type RewardSessionTracker = {
 };
 
 export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContext) {
+  const lastLiveSessionSyncAtByTaskId: Record<string, number> = {};
+  const LIVE_SESSION_SYNC_INTERVAL_MS = 15_000;
+
   function rewardSessionTrackerStorageKey() {
     const uid = ctx.currentUid();
     return uid ? `${ctx.rewardSessionTrackersStorageKey}:${uid}` : ctx.rewardSessionTrackersStorageKey;
@@ -99,9 +102,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         tasks: ctx.getTasks(),
         historyByTaskId: ctx.getHistoryByTaskId(),
         weekStarting: ctx.getWeekStarting(),
-        includedModes: ctx.getDashboardIncludedModes(),
-        isModeEnabled: ctx.isModeEnabled,
-        taskModeOf: ctx.taskModeOf,
         nowValue,
       }).multiplier;
     } catch {
@@ -352,7 +352,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
       name: String(entry?.name || ""),
       ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
-      xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
       ...(entry?.color != null && String(entry.color).trim() ? { color: String(entry.color).trim() } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
@@ -368,6 +367,52 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const taskKey = String(taskId || "");
     if (!taskKey) return "";
     return ctx.captureSessionNoteSnapshot(taskKey);
+  }
+
+  function buildLiveSession(task: Task, elapsedMsOverride?: number | null, noteOverride?: string): LiveTaskSession | null {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId) return null;
+    const elapsedMs =
+      elapsedMsOverride != null && Number.isFinite(Number(elapsedMsOverride))
+        ? Math.max(0, Math.floor(Number(elapsedMsOverride) || 0))
+        : Math.max(0, ctx.getTaskElapsedMs(task));
+    const startedAtMs =
+      Number.isFinite(Number(task.startMs || 0)) && Number(task.startMs || 0) > 0
+        ? Math.floor(Number(task.startMs || 0))
+        : Math.max(0, nowMs() - elapsedMs);
+    const existing = ctx.getLiveSessionsByTaskId()[taskId];
+    const note = String(noteOverride || getCurrentSessionNoteForTask(taskId) || "").trim();
+    return {
+      sessionId: String(existing?.sessionId || `${taskId}:${startedAtMs}`),
+      taskId,
+      name: String(task.name || "").trim() || "Task",
+      startedAtMs,
+      elapsedMs,
+      updatedAtMs: nowMs(),
+      status: "running",
+      color: ctx.sessionColorForTaskMs(task, elapsedMs),
+      ...(note ? { note } : {}),
+    };
+  }
+
+  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; note?: string }) {
+    const session = buildLiveSession(task, opts?.elapsedMs, opts?.note);
+    if (!session) return;
+    ctx.setLiveSessionsByTaskId({
+      ...(ctx.getLiveSessionsByTaskId() || {}),
+      [session.taskId]: session,
+    });
+    ctx.saveLiveSession(session);
+  }
+
+  function syncLiveSessionForTask(task: Task | null | undefined, nowValue = nowMs()) {
+    if (!task?.running) return;
+    const taskId = String(task.id || "").trim();
+    if (!taskId) return;
+    const lastSyncAt = Math.max(0, Math.floor(Number(lastLiveSessionSyncAtByTaskId[taskId] || 0) || 0));
+    if (lastSyncAt > 0 && nowValue - lastSyncAt < LIVE_SESSION_SYNC_INTERVAL_MS) return;
+    upsertLiveSession(task, { elapsedMs: ctx.getTaskElapsedMs(task) });
+    lastLiveSessionSyncAtByTaskId[taskId] = nowValue;
   }
 
   function appendCompletedSessionHistory(
@@ -388,7 +433,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ts: completedAtMs,
       name: task.name,
       ms: safeElapsedMs,
-      xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
       color: ctx.sessionColorForTaskMs(task, safeElapsedMs),
       ...(note ? { note } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
@@ -402,13 +446,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       taskId,
       awardedAt: completedAtMs,
       elapsedMs: safeElapsedMs,
-      xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
-      dashboardIncludedModes: ctx.getDashboardIncludedModes(),
-      isModeEnabled: ctx.isModeEnabled,
-      taskModeOf: ctx.taskModeOf,
       momentumEntitled: ctx.hasEntitlement("advancedInsights"),
       sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, safeElapsedMs),
     });
@@ -424,6 +464,29 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     if (authUid) {
       void ctx.syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId }).catch(() => {});
     }
+  }
+
+  function finalizeLiveSession(
+    task: Task,
+    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }
+  ) {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId) return 0;
+    const liveSession = ctx.getLiveSessionsByTaskId()[taskId];
+    if (!liveSession) return 0;
+    const elapsedMs = Math.max(
+      0,
+      Math.floor(Number(opts?.elapsedMs ?? liveSession?.elapsedMs ?? ctx.getTaskElapsedMs(task)) || 0)
+    );
+    if (elapsedMs > 0) {
+      appendCompletedSessionHistory(task, nowMs(), elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty);
+    }
+    clearRewardSessionTracker(taskId);
+    const next = { ...(ctx.getLiveSessionsByTaskId() || {}) };
+    delete next[taskId];
+    ctx.setLiveSessionsByTaskId(next);
+    ctx.clearLiveSession(taskId);
+    return elapsedMs;
   }
 
   return {
@@ -446,7 +509,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     canLogSession,
     escapeHtmlUI,
     appendHistory,
+    upsertLiveSession,
+    syncLiveSessionForTask,
     getCurrentSessionNoteForTask,
     appendCompletedSessionHistory,
+    finalizeLiveSession,
   };
 }

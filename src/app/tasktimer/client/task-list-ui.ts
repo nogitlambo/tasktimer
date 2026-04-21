@@ -14,7 +14,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
   function clearTaskFlipStates() {
     ctx.getFlippedTaskIds().clear();
-    ctx.setLastRenderedTaskFlipMode("mode1");
     ctx.setLastRenderedTaskFlipView(ctx.getTaskView());
   }
 
@@ -24,9 +23,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
       return;
     }
     const currentView = ctx.getTaskView();
-    if (ctx.getLastRenderedTaskFlipMode() && ctx.getLastRenderedTaskFlipMode() !== "mode1") {
-      ctx.getFlippedTaskIds().clear();
-    }
     if (ctx.getLastRenderedTaskFlipView() && ctx.getLastRenderedTaskFlipView() !== currentView) {
       ctx.getFlippedTaskIds().clear();
     }
@@ -34,7 +30,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     Array.from(ctx.getFlippedTaskIds()).forEach((taskId) => {
       if (!visibleIdSet.has(taskId)) ctx.getFlippedTaskIds().delete(taskId);
     });
-    ctx.setLastRenderedTaskFlipMode("mode1");
     ctx.setLastRenderedTaskFlipView(currentView);
   }
 

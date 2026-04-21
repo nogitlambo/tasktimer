@@ -17,13 +17,6 @@ export function createTaskTimerOverlayRegistry(ctx: TaskTimerPopupMenuContext): 
       open: () => ctx.navigateToAppRoute("/user-guide"),
     },
     {
-      id: "categoryManager",
-      open: () => {
-        ctx.syncModeLabelsUi();
-        ctx.openOverlay(els.categoryManagerOverlay as HTMLElement | null);
-      },
-    },
-    {
       id: "taskSettings",
       open: () => {
         ctx.syncTaskSettingsUi();

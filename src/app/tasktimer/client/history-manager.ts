@@ -34,6 +34,16 @@ type HistoryGenPreview = {
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
 
+  function getFinalizedHistoryByTaskId(): HistoryByTaskId {
+    const projected = ctx.getHistoryByTaskId() || {};
+    const next: HistoryByTaskId = {};
+    Object.keys(projected).forEach((taskId) => {
+      const rows = Array.isArray(projected[taskId]) ? projected[taskId] : [];
+      next[taskId] = rows.filter((entry: any) => !entry?.isLiveSession);
+    });
+    return next;
+  }
+
   function canUseAdvancedHistory() {
     return ctx.hasEntitlement("advancedHistory");
   }
@@ -44,7 +54,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
 
   function getTaskMetaForHistoryId(taskId: string) {
     const tasks = ctx.getTasks();
-    const historyByTaskId = ctx.getHistoryByTaskId();
+    const historyByTaskId = getFinalizedHistoryByTaskId();
     const deletedTaskMeta = ctx.getDeletedTaskMeta();
     const t = tasks.find((x) => x.id === taskId);
     if (t) return { name: t.name, color: (t as any).color, deleted: false };
@@ -62,7 +72,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function exportHistoryManagerCsv() {
-    const historyByTaskId = ctx.getHistoryByTaskId();
+    const historyByTaskId = getFinalizedHistoryByTaskId();
     const tasks = ctx.getTasks();
     const rows: string[] = [];
     rows.push(["taskId", "taskName", "entryName", "ts", "dateTimeIso", "ms", "color", "note"].join(","));
@@ -117,7 +127,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.downloadCsvFile(filename, rows.join("\n"));
   }
 
-  function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown }) {
+  function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown; taskId?: unknown }) {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
     const payload = buildHistoryEntrySummaryPayload({
       entries: [entry],
       formatDateTime: ctx.formatDateTime,
@@ -133,7 +144,59 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     if (els.historyEntryNoteBody) {
       els.historyEntryNoteBody.innerHTML = renderHistoryEntrySummaryHtml(payload, ctx.escapeHtmlUI);
     }
-    ctx.openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+    const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
+    const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
+    const name = String(entry?.name || "").trim();
+    const note = ctx.getHistoryEntryNote(entry);
+    if (overlay) {
+      overlay.dataset.historyEntryOwner = "manager";
+      overlay.dataset.historyEntryTaskId = String((entry as { taskId?: unknown }).taskId || "");
+      overlay.dataset.historyEntryEditable = ts > 0 && !!name ? "true" : "false";
+      overlay.dataset.historyEntryTs = ts > 0 ? String(ts) : "";
+      overlay.dataset.historyEntryMs = String(ms);
+      overlay.dataset.historyEntryName = name;
+      overlay.dataset.historyEntryNote = note;
+      overlay.dataset.historyEntryEditing = "false";
+      const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
+      if (closeBtn) closeBtn.style.display = "";
+    }
+    if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = note;
+    if (els.historyEntryNoteEditor) (els.historyEntryNoteEditor as HTMLElement).style.display = "none";
+    if (els.historyEntryNoteEditBtn) {
+      els.historyEntryNoteEditBtn.textContent = note ? "Edit Note" : "Add Note";
+      els.historyEntryNoteEditBtn.style.display = ts > 0 && !!name ? "" : "none";
+    }
+    if (els.historyEntryNoteCancelBtn) els.historyEntryNoteCancelBtn.style.display = "none";
+    if (els.historyEntryNoteSaveBtn) els.historyEntryNoteSaveBtn.style.display = "none";
+    ctx.openOverlay(overlay);
+  }
+
+  async function saveHistoryManagerOverlayNote() {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditable !== "true") return;
+    const taskId = String(overlay.dataset.historyEntryTaskId || "").trim();
+    const ts = Math.floor(Number(overlay.dataset.historyEntryTs || 0));
+    const ms = Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0)));
+    const name = String(overlay.dataset.historyEntryName || "").trim();
+    if (!taskId || ts <= 0 || !name) return;
+    const historyByTaskId = ctx.loadHistory();
+    const original = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+    const pos = original.findIndex(
+      (entry: any) => Number(entry?.ts) === ts && Number(entry?.ms) === ms && String(entry?.name || "").trim() === name
+    );
+    if (pos < 0) return;
+    const nextEntry = { ...original[pos], taskId };
+    const note = String(els.historyEntryNoteInput?.value || "").trim();
+    if (note) nextEntry.note = note;
+    else delete nextEntry.note;
+    const nextTaskHistory = original.slice();
+    nextTaskHistory[pos] = nextEntry;
+    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
+    ctx.setHistoryByTaskId(nextHistory);
+    ctx.saveHistory(nextHistory);
+    renderHistoryManager();
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    openHistoryManagerNoteOverlay(nextEntry);
   }
 
   function importHistoryManagerCsvFromFile(file: File | null) {
@@ -165,7 +228,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       }
 
       const tasks = ctx.getTasks();
-      const nextHistory: HistoryByTaskId = { ...(ctx.getHistoryByTaskId() || {}) };
+      const nextHistory: HistoryByTaskId = { ...(getFinalizedHistoryByTaskId() || {}) };
       const seenByTask = new Map<string, Set<string>>();
       Object.keys(nextHistory).forEach((taskId) => {
         const set = new Set<string>();
@@ -301,7 +364,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function buildHistoryManagerTestDataPreview(params: HistoryGenParams): HistoryGenPreview | null {
-    const historyByTaskId = ctx.getHistoryByTaskId();
+    const historyByTaskId = getFinalizedHistoryByTaskId();
     const tasks = ctx.getTasks();
     const cloneHistory: HistoryByTaskId = {};
     if (!params.replaceExisting) {
@@ -891,12 +954,18 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         const parts = key.split("|");
         const ts = parseInt(parts[0], 10);
         const ms = parseInt(parts[1], 10);
-        const name = parts.slice(2).join("|");
+        const liveMarkerIndex = parts.findIndex((part: string) => String(part || "").startsWith("live:"));
+        const name = parts.slice(2, liveMarkerIndex >= 0 ? liveMarkerIndex : undefined).join("|");
+        const liveSessionId = liveMarkerIndex >= 0 ? String(parts[liveMarkerIndex] || "").slice(5) : "";
         const entry =
           (ctx.getHistoryByTaskId()?.[taskId] || []).find(
-            (e: any) => Number(e?.ts) === ts && Number(e?.ms) === ms && String(e?.name || "") === String(name || "")
+            (e: any) =>
+              Number(e?.ts) === ts &&
+              Number(e?.ms) === ms &&
+              String(e?.name || "") === String(name || "") &&
+              (!liveSessionId || String(e?.liveSessionId || "") === liveSessionId)
           ) || null;
-        if (entry) openHistoryManagerNoteOverlay(entry);
+        if (entry) openHistoryManagerNoteOverlay({ ...entry, taskId });
         return;
       }
 
@@ -980,6 +1049,33 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         else hmBulkSelectedRows.delete(id);
         renderHistoryManager();
       }
+    });
+    ctx.on(els.historyEntryNoteEditBtn, "click", () => {
+      const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+      if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditable !== "true") return;
+      if (els.historyEntryNoteEditor) (els.historyEntryNoteEditor as HTMLElement).style.display = "grid";
+      if (els.historyEntryNoteCancelBtn) els.historyEntryNoteCancelBtn.style.display = "";
+      if (els.historyEntryNoteSaveBtn) els.historyEntryNoteSaveBtn.style.display = "";
+      if (els.historyEntryNoteEditBtn) els.historyEntryNoteEditBtn.style.display = "none";
+      const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
+      if (closeBtn) closeBtn.style.display = "none";
+      overlay.dataset.historyEntryEditing = "true";
+      els.historyEntryNoteInput?.focus();
+    });
+    ctx.on(els.historyEntryNoteCancelBtn, "click", () => {
+      const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+      if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
+      if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = String(overlay.dataset.historyEntryNote || "");
+      if (els.historyEntryNoteEditor) (els.historyEntryNoteEditor as HTMLElement).style.display = "none";
+      if (els.historyEntryNoteCancelBtn) els.historyEntryNoteCancelBtn.style.display = "none";
+      if (els.historyEntryNoteSaveBtn) els.historyEntryNoteSaveBtn.style.display = "none";
+      if (els.historyEntryNoteEditBtn) els.historyEntryNoteEditBtn.style.display = "";
+      const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
+      if (closeBtn) closeBtn.style.display = "";
+      overlay.dataset.historyEntryEditing = "false";
+    });
+    ctx.on(els.historyEntryNoteSaveBtn, "click", () => {
+      void saveHistoryManagerOverlayNote();
     });
   }
 

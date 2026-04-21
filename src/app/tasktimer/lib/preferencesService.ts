@@ -20,7 +20,6 @@ export type TaskTimerPreferenceStorageKeys = {
   WEB_PUSH_ALERTS_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
-  MODE_SETTINGS_KEY: string;
 };
 
 type PreferencesStateSnapshot = {
@@ -146,8 +145,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
       normalizeTimeOfDay(snapshot.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME)
     );
-    safeRemoveLocalStorage(storageKeys.MODE_SETTINGS_KEY);
-
     options.setCloudPreferencesCache(snapshot);
     repository.savePreferences(snapshot);
 

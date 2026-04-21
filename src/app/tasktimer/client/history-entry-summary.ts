@@ -7,8 +7,8 @@ const NO_SESSION_NOTE_TEXT = "No session note.";
 type HistoryEntrySummarySource = {
   ts?: unknown;
   ms?: unknown;
+  name?: unknown;
   note?: unknown;
-  xpDisqualifiedUntilReset?: unknown;
   completionDifficulty?: unknown;
 };
 
@@ -64,12 +64,18 @@ function formatXpText(xpEarned: number | null) {
   return `${Math.max(0, Math.floor(xpEarned))} XP`;
 }
 
+function deriveTaskTitle(entries: HistoryEntrySummarySource[]) {
+  const firstNamedEntry = entries.find((entry) => String(entry?.name || "").trim());
+  return String(firstNamedEntry?.name || "").trim() || "Session Summary";
+}
+
 function deriveTimeGoalCompleted() {
   return null as boolean | null;
 }
 
 function deriveXpEarned(entry: HistoryEntrySummarySource) {
-  return entry?.xpDisqualifiedUntilReset ? 0 : null;
+  void entry;
+  return null;
 }
 
 function buildHistoryEntrySummaryItem(
@@ -145,14 +151,16 @@ export function buildHistoryEntrySummaryPayload({
   formatTwo,
   getEntryNote,
 }: BuildHistoryEntrySummaryPayloadOptions): HistoryEntrySummaryPayload | null {
-  const sessions = (Array.isArray(entries) ? entries : [])
+  const normalizedEntries = Array.isArray(entries) ? entries : [];
+  const sessions = normalizedEntries
     .map((entry) => buildHistoryEntrySummaryItem(entry, formatDateTime, formatTwo, getEntryNote))
     .sort((a, b) => b.ts - a.ts);
   if (!sessions.length) return null;
   const aggregate = buildAggregateSummary(sessions, formatDateTime, formatTwo);
+  const titleText = deriveTaskTitle(normalizedEntries);
   return {
-    titleText: aggregate ? "Session Summaries" : "Session Summary",
-    metaText: aggregate ? aggregate.sessionCountText : "",
+    titleText,
+    metaText: aggregate ? `${aggregate.sessionCountText} selected` : "Session Summary",
     aggregate,
     sessions,
   };
@@ -166,17 +174,23 @@ export function renderHistoryEntrySummaryHtml(
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
     </div>`;
-
-  const aggregateHtml = payload.aggregate
-    ? `<div class="historyEntrySummarySectionTitle historyEntrySummarySectionTitle-overview">Overview</div>
-       <div class="historyEntrySummaryGrid">
-         ${renderField("Date span", payload.aggregate.dateSpanText)}
-         ${renderField("Sessions", payload.aggregate.sessionCountText)}
-         ${renderField("Total elapsed", payload.aggregate.totalElapsedText)}
-         ${renderField("Time goal completed", payload.aggregate.timeGoalText)}
-         ${renderField("XP earned", payload.aggregate.xpText)}
-       </div>
-       ${payload.sessions.length ? '<div class="historyEntrySummaryDivider" aria-hidden="true"></div>' : ""}`
+  const heroHtml = payload.aggregate
+    ? `<section class="historyEntrySummaryHero" aria-label="${escapeHtml(payload.titleText)} activity summary">
+        <div class="historyEntrySummaryHeroTop">
+          <div class="historyEntrySummaryHeroEyebrow">Activity Summary</div>
+          <div class="historyEntrySummaryHeroDate">${escapeHtml(payload.aggregate.dateSpanText)}</div>
+        </div>
+        <div class="historyEntrySummaryHeroLabel">Total time worked</div>
+        <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
+        <div class="historyEntrySummaryHeroStats">
+          ${[
+            renderField("Sessions", payload.aggregate.sessionCountText),
+            renderField("Date span", payload.aggregate.dateSpanText),
+            renderField("Time goal", payload.aggregate.timeGoalText),
+            renderField("XP earned", payload.aggregate.xpText),
+          ].join("")}
+        </div>
+      </section>`
     : "";
 
   const sessionsHtml = payload.sessions
@@ -184,11 +198,14 @@ export function renderHistoryEntrySummaryHtml(
       const noteCopyHtml = session.hasNote
         ? `<button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtml(session.noteCopyText)}">Copy</button>`
         : "";
-      return `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>
+      return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
+        <div class="historyEntrySummarySessionHead">
+          <div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>
+          <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateTimeText)}</div>
+        </div>
+        <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
         <div class="historyEntrySummaryGrid">
-          ${renderField("Date/Time", session.dateTimeText)}
-          ${renderField("Elapsed", session.elapsedText)}
-          ${renderField("Time goal completed", session.timeGoalText)}
+          ${renderField("Time goal", session.timeGoalText)}
           ${renderField("Sentiment", session.sentimentText)}
           ${renderField("XP earned", session.xpText)}
         </div>
@@ -199,9 +216,9 @@ export function renderHistoryEntrySummaryHtml(
           </div>
           ${noteCopyHtml ? `<div class="historyEntrySummaryNoteActions">${noteCopyHtml}</div>` : ""}
         </div>
-        ${index < payload.sessions.length - 1 ? '<div class="historyEntrySummaryDivider" aria-hidden="true"></div>' : ""}`;
+      </section>`;
     })
     .join("");
 
-  return `${aggregateHtml}${sessionsHtml}`;
+  return `${heroHtml}<div class="historyEntrySummarySessions${payload.aggregate ? "" : " historyEntrySummarySessionsSingle"}">${sessionsHtml}</div>`;
 }

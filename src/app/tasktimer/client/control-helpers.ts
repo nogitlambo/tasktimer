@@ -16,11 +16,19 @@ export function eventTargetClosest(target: EventTarget | null, selector: string)
 
 export function setSwitchState(el: HTMLElement | null | undefined, enabled: boolean) {
   if (!el) return;
+  if (el instanceof HTMLInputElement && el.type === "checkbox") {
+    el.checked = enabled;
+    el.setAttribute("aria-checked", String(enabled));
+    return;
+  }
   el.classList.toggle("on", enabled);
   el.setAttribute("aria-checked", String(enabled));
 }
 
 export function isSwitchEnabled(el: HTMLElement | null | undefined) {
+  if (el instanceof HTMLInputElement && el.type === "checkbox") {
+    return !!el.checked;
+  }
   return !!el?.classList.contains("on");
 }
 

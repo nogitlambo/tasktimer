@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 
@@ -16,6 +16,36 @@ import {
   isArchieDraftAction,
 } from "../lib/archieAssistant";
 import { STORAGE_KEY } from "../lib/storage";
+import {
+  completeOnboardingForCurrentSession,
+  getCompletedOnboardingNotice,
+  getOnboardingDashboardPanelStepByIndex,
+  getOnboardingDashboardPanelStepIndex,
+  getOnboardingDashboardPanelStepMessage,
+  ONBOARDING_STEPS,
+  ONBOARDING_DASHBOARD_CLICK_EVENT,
+  hasCompletedOnboardingForCurrentSession,
+  getOnboardingStepByIndex,
+  getOnboardingStepIndex,
+  getOnboardingStepMessage,
+  getSkippedOnboardingNotice,
+  notifyOnboardingStateChanged,
+  readCloudOnboardingComplete,
+  readOnboardingStepForCurrentSession,
+  readOnboardingStatusForCurrentSession,
+  readOnboardingDashboardPanelStepForCurrentSession,
+  saveOnboardingStepForCurrentSession,
+  saveOnboardingDashboardPanelStepForCurrentSession,
+  ONBOARDING_MODULE_CLICK_EVENT,
+  shouldOnboardingStepAwaitModuleClick,
+  skipOnboardingForCurrentSession,
+  startOnboardingForCurrentSession,
+  type OnboardingDashboardClickDetail,
+  type OnboardingDashboardPanelStepId,
+  type OnboardingModuleClickDetail,
+  type OnboardingModuleStep,
+  type OnboardingStep,
+} from "../lib/onboarding";
 
 type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
 export type ArchieResponseFeedback = "up" | "down";
@@ -24,16 +54,33 @@ type ArchieCopyState = "idle" | "copied" | "failed";
 type ArchieAssistantWidgetProps = {
   activePage: ArchieAssistantPage;
   variant?: "desktop" | "mobile";
+  onOnboardingStepChange?: (state: ArchieOnboardingUiState | null) => void;
+};
+
+type ArchieLocalActionTone = "ghost" | "accent" | "warn";
+
+type ArchieLocalAction = {
+  id: string;
+  label: string;
+  tone?: ArchieLocalActionTone;
+  onClick: () => void;
+};
+
+export type ArchieOnboardingUiState = {
+  step: OnboardingStep;
+  awaitingClick: boolean;
+  dashboardPanelStep: OnboardingDashboardPanelStepId | null;
 };
 
 const ARCHIE_DEFAULT_PROMPT = "What can I help with?";
 const ARCHIE_LOADING_PROMPT = "Working through your workspace...";
 const ARCHIE_OUTLINE_DRAW_MS = 840;
-const ARCHIE_TYPE_MS = 2100;
+const ARCHIE_TYPE_MS = 638;
 const ARCHIE_TYPE_MS_PER_CHAR = Math.max(6, Math.round((ARCHIE_TYPE_MS / ARCHIE_DEFAULT_PROMPT.length) / 4));
 const ARCHIE_BLINK_DURATION_MS = 2000;
 const ARCHIE_BLINK_MIN_DELAY_MS = 10000;
 const ARCHIE_BLINK_MAX_DELAY_MS = 15000;
+const ARCHIE_MOBILE_BREAKPOINT_PX = 980;
 const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
 const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
 const ARCHIE_PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
@@ -176,9 +223,81 @@ export function shouldShowArchieResponseActionRow(input: {
   return !input.busy && input.inputVisible && input.hasResponseActions && !!String(input.message || "").trim();
 }
 
+export function onboardingStepTargetPage(step: OnboardingStep | null | undefined): ArchieAssistantPage | null {
+  if (step === "friends") return "test2";
+  if (step === "dashboard" || step === "tasks" || step === "leaderboard" || step === "settings") return step;
+  return null;
+}
+
+export function shouldAutoAdvanceOnboardingStep(input: {
+  step: OnboardingStep | null | undefined;
+  awaitingClick: boolean;
+  autoAdvanceIfCurrentPage: boolean;
+  activePage: ArchieAssistantPage;
+}) {
+  if (!input.awaitingClick || !input.autoAdvanceIfCurrentPage) return false;
+  return onboardingStepTargetPage(input.step) === input.activePage;
+}
+
+export function resolveOnboardingModuleProgress(input: {
+  currentStep: OnboardingStep | null | undefined;
+  awaitingClick: boolean;
+  triggeredStep: OnboardingModuleStep;
+}) {
+  if (!input.awaitingClick || input.currentStep !== input.triggeredStep) return { type: "ignore" as const };
+  if (input.currentStep === "settings") return { type: "reveal_finish" as const };
+  const nextStep = getOnboardingStepByIndex(getOnboardingStepIndex(input.currentStep) + 1);
+  return { type: "advance" as const, nextStep };
+}
+
+export function onboardingPrimaryActionForStep(input: {
+  step: OnboardingStep;
+  awaitingClick: boolean;
+  dashboardPanelStep?: OnboardingDashboardPanelStepId | null;
+}) {
+  if (input.step === "welcome") {
+    return { id: "continue" as const, label: "Let's Go!" as const, tone: "accent" as const };
+  }
+  if (input.awaitingClick || (input.step === "dashboard" && input.dashboardPanelStep)) return null;
+  if (input.step === "settings") {
+    return { id: "finish" as const, label: "Finish" as const, tone: "accent" as const };
+  }
+  return { id: "continue" as const, label: "Next" as const, tone: "accent" as const };
+}
+
+function getNextDashboardPanelStep(step: OnboardingDashboardPanelStepId) {
+  return getOnboardingDashboardPanelStepByIndex(getOnboardingDashboardPanelStepIndex(step) + 1);
+}
+
+export function resolveOnboardingDashboardPanelProgress(step: OnboardingDashboardPanelStepId | null | undefined) {
+  if (!step) return { type: "ignore" as const };
+  const panelIndex = getOnboardingDashboardPanelStepIndex(step);
+  if (panelIndex >= 3) return { type: "advance_step" as const, nextStep: "tasks" as const };
+  return { type: "advance_panel" as const, nextPanelStep: getNextDashboardPanelStep(step) };
+}
+
+function splitArchieBubbleMessage(messageRaw: string) {
+  const message = String(messageRaw || "");
+  const instructionLine = "Click anywhere to move forward";
+  const lines = message.split("\n");
+  return lines.map((line, index) => ({
+    id: `line-${index}`,
+    text: line,
+    isInstruction: line.trim() === instructionLine,
+  }));
+}
+
 function createArchieLocalSessionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
   return `archie-local-${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
+}
+
+function isVisibleArchieVariant(variant: "desktop" | "mobile") {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return variant === "desktop";
+  }
+  const mobileViewport = window.matchMedia(`(max-width: ${ARCHIE_MOBILE_BREAKPOINT_PX}px)`).matches;
+  return variant === "mobile" ? mobileViewport : !mobileViewport;
 }
 
 async function copyArchieTextToClipboard(textRaw: string) {
@@ -315,7 +434,11 @@ export function ArchieResponseActionRow(props: {
   );
 }
 
-export default function ArchieAssistantWidget({ activePage, variant = "desktop" }: ArchieAssistantWidgetProps) {
+export default function ArchieAssistantWidget({
+  activePage,
+  variant = "desktop",
+  onOnboardingStepChange,
+}: ArchieAssistantWidgetProps) {
   const [isArchieBubbleOpen, setIsArchieBubbleOpen] = useState(false);
   const [archieQuestion, setArchieQuestion] = useState("");
   const [archieRenderedMessage, setArchieRenderedMessage] = useState(ARCHIE_DEFAULT_PROMPT);
@@ -326,6 +449,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const [archieOutlineClosing, setArchieOutlineClosing] = useState(false);
   const [archieInputVisible, setArchieInputVisible] = useState(false);
   const [archieSuggestedAction, setArchieSuggestedAction] = useState<ArchieSuggestedAction | null>(null);
+  const [archieLocalActions, setArchieLocalActions] = useState<ArchieLocalAction[]>([]);
   const [archieBlinkPattern, setArchieBlinkPattern] = useState<ArchieBlinkPattern>("idle");
   const [archieCitations, setArchieCitations] = useState<ArchieKnowledgeCitation[]>([]);
   const [archieDraft, setArchieDraft] = useState<ArchieRecommendationDraft | null>(null);
@@ -337,11 +461,19 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   const [archieBusy, setArchieBusy] = useState(false);
   const [archieReviewOpen, setArchieReviewOpen] = useState(false);
   const [archieSessionId, setArchieSessionId] = useState<string | null>(null);
+  const [archieOnboardingStep, setArchieOnboardingStep] = useState<OnboardingStep | null>(null);
+  const [archieOnboardingAwaitingClick, setArchieOnboardingAwaitingClick] = useState(false);
+  const [archieOnboardingAutoAdvanceEligible, setArchieOnboardingAutoAdvanceEligible] = useState(false);
+  const [archieOnboardingDashboardPanelStep, setArchieOnboardingDashboardPanelStep] = useState<OnboardingDashboardPanelStepId | null>(null);
   const archieInputRef = useRef<HTMLTextAreaElement | null>(null);
   const archieTimersRef = useRef<number[]>([]);
   const archieBlinkStartTimerRef = useRef<number | null>(null);
   const archieBlinkStopTimerRef = useRef<number | null>(null);
   const archieCopyResetTimerRef = useRef<number | null>(null);
+  const onboardingBootedRef = useRef(false);
+  const presentOnboardingStepRef = useRef<
+    ((stepRaw?: OnboardingStep | null, opts?: { waitingForModuleClick?: boolean; autoAdvanceIfCurrentPage?: boolean }) => void) | null
+  >(null);
   const canUsePortal = typeof document !== "undefined";
 
   const clearArchieTimers = useCallback(() => {
@@ -392,8 +524,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieOutlineClosing(false);
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
+    setArchieLocalActions([]);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieOnboardingStep(null);
+    setArchieOnboardingAwaitingClick(false);
+    setArchieOnboardingAutoAdvanceEligible(false);
+    setArchieOnboardingDashboardPanelStep(null);
     setArchieHasResponseActions(false);
     setArchieResponseFeedback(null);
     setArchieCopyState("idle");
@@ -448,8 +585,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       clearArchieCopyResetTimer();
       setArchieRenderedMessage(reducedMotion ? response.message : "");
       setArchieSuggestedAction(response.suggestedAction || null);
+      setArchieLocalActions([]);
       setArchieCitations(response.citations || []);
       setArchieDraft(response.draft || null);
+      setArchieOnboardingStep(null);
+      setArchieOnboardingAwaitingClick(false);
+      setArchieOnboardingAutoAdvanceEligible(false);
+      setArchieOnboardingDashboardPanelStep(null);
       setArchieHasResponseActions(true);
       setArchieResponseFeedback(null);
       setArchieCopyState("idle");
@@ -484,8 +626,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieRenderedMessage(reducedMotion ? ARCHIE_DEFAULT_PROMPT : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
+    setArchieLocalActions([]);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieOnboardingStep(null);
+    setArchieOnboardingAwaitingClick(false);
+    setArchieOnboardingAutoAdvanceEligible(false);
+    setArchieOnboardingDashboardPanelStep(null);
     setArchieHasResponseActions(false);
     setArchieResponseFeedback(null);
     setArchieCopyState("idle");
@@ -522,8 +669,12 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     clearArchieCopyResetTimer();
     setArchieQuestion("");
     setArchieSuggestedAction(null);
+    setArchieLocalActions([]);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieOnboardingStep(null);
+    setArchieOnboardingAwaitingClick(false);
+    setArchieOnboardingAutoAdvanceEligible(false);
     setArchieHasResponseActions(false);
     setArchieResponseFeedback(null);
     setArchieCopyState("idle");
@@ -599,8 +750,13 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     setArchieRenderedMessage(reducedMotion ? nextMessage : "");
     setArchieInputVisible(false);
     setArchieSuggestedAction(null);
+    setArchieLocalActions([]);
     setArchieCitations([]);
     setArchieDraft(null);
+    setArchieOnboardingStep(null);
+    setArchieOnboardingAwaitingClick(false);
+    setArchieOnboardingAutoAdvanceEligible(false);
+    setArchieOnboardingDashboardPanelStep(null);
     setArchieHasResponseActions(true);
     setArchieResponseFeedback(null);
     setArchieCopyState("idle");
@@ -640,6 +796,223 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       setArchieInputVisible(true);
     });
   }, [clearArchieCopyResetTimer, clearArchieTimers, isArchieBubbleOpen, prefersReducedMotion, queueArchieTimer, startArchieTyping]);
+
+  const presentArchieLocalMessage = useCallback(
+    (input: {
+      message: string;
+      actions?: ArchieLocalAction[];
+      showInputAfterTyping?: boolean;
+      onboardingStep?: OnboardingStep | null;
+      onboardingAwaitingClick?: boolean;
+      onboardingAutoAdvanceEligible?: boolean;
+      onboardingDashboardPanelStep?: OnboardingDashboardPanelStepId | null;
+    }) => {
+      const nextMessage = String(input.message || "").trim();
+      if (!nextMessage) return;
+      const reducedMotion = prefersReducedMotion();
+      clearArchieTimers();
+      clearArchieCopyResetTimer();
+      setIsArchieBubbleOpen(true);
+      setArchieQuestion("");
+      setArchieRenderedMessage(reducedMotion ? nextMessage : "");
+      setArchieInputVisible(false);
+      setArchieSuggestedAction(null);
+      setArchieLocalActions(reducedMotion ? input.actions || [] : []);
+      setArchieCitations([]);
+      setArchieDraft(null);
+      setArchieOnboardingStep(input.onboardingStep || null);
+      setArchieOnboardingAwaitingClick(!!input.onboardingAwaitingClick);
+      setArchieOnboardingAutoAdvanceEligible(!!input.onboardingAutoAdvanceEligible);
+      setArchieOnboardingDashboardPanelStep(input.onboardingDashboardPanelStep || null);
+      setArchieHasResponseActions(false);
+      setArchieResponseFeedback(null);
+      setArchieCopyState("idle");
+      setArchieBusy(false);
+      setArchieReviewOpen(false);
+      setArchieSessionId(createArchieLocalSessionId());
+      setArchieOutlineClosing(false);
+      setArchieOutlineAnimating(false);
+      setArchieOutlineComplete(true);
+      setArchieTitleAnimation(reducedMotion ? "none" : "response");
+      setArchieTitleAnimationKey((value) => value + 1);
+      if (reducedMotion) {
+        if (input.showInputAfterTyping) setArchieInputVisible(true);
+        return;
+      }
+      startArchieTyping(nextMessage, () => {
+        setArchieTitleAnimation("none");
+        setArchieLocalActions(input.actions || []);
+        if (input.showInputAfterTyping) setArchieInputVisible(true);
+      });
+    },
+    [clearArchieCopyResetTimer, clearArchieTimers, prefersReducedMotion, startArchieTyping]
+  );
+
+  const finishOnboarding = useCallback(() => {
+    const user = getFirebaseAuthClient()?.currentUser || null;
+    completeOnboardingForCurrentSession(user);
+    saveOnboardingDashboardPanelStepForCurrentSession(user, null);
+    notifyOnboardingStateChanged();
+    presentArchieLocalMessage({
+      message: getCompletedOnboardingNotice(),
+      showInputAfterTyping: true,
+    });
+  }, [presentArchieLocalMessage]);
+
+  const skipOnboarding = useCallback(
+    (step: OnboardingStep) => {
+      const user = getFirebaseAuthClient()?.currentUser || null;
+      skipOnboardingForCurrentSession(user, step);
+      saveOnboardingDashboardPanelStepForCurrentSession(user, null);
+      notifyOnboardingStateChanged();
+      presentArchieLocalMessage({
+        message: getSkippedOnboardingNotice(),
+        showInputAfterTyping: true,
+      });
+    },
+    [presentArchieLocalMessage]
+  );
+
+  const presentDashboardPanelTourStep = useCallback(
+    (step: OnboardingDashboardPanelStepId, opts?: { autoAdvanceIfCurrentPage?: boolean }) => {
+      const user = getFirebaseAuthClient()?.currentUser || null;
+      saveOnboardingStepForCurrentSession(user, "dashboard");
+      saveOnboardingDashboardPanelStepForCurrentSession(user, step);
+      notifyOnboardingStateChanged();
+      const panelIndex = getOnboardingDashboardPanelStepIndex(step);
+      const actions: ArchieLocalAction[] = [
+        {
+          id: "skip",
+          label: "Skip",
+          tone: "ghost",
+          onClick: () => {
+            skipOnboarding("dashboard");
+          },
+        },
+        {
+          id: "back",
+          label: "Back",
+          tone: "ghost",
+          onClick: () => {
+            if (panelIndex === 0) {
+              presentOnboardingStepRef.current?.("dashboard", { waitingForModuleClick: true, autoAdvanceIfCurrentPage: false });
+              return;
+            }
+            presentDashboardPanelTourStep(getOnboardingDashboardPanelStepByIndex(panelIndex - 1), { autoAdvanceIfCurrentPage: false });
+          },
+        },
+      ];
+      presentArchieLocalMessage({
+        message: getOnboardingDashboardPanelStepMessage(step),
+        actions,
+        onboardingStep: "dashboard",
+        onboardingAwaitingClick: false,
+        onboardingAutoAdvanceEligible: !!opts?.autoAdvanceIfCurrentPage,
+        onboardingDashboardPanelStep: step,
+      });
+    },
+    [presentArchieLocalMessage, skipOnboarding]
+  );
+
+  const presentOnboardingStep = useCallback(
+    (
+      stepRaw?: OnboardingStep | null,
+      opts?: {
+        waitingForModuleClick?: boolean;
+        autoAdvanceIfCurrentPage?: boolean;
+      }
+    ) => {
+      const user = getFirebaseAuthClient()?.currentUser || null;
+      const step = stepRaw || readOnboardingStepForCurrentSession(user);
+      if (!step) return;
+      if (step === "dashboard" && opts?.autoAdvanceIfCurrentPage && activePage === "dashboard") {
+        const storedDashboardPanelStep = readOnboardingDashboardPanelStepForCurrentSession(user) || "xp-progress";
+        presentDashboardPanelTourStep(storedDashboardPanelStep, { autoAdvanceIfCurrentPage: false });
+        return;
+      }
+      if (getOnboardingStepIndex(step) === 0 && !archieOnboardingStep) startOnboardingForCurrentSession(user, step);
+      else saveOnboardingStepForCurrentSession(user, step);
+      if (step !== "dashboard") saveOnboardingDashboardPanelStepForCurrentSession(user, null);
+      notifyOnboardingStateChanged();
+      const stepIndex = getOnboardingStepIndex(step);
+      const waitingForModuleClick =
+        typeof opts?.waitingForModuleClick === "boolean" ? opts.waitingForModuleClick : shouldOnboardingStepAwaitModuleClick(step);
+      const actions: ArchieLocalAction[] = [];
+      actions.push({
+        id: "skip",
+        label: "Skip",
+        tone: "ghost",
+        onClick: () => {
+          skipOnboarding(step);
+        },
+      });
+      if (stepIndex > 0) {
+        actions.push({
+          id: "back",
+          label: "Back",
+          tone: "ghost",
+          onClick: () => {
+            const previousStep = getOnboardingStepByIndex(stepIndex - 1);
+            presentOnboardingStep(previousStep, { autoAdvanceIfCurrentPage: false });
+          },
+        });
+      }
+      const primaryAction = onboardingPrimaryActionForStep({
+        step,
+        awaitingClick: waitingForModuleClick,
+        dashboardPanelStep: null,
+      });
+      if (primaryAction?.id === "finish") {
+        actions.push({
+          id: primaryAction.id,
+          label: primaryAction.label,
+          tone: primaryAction.tone,
+          onClick: finishOnboarding,
+        });
+      } else if (primaryAction?.id === "continue") {
+        actions.push({
+          id: primaryAction.id,
+          label: primaryAction.label,
+          tone: primaryAction.tone,
+          onClick: () => {
+            const nextStep = getOnboardingStepByIndex(stepIndex + 1);
+            presentOnboardingStep(nextStep, { autoAdvanceIfCurrentPage: false });
+          },
+        });
+      }
+      presentArchieLocalMessage({
+        message: getOnboardingStepMessage(step),
+        actions,
+        onboardingStep: step,
+        onboardingAwaitingClick: waitingForModuleClick,
+        onboardingAutoAdvanceEligible: !!opts?.autoAdvanceIfCurrentPage,
+        onboardingDashboardPanelStep: null,
+      });
+    },
+    [activePage, archieOnboardingStep, finishOnboarding, presentArchieLocalMessage, presentDashboardPanelTourStep, skipOnboarding]
+  );
+
+  const presentCompleteSetupPrompt = useCallback(() => {
+    presentArchieLocalMessage({
+      message: "Setup is still incomplete. When you're ready, use Complete Setup and I'll pick up where we left off.",
+      actions: [
+        {
+          id: "completeSetup",
+          label: "Complete Setup",
+          tone: "accent",
+          onClick: () => {
+            const user = getFirebaseAuthClient()?.currentUser || null;
+            presentOnboardingStep(readOnboardingStepForCurrentSession(user), { autoAdvanceIfCurrentPage: true });
+          },
+        },
+      ],
+      showInputAfterTyping: true,
+    });
+  }, [presentArchieLocalMessage, presentOnboardingStep]);
+
+  useEffect(() => {
+    presentOnboardingStepRef.current = presentOnboardingStep;
+  }, [presentOnboardingStep]);
 
   const handleArchieResponseFeedback = useCallback(
     (requestedFeedback: ArchieResponseFeedback) => {
@@ -729,6 +1102,12 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     const onTasksRoute = /\/tasklaunch\/?$/i.test(pathname) || /\/tasklaunch\/index\.html$/i.test(pathname);
     if (!onTasksRoute) window.location.assign("/tasklaunch");
   }, [archieDraft?.id, archieSessionId, archieSuggestedAction]);
+
+  const handleArchieLocalAction = useCallback((actionId: string) => {
+    const target = archieLocalActions.find((action) => action.id === actionId);
+    if (!target) return;
+    target.onClick();
+  }, [archieLocalActions]);
 
   const handleReopenLastDraft = useCallback(() => {
     if (!archieLastOpenDraft) return;
@@ -835,9 +1214,20 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
       closeArchieBubble({ animated: true });
       return;
     }
-    setIsArchieBubbleOpen(true);
-    startArchiePromptSequence();
-  }, [closeArchieBubble, isArchieBubbleOpen, startArchiePromptSequence]);
+    const currentUser = getFirebaseAuthClient()?.currentUser || null;
+    const onboardingStatus = readOnboardingStatusForCurrentSession(currentUser);
+    void (async () => {
+      if (currentUser && (onboardingStatus === "active" || onboardingStatus === "skipped")) {
+        const onboardingComplete = await readCloudOnboardingComplete(currentUser.uid);
+        if (!onboardingComplete) {
+          presentCompleteSetupPrompt();
+          return;
+        }
+      }
+      setIsArchieBubbleOpen(true);
+      startArchiePromptSequence();
+    })();
+  }, [closeArchieBubble, isArchieBubbleOpen, presentCompleteSetupPrompt, startArchiePromptSequence]);
 
   const handleArchieInputKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -854,7 +1244,149 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
   }, [archieInputVisible, isArchieBubbleOpen]);
 
   useEffect(() => {
+    onOnboardingStepChange?.(
+      variant === "desktop" && archieOnboardingStep
+        ? {
+            step: archieOnboardingStep,
+            awaitingClick: archieOnboardingAwaitingClick,
+            dashboardPanelStep: archieOnboardingDashboardPanelStep,
+          }
+        : null
+    );
+  }, [archieOnboardingAwaitingClick, archieOnboardingDashboardPanelStep, archieOnboardingStep, onOnboardingStepChange, variant]);
+
+  useEffect(() => {
+    if (variant !== "desktop" || typeof window === "undefined") return;
+    const onModuleClick = (event: Event) => {
+      const detail = (event as CustomEvent<OnboardingModuleClickDetail>).detail;
+      const triggeredStep = detail?.step;
+      if (
+        triggeredStep !== "dashboard" &&
+        triggeredStep !== "tasks" &&
+        triggeredStep !== "friends" &&
+        triggeredStep !== "leaderboard" &&
+        triggeredStep !== "settings"
+      ) {
+        return;
+      }
+      const resolution = resolveOnboardingModuleProgress({
+        currentStep: archieOnboardingStep,
+        awaitingClick: archieOnboardingAwaitingClick,
+        triggeredStep,
+      });
+      if (resolution.type === "ignore") return;
+      if (triggeredStep === "dashboard") {
+        presentDashboardPanelTourStep("xp-progress", { autoAdvanceIfCurrentPage: false });
+        return;
+      }
+      if (resolution.type === "reveal_finish") {
+        presentOnboardingStep("settings", { waitingForModuleClick: false, autoAdvanceIfCurrentPage: false });
+        return;
+      }
+      presentOnboardingStep(resolution.nextStep, { autoAdvanceIfCurrentPage: false });
+    };
+    window.addEventListener(ONBOARDING_MODULE_CLICK_EVENT, onModuleClick as EventListener);
+    return () => {
+      window.removeEventListener(ONBOARDING_MODULE_CLICK_EVENT, onModuleClick as EventListener);
+    };
+  }, [archieOnboardingAwaitingClick, archieOnboardingStep, presentDashboardPanelTourStep, presentOnboardingStep, variant]);
+
+  useEffect(() => {
+    if (variant !== "desktop" || typeof window === "undefined") return;
+    const onDashboardClick = (event: Event) => {
+      const detail = (event as CustomEvent<OnboardingDashboardClickDetail>).detail;
+      if (detail?.source !== "dashboard-content") return;
+      if (archieOnboardingStep !== "dashboard" || !archieOnboardingDashboardPanelStep) return;
+      const resolution = resolveOnboardingDashboardPanelProgress(archieOnboardingDashboardPanelStep);
+      if (resolution.type === "ignore") return;
+      if (resolution.type === "advance_step") {
+        presentOnboardingStep("tasks", { autoAdvanceIfCurrentPage: false });
+        return;
+      }
+      presentDashboardPanelTourStep(resolution.nextPanelStep, { autoAdvanceIfCurrentPage: false });
+    };
+    window.addEventListener(ONBOARDING_DASHBOARD_CLICK_EVENT, onDashboardClick as EventListener);
+    return () => {
+      window.removeEventListener(ONBOARDING_DASHBOARD_CLICK_EVENT, onDashboardClick as EventListener);
+    };
+  }, [archieOnboardingDashboardPanelStep, archieOnboardingStep, presentDashboardPanelTourStep, presentOnboardingStep, variant]);
+
+  useEffect(() => {
+    if (
+      !shouldAutoAdvanceOnboardingStep({
+        step: archieOnboardingStep,
+        awaitingClick: archieOnboardingAwaitingClick,
+        autoAdvanceIfCurrentPage: archieOnboardingAutoAdvanceEligible,
+        activePage,
+      })
+    ) {
+      return;
+    }
+    const triggeredStep = archieOnboardingStep as OnboardingModuleStep;
+    const resolution = resolveOnboardingModuleProgress({
+      currentStep: archieOnboardingStep,
+      awaitingClick: archieOnboardingAwaitingClick,
+      triggeredStep,
+    });
+    if (resolution.type === "ignore") return;
+    if (triggeredStep === "dashboard") {
+      presentDashboardPanelTourStep("xp-progress", { autoAdvanceIfCurrentPage: false });
+      return;
+    }
+    if (resolution.type === "reveal_finish") {
+      presentOnboardingStep("settings", { waitingForModuleClick: false, autoAdvanceIfCurrentPage: false });
+      return;
+    }
+    presentOnboardingStep(resolution.nextStep, { autoAdvanceIfCurrentPage: false });
+  }, [
+    activePage,
+    archieOnboardingAutoAdvanceEligible,
+    archieOnboardingAwaitingClick,
+    archieOnboardingStep,
+    presentDashboardPanelTourStep,
+    presentOnboardingStep,
+  ]);
+
+  useEffect(() => {
+    if (onboardingBootedRef.current) return;
+    if (activePage !== "dashboard") return;
+    if (!isVisibleArchieVariant(variant)) return;
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+
+    let cancelled = false;
+
+    const maybeBootOnboarding = async (user: User | null) => {
+      if (cancelled || onboardingBootedRef.current || !user) return;
+      if (!isVisibleArchieVariant(variant)) return;
+      if (hasCompletedOnboardingForCurrentSession(user)) {
+        onboardingBootedRef.current = true;
+        return;
+      }
+      const onboardingComplete = await readCloudOnboardingComplete(user.uid);
+      if (cancelled || onboardingBootedRef.current) return;
+      if (onboardingComplete) {
+        onboardingBootedRef.current = true;
+        return;
+      }
+      onboardingBootedRef.current = true;
+      presentOnboardingStep(readOnboardingStepForCurrentSession(user), { autoAdvanceIfCurrentPage: true });
+    };
+
+    void maybeBootOnboarding(auth.currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      void maybeBootOnboarding(user || null);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [activePage, presentOnboardingStep, variant]);
+
+  useEffect(() => {
     if (!isArchieBubbleOpen) return;
+    if (archieOnboardingStep) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -890,7 +1422,7 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     return () => {
       cancelled = true;
     };
-  }, [isArchieBubbleOpen]);
+  }, [archieOnboardingStep, isArchieBubbleOpen]);
 
   const showReopenLastDraft =
     isArchieBubbleOpen &&
@@ -956,12 +1488,22 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
     hasResponseActions: archieHasResponseActions,
     message: archieRenderedMessage,
   });
+  const archieOnboardingStepIndex = archieOnboardingStep ? getOnboardingStepIndex(archieOnboardingStep) : -1;
+  const archieOnboardingProgressPercent =
+    archieOnboardingStepIndex >= 0 ? Math.round((archieOnboardingStepIndex / Math.max(1, ONBOARDING_STEPS.length - 1)) * 100) : 0;
+  const archieOnboardingHeadingOnly =
+    archieOnboardingStep != null && archieOnboardingStep !== "welcome" && archieOnboardingStep !== "dashboard";
+  const showArchieActionRow = !archieBusy && (!!archieSuggestedAction || archieLocalActions.length > 0 || showReopenLastDraft);
+  const archieActionRowVisible = archieInputVisible || archieLocalActions.length > 0;
+  const archieBubbleTextVisible =
+    archieTitleAnimation !== "none" || archieInputVisible || archieLocalActions.length > 0 || !!archieRenderedMessage.trim();
+  const archieBubbleMessageLines = splitArchieBubbleMessage(archieRenderedMessage);
 
   return (
     <>
       <div className={`desktopRailMascot${variant === "mobile" ? " mobileArchieAssistant" : ""}`}>
         <div
-          className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}${archieBusy ? " isBusy" : ""}`}
+          className={`desktopRailMascotBubble${isArchieBubbleOpen ? " isOpen" : ""}${archieOutlineAnimating ? " isOutlineAnimating" : ""}${archieOutlineComplete ? " isOutlineComplete" : ""}${archieOutlineClosing ? " isClosing" : ""}${archieBusy ? " isBusy" : ""}${archieOnboardingStep ? " isOnboarding" : ""}`}
           aria-hidden={!isArchieBubbleOpen}
         >
           <span className="desktopRailMascotBubbleOutline" aria-hidden="true">
@@ -979,12 +1521,31 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               </span>
             </div>
           ) : (
-            <div className="desktopRailMascotBubbleTitle">
+            <div className={`desktopRailMascotBubbleTitle${archieOnboardingStep ? " isOnboarding" : ""}${archieOnboardingHeadingOnly ? " isOnboardingHeadingOnly" : ""}`}>
+              {archieOnboardingStep ? (
+                <div className="desktopRailMascotOnboardingProgress" aria-label={`Onboarding ${archieOnboardingProgressPercent}% complete`}>
+                  <div className="desktopRailMascotOnboardingProgressBar" aria-hidden="true">
+                    <span
+                      className="desktopRailMascotOnboardingProgressFill"
+                      style={{ width: `${archieOnboardingProgressPercent}%` }}
+                    />
+                  </div>
+                  <span className="desktopRailMascotOnboardingProgressLabel">{archieOnboardingProgressPercent}% complete</span>
+                </div>
+              ) : null}
               <span
                 key={archieTitleAnimationKey}
-                className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieTitleAnimation !== "none" || archieInputVisible ? " isVisible" : ""}`}
+                className={`desktopRailMascotBubbleTitleText${archieTitleAnimation === "prompt" ? " isTypingPrompt" : ""}${archieTitleAnimation === "response" ? " isTypingResponse" : ""}${archieBubbleTextVisible ? " isVisible" : ""}${archieOnboardingStep ? " isOnboarding" : ""}${archieOnboardingHeadingOnly ? " isOnboardingHeadingOnly" : ""}`}
               >
-                {archieRenderedMessage}
+                {archieBubbleMessageLines.map((line, index) => (
+                  <span
+                    key={`${archieTitleAnimationKey}-${line.id}`}
+                    className={`desktopRailMascotBubbleTitleLine${line.isInstruction ? " isInstruction" : ""}`}
+                    style={{ "--archie-line-delay": `${index * 90}ms` } as CSSProperties}
+                  >
+                    {line.text || "\u00A0"}
+                  </span>
+                ))}
               </span>
             </div>
           )}
@@ -1004,30 +1565,38 @@ export default function ArchieAssistantWidget({ activePage, variant = "desktop" 
               ))}
             </div>
           ) : null}
-          {!archieBusy && archieSuggestedAction ? (
-            <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
-              <button
-                className="btn btn-ghost small desktopRailMascotActionBtn"
-                type="button"
-                onClick={handleArchieSuggestedAction}
-                disabled={archieBusy}
-              >
-                {archieSuggestedAction.label}
-              </button>
-              {showReopenLastDraft && (!archieSuggestedAction || !isArchieDraftAction(archieSuggestedAction)) ? (
+          {showArchieActionRow ? (
+            <div className={`desktopRailMascotActionRow${archieActionRowVisible ? " isVisible" : ""}${archieOnboardingStep ? " isOnboarding" : ""}`}>
+              {archieLocalActions.length
+                ? archieLocalActions.map((action) => (
+                    <button
+                      key={action.id}
+                      className={`btn small desktopRailMascotActionBtn${archieOnboardingStep ? " isOnboarding" : ""}${archieOnboardingStep && action.tone === "accent" ? " isOnboardingPrimary" : ""}${archieOnboardingStep && action.id === "skip" ? " isOnboardingSkip" : ""} ${action.tone === "accent" ? "btn-accent" : action.tone === "warn" ? "btn-warn" : "btn-ghost"}`}
+                      type="button"
+                      onClick={() => handleArchieLocalAction(action.id)}
+                      disabled={archieBusy}
+                    >
+                      {action.label}
+                    </button>
+                  ))
+                : archieSuggestedAction ? (
+                    <button
+                      className="btn btn-ghost small desktopRailMascotActionBtn"
+                      type="button"
+                      onClick={handleArchieSuggestedAction}
+                      disabled={archieBusy}
+                    >
+                      {archieSuggestedAction.label}
+                    </button>
+                  ) : null}
+              {showReopenLastDraft && (!archieSuggestedAction || !isArchieDraftAction(archieSuggestedAction)) && !archieLocalActions.length ? (
                 <button className="btn btn-ghost small desktopRailMascotActionBtn" type="button" onClick={handleReopenLastDraft} disabled={archieBusy}>
                   Reopen Last Draft
                 </button>
               ) : null}
             </div>
-          ) : !archieBusy && showReopenLastDraft ? (
-            <div className={`desktopRailMascotActionRow${archieInputVisible ? " isVisible" : ""}`}>
-              <button className="btn btn-ghost small desktopRailMascotActionBtn" type="button" onClick={handleReopenLastDraft} disabled={archieBusy}>
-                Reopen Last Draft
-              </button>
-            </div>
           ) : null}
-          {!archieBusy ? (
+          {!archieBusy && !archieLocalActions.length ? (
             <span className={`desktopRailMascotInputRow${archieInputVisible ? " isVisible" : ""}`}>
               <textarea
                 ref={archieInputRef}

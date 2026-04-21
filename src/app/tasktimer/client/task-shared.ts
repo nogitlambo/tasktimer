@@ -6,7 +6,6 @@ import {
   syncLegacyPlannedStartFields,
 } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
-import type { MainMode } from "./types";
 
 function normalizePlannedStartDay(
   raw: unknown
@@ -25,7 +24,6 @@ function normalizePlannedStartDay(
 
 export type TaskTimerSharedTaskContext = {
   createId: () => string;
-  getCurrentMode: () => MainMode;
   getEditTimeGoalDraft?: () => {
     value: number;
     unit: "minute" | "hour";
@@ -36,7 +34,6 @@ export type TaskTimerSharedTaskContext = {
 export type TaskTimerSharedTaskApi = {
   createId: () => string;
   makeTask: (name: string, order?: number) => Task;
-  taskModeOf: (task: Task | null | undefined) => MainMode;
   normalizeLoadedTask: (task: Task) => void;
   ensureMilestoneIdentity: (task: Task) => void;
   hasValidPresetInterval: (task: Task | null | undefined) => boolean;
@@ -69,10 +66,6 @@ function checkpointTimeGoalLimitSec(timeGoalMinutes: number | null | undefined):
 }
 
 export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): TaskTimerSharedTaskApi {
-  function taskModeOf(): MainMode {
-    return "mode1";
-  }
-
   function makeTask(name: string, order?: number): Task {
     const task: Task = {
       id: ctx.createId(),
@@ -112,7 +105,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
 
   function normalizeLoadedTask(task: Task) {
     const taskWithMode = task as Task & {
-      mode?: MainMode;
+      mode?: string;
       finalCheckpointAction?: Task["timeGoalAction"];
     };
     delete taskWithMode.mode;
@@ -300,7 +293,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
   return {
     createId: ctx.createId,
     makeTask,
-    taskModeOf,
     normalizeLoadedTask,
     ensureMilestoneIdentity,
     hasValidPresetInterval,

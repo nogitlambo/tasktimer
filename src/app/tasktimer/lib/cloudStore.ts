@@ -16,6 +16,7 @@ import { validateUsername } from "@/lib/username";
 import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
+import { patchLeaderboardProfileFromUserRoot } from "./leaderboard";
 import {
   getTaskPlannedStartByDay,
   normalizeLocalDateValue,
@@ -26,7 +27,7 @@ import {
   type ScheduleDay,
 } from "./schedule-placement";
 
-import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "./types";
+import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
@@ -47,7 +48,6 @@ export type UserPreferencesV1 = {
   checkpointAlertToastEnabled: boolean;
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
-  modeSettings?: Record<string, unknown> | null;
   rewards: RewardProgressV1;
   updatedAtMs: number;
 };
@@ -68,6 +68,7 @@ export type WorkspaceSnapshot = {
   plan: TaskTimerPlan;
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
+  liveSessionsByTaskId: LiveSessionsByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
   preferences: UserPreferencesV1 | null;
   dashboard: DashboardConfig | null;
@@ -163,6 +164,12 @@ function taskHistoryCollection(uid: string, taskId: string) {
   return collection(db, "users", uid, "tasks", taskId, "history");
 }
 
+function taskLiveSessionDoc(uid: string, taskId: string) {
+  const db = dbOrNull();
+  if (!db) return null;
+  return doc(db, "users", uid, "tasks", taskId, "activeSession", "current");
+}
+
 function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   if (!row || typeof row !== "object") return null;
   const next: HistoryEntry = {
@@ -173,13 +180,36 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
-  if ("xpDisqualifiedUntilReset" in (row as Record<string, unknown>)) {
-    next.xpDisqualifiedUntilReset = !!(row as HistoryEntry).xpDisqualifiedUntilReset;
-  }
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   return next;
+}
+
+function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTaskSession | null {
+  if (!row || typeof row !== "object") return null;
+  const taskId = String((row as LiveTaskSession).taskId || taskIdRaw || "").trim();
+  const sessionId = String((row as LiveTaskSession).sessionId || "").trim();
+  if (!taskId || !sessionId) return null;
+  const startedAtMs = Number.isFinite(Number((row as LiveTaskSession).startedAtMs)) ? Math.max(0, Math.floor(Number((row as LiveTaskSession).startedAtMs))) : 0;
+  const updatedAtMs = Number.isFinite(Number((row as LiveTaskSession).updatedAtMs))
+    ? Math.max(startedAtMs, Math.floor(Number((row as LiveTaskSession).updatedAtMs)))
+    : startedAtMs;
+  const elapsedMs = Number.isFinite(Number((row as LiveTaskSession).elapsedMs)) ? Math.max(0, Math.floor(Number((row as LiveTaskSession).elapsedMs))) : 0;
+  const name = String((row as LiveTaskSession).name || "").trim() || "Task";
+  const note = typeof (row as LiveTaskSession).note === "string" ? String((row as LiveTaskSession).note).trim() : "";
+  const color = typeof (row as LiveTaskSession).color === "string" ? String((row as LiveTaskSession).color).trim() : "";
+  return {
+    sessionId,
+    taskId,
+    name,
+    startedAtMs,
+    updatedAtMs,
+    elapsedMs,
+    status: "running",
+    ...(note ? { note } : {}),
+    ...(color ? { color } : {}),
+  };
 }
 
 function deletedTaskDoc(uid: string, taskId: string) {
@@ -790,6 +820,7 @@ function asTaskUi(input: unknown): TaskUiConfig | null {
 function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Task {
   const row: Record<string, unknown> = { ...raw };
   row.id = typeof row.id === "string" && row.id ? row.id : taskId;
+  delete row.xpDisqualifiedUntilReset;
 
   const checkpointsEnabled = row.checkpointsEnabled;
   if (typeof checkpointsEnabled === "boolean" && typeof row.milestonesEnabled !== "boolean") {
@@ -820,7 +851,6 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
 
   row.timeGoalAction = "confirmModal";
 
-  row.xpDisqualifiedUntilReset = !!row.xpDisqualifiedUntilReset;
   row.timeGoalEnabled = !!row.timeGoalEnabled;
   row.timeGoalValue = normalizeTimeGoalValue(row.timeGoalValue);
   row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
@@ -841,9 +871,6 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
 }
 
 function mapTaskToFirestore(task: Task): Record<string, unknown> {
-  const source = task as unknown as Record<string, unknown>;
-  const modeRaw = String(source.mode || "").trim();
-  const mode = modeRaw === "mode2" || modeRaw === "mode3" ? modeRaw : "mode1";
   const plannedStartPushDueAtMs = computePlannedStartPushDueAtMs(task);
 
   // Firestore rules for users/{uid}/tasks/{taskId} are strict (`hasOnly(...)`), so
@@ -866,7 +893,6 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     checkpointToastEnabled: !!task.checkpointToastEnabled,
     checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     timeGoalAction: "confirmModal",
-    xpDisqualifiedUntilReset: !!task.xpDisqualifiedUntilReset,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
     presetIntervalLastCheckpointId: task.presetIntervalLastMilestoneId == null ? null : String(task.presetIntervalLastMilestoneId),
@@ -890,7 +916,6 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
     bgTimeGoalPushEligible: plannedStartPushDueAtMs != null,
     bgTimeGoalPushDueAtMs: plannedStartPushDueAtMs,
-    mode,
   };
   return row;
 }
@@ -924,6 +949,17 @@ export async function saveUserRootPatch(uid: string, patch: Record<string, unkno
     permissionDeniedIsNonFatal: false,
     failureContext: "save user root patch",
   });
+  try {
+    await patchLeaderboardProfileFromUserRoot(uid, patch);
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) throw error;
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Skipping leaderboard profile patch due to current rules", {
+        uid,
+        error: describeError(error),
+      });
+    }
+  }
 }
 
 async function upsertUserRoot(uid: string): Promise<UserRootWriteResult> {
@@ -981,6 +1017,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
       plan: "free",
       tasks: [],
       historyByTaskId: {},
+      liveSessionsByTaskId: {},
       deletedTaskMeta: {},
       preferences: null,
       dashboard: null,
@@ -992,14 +1029,17 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const tasksSnap = await getDocs(collection(db, "users", uid, "tasks"));
   const tasks: Task[] = [];
   const historyByTaskId: HistoryByTaskId = {};
+  const liveSessionsByTaskId: LiveSessionsByTaskId = {};
   const historyLoads = tasksSnap.docs.map(async (d) => {
     const task = mapTaskFromFirestore(d.id, d.data() as Record<string, unknown>);
     const histSnap = await getDocs(query(collection(db, "users", uid, "tasks", d.id, "history")));
+    const liveSessionSnap = await getDoc(taskLiveSessionDoc(uid, d.id)!);
     const history = histSnap.docs
       .map((h) => normalizeHistoryEntryRecord(h.data()))
       .filter((row): row is HistoryEntry => !!row)
       .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
-    return { task, taskId: d.id, history };
+    const liveSession = liveSessionSnap.exists() ? normalizeLiveTaskSessionRecord(d.id, liveSessionSnap.data()) : null;
+    return { task, taskId: d.id, history, liveSession };
   });
 
   const [historyRows, deletedSnap, prefSnap, dashboardSnap, taskUiSnap, userRootSnap] = await Promise.all([
@@ -1014,6 +1054,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   historyRows.forEach((row) => {
     tasks.push(row.task);
     historyByTaskId[row.taskId] = row.history;
+    if (row.liveSession) liveSessionsByTaskId[row.taskId] = row.liveSession;
   });
 
   const deletedTaskMeta: DeletedTaskMeta = {};
@@ -1049,10 +1090,6 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
           prefSnap.get("optimalProductivityEndTime"),
           DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
         ),
-        modeSettings:
-          prefSnap.get("modeSettings") && typeof prefSnap.get("modeSettings") === "object"
-            ? (prefSnap.get("modeSettings") as Record<string, unknown>)
-            : null,
         rewards: normalizeRewardProgress(prefSnap.get("rewards") || DEFAULT_REWARD_PROGRESS),
         updatedAtMs: Number(prefSnap.get("updatedAtMs") || Date.now()),
       }
@@ -1071,7 +1108,12 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const taskUi = taskUiSnap.exists() ? asTaskUi(taskUiSnap.data()) : null;
   const plan = normalizeTaskTimerPlan(userRootSnap?.exists() ? userRootSnap.get("plan") : "free");
 
-  return { plan, tasks, historyByTaskId, deletedTaskMeta, preferences, dashboard, taskUi };
+  return { plan, tasks, historyByTaskId, liveSessionsByTaskId, deletedTaskMeta, preferences, dashboard, taskUi };
+}
+
+export async function loadLiveSessions(uid: string): Promise<LiveSessionsByTaskId> {
+  const snapshot = await loadUserWorkspace(uid);
+  return snapshot.liveSessionsByTaskId || {};
 }
 
 export async function saveTask(uid: string, task: Task): Promise<void> {
@@ -1265,14 +1307,39 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   const name = String(entry?.name || "");
   const color = entry?.color == null ? null : String(entry.color);
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
-  const xpDisqualifiedUntilReset = !!entry?.xpDisqualifiedUntilReset;
   const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
   const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
-  const payload: Record<string, unknown> = { ts, ms, name, xpDisqualifiedUntilReset, createdAt: serverTimestamp() };
+  const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
   if (color) payload.color = color;
   if (note) payload.note = note;
   if (completionDifficulty) payload.completionDifficulty = completionDifficulty;
   await setDoc(doc(col, entryId), payload);
+}
+
+export async function saveLiveSession(uid: string, session: LiveTaskSession): Promise<void> {
+  const taskId = String(session.taskId || "").trim();
+  const ref = taskLiveSessionDoc(uid, taskId);
+  if (!ref || !taskId) return;
+  const payload: Record<string, unknown> = {
+    sessionId: String(session.sessionId || "").trim(),
+    taskId,
+    name: String(session.name || "").trim() || "Task",
+    startedAtMs: Math.max(0, Math.floor(Number(session.startedAtMs || 0) || 0)),
+    elapsedMs: Math.max(0, Math.floor(Number(session.elapsedMs || 0) || 0)),
+    updatedAtMs: Math.max(0, Math.floor(Number(session.updatedAtMs || 0) || 0)),
+    status: "running",
+    createdAt: serverTimestamp(),
+    serverUpdatedAt: serverTimestamp(),
+  };
+  if (typeof session.note === "string" && session.note.trim()) payload.note = session.note.trim();
+  if (typeof session.color === "string" && session.color.trim()) payload.color = session.color.trim();
+  await setDoc(ref, payload, { merge: true });
+}
+
+export async function clearLiveSession(uid: string, taskId: string): Promise<void> {
+  const ref = taskLiveSessionDoc(uid, taskId);
+  if (!ref) return;
+  await deleteDoc(ref);
 }
 
 function historyEntryFingerprint(entry: HistoryEntry): string {
@@ -1280,10 +1347,8 @@ function historyEntryFingerprint(entry: HistoryEntry): string {
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
   const name = String(entry?.name || "");
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
-  const xpDisqualifiedUntilReset =
-    "xpDisqualifiedUntilReset" in (entry || {}) ? (entry?.xpDisqualifiedUntilReset ? "1" : "0") : "";
   const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty) || "";
-  return `${ts}|${ms}|${name}|${note}|${xpDisqualifiedUntilReset}|${completionDifficulty}`;
+  return `${ts}|${ms}|${name}|${note}|${completionDifficulty}`;
 }
 
 function fnv1a32(input: string): string {
@@ -1315,7 +1380,6 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
       ts,
       ms,
       name: String(entry?.name || ""),
-      xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
       ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
@@ -1335,7 +1399,6 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
         ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
         ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
         name: String(entry?.name || ""),
-        xpDisqualifiedUntilReset: !!entry?.xpDisqualifiedUntilReset,
         ...(entry?.color != null ? { color: String(entry.color) } : {}),
         ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
         ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
@@ -1442,7 +1505,6 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
     ),
     optimalProductivityEndTime: normalizeTimeOfDay(data.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
-    modeSettings: data.modeSettings && typeof data.modeSettings === "object" ? (data.modeSettings as Record<string, unknown>) : null,
     rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Number(data.updatedAtMs || Date.now()),
   };

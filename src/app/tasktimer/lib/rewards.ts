@@ -1,6 +1,6 @@
 import { localDayKey } from "./history";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
-import { computeMomentumSnapshot, type MomentumMode } from "./momentum";
+import { computeMomentumSnapshot } from "./momentum";
 import type { HistoryByTaskId, HistoryEntry, Task } from "./types";
 
 export type RewardReason = "launch" | "session" | "dailyConsistency" | "streakBonus" | "weeklyGoal60" | "weeklyGoal100";
@@ -52,13 +52,9 @@ export type CompletedSessionXpContext = {
   taskId: string | null;
   awardedAt: number;
   elapsedMs: number;
-  xpDisqualifiedUntilReset?: boolean;
   historyByTaskId: HistoryByTaskId;
   tasks: Task[];
   weekStarting: DashboardWeekStart;
-  dashboardIncludedModes?: Record<MomentumMode, boolean>;
-  isModeEnabled?: (mode: MomentumMode) => boolean;
-  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
   momentumEntitled?: boolean;
   sessionSegments?: RewardSessionSegment[];
 };
@@ -110,9 +106,6 @@ type XpReasonSummary = {
 type XpProgressArchieOptions = {
   historyByTaskId?: HistoryByTaskId;
   weekStarting?: DashboardWeekStart;
-  dashboardIncludedModes?: Record<MomentumMode, boolean>;
-  isModeEnabled?: (mode: MomentumMode) => boolean;
-  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
   momentumEntitled?: boolean;
 };
 
@@ -120,9 +113,6 @@ type RewardMomentumContext = {
   historyByTaskId?: HistoryByTaskId;
   tasks?: Task[];
   weekStarting?: DashboardWeekStart;
-  dashboardIncludedModes?: Record<MomentumMode, boolean>;
-  isModeEnabled?: (mode: MomentumMode) => boolean;
-  taskModeOf?: (task: Task | null | undefined) => MomentumMode;
   momentumEntitled?: boolean;
 };
 
@@ -295,8 +285,7 @@ function getExistingSourceKeys(progress: RewardProgressV1): Set<string> {
   return new Set(progress.awardLedger.map((entry) => entry.sourceKey));
 }
 
-function getSessionEligibleMs(elapsedMs: number, xpDisqualifiedUntilReset?: boolean): number {
-  if (xpDisqualifiedUntilReset) return 0;
+function getSessionEligibleMs(elapsedMs: number): number {
   const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
   if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
   return Math.min(safeElapsedMs, MAX_REWARD_ELIGIBLE_SESSION_MS);
@@ -431,7 +420,7 @@ function getRewardQualifiedDayStates(historyByTaskId: HistoryByTaskId): Map<stri
 function normalizeHistoryEntryForRewards(entry: HistoryEntry | null | undefined): { ts: number; eligibleMs: number } | null {
   const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
   if (!ts) return null;
-  const eligibleMs = getSessionEligibleMs(Number(entry?.ms || 0), !!entry?.xpDisqualifiedUntilReset);
+  const eligibleMs = getSessionEligibleMs(Number(entry?.ms || 0));
   return { ts, eligibleMs };
 }
 
@@ -529,14 +518,10 @@ export function getRewardWeekProgress(
 function resolveRewardMultiplier(context: RewardMomentumContext | null | undefined, awardedAt: number): number {
   if (!context?.momentumEntitled) return 1;
   if (!context.historyByTaskId || !context.tasks || !context.weekStarting) return 1;
-  if (!context.dashboardIncludedModes || !context.isModeEnabled || !context.taskModeOf) return 1;
   return computeMomentumSnapshot({
     tasks: context.tasks,
     historyByTaskId: context.historyByTaskId,
     weekStarting: context.weekStarting,
-    includedModes: context.dashboardIncludedModes,
-    isModeEnabled: context.isModeEnabled,
-    taskModeOf: context.taskModeOf,
     nowValue: awardedAt,
   }).multiplier;
 }
@@ -663,7 +648,7 @@ export function awardCompletedSessionXp(progress: RewardProgressV1, context: Com
 
   const rawTaskId = context.taskId == null ? "" : String(context.taskId || "").trim();
   const taskId = rawTaskId || null;
-  const eligibleMs = getSessionEligibleMs(context.elapsedMs, !!context.xpDisqualifiedUntilReset);
+  const eligibleMs = getSessionEligibleMs(context.elapsedMs);
   const existingSources = getExistingSourceKeys(previous);
   const entries: RewardLedgerEntry[] = [];
   const completionMultiplier = resolveRewardMultiplier(context, awardedAt);
@@ -925,16 +910,13 @@ function formatXpRateLabel(multiplier: number): string {
 
 function getXpProgressRateSummary(tasks: Task[], nowValue: number, opts?: XpProgressArchieOptions): string {
   if (!opts?.momentumEntitled) return formatXpRateLabel(1);
-  if (!opts.historyByTaskId || !opts.weekStarting || !opts.dashboardIncludedModes || !opts.isModeEnabled || !opts.taskModeOf) {
+  if (!opts.historyByTaskId || !opts.weekStarting) {
     return formatXpRateLabel(1);
   }
   const multiplier = computeMomentumSnapshot({
     tasks,
     historyByTaskId: opts.historyByTaskId,
     weekStarting: opts.weekStarting,
-    includedModes: opts.dashboardIncludedModes,
-    isModeEnabled: opts.isModeEnabled,
-    taskModeOf: opts.taskModeOf,
     nowValue,
   }).multiplier;
   return formatXpRateLabel(multiplier);
