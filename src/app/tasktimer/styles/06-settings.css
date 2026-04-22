@@ -2616,6 +2616,22 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDelete
   text-align:left;
   transform:translateY(-1px);
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemLocked .settingsMenuItemText{
+  width:auto;
+  flex:1 1 auto;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsPlanLockIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-width:18px;
+  margin-left:auto;
+  color: rgba(121,226,255,.88);
+  font-size:12px;
+  line-height:1;
+  text-shadow: 0 0 10px rgba(53,232,255,.18);
+}
 #app[aria-label="TaskLaunch Settings"] #taskDynamicColorsToggleRow > span{
   font-family:var(--font-orbitron) !important;
 }
@@ -2658,6 +2674,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataLi
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsPlanLockIcon{
+  color: rgba(224,154,255,.9);
+  text-shadow: 0 0 10px rgba(209,118,247,.18);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:hover,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataListItem.settingsDataListItemDanger:focus-visible,
@@ -3575,11 +3595,13 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   }
 }
 
-#app[aria-label="TaskLaunch Settings"] #taskWeekStartingRow{
+#app[aria-label="TaskLaunch Settings"] #taskWeekStartingRow,
+#app[aria-label="TaskLaunch Settings"] #taskStartupModuleRow{
   justify-content: space-between;
 }
 
-#app[aria-label="TaskLaunch Settings"] #taskWeekStartingSelect{
+#app[aria-label="TaskLaunch Settings"] #taskWeekStartingSelect,
+#app[aria-label="TaskLaunch Settings"] #taskStartupModuleSelect{
   width: auto;
   min-width: 0;
   max-width: none;
@@ -4352,6 +4374,22 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   color:rgba(228,248,255,.94) !important;
   transform:translateY(-1px);
 }
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemLocked .settingsMenuItemText{
+  width:auto !important;
+  flex:1 1 auto !important;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsPlanLockIcon{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  flex:0 0 auto !important;
+  min-width:18px !important;
+  margin-left:auto !important;
+  color:rgba(121,226,255,.88) !important;
+  font-size:12px !important;
+  line-height:1 !important;
+  text-shadow:0 0 10px rgba(53,232,255,.18) !important;
+}
 
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
@@ -4378,10 +4416,18 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetail
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
   border-color:rgba(209,118,247,.48) !important;
 }
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsPlanLockIcon{
+  color:rgba(224,154,255,.9) !important;
+  text-shadow:0 0 10px rgba(209,118,247,.18) !important;
+}
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
   color:rgba(247,255,212,.94) !important;
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsPlanLockIcon{
+  color:rgba(230,255,122,.92) !important;
+  text-shadow:0 0 10px rgba(219,255,79,.16) !important;
 }
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,

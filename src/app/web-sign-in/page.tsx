@@ -20,6 +20,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
+import { readStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
 import WebSignIn from "../webSign-in";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
@@ -213,7 +214,7 @@ function WebSignInPageContent() {
       }
       if (email && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect) {
         setHasRedirected(true);
-        router.replace("/dashboard");
+        router.replace(startupModuleToRoute(readStartupModulePreference()));
       }
     });
     return () => unsub();

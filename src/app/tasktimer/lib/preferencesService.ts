@@ -2,6 +2,7 @@ import type { UserPreferencesV1 } from "./cloudStore";
 import type { RewardProgressV1 } from "./rewards";
 import type { TaskTimerWorkspaceRepository } from "./workspaceRepository";
 import { normalizeDashboardWeekStart } from "./historyChart";
+import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
@@ -14,6 +15,7 @@ export type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
   WEEK_STARTING_KEY: string;
+  STARTUP_MODULE_KEY: string;
   TASK_VIEW_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
@@ -26,6 +28,7 @@ type PreferencesStateSnapshot = {
   theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+  startupModule: StartupModulePreference;
   taskView: "list" | "tile";
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
@@ -71,15 +74,6 @@ function safeWriteLocalStorage(key: string, value: string): void {
   }
 }
 
-function safeRemoveLocalStorage(key: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(key);
-  } catch {
-    // ignore localStorage write failures
-  }
-}
-
 export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
   const { storageKeys, repository } = options;
 
@@ -103,6 +97,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       theme: state.theme,
       menuButtonStyle: state.menuButtonStyle,
       weekStarting: state.weekStarting,
+      startupModule: state.startupModule,
       taskView: state.taskView,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
@@ -123,6 +118,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function persistSnapshot(snapshot: StoredPreferences): void {
     safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
+    safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "dashboard"));
     safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
     safeWriteLocalStorage(
       storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
@@ -171,6 +167,12 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       .trim()
       .toLowerCase();
     return normalizeDashboardWeekStart(cached);
+  }
+
+  function loadStartupModule(): StartupModulePreference {
+    const cachedValue = getStoredOrCachedPreferences().startupModule;
+    if (typeof cachedValue === "string" && cachedValue.trim()) return normalizeStartupModule(cachedValue);
+    return normalizeStartupModule(safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY));
   }
 
   function loadTaskView(): "list" | "tile" {
@@ -241,6 +243,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadThemeMode,
     loadMenuButtonStyle,
     loadWeekStarting,
+    loadStartupModule,
     loadTaskView,
     loadAutoFocusOnTaskLaunchEnabled,
     loadDynamicColorsEnabled,

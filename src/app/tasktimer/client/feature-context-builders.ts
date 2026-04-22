@@ -6,6 +6,7 @@ import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { TaskTimerAppPageOptions } from "./context";
 import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
+import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerAddTask } from "./add-task";
 import { createTaskTimerAppShell } from "./app-shell";
@@ -129,6 +130,7 @@ type CreatePersistenceOptionsArgs = {
   loadFocusSessionNotes: Parameters<typeof createTaskTimerPersistence>[0]["loadFocusSessionNotes"];
   loadAddTaskCustomNames: () => void;
   loadWeekStartingPreference: () => void;
+  loadStartupModulePreference: () => void;
   loadTaskViewPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
@@ -825,6 +827,10 @@ export function createTaskTimerPreferencesContext(
     setWeekStartingState: (value: DashboardWeekStart) => {
       args.preferencesState.set("weekStarting", value);
     },
+    getStartupModule: () => asType<StartupModulePreference>(args.preferencesState.get("startupModule")),
+    setStartupModuleState: (value) => {
+      args.preferencesState.set("startupModule", value);
+    },
     getAutoFocusOnTaskLaunchEnabled: () => asType<boolean>(args.preferencesState.get("autoFocusOnTaskLaunchEnabled")),
     setAutoFocusOnTaskLaunchEnabledState: (value) => {
       args.preferencesState.set("autoFocusOnTaskLaunchEnabled", value);
@@ -938,6 +944,7 @@ export function createTaskTimerPersistenceContext(
     loadFocusSessionNotes: args.loadFocusSessionNotes,
     loadAddTaskCustomNames: args.loadAddTaskCustomNames,
     loadWeekStartingPreference: args.loadWeekStartingPreference,
+    loadStartupModulePreference: args.loadStartupModulePreference,
     loadTaskViewPreference: args.loadTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,

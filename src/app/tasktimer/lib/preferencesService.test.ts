@@ -7,6 +7,7 @@ function createStorageKeys() {
     THEME_KEY: "theme",
     MENU_BUTTON_STYLE_KEY: "menu",
     WEEK_STARTING_KEY: "week",
+    STARTUP_MODULE_KEY: "startupModule",
     TASK_VIEW_KEY: "view",
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "auto",
     MOBILE_PUSH_ALERTS_KEY: "push",
@@ -55,6 +56,53 @@ describe("TaskTimerPreferencesService", () => {
 
     expect(service.loadThemeMode()).toBe("cyan");
     expect(service.loadWeekStarting()).toBe("sun");
+  });
+
+  it("defaults startup module to dashboard when nothing is stored", () => {
+    vi.stubGlobal("window", {
+      localStorage: createLocalStorageStub(),
+    });
+    const repository = createTaskTimerWorkspaceRepository();
+    const service = createTaskTimerPreferencesService({
+      storageKeys: createStorageKeys(),
+      repository: {
+        ...repository,
+        loadCachedPreferences: () => null,
+        savePreferences: vi.fn(),
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache: vi.fn(),
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(async () => undefined),
+    });
+
+    expect(service.loadStartupModule()).toBe("dashboard");
+  });
+
+  it("prefers cached startup module over local storage", () => {
+    vi.stubGlobal("window", {
+      localStorage: createLocalStorageStub({
+        startupModule: "friends",
+      }),
+    });
+    const repository = createTaskTimerWorkspaceRepository();
+    const service = createTaskTimerPreferencesService({
+      storageKeys: createStorageKeys(),
+      repository: {
+        ...repository,
+        loadCachedPreferences: () => ({
+          ...repository.buildDefaultPreferences(),
+          startupModule: "leaderboard",
+        }),
+        savePreferences: vi.fn(),
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache: vi.fn(),
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(async () => undefined),
+    });
+
+    expect(service.loadStartupModule()).toBe("leaderboard");
   });
 
   it("defaults theme to lime when no cached or local preference exists", () => {
@@ -139,6 +187,7 @@ describe("TaskTimerPreferencesService", () => {
       theme: "purple",
       menuButtonStyle: "square",
       weekStarting: "mon",
+      startupModule: "friends",
       taskView: "tile",
       autoFocusOnTaskLaunchEnabled: false,
       dynamicColorsEnabled: true,
@@ -153,5 +202,6 @@ describe("TaskTimerPreferencesService", () => {
 
     expect(snapshot.optimalProductivityStartTime).toBe("00:00");
     expect(snapshot.optimalProductivityEndTime).toBe("23:59");
+    expect(snapshot.startupModule).toBe("friends");
   });
 });

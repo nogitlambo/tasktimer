@@ -16,6 +16,15 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <span>Auto switch to Focus Mode on launch</span>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
           </div>
+          <div className="unitRow" id="taskStartupModuleRow">
+            <span>Load Module on App Startup</span>
+            <select id="taskStartupModuleSelect" aria-label="Load module on app startup">
+              <option value="dashboard">Dashboard</option>
+              <option value="tasks">Tasks</option>
+              <option value="friends">Friends</option>
+              <option value="leaderboard">Leaderboard</option>
+            </select>
+          </div>
           <div className="unitRow" id="taskViewRow">
             <span>Task View</span>
             <div className="unitButtons" role="group" aria-label="Task view">

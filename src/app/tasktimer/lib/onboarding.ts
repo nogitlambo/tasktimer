@@ -11,6 +11,7 @@ export type OnboardingSessionStatus = "active" | "skipped" | "completed";
 export type OnboardingModuleStep = Exclude<OnboardingStep, "welcome">;
 export type OnboardingModuleClickDetail = { step: OnboardingModuleStep };
 export type OnboardingDashboardPanelStepId = "xp-progress" | "week-hours" | "weekly-time-goals" | "tasks-completed";
+export type OnboardingTasksActionStepId = "open-add-task";
 export type OnboardingDashboardClickDetail = { source: "dashboard-content" };
 
 export const ONBOARDING_STEPS: OnboardingStep[] = ["welcome", "dashboard", "tasks", "friends", "leaderboard", "settings"];
@@ -24,10 +25,13 @@ export const ONBOARDING_SESSION_COMPLETED_KEY = `${STORAGE_KEY}:onboardingComple
 export const ONBOARDING_SESSION_STATUS_KEY = `${STORAGE_KEY}:onboardingStatusThisLogin`;
 export const ONBOARDING_SESSION_STEP_KEY = `${STORAGE_KEY}:onboardingStepThisLogin`;
 export const ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY = `${STORAGE_KEY}:onboardingDashboardPanelStepThisLogin`;
+export const ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY = `${STORAGE_KEY}:onboardingTasksActionStepThisLogin`;
 export const ONBOARDING_SESSION_FINGERPRINT_KEY = `${STORAGE_KEY}:onboardingFingerprintThisLogin`;
+export const ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY = `${STORAGE_KEY}:onboardingManualResumeRequiredThisLogin`;
 export const ONBOARDING_PENDING_ARCHIE_MESSAGE_KEY = `${STORAGE_KEY}:onboardingPendingArchieMessage`;
 export const ONBOARDING_MODULE_CLICK_EVENT = "tasktimer:onboardingModuleClick";
 export const ONBOARDING_DASHBOARD_CLICK_EVENT = "tasktimer:onboardingDashboardClick";
+export const ONBOARDING_ADD_TASK_CLICK_EVENT = "tasktimer:onboardingAddTaskClick";
 export const ONBOARDING_STATE_CHANGED_EVENT = "tasktimer:onboardingStateChanged";
 
 const cloudOnboardingCompleteCache = new Map<string, boolean>();
@@ -82,6 +86,10 @@ export function isOnboardingModuleStep(step: unknown): step is OnboardingModuleS
 
 export function isOnboardingDashboardPanelStepId(step: unknown): step is OnboardingDashboardPanelStepId {
   return step === "xp-progress" || step === "week-hours" || step === "weekly-time-goals" || step === "tasks-completed";
+}
+
+export function isOnboardingTasksActionStepId(step: unknown): step is OnboardingTasksActionStepId {
+  return step === "open-add-task";
 }
 
 export function getOnboardingDashboardPanelStepByIndex(index: number): OnboardingDashboardPanelStepId {
@@ -143,8 +151,14 @@ export function clearOnboardingSessionState() {
   removeSessionStorage(ONBOARDING_SESSION_STATUS_KEY);
   removeSessionStorage(ONBOARDING_SESSION_STEP_KEY);
   removeSessionStorage(ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY);
+  removeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY);
   removeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
+  removeSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY);
   removeSessionStorage(ONBOARDING_PENDING_ARCHIE_MESSAGE_KEY);
+}
+
+export function isOnboardingManualResumeRequired() {
+  return readSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY) === "true";
 }
 
 export function clearCachedCloudOnboardingComplete(uid?: string | null) {
@@ -184,7 +198,9 @@ export function startOnboardingForCurrentSession(user: User | null | undefined, 
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
   writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "active");
   writeSessionStorage(ONBOARDING_SESSION_STEP_KEY, step);
+  removeSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY);
   removeSessionStorage(ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY);
+  removeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY);
 }
 
 export function saveOnboardingStepForCurrentSession(user: User | null | undefined, step: OnboardingStep) {
@@ -193,7 +209,9 @@ export function saveOnboardingStepForCurrentSession(user: User | null | undefine
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
   writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "active");
   writeSessionStorage(ONBOARDING_SESSION_STEP_KEY, step);
+  removeSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY);
   if (step !== "dashboard") removeSessionStorage(ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY);
+  if (step !== "tasks") removeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY);
 }
 
 export function readOnboardingDashboardPanelStepForCurrentSession(user: User | null | undefined) {
@@ -220,12 +238,38 @@ export function saveOnboardingDashboardPanelStepForCurrentSession(
   removeSessionStorage(ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY);
 }
 
-export function skipOnboardingForCurrentSession(user: User | null | undefined, step: OnboardingStep) {
+export function readOnboardingTasksActionStepForCurrentSession(user: User | null | undefined) {
+  const expectedFingerprint = buildOnboardingSessionFingerprint(user);
+  if (!expectedFingerprint) return null;
+  const storedFingerprint = readSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
+  if (storedFingerprint !== expectedFingerprint) return null;
+  const storedStep = readSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY);
+  return isOnboardingTasksActionStepId(storedStep) ? storedStep : null;
+}
+
+export function saveOnboardingTasksActionStepForCurrentSession(
+  user: User | null | undefined,
+  step: OnboardingTasksActionStepId | null | undefined
+) {
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
-  writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "skipped");
-  writeSessionStorage(ONBOARDING_SESSION_STEP_KEY, step);
+  writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "active");
+  if (step && isOnboardingTasksActionStepId(step)) {
+    writeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY, step);
+    return;
+  }
+  removeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY);
+}
+
+export function skipOnboardingForCurrentSession(user: User | null | undefined, step: OnboardingStep) {
+  const fingerprint = buildOnboardingSessionFingerprint(user);
+  if (fingerprint) {
+    writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
+    writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "skipped");
+    writeSessionStorage(ONBOARDING_SESSION_STEP_KEY, step);
+  }
+  writeSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY, "true");
 }
 
 export function completeOnboardingForCurrentSession(user: User | null | undefined) {
@@ -235,6 +279,7 @@ export function completeOnboardingForCurrentSession(user: User | null | undefine
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
   writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "completed");
   writeSessionStorage(ONBOARDING_SESSION_STEP_KEY, ONBOARDING_STEPS[ONBOARDING_STEPS.length - 1] || "notifications");
+  removeSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY);
 }
 
 export function setPendingOnboardingArchieMessage(message: string) {
@@ -256,7 +301,9 @@ export function getOnboardingStepMessage(step: OnboardingStep) {
   if (step === "dashboard") {
     return "Dashboard gives you a quick overview of your activity, progress, and key stats so you can see how your work is tracking at a glance.\n\nSelect the Dashboard module now";
   }
-  if (step === "tasks") return "Tasks";
+  if (step === "tasks") {
+    return "Tasks is your main workspace for creating tasks, tracking time, starting focus sessions, and reviewing each task's recent history from one place.\n\nTo continue, select the Tasks module";
+  }
   if (step === "friends") return "Friends";
   if (step === "leaderboard") return "Leaderboard";
   return "Settings";
@@ -273,6 +320,13 @@ export function getOnboardingDashboardPanelStepMessage(step: OnboardingDashboard
     return "THIS WEEK shows your total logged time for the week and how close you are to your weekly time goal.\n\nClick anywhere to move forward";
   }
   return "TASKS COMPLETED is an overview of the number of tasks you've seen through to completion for the current day and week.\n\nClick anywhere to move forward";
+}
+
+export function getOnboardingTasksActionStepMessage(step: OnboardingTasksActionStepId) {
+  if (step === "open-add-task") {
+    return "You're in the Tasks module now. Use Add Task to create your first task and start building your workspace.\n\nTo continue, click Add Task";
+  }
+  return "";
 }
 
 export function getSkippedOnboardingNotice() {

@@ -1,5 +1,5 @@
-
-import { COMPLETION_DIFFICULTY_LABELS } from "../lib/completionDifficulty";
+import AppImg from "../../../components/AppImg";
+import { COMPLETION_DIFFICULTY_OPTIONS } from "../lib/completionDifficulty";
 
 export default function TimeGoalCompleteOverlay() {
   return (
@@ -12,17 +12,27 @@ export default function TimeGoalCompleteOverlay() {
         <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
         <fieldset className="timeGoalCompleteDifficulty" aria-describedby="timeGoalCompleteDifficultyHint">
           <legend id="timeGoalCompleteDifficultyQuestion">Were there any challenges completing this task today?</legend>
-          <div className="timeGoalCompleteDifficultyPills" id="timeGoalCompleteDifficultyGroup" role="radiogroup" aria-labelledby="timeGoalCompleteDifficultyQuestion">
-            {([1, 2, 3, 4, 5] as const).map((value) => (
+          <div className="timeGoalCompleteDifficultyIcons" id="timeGoalCompleteDifficultyGroup" role="radiogroup" aria-labelledby="timeGoalCompleteDifficultyQuestion">
+            {COMPLETION_DIFFICULTY_OPTIONS.map((option) => (
               <button
                 aria-checked="false"
-                className="btn timeGoalCompleteDifficultyPill"
-                data-completion-difficulty={value}
-                key={value}
+                className="timeGoalCompleteDifficultyIconBtn"
+                data-completion-difficulty={option.value}
+                key={option.value}
                 role="radio"
                 type="button"
               >
-                {COMPLETION_DIFFICULTY_LABELS[value]}
+                <span className="timeGoalCompleteDifficultyIconWrap" aria-hidden="true">
+                  <AppImg
+                    alt=""
+                    className="timeGoalCompleteDifficultyIcon"
+                    draggable={false}
+                    height={44}
+                    src={option.iconSrc}
+                    width={44}
+                  />
+                </span>
+                <span className="timeGoalCompleteDifficultyLabel">{option.label}</span>
               </button>
             ))}
           </div>

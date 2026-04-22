@@ -4,6 +4,7 @@ import {
   parseRecentCustomTaskNames,
   rememberRecentCustomTaskName,
 } from "../lib/addTaskNames";
+import { ONBOARDING_ADD_TASK_CLICK_EVENT } from "../lib/onboarding";
 import {
   formatAddTaskDurationReadout,
   formatAggregateTimeGoalValidationMessage,
@@ -26,6 +27,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     const nextMessage = String(message || "").trim();
     if (!nextMessage) return;
     window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message: nextMessage } }));
+  }
+
+  function notifyOnboardingAddTaskClick() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(ONBOARDING_ADD_TASK_CLICK_EVENT));
   }
 
   function canUseAdvancedTaskConfig() {
@@ -700,7 +706,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function registerAddTaskEvents() {
-    ctx.on(els.openAddTaskBtn, "click", openAddTaskModal);
+    ctx.on(els.openAddTaskBtn, "click", () => {
+      notifyOnboardingAddTaskClick();
+      openAddTaskModal();
+    });
     ctx.on(els.addTaskCancelBtn, "click", closeAddTaskModal);
     ctx.on(els.addTaskStep1NextBtn, "click", () => {
       if (!validateAddTaskStep1()) return;

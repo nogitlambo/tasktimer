@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ONBOARDING_MODULE_CLICK_EVENT, onboardingModuleStepFromNavPage } from "../lib/onboarding";
+import { readStartupAppPagePreference } from "../lib/startupModule";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
 
@@ -139,10 +140,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (page === "schedule") return "schedule";
       if (page === "test2") return "test2";
       if (page === "leaderboard") return "leaderboard";
+      if (isTaskTimerTasksPath(path)) return readStartupAppPagePreference();
     } catch {
       // ignore
     }
-    return isTaskTimerTasksPath(normalizedPathname()) ? "tasks" : defaultPage;
+    return isTaskTimerTasksPath(normalizedPathname()) ? readStartupAppPagePreference() : defaultPage;
   }
 
   function normalizeTaskTimerRoutePath(pathRaw: string) {

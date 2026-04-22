@@ -214,6 +214,12 @@
     pointer-events: auto;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="tasks"][data-onboarding-tasks-action-step="open-add-task"] ~ .desktopAppMain{
+    opacity: 1;
+    filter: none;
+    pointer-events: auto;
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step] .desktopRailTopSection,
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step] .desktopRailBottomSection{
     opacity: .16;
@@ -319,7 +325,16 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step] ~ .desktopAppMain #appPageDashboard .dashboardCard{
     opacity: .2;
     filter: saturate(.52);
+    pointer-events: none;
     transition: opacity .18s ease, filter .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step] ~ .desktopAppMain #appPageDashboard .dashboardShellContent{
+    cursor: pointer;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step] ~ .desktopAppMain #appPageDashboard .dashboardShellContent > *{
+    pointer-events: none;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="xp-progress"],
@@ -331,6 +346,26 @@
     transform: translateY(-2px);
     border-color: rgba(201,255,36,.86) !important;
     background: rgba(13,15,19,.98);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.18),
+      0 0 18px rgba(201,255,36,.22) !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="tasks"][data-onboarding-tasks-action-step="open-add-task"] ~ .desktopAppMain #appPageTasks .taskPageHeaderActions > *,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="tasks"][data-onboarding-tasks-action-step="open-add-task"] ~ .desktopAppMain #appPageTasks .modeView{
+    opacity: .18;
+    filter: saturate(.52);
+    pointer-events: none;
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="tasks"][data-onboarding-tasks-action-step="open-add-task"] ~ .desktopAppMain #appPageTasks #openAddTaskBtn{
+    opacity: 1;
+    filter: none;
+    pointer-events: auto;
+    transform: translateY(-2px);
+    border-color: rgba(201,255,36,.86) !important;
+    background: rgba(13,15,19,.98) !important;
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.18),
       0 0 18px rgba(201,255,36,.22) !important;

@@ -374,8 +374,20 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       event?.preventDefault?.();
       submitTaskExportModal();
     });
-    ctx.on(els.exportBtn, "click", exportBackup);
-    ctx.on(els.importBtn, "click", () => els.importFile?.click());
+    ctx.on(els.exportBtn, "click", () => {
+      if (!canUseAdvancedBackup()) {
+        ctx.showUpgradePrompt("Backup export", "pro");
+        return;
+      }
+      exportBackup();
+    });
+    ctx.on(els.importBtn, "click", () => {
+      if (!canUseAdvancedBackup()) {
+        ctx.showUpgradePrompt("Backup import", "pro");
+        return;
+      }
+      els.importFile?.click();
+    });
     ctx.on(els.importFile, "change", (event: any) => {
       const file = event.target?.files && event.target.files[0] ? event.target.files[0] : null;
       event.target.value = "";

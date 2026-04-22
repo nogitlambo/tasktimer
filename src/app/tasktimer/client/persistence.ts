@@ -46,6 +46,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadFocusSessionNotes: () => Record<string, string>;
   loadAddTaskCustomNames: () => void;
   loadWeekStartingPreference: () => void;
+  loadStartupModulePreference: () => void;
   loadTaskViewPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
@@ -284,6 +285,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     load();
     options.loadAddTaskCustomNames();
     options.loadWeekStartingPreference();
+    options.loadStartupModulePreference();
     options.loadTaskViewPreference();
     options.loadAutoFocusOnTaskLaunchSetting();
     options.loadDynamicColorsSetting();

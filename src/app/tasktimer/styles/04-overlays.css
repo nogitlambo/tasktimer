@@ -2609,37 +2609,62 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   text-align: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyPills{
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  justify-content: center;
-  overflow-x: auto;
-  padding-bottom: 2px;
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIcons{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items:start;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn{
-  min-width: 0;
-  padding: 8px 10px;
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn{
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  cursor: pointer;
+  display:grid;
+  justify-items:center;
+  gap: 7px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconWrap{
+  width: 64px;
+  height: 64px;
+  display:grid;
+  place-items:center;
   border: 1px solid rgba(160,232,255,.28);
   background: rgba(255,255,255,.01);
-  box-shadow: none;
-  color: var(--text);
-  flex: 0 0 auto;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIcon{
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyLabel{
+  display:block;
   font-family: var(--font-geist-sans);
   font-size: 12px;
   letter-spacing: 0;
   line-height: 1.2;
-  text-transform: none;
+  text-align: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn:hover,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn:focus-visible,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn.is-selected{
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyIconWrap{
   background: linear-gradient(180deg, var(--accent3), var(--accent));
   border-color: rgba(53,232,255,.55);
   box-shadow: 0 0 14px rgba(0,220,255,.3);
-  color: #04131c;
+  transform: translateY(-1px);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyLabel,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyLabel,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyLabel{
+  color: rgba(255,255,255,.98);
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteDifficultyHint{
@@ -2696,11 +2721,12 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyHi
   color: rgba(247,232,255,.72);
 }
 
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn{
-  background: transparent !important;
-  background-image: none !important;
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconWrap{
   border-color: rgba(214,96,229,.44);
   box-shadow: none !important;
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyLabel{
   color: #ecdfff;
 }
 
@@ -2717,9 +2743,9 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:focus-visible,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:active,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[aria-pressed="true"],
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn:focus-visible,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyPill.btn.is-selected,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyIconWrap,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:focus-visible,
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:active,

@@ -982,6 +982,7 @@ export function buildDefaultCloudPreferences() {
     schemaVersion: 1 as const,
     theme: "lime" as const,
     menuButtonStyle: "square" as const,
+    startupModule: "dashboard" as const,
     taskView: "list" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,

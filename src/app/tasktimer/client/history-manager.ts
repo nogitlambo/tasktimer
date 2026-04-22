@@ -2,6 +2,7 @@
 
 import type { HistoryByTaskId, Task } from "../lib/types";
 import type { TaskTimerHistoryManagerContext } from "./context";
+import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   allocateHistoryGenDailyBudgets,
   buildHistoryGenTaskGoal,
@@ -12,9 +13,13 @@ import {
 } from "./history-manager-generation";
 import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./history-manager-render";
 import {
+  buildHistoryManagerRowKey,
   groupSelectedHistoryRowsByTask,
+  createDefaultHistoryManagerManualDraft,
+  parseHistoryManagerManualDraft,
   type HistoryGenParams,
   type HistoryGenTaskGoal,
+  type HistoryManagerManualDraft,
 } from "./history-manager-shared";
 import {
   buildHistoryEntrySummaryPayload,
@@ -33,6 +38,142 @@ type HistoryGenPreview = {
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
+  let manualEntryDraftsByTaskId: Record<string, HistoryManagerManualDraft> = {};
+  let activeManualEntryTaskId: string | null = null;
+  let flashedManualEntryRowId: string | null = null;
+  let flashedManualEntryTimeout: number | null = null;
+  let historyManagerLoadCycle = 0;
+  let historyManagerLoading = false;
+
+  function setHistoryManagerLoading(loading: boolean) {
+    historyManagerLoading = loading;
+    if (els.historyManagerScreen) {
+      (els.historyManagerScreen as HTMLElement).setAttribute("aria-busy", loading ? "true" : "false");
+      (els.historyManagerScreen as HTMLElement).classList.toggle("is-loading", loading);
+    }
+    if (els.historyManagerLoadingOverlay) {
+      els.historyManagerLoadingOverlay.hidden = !loading;
+    }
+  }
+
+  function syncManualEntryOverlayFromDraft(taskId: string) {
+    const draft = manualEntryDraftsByTaskId[taskId] || createDefaultHistoryManagerManualDraft(Date.now());
+    if (els.historyManagerManualDateTimeInput) els.historyManagerManualDateTimeInput.value = draft.dateTimeValue || "";
+    if (els.historyManagerManualHoursInput) els.historyManagerManualHoursInput.value = draft.hoursValue || "";
+    if (els.historyManagerManualMinutesInput) els.historyManagerManualMinutesInput.value = draft.minutesValue || "";
+    if (els.historyManagerManualNoteInput) els.historyManagerManualNoteInput.value = draft.noteValue || "";
+    const sentimentButtons = Array.from(
+      ((els.historyManagerManualEntryDifficultyGroup as HTMLElement | null)?.querySelectorAll?.("[data-completion-difficulty]") ||
+        []) as Iterable<Element>
+    );
+    sentimentButtons.forEach((button) => {
+      const selected =
+        normalizeCompletionDifficulty((button as HTMLElement).dataset.completionDifficulty) ===
+        normalizeCompletionDifficulty(draft.completionDifficulty);
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-checked", selected ? "true" : "false");
+    });
+    if (els.historyManagerManualEntryError) {
+      els.historyManagerManualEntryError.textContent = draft.errorMessage || "";
+      (els.historyManagerManualEntryError as HTMLElement).style.display = draft.errorMessage ? "block" : "none";
+    }
+  }
+
+  function openManualEntryOverlay(taskId: string) {
+    const meta = getTaskMetaForHistoryId(taskId);
+    if (meta.deleted) return;
+    if (!manualEntryDraftsByTaskId[taskId]) {
+      manualEntryDraftsByTaskId = {
+        ...manualEntryDraftsByTaskId,
+        [taskId]: createDefaultHistoryManagerManualDraft(Date.now()),
+      };
+    }
+    activeManualEntryTaskId = taskId;
+    if (els.historyManagerManualEntryTitle) {
+      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry`;
+    }
+    if (els.historyManagerManualEntryMeta) {
+      els.historyManagerManualEntryMeta.textContent = `Add a history entry for ${meta.name || "this task"}.`;
+    }
+    syncManualEntryOverlayFromDraft(taskId);
+    if (els.historyManagerManualEntryOverlay) {
+      els.historyManagerManualEntryOverlay.style.display = "flex";
+      els.historyManagerManualEntryOverlay.setAttribute("aria-hidden", "false");
+    }
+    window.setTimeout(() => {
+      try {
+        els.historyManagerManualDateTimeBtn?.focus({ preventScroll: true });
+      } catch {
+        els.historyManagerManualDateTimeBtn?.focus();
+      }
+    }, 0);
+  }
+
+  function closeManualEntryOverlay(options?: { discardDraft?: boolean }) {
+    const taskId = activeManualEntryTaskId;
+    if (options?.discardDraft && taskId && manualEntryDraftsByTaskId[taskId]) {
+      const nextDrafts = { ...manualEntryDraftsByTaskId };
+      delete nextDrafts[taskId];
+      manualEntryDraftsByTaskId = nextDrafts;
+    }
+    activeManualEntryTaskId = null;
+    if (els.historyManagerManualEntryOverlay) {
+      els.historyManagerManualEntryOverlay.style.display = "none";
+      els.historyManagerManualEntryOverlay.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function openManualEntryDateTimePicker() {
+    const input = els.historyManagerManualDateTimeInput;
+    if (!input) return;
+    try {
+      if (typeof (input as HTMLInputElement & { showPicker?: () => void }).showPicker === "function") {
+        (input as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+      } else {
+        input.focus();
+        input.click();
+      }
+    } catch {
+      try {
+        input.focus();
+        input.click();
+      } catch {
+        input.focus();
+      }
+    }
+  }
+
+  function clearFlashedManualEntryRow(scheduleRender = false) {
+    if (flashedManualEntryTimeout != null) {
+      window.clearTimeout(flashedManualEntryTimeout);
+      flashedManualEntryTimeout = null;
+    }
+    if (!flashedManualEntryRowId) return;
+    flashedManualEntryRowId = null;
+    if (scheduleRender && isHistoryManagerOpen()) renderHistoryManager();
+  }
+
+  function flashHistoryManagerRow(rowId: string) {
+    clearFlashedManualEntryRow(false);
+    flashedManualEntryRowId = rowId;
+    flashedManualEntryTimeout = window.setTimeout(() => {
+      flashedManualEntryTimeout = null;
+      if (flashedManualEntryRowId !== rowId) return;
+      flashedManualEntryRowId = null;
+      if (isHistoryManagerOpen()) renderHistoryManager();
+    }, 3000);
+  }
+
+  function scrollToFlashedManualEntryRow() {
+    if (!flashedManualEntryRowId || !els.hmList) return;
+    const row = els.hmList.querySelector<HTMLElement>(`[data-hm-row-id="${flashedManualEntryRowId}"]`);
+    if (!row) return;
+    try {
+      row.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    } catch {
+      row.scrollIntoView();
+    }
+  }
 
   function getFinalizedHistoryByTaskId(): HistoryByTaskId {
     const projected = ctx.getHistoryByTaskId() || {};
@@ -723,6 +864,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       formatDateTime: ctx.formatDateTime,
       getTaskMetaForHistoryId,
       getHistoryEntryNote: (entry) => ctx.getHistoryEntryNote(entry),
+      flashedRowId: flashedManualEntryRowId,
     });
     ctx.setHmExpandedTaskGroups(renderResult.expandedTaskGroups);
     ctx.setHmExpandedDateGroups(renderResult.expandedDateGroups);
@@ -737,6 +879,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!renderResult.validRowIds.has(id)) hmBulkSelectedRows.delete(id);
     });
     syncHistoryManagerBulkUi();
+    scrollToFlashedManualEntryRow();
   }
 
   function openHistoryManager() {
@@ -755,6 +898,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (els.historyManagerImportBtn) els.historyManagerImportBtn.disabled = true;
       return;
     }
+    if (isHistoryManagerOpen()) {
+      if (!historyManagerLoading) renderHistoryManager();
+      return;
+    }
     if (els.historyManagerGenerateBtn) {
       els.historyManagerGenerateBtn.style.display = ctx.isArchitectUser() ? "" : "none";
     }
@@ -762,11 +909,18 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       (els.historyManagerScreen as HTMLElement).style.display = "block";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
-    renderHistoryManager();
-    void refreshHistoryManagerFromCloud().then(() => {
-      if (ctx.runtime.destroyed || !isHistoryManagerOpen()) return;
-      renderHistoryManager();
-    });
+    const loadCycle = historyManagerLoadCycle + 1;
+    historyManagerLoadCycle = loadCycle;
+    setHistoryManagerLoading(true);
+    void (async () => {
+      try {
+        await refreshHistoryManagerFromCloud();
+      } finally {
+        if (ctx.runtime.destroyed || !isHistoryManagerOpen() || historyManagerLoadCycle !== loadCycle) return;
+        renderHistoryManager();
+        setHistoryManagerLoading(false);
+      }
+    })();
   }
 
   function getHistoryManagerReturnRoute() {
@@ -807,6 +961,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function closeHistoryManager() {
+    historyManagerLoadCycle += 1;
+    setHistoryManagerLoading(false);
     if (els.historyManagerScreen) {
       (els.historyManagerScreen as HTMLElement).style.display = "none";
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "true");
@@ -817,7 +973,61 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.setHmBulkSelectedRows(new Set<string>());
     ctx.setHmRowsByTask({});
     ctx.setHmRowsByTaskDate({});
+    manualEntryDraftsByTaskId = {};
+    activeManualEntryTaskId = null;
+    clearFlashedManualEntryRow(false);
+    closeManualEntryOverlay();
     syncHistoryManagerBulkUi();
+  }
+
+  function updateManualEntryDraft(taskId: string, updater: (draft: HistoryManagerManualDraft) => HistoryManagerManualDraft) {
+    const currentDraft = manualEntryDraftsByTaskId[taskId] || createDefaultHistoryManagerManualDraft(Date.now());
+    manualEntryDraftsByTaskId = {
+      ...manualEntryDraftsByTaskId,
+      [taskId]: updater(currentDraft),
+    };
+  }
+
+  function openManualEntryDraft(taskId: string) {
+    openManualEntryOverlay(taskId);
+  }
+
+  function saveManualEntryDraft(taskId: string) {
+    const draft = manualEntryDraftsByTaskId[taskId];
+    if (!draft) return;
+    const meta = getTaskMetaForHistoryId(taskId);
+    const parsed = parseHistoryManagerManualDraft({
+      draft,
+      taskName: meta.name,
+      taskColor: meta.color || null,
+    });
+    if ("error" in parsed) {
+      updateManualEntryDraft(taskId, (currentDraft) => ({ ...currentDraft, errorMessage: parsed.error || "Could not save entry." }));
+      syncManualEntryOverlayFromDraft(taskId);
+      return;
+    }
+    const historyByTaskId = ctx.loadHistory();
+    const nextTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
+    nextTaskHistory.push(parsed.entry);
+    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
+    ctx.setHistoryByTaskId(nextHistory);
+    ctx.saveHistory(nextHistory);
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    const nextDrafts = { ...manualEntryDraftsByTaskId };
+    delete nextDrafts[taskId];
+    manualEntryDraftsByTaskId = nextDrafts;
+    closeManualEntryOverlay();
+    const date = new Date(parsed.entry.ts);
+    const dateKey = `${date.getFullYear()}-${ctx.formatTwo(date.getMonth() + 1)}-${ctx.formatTwo(date.getDate())}`;
+    const rowId = `${taskId}|${parsed.entry.ts}|${parsed.entry.ms}|${String(parsed.entry.name || "")}`;
+    const nextExpandedTaskGroups = new Set(ctx.getHmExpandedTaskGroups());
+    const nextExpandedDateGroups = new Set(ctx.getHmExpandedDateGroups());
+    nextExpandedTaskGroups.add(taskId);
+    nextExpandedDateGroups.add(`${taskId}|${dateKey}`);
+    ctx.setHmExpandedTaskGroups(nextExpandedTaskGroups);
+    ctx.setHmExpandedDateGroups(nextExpandedDateGroups);
+    flashHistoryManagerRow(rowId);
+    renderHistoryManager();
   }
 
   function registerHistoryManagerEvents() {
@@ -925,6 +1135,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.on(els.historyManagerBackBtn, "click", () => {
       ctx.navigateToAppRoute(getHistoryManagerReturnRoute());
     });
+    ctx.on(els.hmList, "mousedown", (ev: any) => {
+      const deleteBtn = ev.target?.closest?.(".hmDelBtn");
+      if (!deleteBtn) return;
+      ev.preventDefault?.();
+      ev.stopPropagation?.();
+    });
     ctx.on(els.hmList, "click", (ev: any) => {
       const bulkCheckbox = ev.target?.closest?.(".hmBulkCheckbox");
       if (bulkCheckbox) {
@@ -969,27 +1185,30 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         return;
       }
 
+      const addBtn = ev.target?.closest?.(".hmAddBtn");
+      if (addBtn) {
+        const taskId = String(addBtn.getAttribute("data-task") || "").trim();
+        if (!taskId) return;
+        openManualEntryDraft(taskId);
+        return;
+      }
+
       const btn = ev.target?.closest?.(".hmDelBtn");
       if (!btn) return;
 
       const taskId = btn.getAttribute("data-task");
       const key = btn.getAttribute("data-key");
       if (!taskId || !key) return;
-
-      const parts = key.split("|");
-      const ts = parseInt(parts[0], 10);
-      const ms = parseInt(parts[1], 10);
-      const name = parts.slice(2).join("|");
+      ev.preventDefault?.();
+      ev.stopPropagation?.();
 
       ctx.confirm("Delete Log Entry", "Delete this entry?", {
         okLabel: "Delete",
         cancelLabel: "Cancel",
         onOk: () => {
           const historyByTaskId = ctx.loadHistory();
-          const orig = historyByTaskId[taskId] || [];
-          const pos = orig.findIndex(
-            (e: any) => e.ts === ts && e.ms === ms && String(e.name || "") === String(name || "")
-          );
+          const orig = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
+          const pos = orig.findIndex((e: any) => buildHistoryManagerRowKey(e) === key);
 
           if (pos !== -1) {
             orig.splice(pos, 1);
@@ -1011,6 +1230,18 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         },
         onCancel: () => ctx.closeConfirm(),
       });
+    });
+    ctx.on(els.historyManagerManualEntryOverlay, "click", (ev: any) => {
+      if (ev.target !== els.historyManagerManualEntryOverlay) return;
+      closeManualEntryOverlay({ discardDraft: true });
+    });
+    ctx.on(els.historyManagerManualEntryCancelBtn, "click", () => {
+      closeManualEntryOverlay({ discardDraft: true });
+    });
+    ctx.on(els.historyManagerManualEntrySaveBtn, "click", () => {
+      const taskId = String(activeManualEntryTaskId || "").trim();
+      if (!taskId) return;
+      saveManualEntryDraft(taskId);
     });
     ctx.on(els.hmList, "change", (ev: any) => {
       if (!ctx.getHmBulkEditMode()) return;
@@ -1049,6 +1280,47 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         else hmBulkSelectedRows.delete(id);
         renderHistoryManager();
       }
+    });
+    const bindManualEntryInput = (
+      el: HTMLInputElement | null,
+      field: "dateTimeValue" | "hoursValue" | "minutesValue" | "noteValue"
+    ) => {
+      ctx.on(el, "input", () => {
+        const taskId = String(activeManualEntryTaskId || "").trim();
+        if (!taskId || !manualEntryDraftsByTaskId[taskId]) return;
+        updateManualEntryDraft(taskId, (draft) => ({
+          ...draft,
+          [field]: String(el?.value || ""),
+          errorMessage: "",
+        }));
+        if (els.historyManagerManualEntryError) {
+          els.historyManagerManualEntryError.textContent = "";
+          (els.historyManagerManualEntryError as HTMLElement).style.display = "none";
+        }
+      });
+    };
+    bindManualEntryInput(els.historyManagerManualDateTimeInput, "dateTimeValue");
+    bindManualEntryInput(els.historyManagerManualHoursInput, "hoursValue");
+    bindManualEntryInput(els.historyManagerManualMinutesInput, "minutesValue");
+    bindManualEntryInput(els.historyManagerManualNoteInput, "noteValue");
+    ctx.on(els.historyManagerManualDateTimeInput, "focus", () => {
+      els.historyManagerManualDateTimeInput?.blur();
+    });
+    ctx.on(els.historyManagerManualDateTimeBtn, "click", () => {
+      openManualEntryDateTimePicker();
+    });
+    ctx.on(els.historyManagerManualEntryDifficultyGroup, "click", (event: Event) => {
+      const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;
+      if (!button) return;
+      const taskId = String(activeManualEntryTaskId || "").trim();
+      const value = normalizeCompletionDifficulty(button.dataset.completionDifficulty);
+      if (!taskId || !manualEntryDraftsByTaskId[taskId] || !value) return;
+      updateManualEntryDraft(taskId, (draft) => ({
+        ...draft,
+        completionDifficulty: value,
+        errorMessage: "",
+      }));
+      syncManualEntryOverlayFromDraft(taskId);
     });
     ctx.on(els.historyEntryNoteEditBtn, "click", () => {
       const overlay = els.historyEntryNoteOverlay as HTMLElement | null;

@@ -1,7 +1,12 @@
 import type { TaskTimerDashboardContext } from "./context";
 import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
-import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
+import {
+  ONBOARDING_DASHBOARD_CLICK_EVENT,
+  readOnboardingDashboardPanelStepForCurrentSession,
+  readOnboardingStatusForCurrentSession,
+} from "../lib/onboarding";
 import { buildXpProgressArchieMessage } from "../lib/rewards";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -739,6 +744,12 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function handleDashboardOnboardingClick(event: Event) {
     const target = event.target as HTMLElement | null;
     if (!target?.closest("#appPageDashboard")) return;
+    const currentUser = getFirebaseAuthClient()?.currentUser || null;
+    const onboardingStatus = readOnboardingStatusForCurrentSession(currentUser);
+    const activeDashboardPanelStep = readOnboardingDashboardPanelStepForCurrentSession(currentUser);
+    if (onboardingStatus !== "active" || !activeDashboardPanelStep) return;
+    event.preventDefault?.();
+    event.stopPropagation?.();
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
   }
@@ -762,8 +773,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardPanelMenuBackBtn, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
+    ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick, true);
     ctx.on(els.dashboardGrid, "click", handleDashboardGridClick);
-    ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick);
     ctx.on(els.dashboardGrid, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
     ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);

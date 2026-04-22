@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
+import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/lib/startupModule";
 import LandingClassic from "./landingClassic";
 import LandingExperimental from "./landing";
 import type { LandingClassicProps, LandingExperimentalProps } from "./landing.types";
@@ -182,7 +183,7 @@ function HomeContent() {
       }
       if (email && !hasRedirected && !bypassAutoRedirect) {
         setHasRedirected(true);
-        router.replace("/dashboard");
+        router.replace(startupModuleToRoute(readStartupModulePreference()));
       }
     });
     return () => unsub();

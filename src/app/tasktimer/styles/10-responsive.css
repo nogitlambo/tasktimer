@@ -1389,6 +1389,7 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     min-height: 20px;
+    text-align: left;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleText,
@@ -1401,18 +1402,20 @@
     word-break: break-word;
     vertical-align: top;
     opacity: 0;
+    text-align: left;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleLine,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleLine{
     display: block;
     width: 100%;
+    text-align: left;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleLine.isInstruction,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitleLine.isInstruction{
     color: rgba(184, 192, 203, .74);
-    text-align: center;
+    text-align: left;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitleLine::after,
@@ -1486,8 +1489,8 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubbleTitle.isOnboardingHeadingOnly,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubbleTitle.isOnboardingHeadingOnly{
     display: grid;
-    justify-items: center;
-    text-align: center;
+    justify-items: start;
+    text-align: left;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotOnboardingProgress,
@@ -1507,11 +1510,9 @@
   #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotOnboardingProgressBar{
     position: relative;
     width: 100%;
-    height: 10px;
+    height: 12px;
     overflow: hidden;
-    border: 1px solid rgba(201,255,36,.44);
-    background: linear-gradient(180deg, rgba(5,9,16,.96), rgba(2,6,13,.92));
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    border: none;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotOnboardingProgressFill,
@@ -1519,9 +1520,6 @@
   #app[aria-label="TaskLaunch App"] .mobileArchieAssistant .desktopRailMascotOnboardingProgressFill,
   #app[aria-label="TaskLaunch Feedback"] .mobileArchieAssistant .desktopRailMascotOnboardingProgressFill{
     display: block;
-    height: 100%;
-    background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%);
-    box-shadow: 0 0 12px rgba(201,255,36,.24);
     transition: width .18s ease;
   }
 
@@ -1652,6 +1650,7 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
+    text-align: left;
     resize: none;
     outline: none;
     opacity: 1;
@@ -3195,23 +3194,23 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .
   flex:1 1 auto;
   min-height:100%;
   width:100%;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
+  align-items:flex-start;
+  justify-content:flex-start;
+  text-align:left;
 }
 
 #app[aria-label="TaskLaunch App"] .desktopRailMascotThinkingIndicator,
 #app[aria-label="TaskLaunch Settings"] .desktopRailMascotThinkingIndicator,
 #app[aria-label="TaskLaunch Feedback"] .desktopRailMascotThinkingIndicator{
   display:inline-flex;
-  align-items:center;
-  justify-content:center;
+  align-items:flex-start;
+  justify-content:flex-start;
   width:100%;
   min-height:100%;
   color:inherit;
   font:inherit;
   letter-spacing:.03em;
-  text-align:center;
+  text-align:left;
   animation:archieThinkingBlink 1s ease-in-out infinite;
 }
 

@@ -500,6 +500,18 @@ export default function DesktopAppRail({
     setShowRankLadderModal(false);
   };
 
+  const navActivePage: DesktopRailPage =
+    onboardingState &&
+    (
+      onboardingState.step === "dashboard" ||
+      onboardingState.step === "tasks" ||
+      onboardingState.step === "friends" ||
+      onboardingState.step === "leaderboard" ||
+      onboardingState.step === "settings"
+    )
+      ? "none"
+      : activePage;
+
   return (
     <>
       {showDesktopRail ? (
@@ -509,12 +521,13 @@ export default function DesktopAppRail({
           data-onboarding-step={onboardingState?.step || undefined}
           data-onboarding-awaiting-click={onboardingState?.awaitingClick ? "true" : undefined}
           data-onboarding-dashboard-panel-step={onboardingState?.dashboardPanelStep || undefined}
+          data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
         >
           <div className="desktopRailTopSection">
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">
               {DESKTOP_NAV_ITEMS.map((item) =>
-                renderDesktopNavItem(item, activePage, useClientNavButtons, {
+                renderDesktopNavItem(item, navActivePage, useClientNavButtons, {
                   onClick: (event) => handleDesktopNavClick(item.page, event),
                 })
               )}
@@ -593,7 +606,7 @@ export default function DesktopAppRail({
           <ArchieAssistantWidget activePage={archieActivePage} variant="mobile" />
           <div className="appFooterNav" aria-label="App pages">
             {NAV_ITEMS.filter((item) => item.showInMobileFooter !== false).map((item) =>
-              renderMobileNavItem(item, activePage, useClientNavButtons)
+              renderMobileNavItem(item, navActivePage, useClientNavButtons)
             )}
           </div>
         </>

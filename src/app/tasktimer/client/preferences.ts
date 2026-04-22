@@ -8,6 +8,7 @@ import {
   normalizeTimeOfDay,
 } from "../lib/productivityPeriod";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
+import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import { bindToggleRow } from "./control-helpers";
@@ -96,6 +97,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       theme: ctx.getThemeMode(),
       menuButtonStyle: ctx.getMenuButtonStyle(),
       weekStarting: ctx.getWeekStarting(),
+      startupModule: ctx.getStartupModule(),
       taskView: ctx.getTaskView(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
@@ -179,6 +181,27 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyWeekStartingPreference(preferenceService.loadWeekStarting());
   }
 
+  function applyStartupModulePreference(next: string) {
+    const startupModule = normalizeStartupModule(next);
+    ctx.setStartupModuleState(startupModule);
+    if (els.taskStartupModuleSelect) {
+      els.taskStartupModuleSelect.value = startupModule;
+    }
+  }
+
+  function loadStartupModulePreference() {
+    applyStartupModulePreference(preferenceService.loadStartupModule());
+  }
+
+  function saveStartupModulePreference() {
+    try {
+      localStorage.setItem(ctx.storageKeys.STARTUP_MODULE_KEY, ctx.getStartupModule());
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function saveWeekStartingPreference() {
     try {
       localStorage.setItem(ctx.storageKeys.WEEK_STARTING_KEY, ctx.getWeekStarting());
@@ -219,6 +242,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function syncTaskSettingsUi() {
     const weekStarting = ctx.getWeekStarting();
+    const startupModule = ctx.getStartupModule();
     const taskView = ctx.getTaskView();
     ctx.toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
@@ -228,6 +252,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
+    }
+    if (els.taskStartupModuleSelect) {
+      els.taskStartupModuleSelect.value = startupModule;
     }
     if (els.optimalProductivityStartTimeInput) {
       els.optimalProductivityStartTimeInput.value = ctx.getOptimalProductivityStartTime();
@@ -352,6 +379,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function persistInlineTaskSettingsImmediate() {
     saveWeekStartingPreference();
+    saveStartupModulePreference();
     saveTaskViewPreference();
     saveAutoFocusOnTaskLaunchSetting();
     saveDynamicColorsSetting();
@@ -394,6 +422,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
       applyWeekStartingPreference("mon");
+      applyStartupModulePreference("dashboard");
       ctx.setAutoFocusOnTaskLaunchEnabledState(false);
       ctx.setTaskViewState("tile");
       ctx.setDynamicColorsEnabledState(true);
@@ -416,6 +445,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskWeekStartingSelect, "change", () => {
       applyWeekStartingPreference(normalizeDashboardWeekStart(els.taskWeekStartingSelect?.value));
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+    });
+    ctx.on(els.taskStartupModuleSelect, "change", () => {
+      applyStartupModulePreference(els.taskStartupModuleSelect?.value || "dashboard");
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
@@ -516,6 +550,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();
+      saveStartupModulePreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
@@ -545,6 +580,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyWeekStartingPreference,
     loadWeekStartingPreference,
     saveWeekStartingPreference,
+    applyStartupModulePreference,
+    loadStartupModulePreference,
+    saveStartupModulePreference,
     loadTaskViewPreference,
     saveTaskViewPreference,
     loadAutoFocusOnTaskLaunchSetting,

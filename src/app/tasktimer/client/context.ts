@@ -18,6 +18,7 @@ import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
+import type { StartupModulePreference } from "../lib/startupModule";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -39,6 +40,7 @@ export type TaskTimerCachedPreferences = {
   theme?: unknown;
   menuButtonStyle?: unknown;
   weekStarting?: unknown;
+  startupModule?: unknown;
   taskView?: unknown;
   autoFocusOnTaskLaunchEnabled?: unknown;
   dynamicColorsEnabled?: unknown;
@@ -815,6 +817,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   storageKeys: {
     THEME_KEY: string;
     TASK_VIEW_KEY: string;
+    STARTUP_MODULE_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
@@ -832,6 +835,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setMenuButtonStyleState: (value: "parallelogram" | "square") => void;
   getWeekStarting: () => DashboardWeekStart;
   setWeekStartingState: (value: DashboardWeekStart) => void;
+  getStartupModule: () => StartupModulePreference;
+  setStartupModuleState: (value: StartupModulePreference) => void;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
   getDynamicColorsEnabled: () => boolean;

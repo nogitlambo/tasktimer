@@ -2,18 +2,23 @@
 #historyManagerScreen .btn,
 #historyManagerScreen .iconBtn,
 #historyManagerScreen .menuIcon,
-#historyManagerScreen .menuItem,
+#historyManagerScreen .menuItem{
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
 #historyManagerScreen .hmSortBtn,
 #historyManagerScreen .hmNoteBtn,
 #historyManagerScreen .hmDelBtn{
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  clip-path: none;
 }
 
 /* History Manager */
 
 #historyManagerScreen{
   display:none;
+  position:relative;
   height:100%;
   min-height:0;
   overflow-y:auto;
@@ -25,6 +30,61 @@
 #historyManagerScreen[aria-hidden="false"]{
   display:flex;
   flex-direction:column;
+}
+
+.hmLoadingOverlay{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background: rgba(13,15,19,.82);
+  backdrop-filter: blur(3px);
+}
+
+.hmLoadingCard{
+  width:min(420px, 100%);
+  display:grid;
+  gap:10px;
+  padding:18px 20px;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(16,19,24,.96);
+}
+
+.hmLoadingTitle{
+  color: rgba(244,251,255,.95);
+  font-family: var(--font-tight);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hmLoadingText{
+  color: rgba(210,224,234,.72);
+  font-family: var(--font-geist-sans);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hmLoadingBar{
+  position:relative;
+  height:8px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.05);
+}
+
+.hmLoadingBarFill{
+  position:absolute;
+  inset:0 auto 0 -38%;
+  width:38%;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(238,244,250,.88), rgba(255,255,255,0));
+  animation: hm-loading-sweep 1.1s linear infinite;
+}
+
+@keyframes hm-loading-sweep{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(360%); }
 }
 
 .hmHead{
@@ -62,21 +122,10 @@
 }
 
 .hmGroup{
-  border:1px solid transparent;
+  border: none;
   border-radius: 0;
   background: transparent;
-  overflow:hidden;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  transition: border-color .16s ease;
-}
-
-.hmGroup:hover,
-.hmGroup:focus-within{
-  border-color: rgba(160,232,255,.34);
-}
-
-.hmGroup:has(.hmBulkTaskChk:checked){
-  border-color: rgba(160,232,255,.58);
+  overflow: visible;
 }
 
 .hmSummary{
@@ -87,7 +136,13 @@
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+.hmSummaryMeta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
 }
 
 .hmSummary::-webkit-details-marker{ display:none; }
@@ -142,6 +197,249 @@
   font-weight:800;
 }
 
+.hmAddBtn{
+  width:32px;
+  height:32px;
+  border:1px solid rgba(160,232,255,.3);
+  background: rgba(255,255,255,.04);
+  color: rgba(236,249,255,.94);
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.hmAddBtn:hover,
+.hmAddBtn:focus-visible{
+  border-color: rgba(160,232,255,.58);
+  background: rgba(255,255,255,.08);
+  outline:none;
+}
+
+.hmManualEntryModal{
+  width:min(560px, calc(100vw - 32px));
+  border:1px solid rgba(121,226,255,.2);
+  background:#0d0f13;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.hmManualEntryModalBody{
+  display:grid;
+  gap:14px;
+  margin-top:14px;
+}
+
+.hmManualEntryTopRow{
+  display:grid;
+  grid-template-columns: minmax(0, 1.35fr) auto;
+  gap:12px;
+  align-items:end;
+}
+
+.hmManualEntryDateTimeField{
+  width:min(100%, 40ch);
+  justify-self:start;
+}
+
+.hmManualEntryElapsedField{
+  justify-self:start;
+}
+
+.hmManualEntrySentiment{
+  border:0;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:8px;
+}
+
+.hmManualEntrySentimentOptions{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap:10px;
+}
+
+.hmManualEntrySentimentBtn{
+  border:0;
+  background:transparent;
+  color: var(--text);
+  padding:0;
+  cursor:pointer;
+  display:grid;
+  justify-items:center;
+  gap:7px;
+}
+
+.hmManualEntrySentimentIconWrap{
+  width:60px;
+  height:60px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(160,232,255,.28);
+  background: rgba(255,255,255,.01);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.hmManualEntrySentimentIcon{
+  width:42px;
+  height:42px;
+  object-fit: contain;
+}
+
+.hmManualEntrySentimentLabel{
+  display:block;
+  font-family: var(--font-geist-sans);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align:center;
+  color: rgba(236,249,255,.9);
+}
+
+.hmManualEntrySentimentBtn:hover .hmManualEntrySentimentIconWrap,
+.hmManualEntrySentimentBtn:focus-visible .hmManualEntrySentimentIconWrap,
+.hmManualEntrySentimentBtn.is-selected .hmManualEntrySentimentIconWrap{
+  background: linear-gradient(180deg, var(--accent3), var(--accent));
+  border-color: rgba(53,232,255,.55);
+  box-shadow: 0 0 14px rgba(0,220,255,.3);
+  transform: translateY(-1px);
+}
+
+.hmManualEntrySentimentBtn:hover .hmManualEntrySentimentLabel,
+.hmManualEntrySentimentBtn:focus-visible .hmManualEntrySentimentLabel,
+.hmManualEntrySentimentBtn.is-selected .hmManualEntrySentimentLabel{
+  color: rgba(255,255,255,.98);
+}
+
+.hmManualEntryField{
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+
+.hmManualEntryLabel{
+  color: rgba(190,230,245,.92);
+  font-family: var(--font-orbitron);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.hmManualEntryInput{
+  width:100%;
+  min-width:0;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(7,14,18,.9);
+  color:#f3fbff;
+  font: inherit;
+  padding:10px 12px;
+}
+
+.hmManualEntryDateTimeInput{
+  color-scheme: dark;
+  padding-right: 12px;
+  background: transparent;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-select:none;
+  caret-color: transparent;
+}
+
+.hmManualEntryDateTimeInput::-webkit-calendar-picker-indicator{
+  display:none;
+}
+
+.hmManualEntryDateTimeWrap{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+
+.hmManualEntryDateTimeBtn{
+  width:40px;
+  min-width:40px;
+  height:40px;
+  border:1px solid rgba(255,255,255,.08);
+  background: transparent;
+  color:#f3fbff;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+
+.hmManualEntryDateTimeBtn:focus-visible,
+.hmManualEntryDateTimeBtn:hover{
+  border-color: rgba(255,255,255,.12);
+}
+
+.hmManualEntryDateTimeBtnIcon{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hmManualEntryInput:focus{
+  outline:none;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.hmManualEntryElapsedInputs{
+  display:grid;
+  grid-template-columns: 7ch auto 7ch auto;
+  gap:6px;
+  align-items:center;
+  justify-content:start;
+}
+
+.hmManualEntryNumber{
+  text-align:center;
+  width: 100%;
+  min-width: 0;
+  border-radius:0;
+  clip-path:none;
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:textfield;
+}
+
+#historyManagerManualNoteInput{
+  border-radius:0;
+  clip-path:none;
+}
+
+.hmManualEntryUnit{
+  color: rgba(214,238,245,.78);
+  font-family: var(--font-orbitron);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.hmManualEntryHint{
+  min-height: 14px;
+  color: rgba(226,246,255,.72);
+  font-family: var(--font-geist-sans);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align:center;
+}
+
+.hmManualEntryError{
+  color: #ffd4d4;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 2px;
+}
+
 .hmTable{
   width:100%;
   border-collapse: collapse;
@@ -169,16 +467,41 @@
 
 .hmTable tbody tr{
   background: transparent;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  transition: box-shadow .16s ease;
 }
 
-.hmTable tbody tr:hover{
-  box-shadow: inset 0 0 0 1px rgba(160,232,255,.32);
+.hmTable tbody tr:has(.hmBulkRowChk:checked) > td{
+  background: rgba(160,232,255,.14);
 }
 
-.hmTable tbody tr:has(.hmBulkRowChk:checked){
-  box-shadow: inset 0 0 0 1px rgba(160,232,255,.56);
+.hmTable tbody tr.hmRowFlash > td{
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 68%, white 18%),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 68%, white 18%);
+  animation: hmRowFlashPulse .55s ease-in-out 0s 5 alternate;
+}
+
+.hmTable tbody tr.hmRowFlash > td:first-child{
+  box-shadow:
+    inset 2px 0 0 color-mix(in srgb, var(--accent) 82%, white 12%),
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 68%, white 18%),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 68%, white 18%);
+}
+
+.hmTable tbody tr.hmRowFlash > td:last-child{
+  box-shadow:
+    inset -2px 0 0 color-mix(in srgb, var(--accent) 82%, white 12%),
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 68%, white 18%),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 68%, white 18%);
+}
+
+@keyframes hmRowFlashPulse{
+  from{
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  to{
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
 }
 
 .hmSelectHead,
@@ -274,6 +597,7 @@
 }
 
 .hmDateHeading{
+  display:block;
   list-style:none;
   cursor:pointer;
   padding:10px 12px 8px;
@@ -282,18 +606,7 @@
   font-size:12px;
   font-weight:800;
   letter-spacing:.04em;
-  border:1px solid transparent;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  transition: border-color .16s ease;
-}
-
-.hmDateGroup:hover .hmDateHeading,
-.hmDateGroup:focus-within .hmDateHeading{
-  border-color: rgba(160,232,255,.3);
-}
-
-.hmDateGroup:has(.hmBulkDateChk:checked) .hmDateHeading{
-  border-color: rgba(160,232,255,.54);
+  border:none;
 }
 
 .hmDateHeading::-webkit-details-marker{
@@ -311,12 +624,19 @@
 }
 
 .hmDelBtn{
-  width:34px;height:34px;
+  width:40px;
+  height:40px;
   border-radius:10px;
   border:1px solid rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
   color:#ffd4d4;
   cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  line-height:1;
+  touch-action:manipulation;
 }
 
 .hmDelBtn:hover{ background: rgba(255,77,77,.16); }
@@ -339,6 +659,22 @@
 
   .hmNoteBtn{
     padding:0;
+  }
+
+  .hmManualEntryModal{
+    width:min(100vw - 20px, 560px);
+  }
+
+  .hmManualEntryTopRow{
+    grid-template-columns: 1fr;
+  }
+
+  .hmManualEntryDateTimeField{
+    width:100%;
+  }
+
+  .hmManualEntrySentimentOptions{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

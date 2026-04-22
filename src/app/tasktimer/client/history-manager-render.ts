@@ -2,7 +2,10 @@
 
 import type { Task } from "../lib/types";
 import { escapeHistoryManagerHtml as escapeHtmlHM } from "../lib/historyManager";
-import { buildHistoryManagerRowKey, formatHistoryManagerElapsed } from "./history-manager-shared";
+import {
+  buildHistoryManagerRowKey,
+  formatHistoryManagerElapsed,
+} from "./history-manager-shared";
 
 type HistoryManagerSortKey = "ts" | "ms";
 type HistoryManagerSortDir = "asc" | "desc";
@@ -22,6 +25,7 @@ type RenderArgs = {
   formatDateTime: (value: number) => string;
   getTaskMetaForHistoryId: (taskId: string) => { name: string; color?: string | null; deleted?: boolean };
   getHistoryEntryNote: (entry: unknown) => string;
+  flashedRowId?: string | null;
 };
 
 export type HistoryManagerRenderResult = {
@@ -91,12 +95,19 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     hmBulkEditMode,
     hmSortKey,
     hmSortDir,
+    hmExpandedTaskGroups,
+    hmExpandedDateGroups,
     formatTwo,
     formatDateTime,
     getTaskMetaForHistoryId,
     getHistoryEntryNote,
+    flashedRowId = null,
   } = args;
-  const expanded = captureExpandedGroups(existingListEl);
+  const capturedExpanded = captureExpandedGroups(existingListEl);
+  const expanded = {
+    taskGroups: new Set<string>([...capturedExpanded.taskGroups, ...hmExpandedTaskGroups]),
+    dateGroups: new Set<string>([...capturedExpanded.dateGroups, ...hmExpandedDateGroups]),
+  };
   const rowIdsByTask: Record<string, string[]> = {};
   const rowIdsByTaskDate: Record<string, string[]> = {};
   const validRowIds = new Set<string>();
@@ -176,8 +187,9 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               const deleteCell = isLiveSession
                 ? '<span class="hmNoteEmpty">-</span>'
                 : `<button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" aria-label="Delete log" title="Delete log">&#128465;</button>`;
+              const flashAttr = flashedRowId === rowId ? ' class="hmRowFlash" data-hm-row-flash="true"' : "";
               return `
-                <tr>
+                <tr data-hm-row-id="${escapeHtmlHM(rowId)}"${flashAttr}>
                   <td class="hmSelectCell">${rowCheckbox}</td>
                   <td>${dateTimeCell}</td>
                   <td>${formatHistoryManagerElapsed(entry.ms || 0, formatTwo)}</td>
@@ -221,6 +233,11 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
         ? `<input class="hmBulkCheckbox hmBulkTaskChk" type="checkbox" data-task="${taskId}" ${taskChecked ? "checked" : ""} />`
         : "";
       const badge = meta.deleted ? '<span class="hmBadge deleted">Deleted</span>' : "";
+      const taskActions = !meta.deleted
+        ? `
+            <button class="iconBtn hmAddBtn" type="button" data-task="${taskId}" aria-label="Add manual history entry" title="Add manual history entry">+</button>
+          `
+        : "";
       const isOpen = expanded.taskGroups.has(String(taskId)) ? " open" : "";
       return `
         <details class="hmGroup" data-task="${taskId}"${isOpen}>
@@ -231,7 +248,10 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               <div class="hmTaskName">${escapeHtmlHM(meta.name || "Task")}</div>
               ${badge}
             </div>
-            <div class="hmCount">${entriesByTask.length} logs</div>
+            <div class="hmSummaryMeta">
+              <div class="hmCount">${entriesByTask.length} logs</div>
+              ${taskActions}
+            </div>
           </summary>
           ${dateGroupsHtml}
         </details>

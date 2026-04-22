@@ -34,11 +34,13 @@ import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
+import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
+  startupModule: StartupModulePreference;
   taskView: "list" | "tile";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
@@ -110,6 +112,36 @@ function isPermissionDeniedError(error: unknown): boolean {
   const code = String(described.code || "").trim().toLowerCase();
   const message = String(described.message || "").trim().toLowerCase();
   return code === "permission-denied" || message.includes("missing or insufficient permissions");
+}
+
+async function safeGetDoc<T>(
+  work: () => Promise<T>,
+  fallback: T,
+  context: string,
+  meta?: Record<string, unknown>
+): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      const describedError = describeError(error);
+      console.warn(`[tasktimer-cloud] Falling back after ${context} read failure`, {
+        ...(meta || {}),
+        error: describedError,
+        permissionDenied: isPermissionDeniedError(error),
+      });
+    }
+    return fallback;
+  }
+}
+
+async function safeGetDocsArray<T>(
+  work: () => Promise<{ docs: T[] }>,
+  context: string,
+  meta?: Record<string, unknown>
+): Promise<T[]> {
+  const snapshot = await safeGetDoc(work, null as { docs: T[] } | null, context, meta);
+  return Array.isArray(snapshot?.docs) ? snapshot.docs : [];
 }
 
 const userRootPermissionWarnedUids = new Set<string>();
@@ -1026,29 +1058,77 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   }
 
   const userRootRef = usersDoc(uid);
-  const tasksSnap = await getDocs(collection(db, "users", uid, "tasks"));
+  const taskDocs = await safeGetDocsArray(
+    () => getDocs(collection(db, "users", uid, "tasks")),
+    "tasks collection",
+    { uid }
+  );
   const tasks: Task[] = [];
   const historyByTaskId: HistoryByTaskId = {};
   const liveSessionsByTaskId: LiveSessionsByTaskId = {};
-  const historyLoads = tasksSnap.docs.map(async (d) => {
+  const historyLoads = taskDocs.map(async (d) => {
     const task = mapTaskFromFirestore(d.id, d.data() as Record<string, unknown>);
-    const histSnap = await getDocs(query(collection(db, "users", uid, "tasks", d.id, "history")));
-    const liveSessionSnap = await getDoc(taskLiveSessionDoc(uid, d.id)!);
-    const history = histSnap.docs
+    const historyDocs = await safeGetDocsArray(
+      () => getDocs(query(collection(db, "users", uid, "tasks", d.id, "history"))),
+      "task history collection",
+      { uid, taskId: d.id }
+    );
+    const liveSessionRef = taskLiveSessionDoc(uid, d.id);
+    const liveSessionSnap = liveSessionRef
+      ? await safeGetDoc(
+          () => getDoc(liveSessionRef),
+          null as Awaited<ReturnType<typeof getDoc>> | null,
+          "live session doc",
+          { uid, taskId: d.id }
+        )
+      : null;
+    const history = historyDocs
       .map((h) => normalizeHistoryEntryRecord(h.data()))
       .filter((row): row is HistoryEntry => !!row)
       .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
-    const liveSession = liveSessionSnap.exists() ? normalizeLiveTaskSessionRecord(d.id, liveSessionSnap.data()) : null;
+    const liveSession = liveSessionSnap?.exists() ? normalizeLiveTaskSessionRecord(d.id, liveSessionSnap.data()) : null;
     return { task, taskId: d.id, history, liveSession };
   });
 
   const [historyRows, deletedSnap, prefSnap, dashboardSnap, taskUiSnap, userRootSnap] = await Promise.all([
     Promise.all(historyLoads),
-    getDocs(collection(db, "users", uid, "deletedTasks")),
-    getDoc(preferencesDoc(uid)!),
-    getDoc(dashboardDoc(uid)!),
-    getDoc(taskUiDoc(uid)!),
-    userRootRef ? getDoc(userRootRef) : Promise.resolve(null),
+    safeGetDocsArray(
+      () => getDocs(collection(db, "users", uid, "deletedTasks")),
+      "deleted tasks collection",
+      { uid }
+    ),
+    preferencesDoc(uid)
+      ? safeGetDoc(
+          () => getDoc(preferencesDoc(uid)!),
+          null as Awaited<ReturnType<typeof getDoc>> | null,
+          "preferences doc",
+          { uid }
+        )
+      : Promise.resolve(null),
+    dashboardDoc(uid)
+      ? safeGetDoc(
+          () => getDoc(dashboardDoc(uid)!),
+          null as Awaited<ReturnType<typeof getDoc>> | null,
+          "dashboard doc",
+          { uid }
+        )
+      : Promise.resolve(null),
+    taskUiDoc(uid)
+      ? safeGetDoc(
+          () => getDoc(taskUiDoc(uid)!),
+          null as Awaited<ReturnType<typeof getDoc>> | null,
+          "task UI doc",
+          { uid }
+        )
+      : Promise.resolve(null),
+    userRootRef
+      ? safeGetDoc(
+          () => getDoc(userRootRef),
+          null as Awaited<ReturnType<typeof getDoc>> | null,
+          "user root doc",
+          { uid }
+        )
+      : Promise.resolve(null),
   ]);
 
   historyRows.forEach((row) => {
@@ -1058,7 +1138,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   });
 
   const deletedTaskMeta: DeletedTaskMeta = {};
-  for (const d of deletedSnap.docs) {
+  for (const d of deletedSnap) {
     const row = d.data() as Record<string, unknown>;
     deletedTaskMeta[d.id] = {
       name: asString(row.name),
@@ -1067,11 +1147,12 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     };
   }
 
-  const preferences: UserPreferencesV1 | null = prefSnap.exists()
-    ? {
+  const preferences: UserPreferencesV1 | null = prefSnap?.exists()
+      ? {
         schemaVersion: 1,
         theme: normalizeThemeMode(prefSnap.get("theme")),
         menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
+        startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
         taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
@@ -1095,7 +1176,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
       }
     : null;
 
-  const dashboard: DashboardConfig | null = dashboardSnap.exists()
+  const dashboard: DashboardConfig | null = dashboardSnap?.exists()
     ? {
         order: Array.isArray(dashboardSnap.get("order")) ? (dashboardSnap.get("order") as string[]) : [],
         widgets:
@@ -1105,7 +1186,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
       }
     : null;
 
-  const taskUi = taskUiSnap.exists() ? asTaskUi(taskUiSnap.data()) : null;
+  const taskUi = taskUiSnap?.exists() ? asTaskUi(taskUiSnap.data()) : null;
   const plan = normalizeTaskTimerPlan(userRootSnap?.exists() ? userRootSnap.get("plan") : "free");
 
   return { plan, tasks, historyByTaskId, liveSessionsByTaskId, deletedTaskMeta, preferences, dashboard, taskUi };
@@ -1490,6 +1571,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
     menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
+    startupModule: normalizeStartupModule(data.startupModule),
     taskView: data.taskView === "tile" ? "tile" : "list",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
