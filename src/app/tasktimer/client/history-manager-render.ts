@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Task } from "../lib/types";
+import { completionDifficultyLabel } from "../lib/completionDifficulty";
 import { escapeHistoryManagerHtml as escapeHtmlHM } from "../lib/historyManager";
 import {
   buildHistoryManagerRowKey,
@@ -176,6 +177,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               const rowKey = buildHistoryManagerRowKey(entry);
               const rowId = `${taskId}|${rowKey}`;
               const note = getHistoryEntryNote(entry);
+              const sentimentLabel = completionDifficultyLabel(entry?.completionDifficulty) || "-";
               const isLiveSession = !!entry?.isLiveSession;
               const noteCell = note
                 ? `<button class="hmNoteBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" title="${escapeHtmlHM(note)}"><span class="hmNoteBtnText">${escapeHtmlHM(note)}</span></button>`
@@ -193,6 +195,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
                   <td class="hmSelectCell">${rowCheckbox}</td>
                   <td>${dateTimeCell}</td>
                   <td>${formatHistoryManagerElapsed(entry.ms || 0, formatTwo)}</td>
+                  <td class="hmSentimentCell">${escapeHtmlHM(sentimentLabel)}</td>
                   <td class="hmNotesCell">${noteCell}</td>
                   <td style="text-align:right;">${deleteCell}</td>
                 </tr>
@@ -214,6 +217,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
                     <th class="hmSelectHead"></th>
                     <th><button class="hmSortBtn" type="button" data-hm-sort="ts">DATE/TIME${dateSortArrow}</button></th>
                     <th><button class="hmSortBtn" type="button" data-hm-sort="ms">ELAPSED${elapsedSortArrow}</button></th>
+                    <th class="hmSentimentHead">SENTIMENT</th>
                     <th class="hmNotesHead">NOTES</th>
                     <th style="text-align:right;">DELETE</th>
                   </tr>

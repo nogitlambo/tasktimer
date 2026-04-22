@@ -27,6 +27,42 @@ import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from ".
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+  const EDIT_OVERLAY_SLIDE_MS = 220;
+  let editOverlayHideTimer: number | null = null;
+
+  function clearEditOverlayHideTimer() {
+    if (editOverlayHideTimer == null) return;
+    window.clearTimeout(editOverlayHideTimer);
+    editOverlayHideTimer = null;
+  }
+
+  function showEditOverlay() {
+    const overlay = els.editOverlay as HTMLElement | null;
+    if (!overlay) return;
+    clearEditOverlayHideTimer();
+    overlay.style.display = "flex";
+    overlay.classList.remove("isClosing");
+    void overlay.offsetHeight;
+    overlay.classList.add("isOpen");
+  }
+
+  function hideEditOverlay(immediate = false) {
+    const overlay = els.editOverlay as HTMLElement | null;
+    if (!overlay) return;
+    clearEditOverlayHideTimer();
+    if (immediate) {
+      overlay.classList.remove("isOpen", "isClosing");
+      overlay.style.display = "none";
+      return;
+    }
+    overlay.classList.remove("isOpen");
+    overlay.classList.add("isClosing");
+    editOverlayHideTimer = window.setTimeout(() => {
+      overlay.classList.remove("isClosing");
+      overlay.style.display = "none";
+      editOverlayHideTimer = null;
+    }, EDIT_OVERLAY_SLIDE_MS);
+  }
 
   function readEditPlannedStartValueFromSelectors() {
     return readPlannedStartValueFromSelectors({
@@ -850,7 +886,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditDraftSnapshot(ctx.buildEditDraftSnapshot(t));
     ctx.clearEditValidationState();
     ctx.syncEditSaveAvailability(t);
-    if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "flex";
+    showEditOverlay();
   }
 
   function closeEdit(saveChanges: boolean) {
@@ -912,7 +948,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
                 syncLegacyPlannedStartFields(t, nextByDay);
                 ctx.closeConfirm();
                 finalizeEditSave(sourceTask, t);
-                if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
+                hideEditOverlay();
                 ctx.clearEditValidationState();
                 closeElapsedPad(false);
                 ctx.setEditIndex(null);
@@ -926,7 +962,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
       finalizeEditSave(sourceTask, t);
     }
-    if (els.editOverlay) (els.editOverlay as HTMLElement).style.display = "none";
+    hideEditOverlay();
     ctx.clearEditValidationState();
     closeElapsedPad(false);
     ctx.setEditIndex(null);

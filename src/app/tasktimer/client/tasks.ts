@@ -176,8 +176,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
             <div class="taskFaceShell taskFaceShellBack">
             <div class="taskBack">
               <div class="taskBackHead">
-                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
                 <div class="taskBackTitle">${ctx.escapeHtmlUI(t.name)}</div>
+                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>

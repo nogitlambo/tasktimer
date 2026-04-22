@@ -1205,8 +1205,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       ctx.confirm("Delete Log Entry", "Delete this entry?", {
         okLabel: "Delete",
         cancelLabel: "Cancel",
-        onOk: () => {
-          const historyByTaskId = ctx.loadHistory();
+        onOk: async () => {
+          const historyByTaskId = { ...(ctx.loadHistory() || {}) };
           const orig = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
           const pos = orig.findIndex((e: any) => buildHistoryManagerRowKey(e) === key);
 
@@ -1214,7 +1214,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
             orig.splice(pos, 1);
             historyByTaskId[taskId] = orig;
             ctx.setHistoryByTaskId(historyByTaskId);
-            ctx.saveHistory(historyByTaskId);
+            await ctx.saveHistoryAndWait(historyByTaskId);
             void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
 
             const deletedTaskMeta = ctx.getDeletedTaskMeta();

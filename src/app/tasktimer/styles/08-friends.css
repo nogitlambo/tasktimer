@@ -117,8 +117,11 @@
 .friendIdentityAvatar {
   width: 60px;
   height: 60px;
+  display: block;
   border-radius: 0;
   object-fit: cover;
+  object-position: center;
+  overflow: hidden;
   border: 1px solid rgba(121, 226, 255, 0.3);
   flex: 0 0 auto;
 }
@@ -152,8 +155,11 @@
 .friendRequestAvatar {
   width: 44px;
   height: 44px;
+  display: block;
   border-radius: 0;
   object-fit: cover;
+  object-position: center;
+  overflow: hidden;
   border: 1px solid rgba(121, 226, 255, 0.3);
 }
 .friendRequestIdentityText {
@@ -335,8 +341,11 @@
 #friendProfileAvatar {
   width: 64px;
   height: 64px;
+  display: block;
   border-radius: 0;
   object-fit: cover;
+  object-position: center;
+  overflow: hidden;
   border: 1px solid rgba(117, 231, 255, 0.3);
 }
 #friendProfileName {
@@ -811,6 +820,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   height: 54px;
   display:grid;
   place-items:center;
+  overflow: hidden;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 0;
   background: #17191d;
@@ -824,6 +834,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   height: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatarSmall{
   width: 42px;

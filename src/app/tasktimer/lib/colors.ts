@@ -9,16 +9,19 @@ export function pctToEndColor(pct: number): string {
   const p = Math.max(0, Math.min(100, pct || 0));
   const g = { r: 12, g: 245, b: 127 };
   const o = { r: 255, g: 140, b: 0 };
+  const y = { r: 255, g: 214, b: 10 };
   const rC = { r: 255, g: 59, b: 48 };
+
+  if (p >= 100) return `rgb(${g.r},${g.g},${g.b})`;
 
   let c1: typeof g, c2: typeof g, tt: number;
   if (p <= 50) {
-    c1 = g;
+    c1 = rC;
     c2 = o;
     tt = p / 50;
   } else {
     c1 = o;
-    c2 = rC;
+    c2 = y;
     tt = (p - 50) / 50;
   }
 

@@ -157,6 +157,7 @@ service cloud.firestore {
         "menuButtonStyle",
         "defaultTaskTimerFormat",
         "weekStarting",
+        "startupModule",
         "taskView",
         "autoFocusOnTaskLaunchEnabled",
         "mobilePushAlertsEnabled",
@@ -175,6 +176,7 @@ service cloud.firestore {
       && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["parallelogram", "square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
+      && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "friends", "leaderboard"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)

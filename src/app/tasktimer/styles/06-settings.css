@@ -261,14 +261,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   letter-spacing:.08em;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon{
-  display:block;
-  width:20px;
-  height:20px;
-  max-width:20px;
-  max-height:20px;
-  margin:0;
-  flex:0 0 auto;
-  object-fit:contain;
+  display:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavRowText{
   font-family:var(--font-tight);
@@ -281,7 +274,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   white-space:nowrap;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavItemIcon{
-  opacity:.92;
+  display:none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   background: linear-gradient(180deg, rgba(53,232,255,.16), rgba(255,255,255,.03)) !important;
@@ -1461,6 +1454,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 /* Final Settings-nav override: footer menu geometry + border language for module buttons. */
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
+  --settings-nav-hover-accent: rgba(117,231,255,.94);
   width: 100% !important;
   min-width: 0 !important;
   min-height: 46px !important;
@@ -1473,14 +1467,27 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   padding: 10px 14px !important;
   text-align: left !important;
 }
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+  --settings-nav-hover-accent: rgba(117,231,255,.94);
+}
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+  position: relative;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile::before,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile::before{
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--settings-nav-hover-accent);
+  opacity: 0;
+  transition: opacity .14s ease;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon{
-  display: block !important;
-  width: 20px !important;
-  height: 20px !important;
-  max-width: 20px !important;
-  max-height: 20px !important;
-  margin: 0 !important;
-  flex: 0 0 auto !important;
+  display: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
   display: block !important;
@@ -1499,20 +1506,32 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavItemIcon{
-  filter: brightness(0) saturate(100%) invert(72%) sepia(78%) saturate(2106%) hue-rotate(139deg) brightness(102%) contrast(101%) drop-shadow(0 0 8px rgba(53,232,255,.35)) !important;
+  display: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
   background: #0d0f13 !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover .settingsNavRowText,
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible .settingsNavRowText,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover .settingsNavRowText,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible .settingsNavRowText{
+  font-size: 14px;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive::before,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isActive::before{
+  opacity: 1;
+}
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
-  border-color: rgba(53,232,255,.58) !important;
+  border-color: transparent !important;
   background:
     linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
     rgba(255,255,255,.04) !important;
-  box-shadow: 0 0 20px rgba(0,220,255,.12), inset 0 0 0 1px rgba(53,232,255,.14) !important;
+  box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger{
   border-color: transparent !important;
@@ -1520,9 +1539,11 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   box-shadow: 0 0 8px rgba(255,77,77,.08) !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
-#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
-  border-color: rgba(255,77,77,.48) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,77,77,.16), 0 0 10px rgba(255,77,77,.14) !important;
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:hover,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:focus-visible{
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger.isActive{
   border-color: transparent !important;
@@ -1837,14 +1858,20 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTil
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
-  border-color: rgba(240,110,224,.52) !important;
+  border-color: transparent !important;
   background: transparent !important;
-  box-shadow: 0 0 20px rgba(212,71,210,.12), inset 0 0 0 1px rgba(240,110,224,.14) !important;
+  box-shadow: none !important;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
   border-color: transparent !important;
   box-shadow: none !important;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+  --settings-nav-hover-accent: rgba(214,120,255,.94);
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavItemIcon{
   filter:
@@ -1883,7 +1910,7 @@ body[data-theme="purple"] .settingsNavTile:hover,
 body[data-theme="purple"] .dashboardPanelMenuItem:hover,
 body[data-theme="purple"] .dashboardSizeOption:hover,
 body[data-theme="purple"] .dashboardAvgRangeMenuItem:hover{
-  border-color: rgba(233,134,245,.62) !important;
+  border-color: transparent !important;
   background: rgba(217,85,231,.16) !important;
 }
 body[data-theme="purple"] .dashboardTitle,
@@ -2701,43 +2728,55 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDataLi
 }
 /* Final Settings nav hover override: use border accent only, no glass fill. */
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
-  border-color: rgba(53,232,255,.48) !important;
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
-#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
-  border-color: rgba(255,77,77,.48) !important;
+#app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:hover,
+#app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
-  border-color: rgba(233,134,245,.62) !important;
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
-  border-color: rgba(255,120,134,.72) !important;
+body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:hover,
+body[data-theme="purple"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
-  border-color: rgba(241,255,151,.46) !important;
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
-body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible{
-  border-color: rgba(255,120,120,.46) !important;
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isDanger:focus-visible{
+  border-color: transparent !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -3877,6 +3916,7 @@ body[data-theme="lime"] .settingsDetailNote{
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
 body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
+  --settings-nav-hover-accent: rgba(214,246,116,.94);
   border-color: rgba(219,255,79,.16);
   background: rgba(18,20,24,.96);
 }
@@ -3885,7 +3925,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTil
   color: rgba(246,255,204,.94);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
-  border-color: rgba(241,255,151,.52) !important;
+  border-color: transparent !important;
   background: rgba(18,20,24,.96) !important;
   box-shadow: none !important;
 }
@@ -3895,9 +3935,12 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTil
   text-shadow: 0 0 8px rgba(219,255,79,.28);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
-body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
-  border-color: rgba(241,255,151,.3);
-  box-shadow: 0 0 16px rgba(219,255,79,.1), inset 0 0 0 1px rgba(241,255,151,.1);
+body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTile:focus-visible{
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"] .settingsDetailTitle,
 body[data-theme="lime"] .settingsInlineSectionTitle,

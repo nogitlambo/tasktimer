@@ -536,6 +536,15 @@
   width: min(34vw, 320px);
 }
 
+.hmSentimentHead{
+  width: 150px;
+}
+
+.hmSentimentCell{
+  color: rgba(236,249,255,.9);
+  white-space: nowrap;
+}
+
 .hmNotesCell{
   width: min(34vw, 320px);
 }

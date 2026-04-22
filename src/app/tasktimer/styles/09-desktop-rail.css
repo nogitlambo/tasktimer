@@ -140,6 +140,7 @@
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn{
+    --desktop-nav-hover-accent: rgba(117,231,255,.94);
     width: 100%;
     max-width: none;
     min-width: 0;
@@ -160,14 +161,29 @@
     text-transform: uppercase;
     clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
     justify-self: stretch;
+    position: relative;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn::before,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn::before{
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--desktop-nav-hover-accent);
+    opacity: 0;
+    transition: opacity .14s ease;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:hover,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:focus-visible,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn:hover,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn:focus-visible{
-    border-color: rgba(53,232,255,.38);
-    box-shadow: 0 0 16px rgba(0,220,255,.10), inset 0 0 0 1px rgba(53,232,255,.10);
+    border-color: transparent;
+    box-shadow: none;
+    font-size: 17px;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:not(:hover):not(:focus-visible):not(.isOn),
@@ -176,13 +192,18 @@
     box-shadow: none !important;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn::before,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn::before{
+    opacity: 1;
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn{
-    border-color: rgba(53,232,255,.58);
+    border-color: transparent;
     background:
       linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
       rgba(255,255,255,.04);
-    box-shadow: 0 0 20px rgba(0,220,255,.12), inset 0 0 0 1px rgba(53,232,255,.14);
+    box-shadow: none;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage,
@@ -199,6 +220,16 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuLabel{
     line-height: 1.1;
     white-space: nowrap;
+  }
+
+  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
+  body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn{
+    --desktop-nav-hover-accent: rgba(214,120,255,.94);
+  }
+
+  body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
+  body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn{
+    --desktop-nav-hover-accent: rgba(214,246,116,.94);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step]:not([data-onboarding-dashboard-panel-step]) ~ .desktopAppMain{
