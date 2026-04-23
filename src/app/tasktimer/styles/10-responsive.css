@@ -101,6 +101,10 @@
     width:100%;
     min-width:0;
   }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRowActions{
+    width:100%;
+    justify-content:flex-start;
+  }
   #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
     width:auto;
     justify-content:flex-start;
@@ -172,6 +176,10 @@
 }
 
 @media (max-width: 420px){
+  #editOverlay .editTaskTypePills,
+  #editOverlay .footerBtns{
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 360px){
@@ -201,6 +209,103 @@
 }
 
 @media (max-width: 640px){
+  #editOverlay .editTaskModalHeader{
+    gap: 8px;
+  }
+
+  #editOverlay .editTaskTypePills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 18px;
+    gap: 8px;
+  }
+
+  #editOverlay .editTaskTypePills .timerTypePill{
+    width: 100%;
+    min-width: 0;
+  }
+
+  #editOverlay .toggleRow{
+    min-height: 0;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  #editOverlay .editTaskTimeGoalToggleWrap{
+    width: auto;
+    max-width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  #editOverlay .editTaskDurationRow{
+    align-items: stretch;
+  }
+
+  #editOverlay #editTaskDurationValueInput{
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  #editOverlay #editTaskDurationUnitPills,
+  #editOverlay #editTaskDurationPeriodPills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  #editOverlay .addTaskDurationPills .unitBtn.small{
+    width: 100%;
+    min-width: 0;
+  }
+
+  #editOverlay .addTaskDurationPerLabel{
+    flex: 0 0 100%;
+  }
+
+  #editOverlay .addTaskPlannedStartSelectorRow{
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 10px;
+  }
+
+  #editOverlay .addTaskPlannedStartTimeCluster{
+    width: 100%;
+  }
+
+  #editOverlay #editPlannedStartHourSelect,
+  #editOverlay #editPlannedStartMinuteSelect{
+    width: auto;
+    flex: 1 1 0;
+  }
+
+  #editOverlay #editPlannedStartMeridiemSelect{
+    width: 84px;
+    flex: 0 0 84px;
+  }
+
+  #editOverlay .addTaskPlannedStartInlineCheckboxRow{
+    flex: 1 1 100%;
+    margin-left: 0;
+    white-space: normal;
+  }
+
+  #editOverlay .addTaskPlannedStartInlineCheckboxRow span{
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  #editOverlay #editPresetIntervalsToggleRow{
+    justify-content: flex-start;
+  }
+
+  #editOverlay .presetIntervalsInfoSlot{
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 980px){
@@ -2439,9 +2544,10 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .deskt
 /* Final task action sizing override: keep secondary buttons rectangular after responsive rules. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
   display: grid !important;
-  grid-template-columns: minmax(112px, 28fr) repeat(4, minmax(56px, 18fr)) !important;
-  width: min(100%, 560px) !important;
-  justify-self: end !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-self: stretch !important;
   gap: 4px !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.small,
@@ -2481,18 +2587,21 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   grid-column: 1 / 3 !important;
   position: relative !important;
   overflow: hidden !important;
+  min-width: 0 !important;
+  width: 100% !important;
   height: calc(90% - 5.4px) !important;
   align-self: center !important;
-  padding: 0 58px 0 12px !important;
-  font-size: 13px !important;
+  padding: 0 clamp(38px, 18%, 58px) 0 clamp(10px, 6%, 12px) !important;
+  font-size: clamp(11px, 2.8vw, 13px) !important;
   font-weight: 800 !important;
+  white-space: nowrap !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]::before,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::before{
   content: "" !important;
   position: absolute !important;
   inset: 3px 3px 3px auto !important;
-  width: 44px !important;
+  width: clamp(30px, 26%, 44px) !important;
   background: #05070b !important;
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
   pointer-events: none !important;
@@ -2501,28 +2610,28 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::after{
   content: "" !important;
   position: absolute !important;
-  right: 17px !important;
+  right: clamp(10px, 7%, 17px) !important;
   top: 50% !important;
   width: 0 !important;
   height: 0 !important;
   transform: translateY(-38%) !important;
-  border-left: 8px solid transparent !important;
-  border-right: 8px solid transparent !important;
-  border-bottom: 10px solid rgba(255,255,255,.92) !important;
+  border-left: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-right: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-bottom: clamp(7px, 2.2vw, 10px) solid rgba(255,255,255,.92) !important;
   pointer-events: none !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"]::after{
-  right: 16px !important;
+  right: clamp(10px, 7%, 16px) !important;
   transform: translateY(-50%) !important;
-  border-top: 8px solid transparent !important;
-  border-bottom: 8px solid transparent !important;
-  border-left: 10px solid rgba(255,255,255,.92) !important;
+  border-top: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-bottom: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-left: clamp(7px, 2.2vw, 10px) solid rgba(255,255,255,.92) !important;
   border-right: 0 !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::after{
-  right: 17px !important;
-  width: 14px !important;
-  height: 14px !important;
+  right: clamp(10px, 7%, 17px) !important;
+  width: clamp(10px, 2.8vw, 14px) !important;
+  height: clamp(10px, 2.8vw, 14px) !important;
   transform: translateY(-50%) !important;
   background: rgba(255,255,255,.92) !important;
   border: 0 !important;

@@ -417,8 +417,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.closeFriendProfileModal();
     ctx.closeFriendRequestModal();
     if (nextPage === "tasks" || nextPage === "schedule") {
-      if (previousPage === "tasks" && nextPage === "schedule") {
-        ctx.requestScheduleEntryScroll();
+      const shouldSnapScheduleOnOpen =
+        nextPage === "schedule" && (previousPage !== "schedule" || opts?.syncUrl === "replace");
+      if (shouldSnapScheduleOnOpen) {
+        ctx.requestScheduleEntryScroll("open");
       }
       ctx.render();
       if (nextPage === "tasks") {
@@ -577,6 +579,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.scheduleAddTaskBtn, "click", () => {
       ctx.els.openAddTaskBtn?.click();
+    });
+    ctx.on(ctx.els.scheduleSnapToFirstBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      ctx.requestScheduleEntryScroll("firstScheduled");
+      ctx.render();
     });
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
       dispatchOnboardingModuleClick("dashboard");

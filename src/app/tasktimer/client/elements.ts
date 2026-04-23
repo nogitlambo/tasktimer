@@ -90,6 +90,7 @@ const els = {
   scheduleGrid: documentRef.getElementById("scheduleGrid") as HTMLElement | null,
   scheduleTrayList: documentRef.getElementById("scheduleTrayList") as HTMLElement | null,
   scheduleMobileDayTabs: documentRef.getElementById("scheduleMobileDayTabs") as HTMLElement | null,
+  scheduleSnapToFirstBtn: documentRef.getElementById("scheduleSnapToFirstBtn") as HTMLButtonElement | null,
   appRoot: documentRef.getElementById("app"),
   groupsFriendsSection: documentRef.getElementById("groupsFriendsSection"),
   openFriendRequestModalBtn: documentRef.getElementById("openFriendRequestModalBtn") as HTMLButtonElement | null,

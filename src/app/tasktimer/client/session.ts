@@ -734,6 +734,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.focusModeScreen as HTMLElement).style.display = "block";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
+    document.body.classList.add("isFocusModeOpen");
     updateFocusDial(task);
     window.requestAnimationFrame(() => {
       const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
@@ -770,6 +771,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.focusModeScreen as HTMLElement).style.display = "none";
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "true");
     }
+    document.body.classList.remove("isFocusModeOpen");
     if (els.focusTaskName) els.focusTaskName.textContent = "Task";
     if (els.focusTimerDays) els.focusTimerDays.textContent = "00d";
     if (els.focusTimerClock) els.focusTimerClock.textContent = "00:00:00";

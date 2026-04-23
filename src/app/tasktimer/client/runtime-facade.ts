@@ -11,7 +11,7 @@ type CreateTaskTimerRuntimeFacadeOptions = {
     | null;
   runtimeCoordinator: {
     renderSchedulePage: () => void;
-    requestScheduleEntryScroll: () => void;
+    requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => void;
     render: () => void;
     resetAllOpenHistoryChartSelections: () => void;
     renderHistory: (taskId: string) => void;
@@ -28,7 +28,7 @@ export function createTaskTimerRuntimeFacade(options: CreateTaskTimerRuntimeFaca
     getElapsedMs: (task: Task) => options.getSessionApi()?.getElapsedMs(task) ?? 0,
     getTaskElapsedMs: (task: Task) => options.getSessionApi()?.getTaskElapsedMs(task) ?? 0,
     renderSchedulePage: () => options.runtimeCoordinator.renderSchedulePage(),
-    requestScheduleEntryScroll: () => options.runtimeCoordinator.requestScheduleEntryScroll(),
+    requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => options.runtimeCoordinator.requestScheduleEntryScroll(mode),
     render: () => options.runtimeCoordinator.render(),
     resetAllOpenHistoryChartSelections: () =>
       options.runtimeCoordinator.resetAllOpenHistoryChartSelections(),

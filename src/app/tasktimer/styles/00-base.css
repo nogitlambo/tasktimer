@@ -1839,7 +1839,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   display:none;
   position:fixed;
   inset:0;
-  z-index:90;
+  z-index:1300;
   isolation:isolate;
   overflow-y:auto;
   overflow-x:hidden;
@@ -1847,6 +1847,19 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
     calc(16px + var(--safe-left));
   background: #000;
+}
+body.isFocusModeOpen{
+  overflow:hidden;
+}
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View > :not(#focusModeScreen){
+  display:none !important;
 }
 #focusModeScreen::before{
   content:"";

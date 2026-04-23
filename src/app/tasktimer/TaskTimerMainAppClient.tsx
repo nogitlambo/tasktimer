@@ -213,16 +213,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     };
   }, []);
 
-  const leaderboardHeroMeta =
-    leaderboardState === "loading"
-      ? "Loading standings..."
-      : leaderboardState === "signedOut"
-        ? "Sign in to view the global ladder"
-        : leaderboardState === "error"
-          ? leaderboardError || "Leaderboard unavailable"
-          : leaderboardData.topEntries.length
-            ? `${leaderboardData.topEntries.length} ranked users loaded`
-            : "No leaderboard data yet";
   const currentUserLabel = leaderboardData.currentUserEntry ? getLeaderboardLabel(leaderboardData.currentUserEntry) : "You";
   const currentUserRankLabel =
     leaderboardData.currentUserRank && leaderboardData.currentUserRank > 0 ? `Rank #${leaderboardData.currentUserRank}` : "Awaiting rank";
@@ -299,9 +289,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           <section className={`appPage${initialPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">
               <div className="dashboardTopRow">
-                <div className="dashboardTitleWrap">
-                  <p className="dashboardKicker">Friends</p>
-                </div>
                 <div className="dashboardEditActions">
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
                     Add Friend
@@ -310,9 +297,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               </div>
 
               <div className="dashboardGrid">
-                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }}>
-                  Ready.
-                </div>
+                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
 
                 <section className="dashboardCard" aria-label="Friends list">
                   <div id="groupsFriendsList" className="settingsDetailNote">
@@ -358,12 +343,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboard page">
             <div className="dashboardShell leaderboardShell">
-              <div className="dashboardTopRow">
-                <div className="dashboardTitleWrap">
-                  <p className="dashboardKicker">Leaderboard</p>
-                </div>
-              </div>
-
               <div className="dashboardGrid leaderboardGrid">
                 <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
                   <div className="leaderboardHeroHead">
@@ -371,7 +350,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <p className="dashboardCardEyebrow">Global ladder</p>
                       <h3 className="dashboardCardTitle">Top focus performers</h3>
                     </div>
-                    <p className="leaderboardHeroMeta">{leaderboardHeroMeta}</p>
                   </div>
                   <div className="leaderboardRows">
                     {leaderboardData.topEntries.length ? (

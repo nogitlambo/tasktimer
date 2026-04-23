@@ -382,6 +382,8 @@ describe("schedule-runtime", () => {
 
     expect(gridHtml).toContain("Deep Work");
     expect(gridHtml).toContain("Daily");
+    expect(gridHtml).toContain('data-earliest-scheduled-task="true"');
+    expect(gridHtml).toContain('class="scheduleTaskCard isEarliestScheduledTask"');
     expect(gridHtml).toContain(
       `class="scheduleProductivityHighlightBand" style="top:${daytimeTopPx}px;height:${daytimeHeightPx}px"`
     );
@@ -417,6 +419,28 @@ describe("schedule-runtime", () => {
     expect(scheduleGrid.innerHTML).toContain("schedulePlanner");
     expect(scheduleGrid.innerHTML).toContain("scheduleProductivityHighlight");
     expect(scheduleTrayList.innerHTML).toContain("Needs a daily time goal");
+  });
+
+  it("marks only the earliest scheduled entry on the planner", () => {
+    const tasks = [
+      makeTask({ id: "task-a", name: "Monday First", plannedStartDay: "mon", plannedStartTime: "08:00" }),
+      makeTask({ id: "task-b", name: "Monday Later", plannedStartDay: "mon", plannedStartTime: "09:00" }),
+      makeTask({ id: "task-c", name: "Tuesday Early", plannedStartDay: "tue", plannedStartTime: "07:00" }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+
+    const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(makeScheduleState(), runtime));
+
+    expect(gridHtml).toContain('data-schedule-task-id="task-a"');
+    expect(gridHtml).toContain('data-earliest-scheduled-task="true"');
+    expect(gridHtml).toContain('data-schedule-task-id="task-a" data-schedule-task-day="mon" data-earliest-scheduled-task="true"');
+    expect(gridHtml).not.toContain('data-schedule-task-id="task-b" data-schedule-task-day="mon" data-earliest-scheduled-task="true"');
+    expect(gridHtml).not.toContain('data-schedule-task-id="task-c" data-schedule-task-day="tue" data-earliest-scheduled-task="true"');
   });
 
   it("keeps scheduled flexible tasks on the planner and unscheduled flexible tasks in the tray", () => {

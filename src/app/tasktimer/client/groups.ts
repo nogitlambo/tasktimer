@@ -1062,7 +1062,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const snapshot = await loadGroupsSnapshot(uid);
       if (refreshSeq !== ctx.getGroupsRefreshSeq()) return;
       applyGroupsSnapshot(snapshot);
-      if (!opts?.preserveStatus) setGroupsStatus("Ready.");
+      if (!opts?.preserveStatus) setGroupsStatus("");
     } catch {
       if (refreshSeq !== ctx.getGroupsRefreshSeq()) return;
       if (!opts?.preserveStatus) setGroupsStatus("Could not load friend data.");

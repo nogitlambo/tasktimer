@@ -203,9 +203,33 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 #app[aria-label="TaskLaunch App"] .appPageTasks .task[draggable="true"]{
   cursor: grab;
 }
+#app[aria-label="TaskLaunch App"] .appPageTasks .list{
+  position: relative;
+}
+#app[aria-label="TaskLaunch App"] .appPageTasks .task{
+  transition: transform .18s cubic-bezier(.22,.78,.2,1);
+  will-change: transform;
+}
 #app[aria-label="TaskLaunch App"] .appPageTasks .task.isDragging{
   opacity:.72;
   box-shadow: 0 0 0 1px rgba(53,232,255,.35), 0 10px 22px rgba(0,0,0,.28);
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isDragGhostHidden{
+  display:none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskDragPlaceholder{
+  width:100%;
+  min-height: 48px;
+  margin:0;
+  border-radius:0;
+  background: transparent;
+  border:none;
+  box-shadow:none;
+  pointer-events:none;
+  opacity:0;
+}
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskDragPlaceholder{
+  width:100%;
 }
 /* Progress row */
 .progressRow{ margin-top:12px; }
@@ -1529,6 +1553,22 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   display:grid;
   gap:16px;
 }
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:14px;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRowActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex:0 0 auto;
+  gap:8px;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleSnapToFirstBtn{
+  white-space:nowrap;
+}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleMobileDayTabs{
   display:none;
   gap:8px;
@@ -1721,6 +1761,13 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
     height .18s ease,
     transform .18s ease;
 }
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
+  border-color:rgba(117,231,255,.78);
+  box-shadow:
+    0 0 0 1px rgba(117,231,255,.24),
+    0 0 18px rgba(117,231,255,.14),
+    inset 3px 0 0 rgba(117,231,255,.9);
+}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardTopRow{
   width:100%;
   display:flex;
@@ -1875,6 +1922,13 @@ body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch 
   border-color:rgba(255,255,255,.12);
   background:#17191d;
 }
+body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
+  border-color:rgba(214,120,255,.76);
+  box-shadow:
+    0 0 0 1px rgba(214,120,255,.22),
+    0 0 18px rgba(214,120,255,.14),
+    inset 3px 0 0 rgba(214,120,255,.88);
+}
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
   border-color:rgba(223,208,255,.24);
   color:rgba(244,236,255,.9);
@@ -1918,6 +1972,13 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   border-color:rgba(255,255,255,.12);
   background:#17191d;
   color:#fbffe3;
+}
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
+  border-color:rgba(214,246,116,.74);
+  box-shadow:
+    0 0 0 1px rgba(214,246,116,.22),
+    0 0 18px rgba(214,246,116,.14),
+    inset 3px 0 0 rgba(214,246,116,.86);
 }
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
   border-color:rgba(222,255,218,.22);
@@ -1963,18 +2024,15 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.appPageScheduleOverlay{
   position:absolute;
   inset:0;
-  z-index:12;
+  z-index:24;
   display:block;
+  background:#0d0f13;
   opacity:0;
   visibility:hidden;
   pointer-events:none;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageBackdrop{
-  position:absolute;
-  inset:0;
-  background:rgba(6,10,14,.38);
-  opacity:0;
-  transition:opacity .22s ease;
+  display:none;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
   position:absolute;
@@ -1983,14 +2041,12 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   grid-template-rows:auto minmax(0, 1fr) auto;
   gap:16px;
   padding:12px;
-  border:1px solid rgba(255,255,255,.08);
+  border:none;
   background:#0d0f13;
-  box-shadow:0 18px 42px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.02);
-  transform:translateX(24px);
+  box-shadow:none;
+  transform:none;
   opacity:0;
-  transition:
-    transform .22s ease,
-    opacity .22s ease;
+  transition:opacity .22s ease;
   overflow:hidden;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.isOpen{
@@ -2002,11 +2058,10 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   opacity:1;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.isOpen .schedulePageShell{
-  transform:translateX(0);
   opacity:1;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
-  transform:translateX(-24px);
+  transform:none;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleBoard{
   min-height:0;
@@ -2020,10 +2075,22 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #app
   margin-top:0;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
-  box-shadow:0 18px 42px rgba(35,12,44,.32), inset 0 0 0 1px rgba(255,255,255,.02);
+  box-shadow:none;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
   box-shadow:none;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"]{
+  overflow:hidden;
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #mode1View,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+  min-height:0;
+  height:100%;
+  overflow:hidden;
 }
 #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill{
   white-space:nowrap;

@@ -553,7 +553,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let getElapsedMs: (task: Task) => number = () => 0;
   let getTaskElapsedMs: (task: Task) => number = () => 0;
   let renderSchedulePage = () => {};
-  let requestScheduleEntryScroll = () => {};
+  let requestScheduleEntryScroll = (mode?: "open" | "firstScheduled") => {
+    void mode;
+  };
   let render = () => {};
   let resetAllOpenHistoryChartSelections = () => {};
   let renderHistory: (taskId: string) => void = () => {};
@@ -1163,21 +1165,21 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       navStackMax: NAV_STACK_MAX,
       nativeBackDebounceMs: NATIVE_BACK_DEBOUNCE_MS,
       appRuntimeState,
-      syncDashboardMenuFlipUi,
+      syncDashboardMenuFlipUi: () => syncDashboardMenuFlipUi(),
       getNavStackMemory: () => cacheRuntimeState.get("navStackMemory"),
       setNavStackMemory: (stack) => {
         cacheRuntimeState.set("navStackMemory", stack);
       },
-      resetAllOpenHistoryChartSelections,
+      resetAllOpenHistoryChartSelections: () => resetAllOpenHistoryChartSelections(),
       clearTaskFlipStates,
       renderFriendsFooterAlertBadge,
       closeTaskExportModal,
       closeShareTaskModal,
       closeFriendProfileModal,
       closeFriendRequestModal,
-      requestScheduleEntryScroll,
-      render,
-      renderHistory,
+      requestScheduleEntryScroll: (mode) => requestScheduleEntryScroll(mode),
+      render: () => render(),
+      renderHistory: (taskId) => renderHistory(taskId),
       renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
       renderGroupsPage,
       refreshGroupsData,

@@ -66,6 +66,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
   const visibleDays = ctx.scheduleRuntime.getVisibleDays();
   const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
+  const earliestScheduledEntry = scheduled[0] ?? null;
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);
   const scheduledCountByTaskId = scheduled.reduce<Record<string, number>>((acc, entry) => {
@@ -89,6 +90,13 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
           const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
           const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
+          const earliestClass =
+            earliestScheduledEntry &&
+            earliestScheduledEntry.day === entry.day &&
+            earliestScheduledEntry.startMinutes === entry.startMinutes &&
+            String(earliestScheduledEntry.task.id || "") === String(entry.task.id || "")
+              ? " isEarliestScheduledTask"
+              : "";
           const recurringTask = isRecurringDailyScheduleTask(entry.task);
           const showNormalizeAction = (scheduledCountByTaskId[String(entry.task.id || "")] || 0) > 1;
           const recurringAction = showNormalizeAction
@@ -108,9 +116,11 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
                 entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
               }">${entry.task.plannedStartOpenEnded ? "Flex" : "Daily"}</span>`
             : "";
-          return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
+          return `<div class="scheduleTaskCard${shortClass}${earliestClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")
-          )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
+          )}" data-schedule-task-day="${day}"${
+            earliestClass ? ' data-earliest-scheduled-task="true"' : ""
+          } style="top:${topPx}px;height:${heightPx}px">
             <div class="scheduleTaskCardTopRow">
               ${recurringBadge}
               ${recurringAction}
