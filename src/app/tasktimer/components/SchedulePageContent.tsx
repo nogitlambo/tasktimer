@@ -1,7 +1,5 @@
 "use client";
 
-import AppImg from "@/components/AppImg";
-
 const DAY_BUTTONS = [
   { value: "mon", label: "Mon" },
   { value: "tue", label: "Tue" },
@@ -18,58 +16,25 @@ type SchedulePageContentProps = {
 
 export default function SchedulePageContent({ active }: SchedulePageContentProps) {
   return (
-    <section className={`appPage appPageSchedule${active ? " appPageOn" : ""}`} id="appPageSchedule" aria-label="Schedule page">
-      <div className="dashboardTopRow scheduleTopRow">
-        <div className="dashboardTitleWrap">
-          <p className="dashboardKicker">Schedule</p>
-        </div>
-        <div className="taskPageHeaderActions schedulePageHeaderActions">
-          <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
-            <button
-              className="iconBtn taskScreenPill taskScreenHeaderBtn"
-              id="closeScheduleBtn"
-              data-screen-pill="tasks"
-              aria-label="Tasks"
-              title="Tasks"
-              role="tab"
-              type="button"
-            >
-              <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-            </button>
-            <button
-              className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
-              data-screen-pill="schedule"
-              aria-current="page"
-              aria-label="Schedule"
-              title="Schedule"
-              role="tab"
-              type="button"
-            >
-              <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-                <path d="M3.5 9.5h17" />
-                <path d="M8 3.75v3.5" />
-                <path d="M16 3.75v3.5" />
-                <path d="M8 13h3" />
-                <path d="M13 13h3" />
-                <path d="M8 17h3" />
-              </svg>
-            </button>
-          </div>
-          <button
-            className="iconBtn taskScreenPill taskScreenHeaderBtn"
-            id="scheduleAddTaskBtn"
-            aria-label="Add Task"
-            title="Add Task"
-            type="button"
-          >
-            <span className="taskScreenIconBtnPlus" aria-hidden="true">
-              +
-            </span>
-          </button>
-        </div>
-      </div>
-
+    <section
+      className={`appPageScheduleOverlay${active ? " isOpen" : ""}`}
+      id="appPageSchedule"
+      aria-label="Schedule panel"
+      aria-hidden={active ? "false" : "true"}
+    >
+      <div className="schedulePageBackdrop" aria-hidden="true" />
+      <button
+        className="iconBtn taskScreenPill taskScreenHeaderBtn"
+        id="scheduleAddTaskBtn"
+        aria-hidden="true"
+        tabIndex={-1}
+        type="button"
+        hidden
+      >
+        <span className="taskScreenIconBtnPlus" aria-hidden="true">
+          +
+        </span>
+      </button>
       <section className="schedulePageShell" aria-label="Weekly schedule planner">
         <div className="scheduleMobileDayTabs" id="scheduleMobileDayTabs" role="tablist" aria-label="Schedule day selector">
           {DAY_BUTTONS.map((day) => (

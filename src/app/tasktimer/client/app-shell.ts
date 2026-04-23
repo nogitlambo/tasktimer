@@ -368,8 +368,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.setCurrentAppPage(nextPage);
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(nextPage);
     document.body.setAttribute("data-app-page", nextPage);
-    ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks");
-    ctx.els.appPageSchedule?.classList.toggle("appPageOn", nextPage === "schedule");
+    ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks" || nextPage === "schedule");
+    ctx.els.appPageSchedule?.classList.toggle("isOpen", nextPage === "schedule");
+    ctx.els.appPageSchedule?.setAttribute("aria-hidden", nextPage === "schedule" ? "false" : "true");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
     ctx.els.appPageTest2?.classList.toggle("appPageOn", nextPage === "test2");
     ctx.els.appPageLeaderboard?.classList.toggle("appPageOn", nextPage === "leaderboard");
@@ -423,7 +424,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (nextPage === "tasks") {
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {
-            if (ctx.runtime.destroyed || ctx.getCurrentAppPage() !== "tasks") return;
+            if (ctx.runtime.destroyed || (ctx.getCurrentAppPage() !== "tasks" && ctx.getCurrentAppPage() !== "schedule")) return;
             for (const taskId of ctx.getOpenHistoryTaskIds()) {
               ctx.renderHistory(taskId);
             }

@@ -79,7 +79,7 @@ describe("TaskTimerPreferencesService", () => {
     expect(service.loadStartupModule()).toBe("dashboard");
   });
 
-  it("prefers cached startup module over local storage", () => {
+  it("prefers local startup module over cached preferences", () => {
     vi.stubGlobal("window", {
       localStorage: createLocalStorageStub({
         startupModule: "friends",
@@ -102,7 +102,7 @@ describe("TaskTimerPreferencesService", () => {
       syncOwnFriendshipProfile: vi.fn(async () => undefined),
     });
 
-    expect(service.loadStartupModule()).toBe("leaderboard");
+    expect(service.loadStartupModule()).toBe("friends");
   });
 
   it("defaults theme to lime when no cached or local preference exists", () => {

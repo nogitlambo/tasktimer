@@ -103,7 +103,7 @@
   }
   #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
     width:auto;
-    justify-content:flex-end;
+    justify-content:flex-start;
     flex-wrap:nowrap;
     gap:8px;
   }
@@ -1120,7 +1120,7 @@
     position: relative;
     width: auto;
     flex: 0 0 auto;
-    justify-content: flex-end;
+    justify-content: flex-start;
     overflow: visible;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelMenuBtn{

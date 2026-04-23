@@ -24,16 +24,18 @@ export function startupModuleToRoute(startupModule: StartupModulePreference): st
 }
 
 export function readStartupModulePreference(storageKey = `${STORAGE_KEY}:startupModule`): StartupModulePreference {
+  if (typeof window === "undefined") return "dashboard";
+  try {
+    const localValue = window.localStorage.getItem(storageKey);
+    if (localValue) return normalizeStartupModule(localValue);
+  } catch {
+    // ignore localStorage failures
+  }
   const cachedPreferences = loadCachedPreferences();
   if (cachedPreferences && typeof cachedPreferences === "object" && "startupModule" in cachedPreferences) {
     return normalizeStartupModule((cachedPreferences as { startupModule?: unknown }).startupModule);
   }
-  if (typeof window === "undefined") return "dashboard";
-  try {
-    return normalizeStartupModule(window.localStorage.getItem(storageKey));
-  } catch {
-    return "dashboard";
-  }
+  return "dashboard";
 }
 
 export function readStartupAppPagePreference(storageKey?: string): AppPage {

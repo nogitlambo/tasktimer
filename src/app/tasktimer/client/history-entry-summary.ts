@@ -5,6 +5,7 @@ const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
 
 type HistoryEntrySummarySource = {
+  taskId?: unknown;
   ts?: unknown;
   ms?: unknown;
   name?: unknown;
@@ -13,6 +14,8 @@ type HistoryEntrySummarySource = {
 };
 
 export type HistoryEntrySummaryItem = {
+  taskId: string;
+  name: string;
   ts: number;
   ms: number;
   dateTimeText: string;
@@ -43,6 +46,7 @@ export type HistoryEntrySummaryPayload = {
 };
 
 type BuildHistoryEntrySummaryPayloadOptions = {
+  taskId?: string;
   entries: HistoryEntrySummarySource[];
   formatDateTime: (value: number) => string;
   formatTwo: (value: number) => string;
@@ -80,17 +84,21 @@ function deriveXpEarned(entry: HistoryEntrySummarySource) {
 
 function buildHistoryEntrySummaryItem(
   entry: HistoryEntrySummarySource,
+  taskId: string,
   formatDateTime: (value: number) => string,
   formatTwo: (value: number) => string,
   getEntryNote: (entry: HistoryEntrySummarySource) => string
 ): HistoryEntrySummaryItem {
   const ts = normalizeTimestamp(entry?.ts);
   const ms = normalizeElapsedMs(entry?.ms);
+  const name = String(entry?.name || "").trim();
   const noteText = String(getEntryNote(entry) || "").trim();
   const hasNote = !!noteText;
   const timeGoalCompleted = deriveTimeGoalCompleted();
   const xpEarned = deriveXpEarned(entry);
   return {
+    taskId,
+    name,
     ts,
     ms,
     dateTimeText: ts > 0 ? formatDateTime(ts) : "Unknown date/time",
@@ -146,14 +154,16 @@ function buildAggregateSummary(
 }
 
 export function buildHistoryEntrySummaryPayload({
+  taskId,
   entries,
   formatDateTime,
   formatTwo,
   getEntryNote,
 }: BuildHistoryEntrySummaryPayloadOptions): HistoryEntrySummaryPayload | null {
   const normalizedEntries = Array.isArray(entries) ? entries : [];
+  const normalizedTaskId = String(taskId || "").trim();
   const sessions = normalizedEntries
-    .map((entry) => buildHistoryEntrySummaryItem(entry, formatDateTime, formatTwo, getEntryNote))
+    .map((entry) => buildHistoryEntrySummaryItem(entry, normalizedTaskId, formatDateTime, formatTwo, getEntryNote))
     .sort((a, b) => b.ts - a.ts);
   if (!sessions.length) return null;
   const aggregate = buildAggregateSummary(sessions, formatDateTime, formatTwo);
@@ -198,10 +208,17 @@ export function renderHistoryEntrySummaryHtml(
       const noteCopyHtml = session.hasNote
         ? `<button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtml(session.noteCopyText)}">Copy</button>`
         : "";
+      const deleteButtonHtml =
+        session.taskId && session.ts > 0 && session.name
+          ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">&#128465;</button>`
+          : "";
       return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
         <div class="historyEntrySummarySessionHead">
-          <div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>
-          <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateTimeText)}</div>
+          <div class="historyEntrySummarySessionHeadMain">
+            <div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>
+            <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateTimeText)}</div>
+          </div>
+          ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
         </div>
         <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
         <div class="historyEntrySummaryGrid">

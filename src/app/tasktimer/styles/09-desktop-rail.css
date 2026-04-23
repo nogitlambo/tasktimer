@@ -168,13 +168,16 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn::before{
     content: "";
     position: absolute;
-    left: 10px;
-    top: 0;
-    bottom: 0;
+    left: 0;
+    top: 50%;
+    bottom: 50%;
     width: 2px;
     background: var(--desktop-nav-hover-accent);
     opacity: 0;
-    transition: opacity .14s ease;
+    transition:
+      top .46s ease,
+      bottom .46s ease,
+      opacity .42s ease;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:hover,
@@ -195,6 +198,8 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn::before,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailMenuBtn.isOn::before{
     opacity: 1;
+    top: 0;
+    bottom: 0;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,

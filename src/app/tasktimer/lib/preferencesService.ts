@@ -170,9 +170,11 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadStartupModule(): StartupModulePreference {
+    const localValue = safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY);
+    if (localValue) return normalizeStartupModule(localValue);
     const cachedValue = getStoredOrCachedPreferences().startupModule;
     if (typeof cachedValue === "string" && cachedValue.trim()) return normalizeStartupModule(cachedValue);
-    return normalizeStartupModule(safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY));
+    return "dashboard";
   }
 
   function loadTaskView(): "list" | "tile" {

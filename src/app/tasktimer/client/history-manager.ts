@@ -59,6 +59,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   function syncManualEntryOverlayFromDraft(taskId: string) {
     const draft = manualEntryDraftsByTaskId[taskId] || createDefaultHistoryManagerManualDraft(Date.now());
     if (els.historyManagerManualDateTimeInput) els.historyManagerManualDateTimeInput.value = draft.dateTimeValue || "";
+    els.historyManagerManualDateTimeInput?.parentElement?.setAttribute(
+      "data-empty",
+      draft.dateTimeValue ? "false" : "true"
+    );
     if (els.historyManagerManualHoursInput) els.historyManagerManualHoursInput.value = draft.hoursValue || "";
     if (els.historyManagerManualMinutesInput) els.historyManagerManualMinutesInput.value = draft.minutesValue || "";
     if (els.historyManagerManualNoteInput) els.historyManagerManualNoteInput.value = draft.noteValue || "";
@@ -90,10 +94,11 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
     activeManualEntryTaskId = taskId;
     if (els.historyManagerManualEntryTitle) {
-      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry`;
+      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry for ${meta.name || "This Task"}`;
     }
     if (els.historyManagerManualEntryMeta) {
-      els.historyManagerManualEntryMeta.textContent = `Add a history entry for ${meta.name || "this task"}.`;
+      els.historyManagerManualEntryMeta.textContent = "";
+      els.historyManagerManualEntryMeta.hidden = true;
     }
     syncManualEntryOverlayFromDraft(taskId);
     if (els.historyManagerManualEntryOverlay) {

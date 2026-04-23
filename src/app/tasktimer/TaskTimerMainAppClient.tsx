@@ -237,15 +237,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     <>
       <TaskTimerAppFrame activePage={initialPage}>
         <div className="appPages">
-          <section className={`appPage appPageTasks${initialPage === "tasks" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
+          <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="dashboardTopRow">
-              <div className="dashboardTitleWrap">
-                <p className="dashboardKicker">Tasks</p>
-              </div>
               <div className="taskPageHeaderActions">
                 <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
                   <button
                     className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
+                    id="closeScheduleBtn"
                     data-screen-pill="tasks"
                     aria-current="page"
                     aria-label="Tasks"
@@ -292,11 +290,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               <div className="list" id="taskList" />
               <HistoryScreen />
               <FocusModeScreen />
+              <SchedulePageContent active={initialPage === "schedule"} />
             </section>
           </section>
 
           <DashboardPageContent rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
-          <SchedulePageContent active={initialPage === "schedule"} />
 
           <section className={`appPage${initialPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">

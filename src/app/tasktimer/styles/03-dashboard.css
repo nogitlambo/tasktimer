@@ -1345,6 +1345,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin-bottom: 18px;
   align-items: flex-start;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
+  margin-left: 0;
+  justify-content: flex-start;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker{
   color: rgba(210,226,237,.68);
 }

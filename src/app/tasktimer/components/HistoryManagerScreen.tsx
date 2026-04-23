@@ -37,10 +37,8 @@ export default function HistoryManagerScreen() {
 
       <div className="overlay" id="historyManagerManualEntryOverlay" style={{ display: "none" }}>
         <div className="modal hmManualEntryModal" role="dialog" aria-modal="true" aria-label="Add manual history entry">
-          <h2 id="historyManagerManualEntryTitle">Add Manual Entry</h2>
-          <div className="modalSubtext" id="historyManagerManualEntryMeta">
-            Add a history entry for this task.
-          </div>
+          <h2 id="historyManagerManualEntryTitle">Add Manual Entry for This Task</h2>
+          <div className="modalSubtext" id="historyManagerManualEntryMeta" hidden />
 
           <div className="hmManualEntryModalBody">
             <div className="hmManualEntryTopRow">
@@ -53,6 +51,7 @@ export default function HistoryManagerScreen() {
                     aria-readonly="true"
                     className="hmManualEntryInput hmManualEntryDateTimeInput"
                     id="historyManagerManualDateTimeInput"
+                    placeholder="---------- --:--"
                     tabIndex={-1}
                     type="datetime-local"
                   />

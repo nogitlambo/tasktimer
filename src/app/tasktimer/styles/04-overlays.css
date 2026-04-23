@@ -2316,10 +2316,45 @@ body[data-theme="purple"] .rewardsInfoText{
     gap:12px;
   }
 
+#historyEntryNoteOverlay .historyEntrySummarySessionHeadMain{
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  flex: 1 1 auto;
+  justify-items: start;
+}
+
+#historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryDeleteBtn{
+  min-width: 44px;
+  width: 44px;
+  min-height: 44px;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #ff1f1f;
+  font-size: 22px;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryDeleteBtn:hover,
+#historyEntryNoteOverlay .historyEntrySummaryDeleteBtn:focus-visible{
+  border-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #ff0000;
+}
+
 #historyEntryNoteOverlay .historyEntrySummarySessionDate{
+    width: 100%;
     font-size:14px;
     color: rgba(228,243,252,.82);
-    text-align:right;
+    text-align:left;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{

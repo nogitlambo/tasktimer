@@ -352,10 +352,40 @@
 }
 
 .hmManualEntryDateTimeWrap{
+  position: relative;
   display:grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap:8px;
   align-items:center;
+}
+
+.hmManualEntryDateTimeWrap[data-empty="true"]::before{
+  content: "---------- --:--";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(190,230,245,.46);
+  font: inherit;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput{
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-fields-wrapper,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-text,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-year-field,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-month-field,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-day-field,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-hour-field,
+.hmManualEntryDateTimeWrap[data-empty="true"] .hmManualEntryDateTimeInput::-webkit-datetime-edit-minute-field{
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .hmManualEntryDateTimeBtn{

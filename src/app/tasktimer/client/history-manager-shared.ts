@@ -55,7 +55,7 @@ export function formatHistoryManagerDraftDateTimeValue(nowMs: number) {
 
 export function createDefaultHistoryManagerManualDraft(nowMs: number): HistoryManagerManualDraft {
   return {
-    dateTimeValue: formatHistoryManagerDraftDateTimeValue(nowMs),
+    dateTimeValue: "",
     hoursValue: "",
     minutesValue: "",
     completionDifficulty: "",

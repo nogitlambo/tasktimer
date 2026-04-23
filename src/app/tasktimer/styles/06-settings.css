@@ -1464,11 +1464,12 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   align-items: center !important;
   justify-content: flex-start !important;
   gap: 10px !important;
-  padding: 10px 14px !important;
+  padding: 10px 14px 10px 24px !important;
   text-align: left !important;
 }
 #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
   --settings-nav-hover-accent: rgba(117,231,255,.94);
+  padding-left: 24px !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile,
 #app[aria-label="TaskLaunch User Guide"] .settingsNavTile{
@@ -1479,12 +1480,15 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   content: "";
   position: absolute;
   left: 10px;
-  top: 0;
-  bottom: 0;
+  top: 50%;
+  bottom: 50%;
   width: 2px;
   background: var(--settings-nav-hover-accent);
   opacity: 0;
-  transition: opacity .14s ease;
+  transition:
+    top .46s ease,
+    bottom .46s ease,
+    opacity .42s ease;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsMenuItemIcon{
   display: none !important;
@@ -1525,6 +1529,8 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive::before,
 #app[aria-label="TaskLaunch User Guide"] .settingsNavTile.isActive::before{
   opacity: 1;
+  top: 0;
+  bottom: 0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   border-color: transparent !important;
@@ -4545,7 +4551,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
     min-height:44px;
     aspect-ratio:auto;
-    padding:9px 10px;
+    padding:9px 10px 9px 24px;
     justify-content:flex-start;
     text-align:left;
   }
@@ -4641,7 +4647,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     align-items:center;
     justify-content:flex-start;
     gap:8px;
-    padding:10px 12px;
+    padding:10px 12px 10px 24px;
     text-align:left;
     text-transform:uppercase;
     letter-spacing:.08em;

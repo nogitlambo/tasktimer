@@ -72,7 +72,7 @@ describe("startupModule helpers", () => {
     expect(readStartupAppPagePreference("startupModule")).toBe("test2");
   });
 
-  it("prefers cached preferences over local storage", async () => {
+  it("prefers local storage over cached preferences", async () => {
     vi.stubGlobal("window", {
       localStorage: createLocalStorageStub({
         startupModule: "friends",
@@ -80,6 +80,6 @@ describe("startupModule helpers", () => {
     });
     const { readStartupModulePreference } = await loadStartupModuleHelpers("leaderboard");
 
-    expect(readStartupModulePreference("startupModule")).toBe("leaderboard");
+    expect(readStartupModulePreference("startupModule")).toBe("friends");
   });
 });

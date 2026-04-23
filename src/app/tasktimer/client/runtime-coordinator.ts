@@ -5,7 +5,7 @@ import {
   timeOfDayToMinutes,
 } from "../lib/productivityPeriod";
 import { renderTaskTimerSchedulePage } from "./schedule-render";
-import { SCHEDULE_MINUTE_PX } from "./schedule-runtime";
+import { SCHEDULE_MINUTE_PX, type TaskTimerScheduleViewModel } from "./schedule-runtime";
 import {
   clearTaskTimerPendingPushAction,
   handleTaskTimerArchieNavigate,
@@ -98,6 +98,25 @@ function getPresentScheduleDay(): TaskTimerScheduleState["selectedDay"] {
   }
 }
 
+export function resolveScheduleOpenScrollTargetMinutes(options: {
+  presentDay: TaskTimerScheduleState["selectedDay"];
+  viewModel: Pick<TaskTimerScheduleViewModel, "scheduled">;
+  optimalProductivityStartTime: string;
+  optimalProductivityEndTime: string;
+}) {
+  const firstScheduledStartMinutes =
+    options.presentDay
+      ? options.viewModel.scheduled.find((entry) => entry.day === options.presentDay)?.startMinutes ?? null
+      : null;
+  if (firstScheduledStartMinutes != null) return firstScheduledStartMinutes;
+
+  const period = normalizeOptimalProductivityPeriod({
+    optimalProductivityStartTime: options.optimalProductivityStartTime,
+    optimalProductivityEndTime: options.optimalProductivityEndTime,
+  });
+  return timeOfDayToMinutes(period.startTime, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME);
+}
+
 export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntimeCoordinatorOptions) {
   let pendingScheduleEntryScroll = false;
 
@@ -122,17 +141,18 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
     if (!pendingScheduleEntryScroll || !options.els.scheduleGridScroller) return;
     pendingScheduleEntryScroll = false;
     const viewModel = scheduleRuntime.buildViewModel();
-    const firstScheduledStartMinutes =
-      viewModel.scheduled.find((entry) => entry.day === presentDay)?.startMinutes ?? null;
-    const period = normalizeOptimalProductivityPeriod({
+    const targetMinutes = resolveScheduleOpenScrollTargetMinutes({
+      presentDay,
+      viewModel,
       optimalProductivityStartTime: options.getOptimalProductivityStartTime(),
       optimalProductivityEndTime: options.getOptimalProductivityEndTime(),
     });
-    const targetMinutes = firstScheduledStartMinutes ?? timeOfDayToMinutes(period.startTime, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME);
     options.windowRef.requestAnimationFrame(() => {
-      const scroller = options.els.scheduleGridScroller;
-      if (!scroller) return;
-      scroller.scrollTop = Math.max(0, targetMinutes * SCHEDULE_MINUTE_PX - 24);
+      options.windowRef.requestAnimationFrame(() => {
+        const scroller = options.els.scheduleGridScroller;
+        if (!scroller) return;
+        scroller.scrollTop = Math.max(0, targetMinutes * SCHEDULE_MINUTE_PX);
+      });
     });
   }
 

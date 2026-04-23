@@ -1124,26 +1124,35 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .his
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineFooterRow{
   margin-top:12px;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
   display:flex;
   flex-wrap:wrap;
   justify-content:space-between;
   align-items:flex-start;
   gap:14px;
+  position:sticky;
+  top:0;
+  z-index:16;
+  padding:8px 0 10px;
+  background:#0d0f13;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
   min-width:0;
   flex:1 1 auto;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
-  margin-left:auto;
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
+  margin-left:0;
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:flex-start;
   flex:0 0 auto;
   gap:10px;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
   margin-left:auto;
   flex:0 1 auto;
   min-width:0;
@@ -1154,7 +1163,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   gap:6px;
   flex-wrap:nowrap;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
   color:rgba(190,240,255,.62);
   font-family:var(--font-tight);
   font-size:10px;
@@ -1505,7 +1515,7 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
   display:inline-flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:flex-start;
   flex-wrap:nowrap;
   gap:8px;
 }
@@ -1945,6 +1955,75 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
     linear-gradient(180deg, rgba(255,171,117,.18), rgba(255,171,117,.06)),
     rgba(52,26,11,.42);
   box-shadow:inset 0 0 0 1px rgba(255,171,117,.16);
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #mode1View{
+  position:relative;
+  isolation:isolate;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.appPageScheduleOverlay{
+  position:absolute;
+  inset:0;
+  z-index:12;
+  display:block;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageBackdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(6,10,14,.38);
+  opacity:0;
+  transition:opacity .22s ease;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+  position:absolute;
+  inset:0;
+  display:grid;
+  grid-template-rows:auto minmax(0, 1fr) auto;
+  gap:16px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#0d0f13;
+  box-shadow:0 18px 42px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.02);
+  transform:translateX(24px);
+  opacity:0;
+  transition:
+    transform .22s ease,
+    opacity .22s ease;
+  overflow:hidden;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.isOpen{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.isOpen .schedulePageBackdrop{
+  opacity:1;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule.isOpen .schedulePageShell{
+  transform:translateX(0);
+  opacity:1;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+  transform:translateX(-24px);
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleBoard{
+  min-height:0;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleGridScroller{
+  max-height:none;
+  height:100%;
+  overflow:auto;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleTray{
+  margin-top:0;
+}
+body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+  box-shadow:0 18px 42px rgba(35,12,44,.32), inset 0 0 0 1px rgba(255,255,255,.02);
+}
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+  box-shadow:none;
 }
 #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill{
   white-space:nowrap;

@@ -42,9 +42,6 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                 onClick={handleOnboardingAdvanceClick}
               >
                 <div className="dashboardTopRow">
-                  <div className="dashboardTitleWrap">
-                    <p className="dashboardKicker">Dashboard</p>
-                  </div>
                   <div className="dashboardEditActions">
                     <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
                       <span className="dashboardRefreshIcon" aria-hidden="true" />
