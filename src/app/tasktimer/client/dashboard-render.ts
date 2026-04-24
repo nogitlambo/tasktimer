@@ -715,12 +715,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (isOnboardingDashboardPreviewActive()) {
       const preview = ONBOARDING_DASHBOARD_PREVIEW.momentum;
       clearSelectedMomentumDriverResetTimer();
-      cancelMomentumAnimation();
-      lastMomentumAnimatedTargetScore = preview.score;
-      lastMomentumAnimatedTargetBand = preview.statusLabel;
       setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
       dialEl.style.setProperty("--momentum-locked", hasAdvancedInsights() ? "0" : "1");
+      const selectedDriverIndex = selectedMomentumDriverKey
+        ? MOMENTUM_DRIVER_DEFS.findIndex((driver) => driver.key === selectedMomentumDriverKey)
+        : -1;
+      const selectedDriver = selectedDriverIndex >= 0 ? MOMENTUM_DRIVER_DEFS[selectedDriverIndex] : null;
+      const selectedDriverScore = selectedDriverIndex >= 0 ? preview.driverScores[selectedDriverIndex] || 0 : null;
       const selectedMessage = selectedMomentumDriverKey ? preview.driverMessages[selectedMomentumDriverKey] : null;
+      const displayedScore = selectedDriverScore ?? preview.score;
+      const displayedStatus = selectedDriver ? selectedDriver.label : preview.statusLabel;
+      const displayedAriaLabel = selectedDriver ? `${selectedDriver.label} focus` : `${preview.statusLabel} momentum`;
+      lastMomentumAnimatedTargetScore = displayedScore;
+      lastMomentumAnimatedTargetBand = displayedStatus;
       renderMomentumDriverRows(driverTextsEl, preview.driverScores, {
         interactive: true,
         selectedKey: selectedMomentumDriverKey,
@@ -730,22 +737,26 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const nextSignature = JSON.stringify({
         preview: true,
         locked: !hasAdvancedInsights(),
-        score: preview.score,
-        status: preview.statusLabel,
+        score: displayedScore,
+        status: displayedStatus,
         selectedDriver: selectedMomentumDriverKey,
         drivers: preview.driverScores,
       });
       if (lastMomentumRenderSignature === nextSignature) return;
       lastMomentumRenderSignature = nextSignature;
-      applyMomentumVisualState({
+      animateMomentumToScore({
         dialEl,
         arcActiveEl,
         needleEl,
         scoreValueEl,
         scoreStatusEl,
-        score: preview.score,
-        ariaBandLabel: `${preview.statusLabel} momentum`,
-        statusLabel: preview.statusLabel,
+        targetScore: displayedScore,
+        targetBandLabel: displayedAriaLabel,
+        driverTextsEl,
+        targetDriverScores: preview.driverScores,
+        driverMessages: preview.driverMessages,
+        statusLabel: displayedStatus,
+        startDriverScores: preview.driverScores,
       });
       return;
     }

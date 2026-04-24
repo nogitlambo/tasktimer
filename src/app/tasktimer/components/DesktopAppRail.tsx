@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type MouseEvent as ReactMous
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
@@ -127,6 +127,13 @@ const NAV_ITEMS: NavItem[] = [
 const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "settings");
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
+const DESKTOP_ARCHIE_MEDIA_QUERY = "(min-width: 981px)";
+
+function shouldEnableDesktopWebArchie() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  if (isNativeOrFileRuntime()) return false;
+  return window.matchMedia(DESKTOP_ARCHIE_MEDIA_QUERY).matches;
+}
 
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
@@ -303,6 +310,7 @@ export default function DesktopAppRail({
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
+  const [isDesktopWebArchieEnabled, setIsDesktopWebArchieEnabled] = useState(false);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -402,6 +410,27 @@ export default function DesktopAppRail({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showRankLadderModal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      setIsDesktopWebArchieEnabled(false);
+      return;
+    }
+    const mediaQuery = window.matchMedia(DESKTOP_ARCHIE_MEDIA_QUERY);
+    const syncArchieAvailability = () => {
+      setIsDesktopWebArchieEnabled(shouldEnableDesktopWebArchie());
+    };
+    syncArchieAvailability();
+    mediaQuery.addEventListener("change", syncArchieAvailability);
+    return () => {
+      mediaQuery.removeEventListener("change", syncArchieAvailability);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showDesktopRail && isDesktopWebArchieEnabled) return;
+    setOnboardingState(null);
+  }, [isDesktopWebArchieEnabled, showDesktopRail]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
@@ -535,7 +564,9 @@ export default function DesktopAppRail({
           </div>
 
           <div className="desktopRailMiddleSection">
-            <ArchieAssistantWidget activePage={archieActivePage} onOnboardingStepChange={setOnboardingState} />
+            {isDesktopWebArchieEnabled ? (
+              <ArchieAssistantWidget activePage={archieActivePage} onOnboardingStepChange={setOnboardingState} />
+            ) : null}
           </div>
 
           <div className="desktopRailBottomSection">
@@ -603,7 +634,6 @@ export default function DesktopAppRail({
 
       {showMobileFooter ? (
         <>
-          <ArchieAssistantWidget activePage={archieActivePage} variant="mobile" />
           <div className="appFooterNav" aria-label="App pages">
             {NAV_ITEMS.filter((item) => item.showInMobileFooter !== false).map((item) =>
               renderMobileNavItem(item, navActivePage, useClientNavButtons)

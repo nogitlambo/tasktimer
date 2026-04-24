@@ -755,6 +755,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function registerDashboardEvents() {
+    const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
     ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     ctx.on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
     ctx.on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
@@ -774,8 +775,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
     ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick, true);
-    ctx.on(els.dashboardGrid, "click", handleDashboardGridClick);
-    ctx.on(els.dashboardGrid, "pointerdown", handleDashboardGridPointerDown);
+    ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
+    ctx.on(dashboardInteractionRoot, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
     ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);
     ctx.on(els.dashboardGrid, "dragover", handleDashboardDragOver);

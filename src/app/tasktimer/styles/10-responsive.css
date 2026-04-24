@@ -3923,3 +3923,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 }
 
+.mobileArchieAssistant{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
