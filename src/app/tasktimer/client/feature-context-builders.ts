@@ -302,7 +302,7 @@ type CreateTasksOptionsArgs = {
   isTaskSharedByOwner: (taskId: string) => boolean;
   confirm: Parameters<typeof createTaskTimerTasks>[0]["confirm"];
   closeConfirm: () => void;
-  openEdit: (index: number) => void;
+  openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;
   clearCheckpointBaseline: (taskId: string | null | undefined) => void;

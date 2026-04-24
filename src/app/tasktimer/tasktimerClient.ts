@@ -929,7 +929,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       isTaskSharedByOwner,
       confirm,
       closeConfirm,
-      openEdit: (index) => editTaskApi?.openEdit(index),
+      openEdit: (index, sourceEl) => editTaskApi?.openEdit(index, sourceEl),
       clearTaskTimeGoalFlow: (taskId) => sessionApi?.clearTaskTimeGoalFlow(taskId),
       flushPendingFocusSessionNoteSave: (taskId) => sessionApi?.flushPendingFocusSessionNoteSave(taskId),
       clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),

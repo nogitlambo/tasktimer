@@ -655,15 +655,23 @@ body[data-theme="purple"] .rankLadderItemFlag{
 #editOverlay{
   align-items: stretch;
   justify-content: stretch;
-  opacity: 0;
-  transition: opacity .22s ease;
+  opacity: 1;
+  --edit-origin-translate-x: 0px;
+  --edit-origin-translate-y: 18px;
+  --edit-origin-scale-x: 1;
+  --edit-origin-scale-y: 1;
 }
 
-#editOverlay.isOpen{
+#editOverlay::before{
+  opacity: 0;
+  transition: opacity .26s ease;
+}
+
+#editOverlay.isOpen::before{
   opacity: 1;
 }
 
-#editOverlay.isClosing{
+#editOverlay.isClosing::before{
   opacity: 0;
 }
 
@@ -677,20 +685,51 @@ body[data-theme="purple"] .rankLadderItemFlag{
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
+  transform-origin: 0 0;
   transform: translateY(18px);
+  will-change: opacity, transform;
   transition:
-    opacity .22s ease,
-    transform .22s cubic-bezier(.22,.78,.2,1);
+    opacity .26s ease,
+    transform .26s cubic-bezier(.16,.84,.24,1);
+}
+
+#editOverlay.isMorphingFromTask .modal{
+  opacity: .18;
+  transform:
+    translate(var(--edit-origin-translate-x), var(--edit-origin-translate-y))
+    scale(var(--edit-origin-scale-x), var(--edit-origin-scale-y));
 }
 
 #editOverlay.isOpen .modal{
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(0, 0) scale(1, 1);
 }
 
 #editOverlay.isClosing .modal{
   opacity: 0;
   transform: translateY(18px);
+}
+
+#editOverlay.isMorphingFromTask.isClosing .modal{
+  opacity: .18;
+  transform:
+    translate(var(--edit-origin-translate-x), var(--edit-origin-translate-y))
+    scale(var(--edit-origin-scale-x), var(--edit-origin-scale-y));
+}
+
+@media (prefers-reduced-motion: reduce){
+  #editOverlay::before,
+  #editOverlay .modal{
+    transition: opacity .12s ease;
+  }
+
+  #editOverlay .modal,
+  #editOverlay.isMorphingFromTask .modal,
+  #editOverlay.isOpen .modal,
+  #editOverlay.isClosing .modal,
+  #editOverlay.isMorphingFromTask.isClosing .modal{
+    transform: none;
+  }
 }
 
 #editOverlay .editTaskModalFrame{

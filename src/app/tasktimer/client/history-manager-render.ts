@@ -26,6 +26,7 @@ type RenderArgs = {
   formatDateTime: (value: number) => string;
   getTaskMetaForHistoryId: (taskId: string) => { name: string; color?: string | null; deleted?: boolean };
   getHistoryEntryNote: (entry: unknown) => string;
+  canUseManualEntry: boolean;
   flashedRowId?: string | null;
 };
 
@@ -102,6 +103,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     formatDateTime,
     getTaskMetaForHistoryId,
     getHistoryEntryNote,
+    canUseManualEntry,
     flashedRowId = null,
   } = args;
   const capturedExpanded = captureExpandedGroups(existingListEl);
@@ -237,7 +239,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
         ? `<input class="hmBulkCheckbox hmBulkTaskChk" type="checkbox" data-task="${taskId}" ${taskChecked ? "checked" : ""} />`
         : "";
       const badge = meta.deleted ? '<span class="hmBadge deleted">Deleted</span>' : "";
-      const taskActions = !meta.deleted
+      const taskActions = !meta.deleted && canUseManualEntry
         ? `
             <button class="iconBtn hmAddBtn" type="button" data-task="${taskId}" aria-label="Add manual history entry" title="Add manual history entry">+</button>
           `

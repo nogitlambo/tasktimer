@@ -37,7 +37,7 @@ const pricingTiers = [
       "Richer dashboard analytics and insights",
       "XP award boosters",
       "Unlimited session history",
-      "History Manager",
+      "Manual history entry",
       "Add Friends and task sharing",
       "Backup Import/Export",
     ],

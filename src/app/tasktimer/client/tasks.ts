@@ -458,7 +458,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       if (inTopRow && !inActions) ctx.openFocusMode(i);
       return;
     }
-    const { action } = delegatedAction;
+    const { action, element } = delegatedAction;
     if ((action === "shareTask" || action === "unshareTask") && !canUseSocialFeatures()) {
       ctx.showUpgradePrompt("Task sharing and friends", "pro");
       return;
@@ -468,7 +468,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       stop: () => stopTask(i),
       reset: () => resetTask(i),
       delete: () => ctx.deleteTask(i),
-      edit: () => ctx.openEdit(i),
+      edit: () => ctx.openEdit(i, element as HTMLElement),
       history: () => openHistory(i),
       duplicate: () => duplicateTask(i),
       editName: () => ctx.openFocusMode(i),

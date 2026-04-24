@@ -27,8 +27,10 @@ import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from ".
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
-  const EDIT_OVERLAY_SLIDE_MS = 220;
+  const EDIT_OVERLAY_SLIDE_MS = 260;
   let editOverlayHideTimer: number | null = null;
+  let editOverlayOpeningTimer: number | null = null;
+  let editOverlayOriginRect: { left: number; top: number; width: number; height: number } | null = null;
 
   function clearEditOverlayHideTimer() {
     if (editOverlayHideTimer == null) return;
@@ -36,30 +38,121 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     editOverlayHideTimer = null;
   }
 
-  function showEditOverlay() {
+  function clearEditOverlayOpeningTimer() {
+    if (editOverlayOpeningTimer == null) return;
+    window.clearTimeout(editOverlayOpeningTimer);
+    editOverlayOpeningTimer = null;
+  }
+
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+    } catch {
+      return false;
+    }
+  }
+
+  function clearEditOverlayOrigin(overlay?: HTMLElement | null) {
+    const target = overlay || (els.editOverlay as HTMLElement | null);
+    editOverlayOriginRect = null;
+    if (!target) return;
+    target.classList.remove("isMorphingFromTask", "isOpening");
+    target.style.removeProperty("--edit-origin-translate-x");
+    target.style.removeProperty("--edit-origin-translate-y");
+    target.style.removeProperty("--edit-origin-scale-x");
+    target.style.removeProperty("--edit-origin-scale-y");
+  }
+
+  function applyEditOverlayOriginVars(
+    overlay: HTMLElement,
+    modal: HTMLElement,
+    sourceRect: { left: number; top: number; width: number; height: number }
+  ) {
+    const modalRect = modal.getBoundingClientRect();
+    if (
+      sourceRect.width <= 0 ||
+      sourceRect.height <= 0 ||
+      modalRect.width <= 0 ||
+      modalRect.height <= 0
+    ) {
+      return false;
+    }
+    overlay.style.setProperty("--edit-origin-translate-x", `${sourceRect.left - modalRect.left}px`);
+    overlay.style.setProperty("--edit-origin-translate-y", `${sourceRect.top - modalRect.top}px`);
+    overlay.style.setProperty("--edit-origin-scale-x", String(Math.max(0.015, sourceRect.width / modalRect.width)));
+    overlay.style.setProperty("--edit-origin-scale-y", String(Math.max(0.015, sourceRect.height / modalRect.height)));
+    return true;
+  }
+
+  function refreshEditOverlayOriginFromStoredRect(overlay: HTMLElement) {
+    const modal = overlay.querySelector<HTMLElement>(".modal") || null;
+    if (!modal || !editOverlayOriginRect || prefersReducedMotion()) return false;
+    return applyEditOverlayOriginVars(overlay, modal, editOverlayOriginRect);
+  }
+
+  function setEditOverlayOrigin(sourceEl?: HTMLElement | null) {
+    const overlay = els.editOverlay as HTMLElement | null;
+    const modal = overlay?.querySelector<HTMLElement>(".modal") || null;
+    if (!overlay || !modal || !sourceEl || prefersReducedMotion()) {
+      clearEditOverlayOrigin(overlay);
+      return false;
+    }
+    const sourceRect = sourceEl.getBoundingClientRect();
+    const nextOriginRect = {
+      left: sourceRect.left,
+      top: sourceRect.top,
+      width: sourceRect.width,
+      height: sourceRect.height,
+    };
+    if (!applyEditOverlayOriginVars(overlay, modal, nextOriginRect)) {
+      clearEditOverlayOrigin(overlay);
+      return false;
+    }
+    editOverlayOriginRect = nextOriginRect;
+    overlay.classList.add("isMorphingFromTask");
+    return true;
+  }
+
+  function showEditOverlay(sourceEl?: HTMLElement | null) {
     const overlay = els.editOverlay as HTMLElement | null;
     if (!overlay) return;
     clearEditOverlayHideTimer();
+    clearEditOverlayOpeningTimer();
     overlay.style.display = "flex";
-    overlay.classList.remove("isClosing");
+    overlay.classList.remove("isOpen", "isClosing", "isOpening", "isMorphingFromTask");
+    const hasOrigin = setEditOverlayOrigin(sourceEl);
+    if (hasOrigin) overlay.classList.add("isOpening");
     void overlay.offsetHeight;
     overlay.classList.add("isOpen");
+    if (hasOrigin) {
+      editOverlayOpeningTimer = window.setTimeout(() => {
+        overlay.classList.remove("isOpening");
+        editOverlayOpeningTimer = null;
+      }, EDIT_OVERLAY_SLIDE_MS);
+    }
   }
 
   function hideEditOverlay(immediate = false) {
     const overlay = els.editOverlay as HTMLElement | null;
     if (!overlay) return;
     clearEditOverlayHideTimer();
+    clearEditOverlayOpeningTimer();
     if (immediate) {
-      overlay.classList.remove("isOpen", "isClosing");
+      overlay.classList.remove("isOpen", "isClosing", "isOpening");
       overlay.style.display = "none";
+      clearEditOverlayOrigin(overlay);
       return;
     }
+    if (!editOverlayOriginRect || !refreshEditOverlayOriginFromStoredRect(overlay)) {
+      clearEditOverlayOrigin(overlay);
+    }
+    overlay.classList.remove("isOpening");
     overlay.classList.remove("isOpen");
     overlay.classList.add("isClosing");
     editOverlayHideTimer = window.setTimeout(() => {
-      overlay.classList.remove("isClosing");
+      overlay.classList.remove("isClosing", "isOpening");
       overlay.style.display = "none";
+      clearEditOverlayOrigin(overlay);
       editOverlayHideTimer = null;
     }, EDIT_OVERLAY_SLIDE_MS);
   }
@@ -857,7 +950,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     renderElapsedPadDisplay();
   }
 
-  function openEdit(i: number) {
+  function openEdit(i: number, sourceEl?: HTMLElement | null) {
     const sourceTask = ctx.getTasks()[i];
     if (!sourceTask) return;
     const t = ctx.cloneTaskForEdit(sourceTask);
@@ -886,7 +979,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditDraftSnapshot(ctx.buildEditDraftSnapshot(t));
     ctx.clearEditValidationState();
     ctx.syncEditSaveAvailability(t);
-    showEditOverlay();
+    showEditOverlay(sourceEl);
   }
 
   function closeEdit(saveChanges: boolean) {

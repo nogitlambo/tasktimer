@@ -57,3 +57,5 @@ next-env.d.ts
 /workspace/package.json
 /workspace/firebase-service-account.json
 /workspace/*firebase-adminsdk-*.json
+tasktimer-prod-*.json
+*firebase-adminsdk-*.json

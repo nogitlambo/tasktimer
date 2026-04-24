@@ -869,6 +869,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       formatDateTime: ctx.formatDateTime,
       getTaskMetaForHistoryId,
       getHistoryEntryNote: (entry) => ctx.getHistoryEntryNote(entry),
+      canUseManualEntry: canUseAdvancedHistory(),
       flashedRowId: flashedManualEntryRowId,
     });
     ctx.setHmExpandedTaskGroups(renderResult.expandedTaskGroups);
@@ -888,21 +889,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function openHistoryManager() {
-    if (!canUseAdvancedHistory()) {
-      if (els.historyManagerScreen) {
-        (els.historyManagerScreen as HTMLElement).style.display = "block";
-        (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "false");
-      }
-      if (els.hmList) {
-        els.hmList.innerHTML =
-          '<div class="hmEmpty">History Manager is available on Pro. Basic inline history remains available on the Tasks page.</div>';
-      }
-      if (els.historyManagerBulkBtn) els.historyManagerBulkBtn.disabled = true;
-      if (els.historyManagerBulkDeleteBtn) els.historyManagerBulkDeleteBtn.style.display = "none";
-      if (els.historyManagerExportBtn) els.historyManagerExportBtn.disabled = true;
-      if (els.historyManagerImportBtn) els.historyManagerImportBtn.disabled = true;
-      return;
-    }
     if (isHistoryManagerOpen()) {
       if (!historyManagerLoading) renderHistoryManager();
       return;
@@ -994,10 +980,19 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function openManualEntryDraft(taskId: string) {
+    if (!canUseAdvancedHistory()) {
+      ctx.showUpgradePrompt("Manual history entry", "pro");
+      return;
+    }
     openManualEntryOverlay(taskId);
   }
 
   function saveManualEntryDraft(taskId: string) {
+    if (!canUseAdvancedHistory()) {
+      ctx.showUpgradePrompt("Manual history entry", "pro");
+      closeManualEntryOverlay({ discardDraft: true });
+      return;
+    }
     const draft = manualEntryDraftsByTaskId[taskId];
     if (!draft) return;
     const meta = getTaskMetaForHistoryId(taskId);
@@ -1037,10 +1032,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
 
   function registerHistoryManagerEvents() {
     ctx.on(els.historyManagerBtn, "click", () => {
-      if (!canUseAdvancedHistory()) {
-        ctx.showUpgradePrompt("History Manager", "pro");
-        return;
-      }
       ctx.navigateToAppRoute("/history-manager");
     });
     ctx.on(els.historyManagerExportBtn, "click", () => {
@@ -1070,20 +1061,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       openHistoryManagerGenerateConfigDialog();
     });
     ctx.on(els.historyManagerBulkBtn, "click", () => {
-      if (!canUseAdvancedHistory()) {
-        ctx.showUpgradePrompt("History bulk editing", "pro");
-        return;
-      }
       const nextBulkEditMode = !ctx.getHmBulkEditMode();
       ctx.setHmBulkEditMode(nextBulkEditMode);
       if (!nextBulkEditMode) ctx.setHmBulkSelectedRows(new Set<string>());
       renderHistoryManager();
     });
     ctx.on(els.historyManagerBulkDeleteBtn, "click", () => {
-      if (!canUseAdvancedHistory()) {
-        ctx.showUpgradePrompt("History bulk deletion", "pro");
-        return;
-      }
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const selected = Array.from(hmBulkSelectedRows);
       if (!selected.length) return;

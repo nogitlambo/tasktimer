@@ -1094,10 +1094,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }
     const manageBtn = ui.root.querySelector('[data-history-action="manage"]') as HTMLButtonElement | null;
     if (manageBtn) {
-      const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
-      manageBtn.disabled = !hasHistoryEntitlement;
-      manageBtn.setAttribute("aria-disabled", String(!hasHistoryEntitlement));
-      manageBtn.title = hasHistoryEntitlement ? "Manage" : "Pro feature: History Manager";
+      manageBtn.disabled = false;
+      manageBtn.setAttribute("aria-disabled", "false");
+      manageBtn.title = "Manage";
     }
     const pinBtn = ui.root.querySelector('[data-history-action="pin"]') as HTMLButtonElement | null;
     if (pinBtn) {
@@ -1366,10 +1365,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           renderHistory(taskId);
         },
         manage: () => {
-          if (!ctx.hasEntitlement("advancedHistory")) {
-            ctx.showUpgradePrompt("History Manager", "pro");
-            return;
-          }
           ctx.navigateToAppRoute(`/history-manager?taskId=${encodeURIComponent(taskId)}&returnTo=tasks`);
         },
         analyse: () => {

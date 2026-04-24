@@ -5,7 +5,7 @@ const dashboardPanelOptions = [
   { id: "xp-progress", label: "XP Progress" },
   { id: "week-hours", label: "Today" },
   { id: "weekly-time-goals", label: "This Week" },
-  { id: "tasks-completed", label: "Tasks Completed" },
+  { id: "tasks-completed", label: "Completed" },
   { id: "momentum", label: "Momentum" },
   { id: "avg-session-by-task", label: "Avg Session by Task" },
   { id: "timeline", label: "Timeline" },
@@ -166,8 +166,13 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                   </section>
 
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
-                    <div className="dashboardCardTitle">Tasks Completed</div>
-                    <div className="dashboardBigValue" id="dashboardTasksCompletedValue">0</div>
+                    <div className="dashboardCardTitle">Completed</div>
+                    <div className="dashboardBigValue dashboardTasksCompletedValue" id="dashboardTasksCompletedValue">
+                      <span className="dashboardTasksCompletedDone">0</span>
+                      <span className="dashboardTasksCompletedSlash">/</span>
+                      <span className="dashboardTasksCompletedTotal">0</span>
+                    </div>
+                    <div className="dashboardTasksCompletedTicks" id="dashboardTasksCompletedTicks" aria-hidden="true" />
                     <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
                     <div className="dashboardSummaryStatus" aria-hidden="true" />
                     <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
@@ -272,27 +277,27 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
                           <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/20</span></li>
                           <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
                         </ul>
-                        <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
-                          <div className="dashboardMomentumFooterTitle">
-                            <span className="dashboardMomentumFooterTitleIcon" aria-hidden="true">
-                              <svg viewBox="0 0 24 24" focusable="false">
-                                <circle cx="12" cy="12" r="4.25" />
-                                <path d="M12 3.5v3" />
-                                <path d="M12 17.5v3" />
-                                <path d="M3.5 12h3" />
-                                <path d="M17.5 12h3" />
-                                <path d="M6 6l2.2 2.2" />
-                                <path d="M15.8 15.8 18 18" />
-                                <path d="M6 18l2.2-2.2" />
-                                <path d="M15.8 8.2 18 6" />
-                              </svg>
-                            </span>
-                            <span>Momentum Insight</span>
-                          </div>
-                          <p className="dashboardMomentumFooterMessage" id="dashboardMomentumFooterMessage" aria-live="polite">
-                            Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
-                          </p>
-                        </section>
+                      </section>
+                      <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
+                        <div className="dashboardMomentumFooterTitle">
+                          <span className="dashboardMomentumFooterTitleIcon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false">
+                              <circle cx="12" cy="12" r="4.25" />
+                              <path d="M12 3.5v3" />
+                              <path d="M12 17.5v3" />
+                              <path d="M3.5 12h3" />
+                              <path d="M17.5 12h3" />
+                              <path d="M6 6l2.2 2.2" />
+                              <path d="M15.8 15.8 18 18" />
+                              <path d="M6 18l2.2-2.2" />
+                              <path d="M15.8 8.2 18 6" />
+                            </svg>
+                          </span>
+                          <span>Momentum Insight</span>
+                        </div>
+                        <p className="dashboardMomentumFooterMessage" id="dashboardMomentumFooterMessage" aria-live="polite">
+                          Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
+                        </p>
                       </section>
                     </section>
 

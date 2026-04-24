@@ -262,75 +262,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       .join("");
   }
 
-  function renderLockedAvgSessionMock(
-    canvas: HTMLCanvasElement | null,
-    wrap: HTMLElement | null,
-    emptyEl: HTMLElement | null
-  ) {
-    if (!canvas || !wrap) return;
-    const rect = wrap.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const width = Math.max(220, Math.floor(rect.width || wrap.clientWidth || 320));
-    const height = Math.max(180, Math.floor(rect.height || wrap.clientHeight || 220));
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = "100%";
-    canvas.style.height = `${height}px`;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
-
-    const labels = ["Writing", "Study", "Planning", "Review"];
-    const values = [82, 64, 48, 36];
-    const chartLeft = 58;
-    const chartRight = width - 22;
-    const chartTop = 16;
-    const chartBottom = height - 42;
-    const chartWidth = chartRight - chartLeft;
-    const chartHeight = chartBottom - chartTop;
-    const maxValue = Math.max(...values, 1);
-    const stepX = chartWidth / labels.length;
-
-    context.strokeStyle = "rgba(180, 220, 240, 0.12)";
-    context.lineWidth = 1;
-    for (let i = 0; i <= 4; i += 1) {
-      const y = chartTop + (chartHeight / 4) * i;
-      context.beginPath();
-      context.moveTo(chartLeft, y);
-      context.lineTo(chartRight, y);
-      context.stroke();
-    }
-
-    context.font = "10px var(--font-readable), system-ui";
-    context.fillStyle = "rgba(182, 210, 224, 0.72)";
-    context.textAlign = "right";
-    context.textBaseline = "middle";
-    [90, 60, 30, 0].forEach((value, idx) => {
-      const y = chartTop + (chartHeight / 3) * idx;
-      context.fillText(`${value}m`, chartLeft - 10, y);
-    });
-
-    labels.forEach((label, idx) => {
-      const value = values[idx] || 0;
-      const barWidth = Math.min(42, stepX * 0.56);
-      const x = chartLeft + stepX * idx + (stepX - barWidth) / 2;
-      const barHeight = Math.round((value / maxValue) * (chartHeight - 6));
-      const y = chartBottom - barHeight;
-      const gradient = context.createLinearGradient(x, y, x + barWidth, chartBottom);
-      gradient.addColorStop(0, "rgba(53,232,255,0.92)");
-      gradient.addColorStop(1, "rgba(0,207,200,0.7)");
-      context.fillStyle = gradient;
-      context.fillRect(x, y, barWidth, barHeight);
-      context.fillStyle = "rgba(226, 242, 250, 0.82)";
-      context.textAlign = "center";
-      context.textBaseline = "top";
-      context.fillText(label, x + barWidth / 2, chartBottom + 10);
-    });
-
-    if (emptyEl) emptyEl.style.display = "none";
-  }
-
   function cancelMomentumAnimation() {
     if (momentumAnimationStartTimerId != null) {
       window.clearTimeout(momentumAnimationStartTimerId);
@@ -670,6 +601,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         loggedMs: preview.loggedMs,
         projectedMs: preview.projectedMs,
         runningMs: preview.runningMs,
+        activeMarkerRunning: preview.runningMs > 0,
+        activeMarkerPct: preview.goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((preview.projectedMs / preview.goalTotalMs) * 100))) : 0,
         emptyLabel: "Weekly time goal progress: no weekly time goals enabled",
         activeLabel: "Weekly time goal progress",
         projectedLabel: "projected if running tasks are logged",
@@ -735,49 +668,28 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectedMs = loggedMs + runningMs;
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
-    const showProjectionMarker = totalGoalMs > 0 && runningMs > 0;
-    const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
+    const anyRunningTask = getDashboardFilteredTasks().some((task) => !!task?.running);
     const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs);
     if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";
     }
-    if (progressFillEl) progressFillEl.style.width = `${progressPct}%`;
-    if (projectionFillEl) {
-      if (showProjectionMarker && projectedDeltaPct > 0) {
-        projectionFillEl.style.display = "";
-        projectionFillEl.style.left = `${progressPct}%`;
-        projectionFillEl.style.width = `${projectedDeltaPct}%`;
-      } else {
-        projectionFillEl.style.display = "none";
-        projectionFillEl.style.left = "0%";
-        projectionFillEl.style.width = "0%";
-      }
-    }
-    if (projectionMarkerEl) {
-      if (showProjectionMarker) {
-        projectionMarkerEl.style.display = "";
-        projectionMarkerEl.classList.toggle("isAtEnd", projectedPct >= 100);
-        if (projectedPct >= 100) projectionMarkerEl.style.left = "";
-        else projectionMarkerEl.style.left = `${projectedPct}%`;
-      } else {
-        projectionMarkerEl.style.display = "none";
-        projectionMarkerEl.classList.remove("isAtEnd");
-        projectionMarkerEl.style.left = "";
-      }
-    }
-    if (progressBarEl) {
-      progressBarEl.setAttribute("aria-valuenow", String(progressPct));
-      progressBarEl.setAttribute(
-        "aria-label",
-        totalGoalMs > 0
-          ? showProjectionMarker
-            ? `Weekly time goal progress: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(totalGoalMs)} logged, ${formatDashboardDurationShort(projectedMs)} projected if running tasks are logged`
-            : `Weekly time goal progress: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(totalGoalMs)} logged`
-          : "Weekly time goal progress: no weekly time goals enabled"
-      );
-    }
+    applyDashboardGoalProgressUi({
+      progressBarEl,
+      progressFillEl,
+      projectionFillEl,
+      projectionMarkerEl,
+      goalTotalMs: totalGoalMs,
+      loggedMs,
+      projectedMs,
+      runningMs,
+      activeMarkerRunning: anyRunningTask,
+      activeMarkerPct: totalGoalMs > 0 ? projectedPct : progressPct,
+      emptyLabel: "Weekly time goal progress: no weekly time goals enabled",
+      activeLabel: "Weekly time goal progress",
+      projectedLabel: "projected if running tasks are logged",
+    });
     if (progressTextEl) {
       progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
     }
@@ -1026,6 +938,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     loggedMs: number;
     projectedMs: number;
     runningMs: number;
+    activeMarkerRunning: boolean;
+    activeMarkerPct: number;
     emptyLabel: string;
     activeLabel: string;
     projectedLabel?: string;
@@ -1039,6 +953,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       loggedMs,
       projectedMs,
       runningMs,
+      activeMarkerRunning,
+      activeMarkerPct,
       emptyLabel,
       activeLabel,
       projectedLabel,
@@ -1046,12 +962,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     const progressPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / goalTotalMs) * 100))) : 0;
     const projectedPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / goalTotalMs) * 100))) : 0;
-    const showProjectionMarker = goalTotalMs > 0 && runningMs > 0;
-    const projectedDeltaPct = showProjectionMarker ? Math.max(0, projectedPct - progressPct) : 0;
+    const showProjectionFill = goalTotalMs > 0 && runningMs > 0;
+    const projectedDeltaPct = showProjectionFill ? Math.max(0, projectedPct - progressPct) : 0;
+    const markerPct = Math.max(0, Math.min(100, Number.isFinite(activeMarkerPct) ? activeMarkerPct : 0));
 
     if (progressFillEl) progressFillEl.style.width = `${progressPct}%`;
     if (projectionFillEl) {
-      if (showProjectionMarker && projectedDeltaPct > 0) {
+      if (showProjectionFill && projectedDeltaPct > 0) {
         projectionFillEl.style.display = "";
         projectionFillEl.style.left = `${progressPct}%`;
         projectionFillEl.style.width = `${projectedDeltaPct}%`;
@@ -1062,13 +979,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }
     }
     if (projectionMarkerEl) {
-      if (showProjectionMarker) {
+      if (activeMarkerRunning) {
         projectionMarkerEl.style.display = "";
-        projectionMarkerEl.classList.toggle("isAtEnd", projectedPct >= 100);
-        if (projectedPct >= 100) projectionMarkerEl.style.left = "";
-        else projectionMarkerEl.style.left = `${projectedPct}%`;
+        projectionMarkerEl.classList.toggle("isAtStart", markerPct <= 0);
+        projectionMarkerEl.classList.toggle("isAtEnd", markerPct >= 100);
+        if (markerPct >= 100) projectionMarkerEl.style.left = "";
+        else projectionMarkerEl.style.left = `${markerPct}%`;
       } else {
         projectionMarkerEl.style.display = "none";
+        projectionMarkerEl.classList.remove("isAtStart");
         projectionMarkerEl.classList.remove("isAtEnd");
         projectionMarkerEl.style.left = "";
       }
@@ -1078,32 +997,48 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       progressBarEl.setAttribute(
         "aria-label",
         goalTotalMs > 0
-          ? showProjectionMarker
+          ? showProjectionFill
             ? `${activeLabel}: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(goalTotalMs)} logged, ${formatDashboardDurationShort(projectedMs)} ${projectedLabel || "projected if running tasks are logged"}`
             : `${activeLabel}: ${formatDashboardDurationShort(loggedMs)} of ${formatDashboardDurationShort(goalTotalMs)} logged`
           : emptyLabel
       );
     }
 
-    return { progressPct, projectedPct, showProjectionMarker };
+    return { progressPct, projectedPct, showProjectionFill, activeMarkerRunning };
   }
 
   function renderDashboardTasksCompletedCard() {
     const valueEl = document.getElementById("dashboardTasksCompletedValue") as HTMLElement | null;
+    const ticksEl = document.getElementById("dashboardTasksCompletedTicks") as HTMLElement | null;
     const metaEl = document.getElementById("dashboardTasksCompletedMeta") as HTMLElement | null;
     const cardEl = valueEl?.closest(".dashboardTasksCompletedCard") as HTMLElement | null;
 
+    const renderCompletionRatio = (completed: number, total: number) => {
+      const completedCount = Math.max(0, Math.round(completed));
+      const totalCount = Math.max(0, Math.round(total));
+      if (!valueEl) return;
+      valueEl.innerHTML = `<span class="dashboardTasksCompletedDone">${completedCount}</span><span class="dashboardTasksCompletedSlash">/</span><span class="dashboardTasksCompletedTotal">${totalCount}</span>`;
+      if (ticksEl) {
+        ticksEl.innerHTML = Array.from({ length: totalCount }, (_, index) => {
+          const isComplete = index < completedCount;
+          return `<span class="dashboardTasksCompletedTick${isComplete ? " isComplete" : ""}" aria-hidden="true"><span class="dashboardTasksCompletedTickMark">✓</span></span>`;
+        }).join("");
+      }
+    };
+
     if (isOnboardingDashboardPreviewActive()) {
       const preview = ONBOARDING_DASHBOARD_PREVIEW.tasksCompleted;
-      if (valueEl) valueEl.textContent = String(preview.total);
+      const previewDailyOpportunityCount = Math.max(1, Math.ceil(Math.max(0, Number(preview.dailyCompletedDays || 0)) / 7));
+      const previewTotalPossible = previewDailyOpportunityCount * 7 + Math.max(0, Number(preview.weeklyCompletedTasks || 0));
+      renderCompletionRatio(preview.total, previewTotalPossible);
       if (metaEl) {
-        metaEl.textContent = preview.metaLabel;
-        metaEl.style.display = "";
+        metaEl.textContent = "";
+        metaEl.style.display = "none";
       }
       if (cardEl) {
         cardEl.setAttribute(
           "aria-label",
-          `Task completion. ${preview.total} goal completions this week: ${preview.dailyCompletedDays} daily and ${preview.weeklyCompletedTasks} weekly.`
+          `Task completion. ${preview.total} of ${previewTotalPossible} weekly completion opportunities complete: ${preview.dailyCompletedDays} daily and ${preview.weeklyCompletedTasks} weekly.`
         );
       }
       return;
@@ -1173,10 +1108,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
 
     const totalCompleted = dailyCompletedDays + weeklyCompletedTasks;
-    const hasData = totalCompleted > 0;
+    const totalPossible = dailyTaskGoalMinutes.size * 7 + weeklyTaskGoalMinutes.size;
+    const hasData = totalCompleted > 0 || totalPossible > 0;
     if (shouldHoldDashboardWidget("tasksCompleted", hasData)) return;
 
-    if (valueEl) valueEl.textContent = String(totalCompleted);
+    renderCompletionRatio(totalCompleted, totalPossible);
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";
@@ -1184,9 +1120,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (cardEl) {
       cardEl.setAttribute(
         "aria-label",
-        totalCompleted > 0
-          ? `Task completion. ${totalCompleted} goal completions this week: ${dailyCompletedDays} daily and ${weeklyCompletedTasks} weekly.`
-          : "Task completion. No weekly goal completions yet."
+        totalPossible > 0
+          ? `Task completion. ${totalCompleted} of ${totalPossible} weekly completion opportunities complete: ${dailyCompletedDays} daily and ${weeklyCompletedTasks} weekly.`
+          : "Task completion. 0 of 0 weekly completion opportunities complete."
       );
     }
   }
@@ -1217,6 +1153,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         loggedMs: preview.loggedMs,
         projectedMs: preview.projectedMs,
         runningMs: preview.runningMs,
+        activeMarkerRunning: preview.runningMs > 0,
+        activeMarkerPct: preview.goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((preview.projectedMs / preview.goalTotalMs) * 100))) : 0,
         emptyLabel: "Today's time goal progress: no daily time goals enabled",
         activeLabel: "Today's time goal progress",
         projectedLabel: "projected if running tasks are logged",
@@ -1298,6 +1236,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       return sum + elapsedMs;
     }, 0);
     const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalInProgressMs;
+    const dailyGoalProgressPct =
+      totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalLoggedMs / totalDailyGoalMs) * 100))) : 0;
+    const dailyGoalProjectedPct =
+      totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalProjectedMs / totalDailyGoalMs) * 100))) : 0;
+    const anyRunningTask = getDashboardFilteredTasks().some((task) => !!task?.running);
 
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
@@ -1311,6 +1254,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       loggedMs: dailyGoalLoggedMs,
       projectedMs: dailyGoalProjectedMs,
       runningMs: dailyGoalInProgressMs,
+      activeMarkerRunning: anyRunningTask,
+      activeMarkerPct: totalDailyGoalMs > 0 ? dailyGoalProjectedPct : dailyGoalProgressPct,
       emptyLabel: "Today's time goal progress: no daily time goals enabled",
       activeLabel: "Today's time goal progress",
       projectedLabel: "projected if running tasks are logged",
@@ -2212,20 +2157,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!canvas) return;
     const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
     if (!wrap) return;
-    if (isOnboardingDashboardPreviewActive()) {
-      setDashboardPlanLockedState(cardEl, !hasAdvancedInsights());
-      if (titleEl) titleEl.textContent = "Avg Session by Task (Example)";
-      if (rangeLabelEl) rangeLabelEl.textContent = "Past 7 Days";
-      renderLockedAvgSessionMock(canvas, wrap, emptyEl);
-      return;
-    }
-    if (!hasAdvancedInsights()) {
-      setDashboardPlanLockedState(cardEl, true);
-      if (titleEl) titleEl.textContent = "Avg Session by Task (Example)";
-      if (rangeLabelEl) rangeLabelEl.textContent = "Past 7 Days";
-      renderLockedAvgSessionMock(canvas, wrap, emptyEl);
-      return;
-    }
     setDashboardPlanLockedState(cardEl, false);
     const rows = getDashboardAvgSessionRows(range, nowMs());
     if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;

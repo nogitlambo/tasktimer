@@ -36,6 +36,7 @@ describe("renderHistoryManagerHtml", () => {
         const note = typeof entry === "object" && entry && "note" in entry ? (entry as { note?: unknown }).note : "";
         return String(note || "");
       },
+      canUseManualEntry: true,
     };
   }
 
@@ -51,6 +52,22 @@ describe("renderHistoryManagerHtml", () => {
 
     expect(result.html).toContain('class="iconBtn hmAddBtn" type="button" data-task="task-1"');
     expect(result.html).not.toContain('data-task="task-2" aria-label="Add manual history entry"');
+  });
+
+  it("hides add button when manual entry is locked", () => {
+    const tasks = [
+      { id: "task-1", name: "Active Task", order: 0 } as Task,
+    ];
+    const historyByTaskId = {
+      "task-1": [{ ts: Date.UTC(2026, 3, 22, 1), ms: 60000, name: "Active Task" }],
+    };
+    const result = renderHistoryManagerHtml({
+      ...buildArgs(tasks, historyByTaskId),
+      canUseManualEntry: false,
+    });
+
+    expect(result.html).not.toContain("hmAddBtn");
+    expect(result.html).not.toContain("Add manual history entry");
   });
 
   it("keeps manual entry creation out of the list markup", () => {
