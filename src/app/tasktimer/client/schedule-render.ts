@@ -66,14 +66,8 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
   const visibleDays = ctx.scheduleRuntime.getVisibleDays();
   const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
-  const earliestScheduledEntry = scheduled[0] ?? null;
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);
-  const scheduledCountByTaskId = scheduled.reduce<Record<string, number>>((acc, entry) => {
-    const taskId = String(entry.task.id || "");
-    acc[taskId] = (acc[taskId] || 0) + 1;
-    return acc;
-  }, {});
   const timeLabels = Array.from({ length: 24 * 60 / SCHEDULE_LABEL_MINUTES }, (_, index) => {
     const minutes = index * SCHEDULE_LABEL_MINUTES;
     return `<div class="scheduleTimeLabel" style="height:${SCHEDULE_LABEL_MINUTES * SCHEDULE_MINUTE_PX}px">${ctx.escapeHtmlUI(
@@ -90,40 +84,17 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
           const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
           const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
-          const earliestClass =
-            earliestScheduledEntry &&
-            earliestScheduledEntry.day === entry.day &&
-            earliestScheduledEntry.startMinutes === entry.startMinutes &&
-            String(earliestScheduledEntry.task.id || "") === String(entry.task.id || "")
-              ? " isEarliestScheduledTask"
-              : "";
           const recurringTask = isRecurringDailyScheduleTask(entry.task);
-          const showNormalizeAction = (scheduledCountByTaskId[String(entry.task.id || "")] || 0) > 1;
-          const recurringAction = showNormalizeAction
-            ? `<button class="iconBtn scheduleTaskCardConvertBtn" data-schedule-normalize="${ctx.escapeHtmlUI(
-                String(entry.task.id || "")
-              )}" type="button"
-              aria-label="${ctx.escapeHtmlUI(
-                `${entry.task.plannedStartOpenEnded ? "Disable" : "Enable"} flexible scheduling for ${String(entry.task.name || "Task")}`
-              )}" title="${ctx.escapeHtmlUI(
-                entry.task.plannedStartOpenEnded
-                  ? `Disable flexible scheduling for ${String(entry.task.name || "Task")}`
-                  : `Enable flexible scheduling for ${String(entry.task.name || "Task")}`
-              )}">${entry.task.plannedStartOpenEnded ? "Flexible" : "Recurring"}</button>`
-            : "";
           const recurringBadge = recurringTask
             ? `<span class="scheduleTaskCardRecurringBadge" aria-label="${
                 entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
               }">${entry.task.plannedStartOpenEnded ? "Flex" : "Daily"}</span>`
             : "";
-          return `<div class="scheduleTaskCard${shortClass}${earliestClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
+          return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")
-          )}" data-schedule-task-day="${day}"${
-            earliestClass ? ' data-earliest-scheduled-task="true"' : ""
-          } style="top:${topPx}px;height:${heightPx}px">
+          )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
             <div class="scheduleTaskCardTopRow">
               ${recurringBadge}
-              ${recurringAction}
             </div>
             <span class="scheduleTaskCardName">${ctx.escapeHtmlUI(entry.task.name || "Task")}</span>
             <span class="scheduleTaskCardMeta">${ctx.escapeHtmlUI(metaText)}</span>

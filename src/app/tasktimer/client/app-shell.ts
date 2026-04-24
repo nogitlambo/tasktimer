@@ -7,6 +7,7 @@ import type { AppPage } from "./types";
 
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   let appPageSlideTimerId: number | null = null;
+  let initialNativeStartupPageResolved = false;
 
   function appPageOrder(page: AppPage) {
     const normalized = page === "schedule" ? "tasks" : page;
@@ -66,15 +67,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const resolvedPath = isKnownAppRoute(normalizedPath) ? normalizedPath : input.startsWith("/tasklaunch") ? "/tasklaunch" : input;
     const resolved = `${resolvedPath}${trailing}`;
 
-    const currentPath = window.location.pathname || "";
-    const capacitorApi = (window as any).Capacitor;
-    const isNativeCapacitorRuntime = !!(
-      capacitorApi &&
-      typeof capacitorApi.isNativePlatform === "function" &&
-      capacitorApi.isNativePlatform()
-    );
-    const usesExportedHtmlPaths =
-      window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativeCapacitorRuntime;
+    const usesExportedHtmlPaths = isNativeOrExportRuntime();
     if (!usesExportedHtmlPaths) return resolved;
 
     const resolvedHashIndex = resolved.indexOf("#");
@@ -128,18 +121,34 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
   }
 
+  function isNativeOrExportRuntime() {
+    const currentPath = window.location.pathname || "";
+    const capacitorApi = (window as any).Capacitor;
+    const isNativeCapacitorRuntime = !!(
+      capacitorApi &&
+      typeof capacitorApi.isNativePlatform === "function" &&
+      capacitorApi.isNativePlatform()
+    );
+    return window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativeCapacitorRuntime;
+  }
+
   function getInitialAppPageFromLocation(defaultPage: AppPage = ctx.initialAppPage): AppPage {
     try {
+      const isFirstInitialPageResolution = !initialNativeStartupPageResolved;
+      initialNativeStartupPageResolved = true;
       const path = normalizedPathname();
-      if (isTaskTimerDashboardPath(path)) return "dashboard";
-      if (isTaskTimerFriendsPath(path)) return "test2";
-      if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       const params = new URLSearchParams(window.location.search || "");
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
       if (page === "schedule") return "schedule";
       if (page === "test2") return "test2";
       if (page === "leaderboard") return "leaderboard";
+      if (isFirstInitialPageResolution && isNativeOrExportRuntime() && isTaskTimerMainAppPath(path)) {
+        return readStartupAppPagePreference();
+      }
+      if (isTaskTimerDashboardPath(path)) return "dashboard";
+      if (isTaskTimerFriendsPath(path)) return "test2";
+      if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       if (isTaskTimerTasksPath(path)) return readStartupAppPagePreference();
     } catch {
       // ignore
@@ -503,11 +512,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       try {
         register(1000, (processNext?: () => void) => {
           invokeNativeBack(ev);
-          try {
-            processNext?.();
-          } catch {
-            // ignore
-          }
+          void processNext;
         });
       } catch {
         invokeNativeBack(ev);
@@ -579,11 +584,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.scheduleAddTaskBtn, "click", () => {
       ctx.els.openAddTaskBtn?.click();
-    });
-    ctx.on(ctx.els.scheduleSnapToFirstBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      ctx.requestScheduleEntryScroll("firstScheduled");
-      ctx.render();
     });
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
       dispatchOnboardingModuleClick("dashboard");

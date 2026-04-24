@@ -1553,22 +1553,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   display:grid;
   gap:16px;
 }
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRow{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:14px;
-}
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRowActions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  flex:0 0 auto;
-  gap:8px;
-}
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule #scheduleSnapToFirstBtn{
-  white-space:nowrap;
-}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleMobileDayTabs{
   display:none;
   gap:8px;
@@ -1761,13 +1745,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
     height .18s ease,
     transform .18s ease;
 }
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
-  border-color:rgba(117,231,255,.78);
-  box-shadow:
-    0 0 0 1px rgba(117,231,255,.24),
-    0 0 18px rgba(117,231,255,.14),
-    inset 3px 0 0 rgba(117,231,255,.9);
-}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardTopRow{
   width:100%;
   display:flex;
@@ -1788,17 +1765,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   text-transform:uppercase;
   color:rgba(233,251,255,.88);
   background:rgba(255,255,255,.08);
-}
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardConvertBtn{
-  min-height:18px;
-  padding:0 7px;
-  border-radius:999px;
-  font-size:9px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  white-space:nowrap;
-  background:rgba(6,13,19,.58);
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isDragging{
   opacity:.7;
@@ -1922,20 +1888,10 @@ body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch 
   border-color:rgba(255,255,255,.12);
   background:#17191d;
 }
-body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
-  border-color:rgba(214,120,255,.76);
-  box-shadow:
-    0 0 0 1px rgba(214,120,255,.22),
-    0 0 18px rgba(214,120,255,.14),
-    inset 3px 0 0 rgba(214,120,255,.88);
-}
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
   border-color:rgba(223,208,255,.24);
   color:rgba(244,236,255,.9);
   background:rgba(255,255,255,.08);
-}
-body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardConvertBtn{
-  background:rgba(22,11,34,.62);
 }
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayColumn.isDropActive{
   background:
@@ -1973,20 +1929,10 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   background:#17191d;
   color:#fbffe3;
 }
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isEarliestScheduledTask{
-  border-color:rgba(214,246,116,.74);
-  box-shadow:
-    0 0 0 1px rgba(214,246,116,.22),
-    0 0 18px rgba(214,246,116,.14),
-    inset 3px 0 0 rgba(214,246,116,.86);
-}
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
   border-color:rgba(222,255,218,.22);
   color:rgba(239,255,235,.9);
   background:rgba(255,255,255,.08);
-}
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardConvertBtn{
-  background:rgba(11,20,12,.62);
 }
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleProductivityHighlightBand{
   background:

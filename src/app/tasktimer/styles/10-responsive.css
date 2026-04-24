@@ -90,20 +90,9 @@
     padding:7px 10px;
     font-size:10px;
   }
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRow{
-    align-items:flex-start;
-  }
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .dashboardTopRow.scheduleTopRow{
-    flex-wrap:wrap;
-    row-gap:12px;
-  }
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .dashboardTitleWrap{
     width:100%;
     min-width:0;
-  }
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTopRowActions{
-    width:100%;
-    justify-content:flex-start;
   }
   #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
     width:auto;

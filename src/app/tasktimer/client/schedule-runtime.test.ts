@@ -244,8 +244,8 @@ describe("schedule-runtime", () => {
     });
 
     const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
-    expect(gridHtml).toContain('data-schedule-normalize="task-a"');
-    expect(gridHtml).toContain(">Recurring</button>");
+    expect(gridHtml).not.toContain('data-schedule-normalize="task-a"');
+    expect(gridHtml).not.toContain(">Recurring</button>");
     expect(gridHtml).toContain("Daily");
 
     const result = runtime.toggleTaskScheduleFlexible("task-a");
@@ -255,7 +255,7 @@ describe("schedule-runtime", () => {
     expect(render).toHaveBeenCalledTimes(1);
 
     const toggledGridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(state, runtime));
-    expect(toggledGridHtml).toContain(">Flexible</button>");
+    expect(toggledGridHtml).not.toContain(">Flexible</button>");
     expect(toggledGridHtml).toContain("Flex");
   });
 
@@ -286,7 +286,7 @@ describe("schedule-runtime", () => {
     });
   });
 
-  it("always shows the R action for multi-day schedules and preserves schedule data when toggled", () => {
+  it("preserves multi-day schedule data when flexible mode is toggled", () => {
     const alignedTasks = [
       makeTask({
         id: "task-a",
@@ -307,8 +307,7 @@ describe("schedule-runtime", () => {
       render: vi.fn(),
     });
     const alignedGridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(alignedState, alignedRuntime));
-    expect(alignedGridHtml).toContain('data-schedule-normalize="task-a"');
-    expect(alignedGridHtml).not.toContain("disabled");
+    expect(alignedGridHtml).not.toContain('data-schedule-normalize="task-a"');
 
     const result = alignedRuntime.toggleTaskScheduleFlexible("task-a");
     expect(result).toEqual({ status: "updated", flexible: true });
@@ -382,8 +381,8 @@ describe("schedule-runtime", () => {
 
     expect(gridHtml).toContain("Deep Work");
     expect(gridHtml).toContain("Daily");
-    expect(gridHtml).toContain('data-earliest-scheduled-task="true"');
-    expect(gridHtml).toContain('class="scheduleTaskCard isEarliestScheduledTask"');
+    expect(gridHtml).not.toContain('data-earliest-scheduled-task="true"');
+    expect(gridHtml).not.toContain("isEarliestScheduledTask");
     expect(gridHtml).toContain(
       `class="scheduleProductivityHighlightBand" style="top:${daytimeTopPx}px;height:${daytimeHeightPx}px"`
     );
@@ -421,7 +420,7 @@ describe("schedule-runtime", () => {
     expect(scheduleTrayList.innerHTML).toContain("Needs a daily time goal");
   });
 
-  it("marks only the earliest scheduled entry on the planner", () => {
+  it("does not mark the earliest scheduled entry on the planner", () => {
     const tasks = [
       makeTask({ id: "task-a", name: "Monday First", plannedStartDay: "mon", plannedStartTime: "08:00" }),
       makeTask({ id: "task-b", name: "Monday Later", plannedStartDay: "mon", plannedStartTime: "09:00" }),
@@ -437,10 +436,10 @@ describe("schedule-runtime", () => {
     const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(makeScheduleState(), runtime));
 
     expect(gridHtml).toContain('data-schedule-task-id="task-a"');
-    expect(gridHtml).toContain('data-earliest-scheduled-task="true"');
-    expect(gridHtml).toContain('data-schedule-task-id="task-a" data-schedule-task-day="mon" data-earliest-scheduled-task="true"');
-    expect(gridHtml).not.toContain('data-schedule-task-id="task-b" data-schedule-task-day="mon" data-earliest-scheduled-task="true"');
-    expect(gridHtml).not.toContain('data-schedule-task-id="task-c" data-schedule-task-day="tue" data-earliest-scheduled-task="true"');
+    expect(gridHtml).toContain('data-schedule-task-id="task-b"');
+    expect(gridHtml).toContain('data-schedule-task-id="task-c"');
+    expect(gridHtml).not.toContain('data-earliest-scheduled-task="true"');
+    expect(gridHtml).not.toContain("isEarliestScheduledTask");
   });
 
   it("keeps scheduled flexible tasks on the planner and unscheduled flexible tasks in the tray", () => {

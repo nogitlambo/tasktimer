@@ -36,14 +36,6 @@ export default function SchedulePageContent({ active }: SchedulePageContentProps
         </span>
       </button>
       <section className="schedulePageShell" aria-label="Weekly schedule planner">
-        <div className="scheduleTopRow">
-          <div className="scheduleTopRowActions">
-            <button className="btn btn-ghost small" id="scheduleSnapToFirstBtn" type="button">
-              Jump to First Task
-            </button>
-          </div>
-        </div>
-
         <div className="scheduleMobileDayTabs" id="scheduleMobileDayTabs" role="tablist" aria-label="Schedule day selector">
           {DAY_BUTTONS.map((day) => (
             <button
