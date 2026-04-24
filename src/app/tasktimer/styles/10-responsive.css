@@ -2530,6 +2530,24 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .deskt
   }
 }
 
+/* Final Tasks/Schedule scroll chrome override: keep scrolling active while hiding scrollbars. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTrayList{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTrayList::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* Final task action sizing override: keep secondary buttons rectangular after responsive rules. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
   display: grid !important;
