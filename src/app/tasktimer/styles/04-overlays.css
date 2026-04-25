@@ -37,6 +37,31 @@
 }
 
 @media (min-width: 981px){
+  #editOverlay{
+    left: var(--desktop-rail-column, clamp(246px, 20vw, 292px));
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  #editOverlay .modal{
+    width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0;
+    border-radius: 0 !important;
+    padding: 18px;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 981px){
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail,
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail,
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail,
@@ -1471,6 +1496,31 @@ body[data-theme="purple"] .rewardsInfoText{
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scroll-padding-bottom: 72px;
+}
+
+@media (min-width: 981px){
+  #editOverlay .modal{
+    box-sizing: border-box;
+    max-height: none !important;
+    overflow: hidden !important;
+    scroll-padding-bottom: 0;
+  }
+
+  #editOverlay .editTaskModalBody{
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+
+  #editOverlay .footerBtns{
+    position: sticky !important;
+    bottom: 0;
+    z-index: 3;
+    align-self: stretch !important;
+    margin-top: 18px;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    background: #0d0f13 !important;
+  }
 }
 
 /* Ensure shared confirm dialog renders above Focus Mode */
@@ -3721,5 +3771,43 @@ body[data-theme="lime"] #editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
   background: rgba(18,20,24,.96) !important;
   color: #f9ffd8 !important;
   box-shadow: none !important;
+}
+
+@media (min-width: 981px){
+  #editOverlay,
+  #app[aria-label="TaskLaunch App"] #editOverlay{
+    position: fixed !important;
+    left: var(--desktop-rail-column, clamp(246px, 20vw, 292px)) !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    padding: 0 !important;
+  }
+
+  #editOverlay .modal,
+  #app[aria-label="TaskLaunch App"] #editOverlay .modal{
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    min-height: 100dvh !important;
+    padding: 18px !important;
+    overflow: hidden !important;
+  }
+
+  #editOverlay .editTaskModalFrame{
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #editOverlay .editTaskModalBody{
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding-bottom: 0 !important;
+  }
 }
 

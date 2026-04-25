@@ -43,8 +43,8 @@
   align-items:center;
   gap:10px;
   font-family:var(--font-tight);
-  font-weight:700;
-  letter-spacing:.15px;
+  font-weight:400;
+  letter-spacing:.16em;
   justify-self:start;
 }
 .brandLogo{
@@ -55,6 +55,50 @@
   object-fit:contain;
   margin-left:0;
   align-self:center;
+}
+.taskLaunchHeaderBrandIcon{
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
+}
+.taskLaunchHeaderBrandText{
+  color: var(--landing-text, rgba(245,248,244,.96));
+  font-family: var(--font-display-ui);
+  font-size: .82rem;
+  font-weight: 400;
+  letter-spacing: .16em;
+  line-height: normal;
+  text-transform: uppercase;
+}
+#app .appBrandLandingReplica{
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: var(--landing-text, rgba(245,248,244,.96)) !important;
+  font-family: var(--font-readable) !important;
+  font-size: .82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .16em !important;
+  line-height: normal !important;
+  text-decoration: none !important;
+  text-transform: uppercase !important;
+  font-synthesis: none !important;
+}
+#app .appBrandLandingReplicaText{
+  color: inherit !important;
+  font: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
+  text-transform: inherit !important;
+}
+#app .appBrandLandingReplicaIcon{
+  display: block !important;
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  object-fit: contain !important;
 }
 .controls{display:flex; align-items:center; gap:var(--space-2);}
 .controls{ justify-self:end; }

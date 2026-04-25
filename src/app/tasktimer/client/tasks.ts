@@ -30,6 +30,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function getTileColumnCount() {
     if (typeof window === "undefined") return 1;
+    if (window.matchMedia("(min-width: 1500px)").matches) return 4;
     if (window.matchMedia("(min-width: 1200px)").matches) return 3;
     if (window.matchMedia("(min-width: 720px)").matches) return 2;
     return 1;
@@ -64,6 +65,24 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         openHistoryTaskIds.delete(taskId);
         delete historyViewByTaskId[taskId];
       }
+    }
+
+    if (!tasks.length) {
+      taskListEl.innerHTML = `
+        <section class="taskListEmptyState" aria-label="No tasks">
+          <div class="taskListEmptyContent">
+            <p class="taskListEmptyMessage">No Tasks found</p>
+            <button class="btn btn-accent taskListEmptyAddBtn" type="button" data-action="openAddTask">
+              + Add New Task
+            </button>
+          </div>
+        </section>
+      `;
+      ctx.save();
+      if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
+      ctx.syncTimeGoalModalWithTaskState();
+      ctx.maybeRestorePendingTimeGoalFlow();
+      return;
     }
 
     tasks.forEach((t, index) => {
@@ -270,6 +289,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
     ctx.render();
+    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
   }
 
   function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: unknown }) {
@@ -294,6 +314,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       ctx.syncFocusSessionNotesInput(taskId);
       ctx.syncFocusSessionNotesAccordion(taskId);
     }
+    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
   }
 
   function toggleCollapse(i: number) {
@@ -344,6 +365,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function resetAll() {
     const tasks = ctx.getTasks();
+    const renderAfterReset = () => {
+      ctx.render();
+      ctx.renderDashboardWidgets();
+    };
     ctx.confirm(
       "Delete Data",
       "This will permanently delete all task history and tasks (if selected below) from your account.",
@@ -372,13 +397,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           ctx.saveDeletedMeta(nextDeletedTaskMeta);
           if (alsoDelete) {
             ctx.setTasks([]);
-            ctx.save();
+            ctx.save({ deletedTaskIds: affectedTaskIds });
             if (uid && affectedTaskIds.length) {
               void Promise.all(affectedTaskIds.map((taskId) => ctx.deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
                 .then(() => ctx.refreshOwnSharedSummaries())
                 .catch(() => {});
             }
-            ctx.render();
+            renderAfterReset();
             ctx.closeConfirm();
             ctx.confirm(
               "Delete Complete",
@@ -391,7 +416,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           }
           ctx.save();
           if (affectedTaskIds.length) void ctx.syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
-          ctx.render();
+          renderAfterReset();
           ctx.closeConfirm();
           ctx.confirm(
             "Delete Complete",
@@ -439,6 +464,14 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   }
 
   function handleTaskListClick(e: any) {
+    const emptyAddBtn = findDelegatedElement(e.target, ".taskListEmptyAddBtn");
+    if (emptyAddBtn) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      els.openAddTaskBtn?.click();
+      return;
+    }
+
     const taskEl = e.target?.closest?.(".task");
     if (!taskEl) return;
     const i = parseInt(taskEl.dataset.index, 10);

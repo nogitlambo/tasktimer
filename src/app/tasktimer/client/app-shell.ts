@@ -8,6 +8,7 @@ import type { AppPage } from "./types";
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   let appPageSlideTimerId: number | null = null;
   let initialNativeStartupPageResolved = false;
+  let userSelectedAppPageBeforeStartupResolution = false;
 
   function appPageOrder(page: AppPage) {
     const normalized = page === "schedule" ? "tasks" : page;
@@ -153,6 +154,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (page === "friends") return "friends";
       if (page === "leaderboard") return "leaderboard";
       if (page === "history") return "history";
+      if (userSelectedAppPageBeforeStartupResolution && isTaskTimerMainAppPath(path)) {
+        return ctx.getCurrentAppPage();
+      }
       if (isFirstInitialPageResolution && isNativeOrExportRuntime() && isTaskTimerMainAppPath(path)) {
         return readStartupAppPagePreference();
       }
@@ -352,6 +356,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function applyAppPage(page: AppPage, opts?: TaskTimerAppPageOptions) {
+    if (opts?.syncUrl === "push" || opts?.pushNavStack) {
+      userSelectedAppPageBeforeStartupResolution = true;
+    }
+
     const hasTasksPage = !!ctx.els.appPageTasks;
     const hasDashboardPage = !!ctx.els.appPageDashboard;
     const hasFriendsPage = !!ctx.els.appPageFriends;

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import AppImg from "../components/AppImg";
 import { useEffect, useState } from "react";
 import type { LandingExperimentalProps } from "./landing.types";
 
@@ -97,33 +97,16 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
   return (
     <main className="landingV2">
       <div className="landingV2Shell">
-        <header className={`landingV2Header ${showHeader ? "isVisible" : ""}`}>
-          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={1868}
-              height={422}
-              priority
-              className="landingV2BrandLogo"
-            />
+        <header className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}>
+          <Link href="/" className="landingV2FooterBrand displayFont">
+            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
+            <span>TaskLaunch</span>
           </Link>
 
-          <nav className="landingV2Nav" aria-label="Landing navigation">
-            <a href="#features">Features</a>
-            <a href="#preview">Interface</a>
-          </nav>
-
-          <div className="landingV2HeaderActions">
-            <Link href="/privacy" className="landingV2HeaderLink">
-              Privacy
-            </Link>
-            <Link href="/?landing=classic" className="landingV2HeaderLink">
-              Coming Soon
-            </Link>
-            <Link href="/web-sign-in" className="landingV2LoginLink">
-              Login
-            </Link>
+          <div className="landingV2FooterLinks">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/web-sign-in">Sign In</Link>
           </div>
         </header>
 

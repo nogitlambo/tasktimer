@@ -21,8 +21,13 @@ export default function TaskTimerAppFrame({
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch App">
       <div className="topbar topbarBrandOnly">
-        <div className="brand">
-          <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
+        <div className="brand landingV2FooterBrand appBrandLandingReplica">
+          <AppImg
+            className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
+            src="/logo/launch-icon-original-transparent.png"
+            alt=""
+          />
+          <span className="appBrandLandingReplicaText">TaskLaunch</span>
         </div>
       </div>
       <div className="desktopAppShell">

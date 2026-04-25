@@ -56,8 +56,9 @@ export default function PrivacyPolicyPage() {
     <main className="landingV2 privacyLandingPage">
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
-          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
-            <AppImg src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" className="landingV2BrandLogo" />
+          <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
+            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
+            <span>TaskLaunch</span>
           </Link>
 
           <div className="landingV2HeaderActions">

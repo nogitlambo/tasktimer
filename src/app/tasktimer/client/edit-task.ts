@@ -1107,8 +1107,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const t = getCurrentEditTask();
       if (!t) return;
       if (!readEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
-      ctx.toggleSwitchElement(toggleEl, !ctx.isSwitchOn(toggleEl));
-      writeEnabled(t, ctx.isSwitchOn(toggleEl));
+      const enabled =
+        toggleEl instanceof HTMLInputElement && toggleEl.type === "checkbox"
+          ? toggleEl.checked
+          : !ctx.isSwitchOn(toggleEl);
+      ctx.toggleSwitchElement(toggleEl, enabled);
+      writeEnabled(t, enabled);
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     };

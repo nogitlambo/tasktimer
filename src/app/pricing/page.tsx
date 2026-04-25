@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import AppImg from "@/components/AppImg";
 import PricingSection from "./PricingSection";
 
 export const metadata: Metadata = {
@@ -16,15 +16,9 @@ export default function PricingPage() {
     <main className="landingV2 pricingPageV2">
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
-          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={1868}
-              height={422}
-              priority
-              className="landingV2BrandLogo"
-            />
+          <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
+            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
+            <span>TaskLaunch</span>
           </Link>
 
           <nav className="landingV2Nav" aria-label="Pricing navigation" />

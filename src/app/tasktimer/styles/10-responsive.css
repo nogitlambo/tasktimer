@@ -459,6 +459,12 @@
   }
 }
 
+@media (min-width: 1500px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="4"]{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 639px){
   body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="1"]{
     grid-template-columns: 1fr;
@@ -4016,7 +4022,49 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailMenuIconImage{
     width: 18px !important;
     height: 18px !important;
-    filter: none !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appBrandLandingReplica,
+  #app[aria-label="TaskLaunch Settings"] .appBrandLandingReplica,
+  #app[aria-label="TaskLaunch Feedback"] .appBrandLandingReplica,
+  #app[aria-label="TaskLaunch User Guide"] .appBrandLandingReplica,
+  #app[aria-label="TaskLaunch History Manager"] .appBrandLandingReplica{
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    color: var(--landing-text, rgba(245,248,244,.96)) !important;
+    font-family: var(--font-readable) !important;
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .16em !important;
+    line-height: normal !important;
+    text-decoration: none !important;
+    text-transform: uppercase !important;
+    font-synthesis: none !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appBrandLandingReplicaText,
+  #app[aria-label="TaskLaunch Settings"] .appBrandLandingReplicaText,
+  #app[aria-label="TaskLaunch Feedback"] .appBrandLandingReplicaText,
+  #app[aria-label="TaskLaunch User Guide"] .appBrandLandingReplicaText,
+  #app[aria-label="TaskLaunch History Manager"] .appBrandLandingReplicaText{
+    color: inherit !important;
+    font: inherit !important;
+    letter-spacing: inherit !important;
+    line-height: inherit !important;
+    text-transform: inherit !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appBrandLandingReplicaIcon,
+  #app[aria-label="TaskLaunch Settings"] .appBrandLandingReplicaIcon,
+  #app[aria-label="TaskLaunch Feedback"] .appBrandLandingReplicaIcon,
+  #app[aria-label="TaskLaunch User Guide"] .appBrandLandingReplicaIcon,
+  #app[aria-label="TaskLaunch History Manager"] .appBrandLandingReplicaIcon{
+    display: block !important;
+    width: 22px !important;
+    height: 22px !important;
+    flex: 0 0 22px !important;
+    object-fit: contain !important;
   }
 }
 

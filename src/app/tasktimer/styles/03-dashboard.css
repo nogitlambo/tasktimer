@@ -2968,22 +2968,22 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: min(5px, .8vw);
+  gap: clamp(2px, .42vw, 8px);
   width: 100%;
   min-width: 0;
-  height: 22px;
-  min-height: 22px;
+  height: 34px;
+  min-height: 34px;
   margin-top: 0;
   transform: translateY(-10px);
   overflow: hidden;
   pointer-events: none;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTick{
-  flex: 0 1 18px;
-  width: clamp(10px, 1.45vw, 18px);
-  height: clamp(10px, 1.45vw, 18px);
-  min-width: 8px;
-  min-height: 8px;
+  flex: 0 1 27px;
+  width: 27px;
+  max-width: 27px;
+  min-width: 7px;
+  aspect-ratio: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2992,6 +2992,17 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background: rgba(209, 220, 228, .08);
   color: rgba(209, 220, 228, .46);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickSeparator{
+  flex: 1 1 12px;
+  text-align: center;
+  min-width: 2px;
+  color: rgba(209, 220, 228, .46);
+  font-family: var(--font-readable);
+  font-size: clamp(8px, 1vw, 14px);
+  font-weight: 900;
+  line-height: 1;
+  transform: translateY(-.03em);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTick.isComplete{
   border-color: rgba(65, 230, 145, .72);
@@ -3003,7 +3014,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickMark{
   font-family: var(--font-readable);
-  font-size: clamp(7px, .8vw, 11px);
+  font-size: clamp(6px, .9em, 16px);
   font-weight: 900;
   line-height: 1;
   transform: translateY(-.02em);
@@ -5737,5 +5748,16 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
   .dashboardCard[data-dashboard-size="eighth"] {
     grid-column: auto;
   }
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
+body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
+  background: transparent !important;
 }
 

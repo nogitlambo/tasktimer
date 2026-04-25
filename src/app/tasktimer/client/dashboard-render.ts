@@ -132,15 +132,24 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
   }
 
-  function applyDashboardTrendIndicator(indicatorEl: HTMLElement | null, currentMs: number, previousMs: number) {
+  function applyDashboardTrendIndicator(
+    indicatorEl: HTMLElement | null,
+    currentMs: number,
+    previousMs: number,
+    opts?: { showDirectionalArrow?: boolean }
+  ) {
     if (!indicatorEl) return null;
     indicatorEl.classList.remove("positive", "negative", "neutral");
     if (!(previousMs > 0)) {
       indicatorEl.textContent = "--";
       return null;
     }
+    const showDirectionalArrow = opts?.showDirectionalArrow !== false;
     const deltaPct = Math.round(((currentMs - previousMs) / previousMs) * 100);
     indicatorEl.textContent = deltaPct > 0 ? `↑${deltaPct}%` : deltaPct < 0 ? `↓${Math.abs(deltaPct)}%` : "0%";
+    if (!showDirectionalArrow) {
+      indicatorEl.textContent = deltaPct > 0 ? `+${deltaPct}%` : deltaPct < 0 ? `-${Math.abs(deltaPct)}%` : "0%";
+    }
     if (deltaPct > 0) indicatorEl.classList.add("positive");
     else if (deltaPct < 0) indicatorEl.classList.add("negative");
     else indicatorEl.classList.add("neutral");
@@ -184,6 +193,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function getDashboardFilteredTasks() {
     return (ctx.getTasks() || []).filter((task) => !!task);
+  }
+
+  function isDashboardTaskActivelyRunning(task: any) {
+    if (!task?.running) return false;
+    const startMs = Number(task?.startMs);
+    return Number.isFinite(startMs) && startMs > 0;
   }
 
   function renderLockedTimelineMock(
@@ -661,15 +676,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }, 0);
 
     const runningMs = goalTasks.reduce((sum, task) => {
-      if (!task?.running) return sum;
+      if (!isDashboardTaskActivelyRunning(task)) return sum;
       return sum + Math.max(0, ctx.getElapsedMs(task));
     }, 0);
 
     const projectedMs = loggedMs + runningMs;
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
-    const anyRunningTask = getDashboardFilteredTasks().some((task) => !!task?.running);
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs);
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
+      showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+    });
     if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
@@ -684,7 +700,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       loggedMs,
       projectedMs,
       runningMs,
-      activeMarkerRunning: anyRunningTask,
+      activeMarkerRunning: runningMs > 0,
       activeMarkerPct: totalGoalMs > 0 ? projectedPct : progressPct,
       emptyLabel: "Weekly time goal progress: no weekly time goals enabled",
       activeLabel: "Weekly time goal progress",
@@ -1032,16 +1048,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (ticksEl) {
         ticksEl.innerHTML = Array.from({ length: totalCount }, (_, index) => {
           const isComplete = index < completedCount;
-          return `<span class="dashboardTasksCompletedTick${isComplete ? " isComplete" : ""}" aria-hidden="true"><span class="dashboardTasksCompletedTickMark">✓</span></span>`;
+          const tick = `<span class="dashboardTasksCompletedTick${isComplete ? " isComplete" : ""}" aria-hidden="true"><span class="dashboardTasksCompletedTickMark">✓</span></span>`;
+          if (index >= totalCount - 1) return tick;
+          return `${tick}<span class="dashboardTasksCompletedTickSeparator" aria-hidden="true">-</span>`;
         }).join("");
       }
     };
 
     if (isOnboardingDashboardPreviewActive()) {
       const preview = ONBOARDING_DASHBOARD_PREVIEW.tasksCompleted;
-      const previewDailyOpportunityCount = Math.max(1, Math.ceil(Math.max(0, Number(preview.dailyCompletedDays || 0)) / 7));
-      const previewTotalPossible = previewDailyOpportunityCount * 7 + Math.max(0, Number(preview.weeklyCompletedTasks || 0));
-      renderCompletionRatio(preview.total, previewTotalPossible);
+      const previewTodayCompleted = Math.min(1, Math.max(0, Number(preview.dailyCompletedDays || 0)));
+      renderCompletionRatio(previewTodayCompleted, 1);
       if (metaEl) {
         metaEl.textContent = "";
         metaEl.style.display = "none";
@@ -1049,7 +1066,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (cardEl) {
         cardEl.setAttribute(
           "aria-label",
-          `Task completion. ${preview.total} of ${previewTotalPossible} weekly completion opportunities complete: ${preview.dailyCompletedDays} daily and ${preview.weeklyCompletedTasks} weekly.`
+          `Today's task completion. ${previewTodayCompleted} of 1 daily completion opportunities complete.`
         );
       }
       return;
@@ -1058,26 +1075,24 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const historyByTaskId = ctx.getHistoryByTaskId();
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
+    const todayKey = localDayKey(nowValue);
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task) return false;
       if (!task.timeGoalEnabled) return false;
       const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
       if (goalMinutes <= 0) return false;
-      return task.timeGoalPeriod === "day" || task.timeGoalPeriod === "week";
+      return task.timeGoalPeriod === "day";
     });
 
     const dailyTaskGoalMinutes = new Map<string, number>();
-    const weeklyTaskGoalMinutes = new Map<string, number>();
     goalTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return;
       const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
       if (task.timeGoalPeriod === "day") dailyTaskGoalMinutes.set(taskId, goalMinutes);
-      else if (task.timeGoalPeriod === "week") weeklyTaskGoalMinutes.set(taskId, goalMinutes);
     });
 
-    const dailyLoggedMsByTaskDay = new Map<string, Map<string, number>>();
-    const weeklyLoggedMsByTask = new Map<string, number>();
+    const dailyLoggedMsByTask = new Map<string, number>();
 
     goalTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
@@ -1088,40 +1103,27 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue) return;
         if (!Number.isFinite(ms) || ms <= 0) return;
-        if (dailyTaskGoalMinutes.has(taskId)) {
-          const dayKey = localDayKey(ts);
-          let byDay = dailyLoggedMsByTaskDay.get(taskId);
-          if (!byDay) {
-            byDay = new Map<string, number>();
-            dailyLoggedMsByTaskDay.set(taskId, byDay);
-          }
-          byDay.set(dayKey, (byDay.get(dayKey) || 0) + ms);
-        }
-        if (weeklyTaskGoalMinutes.has(taskId)) {
-          weeklyLoggedMsByTask.set(taskId, (weeklyLoggedMsByTask.get(taskId) || 0) + ms);
-        }
+        if (!dailyTaskGoalMinutes.has(taskId)) return;
+        if (localDayKey(ts) !== todayKey) return;
+        dailyLoggedMsByTask.set(taskId, (dailyLoggedMsByTask.get(taskId) || 0) + ms);
       });
     });
 
-    let dailyCompletedDays = 0;
-    dailyLoggedMsByTaskDay.forEach((byDay, taskId) => {
+    let todayCompletedTasks = 0;
+    dailyLoggedMsByTask.forEach((loggedMs, taskId) => {
       const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
       if (!(goalMinutes > 0)) return;
-      byDay.forEach((loggedMs) => {
-        if (loggedMs >= goalMinutes * 60000) dailyCompletedDays += 1;
-      });
+      if (loggedMs >= goalMinutes * 60000) todayCompletedTasks += 1;
     });
 
-    let weeklyCompletedTasks = 0;
-    weeklyLoggedMsByTask.forEach((loggedMs, taskId) => {
-      const goalMinutes = weeklyTaskGoalMinutes.get(taskId) || 0;
-      if (goalMinutes > 0 && loggedMs >= goalMinutes * 60000) weeklyCompletedTasks += 1;
-    });
-
-    const totalCompleted = dailyCompletedDays + weeklyCompletedTasks;
-    const totalPossible = dailyTaskGoalMinutes.size * 7 + weeklyTaskGoalMinutes.size;
+    const totalCompleted = todayCompletedTasks;
+    const totalPossible = dailyTaskGoalMinutes.size;
     const hasData = totalCompleted > 0 || totalPossible > 0;
-    if (shouldHoldDashboardWidget("tasksCompleted", hasData)) return;
+    if (hasData) {
+      if (shouldHoldDashboardWidget("tasksCompleted", true)) return;
+    } else {
+      ctx.getDashboardWidgetHasRenderedData().tasksCompleted = false;
+    }
 
     renderCompletionRatio(totalCompleted, totalPossible);
     if (metaEl) {
@@ -1132,8 +1134,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       cardEl.setAttribute(
         "aria-label",
         totalPossible > 0
-          ? `Task completion. ${totalCompleted} of ${totalPossible} weekly completion opportunities complete: ${dailyCompletedDays} daily and ${weeklyCompletedTasks} weekly.`
-          : "Task completion. 0 of 0 weekly completion opportunities complete."
+          ? `Today's task completion. ${totalCompleted} of ${totalPossible} daily completion opportunities complete.`
+          : "Today's task completion. 0 of 0 daily completion opportunities complete."
       );
     }
   }
@@ -1224,6 +1226,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const todayInProgressMs = getDashboardFilteredTasks().reduce((sum, task) => {
       const taskId = String(task?.id || "").trim();
       if (!taskId || !includedTaskIds.has(taskId)) return sum;
+      if (!isDashboardTaskActivelyRunning(task)) return sum;
       const elapsedMs = Math.max(0, ctx.getElapsedMs(task));
       if (elapsedMs <= 0) return sum;
       return sum + elapsedMs;
@@ -1242,6 +1245,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       return sum + taskTodayMs;
     }, 0);
     const dailyGoalInProgressMs = dailyGoalTasks.reduce((sum, task) => {
+      if (!isDashboardTaskActivelyRunning(task)) return sum;
       const elapsedMs = Math.max(0, ctx.getElapsedMs(task));
       if (elapsedMs <= 0) return sum;
       return sum + elapsedMs;
@@ -1251,11 +1255,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalLoggedMs / totalDailyGoalMs) * 100))) : 0;
     const dailyGoalProjectedPct =
       totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalProjectedMs / totalDailyGoalMs) * 100))) : 0;
-    const anyRunningTask = getDashboardFilteredTasks().some((task) => !!task?.running);
-
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdaySameTimeMs);
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdaySameTimeMs, {
+      showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+    });
     applyDashboardGoalProgressUi({
       progressBarEl,
       progressFillEl,
@@ -1265,7 +1269,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       loggedMs: dailyGoalLoggedMs,
       projectedMs: dailyGoalProjectedMs,
       runningMs: dailyGoalInProgressMs,
-      activeMarkerRunning: anyRunningTask,
+      activeMarkerRunning: dailyGoalInProgressMs > 0,
       activeMarkerPct: totalDailyGoalMs > 0 ? dailyGoalProjectedPct : dailyGoalProgressPct,
       emptyLabel: "Today's time goal progress: no daily time goals enabled",
       activeLabel: "Today's time goal progress",

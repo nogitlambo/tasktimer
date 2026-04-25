@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import AppImg from "../components/AppImg";
 import { useEffect, useState } from "react";
 import type { LandingClassicProps } from "./landing.types";
 
@@ -69,24 +69,14 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
   return (
     <main className="landingV2 landingV2ComingSoon">
       <div className="landingV2Shell">
-        <header className={`landingV2Header ${showHeader ? "isVisible" : ""}`}>
-          <Link href="/" className="landingV2Brand" aria-label="TaskLaunch home">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={1868}
-              height={422}
-              priority
-              className="landingV2BrandLogo"
-            />
+        <header className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}>
+          <Link href="/" className="landingV2FooterBrand displayFont">
+            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
+            <span>TaskLaunch</span>
           </Link>
 
-          <nav className="landingV2Nav" aria-label="Landing navigation" />
-
-          <div className="landingV2HeaderActions">
-            <Link href="/privacy" className="landingV2HeaderLink">
-              Privacy
-            </Link>
+          <div className="landingV2FooterLinks">
+            <Link href="/privacy">Privacy</Link>
           </div>
         </header>
 

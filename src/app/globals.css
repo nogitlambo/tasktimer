@@ -53,6 +53,45 @@ body.webSignInRoute {
   font-family: var(--font-display-ui);
 }
 
+.launchWordBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--landing-text, rgba(245, 248, 244, 0.96));
+  font-family: var(--font-display-ui);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.launchWordBrandIcon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
+}
+
+.launchWordBrandText {
+  font-size: 0.82rem;
+}
+
+.webSignInWordBrand {
+  gap: 14px;
+}
+
+.webSignInWordBrand .launchWordBrandIcon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.webSignInWordBrand .launchWordBrandText {
+  font-size: 1.14rem;
+}
+
 .webSignInPage {
   min-height: 100svh;
   width: 100%;
@@ -383,6 +422,26 @@ canvas {
 .landingV2 .landingV2Header.isVisible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.landingV2 .landingV2HeaderFooter {
+  display: flex;
+  justify-content: space-between;
+}
+
+.landingV2 .landingV2HeaderFooter .landingV2FooterBrand,
+.landingV2 .landingV2Header > .landingV2FooterBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landingV2 .landingV2HeaderBrandIcon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
 }
 
 .landingV2 .landingV2Brand {

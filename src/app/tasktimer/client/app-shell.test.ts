@@ -2,29 +2,76 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AppPage } from "./types";
 
 function createLocationStub(pathname: string, search = "") {
+  const body = {
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+    classList: {
+      add: vi.fn(),
+      remove: vi.fn(),
+    },
+  };
+  vi.stubGlobal("document", {
+    body,
+    querySelectorAll: () => [],
+  });
   vi.stubGlobal("window", {
     location: {
       pathname,
       search,
       protocol: "https:",
     },
+    history: {
+      pushState: vi.fn(),
+      replaceState: vi.fn(),
+    },
+    requestAnimationFrame: (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    },
+    setTimeout: (cb: () => void) => {
+      cb();
+      return 0;
+    },
+    clearTimeout: vi.fn(),
     Capacitor: {
       isNativePlatform: () => true,
     },
   });
 }
 
-function createShellContext(initialAppPage: AppPage = "dashboard") {
+function createElementStub() {
   return {
-    els: {},
+    classList: {
+      toggle: vi.fn(),
+    },
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+  };
+}
+
+function createShellContext(initialAppPage: AppPage = "dashboard", opts?: { withPages?: boolean }) {
+  let currentAppPage = initialAppPage;
+  const els = opts?.withPages
+    ? {
+        appPageTasks: createElementStub(),
+        appPageDashboard: createElementStub(),
+        appPageFriends: createElementStub(),
+        appPageLeaderboard: createElementStub(),
+        appPageHistory: createElementStub(),
+      }
+    : {};
+  return {
+    els,
     runtime: { destroyed: false },
     on: vi.fn(),
     initialAppPage,
     navStackKey: "navStack",
     navStackMax: 50,
     nativeBackDebounceMs: 200,
-    getCurrentAppPage: () => initialAppPage,
-    setCurrentAppPage: vi.fn(),
+    getCurrentAppPage: () => currentAppPage,
+    setCurrentAppPage: vi.fn((page: AppPage) => {
+      currentAppPage = page;
+    }),
     getDashboardMenuFlipped: () => false,
     setDashboardMenuFlipped: vi.fn(),
     syncDashboardMenuFlipUi: vi.fn(),
@@ -85,5 +132,15 @@ describe("TaskTimer app shell", () => {
     const shell = createTaskTimerAppShell(createShellContext("tasks"));
 
     expect(shell.getInitialAppPageFromLocation("tasks")).toBe("schedule");
+  });
+
+  it("keeps user-selected module ahead of delayed startup module resolution", async () => {
+    createLocationStub("/tasklaunch/index.html");
+    const { createTaskTimerAppShell } = await loadAppShell("dashboard");
+    const shell = createTaskTimerAppShell(createShellContext("tasks", { withPages: true }));
+
+    shell.applyAppPage("friends", { pushNavStack: true, syncUrl: "push" });
+
+    expect(shell.getInitialAppPageFromLocation("tasks")).toBe("friends");
   });
 });

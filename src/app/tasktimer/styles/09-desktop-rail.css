@@ -1110,9 +1110,9 @@
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandIcon,
   #app[aria-label="TaskLaunch User Guide"] .desktopAppRail .desktopRailBrandIcon,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandIcon{
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
     object-fit: contain;
   }
 
@@ -1121,13 +1121,32 @@
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandWordmark,
   #app[aria-label="TaskLaunch User Guide"] .desktopAppRail .desktopRailBrandWordmark,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandWordmark{
-    color: rgba(234,240,248,.96);
-    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: .08em;
-    line-height: 1;
+    color: var(--landing-text, rgba(245,248,244,.96));
+    font-family: var(--font-display-ui);
+    font-size: .82rem;
+    font-weight: 400;
+    letter-spacing: .16em;
+    line-height: normal;
     text-transform: uppercase;
+  }
+
+  #app .desktopAppRail .appBrandLandingReplica,
+  #app .desktopAppRail .appBrandLandingReplicaText{
+    color: var(--landing-text, rgba(245,248,244,.96)) !important;
+    font-family: var(--font-readable) !important;
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .16em !important;
+    line-height: normal !important;
+    text-transform: uppercase !important;
+    font-synthesis: none !important;
+  }
+
+  #app .desktopAppRail .appBrandLandingReplicaIcon{
+    width: 22px !important;
+    height: 22px !important;
+    flex: 0 0 22px !important;
+    object-fit: contain !important;
   }
 
   #app[aria-label="TaskLaunch App"] .appPages,
@@ -1216,7 +1235,6 @@
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailMenuIconImage{
     width: 18px;
     height: 18px;
-    filter: none !important;
     opacity: .86;
   }
 

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
@@ -73,15 +73,13 @@ export default function SignedOutPage() {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1625px] flex-col px-6 pb-16 pt-8 sm:px-8 md:px-12">
         <header className="flex items-center justify-between">
-          <Link href="/" aria-label="TaskLaunch home">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={255}
-              height={35}
-              priority
-              className="block h-auto w-[225px] sm:w-[255px]"
+          <Link href="/" className="launchWordBrand" aria-label="TaskLaunch home">
+            <AppImg
+              src="/logo/launch-icon-original-transparent.png"
+              alt=""
+              className="launchWordBrandIcon"
             />
+            <span className="launchWordBrandText">TaskLaunch</span>
           </Link>
 
           <nav className="hidden items-center gap-9 md:flex">

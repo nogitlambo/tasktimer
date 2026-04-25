@@ -554,13 +554,13 @@ export default function DesktopAppRail({
           data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
         >
           <div className="desktopRailTopSection">
-            <div className="desktopRailBrandLockup" aria-hidden="true">
+            <div className="desktopRailBrandLockup landingV2FooterBrand appBrandLandingReplica" aria-hidden="true">
               <AppImg
-                className="desktopRailBrandIcon"
+                className="desktopRailBrandIcon landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
                 src="/logo/launch-icon-original-transparent.png"
                 alt=""
               />
-              <span className="desktopRailBrandWordmark">TASKLAUNCH</span>
+              <span className="appBrandLandingReplicaText">TaskLaunch</span>
             </div>
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">

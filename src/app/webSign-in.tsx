@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import AppImg from "@/components/AppImg";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -43,14 +43,14 @@ export default function WebSignIn(props: WebSignInProps) {
         <div className="webSignInGrid" aria-hidden="true" />
         <div className="webSignInContainer">
           <section className="webSignInLaunchPanel">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={560}
-              height={76}
-              priority
-              className="webSignInLogo"
-            />
+            <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
+              <AppImg
+                src="/logo/launch-icon-original-transparent.png"
+                alt=""
+                className="launchWordBrandIcon"
+              />
+              <span className="launchWordBrandText">TaskLaunch</span>
+            </div>
             <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
               <h2 className="sr-only">Launching TaskLaunch</h2>
               <p className="modalSubtext confirmText">Launching TaskLaunch...</p>
@@ -85,14 +85,14 @@ export default function WebSignIn(props: WebSignInProps) {
       <div className="webSignInContainer">
         <section className="webSignInAuthFrame">
           <div className="relative z-10 flex flex-col items-center gap-3">
-            <Image
-              src="/logo/tasklaunch-logo-v2.png"
-              alt="TaskLaunch"
-              width={560}
-              height={76}
-              priority
-              className="webSignInLogo"
-            />
+            <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
+              <AppImg
+                src="/logo/launch-icon-original-transparent.png"
+                alt=""
+                className="launchWordBrandIcon"
+              />
+              <span className="launchWordBrandText">TaskLaunch</span>
+            </div>
           </div>
 
           <section
