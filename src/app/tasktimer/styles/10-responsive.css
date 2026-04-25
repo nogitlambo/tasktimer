@@ -2890,13 +2890,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 /* Final mobile Avg Session card height restore:
    later dashboard overrides can force this panel to span far more rows than a
    standard pro card. Keep it on the normal pro height on mobile. */
-@media (max-width: 640px) {
+@media (max-width: 980px) {
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard {
     grid-row: span var(--dashboard-pro-panel-span) !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
     min-height: 0 !important;
     height: 100% !important;
     overflow: hidden !important;
     align-items: stretch !important;
+    box-sizing: border-box !important;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyChartInline {
@@ -2904,6 +2907,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     height: 100% !important;
     max-height: 100% !important;
     align-self: stretch !important;
+    overflow: hidden !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .historyCanvasWrap {
+    min-block-size: 0 !important;
+  }
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard .dashboardAvgSessionRangeRow {
+    align-self: end !important;
+    min-height: 0 !important;
+    margin: 0 !important;
   }
 }
 
@@ -3879,7 +3891,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   position: absolute !important;
   left: 12px !important;
   top: 42px !important;
-  bottom: 56px !important;
+  bottom: 92px !important;
   width: calc(56% - 18px) !important;
   height: auto !important;
   display: grid !important;
@@ -3890,7 +3902,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   position: absolute !important;
   right: 12px !important;
   top: 42px !important;
-  bottom: 56px !important;
+  bottom: 92px !important;
   width: calc(44% - 18px) !important;
   height: auto !important;
   display: grid !important;
@@ -3902,26 +3914,28 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   position: absolute !important;
   left: 12px !important;
   right: 12px !important;
-  bottom: 10px !important;
+  bottom: 18px !important;
   width: auto !important;
-  height: 40px !important;
+  min-height: 62px !important;
+  height: auto !important;
   display: grid !important;
   margin: 0 !important;
-  padding: 6px 10px !important;
-  overflow: hidden !important;
+  padding: 8px 12px !important;
+  overflow: visible !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDialWrap{
   width: min(100%, 214px) !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterTitle{
-  font-size: 9px !important;
-  line-height: 1 !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
   margin: 3px 0 0 !important;
-  max-height: 2.2em !important;
-  font-size: 9px !important;
-  line-height: 1.1 !important;
+  max-height: none !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  overflow: visible !important;
 }
 
 @media (max-width: 640px){
@@ -3933,6 +3947,104 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDialWrap{
     width: min(100%, 154px) !important;
+  }
+}
+
+/* Mobile Momentum content should size from its children, not the desktop grid span. */
+@media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard{
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto auto !important;
+    grid-template-areas:
+      "title"
+      "main"
+      "drivers"
+      "footer" !important;
+    row-gap: 12px !important;
+    min-height: max-content !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumTitleRow,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumMainSection,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumDriversTextSection,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumFooterBand{
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumTitleRow{
+    grid-area: title !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumMainSection{
+    grid-area: main !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumDriversTextSection{
+    grid-area: drivers !important;
+    padding: 0 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard > .dashboardMomentumFooterBand{
+    grid-area: footer !important;
+    padding: 12px 14px !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDialWrap{
+    width: min(100%, 220px) !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDrivers{
+    gap: 8px !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDriverText{
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterTitle{
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
+    margin-top: 6px !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitle,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitle span{
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 }
 

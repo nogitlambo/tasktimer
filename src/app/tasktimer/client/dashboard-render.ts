@@ -1,4 +1,3 @@
-import { sessionColorForTaskMs } from "../lib/colors";
 import {
   dashboardAvgRangeLabel,
   formatDashboardDurationShort,
@@ -13,6 +12,7 @@ import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
 import { ONBOARDING_DASHBOARD_PREVIEW } from "../lib/dashboardOnboardingPreview";
 import type { TaskTimerDashboardRenderContext } from "./context";
+import { createHistorySpectrumFill } from "./history-chart-fill";
 import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -2265,10 +2265,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const x = startX + idx * (barWidth + gap);
       const barHeight = Math.max(2, Math.round(chartHeight * ratio));
       const y = chartBottom - barHeight;
-      const rowTask = ctx.getTasks().find((task) => String(task.id || "") === String(row.taskId));
-      const rowStaticColor = rowTask ? ctx.getModeColor("mode1") : "rgb(0,207,200)";
-      const rowDynamicColor = rowTask ? sessionColorForTaskMs(rowTask as any, row.avgMs) : rowStaticColor;
-      context.fillStyle = ctx.getDynamicColorsEnabled() ? rowDynamicColor : rowStaticColor;
+      context.fillStyle = createHistorySpectrumFill(context, y, chartBottom);
       context.globalAlpha = 0.92;
       context.fillRect(x, y, barWidth, barHeight);
       context.globalAlpha = 1;

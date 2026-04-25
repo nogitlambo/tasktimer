@@ -5,6 +5,7 @@ import {
   buildHistoryEntrySummaryPayload,
   renderHistoryEntrySummaryHtml,
 } from "./history-entry-summary";
+import { createHistorySpectrumFill } from "./history-chart-fill";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -843,14 +844,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const drawH = Math.max(2, Math.min(innerH, Math.floor(bh)));
       const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
       const y = Math.max(padT, padT + innerH - drawH);
+      const barBottomY = padT + innerH;
+      const goalY =
+        timeGoalMs > 0
+          ? Math.max(padT, Math.min(barBottomY - 1, barBottomY - Math.floor(innerH * Math.min(1, timeGoalMs / scaleMaxMs))))
+          : y;
 
       draw.save();
       draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
-      const historyStaticColor = (() => {
-        const t = (ctx.getTasks() || []).find((task) => String(task.id || "") === String(taskId));
-        return t ? ctx.getModeColor("mode1") : "rgb(0,207,200)";
-      })();
-      draw.fillStyle = ctx.getDynamicColorsEnabled() ? e.color || "rgb(0,207,200)" : historyStaticColor;
+      draw.fillStyle = createHistorySpectrumFill(draw, goalY, barBottomY);
       draw.fillRect(x, y, drawW, drawH);
       draw.restore();
 

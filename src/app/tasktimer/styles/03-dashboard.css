@@ -5448,16 +5448,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   overflow-wrap: anywhere;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterTitle{
-  font-size: 10px !important;
-  line-height: 1.1 !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
   margin: 4px 0 0 !important;
-  max-height: 2.4em !important;
+  max-height: none !important;
   min-height: 0 !important;
-  font-size: 10px !important;
-  line-height: 1.2 !important;
-  overflow: hidden !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  overflow: visible !important;
 }
 
 /* Migrated from tasktimer.css tail: dashboard heatmap and reward authority rules. */
