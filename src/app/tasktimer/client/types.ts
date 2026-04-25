@@ -3,7 +3,7 @@ import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { StartupModulePreference } from "../lib/startupModule";
 
-export type AppPage = "tasks" | "schedule" | "dashboard" | "test2" | "leaderboard";
+export type AppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 export type MainMode = "mode1";
 
 export type TaskTimerClientHandle = {

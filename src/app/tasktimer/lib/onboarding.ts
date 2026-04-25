@@ -110,7 +110,7 @@ export function onboardingModuleStepFromNavPage(page: string | null | undefined)
   const normalized = String(page || "").trim().toLowerCase();
   if (normalized === "dashboard") return "dashboard";
   if (normalized === "tasks") return "tasks";
-  if (normalized === "test2" || normalized === "friends") return "friends";
+  if (normalized === "friends" || normalized === "test2") return "friends";
   if (normalized === "leaderboard") return "leaderboard";
   if (normalized === "settings") return "settings";
   return null;

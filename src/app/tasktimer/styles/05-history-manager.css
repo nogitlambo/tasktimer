@@ -27,6 +27,10 @@
   padding:18px;
 }
 
+#app[aria-label="TaskLaunch History Manager"] #historyManagerScreen{
+  background: transparent;
+}
+
 #historyManagerScreen[aria-hidden="false"]{
   display:flex;
   flex-direction:column;
@@ -111,6 +115,23 @@
   gap:12px;
   flex:1 1 auto;
   min-height:0;
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch History Manager"] #historyManagerScreen{
+    padding: 18px 18px 24px;
+  }
+
+  #app[aria-label="TaskLaunch History Manager"] .hmHead{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: -18px 0 14px;
+    padding: 18px 0 14px;
+    background:
+      linear-gradient(180deg, rgba(17,18,22,.98) 0%, rgba(17,18,22,.94) 78%, rgba(17,18,22,0) 100%);
+    backdrop-filter: blur(8px);
+  }
 }
 
 .hmEmpty{

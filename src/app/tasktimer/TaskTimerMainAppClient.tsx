@@ -13,6 +13,7 @@ import FocusModeScreen from "./components/FocusModeScreen";
 import FriendsOverlays from "./components/FriendsOverlays";
 import GlobalTaskAlerts from "./components/GlobalTaskAlerts";
 import DashboardPageContent from "./components/DashboardPageContent";
+import HistoryManagerScreen from "./components/HistoryManagerScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
@@ -286,7 +287,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <DashboardPageContent rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
 
-          <section className={`appPage${initialPage === "test2" ? " appPageOn" : ""}`} id="appPageTest2" aria-label="Friends page">
+          <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">
               <div className="dashboardTopRow">
                 <div className="dashboardEditActions">
@@ -484,6 +485,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </section>
               </div>
             </div>
+          </section>
+
+          <section className={`appPage${initialPage === "history" ? " appPageOn" : ""}`} id="appPageHistory" aria-label="History Manager page">
+            <HistoryManagerScreen />
           </section>
         </div>
 

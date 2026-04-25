@@ -1573,10 +1573,10 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch Settings"] .settin
   border-radius: 0 !important;
   clip-path: none !important;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCardTitle,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-#app[aria-label="TaskLaunch App"] #appPageTest2 .settingsDetailNote,
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap{
+#app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCardTitle,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageFriends .settingsDetailNote,
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendEntryWrap{
   padding: 8px 12px;
   line-height: 1.25;
 }

@@ -492,7 +492,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
               .deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
               .then(async () => {
                 await ctx.refreshOwnSharedSummaries();
-                if (ctx.getCurrentAppPage() === "test2") await ctx.refreshGroupsData();
+                if (ctx.getCurrentAppPage() === "friends") await ctx.refreshGroupsData();
                 ctx.render();
               })
               .finally(() => ctx.closeConfirm());

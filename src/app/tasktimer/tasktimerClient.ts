@@ -1154,6 +1154,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   );
   rewardSessionBridge.bootstrapRewardSessionTrackers();
   const { loadFocusSessionNotes: loadFocusSessionNotesApi, tick: tickApi, syncTimeGoalModalWithTaskState: syncTimeGoalModalWithTaskStateApi, maybeRestorePendingTimeGoalFlow: maybeRestorePendingTimeGoalFlowApi, registerSessionEvents } = sessionApi;
+  let openHistoryManagerFromShell = () => {};
 
   const appShell = createTaskTimerAppShell(
     createTaskTimerAppShellContext({
@@ -1177,6 +1178,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeShareTaskModal,
       closeFriendProfileModal,
       closeFriendRequestModal,
+      openHistoryManager: () => openHistoryManagerFromShell(),
       requestScheduleEntryScroll: (mode) => requestScheduleEntryScroll(mode),
       render: () => render(),
       renderHistory: (taskId) => renderHistory(taskId),
@@ -1364,6 +1366,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     })
   );
   const { openHistoryManager, registerHistoryManagerEvents } = historyManager;
+  openHistoryManagerFromShell = openHistoryManager;
 
   const historyInline = createTaskTimerHistoryInline(
     createTaskTimerHistoryInlineContext({

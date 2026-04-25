@@ -127,12 +127,12 @@ describe("ArchieAssistantWidget response actions", () => {
         activePage: "dashboard",
       })
     ).toBe(false);
-    expect(onboardingStepTargetPage("friends")).toBe("test2");
+    expect(onboardingStepTargetPage("friends")).toBe("friends");
   });
 
   it("maps desktop rail pages onto onboarding module steps", () => {
     expect(onboardingModuleStepFromNavPage("dashboard")).toBe("dashboard");
-    expect(onboardingModuleStepFromNavPage("test2")).toBe("friends");
+    expect(onboardingModuleStepFromNavPage("friends")).toBe("friends");
     expect(onboardingModuleStepFromNavPage("settings")).toBe("settings");
     expect(onboardingModuleStepFromNavPage("none")).toBeNull();
   });

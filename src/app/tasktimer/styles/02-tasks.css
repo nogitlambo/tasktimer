@@ -1,6 +1,6 @@
 /* Generated from tasktimer.css split. */
 body[data-app-page="dashboard"] #openAddTaskBtn,
-body[data-app-page="test2"] #openAddTaskBtn{
+body[data-app-page="friends"] #openAddTaskBtn{
   display:none !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{

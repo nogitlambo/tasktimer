@@ -101,7 +101,7 @@ export function handleTaskTimerArchieNavigate(hrefRaw: unknown, options: HandleA
     return;
   }
   if (href === "/friends") {
-    options.applyAppPage("test2", { pushNavStack: true, syncUrl: "push" });
+    options.applyAppPage("friends", { pushNavStack: true, syncUrl: "push" });
     return;
   }
   if (href === "/leaderboard") {

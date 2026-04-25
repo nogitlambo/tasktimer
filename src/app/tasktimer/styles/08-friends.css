@@ -53,22 +53,22 @@
   margin: 0;
 }
 /* Groups page: stack each section on its own row using full panel width */
-#appPageTest2 .dashboardShell{
+#appPageFriends .dashboardShell{
   width: 100%;
   max-width: none;
 }
-#appPageTest2 .dashboardGrid{
+#appPageFriends .dashboardGrid{
   grid-template-columns: minmax(0, 1fr);
 }
-#appPageTest2 .dashboardCard{
+#appPageFriends .dashboardCard{
   width: 100%;
 }
-#appPageTest2 #groupsIncomingRequestsList.isEmptyStatus,
-#appPageTest2 #groupsOutgoingRequestsList.isEmptyStatus{
+#appPageFriends #groupsIncomingRequestsList.isEmptyStatus,
+#appPageFriends #groupsOutgoingRequestsList.isEmptyStatus{
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;
 }
-#appPageTest2 .sharedTasksEmpty{
+#appPageFriends .sharedTasksEmpty{
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;
 }
@@ -205,15 +205,15 @@
 .friendSharedTasksDetails[open] .friendSharedTasksCountText::after {
   content: "▴";
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
+#app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn,
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendEntryWrap {
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouTitle{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouTitle{
   padding: 8px 12px;
   line-height: 1.25;
 }
@@ -366,21 +366,21 @@
 }
 /* Final Friends list width override:
    use full card width and disable clipped slants on friend rows/summaries. */
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
   width: 100%;
   max-width: none;
   padding: 0;
   box-sizing: border-box;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary{
   width: 100%;
   max-width: none;
   box-sizing: border-box;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendEntryWrap,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsList .friendSharedTasksDetails > summary{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary{
   clip-path: none;
 }
 .friendSharedTasksHeading {
@@ -513,14 +513,14 @@
     text-align: left;
   }
 }
-body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
-body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
-body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 #openFriendRequestModalBtn,
-body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap {
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails > summary,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn,
+body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFriends .friendEntryWrap {
   clip-path: none !important;
 }
-#appPageTest2 #groupsSharedByYouDetails[open] #groupsSharedByYouList{
+#appPageFriends #groupsSharedByYouDetails[open] #groupsSharedByYouList{
   padding: 10px 10px 0;
 }
 #shareTaskModal .field{
@@ -593,7 +593,7 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageTest
   margin-top: 8px;
 }
 /* Friends page incoming-request action row: keep Decline/Approve on one line and right-aligned. */
-#app[aria-label="TaskLaunch App"] #appPageTest2 .groupsIncomingRequestActions{
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions{
   display: flex !important;
   flex-direction: row !important;
   justify-content: flex-end;
@@ -639,26 +639,26 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 }
 #app[aria-label="TaskLaunch App"] #appPageDashboard.appPageOn,
 #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn,
-#app[aria-label="TaskLaunch App"] #appPageTest2.appPageOn{
+#app[aria-label="TaskLaunch App"] #appPageFriends.appPageOn{
   min-height: calc(100% - var(--app-pages-bottom-padding, 0px));
 }
 /* Final Friends-surface override: remove shaded panel treatment on the Friends screen. */
-#app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsSharedByYouDetails > summary,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsIncomingRequestsDetails > summary,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsOutgoingRequestsDetails > summary,
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendEntryWrap,
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+#app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsIncomingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsIncomingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsOutgoingRequestsDetails,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsOutgoingRequestsDetails > summary,
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendEntryWrap,
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCard{
   background: #0d0f13 !important;
   box-shadow: none !important;
   filter: none !important;
   border-color: rgba(255,255,255,.08) !important;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
-#app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection .dashboardTopRow{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .dashboardTopRow{
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
@@ -666,56 +666,56 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 }
 /* Final Friends shared-task tile layout:
    render each shared task as a 2-column tile and pack multiple tiles per row when space allows. */
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTasksGrid{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
   gap: 12px;
   align-items: stretch;
   justify-content: start;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCard{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCard{
   min-width: 0;
   height: 100%;
   padding: 12px;
   box-sizing: border-box;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCardLayout{
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(152px, 192px);
   gap: 14px;
   align-items: stretch;
   min-height: 100%;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskInfo{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo{
   display: grid;
   align-content: start;
   gap: 4px;
   min-width: 0;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrend{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrend{
   min-width: 0;
   justify-content: stretch;
 }
-#app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrendLabel{
   text-align: right;
 }
 
 @media (max-width: 900px){
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTasksGrid{
+  #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTasksGrid{
     grid-template-columns: 1fr;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskCardLayout{
+  #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCardLayout{
     grid-template-columns: 1fr;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageTest2 .friendSharedTaskTrendLabel{
+  #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrendLabel{
     text-align: left;
   }
 }
 /* Final dashboard overview override: history-backed full-width flat hero chart. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
-body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2,
+body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
   background: transparent !important;
 }
@@ -945,13 +945,13 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
 }
 
 @media (max-width: 980px){
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] .appPages,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] .appPages,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages,
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard,
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 #groupsFriendsSection,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardShell,
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardGrid,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardGrid,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardGrid{
     width: 100% !important;
     max-width: none !important;
@@ -962,7 +962,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
     box-sizing: border-box;
   }
 
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardShell,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardShell,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardShell{
     width: 100% !important;
     max-width: none !important;
@@ -973,7 +973,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
     box-sizing: border-box;
   }
 
-  body[data-app-page="test2"] #app[aria-label="TaskLaunch App"] #appPageTest2 .dashboardCard,
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardCard{
     width: 100%;
     max-width: none;

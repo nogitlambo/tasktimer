@@ -230,7 +230,7 @@ export function shouldShowArchieResponseActionRow(input: {
 }
 
 export function onboardingStepTargetPage(step: OnboardingStep | null | undefined): ArchieAssistantPage | null {
-  if (step === "friends") return "test2";
+  if (step === "friends") return "friends";
   if (step === "dashboard" || step === "tasks" || step === "leaderboard" || step === "settings") return step;
   return null;
 }

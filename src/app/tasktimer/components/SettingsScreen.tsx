@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import AppImg from "@/components/AppImg";
+import DesktopAppRail from "./DesktopAppRail";
 import SettingsPanel, { type SettingsPaneKey } from "./SettingsPanel";
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
@@ -43,12 +44,17 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
           <AppImg className="brandLogo" src="/logo/tasklaunch-logo-v2.png" alt="TaskLaunch" />
         </div>
       </div>
-      <div className="list settingsPageList" style={{ paddingTop: 18 }}>
-        <div className="settingsSceneBackdrop" aria-hidden="true">
-          <div className="settingsSceneGlow settingsSceneGlowA" />
-          <div className="settingsSceneGlow settingsSceneGlowB" />
+      <div className="desktopAppShell">
+        <DesktopAppRail activePage="settings" useClientNavButtons={false} showMobileFooter={false} />
+        <div className="desktopAppMain">
+          <div className="list settingsPageList" style={{ paddingTop: 18 }}>
+            <div className="settingsSceneBackdrop" aria-hidden="true">
+              <div className="settingsSceneGlow settingsSceneGlowA" />
+              <div className="settingsSceneGlow settingsSceneGlowB" />
+            </div>
+            <SettingsPanel initialPane={initialPane} />
+          </div>
         </div>
-        <SettingsPanel initialPane={initialPane} />
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>

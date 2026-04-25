@@ -98,14 +98,14 @@
   display:none;
 }
 body[data-app-page="dashboard"] .modeSwitchWrap,
-body[data-app-page="test2"] .modeSwitchWrap,
+body[data-app-page="friends"] .modeSwitchWrap,
 body[data-app-page="leaderboard"] .modeSwitchWrap{
   display:none !important;
 }
 body[data-app-page="dashboard"] .appPages{
   padding-left: 0 !important;
 }
-body[data-app-page="test2"] .appPages,
+body[data-app-page="friends"] .appPages,
 body[data-app-page="leaderboard"] .appPages{
   padding-left: 104px !important;
   padding-right: 18px !important;

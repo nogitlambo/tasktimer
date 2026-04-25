@@ -55,7 +55,7 @@ describe("startupModule helpers", () => {
     const { startupModuleToAppPage, startupModuleToRoute } = await loadStartupModuleHelpers(null);
 
     expect(startupModuleToRoute("friends")).toBe("/friends");
-    expect(startupModuleToAppPage("friends")).toBe("test2");
+    expect(startupModuleToAppPage("friends")).toBe("friends");
     expect(startupModuleToRoute("leaderboard")).toBe("/leaderboard");
     expect(startupModuleToAppPage("leaderboard")).toBe("leaderboard");
   });
@@ -69,7 +69,7 @@ describe("startupModule helpers", () => {
     const { readStartupAppPagePreference, readStartupModulePreference } = await loadStartupModuleHelpers(null);
 
     expect(readStartupModulePreference("startupModule")).toBe("friends");
-    expect(readStartupAppPagePreference("startupModule")).toBe("test2");
+    expect(readStartupAppPagePreference("startupModule")).toBe("friends");
   });
 
   it("prefers local storage over cached preferences", async () => {

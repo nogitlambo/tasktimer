@@ -196,7 +196,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     if (runtime.destroyed) return;
     options.render();
     if (options.currentAppPage() === "dashboard") options.renderDashboardWidgetsWithBusy();
-    if (options.currentAppPage() === "test2") options.renderGroupsPage();
+    if (options.currentAppPage() === "friends") options.renderGroupsPage();
     if (!options.hasTaskList() && !!els.historyManagerScreen) options.openHistoryManager();
   });
 

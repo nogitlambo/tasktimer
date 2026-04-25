@@ -11,7 +11,7 @@ export function normalizeStartupModule(raw: unknown): StartupModulePreference {
 
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {
   if (startupModule === "tasks") return "tasks";
-  if (startupModule === "friends") return "test2";
+  if (startupModule === "friends") return "friends";
   if (startupModule === "leaderboard") return "leaderboard";
   return "dashboard";
 }

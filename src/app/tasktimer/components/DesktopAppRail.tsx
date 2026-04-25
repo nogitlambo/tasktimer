@@ -45,7 +45,7 @@ import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
 import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
 import RankLadderModal from "./RankLadderModal";
 
-type DesktopRailPage = "dashboard" | "tasks" | "test2" | "leaderboard" | "history" | "settings" | "none";
+type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "history" | "settings" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -85,7 +85,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/tasklaunch",
   },
   {
-    page: "test2",
+    page: "friends",
     label: "Friends",
     ariaLabel: "Friends",
     iconSrc: "/Friends.svg",
@@ -138,7 +138,7 @@ function shouldEnableDesktopWebArchie() {
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "tasks") return 1;
-  if (page === "test2") return 2;
+  if (page === "friends") return 2;
   if (page === "leaderboard") return 3;
   if (page === "history") return 4;
   if (page === "settings") return 5;
@@ -256,7 +256,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
           alt=""
           aria-hidden="true"
         />
-        {item.page === "test2" ? (
+        {item.page === "friends" ? (
           <span
             id="footerTest2AlertBadge"
             className="appFooterAlertBadge"
@@ -278,7 +278,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
         alt=""
         aria-hidden="true"
       />
-      {item.page === "test2" ? (
+      {item.page === "friends" ? (
         <span
           id="footerTest2AlertBadge"
           className="appFooterAlertBadge"
@@ -311,6 +311,7 @@ export default function DesktopAppRail({
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
   const [isDesktopWebArchieEnabled, setIsDesktopWebArchieEnabled] = useState(false);
+  const shouldShowDesktopArchie = isDesktopWebArchieEnabled && activePage !== "history";
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -428,9 +429,9 @@ export default function DesktopAppRail({
   }, []);
 
   useEffect(() => {
-    if (showDesktopRail && isDesktopWebArchieEnabled) return;
+    if (showDesktopRail && shouldShowDesktopArchie) return;
     setOnboardingState(null);
-  }, [isDesktopWebArchieEnabled, showDesktopRail]);
+  }, [shouldShowDesktopArchie, showDesktopRail]);
 
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
@@ -553,6 +554,14 @@ export default function DesktopAppRail({
           data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
         >
           <div className="desktopRailTopSection">
+            <div className="desktopRailBrandLockup" aria-hidden="true">
+              <AppImg
+                className="desktopRailBrandIcon"
+                src="/logo/launch-icon-original-transparent.png"
+                alt=""
+              />
+              <span className="desktopRailBrandWordmark">TASKLAUNCH</span>
+            </div>
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">
               {DESKTOP_NAV_ITEMS.map((item) =>
@@ -564,7 +573,7 @@ export default function DesktopAppRail({
           </div>
 
           <div className="desktopRailMiddleSection">
-            {isDesktopWebArchieEnabled ? (
+            {shouldShowDesktopArchie ? (
               <ArchieAssistantWidget activePage={archieActivePage} onOnboardingStepChange={setOnboardingState} />
             ) : null}
           </div>
