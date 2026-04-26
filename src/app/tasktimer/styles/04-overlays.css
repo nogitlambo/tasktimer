@@ -36,6 +36,17 @@
   padding:18px 18px 16px;
 }
 
+@media (max-width: 980px){
+  .overlay{
+    padding:10px;
+  }
+  .modal{
+    max-height:88svh;
+    overflow:auto;
+    padding:14px;
+  }
+}
+
 @media (min-width: 981px){
   #editOverlay{
     left: var(--desktop-rail-column, clamp(246px, 20vw, 292px));
@@ -184,6 +195,15 @@
   font-weight:700;
   line-height:1.25;
   letter-spacing:.1px;
+}
+
+@media (max-width: 360px){
+  .modal{
+    padding:12px;
+  }
+  .modal h2{
+    font-size:18px;
+  }
 }
 
 #rankLadderOverlay .modal{
@@ -1058,6 +1078,131 @@ body[data-theme="purple"] .rankLadderItemFlag{
   }
 }
 
+@media (max-width: 980px){
+  #editOverlay .modal{
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+  }
+}
+
+@media (max-width: 640px){
+  #editOverlay .footerBtns{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items:center;
+  }
+  #editOverlay .footerBtns .btn{
+    flex:0 1 auto;
+    width:100%;
+  }
+}
+
+@media (max-width: 420px){
+  #editOverlay .editTaskTypePills,
+  #editOverlay .footerBtns{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px){
+  #editOverlay .editTaskModalHeader{
+    gap: 8px;
+  }
+
+  #editOverlay .editTaskTypePills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 18px;
+    gap: 8px;
+  }
+
+  #editOverlay .editTaskTypePills .timerTypePill{
+    width: 100%;
+    min-width: 0;
+  }
+
+  #editOverlay .toggleRow{
+    min-height: 0;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  #editOverlay .editTaskTimeGoalToggleWrap{
+    width: auto;
+    max-width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  #editOverlay .editTaskDurationRow{
+    align-items: stretch;
+  }
+
+  #editOverlay #editTaskDurationValueInput{
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  #editOverlay #editTaskDurationUnitPills,
+  #editOverlay #editTaskDurationPeriodPills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  #editOverlay .addTaskDurationPills .unitBtn.small{
+    width: 100%;
+    min-width: 0;
+  }
+
+  #editOverlay .addTaskDurationPerLabel{
+    flex: 0 0 100%;
+  }
+
+  #editOverlay .addTaskPlannedStartSelectorRow{
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 10px;
+  }
+
+  #editOverlay .addTaskPlannedStartTimeCluster{
+    width: 100%;
+  }
+
+  #editOverlay #editPlannedStartHourSelect,
+  #editOverlay #editPlannedStartMinuteSelect{
+    width: auto;
+    flex: 1 1 0;
+  }
+
+  #editOverlay #editPlannedStartMeridiemSelect{
+    width: 84px;
+    flex: 0 0 84px;
+  }
+
+  #editOverlay .addTaskPlannedStartInlineCheckboxRow{
+    flex: 1 1 100%;
+    margin-left: 0;
+    white-space: normal;
+  }
+
+  #editOverlay .addTaskPlannedStartInlineCheckboxRow span{
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  #editOverlay #editPresetIntervalsToggleRow{
+    justify-content: flex-start;
+  }
+
+  #editOverlay .presetIntervalsInfoSlot{
+    margin-left: 0;
+  }
+}
+
 #addTaskOverlay .milestones{
   border:none;
   background: transparent;
@@ -1602,6 +1747,15 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #exportTaskOverlay .footerBtns .btn{
   margin: 0 !important;
+}
+
+@media (max-width: 980px){
+  #exportTaskOverlay .modal{
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Final modal button sizing override: match Account Sign Out button dimensions. */

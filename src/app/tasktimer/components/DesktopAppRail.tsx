@@ -554,7 +554,7 @@ export default function DesktopAppRail({
           data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
         >
           <div className="desktopRailTopSection">
-            <div className="desktopRailBrandLockup landingV2FooterBrand appBrandLandingReplica" aria-hidden="true">
+            <div className="desktopRailBrandLockup landingV2FooterBrand appBrandLandingReplica displayFont" aria-hidden="true">
               <AppImg
                 className="desktopRailBrandIcon landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
                 src="/logo/launch-icon-original-transparent.png"

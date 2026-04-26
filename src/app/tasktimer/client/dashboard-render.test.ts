@@ -125,4 +125,142 @@ describe("dashboard render zero states", () => {
       "Today's task completion. 1 of 2 daily completion opportunities complete."
     );
   });
+
+  it("suppresses the Today trend percentage when yesterday's baseline is effectively zero", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+
+    const cardEl = { setAttribute: vi.fn() };
+    const titleEl = { textContent: "" };
+    const valueEl = { textContent: "" };
+    const metaEl = { textContent: "", style: { display: "block" } };
+    const deltaEl = {
+      textContent: "",
+      classList: { add: vi.fn(), remove: vi.fn() },
+    };
+    const trendIndicatorEl = {
+      textContent: "",
+      classList: { add: vi.fn(), remove: vi.fn() },
+      closest: vi.fn(() => cardEl),
+    };
+    const progressBarEl = { setAttribute: vi.fn() };
+    const projectionMarkerEl = {
+      style: { display: "none", left: "" },
+      classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+    };
+    const projectionFillEl = { style: { display: "none", left: "0%", width: "0%" } };
+    const progressFillEl = { style: { width: "0%" } };
+
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: vi.fn((id: string) => {
+          if (id === "dashboardTodayHoursTitle") return titleEl;
+          if (id === "dashboardTodayHoursValue") return valueEl;
+          if (id === "dashboardTodayHoursMeta") return metaEl;
+          if (id === "dashboardTodayHoursDelta") return deltaEl;
+          if (id === "dashboardTodayTrendIndicator") return trendIndicatorEl;
+          if (id === "dashboardTodayHoursProgressBar") return progressBarEl;
+          if (id === "dashboardTodayHoursProjectionMarker") return projectionMarkerEl;
+          if (id === "dashboardTodayHoursProjectionFill") return projectionFillEl;
+          if (id === "dashboardTodayHoursProgressFill") return progressFillEl;
+          return null;
+        }),
+      },
+    });
+
+    const today = new Date("2026-04-22T10:00:00").getTime();
+    const yesterdayTinyBaseline = new Date("2026-04-21T09:30:00").getTime();
+
+    const ctx = {
+      getHistoryByTaskId: vi.fn(() => ({
+        task1: [
+          { ts: today, ms: 20 * 60 * 1000 },
+          { ts: yesterdayTinyBaseline, ms: 60 * 1000 },
+        ],
+      })),
+      getTasks: vi.fn(() => [{ id: "task1", running: false, timeGoalEnabled: false }]),
+      getIsOnboardingDashboardPreview: vi.fn(() => false),
+      normalizeHistoryTimestampMs: vi.fn((value) => Number(value)),
+      getElapsedMs: vi.fn(() => 0),
+    } as unknown as TaskTimerDashboardRenderContext;
+
+    createTaskTimerDashboardRender(ctx).renderDashboardTodayHoursCard();
+
+    expect(valueEl.textContent).toBe("20m");
+    expect(trendIndicatorEl.textContent).toBe("--");
+    expect(trendIndicatorEl.classList.add).toHaveBeenCalledWith("neutral");
+    expect(deltaEl.textContent).toBe("+19m vs this time yesterday");
+    expect(deltaEl.classList.add).toHaveBeenCalledWith("positive");
+    expect(cardEl.setAttribute).toHaveBeenCalledWith(
+      "aria-label",
+      "Today's logged time. Trend unavailable versus this time yesterday."
+    );
+  });
+
+  it("suppresses the Today trend percentage when there are no yesterday entries", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+
+    const cardEl = { setAttribute: vi.fn() };
+    const titleEl = { textContent: "" };
+    const valueEl = { textContent: "" };
+    const metaEl = { textContent: "", style: { display: "block" } };
+    const deltaEl = {
+      textContent: "",
+      classList: { add: vi.fn(), remove: vi.fn() },
+    };
+    const trendIndicatorEl = {
+      textContent: "",
+      classList: { add: vi.fn(), remove: vi.fn() },
+      closest: vi.fn(() => cardEl),
+    };
+    const progressBarEl = { setAttribute: vi.fn() };
+    const projectionMarkerEl = {
+      style: { display: "none", left: "" },
+      classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+    };
+    const projectionFillEl = { style: { display: "none", left: "0%", width: "0%" } };
+    const progressFillEl = { style: { width: "0%" } };
+
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: vi.fn((id: string) => {
+          if (id === "dashboardTodayHoursTitle") return titleEl;
+          if (id === "dashboardTodayHoursValue") return valueEl;
+          if (id === "dashboardTodayHoursMeta") return metaEl;
+          if (id === "dashboardTodayHoursDelta") return deltaEl;
+          if (id === "dashboardTodayTrendIndicator") return trendIndicatorEl;
+          if (id === "dashboardTodayHoursProgressBar") return progressBarEl;
+          if (id === "dashboardTodayHoursProjectionMarker") return projectionMarkerEl;
+          if (id === "dashboardTodayHoursProjectionFill") return projectionFillEl;
+          if (id === "dashboardTodayHoursProgressFill") return progressFillEl;
+          return null;
+        }),
+      },
+    });
+
+    const today = new Date("2026-04-22T10:00:00").getTime();
+
+    const ctx = {
+      getHistoryByTaskId: vi.fn(() => ({
+        task1: [{ ts: today, ms: 20 * 60 * 1000 }],
+      })),
+      getTasks: vi.fn(() => [{ id: "task1", running: false, timeGoalEnabled: false }]),
+      getIsOnboardingDashboardPreview: vi.fn(() => false),
+      normalizeHistoryTimestampMs: vi.fn((value) => Number(value)),
+      getElapsedMs: vi.fn(() => 0),
+    } as unknown as TaskTimerDashboardRenderContext;
+
+    createTaskTimerDashboardRender(ctx).renderDashboardTodayHoursCard();
+
+    expect(valueEl.textContent).toBe("20m");
+    expect(trendIndicatorEl.textContent).toBe("--");
+    expect(deltaEl.textContent).toBe("+20m vs this time yesterday");
+    expect(cardEl.setAttribute).toHaveBeenCalledWith(
+      "aria-label",
+      "Today's logged time. Trend unavailable versus this time yesterday."
+    );
+  });
 });

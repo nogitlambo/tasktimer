@@ -463,12 +463,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function syncFocusRunButtons(task?: Task | null) {
     const running = !!task?.running;
-    if (els.focusDialHint) els.focusDialHint.textContent = running ? "Tap to Stop" : "Tap to Launch";
+    const hintText = running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
+    if (els.focusDialHint) els.focusDialHint.textContent = hintText;
     if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running;
     if (els.focusDial) {
       els.focusDial.classList.toggle("isRunning", running);
       els.focusDial.classList.toggle("isStopped", !!task && !running);
       els.focusDial.setAttribute("aria-pressed", running ? "true" : "false");
+      els.focusDial.setAttribute("aria-label", `Focus dial. ${hintText.toLowerCase()} timer`);
     }
   }
 

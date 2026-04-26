@@ -39,6 +39,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     { key: "liveBonus", label: "Live Bonus", max: 10 },
   ] as const;
   const MOMENTUM_DRIVER_AUTO_RESET_MS = 10000;
+  const DASHBOARD_TREND_MIN_BASELINE_MS = 15 * 60 * 1000;
 
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
@@ -136,12 +137,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     indicatorEl: HTMLElement | null,
     currentMs: number,
     previousMs: number,
-    opts?: { showDirectionalArrow?: boolean }
+    opts?: { showDirectionalArrow?: boolean; minBaselineMs?: number }
   ) {
     if (!indicatorEl) return null;
     indicatorEl.classList.remove("positive", "negative", "neutral");
-    if (!(previousMs > 0)) {
+    const minBaselineMs = Math.max(0, Number(opts?.minBaselineMs) || 0);
+    if (!(previousMs > 0) || previousMs < minBaselineMs) {
       indicatorEl.textContent = "--";
+      indicatorEl.classList.add("neutral");
       return null;
     }
     const showDirectionalArrow = opts?.showDirectionalArrow !== false;
@@ -1212,6 +1215,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     let todayLoggedMs = 0;
     let yesterdaySameTimeMs = 0;
+    let yesterdaySameTimeEntryCount = 0;
     includedTaskIds.forEach((taskId) => {
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       entries.forEach((entry: any) => {
@@ -1220,7 +1224,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         if (!Number.isFinite(ts) || ms <= 0) return;
         const entryDayKey = localDayKey(ts);
         if (entryDayKey === todayKey) todayLoggedMs += ms;
-        else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) yesterdaySameTimeMs += ms;
+        else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) {
+          yesterdaySameTimeMs += ms;
+          yesterdaySameTimeEntryCount += 1;
+        }
       });
     });
     const todayInProgressMs = getDashboardFilteredTasks().reduce((sum, task) => {
@@ -1257,7 +1264,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalProjectedMs / totalDailyGoalMs) * 100))) : 0;
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdaySameTimeMs, {
+    const yesterdayHasUsableTrendBaseline =
+      yesterdaySameTimeEntryCount > 0 && yesterdaySameTimeMs >= DASHBOARD_TREND_MIN_BASELINE_MS;
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdayHasUsableTrendBaseline ? yesterdaySameTimeMs : 0, {
+      minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
       showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
     });
     applyDashboardGoalProgressUi({

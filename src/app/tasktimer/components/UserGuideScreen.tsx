@@ -204,7 +204,7 @@ export default function UserGuideScreen({ onBack }: Props) {
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch User Guide">
       <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
-        <div className="brand landingV2FooterBrand appBrandLandingReplica">
+        <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
           <AppImg
             className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
             src="/logo/launch-icon-original-transparent.png"

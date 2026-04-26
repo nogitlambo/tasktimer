@@ -52,6 +52,14 @@
 #friendRequestModal .editHead h2{
   margin: 0;
 }
+@media (max-width: 980px){
+  #friendRequestModal .modal{
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 /* Groups page: stack each section on its own row using full panel width */
 #appPageFriends .dashboardShell{
   width: 100%;
@@ -335,6 +343,14 @@
 #friendProfileModal .friendProfileCloseRow{
   justify-content: flex-end !important;
 }
+@media (max-width: 980px){
+  #friendProfileModal .modal{
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 #friendProfileIdentityRow {
   gap: 12px;
 }
@@ -570,6 +586,14 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFrie
 #shareTaskModal .modalSubtext,
 #friendRequestModal .modalSubtext{
   margin: 2px 0 0;
+}
+@media (max-width: 980px){
+  #shareTaskModal .modal{
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 #shareTaskFriendsField label{
   margin-bottom: 6px;
@@ -1002,4 +1026,31 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRank{
       margin-bottom: -4px;
     }
+}
+
+/* Leaderboard responsive ownership. */
+@media (max-width: 980px){
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardCard,
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard{
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
+    padding: 10px 12px;
+  }
+}
+
+/* Friends and leaderboard mobile shell ownership. */
+/* Mobile width override for main app pages (Tasks/Friends shared shell paths). */
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardShell,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardShell{
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 }

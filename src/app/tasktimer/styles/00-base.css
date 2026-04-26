@@ -744,6 +744,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .row3 > .field{
   flex:1;
 }
+@media (max-width: 640px){
+  .row2,
+  .row3{
+    flex-direction:column;
+  }
+}
 .elapsedPadModal{
   width:min(360px, 100%);
 }
@@ -1151,6 +1157,27 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   justify-content:flex-end;
   margin-left:auto;
   flex: 0 0 auto;
+}
+@media (max-width: 980px){
+  .historyRangeRow{
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .historyRangeInfo{
+    flex:1 1 100%;
+  }
+  .historyRangeActions{
+    width:100%;
+    justify-content:flex-end;
+  }
+}
+/* Mobile-only history chart sizing: +25% from the original 260px baseline. */
+@media (max-width: 640px){
+  .historyCanvasWrap{
+    height:325px;
+  }
 }
 .historyCloseBtn{
   min-width: 0;

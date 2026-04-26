@@ -1779,6 +1779,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .
   align-items:stretch;
   gap:20px;
 }
+@media (max-width: 1240px){
+  #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow > .settingsAvatarCol{
   order:1;
   display:flex;
@@ -2455,11 +2460,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
   border-color: rgba(255,255,255,.08);
   opacity: 1;
 }
-/* Final desktop rail padding override: remove left padding only on desktop app rails. */
-#app[aria-label="TaskLaunch App"] .desktopAppRail,
-#app[aria-label="TaskLaunch Settings"] .desktopAppRail{
-  padding-left: 0;
-}
 /* Final rank ladder overlay visibility override: when rendered, the shared overlay must be visible in app/settings contexts. */
 #app[aria-label="TaskLaunch App"] #rankLadderOverlay,
 #app[aria-label="TaskLaunch Settings"] #rankLadderOverlay{
@@ -2793,6 +2793,14 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTil
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+}
+@media (hover: hover) and (pointer: fine){
+  .settingsMenu .menuItem:hover{
+    background: linear-gradient(180deg, rgba(53,232,255,.18), rgba(255,255,255,.05));
+    border-color: rgba(53,232,255,.5);
+    box-shadow: inset 0 0 0 1px rgba(53,232,255,.2), 0 0 12px rgba(0,220,255,.16);
+    transform: translateY(-1px);
+  }
 }
 /* Final Account ID-card mockup: replace the top account summary with a branded profile card. */
 #app[aria-label="TaskLaunch Settings"] .settingsAvatarPicker{

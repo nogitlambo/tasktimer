@@ -144,6 +144,16 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   top:auto;
   bottom:calc(100% + 6px);
 }
+@media (max-width: 640px){
+  .taskMenuList{
+    right:0;
+    left:auto;
+    min-width:160px;
+    max-width:calc(100vw - 40px);
+    max-height:min(60vh, 280px);
+    overflow:auto;
+  }
+}
 .taskMenuItem{
   width:100%;
   text-align:left;
@@ -2157,6 +2167,85 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   text-shadow:0 0 8px rgba(0,220,255,.5);
   flex:0 0 auto;
 }
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(.taskScreenIconBtnImage, .taskScreenIconBtnSvg){
+    width:18px;
+    height:18px;
+  }
+  #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenIconBtnPlus{
+    width:18px;
+    height:18px;
+    font-size:18px;
+    line-height:18px;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
+    min-width:0;
+    min-height:auto;
+    padding:0;
+    font-size:10px;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlGroup{
+    flex-basis:auto;
+    margin-left:auto;
+    justify-content:flex-end;
+    gap:6px;
+    flex-wrap:nowrap;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeControlLabel{
+    font-size:9px;
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem{
+    min-width:118px;
+    min-height:32px;
+    padding:7px 10px;
+    font-size:10px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .dashboardTitleWrap{
+    width:100%;
+    min-width:0;
+  }
+  #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskPageHeaderActions{
+    width:auto;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    gap:8px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleMobileDayTabs{
+    display:flex;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller{
+    max-height:58vh;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlanner{
+    min-width:100%;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerHead{
+    grid-template-columns:72px minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerBody{
+    grid-template-columns:72px minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDays,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayColumns{
+    grid-template-columns:minmax(0, 1fr);
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerCorner,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayHeader,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDayChip{
+    min-height:48px;
+    font-size:10px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTimeLabel{
+    font-size:9px;
+    padding-left:8px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTray{
+    padding:12px;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTrayList{
+    grid-template-columns:1fr;
+  }
+}
 #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) .taskScreenPill.isOn{
   color:#f7fdff !important;
   border-color: transparent !important;
@@ -2372,6 +2461,48 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   }
 }
 
+@media (min-width: 981px){
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
+    box-sizing:border-box;
+    width:calc(100% - 120px);
+    max-width:none;
+    margin-left:120px;
+    margin-right:0;
+    padding-inline:18px;
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch App"] .appPageTasks .list{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+@media (min-width: 720px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="2"]{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="3"]{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1500px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="4"]{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="1"]{
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 420px){
   #app[aria-label="TaskLaunch App"] .appPageTasks .name{
     font-size:13px;
@@ -2492,4 +2623,200 @@ body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
   background: transparent !important;
+}
+
+/* Task action sizing ownership. */
+/* Task action sizing: keep secondary buttons rectangular after responsive rules. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-self: stretch !important;
+  gap: 4px !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.small,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenu,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn{
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
+  flex: 1 1 auto !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskActionSpacer{
+  width: 100%;
+  min-width: 0;
+  pointer-events: none;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn{
+  aspect-ratio: 1 / .9 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  transform: scaleY(.94) !important;
+  transform-origin: center !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.small{
+  height: 100% !important;
+  align-self: stretch !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]{
+  grid-column: 1 / 3 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  height: calc(90% - 5.4px) !important;
+  align-self: center !important;
+  padding: 0 clamp(38px, 18%, 58px) 0 clamp(10px, 6%, 12px) !important;
+  font-size: clamp(11px, 2.8vw, 13px) !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]::before,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::before{
+  content: "" !important;
+  position: absolute !important;
+  inset: 3px 3px 3px auto !important;
+  width: clamp(30px, 26%, 44px) !important;
+  background: #05070b !important;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+  pointer-events: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]::after,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::after{
+  content: "" !important;
+  position: absolute !important;
+  right: clamp(10px, 7%, 17px) !important;
+  top: 50% !important;
+  width: 0 !important;
+  height: 0 !important;
+  transform: translateY(-38%) !important;
+  border-left: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-right: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-bottom: clamp(7px, 2.2vw, 10px) solid rgba(255,255,255,.92) !important;
+  pointer-events: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"]::after{
+  right: clamp(10px, 7%, 16px) !important;
+  transform: translateY(-50%) !important;
+  border-top: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-bottom: clamp(5px, 1.8vw, 8px) solid transparent !important;
+  border-left: clamp(7px, 2.2vw, 10px) solid rgba(255,255,255,.92) !important;
+  border-right: 0 !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]::after{
+  right: clamp(10px, 7%, 17px) !important;
+  width: clamp(10px, 2.8vw, 14px) !important;
+  height: clamp(10px, 2.8vw, 14px) !important;
+  transform: translateY(-50%) !important;
+  background: rgba(255,255,255,.92) !important;
+  border: 0 !important;
+}
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"],
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:focus-visible,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:active,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"],
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:hover,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:focus-visible,
+body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:active{
+  border-color: transparent !important;
+  background: #f7f7f4 !important;
+  color: #090b0f !important;
+  box-shadow: none !important;
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"],
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:hover,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:focus-visible,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:active,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"],
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:hover,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:focus-visible,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:active{
+  border-color: transparent !important;
+  background: #f7f7f4 !important;
+  color: #090b0f !important;
+  box-shadow: none !important;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"],
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="start"]:active,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"],
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:hover,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:focus-visible,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:active{
+  border-color: transparent !important;
+  background: #f7f7f4 !important;
+  color: #090b0f !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn{
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn:active,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskMenuBtn:active{
+  background: rgba(18, 20, 24, .96) !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]:active{
+  background: #5caac9 !important;
+  color: #08131a !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn[data-action="stop"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn[data-action="stop"]:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn[data-action="stop"]:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-warn[data-action="stop"]:active{
+  background: #c84b4b !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"]:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"]:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-resume[data-action="start"]:active{
+  background: #d6ab4c !important;
+  color: #161103 !important;
+  box-shadow: none !important;
+}
+
+/* Task back responsive ownership. */
+/* Desktop footer navigation: lay out menu buttons horizontally instead of as a left rail. */
+@media (max-width: 1100px){
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBack{
+    padding:10px 0 0;
+  }
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBackHead{
+    gap:8px;
+  }
+}
+
+@media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] .appPageTasks .task .taskBackTitle{
+    font-size:12px;
+    letter-spacing:.1em;
+  }
 }

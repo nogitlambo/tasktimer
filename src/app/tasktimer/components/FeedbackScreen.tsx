@@ -276,7 +276,7 @@ export default function FeedbackScreen() {
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Feedback">
       <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
-        <div className="brand landingV2FooterBrand appBrandLandingReplica">
+        <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
           <AppImg
             className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
             src="/logo/launch-icon-original-transparent.png"

@@ -77,14 +77,11 @@
   align-items: center !important;
   gap: 10px !important;
   color: var(--landing-text, rgba(245,248,244,.96)) !important;
-  font-family: var(--font-readable) !important;
   font-size: .82rem !important;
-  font-weight: 700 !important;
   letter-spacing: .16em !important;
   line-height: normal !important;
   text-decoration: none !important;
   text-transform: uppercase !important;
-  font-synthesis: none !important;
 }
 #app .appBrandLandingReplicaText{
   color: inherit !important;
@@ -219,6 +216,19 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   justify-content:flex-end;
   margin-top:16px;
   flex-wrap:wrap;
+}
+@media (max-width: 640px){
+  .footerBtns{
+    justify-content:stretch;
+  }
+  .footerBtns .btn{
+    flex:1 1 100%;
+  }
+}
+@media (max-width: 360px){
+  .footerBtns{
+    gap:8px;
+  }
 }
 .historySaveWorkingIndicator{
   position: fixed;

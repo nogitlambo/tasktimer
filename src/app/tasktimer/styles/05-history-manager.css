@@ -758,6 +758,13 @@
   }
 }
 
+@media (hover: hover) and (pointer: fine){
+  .historyTopIconBtn:hover{
+    border:none !important;
+    background: rgba(235,245,255,.18) !important;
+  }
+}
+
 @media (max-width: 360px){
   #historyManagerScreen{
     padding:10px;
