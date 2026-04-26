@@ -696,9 +696,13 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.editCheckpointToastToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled());
     if (els.editCheckpointSoundModeSelect) {
       els.editCheckpointSoundModeSelect.value = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
+      els.editCheckpointSoundModeSelect.disabled =
+        !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled;
     }
     if (els.editCheckpointToastModeSelect) {
       els.editCheckpointToastModeSelect.value = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
+      els.editCheckpointToastModeSelect.disabled =
+        !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled;
     }
     els.editCheckpointSoundModeField?.classList.toggle(
       "isHidden",

@@ -15,7 +15,7 @@
     "android:java:check": "node scripts/check-android-java.mjs",
     "android:sync": "npm run android:java:check && npm run build:android && npx cap sync android",
     "android:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",
-    "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && copy /Y app\\build\\outputs\\apk\\debug\\app-debug.apk \"G:\\My Drive\\Apps\\app-debug.apk\"",
+    "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug && cd .. && node scripts/copy-android-apk.mjs",
     "firebase:login": "npx firebase-tools login",
     "firebase:rules:deploy": "npx firebase-tools deploy --only firestore:rules --project tasktimer-prod",
     "firebase:login-and-rules:deploy": "npm run firebase:login && npm run firebase:rules:deploy",
@@ -73,6 +73,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "googleapis": "^171.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.0"

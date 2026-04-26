@@ -1592,6 +1592,30 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 #app[aria-label="TaskLaunch App"] :is(#appPageTasks, #appPageSchedule) :is(#openScheduleBtn, #closeScheduleBtn, #openAddTaskBtn, #scheduleAddTaskBtn){
   white-space:nowrap;
 }
+/* Tasks + schedule scroll chrome ownership. Keep scrolling enabled while hiding scrollbar UI. */
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"],
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleGridScroller,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks :is(.scheduleMobileDayTabs),
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule :is(.scheduleMobileDayTabs){
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleGridScroller::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller::-webkit-scrollbar,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks :is(.scheduleMobileDayTabs)::-webkit-scrollbar,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule :is(.scheduleMobileDayTabs)::-webkit-scrollbar{
+  width:0;
+  height:0;
+  display:none;
+}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule{
   display:block;
 }

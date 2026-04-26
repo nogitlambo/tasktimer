@@ -36,6 +36,8 @@ export type HistoryViewState = {
   rangeMode: "entries" | "day";
   revealPhase: "opening" | "open" | "closing";
   revealTimer: number | null;
+  barRevealProgress: number;
+  barRevealAnimRaf: number | null;
   layoutRetryRaf: number | null;
   editMode: boolean;
   barRects: HistoryBarRect[];

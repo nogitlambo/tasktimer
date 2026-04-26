@@ -557,7 +557,12 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .editTaskTimeGoalHeaderLabel{
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: auto;
   margin-bottom: 0;
+  margin-right: auto;
 }
 
 #editOverlay .editTaskTimeGoalToggleWrap{
@@ -565,6 +570,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   align-items:center;
   gap: 10px;
   flex: 0 0 auto;
+  justify-content: flex-start;
   cursor: pointer;
 }
 
@@ -588,7 +594,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   height: 18px;
   margin: 0;
   flex: 0 0 auto;
-  accent-color: var(--accent3);
+  accent-color: #d9f34a;
   cursor: pointer;
 }
 
@@ -1086,24 +1092,40 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 @media (max-width: 640px){
   #editOverlay .footerBtns{
-    display:grid;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items:center;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    margin-top: auto;
+    margin-right: calc(-12px - var(--safe-right));
+    margin-bottom: calc(-12px - var(--safe-bottom));
+    margin-left: calc(-12px - var(--safe-left));
+    padding: 12px calc(12px + var(--safe-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + var(--safe-left));
+    background: #0d0f13 !important;
+    border-top: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 -14px 28px rgba(0,0,0,.32);
   }
   #editOverlay .footerBtns .btn{
-    flex:0 1 auto;
-    width:100%;
+    flex: 0 1 auto;
+    width: 100%;
   }
 }
 
 @media (max-width: 420px){
-  #editOverlay .editTaskTypePills,
-  #editOverlay .footerBtns{
+  #editOverlay .editTaskTypePills{
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px){
+  #editOverlay .editTaskTimeGoalHeader{
+    align-items: center;
+    flex-wrap: nowrap;
+    row-gap: 0;
+  }
+
   #editOverlay .editTaskModalHeader{
     gap: 8px;
   }
@@ -1132,59 +1154,68 @@ body[data-theme="purple"] .rankLadderItemFlag{
     width: auto;
     max-width: 100%;
     justify-content: flex-start;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+  }
+
+  #editOverlay .editTaskTimeGoalHeaderLabel{
+    margin-right: 0;
   }
 
   #editOverlay .editTaskDurationRow{
-    align-items: stretch;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   #editOverlay #editTaskDurationValueInput{
-    width: 100%;
-    min-width: 0;
-    flex: 1 1 100%;
+    width: 86px;
+    min-width: 86px;
+    flex: 0 0 auto;
   }
 
   #editOverlay #editTaskDurationUnitPills,
   #editOverlay #editTaskDurationPeriodPills{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    flex: 1 1 calc(50% - 4px);
+    display: flex;
+    grid-template-columns: none;
+    flex: 0 1 auto;
     min-width: 0;
   }
 
   #editOverlay .addTaskDurationPills .unitBtn.small{
-    width: 100%;
-    min-width: 0;
+    width: 34px;
+    min-width: 34px;
   }
 
   #editOverlay .addTaskDurationPerLabel{
-    flex: 0 0 100%;
+    flex: 0 0 auto;
   }
 
   #editOverlay .addTaskPlannedStartSelectorRow{
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
     align-items: flex-start;
     row-gap: 10px;
   }
 
   #editOverlay .addTaskPlannedStartTimeCluster{
     width: 100%;
+    justify-content: flex-start;
   }
 
   #editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect{
-    width: auto;
-    flex: 1 1 0;
+    width: 64px;
+    flex: 0 0 64px;
   }
 
   #editOverlay #editPlannedStartMeridiemSelect{
-    width: 84px;
-    flex: 0 0 84px;
+    width: 76px;
+    flex: 0 0 76px;
   }
 
   #editOverlay .addTaskPlannedStartInlineCheckboxRow{
-    flex: 1 1 100%;
+    width: 100%;
+    flex: 0 0 auto;
+    align-self: stretch;
     margin-left: 0;
     white-space: normal;
   }
@@ -1200,6 +1231,20 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
   #editOverlay .presetIntervalsInfoSlot{
     margin-left: 0;
+  }
+}
+
+@media (max-width: 640px){
+  #editOverlay #editPlannedStartHourSelect,
+  #editOverlay #editPlannedStartMinuteSelect,
+  #editOverlay #editPlannedStartMeridiemSelect{
+    font-family: var(--font-geist-sans) !important;
+    font-size: 14px;
+    line-height: 1.2;
+    color: rgba(245,248,244,.94) !important;
+    -webkit-text-fill-color: rgba(245,248,244,.94);
+    opacity: 1;
+    text-indent: 0;
   }
 }
 
@@ -1949,9 +1994,9 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"],
 #editOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"]{
-  width:14px;
-  height:14px;
-  accent-color: var(--accent3);
+  width:18px;
+  height:18px;
+  accent-color: #d9f34a;
 }
 
 #addTaskOverlay .addTaskPlannedStartHelp{
@@ -3116,6 +3161,7 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficulty l
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyHint{
   color: rgba(247,232,255,.72);
 }
+
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconWrap{
   border-color: rgba(214,96,229,.44);

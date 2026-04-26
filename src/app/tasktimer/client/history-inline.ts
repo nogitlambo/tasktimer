@@ -27,6 +27,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_LOOKBACK_DAYS = 30;
   const HISTORY_REVEAL_OPEN_MS = 220;
   const HISTORY_REVEAL_CLOSE_MS = 170;
+  const HISTORY_BAR_REVEAL_MS = 280;
   const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
   const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
   const { sharedTasks } = ctx;
@@ -41,6 +42,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     if (!state || state.revealTimer == null) return;
     window.clearTimeout(state.revealTimer);
     state.revealTimer = null;
+  }
+
+  function clearHistoryBarRevealAnimation(state: HistoryViewState | undefined) {
+    if (!state || state.barRevealAnimRaf == null) return;
+    window.cancelAnimationFrame(state.barRevealAnimRaf);
+    state.barRevealAnimRaf = null;
   }
 
   function clearHistoryLayoutRetry(state: HistoryViewState | undefined) {
@@ -199,6 +206,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       rangeMode: savedRangeMode,
       revealPhase: "open",
       revealTimer: null,
+      barRevealProgress: 1,
+      barRevealAnimRaf: null,
       layoutRetryRaf: null,
       editMode: false,
       barRects: [],
@@ -214,6 +223,39 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     };
     historyViewByTaskId[taskId] = created;
     return created;
+  }
+
+  function startHistoryBarRevealAnimation(taskId: string) {
+    const state = ensureHistoryViewState(taskId);
+    clearHistoryBarRevealAnimation(state);
+    if (prefersReducedMotion()) {
+      state.barRevealProgress = 1;
+      return;
+    }
+
+    state.barRevealProgress = 0;
+    const startAt = performance.now();
+
+    const tick = (now: number) => {
+      if (!ctx.getOpenHistoryTaskIds().has(taskId)) {
+        state.barRevealAnimRaf = null;
+        return;
+      }
+      const nextState = ctx.getHistoryViewByTaskId()[taskId];
+      if (!nextState) return;
+      const t = Math.max(0, Math.min(1, (now - startAt) / HISTORY_BAR_REVEAL_MS));
+      nextState.barRevealProgress = 1 - Math.pow(1 - t, 3);
+      renderHistory(taskId);
+      if (t < 1) {
+        nextState.barRevealAnimRaf = window.requestAnimationFrame(tick);
+      } else {
+        nextState.barRevealAnimRaf = null;
+        nextState.barRevealProgress = 1;
+        renderHistory(taskId);
+      }
+    };
+
+    state.barRevealAnimRaf = window.requestAnimationFrame(tick);
   }
 
   function saveHistoryRangePref(taskId: string, rangeDays: 7 | 14) {
@@ -234,6 +276,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.cancelAnimationFrame(state.selectionAnimRaf);
       state.selectionAnimRaf = null;
     }
+    clearHistoryBarRevealAnimation(state);
     clearHistoryLayoutRetry(state);
 
     const prevAbsIndex = state.visualSelectedAbsIndex;
@@ -841,20 +884,27 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const baseX = plotLeft + idx * (barW + gap);
       const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW));
-      const drawH = Math.max(2, Math.min(innerH, Math.floor(bh)));
+      const barRevealProgress = Math.max(0, Math.min(1, state.barRevealProgress ?? 1));
+      const rawAnimatedBarH = Math.floor(bh * barRevealProgress);
+      const drawH =
+        ms > 0 && barRevealProgress > 0
+          ? Math.max(2, Math.min(innerH, rawAnimatedBarH))
+          : 0;
       const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
-      const y = Math.max(padT, padT + innerH - drawH);
+      const y = drawH > 0 ? Math.max(padT, padT + innerH - drawH) : padT + innerH;
       const barBottomY = padT + innerH;
       const goalY =
         timeGoalMs > 0
           ? Math.max(padT, Math.min(barBottomY - 1, barBottomY - Math.floor(innerH * Math.min(1, timeGoalMs / scaleMaxMs))))
           : y;
 
-      draw.save();
-      draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
-      draw.fillStyle = createHistorySpectrumFill(draw, goalY, barBottomY);
-      draw.fillRect(x, y, drawW, drawH);
-      draw.restore();
+      if (drawH > 0) {
+        draw.save();
+        draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
+        draw.fillStyle = createHistorySpectrumFill(draw, goalY, barBottomY);
+        draw.fillRect(x, y, drawW, drawH);
+        draw.restore();
+      }
 
       const slotLeft = idx === 0 ? plotLeft : plotLeft + idx * (barW + gap) - Math.floor(gap / 2);
       const slotRight = idx === barCount - 1 ? plotRight : plotLeft + (idx + 1) * (barW + gap) - Math.floor(gap / 2);
@@ -870,7 +920,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         hitH: innerH,
       };
 
-      if (isSelected || isLocked) {
+      if (drawH > 0 && (isSelected || isLocked)) {
         draw.save();
         draw.strokeStyle = isLocked ? "rgba(255,77,77,.95)" : "rgba(255,255,255,.9)";
         draw.lineWidth = 2;
@@ -1151,14 +1201,18 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }
     const state = ensureHistoryViewState(taskId);
     clearHistoryRevealTimer(state);
+    clearHistoryBarRevealAnimation(state);
     clearHistoryLayoutRetry(state);
     ctx.getOpenHistoryTaskIds().add(taskId);
-    state.revealPhase = prefersReducedMotion() ? "open" : "opening";
+    const reducedMotion = prefersReducedMotion();
+    state.revealPhase = reducedMotion ? "open" : "opening";
+    state.barRevealProgress = reducedMotion ? 1 : 0;
     ctx.render();
     renderAllOpenHistoryChartsAfterLayout();
     renderAllOpenHistoryChartsAfterLayout(32);
     scheduleHistoryOpenSettledRenders(taskId);
-    if (prefersReducedMotion()) return;
+    if (reducedMotion) return;
+    startHistoryBarRevealAnimation(taskId);
     queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
       const nextState = ctx.getHistoryViewByTaskId()[taskId];
@@ -1179,6 +1233,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const state = historyViewByTaskId[taskId];
       if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
       if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
+      clearHistoryBarRevealAnimation(state);
       ctx.getOpenHistoryTaskIds().delete(taskId);
       if (!state || reducedMotion) {
         clearHistoryRevealTimer(state);
@@ -1205,6 +1260,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const state = historyViewByTaskId[k];
         if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
         if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
+        clearHistoryBarRevealAnimation(state);
         clearHistoryRevealTimer(state);
         clearHistoryLayoutRetry(state);
         clearHistoryCanvasResizeObserver(k);
