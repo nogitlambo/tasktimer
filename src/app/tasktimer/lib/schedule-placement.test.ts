@@ -35,6 +35,11 @@ describe("schedule placement helpers", () => {
     expect(getMovedScheduleDayValue(task, "thu")).toBeNull();
   });
 
+  it("treats dragged scheduled moves as single-day placements", () => {
+    const task = createTask({ plannedStartDay: null, plannedStartTime: "09:00" });
+    expect(getSchedulePlacementDays(task, "thu", "mon")).toEqual(["thu"]);
+  });
+
   it("keeps single-day tasks on the dropped day", () => {
     const task = createTask({ plannedStartDay: "mon", plannedStartTime: "09:00" });
     expect(isRecurringDailyScheduleTask(task)).toBe(false);

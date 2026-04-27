@@ -38,6 +38,9 @@
 .topbar.topbarBrandOnly{
   grid-template-columns: minmax(0, 1fr);
 }
+.topbar.topbarBrandOnly.taskLaunchAppTopbar{
+  grid-template-columns: minmax(0, 1fr) auto;
+}
 .brand{
   display:flex;
   align-items:center;
@@ -96,6 +99,12 @@
   height: 22px !important;
   flex: 0 0 22px !important;
   object-fit: contain !important;
+}
+.taskLaunchMobileMenuBtn{
+  display:none;
+}
+.taskLaunchMobileMenu{
+  display:none;
 }
 .controls{display:flex; align-items:center; gap:var(--space-2);}
 .controls{ justify-self:end; }
@@ -356,10 +365,27 @@ body[data-theme="purple"] .dashboardRefreshBusyProgress{
   --dashboard-busy-progress-fill-start: rgba(243, 181, 255, .94);
   --dashboard-busy-progress-fill-end: rgba(213, 109, 236, .9);
 }
+body[data-theme="purple"] .taskLaunchMobileMenu{
+  border-bottom-color: rgba(218,112,235,.24);
+}
+body[data-theme="purple"] .taskLaunchMobileMenuBars > span{
+  background: rgba(250, 236, 255, 0.96);
+}
+body[data-theme="lime"] .taskLaunchMobileMenu{
+  border-bottom-color: rgba(191,233,122,.22);
+}
+body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
+  background: rgba(241, 250, 224, 0.96);
+}
 @media (prefers-reduced-motion: reduce){
   .dashboardRefreshBusyProgressBar{
     animation: none;
     transform: translateX(68%);
+  }
+
+  .taskLaunchMobileMenu,
+  .taskLaunchMobileMenuBars > span{
+    transition: none;
   }
 }
 /* Final Tasks-page override: make + Add Task span full panel width. */
@@ -626,12 +652,115 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     padding: 12px;
   }
 
+  .topbar.topbarBrandOnly.taskLaunchAppTopbar{
+    grid-template-areas: "brand controls";
+  }
+
   .brand {
     grid-area: brand;
   }
 
   .controls {
     grid-area: controls;
+  }
+
+  .taskLaunchMobileMenuBtn{
+    display: inline-grid;
+    grid-area: controls;
+    justify-self: end;
+    position: relative;
+    z-index: 2;
+  }
+
+  .taskLaunchMobileMenuBars{
+    display: inline-grid;
+    gap: 4px;
+  }
+
+  .taskLaunchMobileMenuBars > span{
+    display: block;
+    width: 16px;
+    height: 1.5px;
+    border-radius: 999px;
+    background: rgba(236, 248, 255, 0.96);
+    transition: transform .18s ease, opacity .18s ease;
+  }
+
+  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(1){
+    transform: translateY(5.5px) rotate(45deg);
+  }
+
+  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(2){
+    opacity: 0;
+  }
+
+  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(3){
+    transform: translateY(-5.5px) rotate(-45deg);
+  }
+
+  .taskLaunchMobileMenu{
+    position: fixed;
+    inset: 0;
+    display: block;
+    width: 100vw;
+    height: 100dvh;
+    padding:
+      calc(72px + var(--safe-top))
+      calc(12px + var(--safe-right))
+      calc(96px + env(safe-area-inset-bottom))
+      calc(12px + var(--safe-left));
+    background:
+      linear-gradient(180deg, rgba(7,10,15,.92), rgba(7,10,15,.97)),
+      rgba(13,15,19,.96);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+    z-index: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .taskLaunchMobileMenu.isOpen{
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity .18s ease, transform .18s ease, visibility 0s linear 0s;
+  }
+
+  .taskLaunchMobileMenuList{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  .taskLaunchMobileMenuItem{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 54px;
+    text-decoration: none;
+    width: 100%;
+  }
+
+  .taskLaunchMobileMenuItemIcon{
+    flex: 0 0 auto;
+  }
+
+  .taskLaunchMobileMenuItemText{
+    font-family: var(--font-tight);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: inherit;
+  }
+
+  body.taskLaunchMobileMenuOpen{
+    overflow: hidden;
   }
 
   .modeSwitchWrap {

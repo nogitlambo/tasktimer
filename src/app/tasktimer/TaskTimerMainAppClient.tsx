@@ -274,10 +274,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <span className="taskScreenHeaderBtnText">Add Task</span>
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
-                  <span className="tasksModeControlLabel">Order By</span>
                   <details className="tasksModeMenu" id="taskOrderByMenu">
-                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn">
-                      <span id="taskOrderByValue">Custom</span>
+                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
+                      <span id="taskOrderByValue" className="sr-only">Custom</span>
+                      <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M4 6.5h16" />
+                        <path d="M7.5 12h9" />
+                        <path d="M10.5 17.5h3" />
+                      </svg>
                     </summary>
                     <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
                       <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" aria-pressed="false" role="menuitem">

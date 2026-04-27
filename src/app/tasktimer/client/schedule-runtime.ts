@@ -217,15 +217,10 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
     const scheduledDays = getScheduleDaysForTask(task);
     const nextTime = formatScheduleStoredTime(startMinutes);
-    if (sourceDay && nextByDay[sourceDay]) {
-      if (task.plannedStartOpenEnded) {
-        delete nextByDay[sourceDay];
-        nextByDay[day] = nextTime;
-      } else {
-        placementDays.forEach((placementDay) => {
-          nextByDay[placementDay] = nextTime;
-        });
-      }
+    if (sourceDay) {
+      if (nextByDay[sourceDay]) delete nextByDay[sourceDay];
+      nextByDay[day] = nextTime;
+      setTaskScheduleByDay(task, nextByDay, { flexible: true });
     } else if (scheduledDays.length === 1) {
       nextByDay[day] = nextTime;
       const onlyScheduledDay = scheduledDays[0];

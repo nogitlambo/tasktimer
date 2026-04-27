@@ -149,6 +149,7 @@ const els = {
   footerDashboardBtn: documentRef.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
   footerTest2Btn: documentRef.getElementById("footerTest2Btn") as HTMLButtonElement | null,
   footerTest2AlertBadge: documentRef.getElementById("footerTest2AlertBadge") as HTMLElement | null,
+  footerLeaderboardBtn: documentRef.getElementById("footerLeaderboardBtn") as HTMLButtonElement | null,
   footerSettingsBtn: documentRef.getElementById("footerSettingsBtn") as HTMLButtonElement | null,
   commandCenterTasksBtn: documentRef.getElementById("commandCenterTasksBtn") as HTMLButtonElement | null,
   commandCenterDashboardBtn: documentRef.getElementById("commandCenterDashboardBtn") as HTMLButtonElement | null,

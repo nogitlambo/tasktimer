@@ -94,7 +94,7 @@ describe("schedule-runtime", () => {
     expect(render).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves recurring-daily behavior and blocks overlapping placements", () => {
+  it("moves only the dragged day for recurring-daily tasks and blocks overlapping placements", () => {
     const recurringSave = vi.fn();
     const recurringRender = vi.fn();
     const recurringTasks = [makeTask({ id: "task-a", plannedStartDay: null, plannedStartTime: "09:00" })];
@@ -105,8 +105,16 @@ describe("schedule-runtime", () => {
       render: recurringRender,
     });
 
-    recurringRuntime.moveTaskOnSchedule("task-a", "wed", 540);
-    expect(recurringTasks[0]?.plannedStartDay).toBeNull();
+    recurringRuntime.moveTaskOnSchedule("task-a", "wed", 540, "mon");
+    expect(recurringTasks[0]?.plannedStartOpenEnded).toBe(true);
+    expect(recurringTasks[0]?.plannedStartByDay).toEqual({
+      tue: "09:00",
+      wed: "09:00",
+      thu: "09:00",
+      fri: "09:00",
+      sat: "09:00",
+      sun: "09:00",
+    });
     expect(recurringSave).toHaveBeenCalledTimes(1);
 
     const overlapSave = vi.fn();
@@ -159,7 +167,7 @@ describe("schedule-runtime", () => {
     expect(render).toHaveBeenCalledTimes(1);
   });
 
-  it("moves all scheduled days for non-flex tasks", () => {
+  it("moves only the dragged scheduled day for shared non-flex tasks and marks them flexible", () => {
     const save = vi.fn();
     const render = vi.fn();
     const tasks = [makeTask({ id: "task-a", plannedStartDay: null, plannedStartTime: "09:00", plannedStartOpenEnded: false })];
@@ -172,19 +180,18 @@ describe("schedule-runtime", () => {
 
     runtime.moveTaskOnSchedule("task-a", "wed", 600, "mon");
 
-    expect(tasks[0]?.plannedStartOpenEnded).toBe(false);
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(true);
     expect(tasks[0]?.plannedStartByDay).toEqual({
-      mon: "10:00",
-      tue: "10:00",
+      tue: "09:00",
       wed: "10:00",
-      thu: "10:00",
-      fri: "10:00",
-      sat: "10:00",
-      sun: "10:00",
+      thu: "09:00",
+      fri: "09:00",
+      sat: "09:00",
+      sun: "09:00",
     });
   });
 
-  it("moves all currently scheduled days for non-flex per-day maps", () => {
+  it("moves only the dragged scheduled day for non-flex per-day maps and marks them flexible", () => {
     const tasks = [
       makeTask({
         id: "task-a",
@@ -207,11 +214,10 @@ describe("schedule-runtime", () => {
 
     runtime.moveTaskOnSchedule("task-a", "wed", 660, "mon");
 
-    expect(tasks[0]?.plannedStartOpenEnded).toBe(false);
+    expect(tasks[0]?.plannedStartOpenEnded).toBe(true);
     expect(tasks[0]?.plannedStartByDay).toEqual({
-      mon: "11:00",
       wed: "11:00",
-      fri: "11:00",
+      fri: "09:00",
     });
   });
 

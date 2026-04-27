@@ -407,6 +407,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "friends");
+    ctx.els.footerLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "friends");
@@ -596,6 +597,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       e?.preventDefault?.();
       applyAppPage("friends", { pushNavStack: true, syncUrl: "push" });
     });
+    ctx.on(ctx.els.footerLeaderboardBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      applyAppPage("leaderboard", { pushNavStack: true, syncUrl: "push" });
+    });
     ctx.on(ctx.els.footerSettingsBtn, "click", (e: any) => {
       e?.preventDefault?.();
       navigateToAppRoute("/settings");
@@ -645,10 +650,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (!badge) return;
       e?.preventDefault?.();
       navigateToAppRoute("/settings?pane=general");
-    });
-
-    ctx.on(ctx.els.menuIcon, "click", () => {
-      navigateToAppRoute("/settings");
     });
   }
 

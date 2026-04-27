@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "clean:next": "node -e \"require('node:fs').rmSync('.next', { recursive: true, force: true })\"",
-    "dev": "next dev",
+    "clean:next:dev": "node -e \"require('node:fs').rmSync('.next/dev', { recursive: true, force: true })\"",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev",
+    "dev:reset": "npm run clean:next:dev && npm run dev",
     "build": "npm run clean:next && next build --webpack",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
     "build:android": "npm run clean:next && node scripts/build-android-export.mjs",

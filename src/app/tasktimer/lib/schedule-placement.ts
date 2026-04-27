@@ -110,6 +110,7 @@ export function canNormalizeTaskSchedule(task: Task): boolean {
 }
 
 export function getSchedulePlacementDays(task: Task, dropDay: ScheduleDay, sourceDay?: ScheduleDay | null): ScheduleDay[] {
+  if (sourceDay) return [dropDay];
   const byDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
   if (task.plannedStartOpenEnded) return [dropDay];
   if (byDay) {
