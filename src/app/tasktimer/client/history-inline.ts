@@ -550,8 +550,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
+    const task = ctx.getTasks().find((candidate) => String(candidate?.id || "").trim() === String(taskId || "").trim()) || null;
     const payload = buildHistoryEntrySummaryPayload({
       taskId,
+      task,
+      rewardProgress: ctx.getRewardProgress(),
       entries,
       formatDateTime: ctx.formatDateTime,
       formatTwo: ctx.formatTwo,

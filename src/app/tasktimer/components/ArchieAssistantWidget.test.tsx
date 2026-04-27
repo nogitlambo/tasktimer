@@ -15,7 +15,10 @@ import {
   getOnboardingDashboardPanelStepMessage,
   onboardingModuleStepFromNavPage,
   readOnboardingDashboardPanelStepForCurrentSession,
+  readOnboardingStatusForCurrentSession,
   saveOnboardingDashboardPanelStepForCurrentSession,
+  saveOnboardingTasksActionStepForCurrentSession,
+  skipOnboardingForCurrentSession,
   shouldOnboardingStepAwaitModuleClick,
 } from "../lib/onboarding";
 
@@ -176,6 +179,27 @@ describe("ArchieAssistantWidget response actions", () => {
       "tasks-completed"
     );
     expect(getOnboardingDashboardPanelStepMessage("xp-progress")).toContain("Click anywhere to move forward");
+  });
+
+  it("preserves skipped onboarding status when clearing panel and task substeps", () => {
+    const store = new Map<string, string>();
+    const sessionStorage = {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value);
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key);
+      }),
+    };
+    vi.stubGlobal("window", { sessionStorage });
+    const user = { uid: "uid-1", metadata: { lastSignInTime: "signin-1" } } as never;
+
+    skipOnboardingForCurrentSession(user, "dashboard");
+    saveOnboardingDashboardPanelStepForCurrentSession(user, null);
+    saveOnboardingTasksActionStepForCurrentSession(user, null);
+
+    expect(readOnboardingStatusForCurrentSession(user)).toBe("skipped");
   });
 
   it("keeps onboarding heading-only usage scoped to layout cases", () => {

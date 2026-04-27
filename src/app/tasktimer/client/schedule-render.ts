@@ -115,9 +115,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
             })()
           : "";
       const slots = Array.from({ length: 24 * 60 / SCHEDULE_SNAP_MINUTES }, (_, index) => {
-        const slotMinutes = index * SCHEDULE_SNAP_MINUTES;
-        const middayClass = slotMinutes === 12 * 60 ? " isMidday" : "";
-        return `<div class="scheduleSlot${middayClass}" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`;
+        return `<div class="scheduleSlot" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`;
       }).join("");
       const productivityHighlight = `<div class="scheduleProductivityHighlight" aria-hidden="true">${productivitySegments
         .map(

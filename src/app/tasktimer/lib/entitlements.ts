@@ -44,12 +44,18 @@ export function normalizeTaskTimerPlan(value: unknown): TaskTimerPlan {
   return "free";
 }
 
+export function getEffectiveTaskTimerPlan(plan: TaskTimerPlan): TaskTimerPlan {
+  // Temporary testing-only override: treat Free users as Pro across the app surface.
+  // Remove after QA when real plan gating should apply again.
+  return plan === "pro" ? "pro" : "pro";
+}
+
 export function getTaskTimerEntitlements(plan: TaskTimerPlan) {
-  return PLAN_ENTITLEMENTS[plan];
+  return PLAN_ENTITLEMENTS[getEffectiveTaskTimerPlan(plan)];
 }
 
 export function hasTaskTimerEntitlement(plan: TaskTimerPlan, entitlement: TaskTimerEntitlement) {
-  return !!PLAN_ENTITLEMENTS[plan][entitlement];
+  return !!PLAN_ENTITLEMENTS[getEffectiveTaskTimerPlan(plan)][entitlement];
 }
 
 export function readTaskTimerPlanCacheFromStorage(): { uid: string | null; plan: TaskTimerPlan } {
@@ -79,8 +85,8 @@ export function readTaskTimerPlanFromStorage(): TaskTimerPlan {
   const cached = readTaskTimerPlanCacheFromStorage();
   const cachedUid = String(cached.uid || "").trim();
   const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
-  if (cachedUid && activeUid && cachedUid !== activeUid) return "free";
-  return cached.plan;
+  if (cachedUid && activeUid && cachedUid !== activeUid) return getEffectiveTaskTimerPlan("free");
+  return getEffectiveTaskTimerPlan(cached.plan);
 }
 
 export function writeTaskTimerPlanToStorage(plan: TaskTimerPlan, opts?: { uid?: string | null }) {

@@ -1,5 +1,6 @@
 "use client";
 import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
+import RankThumbnail from "./RankThumbnail";
 
 const dashboardPanelOptions = [
   { id: "xp-progress", label: "XP Progress" },
@@ -13,6 +14,7 @@ const dashboardPanelOptions = [
 ] as const;
 
 type RewardsHeader = {
+  rankLabel: string;
   totalXp: number;
   progressPct: number;
   progressLabel: string;
@@ -20,11 +22,12 @@ type RewardsHeader = {
 };
 
 type DashboardPageContentProps = {
+  currentRankId: string;
   rewardsHeader: RewardsHeader;
   active: boolean;
 };
 
-export default function DashboardPageContent({ rewardsHeader, active }: DashboardPageContentProps) {
+export default function DashboardPageContent({ currentRankId, rewardsHeader, active }: DashboardPageContentProps) {
   const handleOnboardingAdvanceClick = () => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
@@ -69,16 +72,20 @@ export default function DashboardPageContent({ rewardsHeader, active }: Dashboar
 
                 <div className="dashboardGrid">
                   <section className="dashboardCard dashboardSummaryCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
-                    <div className="dashboardCardTitle">XP Progress</div>
-                    <button
-                      className="iconBtn dashboardXpProgressHelpBtn"
-                      id="dashboardXpProgressHelpBtn"
-                      type="button"
-                      aria-label="Explain XP progress"
-                      title="Explain XP progress"
-                    >
-                      ?
-                    </button>
+                    <div className="dashboardXpProgressTitleRow">
+                      <div className="dashboardCardTitle">XP Progress</div>
+                      <span className="dashboardXpProgressInsignia" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                        <RankThumbnail
+                          rankId={currentRankId}
+                          className="dashboardXpProgressInsigniaShell"
+                          imageClassName="dashboardXpProgressInsigniaImg"
+                          placeholderClassName="dashboardXpProgressInsigniaPlaceholder"
+                          alt=""
+                          size={24}
+                          aria-hidden
+                        />
+                      </span>
+                    </div>
                     <div className="dashboardXpProgressValue">
                       <strong>{rewardsHeader.totalXp} XP</strong>
                     </div>

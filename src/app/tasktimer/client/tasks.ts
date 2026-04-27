@@ -1,6 +1,7 @@
 import { escapeRegExp, newTaskId } from "../lib/ids";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
+import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel, renderTaskProgressHtml } from "./task-card-view-model";
@@ -28,6 +29,57 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return ctx.hasEntitlement("socialFeatures");
   }
 
+  function normalizeTaskNameForSort(task: Task | null | undefined) {
+    return String(task?.name || "").trim().toLocaleLowerCase();
+  }
+
+  function getTaskScheduleSortMinutes(task: Task | null | undefined) {
+    if (!task) return null;
+    const entries = getTaskScheduledDayEntries(task);
+    if (!entries.length) return null;
+    const minuteValues = entries
+      .map((entry) => {
+        const match = String(entry.time || "").match(/^(\d{2}):(\d{2})$/);
+        if (!match) return null;
+        const hours = Number(match[1] || 0);
+        const minutes = Number(match[2] || 0);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+        return hours * 60 + minutes;
+      })
+      .filter((value): value is number => value != null);
+    if (!minuteValues.length) return null;
+    return Math.min(...minuteValues);
+  }
+
+  function compareTasksByCustomOrder(a: Task, b: Task) {
+    return (a.order || 0) - (b.order || 0);
+  }
+
+  function compareTasksByAlpha(a: Task, b: Task) {
+    const nameCompare = normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
+    if (nameCompare !== 0) return nameCompare;
+    return compareTasksByCustomOrder(a, b);
+  }
+
+  function compareTasksBySchedule(a: Task, b: Task) {
+    const aMinutes = getTaskScheduleSortMinutes(a);
+    const bMinutes = getTaskScheduleSortMinutes(b);
+    if (aMinutes == null && bMinutes != null) return 1;
+    if (aMinutes != null && bMinutes == null) return -1;
+    if (aMinutes != null && bMinutes != null && aMinutes !== bMinutes) return aMinutes - bMinutes;
+    const nameCompare = normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
+    if (nameCompare !== 0) return nameCompare;
+    return compareTasksByCustomOrder(a, b);
+  }
+
+  function buildDisplayedTasks(tasks: Task[]) {
+    const nextTasks = tasks.slice();
+    const taskOrderBy = ctx.getTaskOrderBy();
+    if (taskOrderBy === "alpha") return nextTasks.sort(compareTasksByAlpha);
+    if (taskOrderBy === "schedule") return nextTasks.sort(compareTasksBySchedule);
+    return nextTasks.sort(compareTasksByCustomOrder);
+  }
+
   function getTileColumnCount() {
     if (typeof window === "undefined") return 1;
     if (window.matchMedia("(min-width: 1500px)").matches) return 4;
@@ -41,7 +93,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!taskListEl) return;
 
     const tasks = ctx.getTasks();
-    tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const displayedTasks = buildDisplayedTasks(tasks);
+    const sourceIndexByTaskId = new Map(tasks.map((task, index) => [String(task.id || ""), index] as const));
     taskListEl.innerHTML = "";
     const useTileColumns = ctx.getTaskView() === "tile";
     const tileColumnCount = useTileColumns ? getTileColumnCount() : 1;
@@ -67,7 +120,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       }
     }
 
-    if (!tasks.length) {
+    if (!displayedTasks.length) {
       taskListEl.innerHTML = `
         <section class="taskListEmptyState" aria-label="No tasks">
           <div class="taskListEmptyContent">
@@ -85,7 +138,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       return;
     }
 
-    tasks.forEach((t, index) => {
+    displayedTasks.forEach((t) => {
       const elapsedMs = ctx.getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
@@ -103,9 +156,9 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         ((ctx.checkpointRepeatActiveTaskId() && ctx.checkpointRepeatActiveTaskId() === taskId) || hasActiveToastForTask
           ? " taskAlertPulse"
           : "");
-      (taskEl as any).dataset.index = String(index);
+      (taskEl as any).dataset.index = String(sourceIndexByTaskId.get(taskId) ?? -1);
       (taskEl as any).dataset.taskId = taskId;
-      taskEl.setAttribute("draggable", "true");
+      taskEl.setAttribute("draggable", ctx.getTaskOrderBy() === "custom" ? "true" : "false");
 
       const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
       const progressModel = buildTaskProgressModel({

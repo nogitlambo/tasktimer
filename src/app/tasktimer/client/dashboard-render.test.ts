@@ -126,6 +126,98 @@ describe("dashboard render zero states", () => {
     );
   });
 
+  it("renders a partial completed tick while a daily-goal task is running", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+    const { cardEl, valueEl, ticksEl } = installCompletedCardDom();
+    const renderedData = {
+      tasksCompleted: false,
+      momentum: false,
+      focusTrend: false,
+      heatCalendar: false,
+      modeDistribution: false,
+      avgSession: false,
+      timeline: false,
+    };
+    const runningStartMs = new Date("2026-04-22T11:45:00").getTime();
+
+    const ctx = {
+      getTasks: vi.fn(() => [
+        { id: "daily", running: false, timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 30 },
+        { id: "daily2", running: true, startMs: runningStartMs, timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 20 },
+      ]),
+      getHistoryByTaskId: vi.fn(() => ({
+        daily: [{ ts: new Date("2026-04-22T09:00:00").getTime(), ms: 30 * 60 * 1000 }],
+        daily2: [],
+      })),
+      getWeekStarting: vi.fn(() => "monday"),
+      getDashboardWidgetHasRenderedData: vi.fn(() => renderedData),
+      getDashboardRefreshHoldActive: vi.fn(() => false),
+      getCloudRefreshInFlight: vi.fn(() => null),
+      getIsOnboardingDashboardPreview: vi.fn(() => false),
+      normalizeHistoryTimestampMs: vi.fn((value) => Number(value)),
+      getElapsedMs: vi.fn(() => 15 * 60 * 1000),
+    } as unknown as TaskTimerDashboardRenderContext;
+
+    createTaskTimerDashboardRender(ctx).renderDashboardTasksCompletedCard();
+
+    expect(valueEl.innerHTML).toContain("dashboardTasksCompletedDone\">1</span>");
+    expect(valueEl.innerHTML).toContain("dashboardTasksCompletedTotal\">2</span>");
+    expect(ticksEl.innerHTML).toContain("dashboardTasksCompletedTick isComplete");
+    expect(ticksEl.innerHTML).toContain("dashboardTasksCompletedTick isPartial");
+    expect(ticksEl.innerHTML).toContain("--dashboard-task-complete-progress:75%");
+    expect(cardEl.setAttribute).toHaveBeenCalledWith(
+      "aria-label",
+      "Today's task completion. 1 of 2 daily completion opportunities complete."
+    );
+  });
+
+  it("counts only daily-goal tasks that are actually due today", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+    const { cardEl, valueEl, ticksEl } = installCompletedCardDom();
+    const renderedData = {
+      tasksCompleted: false,
+      momentum: false,
+      focusTrend: false,
+      heatCalendar: false,
+      modeDistribution: false,
+      avgSession: false,
+      timeline: false,
+    };
+    const today = new Date("2026-04-22T09:00:00").getTime();
+
+    const ctx = {
+      getTasks: vi.fn(() => [
+        { id: "daily-any", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 30, plannedStartDay: null, plannedStartTime: null },
+        { id: "daily-wed", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 20, plannedStartDay: "wed", plannedStartTime: "09:00" },
+        { id: "daily-mon", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 40, plannedStartDay: "mon", plannedStartTime: "09:00" },
+      ]),
+      getHistoryByTaskId: vi.fn(() => ({
+        "daily-any": [{ ts: today, ms: 30 * 60 * 1000 }],
+        "daily-wed": [{ ts: today, ms: 5 * 60 * 1000 }],
+        "daily-mon": [{ ts: today, ms: 40 * 60 * 1000 }],
+      })),
+      getWeekStarting: vi.fn(() => "monday"),
+      getDashboardWidgetHasRenderedData: vi.fn(() => renderedData),
+      getDashboardRefreshHoldActive: vi.fn(() => false),
+      getCloudRefreshInFlight: vi.fn(() => null),
+      getIsOnboardingDashboardPreview: vi.fn(() => false),
+      normalizeHistoryTimestampMs: vi.fn((value) => Number(value)),
+      getElapsedMs: vi.fn(() => 0),
+    } as unknown as TaskTimerDashboardRenderContext;
+
+    createTaskTimerDashboardRender(ctx).renderDashboardTasksCompletedCard();
+
+    expect(valueEl.innerHTML).toContain("dashboardTasksCompletedDone\">1</span>");
+    expect(valueEl.innerHTML).toContain("dashboardTasksCompletedTotal\">2</span>");
+    expect((ticksEl.innerHTML.match(/dashboardTasksCompletedTick(?:\s|")/g) || [])).toHaveLength(2);
+    expect(cardEl.setAttribute).toHaveBeenCalledWith(
+      "aria-label",
+      "Today's task completion. 1 of 2 daily completion opportunities complete."
+    );
+  });
+
   it("suppresses the Today trend percentage when yesterday's baseline is effectively zero", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-22T12:00:00"));

@@ -157,13 +157,13 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (userSelectedAppPageBeforeStartupResolution && isTaskTimerMainAppPath(path)) {
         return ctx.getCurrentAppPage();
       }
-      if (isFirstInitialPageResolution && isNativeOrExportRuntime() && isTaskTimerMainAppPath(path)) {
-        return readStartupAppPagePreference();
-      }
       if (isTaskTimerDashboardPath(path)) return "dashboard";
       if (isTaskTimerFriendsPath(path)) return "friends";
       if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       if (/\/history-manager(?:\/index\.html)?$/i.test(path)) return "history";
+      if (isFirstInitialPageResolution && isNativeOrExportRuntime() && isTaskTimerMainAppPath(path)) {
+        return readStartupAppPagePreference();
+      }
       if (isTaskTimerTasksPath(path)) return readStartupAppPagePreference();
     } catch {
       // ignore

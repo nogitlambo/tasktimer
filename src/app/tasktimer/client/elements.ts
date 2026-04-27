@@ -1,6 +1,9 @@
 export function collectTaskTimerElements(documentRef: Document) {
 const els = {
   taskList: documentRef.getElementById("taskList"),
+  taskOrderByMenu: documentRef.getElementById("taskOrderByMenu") as HTMLDetailsElement | null,
+  taskOrderByMenuBtn: documentRef.getElementById("taskOrderByMenuBtn") as HTMLElement | null,
+  taskOrderByValue: documentRef.getElementById("taskOrderByValue"),
   openScheduleBtn: documentRef.getElementById("openScheduleBtn") as HTMLButtonElement | null,
   openAddTaskBtn: documentRef.getElementById("openAddTaskBtn"),
   scheduleAddTaskBtn: documentRef.getElementById("scheduleAddTaskBtn") as HTMLButtonElement | null,
@@ -160,7 +163,6 @@ const els = {
   dashboardEditCancelBtn: documentRef.getElementById("dashboardEditCancelBtn") as HTMLButtonElement | null,
   dashboardEditDoneBtn: documentRef.getElementById("dashboardEditDoneBtn") as HTMLButtonElement | null,
   dashboardRefreshBtn: documentRef.getElementById("dashboardRefreshBtn") as HTMLButtonElement | null,
-  dashboardXpProgressHelpBtn: documentRef.getElementById("dashboardXpProgressHelpBtn") as HTMLButtonElement | null,
   dashboardPanelMenuBtn: documentRef.getElementById("dashboardPanelMenuBtn") as HTMLElement | null,
   dashboardPanelMenuBackBtn: documentRef.getElementById("dashboardPanelMenuBackBtn") as HTMLButtonElement | null,
   dashboardPanelMenuList: documentRef.getElementById("dashboardPanelMenuList") as HTMLElement | null,

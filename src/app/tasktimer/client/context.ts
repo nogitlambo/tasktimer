@@ -19,6 +19,7 @@ import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { StartupModulePreference } from "../lib/startupModule";
+import type { TaskOrderBy } from "./types";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -227,6 +228,7 @@ export type TaskTimerTaskListUiContext = {
   setTasks: (value: Task[]) => void;
   getCurrentAppPage: () => AppPage;
   getTaskView: () => "list" | "tile";
+  getTaskOrderBy: () => TaskOrderBy;
   getTaskDragEl: () => HTMLElement | null;
   setTaskDragEl: (value: HTMLElement | null) => void;
   getFlippedTaskIds: () => Set<string>;
@@ -351,6 +353,7 @@ export type TaskTimerTasksContext = {
   getCurrentUid: () => string | null;
   getCurrentAppPage: () => AppPage;
   getTaskView: () => "list" | "tile";
+  getTaskOrderBy: () => TaskOrderBy;
   getCurrentTileColumnCount: () => number;
   setCurrentTileColumnCount: (value: number) => void;
   getFocusModeTaskId: () => string | null;
@@ -818,6 +821,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   storageKeys: {
     THEME_KEY: string;
     TASK_VIEW_KEY: string;
+    TASK_ORDER_BY_KEY: string;
     STARTUP_MODULE_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
@@ -832,6 +836,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setThemeModeState: (value: "purple" | "cyan" | "lime") => void;
   getTaskView: () => "list" | "tile";
   setTaskViewState: (value: "list" | "tile") => void;
+  getTaskOrderBy: () => TaskOrderBy;
+  setTaskOrderByState: (value: TaskOrderBy) => void;
   getMenuButtonStyle: () => "parallelogram" | "square";
   setMenuButtonStyleState: (value: "parallelogram" | "square") => void;
   getWeekStarting: () => DashboardWeekStart;
@@ -895,6 +901,7 @@ export type TaskTimerHistoryManagerContext = {
   on: TaskTimerRuntime["on"];
   runtime: TaskTimerRuntime;
   getTasks: () => Task[];
+  getRewardProgress: () => RewardProgressV1;
   setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
@@ -953,6 +960,7 @@ export type TaskTimerHistoryInlineContext = {
   on: TaskTimerRuntime["on"];
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
+  getRewardProgress: () => RewardProgressV1;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
   getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;

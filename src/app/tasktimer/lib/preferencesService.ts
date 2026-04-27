@@ -17,6 +17,7 @@ export type TaskTimerPreferenceStorageKeys = {
   WEEK_STARTING_KEY: string;
   STARTUP_MODULE_KEY: string;
   TASK_VIEW_KEY: string;
+  TASK_ORDER_BY_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
@@ -30,6 +31,7 @@ type PreferencesStateSnapshot = {
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
+  taskOrderBy: "custom" | "alpha" | "schedule";
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
@@ -99,6 +101,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       weekStarting: state.weekStarting,
       startupModule: state.startupModule,
       taskView: state.taskView,
+      taskOrderBy: state.taskOrderBy,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
@@ -120,6 +123,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
     safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "dashboard"));
     safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
+    safeWriteLocalStorage(storageKeys.TASK_ORDER_BY_KEY, String(snapshot.taskOrderBy || "custom"));
     safeWriteLocalStorage(
       storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false",
@@ -182,6 +186,13 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     if (localRaw === "tile" || localRaw === "list") return localRaw;
     const cloudRaw = String(getStoredOrCachedPreferences().taskView || "").trim().toLowerCase();
     return cloudRaw === "tile" ? "tile" : "list";
+  }
+
+  function loadTaskOrderBy(): "custom" | "alpha" | "schedule" {
+    const localRaw = safeReadLocalStorage(storageKeys.TASK_ORDER_BY_KEY).toLowerCase();
+    if (localRaw === "alpha" || localRaw === "schedule" || localRaw === "custom") return localRaw;
+    const cloudRaw = String(getStoredOrCachedPreferences().taskOrderBy || "").trim().toLowerCase();
+    return cloudRaw === "alpha" ? "alpha" : cloudRaw === "schedule" ? "schedule" : "custom";
   }
 
   function loadAutoFocusOnTaskLaunchEnabled(): boolean {
@@ -247,6 +258,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadWeekStarting,
     loadStartupModule,
     loadTaskView,
+    loadTaskOrderBy,
     loadAutoFocusOnTaskLaunchEnabled,
     loadDynamicColorsEnabled,
     loadMobilePushAlertsEnabled,

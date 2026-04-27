@@ -19,6 +19,7 @@ import {
   saveDeletedTaskMeta,
   saveTask,
   subscribeToTaskCollection,
+  subscribeToTaskLiveSessionDocs,
   type UserPreferencesV1,
 } from "./cloudStore";
 import {
@@ -984,6 +985,7 @@ export function buildDefaultCloudPreferences() {
     menuButtonStyle: "square" as const,
     startupModule: "dashboard" as const,
     taskView: "list" as const,
+    taskOrderBy: "custom" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
     mobilePushAlertsEnabled: false,
@@ -1497,6 +1499,11 @@ export function loadDeletedMeta(): DeletedTaskMeta {
 export function subscribeCloudTaskCollection(uid: string, listener: () => void): () => void {
   if (!uid) return () => {};
   return subscribeToTaskCollection(uid, listener);
+}
+
+export function subscribeCloudTaskLiveSessions(uid: string, taskIds: string[], listener: () => void): () => void {
+  if (!uid || !Array.isArray(taskIds) || !taskIds.length) return () => {};
+  return subscribeToTaskLiveSessionDocs(uid, taskIds, listener);
 }
 
 export function saveDeletedMeta(meta: DeletedTaskMeta): void {

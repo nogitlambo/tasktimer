@@ -1,5 +1,6 @@
 import { completionDifficultyLabel } from "../lib/completionDifficulty";
-import { formatHistoryManagerElapsed } from "./history-manager-shared";
+import type { RewardProgressV1 } from "../lib/rewards";
+import type { Task } from "../lib/types";
 
 const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
@@ -47,6 +48,8 @@ export type HistoryEntrySummaryPayload = {
 
 type BuildHistoryEntrySummaryPayloadOptions = {
   taskId?: string;
+  task?: Task | null;
+  rewardProgress?: RewardProgressV1 | null;
   entries: HistoryEntrySummarySource[];
   formatDateTime: (value: number) => string;
   formatTwo: (value: number) => string;
@@ -73,18 +76,76 @@ function deriveTaskTitle(entries: HistoryEntrySummarySource[]) {
   return String(firstNamedEntry?.name || "").trim() || "Session Summary";
 }
 
-function deriveTimeGoalCompleted() {
-  return null as boolean | null;
+function deriveTimeGoalCompleted(entry: HistoryEntrySummarySource, task?: Task | null) {
+  const goalMinutes = Number(task?.timeGoalMinutes || 0);
+  if (!task?.timeGoalEnabled || !(goalMinutes > 0)) return null as boolean | null;
+  const entryMs = normalizeElapsedMs(entry?.ms);
+  return entryMs >= goalMinutes * 60 * 1000;
 }
 
-function deriveXpEarned(entry: HistoryEntrySummarySource) {
-  void entry;
-  return null;
+function formatTimeGoalText(task?: Task | null) {
+  const effectiveMinutesRaw = Number(task?.timeGoalMinutes || 0);
+  const effectiveMinutes = Number.isFinite(effectiveMinutesRaw) ? Math.max(0, effectiveMinutesRaw) : 0;
+  if (!task?.timeGoalEnabled || !(effectiveMinutes > 0)) return NOT_TRACKED_TEXT;
+
+  const goalUnit = task?.timeGoalUnit === "minute" ? "minute" : task?.timeGoalUnit === "hour" ? "hour" : null;
+  const goalPeriod = task?.timeGoalPeriod === "day" ? "day" : task?.timeGoalPeriod === "week" ? "week" : null;
+  const goalValueRaw = Number(task?.timeGoalValue || 0);
+  const goalValue = Number.isFinite(goalValueRaw) ? Math.max(0, goalValueRaw) : 0;
+
+  if (goalUnit && goalPeriod && goalValue > 0) {
+    const unitLabel = goalValue === 1 ? goalUnit : `${goalUnit}s`;
+    const periodLabel = goalPeriod === "day" ? "per day" : "per week";
+    return `${goalValue} ${unitLabel} ${periodLabel}`;
+  }
+
+  if (effectiveMinutes % 60 === 0) {
+    const hours = effectiveMinutes / 60;
+    return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+  return `${effectiveMinutes} ${effectiveMinutes === 1 ? "minute" : "minutes"}`;
+}
+
+function deriveXpEarned(entry: HistoryEntrySummarySource, taskId: string, rewardProgress?: RewardProgressV1 | null) {
+  const normalizedTaskId = String(taskId || "").trim();
+  const awardedAt = normalizeTimestamp(entry?.ts);
+  const ledger = Array.isArray(rewardProgress?.awardLedger) ? rewardProgress.awardLedger : null;
+  if (!normalizedTaskId || awardedAt <= 0 || !ledger) return null;
+  const matchingEntries = ledger.filter((award) => {
+    const awardTs = normalizeTimestamp(award?.ts);
+    if (awardTs !== awardedAt) return false;
+    if (award?.reason === "session") return String(award?.taskId || "").trim() === normalizedTaskId;
+    return true;
+  });
+  const totalXp = matchingEntries.reduce((sum, award) => sum + Math.max(0, Number(award?.xp || 0) || 0), 0);
+  return totalXp > 0 ? totalXp : 0;
+}
+
+function formatHistoryEntrySummaryElapsed(msRaw: unknown, formatTwo: (value: number) => string) {
+  const totalSeconds = Math.max(0, Math.floor(Math.max(0, Number(msRaw) || 0) / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = [
+    { value: days, suffix: "d" },
+    { value: hours, suffix: "h" },
+    { value: minutes, suffix: "m" },
+    { value: seconds, suffix: "s" },
+  ];
+  const firstVisibleIndex = parts.findIndex((part) => part.value > 0);
+  if (firstVisibleIndex === -1) return "0s";
+  return parts
+    .slice(firstVisibleIndex)
+    .map((part, index) => `${index === 0 ? String(part.value) : formatTwo(part.value)}${part.suffix}`)
+    .join(" ");
 }
 
 function buildHistoryEntrySummaryItem(
   entry: HistoryEntrySummarySource,
   taskId: string,
+  task: Task | null | undefined,
+  rewardProgress: RewardProgressV1 | null | undefined,
   formatDateTime: (value: number) => string,
   formatTwo: (value: number) => string,
   getEntryNote: (entry: HistoryEntrySummarySource) => string
@@ -94,18 +155,17 @@ function buildHistoryEntrySummaryItem(
   const name = String(entry?.name || "").trim();
   const noteText = String(getEntryNote(entry) || "").trim();
   const hasNote = !!noteText;
-  const timeGoalCompleted = deriveTimeGoalCompleted();
-  const xpEarned = deriveXpEarned(entry);
+  const timeGoalCompleted = deriveTimeGoalCompleted(entry, task);
+  const xpEarned = deriveXpEarned(entry, taskId, rewardProgress);
   return {
     taskId,
     name,
     ts,
     ms,
     dateTimeText: ts > 0 ? formatDateTime(ts) : "Unknown date/time",
-    elapsedText: formatHistoryManagerElapsed(ms, formatTwo),
+    elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
     timeGoalCompleted,
-    timeGoalText:
-      timeGoalCompleted == null ? NOT_TRACKED_TEXT : timeGoalCompleted ? "Yes" : "No",
+    timeGoalText: formatTimeGoalText(task),
     noteText: hasNote ? noteText : NO_SESSION_NOTE_TEXT,
     hasNote,
     noteCopyText: noteText,
@@ -147,7 +207,7 @@ function buildAggregateSummary(
   return {
     dateSpanText,
     sessionCountText: `${sortedByTime.length} sessions`,
-    totalElapsedText: formatHistoryManagerElapsed(totalElapsedMs, formatTwo),
+    totalElapsedText: formatHistoryEntrySummaryElapsed(totalElapsedMs, formatTwo),
     timeGoalText,
     xpText: formatXpText(totalXp),
   };
@@ -155,6 +215,8 @@ function buildAggregateSummary(
 
 export function buildHistoryEntrySummaryPayload({
   taskId,
+  task,
+  rewardProgress,
   entries,
   formatDateTime,
   formatTwo,
@@ -163,7 +225,7 @@ export function buildHistoryEntrySummaryPayload({
   const normalizedEntries = Array.isArray(entries) ? entries : [];
   const normalizedTaskId = String(taskId || "").trim();
   const sessions = normalizedEntries
-    .map((entry) => buildHistoryEntrySummaryItem(entry, normalizedTaskId, formatDateTime, formatTwo, getEntryNote))
+    .map((entry) => buildHistoryEntrySummaryItem(entry, normalizedTaskId, task, rewardProgress, formatDateTime, formatTwo, getEntryNote))
     .sort((a, b) => b.ts - a.ts);
   if (!sessions.length) return null;
   const aggregate = buildAggregateSummary(sessions, formatDateTime, formatTwo);
@@ -237,5 +299,9 @@ export function renderHistoryEntrySummaryHtml(
     })
     .join("");
 
-  return `${heroHtml}<div class="historyEntrySummarySessions${payload.aggregate ? "" : " historyEntrySummarySessionsSingle"}">${sessionsHtml}</div>`;
+  return `<div class="historyEntrySummaryLayout">
+    ${heroHtml}
+    ${payload.aggregate ? '<div class="historyEntrySummaryDivider" aria-hidden="true"></div>' : ""}
+    <div class="historyEntrySummarySessions${payload.aggregate ? "" : " historyEntrySummarySessionsSingle"}">${sessionsHtml}</div>
+  </div>`;
 }

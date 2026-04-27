@@ -132,6 +132,7 @@ type CreatePersistenceOptionsArgs = {
   loadWeekStartingPreference: () => void;
   loadStartupModulePreference: () => void;
   loadTaskViewPreference: () => void;
+  loadTaskOrderByPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadCheckpointAlertSettings: () => void;
@@ -162,6 +163,7 @@ type CreateHistoryManagerOptionsArgs = {
   els: Parameters<typeof createTaskTimerHistoryManager>[0]["els"];
   on: Parameters<typeof createTaskTimerHistoryManager>[0]["on"];
   runtime: Parameters<typeof createTaskTimerHistoryManager>[0]["runtime"];
+  rewardState: MutableStore;
   taskCollectionBindings: {
     getTasks: () => Task[];
     setTasks: (value: Task[]) => void;
@@ -208,6 +210,7 @@ type CreateHistoryInlineOptionsArgs = {
   els: Parameters<typeof createTaskTimerHistoryInline>[0]["els"];
   on: Parameters<typeof createTaskTimerHistoryInline>[0]["on"];
   sharedTasks: Parameters<typeof createTaskTimerHistoryInline>[0]["sharedTasks"];
+  rewardState: MutableStore;
   taskCollectionBindings: {
     getTasks: () => Task[];
     getHistoryByTaskId: () => HistoryByTaskId;
@@ -820,6 +823,10 @@ export function createTaskTimerPreferencesContext(
     setTaskViewState: (value) => {
       args.preferencesState.set("taskView", value);
     },
+    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),
+    setTaskOrderByState: (value) => {
+      args.preferencesState.set("taskOrderBy", value);
+    },
     getMenuButtonStyle: () => asType<"parallelogram" | "square">(args.preferencesState.get("menuButtonStyle")),
     setMenuButtonStyleState: (value) => {
       args.preferencesState.set("menuButtonStyle", value);
@@ -947,6 +954,7 @@ export function createTaskTimerPersistenceContext(
     loadWeekStartingPreference: args.loadWeekStartingPreference,
     loadStartupModulePreference: args.loadStartupModulePreference,
     loadTaskViewPreference: args.loadTaskViewPreference,
+    loadTaskOrderByPreference: args.loadTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadCheckpointAlertSettings: args.loadCheckpointAlertSettings,
@@ -982,6 +990,7 @@ export function createTaskTimerHistoryManagerContext(
     on: args.on,
     runtime: args.runtime,
     ...args.taskCollectionBindings,
+    getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     getHmExpandedTaskGroups: () => asType<Set<string>>(args.historyUiState.get("hmExpandedTaskGroups")),
     setHmExpandedTaskGroups: (value) => {
       args.historyUiState.set("hmExpandedTaskGroups", value);
@@ -1055,6 +1064,7 @@ export function createTaskTimerHistoryInlineContext(
     on: args.on,
     sharedTasks: args.sharedTasks,
     getTasks: args.taskCollectionBindings.getTasks,
+    getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     setHistoryByTaskId: args.taskCollectionBindings.setHistoryByTaskId,
     getHistoryRangeDaysByTaskId: () => asType<Record<string, 7 | 14>>(args.historyUiState.get("historyRangeDaysByTaskId")),
@@ -1105,6 +1115,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getCurrentUid: args.currentUid,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getTaskView: () => asType<"list" | "tile">(args.preferencesState.get("taskView")),
+    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),
     getCurrentTileColumnCount: () => asType<number>(args.appRuntimeState.get("currentTileColumnCount")),
     setCurrentTileColumnCount: (value) => args.appRuntimeState.set("currentTileColumnCount", value),
     getFocusModeTaskId: args.focusModeTaskId,

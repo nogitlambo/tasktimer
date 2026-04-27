@@ -2265,18 +2265,26 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTitleRow .dashboardCardTitle{
   flex:1 1 auto;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressHelpBtn{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressInsignia{
   width:26px;
   height:26px;
   min-width:26px;
-  padding:0;
-  border-color: transparent;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  font-family:var(--font-tight);
-  font-size:13px;
-  line-height:1;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressInsigniaShell{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressInsigniaImg,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressInsigniaPlaceholder{
+  display:block;
+  width:24px;
+  height:24px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressValue{
   align-self: start;
@@ -3045,6 +3053,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   pointer-events: none;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTick{
+  --dashboard-task-complete-progress: 0%;
   flex: 0 1 27px;
   width: 27px;
   max-width: 27px;
@@ -3058,6 +3067,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background: rgba(209, 220, 228, .08);
   color: rgba(209, 220, 228, .46);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTick.isPartial{
+  border-color: rgba(65, 230, 145, .68);
+  background:
+    radial-gradient(circle at center, rgba(65, 230, 145, .26) 0 54%, transparent 56% 100%),
+    conic-gradient(from -90deg, rgba(65, 230, 145, .92) 0 var(--dashboard-task-complete-progress), rgba(209, 220, 228, .14) var(--dashboard-task-complete-progress) 100%);
+  color: transparent;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    0 0 10px rgba(65, 230, 145, .16);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickSeparator{
   flex: 1 1 12px;
@@ -3084,6 +3103,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-weight: 900;
   line-height: 1;
   transform: translateY(-.02em);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTick.isPartial .dashboardTasksCompletedTickMark{
+  opacity: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardSummaryProgressSpacer,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardSummaryStatus{
@@ -4944,11 +4966,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 /* Final authoritative dashboard summary progress visuals. Keep control styling here, not in responsive overrides. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard{
   position: relative;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .dashboardXpProgressHelpBtn{
-  position: absolute;
-  top: 12px;
-  right: 12px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardGoalProgressWrap,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProgressWrap{

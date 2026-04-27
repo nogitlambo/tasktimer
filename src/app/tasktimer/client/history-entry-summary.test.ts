@@ -1,15 +1,78 @@
 import { describe, expect, it } from "vitest";
 
 import { buildHistoryEntrySummaryPayload, renderHistoryEntrySummaryHtml } from "./history-entry-summary";
+import type { RewardProgressV1 } from "../lib/rewards";
+import type { Task } from "../lib/types";
 
 describe("history entry summary payload", () => {
   const formatDateTime = (value: number) => `ts:${value}`;
   const formatTwo = (value: number) => String(value).padStart(2, "0");
   const escapeHtml = (value: unknown) => String(value ?? "");
+  const task: Task = {
+    id: "task-1",
+    name: "Deep Work",
+    order: 0,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestones: [],
+    hasStarted: true,
+    timeGoalEnabled: true,
+    timeGoalValue: 1,
+    timeGoalUnit: "hour",
+    timeGoalPeriod: "day",
+    timeGoalMinutes: 60,
+  };
+  const rewardProgress: RewardProgressV1 = {
+    totalXp: 16,
+    totalXpPrecise: 16,
+    currentRankId: "unranked",
+    lastAwardedAt: 1700000000000,
+    completedSessions: 1,
+    awardLedger: [
+      {
+        ts: 1700000000000,
+        dayKey: "2023-11-14",
+        taskId: "task-1",
+        xp: 6,
+        baseXp: 6,
+        multiplier: 1,
+        eligibleMs: 3600000,
+        reason: "session",
+        sourceKey: "session:task-1:1700000000000",
+      },
+      {
+        ts: 1700000000000,
+        dayKey: "2023-11-14",
+        taskId: null,
+        xp: 3,
+        baseXp: 3,
+        multiplier: 1,
+        eligibleMs: 0,
+        reason: "dailyConsistency",
+        sourceKey: "daily:2023-11-14",
+      },
+      {
+        ts: 1699990000000,
+        dayKey: "2023-11-14",
+        taskId: "task-1",
+        xp: 2,
+        baseXp: 2,
+        multiplier: 1,
+        eligibleMs: 900000,
+        reason: "session",
+        sourceKey: "session:task-1:1699990000000",
+      },
+    ],
+  };
 
   it("builds a single-session summary with safe fallbacks", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",
+      task,
+      rewardProgress,
       entries: [
         {
           ts: 1700000000000,
@@ -32,10 +95,11 @@ describe("history entry summary payload", () => {
       taskId: "task-1",
       name: "Deep Work",
       dateTimeText: "ts:1700000000000",
+      elapsedText: "1h 00m 00s",
       noteText: "Deep focus block",
       sentimentText: "Somewhat Easy",
-      timeGoalText: "Not tracked",
-      xpText: "Not tracked",
+      timeGoalText: "1 hour per day",
+      xpText: "9 XP",
     });
     const html = renderHistoryEntrySummaryHtml(payload!, escapeHtml);
     expect(html).not.toContain("Activity Summary");
@@ -51,6 +115,8 @@ describe("history entry summary payload", () => {
   it("builds aggregate totals and preserves safe xp derivation when all sessions are known", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",
+      task,
+      rewardProgress,
       entries: [
         {
           ts: 1700000000000,
@@ -75,10 +141,17 @@ describe("history entry summary payload", () => {
     expect(payload?.titleText).toBe("Deep Work");
     expect(payload?.aggregate).toMatchObject({
       sessionCountText: "2 sessions",
-      xpText: "Not tracked",
-      timeGoalText: "Not tracked",
+      totalElapsedText: "45m 00s",
+      xpText: "11 XP",
+      timeGoalText: "No",
     });
     expect(payload?.sessions[0].noteText).toBe("No session note.");
+    expect(payload?.sessions[0].elapsedText).toBe("30m 00s");
+    expect(payload?.sessions[0].xpText).toBe("9 XP");
+    expect(payload?.sessions[0].timeGoalText).toBe("1 hour per day");
+    expect(payload?.sessions[1].elapsedText).toBe("15m 00s");
+    expect(payload?.sessions[1].xpText).toBe("2 XP");
+    expect(payload?.sessions[1].timeGoalText).toBe("1 hour per day");
     expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Activity Summary");
     expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Session 1");
     expect(renderHistoryEntrySummaryHtml(payload!, escapeHtml)).toContain("Quick wrap-up");

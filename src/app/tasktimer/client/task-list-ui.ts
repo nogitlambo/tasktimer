@@ -75,6 +75,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   }
 
   function persistTaskOrderFromTaskListDom() {
+    if (ctx.getTaskOrderBy() !== "custom") return;
     const list = els.taskList;
     if (!list) return;
     const draggedModeTaskIds = Array.from(list.querySelectorAll(".task[data-task-id]"))
@@ -169,6 +170,10 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   }
 
   function handleTaskListDragStart(event: any) {
+    if (ctx.getTaskOrderBy() !== "custom") {
+      event.preventDefault?.();
+      return;
+    }
     if (shouldIgnoreTaskDragStart(event.target)) return;
     const card = event.target?.closest?.(".task") as HTMLElement | null;
     if (!card || !els.taskList?.contains(card)) return;
@@ -263,6 +268,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   }
 
   function handleTaskListDragOver(event: any) {
+    if (ctx.getTaskOrderBy() !== "custom") return;
     const list = els.taskList;
     const dragging = ctx.getTaskDragEl();
     const placeholder = dragPlaceholderEl;
@@ -301,6 +307,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   }
 
   function handleTaskListDrop(event: any) {
+    if (ctx.getTaskOrderBy() !== "custom") return;
     if (!ctx.getTaskDragEl()) return;
     event.preventDefault();
     finishTaskListDrag();

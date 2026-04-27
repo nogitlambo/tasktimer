@@ -2987,8 +2987,8 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTil
   overflow: hidden !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .accountAvatarPlaceholder{
-  width: 140px !important;
-  height: 140px !important;
+  width: 116px !important;
+  height: 116px !important;
   margin: 0;
   border-radius: 0 !important;
   border: 4px solid rgba(255,255,255,.88);
@@ -3012,8 +3012,12 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch User Guide"] .settingsNavTil
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  padding: 6px;
+  background: linear-gradient(180deg, rgba(12,18,28,.82), rgba(7,10,18,.94));
+  box-sizing: border-box;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .settingsAccountIdCardAvatarCaption{
   padding-left: 6px;
@@ -3349,8 +3353,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     gap: 14px;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .accountAvatarPlaceholder{
-    width: 112px !important;
-    height: 112px !important;
+    width: 96px !important;
+    height: 96px !important;
     border-width: 3px;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .settingsAccountIdCardAvatarCaption{
@@ -3404,8 +3408,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     padding: 0 12px 14px;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .accountAvatarPlaceholder{
-    width: 100px !important;
-    height: 100px !important;
+    width: 88px !important;
+    height: 88px !important;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardNameValue{
     font-size: 18px;

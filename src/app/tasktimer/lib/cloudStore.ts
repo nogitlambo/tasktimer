@@ -42,6 +42,7 @@ export type UserPreferencesV1 = {
   menuButtonStyle: "parallelogram" | "square";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
+  taskOrderBy: "custom" | "alpha" | "schedule";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
@@ -1154,6 +1155,12 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
         startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
         taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
+        taskOrderBy:
+          prefSnap.get("taskOrderBy") === "alpha"
+            ? "alpha"
+            : prefSnap.get("taskOrderBy") === "schedule"
+              ? "schedule"
+              : "custom",
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
         mobilePushAlertsEnabled: asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
@@ -1367,6 +1374,34 @@ export function subscribeToTaskCollection(uid: string, listener: () => void): ()
   };
 }
 
+export function subscribeToTaskLiveSessionDocs(uid: string, taskIds: string[], listener: () => void): () => void {
+  const unsubs: Array<() => void> = [];
+  const uniqueTaskIds = Array.from(new Set((taskIds || []).map((taskId) => String(taskId || "").trim()).filter(Boolean)));
+  uniqueTaskIds.forEach((taskId) => {
+    const ref = taskLiveSessionDoc(uid, taskId);
+    if (!ref) return;
+    const unsub = onSnapshot(
+      ref,
+      () => {
+        listener();
+      },
+      () => {
+        // Ignore transient listener failures; task collection/focus refresh remains as fallback.
+      }
+    );
+    unsubs.push(() => {
+      try {
+        unsub();
+      } catch {
+        // ignore unsubscribe failures
+      }
+    });
+  });
+  return () => {
+    unsubs.forEach((unsub) => unsub());
+  };
+}
+
 export async function deleteTask(uid: string, taskId: string): Promise<void> {
   const ref = taskDoc(uid, taskId);
   if (!ref) return;
@@ -1573,6 +1608,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
     startupModule: normalizeStartupModule(data.startupModule),
     taskView: data.taskView === "tile" ? "tile" : "list",
+    taskOrderBy: data.taskOrderBy === "alpha" ? "alpha" : data.taskOrderBy === "schedule" ? "schedule" : "custom",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
     mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),

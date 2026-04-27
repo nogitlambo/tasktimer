@@ -70,6 +70,18 @@ function removeSessionStorage(key: string) {
   }
 }
 
+function readStoredOnboardingSessionStatus() {
+  const storedStatus = readSessionStorage(ONBOARDING_SESSION_STATUS_KEY);
+  if (storedStatus === "active" || storedStatus === "skipped" || storedStatus === "completed") {
+    return storedStatus;
+  }
+  return null;
+}
+
+function writeOnboardingSessionStatusPreservingCurrent(nextDefault: OnboardingSessionStatus = "active") {
+  writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, readStoredOnboardingSessionStatus() || nextDefault);
+}
+
 export function getOnboardingStepIndex(step: OnboardingStep) {
   const index = ONBOARDING_STEPS.indexOf(step);
   return index >= 0 ? index : 0;
@@ -230,7 +242,7 @@ export function saveOnboardingDashboardPanelStepForCurrentSession(
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
-  writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "active");
+  writeOnboardingSessionStatusPreservingCurrent("active");
   if (step && isOnboardingDashboardPanelStepId(step)) {
     writeSessionStorage(ONBOARDING_SESSION_DASHBOARD_PANEL_STEP_KEY, step);
     return;
@@ -254,7 +266,7 @@ export function saveOnboardingTasksActionStepForCurrentSession(
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
-  writeSessionStorage(ONBOARDING_SESSION_STATUS_KEY, "active");
+  writeOnboardingSessionStatusPreservingCurrent("active");
   if (step && isOnboardingTasksActionStepId(step)) {
     writeSessionStorage(ONBOARDING_SESSION_TASKS_ACTION_STEP_KEY, step);
     return;

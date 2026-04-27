@@ -25,7 +25,6 @@ describe("dashboard momentum driver delegation", () => {
     const dashboardEditBtn = new EventTarget() as unknown as HTMLButtonElement;
     const dashboardEditCancelBtn = new EventTarget() as unknown as HTMLButtonElement;
     const dashboardEditDoneBtn = new EventTarget() as unknown as HTMLButtonElement;
-    const dashboardXpProgressHelpBtn = new EventTarget() as unknown as HTMLButtonElement;
     const dashboardHeatSummaryCloseBtn = new EventTarget() as unknown as HTMLButtonElement;
     const on = vi.fn();
     const selectDashboardMomentumDriver = vi.fn();
@@ -40,7 +39,6 @@ describe("dashboard momentum driver delegation", () => {
         dashboardEditBtn,
         dashboardEditCancelBtn,
         dashboardEditDoneBtn,
-        dashboardXpProgressHelpBtn,
         dashboardHeatSummaryCloseBtn,
         dashboardMomentumDrivers: null,
       } as TaskTimerDashboardContext["els"],

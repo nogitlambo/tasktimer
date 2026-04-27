@@ -7,29 +7,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
-import { syncOwnFriendshipProfile } from "../lib/friendsStore";
-import RankThumbnail from "./RankThumbnail";
-import {
-  isAdminAccountEmail,
-  buildRewardProgressForRankSelection,
-  buildRewardsHeaderViewModel,
-  DEFAULT_REWARD_PROGRESS,
-  normalizeRewardProgress,
-  RANK_LADDER,
-  RANK_MODAL_THUMBNAIL_BY_ID,
-} from "../lib/rewards";
-import {
-  buildDefaultCloudPreferences,
-  loadCachedPreferences,
-  saveCloudPreferences,
-  subscribeCachedPreferences,
-} from "../lib/storage";
 import {
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
 } from "../lib/entitlements";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
+import { saveUserRootPatch } from "../lib/cloudStore";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
   ACCOUNT_PROFILE_UPDATED_EVENT,
@@ -37,13 +21,9 @@ import {
   googleAvatarIdForUid,
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
-  readStoredRankThumbnailSrc,
-  writeStoredRankThumbnailSrc,
 } from "../lib/accountProfileStorage";
-import { saveUserRootPatch } from "../lib/cloudStore";
 import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
 import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
-import RankLadderModal from "./RankLadderModal";
 
 type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "history" | "settings" | "none";
 
@@ -300,13 +280,8 @@ export default function DesktopAppRail({
 }: DesktopAppRailProps) {
   const archieActivePage = activePage === "history" ? "none" : activePage;
   const [onboardingState, setOnboardingState] = useState<ArchieOnboardingUiState | null>(null);
-  const [signedInUserUid, setSignedInUserUid] = useState("");
-  const [signedInUserEmail, setSignedInUserEmail] = useState("");
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
-  const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
-  const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
-  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
@@ -315,31 +290,23 @@ export default function DesktopAppRail({
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
-    const email = String(user?.email || "").trim().toLowerCase();
     const fallbackLabel = labelFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
 
     if (!uid) {
-      setSignedInUserUid("");
-      setSignedInUserEmail("");
       setProfileLabel(fallbackLabel);
       setProfileAvatarSrc(googlePhotoUrl);
-      setRankThumbnailSrc("");
       setCurrentPlan("free");
       return;
     }
-    setSignedInUserUid(uid);
-    setSignedInUserEmail(email);
     void syncCurrentUserPlanCache(uid).catch(() => {
       // Keep rendering from the cached/default plan if the plan sync is temporarily unavailable.
     });
 
     const storedAvatarId = readStoredAvatarId(uid);
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
-    const storedRankThumbnailSrc = readStoredRankThumbnailSrc(uid);
     setProfileLabel(fallbackLabel);
     setProfileAvatarSrc(resolveAvatarSrc(uid, storedAvatarId, storedCustomAvatarSrc, googlePhotoUrl));
-    setRankThumbnailSrc(storedRankThumbnailSrc);
 
     const db = getFirebaseFirestoreClient();
     if (!db) return;
@@ -349,7 +316,6 @@ export default function DesktopAppRail({
       const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || snap.get("displayName") || "").trim() : "";
       const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
-      const remoteRankThumbnailSrc = String(snap.get("rankThumbnailSrc") || storedRankThumbnailSrc).trim();
       const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
       const remotePlan = snap.exists() ? String(snap.get("plan") || "").trim().toLowerCase() : "";
       if (googlePhotoUrl && remoteGooglePhotoUrl !== googlePhotoUrl) {
@@ -359,20 +325,12 @@ export default function DesktopAppRail({
       }
       setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
-      setRankThumbnailSrc(remoteRankThumbnailSrc);
       if (remotePlan === "free" || remotePlan === "pro") {
         setCurrentPlan(remotePlan);
       }
     } catch {
       // Keep local/auth profile state if user-doc enrichment fails.
     }
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeCachedPreferences((prefs) => {
-      setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
-    });
-    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -404,15 +362,6 @@ export default function DesktopAppRail({
   }, [syncProfileFromUser]);
 
   useEffect(() => {
-    if (!showRankLadderModal) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowRankLadderModal(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showRankLadderModal]);
-
-  useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       setIsDesktopWebArchieEnabled(false);
       return;
@@ -433,16 +382,9 @@ export default function DesktopAppRail({
     setOnboardingState(null);
   }, [shouldShowDesktopArchie, showDesktopRail]);
 
-  const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
   const currentPlanBadgeLabel = currentPlan === "pro" ? "Pro Plan" : currentPlanLabel;
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
-  const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === rewardProgress.currentRankId));
-  const canSelectRankInsignia = isAdminAccountEmail(signedInUserEmail);
-  const rankLadderSummary =
-    rewardsHeader.xpToNext != null
-      ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
-      : "You have reached the highest configured rank.";
   const mockNextPaymentDateLabel = useMemo(() => {
     if (currentPlan !== "pro") return "No upcoming charge while on Free.";
     const nextDate = new Date();
@@ -499,36 +441,6 @@ export default function DesktopAppRail({
       setBillingBusy(false);
     }
   }, [billingBusy]);
-
-  const handleSelectRankThumbnail = async (rankId: string) => {
-    if (!signedInUserUid || !isAdminAccountEmail(signedInUserEmail)) return;
-    const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
-    const nextSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
-    const currentPrefs = loadCachedPreferences() || buildDefaultCloudPreferences();
-    setRewardProgress(nextRewards);
-    setRankThumbnailSrc(nextSrc);
-    writeStoredRankThumbnailSrc(signedInUserUid, nextSrc);
-    saveCloudPreferences({
-      ...currentPrefs,
-      rewards: nextRewards,
-    });
-    try {
-      await saveUserRootPatch(signedInUserUid, {
-        rankThumbnailSrc: nextSrc || null,
-      });
-    } catch {
-      // Keep local selection even if cloud sync fails.
-    }
-    try {
-      await syncOwnFriendshipProfile(signedInUserUid, {
-        rankThumbnailSrc: nextSrc || null,
-        currentRankId: nextRewards.currentRankId,
-      });
-    } catch {
-      // Ignore friendship profile rank sync failures from the desktop rail.
-    }
-    setShowRankLadderModal(false);
-  };
 
   const navActivePage: DesktopRailPage =
     onboardingState &&
@@ -615,24 +527,6 @@ export default function DesktopAppRail({
                       </button>
                     </div>
                   </div>
-                  <button
-                    className="dashboardRailProfileMetricRank dashboardRailProfileMetricRankBtn"
-                    type="button"
-                    aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                    onClick={() => setShowRankLadderModal(true)}
-                  >
-                    <RankThumbnail
-                      rankId={rewardProgress.currentRankId}
-                      storedThumbnailSrc={rankThumbnailSrc}
-                      className="dashboardRailRankBadgeShell"
-                      imageClassName="dashboardRailRankBadge"
-                      placeholderClassName="dashboardRailRankBadgePlaceholder"
-                      alt=""
-                      size={44}
-                      aria-hidden
-                    />
-                    <div className="dashboardProfileMeta dashboardRailRankLabel">{rewardsHeader.rankLabel}</div>
-                  </button>
                 </div>
               </section>
             </div>
@@ -706,18 +600,6 @@ export default function DesktopAppRail({
           </div>
         </div>
       </div>
-      <RankLadderModal
-        open={showRankLadderModal}
-        onClose={() => setShowRankLadderModal(false)}
-        rankLabel={rewardsHeader.rankLabel}
-        totalXp={rewardsHeader.totalXp}
-        rankSummary={rankLadderSummary}
-        currentRankId={rewardProgress.currentRankId}
-        currentRankIndex={currentRankIndex}
-        rankThumbnailSrc={rankThumbnailSrc}
-        canSelectRankInsignia={canSelectRankInsignia}
-        onSelectRankThumbnail={handleSelectRankThumbnail}
-      />
     </>
   );
 }

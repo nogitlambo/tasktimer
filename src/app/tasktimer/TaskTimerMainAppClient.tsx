@@ -271,10 +271,27 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   title="Add Task"
                   type="button"
                 >
-                  <span className="taskScreenIconBtnPlus" aria-hidden="true">
-                    +
-                  </span>
+                  <span className="taskScreenHeaderBtnText">Add Task</span>
                 </button>
+                <div className="tasksModeControlGroup" aria-label="Task ordering controls">
+                  <span className="tasksModeControlLabel">Order By</span>
+                  <details className="tasksModeMenu" id="taskOrderByMenu">
+                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn">
+                      <span id="taskOrderByValue">Custom</span>
+                    </summary>
+                    <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
+                      <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" aria-pressed="false" role="menuitem">
+                        A-Z
+                      </button>
+                      <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" aria-pressed="false" role="menuitem">
+                        Schedule/Time
+                      </button>
+                      <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" aria-pressed="true" role="menuitem">
+                        Custom
+                      </button>
+                    </div>
+                  </details>
+                </div>
               </div>
             </div>
             <section className="modeView modeViewOn" id="mode1View" aria-label="Tasks view">
@@ -285,7 +302,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </section>
           </section>
 
-          <DashboardPageContent rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
+          <DashboardPageContent currentRankId={rewardProgress.currentRankId} rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">

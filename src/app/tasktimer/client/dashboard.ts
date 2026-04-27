@@ -5,7 +5,6 @@ import {
   readOnboardingDashboardPanelStepForCurrentSession,
   readOnboardingStatusForCurrentSession,
 } from "../lib/onboarding";
-import { buildXpProgressArchieMessage } from "../lib/rewards";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -759,17 +758,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
     ctx.on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
     ctx.on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
-    ctx.on(els.dashboardXpProgressHelpBtn, "click", (e: Event) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      const message = buildXpProgressArchieMessage(ctx.getRewardProgress(), ctx.getTasks(), Date.now(), {
-        historyByTaskId: ctx.getHistoryByTaskId(),
-        weekStarting: ctx.getWeekStarting(),
-        momentumEntitled: ctx.hasEntitlement("advancedInsights"),
-      });
-      if (typeof window === "undefined" || !String(message || "").trim()) return;
-      window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
-    });
     ctx.on(els.dashboardPanelMenuBtn, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuBackBtn, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);

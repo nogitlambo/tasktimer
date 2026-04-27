@@ -1,6 +1,12 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { hasPendingTaskOrHistorySync, hydrateStorageFromCloud, subscribeCloudTaskCollection } from "../lib/storage";
+import type { Task } from "../lib/types";
+import {
+  hasPendingTaskOrHistorySync,
+  hydrateStorageFromCloud,
+  subscribeCloudTaskCollection,
+  subscribeCloudTaskLiveSessions,
+} from "../lib/storage";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerStateAccessor } from "./root-state";
 
@@ -30,6 +36,7 @@ type CreateTaskTimerCloudSyncOptions = {
   maybeHandlePendingPushAction?: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   currentUid: () => string;
+  getTasks: () => Task[];
   isInitialAuthHydrating?: () => boolean;
   showDashboardBusyIndicator?: (message?: string) => number;
   hideDashboardBusyIndicator?: (key?: number) => void;
@@ -119,6 +126,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         options.maybeHandlePendingPushAction?.();
         options.maybeRestorePendingTimeGoalFlow();
         options.lastCloudRefreshAtMs.set(options.nowMs());
+        syncCloudTaskCollectionListener();
       })
       .catch(() => {
         // Keep current in-memory state when cloud refresh is unavailable.
@@ -184,13 +192,23 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     }
     const uid = options.currentUid();
     if (!uid) return;
-    options.runtime.removeCloudTaskCollectionListener = subscribeCloudTaskCollection(uid, () => {
+    const handleCloudActivity = () => {
       if (hasPendingTaskOrHistorySync()) {
         scheduleDeferredCloudRefresh(5000);
         return;
       }
       refreshCloudStateIfStale(1500);
-    });
+    };
+    const removeTaskCollectionListener = subscribeCloudTaskCollection(uid, handleCloudActivity);
+    const removeTaskLiveSessionListener = subscribeCloudTaskLiveSessions(
+      uid,
+      options.getTasks().map((task) => String(task?.id || "").trim()).filter(Boolean),
+      handleCloudActivity
+    );
+    options.runtime.removeCloudTaskCollectionListener = () => {
+      removeTaskCollectionListener();
+      removeTaskLiveSessionListener();
+    };
   }
 
   function initCloudRefreshSync() {

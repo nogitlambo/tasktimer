@@ -381,6 +381,7 @@ describe("schedule-runtime", () => {
 
     expect(gridHtml).toContain("Deep Work");
     expect(gridHtml).toContain("Daily");
+    expect(gridHtml).not.toContain("isMidday");
     expect(gridHtml).not.toContain('data-earliest-scheduled-task="true"');
     expect(gridHtml).not.toContain("isEarliestScheduledTask");
     expect(gridHtml).toContain(

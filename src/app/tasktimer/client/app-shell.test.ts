@@ -118,12 +118,12 @@ describe("TaskTimer app shell", () => {
   });
 
   it("uses the saved startup module for the first native main-route resolution", async () => {
-    createLocationStub("/dashboard/index.html");
+    createLocationStub("/tasklaunch/index.html");
     const { createTaskTimerAppShell } = await loadAppShell("tasks");
     const shell = createTaskTimerAppShell(createShellContext("dashboard"));
 
     expect(shell.getInitialAppPageFromLocation("dashboard")).toBe("tasks");
-    expect(shell.getInitialAppPageFromLocation("dashboard")).toBe("dashboard");
+    expect(shell.getInitialAppPageFromLocation("dashboard")).toBe("tasks");
   });
 
   it("keeps explicit page query routing ahead of the startup module", async () => {
@@ -132,6 +132,14 @@ describe("TaskTimer app shell", () => {
     const shell = createTaskTimerAppShell(createShellContext("tasks"));
 
     expect(shell.getInitialAppPageFromLocation("tasks")).toBe("schedule");
+  });
+
+  it("keeps explicit history-manager routing ahead of the startup module in native runtime", async () => {
+    createLocationStub("/history-manager/index.html");
+    const { createTaskTimerAppShell } = await loadAppShell("dashboard");
+    const shell = createTaskTimerAppShell(createShellContext("tasks"));
+
+    expect(shell.getInitialAppPageFromLocation("tasks")).toBe("history");
   });
 
   it("keeps user-selected module ahead of delayed startup module resolution", async () => {

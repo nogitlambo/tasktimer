@@ -57,6 +57,7 @@ export type DashboardCardSize = "full" | "half" | "quarter";
 export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
 export type DashboardMomentumDriverKey = "recentActivity" | "consistency" | "weeklyProgress" | "liveBonus";
+export type TaskOrderBy = "custom" | "alpha" | "schedule";
 export type DashboardRenderOptions = {
   includeAvgSession?: boolean;
   showBusy?: boolean;
@@ -80,6 +81,7 @@ export type TaskTimerMutableState = {
   weekStarting: DashboardWeekStart;
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
+  taskOrderBy: TaskOrderBy;
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   mobilePushAlertsEnabled: boolean;

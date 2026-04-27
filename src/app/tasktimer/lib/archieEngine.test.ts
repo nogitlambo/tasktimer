@@ -70,6 +70,7 @@ function createPreferences(overrides?: Partial<NonNullable<ArchieWorkspaceContex
     menuButtonStyle: "square",
     startupModule: "dashboard",
     taskView: "list",
+    taskOrderBy: "custom",
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
     mobilePushAlertsEnabled: false,

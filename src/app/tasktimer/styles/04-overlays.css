@@ -802,7 +802,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding-right: 4px;
-  padding-bottom: 8px;
+  padding-bottom: 32px;
 }
 
 #editOverlay .editTaskTypePills .timerTypePill{
@@ -827,11 +827,16 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .footerBtns{
-  margin-top: 18px;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 14px 0 max(14px, var(--safe-bottom));
   gap:8px;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  z-index: 2;
 }
 
 #editOverlay .editTaskModalBody > .milestones,
@@ -869,7 +874,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   padding-bottom: calc(2px + env(safe-area-inset-bottom));
   background: transparent;
   flex: 0 0 auto;
-  align-self: flex-start;
+  align-self: stretch;
 }
 
 #editOverlay .footerBtns::before{
@@ -1092,12 +1097,8 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 @media (max-width: 640px){
   #editOverlay .footerBtns{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
     align-items: center;
-    position: sticky;
-    bottom: 0;
-    z-index: 3;
     margin-top: auto;
     margin-right: calc(-12px - var(--safe-right));
     margin-bottom: calc(-12px - var(--safe-bottom));
@@ -1106,10 +1107,12 @@ body[data-theme="purple"] .rankLadderItemFlag{
     background: #0d0f13 !important;
     border-top: 1px solid rgba(255,255,255,.12);
     box-shadow: 0 -14px 28px rgba(0,0,0,.32);
+    justify-content: flex-end;
+    flex-wrap: nowrap;
   }
   #editOverlay .footerBtns .btn{
-    flex: 0 1 auto;
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
   }
 }
 
@@ -1699,17 +1702,16 @@ body[data-theme="purple"] .rewardsInfoText{
   #editOverlay .editTaskModalBody{
     display: flex;
     flex-direction: column;
-    padding-bottom: 0;
+    padding-bottom: 32px;
   }
 
   #editOverlay .footerBtns{
-    position: sticky !important;
-    bottom: 0;
-    z-index: 3;
     align-self: stretch !important;
     margin-top: 18px;
     padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
     background: #0d0f13 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
   }
 }
 
@@ -2417,6 +2419,7 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #historyEntryNoteOverlay .modal{
+  --history-entry-note-shell-pad-x: 22px;
   background: #17191d;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 0;
@@ -2430,12 +2433,22 @@ body[data-theme="purple"] .rewardsInfoText{
   max-height: calc(100vh - 36px);
   padding: 22px 22px 18px;
   margin: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   pointer-events: auto;
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,.03),
     0 18px 34px rgba(0,0,0,.34),
     0 30px 68px rgba(0,0,0,.42);
+}
+
+#historyEntryNoteOverlay .historyEntryNoteHeader,
+#historyEntryNoteOverlay .historyEntryNoteBody,
+#historyEntryNoteOverlay .historyEntryNoteEditor,
+#historyEntryNoteOverlay .confirmBtns{
+  position: relative;
+  z-index: 1;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteHeader{
@@ -2456,16 +2469,20 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntryNoteHeader h2{
     margin: 0;
-    font-size: 24px;
+    font-family: var(--font-readable);
+    font-size: 18px;
+    font-weight: 700;
     line-height: 1.1;
-    letter-spacing: -.02em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
   }
 
 #historyEntryNoteOverlay .historyEntryNoteHeader .modalSubtext{
     margin: 0;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .12em;
+    font-family: var(--font-orbitron);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
     text-transform: uppercase;
     color: rgba(182,210,224,.7);
   }
@@ -2477,6 +2494,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntryNoteBody{
     display: grid;
     gap: 18px;
+    flex: 1 1 auto;
     min-width: 0;
     max-width: none;
   min-height: 0;
@@ -2485,21 +2503,45 @@ body[data-theme="purple"] .rewardsInfoText{
   padding: 0;
   border: 0;
   background: transparent;
-  overflow: visible;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   color: rgba(241,249,255,.94);
   font-size: inherit;
   line-height: inherit;
   }
 
+#historyEntryNoteOverlay .historyEntryNoteBody::-webkit-scrollbar{
+  display: none;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryLayout{
+    display:grid;
+    gap:18px;
+    width:100%;
+  }
+
 #historyEntryNoteOverlay .historyEntrySummaryHero{
     display:grid;
     gap:14px;
-    padding:18px 18px 16px;
-    border:1px solid rgba(255,255,255,.1);
+    position: relative;
+    margin-inline: calc(-1 * var(--history-entry-note-shell-pad-x));
+    padding:14px var(--history-entry-note-shell-pad-x) 12px;
+    border:0;
+    box-shadow:none;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummaryHero::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    left: calc(-1 * var(--history-entry-note-shell-pad-x));
+    right: calc(-1 * var(--history-entry-note-shell-pad-x));
     background:
-      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0) 58%),
-      rgba(12,14,18,.9);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 60%),
+      rgba(8,10,14,.72);
+    z-index:-1;
+    pointer-events:none;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroTop{
@@ -2510,28 +2552,29 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroEyebrow{
-    font-size:12px;
-    font-weight:800;
-    letter-spacing:.12em;
+    font-family: var(--font-orbitron);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
     text-transform:uppercase;
     color: rgba(182,210,224,.74);
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroDate{
-    font-size:14px;
+    font-size:12px;
     font-weight:700;
     color: rgba(234,248,255,.86);
     text-align:right;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroLabel{
-    font-size:15px;
+    font-size:12px;
     color: rgba(182,210,224,.82);
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroValue{
-    font-family: var(--font-readable);
-    font-size: 42px;
+    font-family: var(--font-orbitron);
+    font-size: 38px;
     line-height: 1;
     font-weight: 700;
     color: rgba(247,251,255,.98);
@@ -2546,12 +2589,12 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummarySessions{
     display:grid;
-    gap:14px;
+    gap:0;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionsSingle{
-    gap:0;
-  }
+  gap:0;
+}
 
 #historyEntryNoteOverlay .historyEntryNoteEditor{
     margin-top: 14px;
@@ -2560,8 +2603,9 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #historyEntryNoteOverlay .historyEntryNoteEditorLabel{
-  font-size: 12px;
-  font-weight: 800;
+  font-family: var(--font-orbitron);
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--accent3);
@@ -2578,9 +2622,10 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle{
     margin: 0;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .12em;
+    font-family: var(--font-orbitron);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
     text-transform: uppercase;
     color: rgba(182,210,224,.74);
   }
@@ -2592,9 +2637,15 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummarySessionCard{
     display:grid;
     gap:14px;
-    padding:16px 18px;
-    border:1px solid rgba(255,255,255,.08);
-    background: rgba(14,16,20,.86);
+    padding:0;
+    border:0;
+    background: transparent;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummarySessionCard + .historyEntrySummarySessionCard{
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid rgba(255,255,255,.08);
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionHead{
@@ -2640,14 +2691,14 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummarySessionDate{
     width: 100%;
-    font-size:14px;
+    font-size:12px;
     color: rgba(228,243,252,.82);
     text-align:left;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
-    font-family: var(--font-readable);
-    font-size: 32px;
+    font-family: var(--font-orbitron);
+    font-size: 28px;
     line-height: 1;
     font-weight: 700;
     color: rgba(247,251,255,.96);
@@ -2665,12 +2716,13 @@ body[data-theme="purple"] .rewardsInfoText{
     display: grid;
     gap: 6px;
     padding-top: 12px;
-    border-top: 2px solid rgba(53,232,255,.42);
+    border-top: 1px solid rgba(255,255,255,.14);
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryLabel{
-  font-size: 12px;
-  font-weight: 800;
+  font-family: var(--font-orbitron);
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--accent3);
@@ -2679,9 +2731,9 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummaryValue{
     min-width: 0;
     color: rgba(241,249,255,.94);
-    font-size: 18px;
+    font-size: 14px;
     line-height: 1.2;
-    font-weight: 700;
+    font-weight: 400;
     white-space: pre-wrap;
     word-break: break-word;
   }
@@ -2704,7 +2756,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummaryNoteText{
     min-width: 0;
     color: rgba(230,245,255,.9);
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
@@ -2719,23 +2771,26 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummaryDivider{
   height: 1px;
   background: rgba(255,255,255,.08);
+  width: 100%;
 }
 
   @media (max-width: 640px){
   #historyEntryNoteOverlay{
-    padding: 10px;
+    padding: 6px;
   }
 
   #historyEntryNoteOverlay .modal{
-      width: min(100vw - 20px, 1120px);
+      --history-entry-note-shell-pad-x: 12px;
+      width: calc(100vw - 12px);
+      max-width: none;
       min-width: 0;
       min-height: 0;
-      max-height: calc(100vh - 20px);
-      padding: 16px 16px 14px;
+      max-height: calc(100vh - 12px);
+      padding: 16px 12px 14px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHero{
-      padding:16px 14px 14px;
+      padding:12px var(--history-entry-note-shell-pad-x) 10px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHeroTop,
@@ -2745,11 +2800,11 @@ body[data-theme="purple"] .rewardsInfoText{
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHeroValue{
-      font-size:34px;
+      font-size:30px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
-      font-size:28px;
+      font-size:24px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHeroStats{
@@ -4008,6 +4063,10 @@ body[data-theme="lime"] #editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
     min-height: 0 !important;
     overflow-y: auto !important;
     padding-bottom: 0 !important;
+  }
+
+  #editOverlay .footerBtns{
+    padding-bottom: max(14px, var(--safe-bottom)) !important;
   }
 }
 

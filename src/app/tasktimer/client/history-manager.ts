@@ -275,7 +275,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
 
   function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown; taskId?: unknown }) {
     const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    const taskId = String(entry?.taskId || "").trim();
+    const task = ctx.getTasks().find((candidate) => String(candidate?.id || "").trim() === taskId) || null;
     const payload = buildHistoryEntrySummaryPayload({
+      taskId,
+      task,
+      rewardProgress: ctx.getRewardProgress(),
       entries: [entry],
       formatDateTime: ctx.formatDateTime,
       formatTwo: ctx.formatTwo,
@@ -902,7 +907,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
     const loadCycle = historyManagerLoadCycle + 1;
     historyManagerLoadCycle = loadCycle;
-    setHistoryManagerLoading(true);
+    renderHistoryManager();
+    setHistoryManagerLoading(false);
     void (async () => {
       try {
         await refreshHistoryManagerFromCloud();

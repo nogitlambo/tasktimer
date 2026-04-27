@@ -1,5 +1,5 @@
 import type { TaskTimerPreferencesContext } from "./context";
-import type { MainMode } from "./types";
+import type { MainMode, TaskOrderBy } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
@@ -99,6 +99,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       weekStarting: ctx.getWeekStarting(),
       startupModule: ctx.getStartupModule(),
       taskView: ctx.getTaskView(),
+      taskOrderBy: ctx.getTaskOrderBy(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
@@ -143,6 +144,34 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
     els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
+  }
+
+  function getTaskOrderByLabel(value: TaskOrderBy) {
+    if (value === "alpha") return "A-Z";
+    if (value === "schedule") return "Schedule/Time";
+    return "Custom";
+  }
+
+  function syncTaskOrderByMenuUi() {
+    const taskOrderBy = ctx.getTaskOrderBy();
+    if (els.taskOrderByValue) els.taskOrderByValue.textContent = getTaskOrderByLabel(taskOrderBy);
+    if (els.taskOrderByMenuBtn) {
+      els.taskOrderByMenuBtn.setAttribute("aria-label", `Order By: ${getTaskOrderByLabel(taskOrderBy)}`);
+    }
+    if (els.taskOrderByMenu) {
+      Array.from(els.taskOrderByMenu.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
+        const itemValue = item.dataset.taskOrderBy === "alpha" ? "alpha" : item.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
+        const isOn = itemValue === taskOrderBy;
+        item.classList.toggle("isOn", isOn);
+        item.setAttribute("aria-pressed", isOn ? "true" : "false");
+      });
+    }
+  }
+
+  function applyTaskOrderByPreference(next: TaskOrderBy) {
+    const taskOrderBy = next === "alpha" ? "alpha" : next === "schedule" ? "schedule" : "custom";
+    ctx.setTaskOrderByState(taskOrderBy);
+    syncTaskOrderByMenuUi();
   }
 
   function applyMenuButtonStyle(next: "parallelogram" | "square") {
@@ -224,6 +253,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
+  function loadTaskOrderByPreference() {
+    applyTaskOrderByPreference(preferenceService.loadTaskOrderBy());
+  }
+
+  function saveTaskOrderByPreference() {
+    try {
+      localStorage.setItem(ctx.storageKeys.TASK_ORDER_BY_KEY, ctx.getTaskOrderBy());
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function loadAutoFocusOnTaskLaunchSetting() {
     ctx.setAutoFocusOnTaskLaunchEnabledState(preferenceService.loadAutoFocusOnTaskLaunchEnabled());
   }
@@ -266,6 +308,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
     els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
     els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
+    syncTaskOrderByMenuUi();
     const lockAdvancedTaskConfig = !canUseAdvancedTaskConfig();
     if (els.taskDynamicColorsToggle) {
       (els.taskDynamicColorsToggle as HTMLButtonElement).disabled = lockAdvancedTaskConfig;
@@ -381,6 +424,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveWeekStartingPreference();
     saveStartupModulePreference();
     saveTaskViewPreference();
+    saveTaskOrderByPreference();
     saveAutoFocusOnTaskLaunchSetting();
     saveDynamicColorsSetting();
     saveMobilePushAlertsSetting();
@@ -425,6 +469,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       applyStartupModulePreference("dashboard");
       ctx.setAutoFocusOnTaskLaunchEnabledState(false);
       ctx.setTaskViewState("tile");
+      applyTaskOrderByPreference("custom");
       ctx.setDynamicColorsEnabledState(true);
       ctx.setMobilePushAlertsEnabledState(false);
       ctx.setWebPushAlertsEnabledState(false);
@@ -466,6 +511,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.render();
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
+    });
+    ctx.on(els.taskOrderByMenu, "click", (event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest?.(".tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
+      if (!button) return;
+      const nextValue = button.dataset.taskOrderBy === "alpha" ? "alpha" : button.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
+      applyTaskOrderByPreference(nextValue);
+      ctx.clearTaskFlipStates();
+      ctx.render();
+      syncTaskSettingsUi();
+      persistInlineTaskSettingsImmediate();
+      if (els.taskOrderByMenu) els.taskOrderByMenu.open = false;
     });
     bindToggleRow({
       on: ctx.on,
@@ -574,6 +631,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadModeLabels,
     applyTheme,
     applyTaskViewPreference,
+    applyTaskOrderByPreference,
     applyMenuButtonStyle,
     loadThemePreference,
     loadMenuButtonStylePreference,
@@ -584,7 +642,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadStartupModulePreference,
     saveStartupModulePreference,
     loadTaskViewPreference,
+    loadTaskOrderByPreference,
     saveTaskViewPreference,
+    saveTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting,
     saveAutoFocusOnTaskLaunchSetting,
     toggleSwitchElement: ctx.toggleSwitchElement,

@@ -7,6 +7,7 @@ import { createTaskTimerCloudSync } from "./cloud-sync";
 const mocks = vi.hoisted(() => ({
   hydrateStorageFromCloud: vi.fn(() => Promise.resolve()),
   subscribeCloudTaskCollection: vi.fn(() => () => {}),
+  subscribeCloudTaskLiveSessions: vi.fn(() => () => {}),
   onAuthStateChanged: vi.fn(),
   getFirebaseAuthClient: vi.fn(() => ({ currentUser: { uid: "user-1" } })),
 }));
@@ -15,6 +16,7 @@ vi.mock("../lib/storage", () => ({
   hasPendingTaskOrHistorySync: vi.fn(() => false),
   hydrateStorageFromCloud: mocks.hydrateStorageFromCloud,
   subscribeCloudTaskCollection: mocks.subscribeCloudTaskCollection,
+  subscribeCloudTaskLiveSessions: mocks.subscribeCloudTaskLiveSessions,
 }));
 
 vi.mock("firebase/auth", () => ({
@@ -108,6 +110,7 @@ describe("cloud-sync", () => {
       maybeHandlePendingPushAction: vi.fn(),
       maybeRestorePendingTimeGoalFlow: vi.fn(),
       currentUid: () => "user-1",
+      getTasks: () => [{ id: "task-1" }] as Array<{ id: string }>,
       showDashboardBusyIndicator: vi.fn(() => 1),
       hideDashboardBusyIndicator: vi.fn(),
       setDashboardRefreshPending,
@@ -124,6 +127,7 @@ describe("cloud-sync", () => {
     expect(mocks.hydrateStorageFromCloud).toHaveBeenCalledWith({ force: true });
     expect(renderDashboardWidgets).toHaveBeenCalled();
     expect(setDashboardRefreshPending).toHaveBeenCalledWith(false);
+    expect(mocks.subscribeCloudTaskLiveSessions).toHaveBeenCalledWith("user-1", ["task-1"], expect.any(Function));
   });
 
   it("marks dashboard refresh pending for passive dashboard refreshes", () => {
@@ -155,6 +159,7 @@ describe("cloud-sync", () => {
       maybeHandlePendingPushAction: vi.fn(),
       maybeRestorePendingTimeGoalFlow: vi.fn(),
       currentUid: () => "user-1",
+      getTasks: () => [],
       setDashboardRefreshPending,
     });
 
@@ -202,6 +207,7 @@ describe("cloud-sync", () => {
       maybeHandlePendingPushAction: vi.fn(),
       maybeRestorePendingTimeGoalFlow: vi.fn(),
       currentUid: () => "user-1",
+      getTasks: () => [],
       showDashboardBusyIndicator,
       hideDashboardBusyIndicator,
       setDashboardRefreshPending,
