@@ -851,6 +851,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #taskManualEntryOverlay .hmManualEntryFooterBtns,
 #historyManagerManualEntryOverlay .hmManualEntryFooterBtns{
+  flex: 0 0 auto;
   margin-top: 0;
   padding: 14px 0 max(14px, var(--safe-bottom));
   gap: 8px;
@@ -858,6 +859,8 @@ body[data-theme="purple"] .rankLadderItemFlag{
   align-items: center;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  z-index: 2;
 }
 
 #taskManualEntryOverlay .hmManualEntryFooterBtns .btn,
@@ -2375,7 +2378,26 @@ body[data-theme="purple"] .rewardsInfoText{
   justify-content: center;
 }
 
+#taskManualEntryOverlay #taskManualEntryCancelBtn,
+#taskManualEntryOverlay #taskManualEntrySaveBtn,
+#historyManagerManualEntryOverlay #historyManagerManualEntryCancelBtn,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn{
+  min-width: 92px;
+  justify-content: center;
+}
+
 #editOverlay #saveEditBtn:hover{
+  background: linear-gradient(180deg, var(--accent3), var(--accent)) !important;
+  color: #04131c !important;
+  border-color: rgba(53,232,255,.55) !important;
+  box-shadow: 0 0 14px rgba(0,220,255,.3) !important;
+  font-weight: 800;
+}
+
+#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:hover,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:focus-visible{
   background: linear-gradient(180deg, var(--accent3), var(--accent)) !important;
   color: #04131c !important;
   border-color: rgba(53,232,255,.55) !important;
@@ -3693,7 +3715,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background: #0d0f13 !important;
 }
 
+#taskManualEntryOverlay .hmManualEntryFooterBtns,
+#historyManagerManualEntryOverlay .hmManualEntryFooterBtns{
+  background: #0d0f13 !important;
+}
+
 #editOverlay #cancelEditBtn{
+  border-color: rgba(201,255,36,.34) !important;
+  color: rgba(245,248,244,.88) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+}
+
+#taskManualEntryOverlay #taskManualEntryCancelBtn,
+#historyManagerManualEntryOverlay #historyManagerManualEntryCancelBtn{
   border-color: rgba(201,255,36,.34) !important;
   color: rgba(245,248,244,.88) !important;
   background:
@@ -3704,6 +3740,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #saveEditBtn,
 #editOverlay #saveEditBtn:hover,
 #editOverlay #saveEditBtn:focus-visible{
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
+  font-weight: 800;
+}
+
+#taskManualEntryOverlay #taskManualEntrySaveBtn,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:hover,
+#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:focus-visible{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
   border-color: rgba(201,255,36,.86) !important;
