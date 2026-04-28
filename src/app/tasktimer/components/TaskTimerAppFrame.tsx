@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
@@ -96,7 +97,7 @@ export default function TaskTimerAppFrame({
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="Settings menu">
             <a
               className="menuItem taskLaunchMobileMenuItem"
-              href="/settings"
+              href={resolveTaskTimerRouteHref("/settings")}
               role="menuitem"
               onClick={() => setMobileMenuOpen(false)}
             >

@@ -452,6 +452,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardSideText">
                             <strong>{getLeaderboardLabel(entry)}</strong>
                             <span>{formatLeaderboardStreak(entry.streakDays)}</span>
+                            <span className="leaderboardMobileXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                           </div>
                           <span className="leaderboardSideMetricWrap">
                             <LeaderboardRankBadge profile={entry} small />
@@ -486,6 +487,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <div className="leaderboardSideText">
                               <strong>{getLeaderboardLabel(entry)}</strong>
                               <span>{gapLabel}</span>
+                              <span className="leaderboardMobileXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </div>
                             <span className="leaderboardSideMetricWrap">
                               <LeaderboardRankBadge profile={entry} small />

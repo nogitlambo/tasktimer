@@ -22,7 +22,7 @@ export type ArchieKnowledgeCitation = {
   id: string;
   title: string;
   section: string;
-  route?: "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/user-guide" | "/feedback";
+  route?: "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/user-guide" | "/feedback" | "/leaderboard";
   settingsPane?: ArchieSettingsPane;
   sourceKind?: "user-guide" | "settings" | "policy";
 };

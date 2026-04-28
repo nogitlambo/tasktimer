@@ -669,7 +669,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     grid-area: controls;
     justify-self: end;
     position: relative;
-    z-index: 2;
+    z-index: 42;
   }
 
   .taskLaunchMobileMenuBars{
@@ -710,16 +710,20 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
       calc(96px + env(safe-area-inset-bottom))
       calc(12px + var(--safe-left));
     background:
-      linear-gradient(180deg, rgba(7,10,15,.92), rgba(7,10,15,.97)),
-      rgba(13,15,19,.96);
+      linear-gradient(180deg, rgba(7,10,15,.96), rgba(7,10,15,.985)),
+      rgba(13,15,19,.985);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateY(-10px);
-    transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
-    z-index: 1;
+    transform: translateY(calc(-100% - 24px));
+    transition:
+      opacity .24s ease,
+      transform .28s cubic-bezier(.22,1,.36,1),
+      visibility 0s linear .28s;
+    z-index: 40;
     overflow-y: auto;
     overscroll-behavior: contain;
+    box-shadow: 0 22px 48px rgba(0,0,0,.42);
   }
 
   .taskLaunchMobileMenu.isOpen{
@@ -727,7 +731,10 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     visibility: visible;
     pointer-events: auto;
     transform: translateY(0);
-    transition: opacity .18s ease, transform .18s ease, visibility 0s linear 0s;
+    transition:
+      opacity .24s ease,
+      transform .28s cubic-bezier(.22,1,.36,1),
+      visibility 0s linear 0s;
   }
 
   .taskLaunchMobileMenuList{
