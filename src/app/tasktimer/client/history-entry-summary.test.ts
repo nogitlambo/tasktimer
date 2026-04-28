@@ -94,7 +94,7 @@ describe("history entry summary payload", () => {
     expect(payload?.sessions[0]).toMatchObject({
       taskId: "task-1",
       name: "Deep Work",
-      dateTimeText: "ts:1700000000000",
+      dateTimeText: "Wednesday 15th November, 2023",
       elapsedText: "1h 00m 00s",
       noteText: "Deep focus block",
       sentimentText: "Somewhat Easy",
@@ -140,6 +140,7 @@ describe("history entry summary payload", () => {
 
     expect(payload?.titleText).toBe("Deep Work");
     expect(payload?.aggregate).toMatchObject({
+      dateSpanText: "Wednesday 15th November, 2023 to Wednesday 15th November, 2023",
       sessionCountText: "2 sessions",
       totalElapsedText: "45m 00s",
       xpText: "11 XP",

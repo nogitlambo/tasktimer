@@ -71,6 +71,27 @@ function formatXpText(xpEarned: number | null) {
   return `${Math.max(0, Math.floor(xpEarned))} XP`;
 }
 
+function formatOrdinalDay(day: number) {
+  const absDay = Math.abs(Math.floor(day));
+  const mod100 = absDay % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${absDay}th`;
+  const mod10 = absDay % 10;
+  if (mod10 === 1) return `${absDay}st`;
+  if (mod10 === 2) return `${absDay}nd`;
+  if (mod10 === 3) return `${absDay}rd`;
+  return `${absDay}th`;
+}
+
+function formatSummaryLongDate(value: number) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "Unknown date/time";
+  const date = new Date(timestamp);
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+  const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(date);
+  const year = new Intl.DateTimeFormat("en-US", { year: "numeric" }).format(date);
+  return `${weekday} ${formatOrdinalDay(date.getDate())} ${month}, ${year}`;
+}
+
 function deriveTaskTitle(entries: HistoryEntrySummarySource[]) {
   const firstNamedEntry = entries.find((entry) => String(entry?.name || "").trim());
   return String(firstNamedEntry?.name || "").trim() || "Session Summary";
@@ -146,7 +167,7 @@ function buildHistoryEntrySummaryItem(
   taskId: string,
   task: Task | null | undefined,
   rewardProgress: RewardProgressV1 | null | undefined,
-  formatDateTime: (value: number) => string,
+  _formatDateTime: (value: number) => string,
   formatTwo: (value: number) => string,
   getEntryNote: (entry: HistoryEntrySummarySource) => string
 ): HistoryEntrySummaryItem {
@@ -162,7 +183,7 @@ function buildHistoryEntrySummaryItem(
     name,
     ts,
     ms,
-    dateTimeText: ts > 0 ? formatDateTime(ts) : "Unknown date/time",
+    dateTimeText: formatSummaryLongDate(ts),
     elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
     timeGoalCompleted,
     timeGoalText: formatTimeGoalText(task),
@@ -177,7 +198,7 @@ function buildHistoryEntrySummaryItem(
 
 function buildAggregateSummary(
   sessions: HistoryEntrySummaryItem[],
-  formatDateTime: (value: number) => string,
+  _formatDateTime: (value: number) => string,
   formatTwo: (value: number) => string
 ) {
   if (sessions.length <= 1) return null;
@@ -200,8 +221,8 @@ function buildAggregateSummary(
   const dateSpanText =
     latestTs > 0 && earliestTs > 0
       ? latestTs === earliestTs
-        ? formatDateTime(latestTs)
-        : `${formatDateTime(latestTs)} to ${formatDateTime(earliestTs)}`
+        ? formatSummaryLongDate(latestTs)
+        : `${formatSummaryLongDate(latestTs)} to ${formatSummaryLongDate(earliestTs)}`
       : "Unknown date/time";
 
   return {
@@ -249,18 +270,15 @@ export function renderHistoryEntrySummaryHtml(
   const heroHtml = payload.aggregate
     ? `<section class="historyEntrySummaryHero" aria-label="${escapeHtml(payload.titleText)} activity summary">
         <div class="historyEntrySummaryHeroTop">
-          <div class="historyEntrySummaryHeroEyebrow">Activity Summary</div>
-          <div class="historyEntrySummaryHeroDate">${escapeHtml(payload.aggregate.dateSpanText)}</div>
+          <div class="historyEntrySummaryHeroHeading">
+            <div class="historyEntrySummaryHeroEyebrow">Activity Summary</div>
+            <div class="historyEntrySummaryHeroDate">${escapeHtml(payload.aggregate.dateSpanText)}</div>
+          </div>
         </div>
-        <div class="historyEntrySummaryHeroLabel">Total time worked</div>
+        <div class="historyEntrySummaryHeroLabel">Total Time Logged</div>
         <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
         <div class="historyEntrySummaryHeroStats">
-          ${[
-            renderField("Sessions", payload.aggregate.sessionCountText),
-            renderField("Date span", payload.aggregate.dateSpanText),
-            renderField("Time goal", payload.aggregate.timeGoalText),
-            renderField("XP earned", payload.aggregate.xpText),
-          ].join("")}
+          ${[renderField("XP Earned", payload.aggregate.xpText)].join("")}
         </div>
       </section>`
     : "";
@@ -272,7 +290,7 @@ export function renderHistoryEntrySummaryHtml(
         : "";
       const deleteButtonHtml =
         session.taskId && session.ts > 0 && session.name
-          ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">&#128465;</button>`
+          ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.png" alt="" aria-hidden="true" /></button>`
           : "";
       return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
         <div class="historyEntrySummarySessionHead">

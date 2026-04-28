@@ -654,6 +654,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
 
   .topbar.topbarBrandOnly.taskLaunchAppTopbar{
     grid-template-areas: "brand controls";
+    z-index: 60;
   }
 
   .brand {

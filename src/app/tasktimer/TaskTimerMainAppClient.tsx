@@ -370,7 +370,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
                   <div className="leaderboardHeroHead">
                     <div>
-                      <p className="dashboardCardEyebrow">Global ladder</p>
+                      <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
                       <h3 className="dashboardCardTitle">Top focus performers</h3>
                     </div>
                   </div>

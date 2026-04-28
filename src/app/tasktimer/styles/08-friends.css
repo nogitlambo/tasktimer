@@ -816,7 +816,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   font-size:11px;
   letter-spacing:.14em;
   text-transform:uppercase;
-  color: rgba(188, 214, 230, 0.72);
+  color: #c9ff24;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroMeta,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardPanelText,

@@ -1850,9 +1850,28 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn,
+#confirmOverlay.isDeleteTaskConfirm #confirmAltBtn,
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
+  font-family: var(--font-readable) !important;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn,
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
   min-width: 92px;
   justify-content: center;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:focus-visible:not(:disabled),
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:active:not(:disabled){
+  background: linear-gradient(180deg, #ff5f5f 0%, #e13b3b 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,77,77,.88) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 16px rgba(255,77,77,.22) !important;
+  font-weight: 800;
 }
 
 #addTaskOverlay .addTaskWizardProgress{
@@ -2523,7 +2542,7 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: rgba(182,210,224,.7);
+    color: rgba(160,168,178,.72);
   }
 
 #historyEntryNoteOverlay .historyEntryNoteTime{
@@ -2584,10 +2603,13 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroTop{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:12px;
+    display:grid;
+    gap:6px;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummaryHeroHeading{
+    display:grid;
+    gap:4px;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroEyebrow{
@@ -2596,14 +2618,14 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight:700;
     letter-spacing:.08em;
     text-transform:uppercase;
-    color: rgba(182,210,224,.74);
+    color: #c9ff24;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroDate{
     font-size:12px;
     font-weight:700;
     color: rgba(234,248,255,.86);
-    text-align:right;
+    text-align:left;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroLabel{
@@ -2655,8 +2677,59 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #historyEntryNoteOverlay .confirmBtns{
-  margin-top: 16px;
-  justify-content: center;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 14px 0 max(14px, var(--safe-bottom));
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  z-index: 2;
+  background: #0d0f13;
+}
+
+#historyEntryNoteOverlay .confirmBtns .btn{
+  padding: 9px 12px;
+  min-height: 36px;
+  font-family: var(--font-readable) !important;
+}
+
+#historyEntryNoteOverlay #historyEntryNoteEditBtn,
+#historyEntryNoteOverlay #historyEntryNoteCancelBtn,
+#historyEntryNoteOverlay .closePopup{
+  border-color: rgba(201,255,36,.34) !important;
+  color: rgba(245,248,244,.88) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
+    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+}
+
+#historyEntryNoteOverlay #historyEntryNoteSaveBtn,
+#historyEntryNoteOverlay #historyEntryNoteSaveBtn:hover,
+#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible{
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
+  font-weight: 800;
+}
+
+#historyEntryNoteOverlay .closePopup:hover,
+#historyEntryNoteOverlay .closePopup:focus-visible,
+#historyEntryNoteOverlay #historyEntryNoteEditBtn:hover,
+#historyEntryNoteOverlay #historyEntryNoteEditBtn:focus-visible,
+#historyEntryNoteOverlay #historyEntryNoteCancelBtn:hover,
+#historyEntryNoteOverlay #historyEntryNoteCancelBtn:focus-visible{
+  border-color: rgba(201,255,36,.5) !important;
+  color: rgba(250,253,247,.96) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle{
@@ -2666,7 +2739,7 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: rgba(182,210,224,.74);
+    color: #c9ff24;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle-overview{
@@ -2675,7 +2748,7 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummarySessionCard{
     display:grid;
-    gap:14px;
+    gap:8px;
     padding:0;
     border:0;
     background: transparent;
@@ -2720,6 +2793,14 @@ body[data-theme="purple"] .rewardsInfoText{
   font-size: 22px;
 }
 
+#historyEntryNoteOverlay .historyEntrySummaryDeleteIcon{
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
 #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn:hover,
 #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn:focus-visible{
   border-color: transparent !important;
@@ -2737,11 +2818,12 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
     font-family: var(--font-orbitron);
-    font-size: 28px;
+    font-size: 24px;
     line-height: 1;
     font-weight: 700;
     color: rgba(247,251,255,.96);
     letter-spacing: -.03em;
+    margin-top: -2px;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryGrid{
@@ -2815,16 +2897,22 @@ body[data-theme="purple"] .rewardsInfoText{
 
   @media (max-width: 640px){
   #historyEntryNoteOverlay{
-    padding: 6px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding:
+      calc(72px + var(--safe-top))
+      calc(6px + var(--safe-right))
+      calc(96px + var(--safe-bottom))
+      calc(6px + var(--safe-left));
   }
 
   #historyEntryNoteOverlay .modal{
       --history-entry-note-shell-pad-x: 12px;
-      width: calc(100vw - 12px);
+      width: calc(100vw - 12px - var(--safe-left) - var(--safe-right));
       max-width: none;
       min-width: 0;
       min-height: 0;
-      max-height: calc(100vh - 12px);
+      max-height: calc(100dvh - 72px - 96px - var(--safe-top) - var(--safe-bottom));
       padding: 16px 12px 14px;
     }
 
@@ -2843,7 +2931,7 @@ body[data-theme="purple"] .rewardsInfoText{
     }
 
   #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
-      font-size:24px;
+      font-size:22px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHeroStats{
