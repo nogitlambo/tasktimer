@@ -668,7 +668,7 @@ export function buildRecommendationDraft(context: ArchieWorkspaceContext, questi
   };
 }
 
-export function buildFallbackResponse(): ArchieQueryResponse {
+function buildFallbackResponse(): ArchieQueryResponse {
   return {
     mode: "fallback",
     message:

@@ -1012,7 +1012,7 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
     webTitle: "Time Goal Reached",
     webBody: `Return to TaskLaunch to view XP awarded for ${taskName}.`,
     allowWeb: true,
-    skipIfForeground: true,
+    skipIfForeground: false,
   });
 
   if (response.status === "sent" || response.status === "foreground") {

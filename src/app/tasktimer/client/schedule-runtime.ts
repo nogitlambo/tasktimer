@@ -88,7 +88,7 @@ export function formatScheduleMinutes(totalMinutes: number) {
   return `${hours12}:${String(minutes).padStart(2, "0")} ${meridiem}`;
 }
 
-export function formatScheduleStoredTime(totalMinutes: number) {
+function formatScheduleStoredTime(totalMinutes: number) {
   const safeMinutes = Math.max(0, Math.min(24 * 60 - SCHEDULE_SNAP_MINUTES, Math.floor(Number(totalMinutes) || 0)));
   const hours = Math.floor(safeMinutes / 60);
   const minutes = safeMinutes % 60;
@@ -116,7 +116,7 @@ export function snapScheduleMinutes(totalMinutes: number) {
   );
 }
 
-export function getScheduleTaskDurationMinutes(task: Task) {
+function getScheduleTaskDurationMinutes(task: Task) {
   const hasGoal = !!task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0;
   if (!hasGoal) return 0;
   const goalMinutes = Math.max(SCHEDULE_SNAP_MINUTES, Math.round(Number(task.timeGoalMinutes || 0)));

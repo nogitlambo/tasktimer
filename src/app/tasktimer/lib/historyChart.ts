@@ -16,7 +16,7 @@ export function normalizeDashboardWeekStart(value: unknown): DashboardWeekStart 
   return "mon";
 }
 
-export function weekdayIndexForWeekStart(dayOfWeek: number, weekStart: DashboardWeekStart) {
+function weekdayIndexForWeekStart(dayOfWeek: number, weekStart: DashboardWeekStart) {
   const safeDayOfWeek = Math.max(0, Math.min(6, Math.floor(dayOfWeek)));
   const weekStartIndexByKey: Record<DashboardWeekStart, number> = {
     sun: 0,
@@ -57,17 +57,6 @@ export function startOfCurrentWeekMs(nowValue: number, weekStart: DashboardWeekS
   return d.getTime();
 }
 
-export function startOfCurrentWeekMondayMs(nowValue: number) {
-  return startOfCurrentWeekMs(nowValue, "mon");
-}
-
-export function startOfCurrentMonthMs(nowValue: number) {
-  const d = new Date(nowValue);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
 export function getDashboardAvgRangeWindow(
   range: "past7" | "past30",
   nowValue: number
@@ -104,13 +93,3 @@ export function formatDashboardDurationWithMinutes(ms: number) {
   return `${minutes}m`;
 }
 
-export function formatDashboardHeatMonthLabel(year: number, monthIndex: number) {
-  const d = new Date(year, monthIndex, 1);
-  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-}
-
-export function truncateDashboardLabel(label: string, maxChars: number) {
-  const clean = String(label || "").trim();
-  if (clean.length <= maxChars) return clean;
-  return `${clean.slice(0, Math.max(1, maxChars - 1))}...`;
-}

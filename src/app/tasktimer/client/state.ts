@@ -1,7 +1,7 @@
 import type { AppPage, MainMode, TaskTimerMutableState } from "./types";
 import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 
-export type TaskTimerStorageKeys = {
+type TaskTimerStorageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;

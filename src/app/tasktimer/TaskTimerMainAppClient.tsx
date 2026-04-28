@@ -20,6 +20,7 @@ import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
+import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { formatDashboardDurationShort } from "./lib/historyChart";
@@ -517,6 +518,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       </TaskTimerAppFrame>
 
       <AddTaskOverlay />
+      <TaskManualEntryOverlay />
       <InfoOverlays />
       <ElapsedPadOverlay />
       <ExportTaskOverlay />

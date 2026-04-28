@@ -19,12 +19,12 @@ type TaskConfigReadoutOptions = {
   [key: string]: unknown;
 };
 
-export type AggregateTimeGoalTotals = {
+type AggregateTimeGoalTotals = {
   totalDailyGoalMinutes: number;
   totalWeeklyEquivalentMinutes: number;
 };
 
-export type AggregateTimeGoalValidationResult = AggregateTimeGoalTotals & {
+type AggregateTimeGoalValidationResult = AggregateTimeGoalTotals & {
   isWithinLimit: boolean;
   failedLimit: "day" | "week" | null;
   dailyOverflowMinutes: number;
@@ -38,7 +38,7 @@ export function getAddTaskDurationMaxForPeriod(unit: DurationUnit, period: Durat
   return unit === "minute" ? 7 * 24 * 60 : 7 * 24;
 }
 
-export function getAggregateTimeGoalTotals(tasks: Task[]): AggregateTimeGoalTotals {
+function getAggregateTimeGoalTotals(tasks: Task[]): AggregateTimeGoalTotals {
   return (Array.isArray(tasks) ? tasks : []).reduce<AggregateTimeGoalTotals>(
     (totals, task) => {
       if (task?.taskType === "once-off") return totals;
@@ -104,7 +104,7 @@ export function getAggregateTimeGoalValidationForReplacement(
   return validateAggregateTimeGoalTotals(nextTasks);
 }
 
-export function formatAggregateTimeGoalMinutes(minutes: number, period: DurationPeriod): string {
+function formatAggregateTimeGoalMinutes(minutes: number, period: DurationPeriod): string {
   const totalMinutes = Math.max(0, Math.round(Number(minutes) || 0));
   const hours = Math.floor(totalMinutes / 60);
   const remainingMinutes = totalMinutes % 60;

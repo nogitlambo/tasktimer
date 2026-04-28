@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 
+import { ApiRateLimitError } from "../shared/rateLimit";
 import type {
   ArchieQueryRequest,
   ArchieQueryResponse,
@@ -22,7 +23,7 @@ import {
   hasFirebaseAdminCredentialConfig,
 } from "@/lib/firebaseAdmin";
 
-export class ArchieApiError extends Error {
+class ArchieApiError extends Error {
   status: number;
   code: string;
 
@@ -34,7 +35,7 @@ export class ArchieApiError extends Error {
   }
 }
 
-export type ArchieServerPlan = "free" | "pro";
+type ArchieServerPlan = "free" | "pro";
 
 function asString(value: unknown, maxLength = 4000) {
   return String(value || "").trim().slice(0, maxLength);
@@ -77,6 +78,9 @@ export function assertCanUseArchieAi(plan: ArchieServerPlan) {
 
 export function createArchieErrorResponse(error: unknown, fallbackMessage: string) {
   const message = error instanceof Error && error.message ? error.message : fallbackMessage;
+  if (error instanceof ApiRateLimitError) {
+    return Response.json({ error: error.message, code: error.code }, { status: error.status });
+  }
   if (error instanceof ArchieApiError) {
     return Response.json({ error: error.message, code: error.code }, { status: error.status });
   }
@@ -320,7 +324,7 @@ export async function writeArchieSession(uid: string, input: {
   return sessionId;
 }
 
-export async function writeArchieTelemetryEvent(uid: string, input: {
+async function writeArchieTelemetryEvent(uid: string, input: {
   sessionId: string | null;
   draftId?: string | null;
   eventType: ArchieTelemetryEventType;
@@ -342,7 +346,7 @@ export function buildDraft(seed: Omit<ArchieRecommendationDraft, "id" | "created
   };
 }
 
-export async function getArchieDraft(uid: string, draftId: string) {
+async function getArchieDraft(uid: string, draftId: string) {
   const snap = await userDraftDoc(uid, draftId).get();
   if (!snap.exists) {
     throw new ArchieApiError("archie/draft-not-found", "That Archie draft no longer exists.", 404);

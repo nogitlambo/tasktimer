@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
-import { getSettingsNavItems } from "./settings/useSettingsPaneState";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
@@ -25,7 +24,6 @@ export default function TaskTimerAppFrame({
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const railPage = activePage === "schedule" ? "tasks" : activePage;
-  const settingsNavItems = getSettingsNavItems();
   const searchParamsKey = searchParams.toString();
 
   useEffect(() => {
@@ -96,18 +94,14 @@ export default function TaskTimerAppFrame({
           aria-hidden={mobileMenuOpen ? "false" : "true"}
         >
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="Settings menu">
-            {settingsNavItems.map((item) => (
-              <a
-                key={item.key}
-                className="menuItem taskLaunchMobileMenuItem"
-                href={`/settings?pane=${item.key}`}
-                role="menuitem"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <AppImg className="settingsMenuItemIcon taskLaunchMobileMenuItemIcon" src={item.icon} alt="" aria-hidden="true" />
-                <span className="taskLaunchMobileMenuItemText">{item.label}</span>
-              </a>
-            ))}
+            <a
+              className="menuItem taskLaunchMobileMenuItem"
+              href="/settings"
+              role="menuitem"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="taskLaunchMobileMenuItemText">Settings</span>
+            </a>
           </div>
         </div>
       </div>

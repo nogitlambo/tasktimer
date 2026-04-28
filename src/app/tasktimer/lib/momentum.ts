@@ -19,20 +19,20 @@ export type MomentumSnapshot = {
   recentDaysMs: [number, number, number];
 };
 
-export type MomentumComputationContext = {
+type MomentumComputationContext = {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
   weekStarting: DashboardWeekStart;
   nowValue?: number;
 };
 
-export const MOMENTUM_THRESHOLDS = {
+const MOMENTUM_THRESHOLDS = {
   building: 25,
   strong: 50,
   surging: 75,
 } as const;
 
-export function clampMomentumScore(value: number): number {
+function clampMomentumScore(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
 }
@@ -44,7 +44,7 @@ export function getMomentumBandLabel(score: number): string {
   return "Low";
 }
 
-export function getMomentumMultiplier(score: number): number {
+function getMomentumMultiplier(score: number): number {
   if (score >= MOMENTUM_THRESHOLDS.surging) return 2;
   if (score >= MOMENTUM_THRESHOLDS.strong) return 1.5;
   if (score >= MOMENTUM_THRESHOLDS.building) return 1.2;

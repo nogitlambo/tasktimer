@@ -22,7 +22,7 @@ function normalizePlannedStartDay(
     : null;
 }
 
-export type TaskTimerSharedTaskContext = {
+type TaskTimerSharedTaskContext = {
   createId: () => string;
   getEditTimeGoalDraft?: () => {
     value: number;

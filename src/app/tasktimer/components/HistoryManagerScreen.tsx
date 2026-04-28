@@ -144,7 +144,7 @@ export default function HistoryManagerScreen() {
             <div className="hmManualEntryError" id="historyManagerManualEntryError" style={{ display: "none" }} />
           </div>
 
-          <div className="confirmBtns">
+          <div className="footerBtns hmManualEntryFooterBtns">
             <button className="btn btn-ghost" id="historyManagerManualEntryCancelBtn" type="button">
               Cancel
             </button>

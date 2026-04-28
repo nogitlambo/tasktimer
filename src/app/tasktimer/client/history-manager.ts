@@ -25,6 +25,10 @@ import {
   buildHistoryEntrySummaryPayload,
   renderHistoryEntrySummaryHtml,
 } from "./history-entry-summary";
+import {
+  OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT,
+  type OpenHistoryManagerManualEntryDetail,
+} from "./history-manager-events";
 
 type HistoryGenPreview = {
   params: HistoryGenParams;
@@ -83,9 +87,9 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
   }
 
-  function openManualEntryOverlay(taskId: string) {
+  function openManualEntryOverlay(taskId: string, options?: { forceTaskName?: string | null; allowDeleted?: boolean }) {
     const meta = getTaskMetaForHistoryId(taskId);
-    if (meta.deleted) return;
+    if (meta.deleted && !options?.allowDeleted) return;
     if (!manualEntryDraftsByTaskId[taskId]) {
       manualEntryDraftsByTaskId = {
         ...manualEntryDraftsByTaskId,
@@ -94,7 +98,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
     activeManualEntryTaskId = taskId;
     if (els.historyManagerManualEntryTitle) {
-      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry for ${meta.name || "This Task"}`;
+      const taskName = String(options?.forceTaskName || meta.name || "This Task").trim() || "This Task";
+      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry for ${taskName}`;
     }
     if (els.historyManagerManualEntryMeta) {
       els.historyManagerManualEntryMeta.textContent = "";
@@ -199,16 +204,17 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function getTaskMetaForHistoryId(taskId: string) {
+    const normalizedTaskId = String(taskId || "").trim();
     const tasks = ctx.getTasks();
     const historyByTaskId = getFinalizedHistoryByTaskId();
     const deletedTaskMeta = ctx.getDeletedTaskMeta();
-    const t = tasks.find((x) => x.id === taskId);
+    const t = tasks.find((x) => String(x?.id || "").trim() === normalizedTaskId);
     if (t) return { name: t.name, color: (t as any).color, deleted: false };
 
-    const dm = deletedTaskMeta && (deletedTaskMeta as any)[taskId];
+    const dm = deletedTaskMeta && (deletedTaskMeta as any)[normalizedTaskId];
     if (dm) return { name: dm.name || "Deleted Task", color: dm.color || null, deleted: true };
 
-    const arr = historyByTaskId && historyByTaskId[taskId];
+    const arr = historyByTaskId && historyByTaskId[normalizedTaskId];
     if (arr && arr.length) {
       const e = arr[arr.length - 1] as any;
       return { name: e.name || "Deleted Task", color: e.color || null, deleted: true };
@@ -993,6 +999,18 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     openManualEntryOverlay(taskId);
   }
 
+  function openManualEntryForTask(taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    if (!canUseAdvancedHistory()) {
+      ctx.showUpgradePrompt("Manual history entry", "pro");
+      return;
+    }
+    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
+    if (!task) return;
+    openManualEntryOverlay(taskId, { forceTaskName: task.name, allowDeleted: true });
+  }
+
   function saveManualEntryDraft(taskId: string) {
     if (!canUseAdvancedHistory()) {
       ctx.showUpgradePrompt("Manual history entry", "pro");
@@ -1037,6 +1055,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   }
 
   function registerHistoryManagerEvents() {
+    if (typeof window !== "undefined") {
+      ctx.on(window, OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT, (event: Event) => {
+        const detail = (event as CustomEvent<OpenHistoryManagerManualEntryDetail | undefined>).detail;
+        const taskId = String(detail?.taskId || "").trim();
+        const taskName = String(detail?.taskName || "").trim();
+        if (!taskId) return;
+        if (!canUseAdvancedHistory()) {
+          ctx.showUpgradePrompt("Manual history entry", "pro");
+          return;
+        }
+        openManualEntryOverlay(taskId, {
+          forceTaskName: taskName || null,
+          allowDeleted: true,
+        });
+      });
+    }
     ctx.on(els.historyManagerBtn, "click", () => {
       ctx.navigateToAppRoute("/history-manager");
     });
@@ -1357,6 +1391,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     syncHistoryManagerBulkUi,
     renderHistoryManager,
     openHistoryManager,
+    openManualEntryForTask,
     getHistoryManagerReturnRoute,
     isHistoryManagerOpen,
     refreshHistoryManagerFromCloud,

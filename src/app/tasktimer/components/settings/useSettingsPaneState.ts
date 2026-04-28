@@ -28,9 +28,9 @@ const SETTINGS_VISIBLE_PANE_KEYS: SettingsPaneKey[] = [
 
 const SETTINGS_PANE_TRANSITION_MS = 220;
 
-export type SettingsPaneSlideDirection = "forward" | "backward";
+type SettingsPaneSlideDirection = "forward" | "backward";
 
-export function isSettingsPaneKey(value: string): value is SettingsPaneKey {
+function isSettingsPaneKey(value: string): value is SettingsPaneKey {
   return SETTINGS_PANE_KEYS.includes(value as SettingsPaneKey);
 }
 

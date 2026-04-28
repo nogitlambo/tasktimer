@@ -740,14 +740,13 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   .taskLaunchMobileMenuItem{
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
     min-height: 54px;
     text-decoration: none;
     width: 100%;
-  }
-
-  .taskLaunchMobileMenuItemIcon{
-    flex: 0 0 auto;
+    border: none !important;
+    box-shadow: none !important;
+    clip-path: none !important;
   }
 
   .taskLaunchMobileMenuItemText{
@@ -757,6 +756,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     letter-spacing: .06em;
     text-transform: uppercase;
     color: inherit;
+    text-align: center;
   }
 
   body.taskLaunchMobileMenuOpen{

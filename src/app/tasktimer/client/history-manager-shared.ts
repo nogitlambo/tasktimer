@@ -18,7 +18,7 @@ export type HistoryGenTaskGoal = {
   dailyBudgetMinutes: number;
 };
 
-export type HistoryManagerRowEntry = {
+type HistoryManagerRowEntry = {
   ts: unknown;
   ms: unknown;
   name: unknown;
@@ -55,7 +55,7 @@ export function formatHistoryManagerDraftDateTimeValue(nowMs: number) {
 
 export function createDefaultHistoryManagerManualDraft(nowMs: number): HistoryManagerManualDraft {
   return {
-    dateTimeValue: "",
+    dateTimeValue: formatHistoryManagerDraftDateTimeValue(nowMs),
     hoursValue: "",
     minutesValue: "",
     completionDifficulty: "",

@@ -9,11 +9,11 @@ import {
 } from "@/lib/firebaseAdmin";
 import { asString, type FeedbackType } from "../jira/feedback/shared";
 
-export const FEEDBACK_SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000;
-export const FEEDBACK_SUBMISSION_LIMIT = 3;
-export const FEEDBACK_VOTE_COOLDOWN_MS = 10 * 1000;
-export const FEEDBACK_REFRESH_WINDOW_MS = 60 * 1000;
-export const FEEDBACK_REFRESH_LIMIT = 12;
+const FEEDBACK_SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000;
+const FEEDBACK_SUBMISSION_LIMIT = 3;
+const FEEDBACK_VOTE_COOLDOWN_MS = 10 * 1000;
+const FEEDBACK_REFRESH_WINDOW_MS = 60 * 1000;
+const FEEDBACK_REFRESH_LIMIT = 12;
 const FEEDBACK_VOTE_TRACK_TTL_MS = 24 * 60 * 60 * 1000;
 
 type FeedbackSubmissionEvent = {
@@ -39,7 +39,7 @@ export class FeedbackApiError extends Error {
   }
 }
 
-export function parseCookieValue(cookieHeader: string | null, name: string) {
+function parseCookieValue(cookieHeader: string | null, name: string) {
   const source = String(cookieHeader || "");
   if (!source) return "";
   const parts = source.split(";");
@@ -174,7 +174,7 @@ function pruneVoteToggleMap(events: Record<string, number>, nowMs: number) {
   );
 }
 
-export function buildFeedbackFingerprint(type: FeedbackType, title: string, details: string) {
+function buildFeedbackFingerprint(type: FeedbackType, title: string, details: string) {
   const normalize = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
   return createHash("sha256")
     .update([normalize(type), normalize(title), normalize(details)].join("::"))

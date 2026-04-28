@@ -7,13 +7,13 @@ import {
   type OptimalProductivityPeriod,
 } from "./productivityPeriod";
 
-export type InsightEntry = {
+type InsightEntry = {
   ts: number;
   ms: number;
   completionDifficulty?: CompletionDifficulty;
 };
 
-export type FocusInsightsResult = {
+type FocusInsightsResult = {
   bestMs: number;
   weekdaySessionCount: number;
   weekdayName: string | null;

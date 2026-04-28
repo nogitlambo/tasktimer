@@ -1,7 +1,7 @@
-import { escapeRegExp, newTaskId } from "../lib/ids";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
+import { createDefaultHistoryManagerManualDraft, parseHistoryManagerManualDraft, type HistoryManagerManualDraft } from "./history-manager-shared";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel, renderTaskProgressHtml } from "./task-card-view-model";
@@ -11,6 +11,120 @@ import { buildTaskProgressModel, renderTaskProgressHtml } from "./task-card-view
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+  let taskManualEntryDraft: HistoryManagerManualDraft | null = null;
+  let activeTaskManualEntryTaskId: string | null = null;
+
+  function syncTaskManualEntryOverlay() {
+    const draft = taskManualEntryDraft || createDefaultHistoryManagerManualDraft(Date.now());
+    if (els.taskManualDateTimeInput) els.taskManualDateTimeInput.value = draft.dateTimeValue || "";
+    els.taskManualDateTimeInput?.parentElement?.setAttribute("data-empty", draft.dateTimeValue ? "false" : "true");
+    if (els.taskManualHoursInput) els.taskManualHoursInput.value = draft.hoursValue || "";
+    if (els.taskManualMinutesInput) els.taskManualMinutesInput.value = draft.minutesValue || "";
+    if (els.taskManualNoteInput) els.taskManualNoteInput.value = draft.noteValue || "";
+    const sentimentButtons = Array.from(
+      ((els.taskManualEntryDifficultyGroup as HTMLElement | null)?.querySelectorAll?.("[data-completion-difficulty]") || []) as Iterable<Element>
+    );
+    sentimentButtons.forEach((button) => {
+      const selected =
+        normalizeCompletionDifficulty((button as HTMLElement).dataset.completionDifficulty) ===
+        normalizeCompletionDifficulty(draft.completionDifficulty);
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-checked", selected ? "true" : "false");
+    });
+    if (els.taskManualEntryError) {
+      els.taskManualEntryError.textContent = draft.errorMessage || "";
+      (els.taskManualEntryError as HTMLElement).style.display = draft.errorMessage ? "block" : "none";
+    }
+  }
+
+  function closeTaskManualEntryOverlay() {
+    activeTaskManualEntryTaskId = null;
+    taskManualEntryDraft = null;
+    if (els.taskManualEntryOverlay) {
+      els.taskManualEntryOverlay.style.display = "none";
+      els.taskManualEntryOverlay.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function openTaskManualEntryDateTimePicker() {
+    const input = els.taskManualDateTimeInput;
+    if (!input) return;
+    try {
+      if (typeof (input as HTMLInputElement & { showPicker?: () => void }).showPicker === "function") {
+        (input as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+      } else {
+        input.focus();
+        input.click();
+      }
+    } catch {
+      try {
+        input.focus();
+        input.click();
+      } catch {
+        input.focus();
+      }
+    }
+  }
+
+  function openTaskManualEntryOverlay(taskId: string) {
+    const normalizedTaskId = String(taskId || "").trim();
+    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === normalizedTaskId) || null;
+    if (!task) return;
+    activeTaskManualEntryTaskId = normalizedTaskId;
+    taskManualEntryDraft = createDefaultHistoryManagerManualDraft(Date.now());
+    if (els.taskManualEntryTitle) {
+      els.taskManualEntryTitle.textContent = `Add Manual Entry for ${getTaskDisplayName(task)}`;
+    }
+    if (els.taskManualEntryMeta) {
+      els.taskManualEntryMeta.textContent = "";
+      (els.taskManualEntryMeta as HTMLElement).hidden = true;
+    }
+    syncTaskManualEntryOverlay();
+    if (els.taskManualEntryOverlay) {
+      els.taskManualEntryOverlay.style.display = "flex";
+      els.taskManualEntryOverlay.setAttribute("aria-hidden", "false");
+    }
+    window.setTimeout(() => {
+      try {
+        els.taskManualDateTimeBtn?.focus({ preventScroll: true });
+      } catch {
+        els.taskManualDateTimeBtn?.focus();
+      }
+    }, 0);
+  }
+
+  function updateTaskManualEntryDraft(updater: (draft: HistoryManagerManualDraft) => HistoryManagerManualDraft) {
+    const currentDraft = taskManualEntryDraft || createDefaultHistoryManagerManualDraft(Date.now());
+    taskManualEntryDraft = updater(currentDraft);
+  }
+
+  function saveTaskManualEntryDraft() {
+    const taskId = String(activeTaskManualEntryTaskId || "").trim();
+    if (!taskId) return;
+    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
+    if (!task) return;
+    const draft = taskManualEntryDraft;
+    if (!draft) return;
+    const parsed = parseHistoryManagerManualDraft({
+      draft,
+      taskName: getTaskDisplayName(task),
+      taskColor: typeof (task as { color?: unknown }).color === "string" ? String((task as { color?: unknown }).color || "") : null,
+    });
+    if ("error" in parsed) {
+      updateTaskManualEntryDraft((currentDraft) => ({ ...currentDraft, errorMessage: parsed.error || "Could not save entry." }));
+      syncTaskManualEntryOverlay();
+      return;
+    }
+    const historyByTaskId = ctx.getHistoryByTaskId();
+    const nextTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
+    nextTaskHistory.push(parsed.entry);
+    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
+    ctx.setHistoryByTaskId(nextHistory);
+    ctx.saveHistory(nextHistory);
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    closeTaskManualEntryOverlay();
+    ctx.render();
+  }
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
@@ -252,10 +366,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
               </div>
               <div class="taskBackActions">
-                <button class="taskMenuItem" data-action="duplicate" title="Duplicate" type="button">Duplicate</button>
+                <button class="taskMenuItem" data-action="manualEntry" title="${canUseAdvancedHistory() ? "Add Manual Entry" : "Pro feature: Manual history entry"}" type="button" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>${canUseAdvancedHistory() ? "Add Manual Entry" : "Add Manual Entry (Pro)"}</button>
                 <button class="taskMenuItem" data-action="collapse" title="${ctx.escapeHtmlUI(collapseLabel)}" type="button">${ctx.escapeHtmlUI(collapseLabel)}</button>
-                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem" data-action="${ctx.isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Pro feature: Sharing"}" type="button" ${canUseSocialFeatures() ? "" : 'data-plan-locked="socialFeatures"'}>${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Share (Pro)"}</button>
+                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>
             </div>
@@ -482,40 +596,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetAllDeleteConfirm");
   }
 
-  function nextDuplicateName(originalName: string) {
-    const name = (originalName || "Task").trim();
-    const root = name.replace(/\s\d+$/, "").trim();
-    let maxN = 0;
-    ctx.getTasks().forEach((t) => {
-      const n = (t.name || "").trim();
-      if (n === root) return;
-      const match = n.match(new RegExp(`^${escapeRegExp(root)}\\s(\\d+)$`));
-      if (!match) return;
-      const value = parseInt(match[1], 10);
-      if (!isNaN(value)) maxN = Math.max(maxN, value);
-    });
-    return `${root} ${maxN + 1}`;
-  }
-
-  function duplicateTask(i: number) {
-    const tasks = ctx.getTasks();
-    const t = tasks[i];
-    if (!t) return;
-    const newId = newTaskId();
-    const copy = JSON.parse(JSON.stringify(t));
-    copy.id = newId;
-    copy.name = nextDuplicateName(t.name);
-    copy.running = false;
-    copy.startMs = null;
-    tasks.splice(i + 1, 0, copy);
-    const historyByTaskId = ctx.getHistoryByTaskId();
-    const sourceTaskId = String(t.id || "");
-    historyByTaskId[newId] = historyByTaskId && historyByTaskId[sourceTaskId] ? JSON.parse(JSON.stringify(historyByTaskId[sourceTaskId])) : [];
-    ctx.saveHistory(historyByTaskId);
-    ctx.save();
-    ctx.render();
-  }
-
   function handleTaskListClick(e: any) {
     const emptyAddBtn = findDelegatedElement(e.target, ".taskListEmptyAddBtn");
     if (emptyAddBtn) {
@@ -549,6 +629,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       ctx.showUpgradePrompt("Task sharing and friends", "pro");
       return;
     }
+    if (action === "manualEntry" && !canUseAdvancedHistory()) {
+      ctx.showUpgradePrompt("Manual history entry", "pro");
+      return;
+    }
     const actionHandlers: Record<string, () => void> = {
       start: () => startTask(i),
       stop: () => stopTask(i),
@@ -556,11 +640,16 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       delete: () => ctx.deleteTask(i),
       edit: () => ctx.openEdit(i, element as HTMLElement),
       history: () => openHistory(i),
-      duplicate: () => duplicateTask(i),
       editName: () => ctx.openFocusMode(i),
       focus: () => ctx.openFocusMode(i),
       collapse: () => toggleCollapse(i),
       exportTask: () => ctx.openTaskExportModal(i),
+      manualEntry: () => {
+        if (!taskId) return;
+        window.setTimeout(() => {
+          openTaskManualEntryOverlay(taskId);
+        }, 0);
+      },
       shareTask: () => ctx.openShareTaskModal(i),
       unshareTask: () => {
         const t = ctx.getTasks()[i];
@@ -599,6 +688,49 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.on(els.resetAllBtn, "click", (e: any) => {
       e?.preventDefault?.();
       resetAll();
+    });
+    ctx.on(els.taskManualEntryOverlay, "click", (ev: any) => {
+      if (ev.target !== els.taskManualEntryOverlay) return;
+      closeTaskManualEntryOverlay();
+    });
+    ctx.on(els.taskManualEntryCancelBtn, "click", () => {
+      closeTaskManualEntryOverlay();
+    });
+    ctx.on(els.taskManualEntrySaveBtn, "click", () => {
+      saveTaskManualEntryDraft();
+    });
+    ctx.on(els.taskManualDateTimeBtn, "click", () => {
+      openTaskManualEntryDateTimePicker();
+    });
+    ctx.on(els.taskManualDateTimeInput, "change", () => {
+      const value = String(els.taskManualDateTimeInput?.value || "");
+      updateTaskManualEntryDraft((draft) => ({ ...draft, dateTimeValue: value, errorMessage: "" }));
+      syncTaskManualEntryOverlay();
+    });
+    ctx.on(els.taskManualHoursInput, "input", () => {
+      const value = String(els.taskManualHoursInput?.value || "");
+      updateTaskManualEntryDraft((draft) => ({ ...draft, hoursValue: value, errorMessage: "" }));
+      syncTaskManualEntryOverlay();
+    });
+    ctx.on(els.taskManualMinutesInput, "input", () => {
+      const value = String(els.taskManualMinutesInput?.value || "");
+      updateTaskManualEntryDraft((draft) => ({ ...draft, minutesValue: value, errorMessage: "" }));
+      syncTaskManualEntryOverlay();
+    });
+    ctx.on(els.taskManualNoteInput, "input", () => {
+      const value = String(els.taskManualNoteInput?.value || "");
+      updateTaskManualEntryDraft((draft) => ({ ...draft, noteValue: value, errorMessage: "" }));
+    });
+    ctx.on(els.taskManualEntryDifficultyGroup, "click", (ev: any) => {
+      const btn = ev.target?.closest?.("[data-completion-difficulty]");
+      if (!btn) return;
+      const value = String(btn.getAttribute("data-completion-difficulty") || "");
+      updateTaskManualEntryDraft((draft) => ({
+        ...draft,
+        completionDifficulty: normalizeCompletionDifficulty(value) || "",
+        errorMessage: "",
+      }));
+      syncTaskManualEntryOverlay();
     });
   }
 

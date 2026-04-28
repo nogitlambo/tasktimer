@@ -137,7 +137,6 @@ function recommendForPath(filePath, target) {
   const isUserGuideRoute =
     path.startsWith("src/app/user-guide/") ||
     path.includes("userguidescreen");
-  const isTaskComponent = path.includes("src/app/tasktimer/components/");
   const isLandingOrSignIn =
     path === "src/app/page.tsx" ||
     path.startsWith("src/app/web-sign-in/") ||

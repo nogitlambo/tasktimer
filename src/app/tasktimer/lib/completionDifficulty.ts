@@ -1,6 +1,6 @@
 export type CompletionDifficulty = 1 | 2 | 3 | 4 | 5;
 
-export const COMPLETION_DIFFICULTY_LABELS: Record<CompletionDifficulty, string> = {
+const COMPLETION_DIFFICULTY_LABELS: Record<CompletionDifficulty, string> = {
   1: "Very Difficult",
   2: "Somewhat Difficult",
   3: "Neutral",

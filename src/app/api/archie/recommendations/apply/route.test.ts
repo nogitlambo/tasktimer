@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const verifyArchieRequestUser = vi.fn();
 const loadArchieUserPlan = vi.fn();
 const applyArchieDraft = vi.fn();
+const enforceUidRateLimit = vi.fn();
 const createArchieErrorResponse = vi.fn((error: unknown) => {
   const typedError = error as Error & { code?: string; status?: number };
   return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
@@ -24,6 +25,10 @@ vi.mock("../../shared", () => ({
   },
 }));
 
+vi.mock("../../../shared/rateLimit", () => ({
+  enforceUidRateLimit,
+}));
+
 function createRequest() {
   return new Request("http://localhost/api/archie/recommendations/apply", {
     method: "POST",
@@ -41,6 +46,7 @@ describe("POST /api/archie/recommendations/apply", () => {
     loadArchieUserPlan.mockReset();
     applyArchieDraft.mockReset().mockResolvedValue({ ok: true, decision: "apply", appliedCount: 1 });
     createArchieErrorResponse.mockClear();
+    enforceUidRateLimit.mockReset().mockResolvedValue(undefined);
   });
 
   it("denies Free users before applying a draft", async () => {

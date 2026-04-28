@@ -36,15 +36,22 @@ export default function TimeGoalCompleteOverlay() {
               </button>
             ))}
           </div>
-          <div className="timeGoalCompleteDifficultyHint" id="timeGoalCompleteDifficultyHint">
-            Choose one before saving this session.
-          </div>
+          <div className="timeGoalCompleteDifficultyHint" id="timeGoalCompleteDifficultyHint" />
         </fieldset>
+        <div className="timeGoalCompleteNoteField">
+          <label className="timeGoalCompleteNoteLabel" htmlFor="timeGoalCompleteNoteInput">
+            Session note
+          </label>
+          <textarea
+            className="focusSessionNotesInput"
+            id="timeGoalCompleteNoteInput"
+            placeholder="Optional note"
+            rows={4}
+          />
+        </div>
+        <div className="timeGoalCompleteValidation confirmText" id="timeGoalCompleteValidation" aria-live="polite" hidden />
         <div className="confirmBtns timeGoalCompleteActionGrid">
-          <button className="btn btn-ghost" id="timeGoalCompleteAddNoteBtn" type="button">
-            Add Note
-          </button>
-          <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button" disabled>
+          <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button">
             Close
           </button>
         </div>

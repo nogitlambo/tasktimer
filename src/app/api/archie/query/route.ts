@@ -4,6 +4,7 @@ import type { ArchieQueryRequest } from "@/app/tasktimer/lib/archieAssistant";
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import { buildArchieQueryResponse } from "@/app/tasktimer/lib/archieEngine";
 import { maybeGenerateArchieDraftSeed, maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
+import { enforceUidRateLimit } from "../../shared/rateLimit";
 import {
   attachArchieDraftSession,
   buildDraft,
@@ -24,6 +25,14 @@ export async function POST(req: Request) {
     const startedAt = Date.now();
     const body = (await req.json()) as ArchieQueryRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);
+    await enforceUidRateLimit({
+      namespace: "archie-query",
+      uid,
+      windowMs: 10 * 60 * 1000,
+      maxEvents: 20,
+      code: "archie/query-rate-limited",
+      message: "Too many Archie requests recently. Please wait before trying again.",
+    });
     const requestBody: ArchieQueryRequest = {
       message: String(body?.message || "").trim(),
       activePage: normalizeArchieAssistantPage(body?.activePage),

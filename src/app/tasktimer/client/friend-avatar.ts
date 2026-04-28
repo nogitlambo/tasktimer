@@ -37,7 +37,7 @@ export function normalizeFriendAvatarSrc(src: string, env: FriendAvatarEnvironme
   return normalizedValue;
 }
 
-export function isGoogleProfileAvatarId(avatarIdRaw: string): boolean {
+function isGoogleProfileAvatarId(avatarIdRaw: string): boolean {
   return /^google\/profile-photo:/i.test(String(avatarIdRaw || "").trim());
 }
 
@@ -75,7 +75,7 @@ export function getMergedFriendProfile(
   };
 }
 
-export function getFriendAvatarImageSrc(profile: FriendProfile | null | undefined, options: FriendAvatarResolverOptions): string {
+function getFriendAvatarImageSrc(profile: FriendProfile | null | undefined, options: FriendAvatarResolverOptions): string {
   const customSrc = String(profile?.avatarCustomSrc || "").trim();
   if (customSrc) return normalizeFriendAvatarSrc(customSrc, options.env);
   const avatarId = String(profile?.avatarId || "").trim();

@@ -1,4 +1,4 @@
-export type OnboardingDashboardTimelineItem = {
+type OnboardingDashboardTimelineItem = {
   taskName: string;
   label: string;
   duration: string;
@@ -7,9 +7,9 @@ export type OnboardingDashboardTimelineItem = {
   colorIndex: number;
 };
 
-export type OnboardingDashboardHeatLevel = "none" | "low" | "medium" | "high";
+type OnboardingDashboardHeatLevel = "none" | "low" | "medium" | "high";
 
-export type OnboardingDashboardPreviewData = {
+type OnboardingDashboardPreviewData = {
   xpProgress: {
     totalXp: number;
     progressPct: number;

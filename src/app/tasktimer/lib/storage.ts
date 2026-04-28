@@ -1023,6 +1023,11 @@ function debugLogCloudQueue(
   detail?: Record<string, unknown>
 ): void {
   if (process.env.NODE_ENV === "production") return;
+  if (channel === "tasks" && phase !== "error") {
+    const liveSessionUpserts = Math.max(0, Number(detail?.liveSessionUpserts || 0) || 0);
+    const liveSessionClears = Math.max(0, Number(detail?.liveSessionClears || 0) || 0);
+    if (liveSessionUpserts > 0 || liveSessionClears > 0) return;
+  }
   try {
     console.info(`[tasktimer-cloud-queue] ${channel}:${phase}`, {
       preferencesInFlight: !!inFlightPreferencesSync,

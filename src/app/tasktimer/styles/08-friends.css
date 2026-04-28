@@ -607,10 +607,23 @@ body[data-control-style="square"] #app[aria-label="TaskLaunch App"] #appPageFrie
   padding-right: 2px;
 }
 #shareTaskModal .shareTaskFriendOption{
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   padding: 6px 8px;
   border: 1px solid rgba(121,226,255,.2);
   background: rgba(255,255,255,.02);
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+#shareTaskModal .shareTaskFriendOptionLabel{
+  min-width: 0;
+}
+#shareTaskModal .shareTaskFriendOptionState{
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(188,214,230,.72);
+  justify-self: end;
 }
 #shareTaskStatus,
 #friendRequestModalStatus{

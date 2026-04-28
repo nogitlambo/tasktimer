@@ -56,7 +56,7 @@ function normalizePlan(value: unknown): SubscriptionPlan {
   return asString(value).toLowerCase() === "pro" ? "pro" : "free";
 }
 
-export function normalizeEmailKey(email: unknown) {
+function normalizeEmailKey(email: unknown) {
   return asString(email).toLowerCase();
 }
 

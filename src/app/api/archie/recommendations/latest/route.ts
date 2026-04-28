@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { ArchieRecentDraftResponse } from "@/app/tasktimer/lib/archieAssistant";
+import { enforceUidRateLimit } from "../../../shared/rateLimit";
 import { assertCanUseArchieAi, createArchieErrorResponse, getLatestOpenArchieDraft, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +9,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     const { uid } = await verifyArchieRequestUser(req);
+    await enforceUidRateLimit({
+      namespace: "archie-recommendation-latest",
+      uid,
+      windowMs: 10 * 60 * 1000,
+      maxEvents: 30,
+      code: "archie/latest-rate-limited",
+      message: "Too many Archie draft refreshes recently. Please wait before trying again.",
+    });
     assertCanUseArchieAi(await loadArchieUserPlan(uid));
     const draft = await getLatestOpenArchieDraft(uid);
     const response: ArchieRecentDraftResponse = draft

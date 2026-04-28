@@ -81,7 +81,6 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterLeaderboardBtn",
     mobileId: "footerLeaderboardBtn",
     href: "/leaderboard",
-    showInMobileFooter: false,
   },
   {
     page: "history",
@@ -101,6 +100,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
     href: "/settings",
+    showInMobileFooter: false,
   },
 ];
 

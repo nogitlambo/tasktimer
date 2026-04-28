@@ -30,7 +30,7 @@ type RenderArgs = {
   flashedRowId?: string | null;
 };
 
-export type HistoryManagerRenderResult = {
+type HistoryManagerRenderResult = {
   html: string;
   rowIdsByTask: Record<string, string[]>;
   rowIdsByTaskDate: Record<string, string[]>;

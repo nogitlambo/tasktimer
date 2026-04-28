@@ -1,6 +1,6 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "./types";
 
-export type DashboardRenderSummaryInput = {
+type DashboardRenderSummaryInput = {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
@@ -10,7 +10,7 @@ export type DashboardRenderSummaryInput = {
   nowMs: number;
 };
 
-export type DashboardRenderSummary = {
+type DashboardRenderSummary = {
   taskCount: number;
   runningTaskCount: number;
   historyTaskCount: number;

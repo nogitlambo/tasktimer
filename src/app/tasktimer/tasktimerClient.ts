@@ -885,7 +885,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
     getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
     getDashboardAvgRange: getDashboardAvgRangeApi,
-    ensureDashboardIncludedModesValid: ensureDashboardIncludedModesValidApi,
     loadDashboardWidgetState: loadDashboardWidgetStateApi,
     applyDashboardCardVisibility: applyDashboardCardVisibilityApi,
     applyDashboardCardSizes: applyDashboardCardSizesApi,
@@ -893,6 +892,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     applyDashboardEditMode: applyDashboardEditModeApi,
     registerDashboardEvents,
   } = dashboardApi;
+
+  let openManualEntryForTaskFromHistoryManager: (taskId: string) => void = () => {};
   const tasksApi = createTaskTimerTasks(
     createTaskTimerTasksContext({
       els,
@@ -993,6 +994,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openHistoryInline: (index) => historyInlineApi?.openHistory(index),
       openTaskExportModal: (index) => openTaskExportModal(index),
       openShareTaskModal: (index) => openShareTaskModal(index),
+      openManualEntryForTask: (taskId) => openManualEntryForTaskFromHistoryManager(taskId),
       currentUid: () => getCurrentTaskTimerUid(),
       deleteSharedTaskSummariesForTask,
       refreshOwnSharedSummaries,
@@ -1369,7 +1371,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       showUpgradePrompt,
     })
   );
-  const { openHistoryManager, registerHistoryManagerEvents } = historyManager;
+  const { openHistoryManager, openManualEntryForTask, registerHistoryManagerEvents } = historyManager;
+  openManualEntryForTaskFromHistoryManager = openManualEntryForTask;
   openHistoryManagerFromShell = openHistoryManager;
 
   const historyInline = createTaskTimerHistoryInline(

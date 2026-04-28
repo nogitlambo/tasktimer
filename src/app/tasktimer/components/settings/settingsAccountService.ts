@@ -10,7 +10,7 @@ import { clearScopedStorageState, waitForPendingTaskSync } from "@/app/tasktimer
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
-export const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
 export function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -20,7 +20,7 @@ export function getErrorMessage(err: unknown, fallback: string) {
   return fallback;
 }
 
-export function shouldUseRedirectAuth() {
+function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
@@ -34,7 +34,7 @@ function redirectToSignedOutHome() {
   window.location.assign(resolveTaskTimerRouteHref("/?signedOut=1"));
 }
 
-export function accountStateDocRef(uid: string) {
+function accountStateDocRef(uid: string) {
   const db = getFirebaseFirestoreClient();
   if (!db) return null;
   return doc(db, "users", uid, "accountState", "v1");

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTaskTimerRuntime } from "./runtime";
 import { createTaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerCloudSync } from "./cloud-sync";
+import type { Task } from "../lib/types";
 
 const mocks = vi.hoisted(() => ({
   hydrateStorageFromCloud: vi.fn(() => Promise.resolve()),
@@ -11,6 +12,22 @@ const mocks = vi.hoisted(() => ({
   onAuthStateChanged: vi.fn(),
   getFirebaseAuthClient: vi.fn(() => ({ currentUser: { uid: "user-1" } })),
 }));
+
+function makeTask(overrides?: Partial<Task>): Task {
+  return {
+    id: "task-1",
+    name: "Task 1",
+    order: 0,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestones: [],
+    hasStarted: false,
+    ...overrides,
+  };
+}
 
 vi.mock("../lib/storage", () => ({
   hasPendingTaskOrHistorySync: vi.fn(() => false),
@@ -110,7 +127,7 @@ describe("cloud-sync", () => {
       maybeHandlePendingPushAction: vi.fn(),
       maybeRestorePendingTimeGoalFlow: vi.fn(),
       currentUid: () => "user-1",
-      getTasks: () => [{ id: "task-1" }] as Array<{ id: string }>,
+      getTasks: () => [makeTask()],
       showDashboardBusyIndicator: vi.fn(() => 1),
       hideDashboardBusyIndicator: vi.fn(),
       setDashboardRefreshPending,

@@ -76,7 +76,18 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String secondaryActionId = isUnscheduledGap ? ACTION_POSTPONE_NEXT_GAP : ACTION_SNOOZE_10M;
 
         int notificationId = Math.abs((messageId.isEmpty() ? (taskId + route) : messageId).hashCode());
-        Intent defaultIntent = buildReceiverIntent(taskId, route, taskName, messageId, "default", notificationId, eventType, notificationKind, dueAtMs);
+        String contentActionId = isTimeGoalComplete ? "default" : ACTION_LAUNCH_TASK;
+        Intent defaultIntent = buildReceiverIntent(
+            taskId,
+            route,
+            taskName,
+            messageId,
+            contentActionId,
+            notificationId,
+            eventType,
+            notificationKind,
+            dueAtMs
+        );
         Intent launchIntent = buildReceiverIntent(taskId, route, taskName, messageId, ACTION_LAUNCH_TASK, notificationId, eventType, notificationKind, dueAtMs);
         Intent secondaryIntent = buildReceiverIntent(taskId, route, taskName, messageId, secondaryActionId, notificationId, eventType, notificationKind, dueAtMs);
 

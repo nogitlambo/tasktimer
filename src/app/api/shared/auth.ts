@@ -40,7 +40,7 @@ function getRequestIdToken(req: Request, body?: Record<string, unknown> | null) 
   return parseCookieValue(req.headers.get("cookie"), "tasktimer_feedback_auth");
 }
 
-export class ApiAuthError extends Error {
+class ApiAuthError extends Error {
   status: number;
   code: string;
 

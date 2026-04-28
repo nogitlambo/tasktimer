@@ -147,8 +147,12 @@ async function safeGetDocsArray<T>(
 
 const userRootPermissionWarnedUids = new Set<string>();
 const IDENTITY_SYNC_RECENT_WINDOW_MS = 60_000;
+const USER_PROFILE_BOOTSTRAP_RECENT_WINDOW_MS = 60_000;
 const inFlightIdentitySyncByKey = new Map<string, Promise<void>>();
 const lastSuccessfulIdentitySyncAtByKey = new Map<string, number>();
+const lastDeferredIdentitySyncAtByKey = new Map<string, number>();
+const inFlightUserProfileBootstrapByUid = new Map<string, Promise<void>>();
+const lastUserProfileBootstrapAtByUid = new Map<string, number>();
 
 function normalizeIdentitySyncValue(value: string | null | undefined): string {
   return String(value || "").trim();
@@ -161,6 +165,20 @@ function identitySyncRequestKey(uid: string, email: string | null | undefined, p
     normalizeIdentitySyncValue(prevEmail).toLowerCase(),
     normalizeIdentitySyncValue(displayName),
   ].join("|");
+}
+
+function isExpectedIdentitySyncError(error: unknown): boolean {
+  const described = describeError(error);
+  const code = String(described.code || "").trim().toLowerCase();
+  const message = String(described.message || "").trim().toLowerCase();
+  return (
+    code === "account/sync-identity-rate-limited" ||
+    code === "auth/unauthenticated" ||
+    code === "auth/invalid-session" ||
+    message.includes("too many identity sync attempts recently") ||
+    message.includes("you must be signed in to continue") ||
+    message.includes("your sign-in session is no longer valid")
+  );
 }
 
 function dbOrNull() {
@@ -435,6 +453,8 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
   const now = Date.now();
   const lastSuccessAt = lastSuccessfulIdentitySyncAtByKey.get(requestKey) || 0;
   if (now - lastSuccessAt < IDENTITY_SYNC_RECENT_WINDOW_MS) return;
+  const lastDeferredAt = lastDeferredIdentitySyncAtByKey.get(requestKey) || 0;
+  if (now - lastDeferredAt < IDENTITY_SYNC_RECENT_WINDOW_MS) return;
   const inFlight = inFlightIdentitySyncByKey.get(requestKey);
   if (inFlight) {
     await inFlight;
@@ -454,18 +474,38 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
       }),
     });
     if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new Error(String(payload.error || "Could not sync user identity lookup."));
+      const payload = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+      const status = Number(response.status || 0) || null;
+      const code = String(payload.code || "").trim();
+      const message = String(payload.error || "").trim() || "Could not sync user identity lookup.";
+      const nextError = new Error(status ? `${message} (status ${status})` : message) as Error & {
+        code?: string;
+        status?: number | null;
+      };
+      if (code) nextError.code = code;
+      if (status) nextError.status = status;
+      throw nextError;
     }
     lastSuccessfulIdentitySyncAtByKey.set(requestKey, Date.now());
+    lastDeferredIdentitySyncAtByKey.delete(requestKey);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[tasktimer-cloud] Failed to sync account identity index", {
-        uid,
-        email: authEmail || null,
-        prevEmail: options?.prevEmail || null,
-        error: describeError(error),
-      });
+      if (isExpectedIdentitySyncError(error)) {
+        lastDeferredIdentitySyncAtByKey.set(requestKey, Date.now());
+        console.warn("[tasktimer-cloud] Deferred account identity index sync", {
+          uid,
+          email: authEmail || null,
+          prevEmail: options?.prevEmail || null,
+          error: describeError(error),
+        });
+      } else {
+        console.error("[tasktimer-cloud] Failed to sync account identity index", {
+          uid,
+          email: authEmail || null,
+          prevEmail: options?.prevEmail || null,
+          error: describeError(error),
+        });
+      }
     }
     throw error;
   } finally {
@@ -479,6 +519,7 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
 type UserRootWriteOptions = {
   patch?: Record<string, unknown>;
   includeAuthIdentity?: boolean;
+  skipIdentitySync?: boolean;
   permissionDeniedIsNonFatal?: boolean;
   permissionWarningKey?: string;
   failureContext?: string;
@@ -582,7 +623,7 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
     } else {
       await setDoc(root, payload, { merge: true });
     }
-    if (shouldSyncIdentity) {
+    if (shouldSyncIdentity && !options?.skipIdentitySync) {
       await syncUserIdentityIndex(uid, {
         prevEmail: prevEmail || null,
         displayName: nextDisplayName,
@@ -995,9 +1036,10 @@ export async function saveUserRootPatch(uid: string, patch: Record<string, unkno
   }
 }
 
-async function upsertUserRoot(uid: string): Promise<UserRootWriteResult> {
+async function upsertUserRoot(uid: string, options?: { skipIdentitySync?: boolean }): Promise<UserRootWriteResult> {
   return writeUserRootDocument(uid, {
     includeAuthIdentity: true,
+    skipIdentitySync: options?.skipIdentitySync === true,
     permissionDeniedIsNonFatal: true,
     permissionWarningKey: `${uid}:bootstrap`,
     failureContext: "User root bootstrap",
@@ -1006,41 +1048,59 @@ async function upsertUserRoot(uid: string): Promise<UserRootWriteResult> {
 
 export async function ensureUserProfileIndex(uid: string): Promise<void> {
   if (!uid) return;
-  try {
-    await syncUserIdentityIndex(uid);
-  } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Continuing without account identity bootstrap", {
-        uid,
-        error: describeError(error),
-      });
+  const normalizedUid = String(uid || "").trim();
+  const now = Date.now();
+  const lastBootstrapAt = lastUserProfileBootstrapAtByUid.get(normalizedUid) || 0;
+  if (now - lastBootstrapAt < USER_PROFILE_BOOTSTRAP_RECENT_WINDOW_MS) return;
+  const inFlight = inFlightUserProfileBootstrapByUid.get(normalizedUid);
+  if (inFlight) {
+    await inFlight;
+    return;
+  }
+  const bootstrapPromise = (async () => {
+    try {
+      try {
+        await syncUserIdentityIndex(normalizedUid);
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[tasktimer-cloud] Continuing without account identity bootstrap", {
+            uid: normalizedUid,
+            error: describeError(error),
+          });
+        }
+        // Account identity bootstrap is best-effort and should not block workspace hydration.
+      }
+      let rootReadable = false;
+      try {
+        const result = await upsertUserRoot(normalizedUid, { skipIdentitySync: true });
+        rootReadable = result.rootReadable;
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[tasktimer-cloud] Continuing without user root bootstrap", {
+            uid: normalizedUid,
+            error: describeError(error),
+          });
+        }
+        // Keep email lookup available even if user root sync fails unexpectedly.
+      }
+      if (!rootReadable) return;
+      try {
+        const root = usersDoc(normalizedUid);
+        if (!root) return;
+        const snap = await getDoc(root);
+        const usernameKey = snap.exists() ? String(snap.get("usernameKey") || "").trim() : "";
+        if (usernameKey) return;
+        await claimMissingUsername(normalizedUid);
+      } catch {
+        // Username bootstrap is best-effort and should not block sign-in/profile indexing.
+      }
+    } finally {
+      lastUserProfileBootstrapAtByUid.set(normalizedUid, Date.now());
+      inFlightUserProfileBootstrapByUid.delete(normalizedUid);
     }
-    // Account identity bootstrap is best-effort and should not block workspace hydration.
-  }
-  let rootReadable = false;
-  try {
-    const result = await upsertUserRoot(uid);
-    rootReadable = result.rootReadable;
-  } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[tasktimer-cloud] Continuing without user root bootstrap", {
-        uid,
-        error: describeError(error),
-      });
-    }
-    // Keep email lookup available even if user root sync fails unexpectedly.
-  }
-  if (!rootReadable) return;
-  try {
-    const root = usersDoc(uid);
-    if (!root) return;
-    const snap = await getDoc(root);
-    const usernameKey = snap.exists() ? String(snap.get("usernameKey") || "").trim() : "";
-    if (usernameKey) return;
-    await claimMissingUsername(uid);
-  } catch {
-    // Username bootstrap is best-effort and should not block sign-in/profile indexing.
-  }
+  })();
+  inFlightUserProfileBootstrapByUid.set(normalizedUid, bootstrapPromise);
+  await bootstrapPromise;
 }
 
 export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot> {

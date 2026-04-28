@@ -42,7 +42,7 @@ export function canUseFirebaseAdminDefaultCredentials() {
   );
 }
 
-export function getFirebaseAdminApp() {
+function getFirebaseAdminApp() {
   if (getApps().length) return getApp();
   const projectId = getFirebaseAdminProjectId();
   const credential = getFirebaseAdminCredential();

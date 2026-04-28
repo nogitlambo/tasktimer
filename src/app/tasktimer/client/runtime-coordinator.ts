@@ -61,14 +61,14 @@ export function escapeTaskTimerHtml(str: unknown) {
     .replaceAll("'", "&#039;");
 }
 
-export function getTaskTimerTileColumnCount(windowRef: Window) {
+function getTaskTimerTileColumnCount(windowRef: Window) {
   if (typeof windowRef === "undefined") return 1;
   if (windowRef.matchMedia("(min-width: 1200px)").matches) return 3;
   if (windowRef.matchMedia("(min-width: 720px)").matches) return 2;
   return 1;
 }
 
-export function isTaskTimerArchitectUser(options: {
+function isTaskTimerArchitectUser(options: {
   getCurrentEmail: () => string | null;
   architectEmail: string;
 }) {

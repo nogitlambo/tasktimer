@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const verifyArchieRequestUser = vi.fn();
 const loadArchieUserPlan = vi.fn();
 const getLatestOpenArchieDraft = vi.fn();
+const enforceUidRateLimit = vi.fn();
 const createArchieErrorResponse = vi.fn((error: unknown) => {
   const typedError = error as Error & { code?: string; status?: number };
   return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
@@ -24,12 +25,17 @@ vi.mock("../../shared", () => ({
   createArchieErrorResponse,
 }));
 
+vi.mock("../../../shared/rateLimit", () => ({
+  enforceUidRateLimit,
+}));
+
 describe("GET /api/archie/recommendations/latest", () => {
   beforeEach(() => {
     verifyArchieRequestUser.mockReset();
     loadArchieUserPlan.mockReset().mockResolvedValue("pro");
     getLatestOpenArchieDraft.mockReset();
     createArchieErrorResponse.mockClear();
+    enforceUidRateLimit.mockReset().mockResolvedValue(undefined);
   });
 
   it("returns the latest open draft with a review action", async () => {

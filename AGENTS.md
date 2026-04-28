@@ -161,7 +161,9 @@
 - `PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction``
 - `PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId``
 - `REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers``
+- `STARTUP_MODULE_KEY = `${storageKey}:startupModule``
 - `STORAGE_KEY = "taskticker_tasks_v1"`
+- `TASK_ORDER_BY_KEY = `${storageKey}:taskOrderBy``
 - `TASK_VIEW_KEY = `${storageKey}:taskView``
 - `THEME_KEY = `${storageKey}:theme``
 - `TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow``
@@ -180,6 +182,7 @@
 - `data-action="history"`
 - `data-action="jumpToCheckpointTask"`
 - `data-action="muteCheckpointAlert"`
+- `data-action="openAddTask"`
 - `data-action="reset"`
 - `data-action="rmMs"`
 - `data-action="start"`
@@ -192,6 +195,7 @@
 - `data-history-action="newer"`
 - `data-history-action="older"`
 - `data-history-action="pin"`
+- `data-history-action="viewSummary"`
 - `data-menu="historyManager"`
 - `data-menu="howto"`
 <!-- AUTO-CONTEXT:END -->

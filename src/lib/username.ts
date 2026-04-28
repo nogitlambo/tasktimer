@@ -1,4 +1,4 @@
-export const RESERVED_USERNAMES = new Set([
+const RESERVED_USERNAMES = new Set([
   "admin",
   "support",
   "system",
@@ -11,7 +11,7 @@ export const RESERVED_USERNAMES = new Set([
   "me",
 ]);
 
-export const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
+const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
 
 export function normalizeUsername(username: string): string {
   return String(username || "").trim().toLowerCase();

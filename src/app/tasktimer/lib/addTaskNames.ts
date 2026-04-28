@@ -9,11 +9,11 @@ export const ADD_TASK_PRESET_NAMES = [
   "Workout",
 ];
 
-export function normalizeTaskNameKey(s: string): string {
+function normalizeTaskNameKey(s: string): string {
   return String(s || "").trim().toLowerCase();
 }
 
-export function isPresetTaskName(name: string, presets = ADD_TASK_PRESET_NAMES): boolean {
+function isPresetTaskName(name: string, presets = ADD_TASK_PRESET_NAMES): boolean {
   const k = normalizeTaskNameKey(name);
   return presets.some((x) => normalizeTaskNameKey(x) === k);
 }

@@ -218,6 +218,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return normalizeCompletionDifficulty(overlay?.dataset.completionDifficulty);
   }
 
+  function setTimeGoalCompletionValidation(message?: string) {
+    const validationEl = els.timeGoalCompleteValidation as HTMLElement | null;
+    if (!validationEl) return;
+    const nextMessage = String(message || "").trim();
+    validationEl.textContent = nextMessage;
+    validationEl.hidden = !nextMessage;
+  }
+
   function syncTimeGoalCompletionDifficultyUi(valueRaw?: unknown) {
     const value = normalizeCompletionDifficulty(valueRaw);
     const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
@@ -233,9 +241,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-checked", selected ? "true" : "false");
     });
-    if (els.timeGoalCompleteCloseBtn) {
-      els.timeGoalCompleteCloseBtn.disabled = !value;
-    }
+    if (value) setTimeGoalCompletionValidation("");
   }
 
   function clearPendingTimeGoalFlow() {
@@ -271,15 +277,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
       if (overlay) delete overlay.dataset.taskId;
     }
+    setTimeGoalCompletionValidation("");
     syncTimeGoalCompletionDifficultyUi();
     if (normalizedTaskId) delete ctx.getTimeGoalReminderAtMsByTaskId()[normalizedTaskId];
   }
 
-  function persistPendingTimeGoalFlow(
-    task: Task,
-    step: "main" | "saveNote" | "note",
-    opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty }
-  ) {
+  function persistPendingTimeGoalFlow(task: Task, step: "main", opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty }) {
     const taskId = String(task?.id || "").trim();
     if (!taskId || typeof window === "undefined") return;
     const completionDifficulty = normalizeCompletionDifficulty(opts?.completionDifficulty) || getSelectedTimeGoalCompletionDifficulty();
@@ -300,7 +303,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function loadPendingTimeGoalFlow():
-    | { taskId: string; step: "main" | "saveNote" | "note"; frozenElapsedMs: number; reminder: boolean; completionDifficulty?: CompletionDifficulty }
+    | { taskId: string; step: "main"; frozenElapsedMs: number; reminder: boolean; completionDifficulty?: CompletionDifficulty }
     | null {
     if (typeof window === "undefined") return null;
     try {
@@ -308,13 +311,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!raw) return null;
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       const taskId = String(parsed?.taskId || "").trim();
-      const stepRaw = String(parsed?.step || "").trim();
-      const step = stepRaw === "saveNote" || stepRaw === "note" ? stepRaw : "main";
       const frozenElapsedMs = Math.max(0, Math.floor(Number(parsed?.frozenElapsedMs || 0) || 0));
       const reminder = !!parsed?.reminder;
       const completionDifficulty = normalizeCompletionDifficulty(parsed?.completionDifficulty);
       if (!taskId) return null;
-      return { taskId, step, frozenElapsedMs, reminder, completionDifficulty };
+      return { taskId, step: "main", frozenElapsedMs, reminder, completionDifficulty };
     } catch {
       return null;
     }
@@ -369,32 +370,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
     }
     if (els.timeGoalCompleteMeta) els.timeGoalCompleteMeta.textContent = "";
+    setTimeGoalCompletionValidation("");
+    if (els.timeGoalCompleteNoteInput) {
+      els.timeGoalCompleteNoteInput.value = captureSessionNoteSnapshot(taskId);
+    }
     syncTimeGoalCompletionDifficultyUi(opts?.completionDifficulty);
     persistPendingTimeGoalFlow(task, "main", opts);
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-  }
-
-  function openTimeGoalSaveNoteChoice(task: Task) {
-    persistPendingTimeGoalFlow(task, "saveNote");
-    ctx.openOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-  }
-
-  function openTimeGoalNoteModal(task: Task) {
-    const taskId = String(task.id || "").trim();
-    if (!taskId) return;
-    const capturedNote = captureSessionNoteSnapshot(taskId);
-    if (capturedNote) setFocusSessionDraft(taskId, capturedNote);
-    if (els.timeGoalCompleteNoteTitle) {
-      els.timeGoalCompleteNoteTitle.textContent = `${String(task.name || "Task")} Notes`;
-    }
-    if (els.timeGoalCompleteNoteText) {
-      els.timeGoalCompleteNoteText.textContent = "Add a note for this saved session before the timer resets.";
-    }
-    if (els.timeGoalCompleteNoteInput) {
-      els.timeGoalCompleteNoteInput.value = capturedNote;
-    }
-    persistPendingTimeGoalFlow(task, "note");
-    ctx.openOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
   }
 
   function maybeRestorePendingTimeGoalFlow() {
@@ -417,8 +399,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           completionDifficulty: pending.completionDifficulty,
         });
       }
-      if (pending.step === "saveNote") openTimeGoalSaveNoteChoice(task);
-      else if (pending.step === "note") openTimeGoalNoteModal(task);
       return;
     }
     if (String(ctx.getTimeGoalModalTaskId() || "").trim()) return;
@@ -442,9 +422,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(task.id || "");
     const completionDifficulty = getSelectedTimeGoalCompletionDifficulty();
     if (opts.logHistory && !completionDifficulty) {
+      setTimeGoalCompletionValidation("Select a sentiment before closing this session.");
       ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-      syncTimeGoalCompletionDifficultyUi();
       return;
+    }
+    if (taskId && els.timeGoalCompleteNoteInput) {
+      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
@@ -1252,10 +1235,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const task = getActiveTimeGoalModalTask();
       if (task) await resolveTimeGoalCompletion(task, { logHistory: true });
     });
-    ctx.on(els.timeGoalCompleteAddNoteBtn, "click", () => {
-      const task = getActiveTimeGoalModalTask();
-      if (task) openTimeGoalNoteModal(task);
-    });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {
       const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;
       if (!button) return;
@@ -1265,28 +1244,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const task = getActiveTimeGoalModalTask();
       if (task) persistPendingTimeGoalFlow(task, "main", { completionDifficulty: value });
     });
-    ctx.on(els.timeGoalCompleteSaveNoteNoBtn, "click", async () => {
-      const task = getActiveTimeGoalModalTask();
-      if (!task) return;
-      ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
-      persistPendingTimeGoalFlow(task, "main");
-      await resolveTimeGoalCompletion(task, { logHistory: true });
-    });
-    ctx.on(els.timeGoalCompleteSaveNoteYesBtn, "click", () => {
-      const task = getActiveTimeGoalModalTask();
-      if (task) openTimeGoalNoteModal(task);
-    });
     ctx.on(els.timeGoalCompleteNoteInput, "input", () => {
       const taskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
       if (taskId) setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
-    });
-    ctx.on(els.timeGoalCompleteNoteDoneBtn, "click", async () => {
-      const task = getActiveTimeGoalModalTask();
-      const taskId = getActiveTimeGoalModalTaskId();
-      if (!task || !taskId) return;
-      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
-      ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-      await resolveTimeGoalCompletion(task, { logHistory: true });
     });
     ctx.on(els.checkpointToastHost, "click", (e: any) => {
       const delegatedAction = getDelegatedAction(e.target, "data-action");

@@ -14,6 +14,8 @@ import {
   resolveScheduleOpenFocus,
   resolveScheduleOpenScrollTargetMinutes,
 } from "./runtime-coordinator";
+import type { Task } from "../lib/types";
+import type { TaskTimerElements } from "./elements";
 import type { TaskTimerScheduleState } from "./schedule-runtime";
 import { SCHEDULE_MINUTE_PX } from "./schedule-runtime";
 
@@ -26,6 +28,17 @@ function makeScheduleState() {
     dragPreviewStartMinutes: null,
     dragPointerOffsetMinutes: 0,
   });
+}
+
+const fakeTask = {} as Task;
+
+function createTestElements(scroller: HTMLElement): TaskTimerElements {
+  return {
+    scheduleGridScroller: scroller,
+    scheduleGrid: { innerHTML: "" } as HTMLElement,
+    scheduleTrayList: { innerHTML: "" } as HTMLElement,
+    scheduleMobileDayTabs: null,
+  } as unknown as TaskTimerElements;
 }
 
 describe("runtime-coordinator", () => {
@@ -45,9 +58,9 @@ describe("runtime-coordinator", () => {
         presentDay: "mon",
         viewModel: {
           scheduled: [
-            { day: "tue", startMinutes: 480, durationMinutes: 60, task: {} as any },
-            { day: "mon", startMinutes: 540, durationMinutes: 60, task: {} as any },
-            { day: "mon", startMinutes: 660, durationMinutes: 60, task: {} as any },
+            { day: "tue", startMinutes: 480, durationMinutes: 60, task: fakeTask },
+            { day: "mon", startMinutes: 540, durationMinutes: 60, task: fakeTask },
+            { day: "mon", startMinutes: 660, durationMinutes: 60, task: fakeTask },
           ],
         },
         optimalProductivityStartTime: "14:00",
@@ -61,7 +74,7 @@ describe("runtime-coordinator", () => {
       resolveScheduleOpenScrollTargetMinutes({
         presentDay: "mon",
         viewModel: {
-          scheduled: [{ day: "tue", startMinutes: 480, durationMinutes: 60, task: {} as any }],
+          scheduled: [{ day: "tue", startMinutes: 480, durationMinutes: 60, task: fakeTask }],
         },
         optimalProductivityStartTime: "14:00",
         optimalProductivityEndTime: "15:00",
@@ -86,8 +99,8 @@ describe("runtime-coordinator", () => {
         presentDay: "mon",
         viewModel: {
           scheduled: [
-            { day: "tue", startMinutes: 480, durationMinutes: 60, task: {} as any },
-            { day: "wed", startMinutes: 540, durationMinutes: 60, task: {} as any },
+            { day: "tue", startMinutes: 480, durationMinutes: 60, task: fakeTask },
+            { day: "wed", startMinutes: 540, durationMinutes: 60, task: fakeTask },
           ],
         },
       })
@@ -101,17 +114,12 @@ describe("runtime-coordinator", () => {
     const scheduleState = makeScheduleState();
     const scroller = { scrollTop: 0 } as HTMLElement;
     const buildViewModel = vi.fn(() => ({
-      scheduled: [{ day: "tue", startMinutes: 510, durationMinutes: 60, task: {} as any }],
+      scheduled: [{ day: "tue", startMinutes: 510, durationMinutes: 60, task: fakeTask }],
       unscheduled: [],
     }));
     const renderTasksPage = vi.fn();
     const coordinator = createTaskTimerRuntimeCoordinator({
-      els: {
-        scheduleGridScroller: scroller,
-        scheduleGrid: { innerHTML: "" } as HTMLElement,
-        scheduleTrayList: { innerHTML: "" } as HTMLElement,
-        scheduleMobileDayTabs: null,
-      } as any,
+      els: createTestElements(scroller),
       scheduleState,
       scheduleRuntime: { buildViewModel },
       escapeHtmlUI: (value: unknown) => String(value ?? ""),
@@ -154,14 +162,9 @@ describe("runtime-coordinator", () => {
     const buildViewModel = vi
       .fn()
       .mockReturnValueOnce({ scheduled: [], unscheduled: [] })
-      .mockReturnValueOnce({ scheduled: [{ day: "wed", startMinutes: 600, durationMinutes: 60, task: {} as any }], unscheduled: [] });
+      .mockReturnValueOnce({ scheduled: [{ day: "wed", startMinutes: 600, durationMinutes: 60, task: fakeTask }], unscheduled: [] });
     const coordinator = createTaskTimerRuntimeCoordinator({
-      els: {
-        scheduleGridScroller: scroller,
-        scheduleGrid: { innerHTML: "" } as HTMLElement,
-        scheduleTrayList: { innerHTML: "" } as HTMLElement,
-        scheduleMobileDayTabs: null,
-      } as any,
+      els: createTestElements(scroller),
       scheduleState,
       scheduleRuntime: { buildViewModel },
       escapeHtmlUI: (value: unknown) => String(value ?? ""),

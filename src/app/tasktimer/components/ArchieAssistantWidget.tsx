@@ -53,7 +53,7 @@ import {
 } from "../lib/onboarding";
 
 type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
-export type ArchieResponseFeedback = "up" | "down";
+type ArchieResponseFeedback = "up" | "down";
 type ArchieCopyState = "idle" | "copied" | "failed";
 
 type ArchieAssistantWidgetProps = {

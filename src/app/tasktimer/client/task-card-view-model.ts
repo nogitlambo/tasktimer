@@ -1,6 +1,6 @@
 import type { Milestone } from "../lib/types";
 
-export type TaskProgressMarkerModel =
+type TaskProgressMarkerModel =
   | {
       kind: "baseline";
       leftPos: number;
@@ -24,7 +24,7 @@ export type TaskProgressMarkerModel =
       reached: boolean;
     };
 
-export type TaskProgressModel = {
+type TaskProgressModel = {
   pct: number;
   markers: TaskProgressMarkerModel[];
 };

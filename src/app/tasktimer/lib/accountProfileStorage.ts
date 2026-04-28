@@ -26,15 +26,15 @@ function safeWrite(key: string, value: string): void {
   }
 }
 
-export function avatarStorageKeyForUid(uid: string) {
+function avatarStorageKeyForUid(uid: string) {
   return `${AVATAR_SELECTION_STORAGE_PREFIX}${uid}`;
 }
 
-export function avatarCustomStorageKeyForUid(uid: string) {
+function avatarCustomStorageKeyForUid(uid: string) {
   return `${AVATAR_CUSTOM_STORAGE_PREFIX}${uid}`;
 }
 
-export function rankThumbnailStorageKeyForUid(uid: string) {
+function rankThumbnailStorageKeyForUid(uid: string) {
   return `${RANK_THUMBNAIL_STORAGE_PREFIX}${uid}`;
 }
 

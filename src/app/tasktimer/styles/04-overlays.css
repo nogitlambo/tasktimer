@@ -849,6 +849,23 @@ body[data-theme="purple"] .rankLadderItemFlag{
   min-height:36px;
 }
 
+#taskManualEntryOverlay .hmManualEntryFooterBtns,
+#historyManagerManualEntryOverlay .hmManualEntryFooterBtns{
+  margin-top: 0;
+  padding: 14px 0 max(14px, var(--safe-bottom));
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+#taskManualEntryOverlay .hmManualEntryFooterBtns .btn,
+#historyManagerManualEntryOverlay .hmManualEntryFooterBtns .btn{
+  padding: 9px 12px;
+  min-height: 36px;
+}
+
 #editOverlay .unitBtn.isOn,
 #editOverlay .timerTypePill.isOn{
   border-color: rgba(116,198,226,.55) !important;
@@ -3174,6 +3191,40 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   text-align: center;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteNoteField{
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNoteLabel{
+  color: rgba(226,246,255,.92);
+  font-family: var(--font-geist-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+#timeGoalCompleteOverlay .focusSessionNotesInput{
+  min-height: 94px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteValidation[hidden]{
+  display: none !important;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteValidation{
+  margin: -2px 0 10px;
+  color: #ff4d5f !important;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
   justify-content: center;
   margin-top: 4px;
@@ -3211,6 +3262,18 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .modalSubtext{
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficulty legend{
   color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteNoteLabel{
+  color: rgba(247,232,255,.92);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
+  color: #ff6b8f !important;
+}
+
+body[data-theme="lime"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
+  color: #ff5a68 !important;
 }
 
 body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyHint{

@@ -11,7 +11,7 @@ import {
   type OptimalProductivityPeriod,
 } from "./productivityPeriod";
 
-export type TaskTimerPreferenceStorageKeys = {
+type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
   WEEK_STARTING_KEY: string;

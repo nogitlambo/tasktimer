@@ -31,13 +31,13 @@ const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
 const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 export const TASKLAUNCH_PUSH_CHANNEL_ID = "tasklaunch-default";
 
-export type PendingPushAction = {
+type PendingPushAction = {
   taskId: string;
   route: string;
   actionId: "default" | "launchTask" | "snooze10m" | "postponeNextGap";
 };
 
-export type PushDiagnostics = {
+type PushDiagnostics = {
   runtime: "native" | "web";
   platform: string;
   deviceId: string;
@@ -73,7 +73,7 @@ type PushNotificationsPluginShape = typeof PushNotifications & {
   unregister?: () => Promise<void>;
 };
 
-export type PushChannelPreference = {
+type PushChannelPreference = {
   mobileEnabled: boolean;
   webEnabled: boolean;
 };

@@ -1,6 +1,6 @@
-export type DashboardRenderPhase = "full" | "live";
+type DashboardRenderPhase = "full" | "live";
 
-export type DashboardRenderMetric = {
+type DashboardRenderMetric = {
   phase: DashboardRenderPhase;
   durationMs: number;
   signature: string;
@@ -39,7 +39,7 @@ function ensurePerfState() {
   return window[PERF_WINDOW_KEY]!;
 }
 
-export function recordDashboardRenderMetric(metric: DashboardRenderMetric): void {
+function recordDashboardRenderMetric(metric: DashboardRenderMetric): void {
   const perf = ensurePerfState();
   if (!perf) return;
   perf.metrics.push(metric);

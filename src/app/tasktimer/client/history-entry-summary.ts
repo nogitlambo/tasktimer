@@ -14,7 +14,7 @@ type HistoryEntrySummarySource = {
   completionDifficulty?: unknown;
 };
 
-export type HistoryEntrySummaryItem = {
+type HistoryEntrySummaryItem = {
   taskId: string;
   name: string;
   ts: number;
@@ -31,7 +31,7 @@ export type HistoryEntrySummaryItem = {
   xpText: string;
 };
 
-export type HistoryEntrySummaryAggregate = {
+type HistoryEntrySummaryAggregate = {
   dateSpanText: string;
   sessionCountText: string;
   totalElapsedText: string;
@@ -39,7 +39,7 @@ export type HistoryEntrySummaryAggregate = {
   xpText: string;
 };
 
-export type HistoryEntrySummaryPayload = {
+type HistoryEntrySummaryPayload = {
   titleText: string;
   metaText: string;
   aggregate: HistoryEntrySummaryAggregate | null;

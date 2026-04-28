@@ -2,7 +2,7 @@ import type { ArchieKnowledgeCitation, ArchieSettingsPane } from "./archieAssist
 
 type ArchieRoute = "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/user-guide" | "/feedback";
 
-export type ArchieKnowledgeEntry = {
+type ArchieKnowledgeEntry = {
   id: string;
   category: string;
   question: string;
@@ -30,7 +30,7 @@ export type ArchieKnowledgeMatch = {
   unmatchedTokenCount: number;
 };
 
-export const ARCHIE_KNOWLEDGE_BASE: ArchieKnowledgeEntry[] = [
+const ARCHIE_KNOWLEDGE_BASE: ArchieKnowledgeEntry[] = [
   {
     id: "faq-overview-what-is-tasklaunch",
     category: "overview",

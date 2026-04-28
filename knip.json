@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "functions/index.js",
+    "scripts/*.mjs",
+    "src/app/**/{layout,page,route,not-found,robots,sitemap}.ts",
+    "src/app/**/{layout,page,route,not-found}.tsx",
+    "src/**/*.test.{ts,tsx}",
+    "tests/e2e/**/*.ts"
+  ],
+  "project": [
+    "functions/**/*.js",
+    "functions/**/*.ts",
+    "scripts/**/*.mjs",
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.ts"
+  ],
+  "ignoreDependencies": [
+    "@capacitor/app",
+    "@fontsource-variable/geist",
+    "@fontsource-variable/geist-mono",
+    "@fontsource/inconsolata",
+    "@fontsource/orbitron",
+    "firebase-functions",
+    "tailwindcss"
+  ],
+  "ignoreBinaries": [
+    "firebase-tools",
+    "gradlew.bat"
+  ]
+}

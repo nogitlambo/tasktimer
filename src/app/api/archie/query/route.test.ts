@@ -17,6 +17,7 @@ const buildDraft = vi.fn((seed: Omit<ArchieRecommendationDraft, "id" | "createdA
 const buildArchieQueryResponse = vi.fn();
 const maybeRefineArchieResponse = vi.fn();
 const maybeGenerateArchieDraftSeed = vi.fn();
+const enforceUidRateLimit = vi.fn();
 
 vi.mock("../shared", () => ({
   verifyArchieRequestUser,
@@ -35,7 +36,10 @@ vi.mock("../shared", () => ({
     confidence: "high",
     suggestedAction: { kind: "navigate", label: "Upgrade to Pro", href: "/pricing" },
   }),
-  createArchieErrorResponse: (error: unknown) => Response.json({ error: String(error) }, { status: 500 }),
+  createArchieErrorResponse: (error: unknown) => {
+    const typedError = error as Error & { code?: string; status?: number };
+    return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
+  },
 }));
 
 vi.mock("@/app/tasktimer/lib/archieEngine", () => ({
@@ -45,6 +49,10 @@ vi.mock("@/app/tasktimer/lib/archieEngine", () => ({
 vi.mock("@/app/tasktimer/lib/archieModel", () => ({
   maybeRefineArchieResponse,
   maybeGenerateArchieDraftSeed,
+}));
+
+vi.mock("../../shared/rateLimit", () => ({
+  enforceUidRateLimit,
 }));
 
 function createDraft(): ArchieRecommendationDraft {
@@ -114,6 +122,7 @@ describe("POST /api/archie/query", () => {
     buildArchieQueryResponse.mockReset();
     maybeRefineArchieResponse.mockReset();
     maybeGenerateArchieDraftSeed.mockReset();
+    enforceUidRateLimit.mockReset().mockResolvedValue(undefined);
   });
 
   it("returns deterministic product answers for Free users without Genkit refinement", async () => {
@@ -218,5 +227,23 @@ describe("POST /api/archie/query", () => {
     expect(writeArchieSession).toHaveBeenCalled();
     expect(attachArchieDraftSession).toHaveBeenCalledWith("user-1", "draft-built", "session-1");
     expect(json.sessionId).toBe("session-1");
+  });
+
+  it("returns 429 when the Archie query limit is exceeded", async () => {
+    const error = new Error("Too many Archie requests recently. Please wait before trying again.") as Error & {
+      code: string;
+      status: number;
+    };
+    error.code = "archie/query-rate-limited";
+    error.status = 429;
+    enforceUidRateLimit.mockRejectedValueOnce(error);
+
+    const { POST } = await import("./route");
+    const response = await POST(createRequest("What should I work on next?"));
+    const json = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(json.code).toBe("archie/query-rate-limited");
+    expect(loadArchieWorkspaceContext).not.toHaveBeenCalled();
   });
 });

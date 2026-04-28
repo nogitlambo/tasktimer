@@ -37,7 +37,7 @@ export type LeaderboardProfile = {
   schemaVersion: 1;
 };
 
-export type LeaderboardMetricsSnapshot = {
+type LeaderboardMetricsSnapshot = {
   rewardCurrentRankId: string | null;
   rewardTotalXp: number;
   streakDays: number;

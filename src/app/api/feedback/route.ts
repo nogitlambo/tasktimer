@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ApiRateLimitError, enforceUidRateLimit } from "../shared/rateLimit";
 import {
   asString,
   createJiraIssue,
@@ -41,6 +42,9 @@ function normalizeBoolean(value: unknown) {
 }
 
 function createErrorResponse(error: unknown, fallbackMessage: string) {
+  if (error instanceof ApiRateLimitError) {
+    return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+  }
   if (error instanceof FeedbackApiError) {
     return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
   }
@@ -224,6 +228,14 @@ export async function PATCH(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFeedbackRequestUser(req, body);
+    await enforceUidRateLimit({
+      namespace: "feedback-vote-toggle",
+      uid,
+      windowMs: 10 * 60 * 1000,
+      maxEvents: 60,
+      code: "feedback/vote-rate-limited",
+      message: "Too many feedback vote attempts recently. Please wait before trying again.",
+    });
     const feedbackId = asString(body.feedbackId, 120);
     if (!feedbackId) {
       throw new FeedbackApiError("feedback/invalid-vote", "Feedback vote target is unavailable.", 400);

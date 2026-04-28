@@ -34,13 +34,6 @@ export type SettingsAvatarGroup = {
   items: AvatarOption[];
 };
 
-export type SettingsPushViewModel = {
-  pushTestBusy: boolean;
-  pushTestStatus: string;
-  canTriggerPushTest: boolean;
-  onPushTest: () => Promise<void>;
-};
-
 export type SettingsAccountViewModel = {
   authStatus: string;
   authError: string;

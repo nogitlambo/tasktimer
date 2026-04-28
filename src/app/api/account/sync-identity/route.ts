@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 function asString(value: unknown, maxLength = 0) {
@@ -21,6 +22,14 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid, email } = await verifyFirebaseRequestUser(req, body);
+    await enforceUidRateLimit({
+      namespace: "account-sync-identity",
+      uid,
+      windowMs: 10 * 60 * 1000,
+      maxEvents: 12,
+      code: "account/sync-identity-rate-limited",
+      message: "Too many identity sync attempts recently. Please wait before trying again.",
+    });
     const authEmail = normalizeEmail(email);
     if (!authEmail) {
       return NextResponse.json({ error: "A verified email address is required." }, { status: 400 });
@@ -51,6 +60,9 @@ export async function POST(req: Request) {
     await batch.commit();
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof ApiRateLimitError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
     if (error instanceof Error && "status" in error) {
       return createApiAuthErrorResponse(error, "Could not sync account identity.");
     }

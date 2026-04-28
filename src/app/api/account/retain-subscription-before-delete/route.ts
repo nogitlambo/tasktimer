@@ -14,6 +14,7 @@ import {
   createApiInternalErrorResponse,
   verifyFirebaseRequestUser,
 } from "../../shared/auth";
+import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -43,6 +44,14 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { uid, email } = await verifyFirebaseRequestUser(req, body);
+    await enforceUidRateLimit({
+      namespace: "account-retain-subscription-before-delete",
+      uid,
+      windowMs: 30 * 60 * 1000,
+      maxEvents: 4,
+      code: "account/retain-subscription-rate-limited",
+      message: "Too many subscription retention attempts recently. Please wait before trying again.",
+    });
     const normalizedEmail = asString(email).toLowerCase();
     if (!normalizedEmail) {
       return NextResponse.json({ retained: false, reason: "missing-email" });
@@ -73,6 +82,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ retained: true });
   } catch (error) {
+    if (error instanceof ApiRateLimitError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
     if (error instanceof Error && "status" in error) {
       return createApiAuthErrorResponse(error, "Could not preserve subscription access before deletion.");
     }

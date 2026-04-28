@@ -337,6 +337,60 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     return String(els.shareTaskScopeSelect?.value || "all") === "specific";
   }
 
+  function getShareTaskFriendRows() {
+    const uid = ctx.getCurrentUid();
+    if (!uid || !ctx.getGroupsFriendships().length) return [] as Array<{ friendUid: string; alias: string }>;
+    return ctx
+      .getGroupsFriendships()
+      .map((row) => {
+        const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
+        if (!friendUid) return null;
+        const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
+        return { friendUid, alias };
+      })
+      .filter((row): row is { friendUid: string; alias: string } => !!row);
+  }
+
+  function getShareTaskAvailability(taskId: string) {
+    const friendRows = getShareTaskFriendRows();
+    const sharedFriendUidSet = new Set(getSharedFriendUidsForTask(taskId));
+    const availableFriendRows = friendRows.filter((row) => !sharedFriendUidSet.has(row.friendUid));
+    return {
+      friendRows,
+      sharedFriendUidSet,
+      availableFriendRows,
+      isSharedWithAllFriends: friendRows.length > 0 && availableFriendRows.length === 0,
+    };
+  }
+
+  function syncShareTaskModalAvailabilityUi(opts?: { taskName?: string }) {
+    const mode = ctx.getShareTaskMode() === "unshare" ? "unshare" : "share";
+    const activeTaskId = String(ctx.getShareTaskTaskId() || "").trim();
+    const taskName =
+      String(opts?.taskName || "").trim() ||
+      String(ctx.getTasks()[ctx.getShareTaskIndex() ?? -1]?.name || "").trim() ||
+      "Untitled task";
+    if (mode === "unshare") {
+      const targetCount = getSharedFriendUidsForTask(activeTaskId).length;
+      setShareTaskModalModeUi({ mode, taskName, hasChoices: targetCount > 0 });
+      return;
+    }
+    const availability = getShareTaskAvailability(activeTaskId);
+    const hasChoices = isShareTaskSpecificScopeSelected()
+      ? availability.availableFriendRows.length > 0
+      : availability.friendRows.length > 0 && !availability.isSharedWithAllFriends;
+    setShareTaskModalModeUi({ mode, taskName, hasChoices });
+    if (!availability.friendRows.length) {
+      setShareTaskStatus("No friends available to share with.", "error");
+      return;
+    }
+    if (availability.isSharedWithAllFriends) {
+      setShareTaskStatus("This task is already shared with all friends.", "info");
+      return;
+    }
+    setShareTaskStatus("");
+  }
+
   function setShareTaskModalModeUi(opts: { mode: "share" | "unshare"; taskName: string; hasChoices?: boolean }) {
     const mode = opts.mode === "unshare" ? "unshare" : "share";
     const taskName = String(opts.taskName || "").trim() || "Untitled task";
@@ -373,17 +427,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const uid = ctx.getCurrentUid();
     const mode = ctx.getShareTaskMode() === "unshare" ? "unshare" : "share";
     let rows: Array<{ friendUid: string; alias: string }> = [];
-    if (uid && ctx.getGroupsFriendships().length) {
-      rows = ctx
-        .getGroupsFriendships()
-        .map((row) => {
-          const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
-          if (!friendUid) return null;
-          const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
-          return { friendUid, alias };
-        })
-        .filter((row): row is { friendUid: string; alias: string } => !!row);
-    }
+    if (uid) rows = getShareTaskFriendRows();
     if (mode === "unshare") {
       const activeTaskId = String(ctx.getShareTaskTaskId() || "").trim();
       const targetUids = new Set(getSharedFriendUidsForTask(activeTaskId));
@@ -395,6 +439,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           .map((row) => ({ friendUid: row.friendUid, alias: String(row.friendUid || "").trim() || "Unknown friend" }));
       }
     }
+    const activeTaskId = String(ctx.getShareTaskTaskId() || "").trim();
+    const shareAvailability = mode === "share" ? getShareTaskAvailability(activeTaskId) : null;
     if (!uid || !rows.length) {
       listEl.innerHTML = `<div class="settingsDetailNote isEmptyStatus">${
         mode === "unshare" ? "This task is not currently shared with any friends." : "No friends available."
@@ -404,9 +450,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     listEl.innerHTML = rows
       .map((row) => {
         const inputId = `shareFriend_${ctx.escapeHtmlUI(row.friendUid)}`;
+        const isCurrentlyShared = !!shareAvailability?.sharedFriendUidSet.has(row.friendUid);
         return `<label class="shareTaskFriendOption" for="${inputId}">
-          <input id="${inputId}" type="checkbox" data-share-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}" />
-          <span>${ctx.escapeHtmlUI(row.alias)}</span>
+          <input id="${inputId}" type="checkbox" data-share-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}" ${mode === "share" && isCurrentlyShared ? "disabled" : ""} />
+          <span class="shareTaskFriendOptionLabel">${ctx.escapeHtmlUI(row.alias)}</span>
+          ${mode === "share" && isCurrentlyShared ? '<span class="shareTaskFriendOptionState">Currently shared</span>' : ""}
         </label>`;
       })
       .join("");
@@ -420,6 +468,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.shareTaskFriendsField) {
       (els.shareTaskFriendsField as HTMLElement).style.display = isShareTaskSpecificScopeSelected() ? "grid" : "none";
     }
+    syncShareTaskModalAvailabilityUi();
   }
 
   function closeShareTaskModal() {
@@ -440,10 +489,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     const task = ctx.getTasks()[taskIndex];
     if (!task) return;
+    const taskName = String(task.name || "").trim() || "Untitled task";
     ctx.setShareTaskIndex(taskIndex);
     ctx.setShareTaskTaskId(String(task.id || "").trim());
     ctx.setShareTaskMode("share");
-    setShareTaskModalModeUi({ mode: "share", taskName: String(task.name || "").trim() || "Untitled task", hasChoices: true });
+    setShareTaskModalModeUi({ mode: "share", taskName, hasChoices: true });
     if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
     syncShareTaskScopeUi();
     renderShareTaskFriendOptions();
@@ -453,10 +503,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         .then((rows) => {
           ctx.setGroupsFriendships(rows || []);
           renderShareTaskFriendOptions();
+          syncShareTaskModalAvailabilityUi({ taskName });
         })
         .catch(() => {});
     }
-    setShareTaskStatus("");
+    syncShareTaskModalAvailabilityUi({ taskName });
     if (els.shareTaskModal) (els.shareTaskModal as HTMLElement).style.display = "flex";
   }
 
@@ -612,6 +663,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       }
     }
     let targets: string[] = [];
+    const availability = getShareTaskAvailability(activeTaskId);
     if (isShareTaskSpecificScopeSelected()) {
       targets = selectedTargets;
       if (!targets.length) {
@@ -619,12 +671,12 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         return;
       }
     } else {
-      targets = ctx
-        .getGroupsFriendships()
-        .map((row) => (row.users[0] === uid ? row.users[1] : row.users[0]))
-        .filter(Boolean);
+      targets = availability.availableFriendRows.map((row) => row.friendUid);
       if (!targets.length) {
-        setShareTaskStatus("No friends available to share with.", "error");
+        setShareTaskStatus(
+          availability.friendRows.length ? "This task is already shared with all friends." : "No friends available to share with.",
+          "error"
+        );
         return;
       }
     }
@@ -1249,8 +1301,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (e?.target === els.shareTaskModal) closeShareTaskModal();
     });
     ctx.on(els.shareTaskScopeSelect, "change", () => {
+      renderShareTaskFriendOptions();
       syncShareTaskScopeUi();
-      setShareTaskStatus("");
     });
     ctx.on(els.shareTaskConfirmBtn, "click", (e: any) => {
       e?.preventDefault?.();

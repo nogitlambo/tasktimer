@@ -37,7 +37,7 @@ export function createTaskTimerRuntime() {
 
 export type TaskTimerRuntime = ReturnType<typeof createTaskTimerRuntime>;
 
-export type DestroyTaskTimerRuntimeOptions = {
+type DestroyTaskTimerRuntimeOptions = {
   runtime: TaskTimerRuntime;
   deferredCloudRefreshTimer: number | null;
   checkpointToastAutoCloseTimer: number | null;

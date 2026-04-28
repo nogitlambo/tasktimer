@@ -249,7 +249,7 @@ describe("timeGoalComplete push delivery", () => {
     expect(ref.set).toHaveBeenCalledTimes(1);
   });
 
-  it("sends web push while suppressing native delivery when a native device is foregrounded", async () => {
+  it("sends both native and web pushes even when a native device is foregrounded", async () => {
     state.users.set("user-2", {
       devices: [
         {
@@ -306,8 +306,14 @@ describe("timeGoalComplete push delivery", () => {
     }, 120_000);
 
     expect(result.status).toBe("sent");
-    expect(sendEachForMulticast).toHaveBeenCalledTimes(1);
-    expect(sendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({
+    expect(sendEachForMulticast).toHaveBeenCalledTimes(2);
+    expect(sendEachForMulticast).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      tokens: ["native-token-2"],
+      data: expect.objectContaining({
+        eventType: "timeGoalComplete",
+      }),
+    }));
+    expect(sendEachForMulticast).toHaveBeenNthCalledWith(2, expect.objectContaining({
       tokens: ["web-token-2"],
     }));
     expect(ref.set).toHaveBeenCalledTimes(1);

@@ -4,6 +4,7 @@ import type { ArchieRecommendationDraftRequest } from "@/app/tasktimer/lib/archi
 import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistant";
 import { buildRecommendationDraft } from "@/app/tasktimer/lib/archieEngine";
 import { maybeGenerateArchieDraftSeed } from "@/app/tasktimer/lib/archieModel";
+import { enforceUidRateLimit } from "../../../shared/rateLimit";
 import {
   assertCanUseArchieAi,
   buildDraft,
@@ -20,6 +21,14 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ArchieRecommendationDraftRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);
+    await enforceUidRateLimit({
+      namespace: "archie-recommendation-draft",
+      uid,
+      windowMs: 10 * 60 * 1000,
+      maxEvents: 10,
+      code: "archie/draft-rate-limited",
+      message: "Too many Archie draft requests recently. Please wait before trying again.",
+    });
     assertCanUseArchieAi(await loadArchieUserPlan(uid));
     const requestBody: ArchieRecommendationDraftRequest = {
       message: String(body?.message || "").trim(),

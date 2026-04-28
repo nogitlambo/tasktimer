@@ -363,6 +363,7 @@ type CreateTasksOptionsArgs = {
   openHistoryInline: (index: number) => void;
   openTaskExportModal: (index: number) => void;
   openShareTaskModal: (index: number) => void;
+  openManualEntryForTask: (taskId: string) => void;
   currentUid: () => string | null;
   deleteSharedTaskSummariesForTask: (uid: string, taskId: string) => Promise<void>;
   refreshOwnSharedSummaries: () => Promise<void>;
@@ -1207,6 +1208,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     openHistoryInline: args.openHistoryInline,
     openTaskExportModal: args.openTaskExportModal,
     openShareTaskModal: args.openShareTaskModal,
+    openManualEntryForTask: args.openManualEntryForTask,
     currentUid: args.currentUid,
     deleteSharedTaskSummariesForTask: args.deleteSharedTaskSummariesForTask,
     refreshOwnSharedSummaries: args.refreshOwnSharedSummaries,

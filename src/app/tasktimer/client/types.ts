@@ -10,7 +10,7 @@ export type TaskTimerClientHandle = {
   destroy: () => void;
 };
 
-export type HistoryBarRect = {
+type HistoryBarRect = {
   x: number;
   y: number;
   w: number;
@@ -22,7 +22,7 @@ export type HistoryBarRect = {
   hitH?: number;
 };
 
-export type HistoryLabelHitRect = {
+type HistoryLabelHitRect = {
   x: number;
   y: number;
   w: number;

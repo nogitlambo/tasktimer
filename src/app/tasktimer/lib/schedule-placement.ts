@@ -4,7 +4,7 @@ export const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "su
 
 export type ScheduleDay = (typeof SCHEDULE_DAY_ORDER)[number];
 
-export function normalizeScheduleDayValue(raw: unknown): ScheduleDay | null {
+function normalizeScheduleDayValue(raw: unknown): ScheduleDay | null {
   const value = String(raw || "").trim().toLowerCase();
   return SCHEDULE_DAY_ORDER.includes(value as ScheduleDay) ? (value as ScheduleDay) : null;
 }
@@ -56,7 +56,7 @@ export function normalizeTaskPlannedStartByDay(raw: unknown): TaskPlannedStartBy
   return Object.keys(result).length > 0 ? result : null;
 }
 
-export function buildLegacyTaskPlannedStartByDay(task: Task): TaskPlannedStartByDay | null {
+function buildLegacyTaskPlannedStartByDay(task: Task): TaskPlannedStartByDay | null {
   if (!!task.plannedStartOpenEnded) return null;
   const plannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
   if (!plannedStartTime) return null;

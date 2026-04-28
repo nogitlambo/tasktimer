@@ -7,6 +7,7 @@ import {
   createApiInternalErrorResponse,
   verifyFirebaseRequestUser,
 } from "../../shared/auth";
+import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -88,6 +89,14 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { uid, email } = await verifyFirebaseRequestUser(req, body);
+    await enforceUidRateLimit({
+      namespace: "account-delete-user-data",
+      uid,
+      windowMs: 24 * 60 * 60 * 1000,
+      maxEvents: 2,
+      code: "account/delete-user-data-rate-limited",
+      message: "Too many account deletion attempts recently. Please wait before trying again.",
+    });
     const db = getFirebaseAdminDb();
 
     const userRef = db.collection("users").doc(uid);
@@ -118,6 +127,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof ApiRateLimitError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
     if (error instanceof Error && "status" in error) {
       return createApiAuthErrorResponse(error, "Could not delete your cloud data.");
     }
