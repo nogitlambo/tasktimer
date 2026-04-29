@@ -5,13 +5,10 @@ import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsHelpPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
-    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsHelpPane" title="Support" subtitle="Open the Timebase user guide and walkthrough content.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsHelpPane" title="Support" subtitle="Open privacy and feedback resources.">
       <div className="settingsInlineStack settingsDataListStack">
         <section className="settingsInlineSection">
           <div className="settingsDataList">
-            <button className="menuItem settingsDataListItem" data-menu="howto" type="button">
-              <MenuIconLabel icon="/About.svg" label="User Guide" />
-            </button>
             <a
               className="menuItem settingsDataListItem"
               href={resolveTaskTimerRouteHref("/privacy")}

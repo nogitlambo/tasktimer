@@ -8,7 +8,7 @@ export type SettingsPaneKey =
   | "appearance"
   | "notifications"
   | "privacy"
-  | "userGuide"
+  | "help"
   | "about"
   | "feedback"
   | "data"

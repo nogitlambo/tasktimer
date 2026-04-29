@@ -91,7 +91,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           <SettingsAppearancePane active={paneState.activePane === "appearance"} exiting={paneState.exitingPane === "appearance"} />
           <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />
           <SettingsPrivacyPane active={paneState.activePane === "privacy"} exiting={paneState.exitingPane === "privacy"} />
-          <SettingsHelpPane active={paneState.activePane === "userGuide"} exiting={paneState.exitingPane === "userGuide"} />
+          <SettingsHelpPane active={paneState.activePane === "help"} exiting={paneState.exitingPane === "help"} />
           <SettingsAboutPane active={paneState.activePane === "about"} exiting={paneState.exitingPane === "about"} />
           <SettingsFeedbackPane
             active={paneState.activePane === "feedback"}

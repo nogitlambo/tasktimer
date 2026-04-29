@@ -1793,7 +1793,3 @@ export function initTaskTimerHistoryManagerClient(): TaskTimerClientHandle {
 export function initTaskTimerFeedbackClient(): TaskTimerClientHandle {
   return initTaskTimerClient();
 }
-
-export function initTaskTimerUserGuideClient(): TaskTimerClientHandle {
-  return initTaskTimerClient();
-}

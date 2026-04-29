@@ -7,7 +7,6 @@ const protectedRoutes = [
   "/settings",
   "/history-manager",
   "/feedback",
-  "/user-guide",
 ];
 
 test.describe("public entrypoints", () => {

@@ -6,7 +6,7 @@
 
 - Package name: `tasktimer`
 - Frameworks: `next@16.1.6`, `react@19.2.3`
-- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, and `/feedback`
+- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, and `/feedback`
 - Documentation automation is generated from current repo structure and scripts
 
 ## Top-Level Source Map
@@ -33,7 +33,6 @@
 - `/settings`
 - `/signed-out`
 - `/tasklaunch`
-- `/user-guide`
 - `/web-sign-in`
 
 ### TaskLaunch Routes
@@ -43,7 +42,6 @@
 - `/history-manager`
 - `/settings`
 - `/tasklaunch`
-- `/user-guide`
 
 ## Runtime Entry Points
 
@@ -61,7 +59,6 @@
 - [`src/app/history-manager/page.tsx`](/G:/Apps/tasklaunch/src/app/history-manager/page.tsx)
 - [`src/app/settings/page.tsx`](/G:/Apps/tasklaunch/src/app/settings/page.tsx)
 - [`src/app/tasklaunch/page.tsx`](/G:/Apps/tasklaunch/src/app/tasklaunch/page.tsx)
-- [`src/app/user-guide/page.tsx`](/G:/Apps/tasklaunch/src/app/user-guide/page.tsx)
 
 ## TaskTimer Client Support Modules
 

@@ -19,7 +19,7 @@ test("@auth-setup capture authenticated storage state", async ({ page }) => {
   await expect
     .poll(() => {
       const pathname = new URL(page.url()).pathname;
-      return ["/dashboard", "/tasklaunch", "/friends", "/settings", "/history-manager", "/feedback", "/user-guide"].includes(pathname);
+      return ["/dashboard", "/tasklaunch", "/friends", "/settings", "/history-manager", "/feedback"].includes(pathname);
     }, { timeout: 10 * 60 * 1000, message: "Timed out waiting for a successful sign-in redirect to a protected route." })
     .toBe(true);
 

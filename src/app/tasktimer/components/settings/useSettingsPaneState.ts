@@ -9,7 +9,7 @@ const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
   "appearance",
   "notifications",
   "privacy",
-  "userGuide",
+  "help",
   "about",
   "feedback",
   "data",
@@ -21,7 +21,7 @@ const SETTINGS_VISIBLE_PANE_KEYS: SettingsPaneKey[] = [
   "preferences",
   "appearance",
   "notifications",
-  "userGuide",
+  "help",
   "data",
   "about",
 ];
@@ -103,7 +103,7 @@ export function getSettingsNavItems(): SettingsNavItem[] {
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
     { key: "notifications", label: "Notifications", icon: "/Settings.svg" },
-    { key: "userGuide", label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
+    { key: "help", label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
     { key: "data", label: "Data", icon: "/History_Manager.svg" },
     { key: "about", label: "About", icon: "/About.svg" },
   ];

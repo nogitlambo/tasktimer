@@ -155,7 +155,7 @@ describe("Archie engine", () => {
     expect(response.citations.length).toBeGreaterThan(0);
     expect(response.message.toLowerCase()).toContain("history manager");
     expect(response.citations[0]?.route).toBe("/history-manager");
-    expect(response.citations[0]?.title).toContain("User Guide");
+    expect(response.citations[0]?.title).toContain("Settings");
   });
 
   it("returns settings pane citations for settings answers", () => {

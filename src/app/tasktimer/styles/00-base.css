@@ -2478,13 +2478,11 @@ body[data-theme="lime"] .focusSessionNotesCollapseLabel::after{
 }
 body[data-theme="lime"] .iconBtn,
 body[data-theme="lime"] .settingsInlineSectionIcon,
-body[data-theme="lime"] .settingsNavItemIcon,
-body[data-theme="lime"] .userGuideIcon{
+body[data-theme="lime"] .settingsNavItemIcon{
   color: rgba(244,255,201,.94);
 }
 body[data-theme="lime"] .settingsInlineSectionIcon,
-body[data-theme="lime"] .settingsNavItemIcon,
-body[data-theme="lime"] .userGuideIcon{
+body[data-theme="lime"] .settingsNavItemIcon{
   filter:
     brightness(0) saturate(100%)
     invert(92%) sepia(45%) saturate(700%) hue-rotate(20deg) brightness(104%) contrast(103%)
@@ -2634,7 +2632,6 @@ body[data-theme="lime"] .userGuideIcon{
 
 #app[aria-label="TaskLaunch App"],
 #app[aria-label="TaskLaunch Settings"],
-#app[aria-label="TaskLaunch User Guide"],
 #app[aria-label="TaskLaunch Feedback"] {
   cursor: crosshair;
 }
@@ -2645,11 +2642,6 @@ body[data-theme="lime"] .userGuideIcon{
   #historyChart
 ),
 #app[aria-label="TaskLaunch Settings"] :where(
-  .historyCanvasWrap,
-  .historyChartInline,
-  #historyChart
-),
-#app[aria-label="TaskLaunch User Guide"] :where(
   .historyCanvasWrap,
   .historyChartInline,
   #historyChart
@@ -2676,19 +2668,6 @@ body[data-theme="lime"] .userGuideIcon{
   [data-move-mode]
 ),
 #app[aria-label="TaskLaunch Settings"] :where(
-  .btn,
-  .iconBtn,
-  button,
-  a,
-  label,
-  summary,
-  [role="button"],
-  [data-action],
-  [data-history-action],
-  [data-menu],
-  [data-move-mode]
-),
-#app[aria-label="TaskLaunch User Guide"] :where(
   .btn,
   .iconBtn,
   button,

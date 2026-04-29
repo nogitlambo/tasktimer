@@ -13,10 +13,6 @@ export function createTaskTimerOverlayRegistry(ctx: TaskTimerPopupMenuContext): 
       open: () => ctx.openHistoryManager(),
     },
     {
-      id: "howto",
-      open: () => ctx.navigateToAppRoute("/user-guide"),
-    },
-    {
       id: "taskSettings",
       open: () => {
         ctx.syncTaskSettingsUi();

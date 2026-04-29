@@ -3,7 +3,7 @@
 ## Project
 - App: Next.js (App Router) TaskTimer app
 - Main route: `/tasklaunch`
-- Additional routes: `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, `/feedback`
+- Additional routes: `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/feedback`
 - Key files: `src/app/tasklaunch/page.tsx`, `src/app/tasktimer/tasktimerClient.ts`, `src/app/tasktimer/lib/*`, `src/app/tasktimer/components/*`
 
 ## Current architecture context
@@ -62,11 +62,8 @@
 - Ensure purple/cyan theme parity when introducing new visual elements.
 - New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
 - New toggle switches should match the shared app dimensions by default: `39x21` switch track, `18x18` thumb, and `left:19px` for the on-state thumb position.
-- User Guide must not inherit shared `.menu` width caps; keep route-scoped full-width overrides under `#app[aria-label="TaskTimer User Guide"]`.
-- User Guide right detail/topic content should use full available panel width.
-- User Guide topic list buttons should match Settings module list style (flat treatment; no extra shading unless explicitly requested).
 - Do not add new `Final`, `Canonical`, or `authoritative` catch-all override blocks to `tasktimer.css`; keep ownership local to the split file that owns the component/route.
-- Prefer route-scoped selectors (`#app[aria-label="..."]`) for Settings/User Guide changes.
+- Prefer route-scoped selectors (`#app[aria-label="..."]`) for Settings changes.
 - For all newly added modals and pages, always apply current app styling by default:
   - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
   - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
@@ -122,7 +119,7 @@
   - ID/className regressions that can break client-side bindings.
 - `data-*` action hook regressions (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
 - CSS ownership regressions via `npm run css:audit:tasktimer`.
-  - Page/route navigation regressions between `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, `/feedback`.
+  - Page/route navigation regressions between `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/feedback`.
   - History Manager behavior regressions: bulk selection propagation (task -> date -> rows), sortable columns, and delete summary accuracy.
   - Pinned history behavior: pinned chart reopens on Tasks page and persists via `${STORAGE_KEY}:pinnedHistoryTaskIds`.
   - Theme parity regressions: new/changed controls readable and consistent in both purple and cyan themes.
@@ -145,7 +142,6 @@
 - `/history-manager`
 - `/settings`
 - `/tasklaunch`
-- `/user-guide`
 
 ### Persistent keys (derived from storage/client modules)
 - `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``

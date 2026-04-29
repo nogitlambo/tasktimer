@@ -12,7 +12,7 @@ export type ArchieSettingsPane =
   | "appearance"
   | "notifications"
   | "privacy"
-  | "userGuide"
+  | "help"
   | "about"
   | "feedback"
   | "data"
@@ -22,9 +22,9 @@ export type ArchieKnowledgeCitation = {
   id: string;
   title: string;
   section: string;
-  route?: "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/user-guide" | "/feedback" | "/leaderboard";
+  route?: "/tasklaunch" | "/dashboard" | "/settings" | "/history-manager" | "/feedback" | "/leaderboard";
   settingsPane?: ArchieSettingsPane;
-  sourceKind?: "user-guide" | "settings" | "policy";
+  sourceKind?: "settings" | "policy";
 };
 
 export type ArchieSuggestedAction =

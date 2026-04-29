@@ -43,7 +43,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       path === "/leaderboard" ||
       path === "/settings" ||
       path === "/history-manager" ||
-      path === "/user-guide" ||
       path === "/feedback"
     );
   }
@@ -179,7 +178,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     normalized = normalized.replace(/\/index\.html$/i, "");
     if (/\/settings(?:\/index)?$/i.test(normalized) || /\/settings\.html$/i.test(normalized)) return "/settings";
     if (/\/history-manager(?:\/index)?$/i.test(normalized) || /\/history-manager\.html$/i.test(normalized)) return "/history-manager";
-    if (/\/user-guide(?:\/index)?$/i.test(normalized) || /\/user-guide\.html$/i.test(normalized)) return "/user-guide";
     if (/\/feedback(?:\/index)?$/i.test(normalized) || /\/feedback\.html$/i.test(normalized)) return "/feedback";
     if (/\/dashboard(?:\/index)?$/i.test(normalized)) return "/dashboard";
     if (/\/friends(?:\/index)?$/i.test(normalized)) return "/friends";
@@ -194,7 +192,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       path === "/tasklaunch" ||
       path === "/settings" ||
       path === "/history-manager" ||
-      path === "/user-guide" ||
       path === "/feedback"
     );
   }

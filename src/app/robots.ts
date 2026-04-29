@@ -18,7 +18,6 @@ export default function robots(): MetadataRoute.Robots {
           "/settings",
           "/signed-out",
           "/tasklaunch",
-          "/user-guide",
           "/web-sign-in",
           "/api",
         ],

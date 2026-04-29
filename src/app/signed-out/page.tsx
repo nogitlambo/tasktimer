@@ -89,11 +89,8 @@ export default function SignedOutPage() {
             <Link href="/privacy" className="text-sm uppercase tracking-[0.18em] text-white/72 transition hover:text-white">
               Privacy
             </Link>
-            <Link
-              href="/user-guide"
-              className="text-sm uppercase tracking-[0.18em] text-white/72 transition hover:text-white"
-            >
-              Features
+            <Link href="/feedback" className="text-sm uppercase tracking-[0.18em] text-white/72 transition hover:text-white">
+              Feedback
             </Link>
           </nav>
         </header>

@@ -756,6 +756,16 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
   background: transparent !important;
 }
+
+@media (min-width: 981px){
+  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
+    padding-left: 18px;
+    padding-right: 18px;
+    box-sizing: border-box;
+  }
+}
+
 body[data-theme="lime"] #shareTaskModal .shareTaskFriendOption{
   border-color: rgba(219,255,79,.2);
   background: rgba(18,20,24,.96);

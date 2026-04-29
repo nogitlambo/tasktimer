@@ -13,7 +13,6 @@ Current ownership:
 - `04-overlays.css`: shared overlays and modals
 - `05-history-manager.css`: History Manager
 - `06-settings.css`: Settings, Account, About, rank ladder
-- `07-user-guide.css`: User Guide
 - `08-feedback.css`: Feedback route
 - `08-friends.css`: Friends route
 - `09-desktop-rail.css`: desktop rail base styling
