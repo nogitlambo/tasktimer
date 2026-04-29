@@ -2073,7 +2073,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const todayStartMs = todayDate.getTime();
 
     if (monthLabelEl) {
-      monthLabelEl.textContent = "Past 4 Weeks";
+      monthLabelEl.textContent = "";
     }
     if (weekdaysEl) {
       weekdaysEl.innerHTML = getDashboardWeekdayLabels(weekStarting).map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("");

@@ -170,13 +170,13 @@
 - `data-action="closeCheckpointToast"`
 - `data-action="collapse"`
 - `data-action="delete"`
-- `data-action="duplicate"`
 - `data-action="edit"`
 - `data-action="editName"`
 - `data-action="exportTask"`
 - `data-action="focus"`
 - `data-action="history"`
 - `data-action="jumpToCheckpointTask"`
+- `data-action="manualEntry"`
 - `data-action="muteCheckpointAlert"`
 - `data-action="openAddTask"`
 - `data-action="reset"`
@@ -193,5 +193,4 @@
 - `data-history-action="pin"`
 - `data-history-action="viewSummary"`
 - `data-menu="historyManager"`
-- `data-menu="howto"`
 <!-- AUTO-CONTEXT:END -->

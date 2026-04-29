@@ -65,10 +65,29 @@
     max-width: none !important;
     height: 100% !important;
     max-height: none !important;
-    min-height: 0;
+    min-height: 100dvh;
+    box-sizing: border-box;
     border-radius: 0 !important;
     padding: 18px;
-    overflow: hidden;
+    overflow: hidden !important;
+    scroll-padding-bottom: 0;
+  }
+
+  #editOverlay .editTaskModalBody{
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-bottom: 0;
+  }
+
+  #editOverlay .footerBtns{
+    align-self: stretch;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+    padding: 12px 0 max(14px, var(--safe-bottom));
   }
 }
 
@@ -502,17 +521,17 @@ body[data-theme="purple"] .rankLadderItemFlag{
 /* Edit Task modal: parallelogram styling */
 
 #editOverlay .modal{
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(0,224,255,.10), rgba(0,0,0,0) 36%),
-    radial-gradient(120% 120% at 100% 0%, rgba(240,110,224,.16), rgba(0,0,0,0) 34%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    #05080f;
+  background: #0d0f13 !important;
+  border: 0 !important;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-
-#editOverlay .modal{
+  box-shadow: none !important;
   padding:14px 14px 12px;
+  max-height: min(92dvh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: 72px;
 }
 
 #editOverlay .field{
@@ -525,6 +544,8 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .editHead h2{
   margin: 0;
+  color: rgba(245,248,244,.88) !important;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -533,12 +554,12 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay label{
   margin-bottom:6px;
-  font-family: var(--font-tight);
+  color: rgba(245,248,244,.88) !important;
+  font-family: var(--font-orbitron) !important;
   font-size:11px;
   font-weight:700;
   letter-spacing:.08em;
   text-transform: uppercase;
-  color: rgba(216,231,239,.84);
 }
 
 #editOverlay .editTaskTimeGoalField{
@@ -583,8 +604,9 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .editTaskTimeGoalToggleText{
+  color: rgba(245,248,244,.88) !important;
+  font-family: var(--font-readable) !important;
   font-size: 13px;
-  color: rgba(194,224,236,.88);
 }
 
 #editOverlay .editTaskTimeGoalToggleWrap input[type="checkbox"],
@@ -599,13 +621,41 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay input[type="text"],
-#editOverlay input[type="number"]{
+#editOverlay input[type="number"],
+#editOverlay select,
+#editOverlay textarea,
+#editOverlay .toggleRow,
+#editOverlay .milestonesSummary{
   padding:9px 10px;
   min-height:36px;
   font-size:14px;
   line-height:1.35;
+  border-color: rgba(255,255,255,.02) !important;
+  background: #0d0f13 !important;
+  color: rgba(245,248,244,.94) !important;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+
+#editOverlay input[type="text"]::placeholder,
+#editOverlay input[type="number"]::placeholder,
+#editOverlay textarea::placeholder{
+  color: rgba(245,248,244,.54) !important;
+}
+
+#editOverlay input[type="text"]:focus,
+#editOverlay input[type="number"]:focus,
+#editOverlay select:focus,
+#editOverlay textarea:focus{
+  border-color: rgba(255,255,255,.02) !important;
+  outline: 1px solid rgba(201,255,36,.2) !important;
+  outline-offset: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 0 0 1px rgba(201,255,36,.12) !important;
 }
 
 #editOverlay select,
@@ -625,12 +675,25 @@ body[data-theme="purple"] .rankLadderItemFlag{
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
+#editOverlay .toggleRow > span,
+#editOverlay .unitRow > span,
+#editOverlay .editMoveWrap > label,
+#editOverlay .editMoveWrap > .editMoveLabel,
+#editOverlay .editMoveMenu > summary,
+#editOverlay .editValidationError{
+  font-family: var(--font-readable) !important;
+}
+
 #editOverlay .toggleRow{
   min-height:42px;
   justify-content: flex-start;
 }
 
 #editOverlay #editPresetIntervalsToggleRow{
+  clip-path: none;
+  overflow: visible;
+  position: relative;
+  z-index: 5;
   justify-content: space-between;
 }
 
@@ -639,7 +702,20 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .addTaskPlannedStartSelectorRow{
+  display:flex;
   align-items: center;
+  gap:6px;
+  flex-wrap:nowrap;
+}
+
+#editOverlay .presetIntervalsInfoSlot{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin-left: 4px;
+  position: relative;
+  z-index: 6;
 }
 
 #editOverlay .switch{
@@ -828,15 +904,17 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .footerBtns{
   flex: 0 0 auto;
+  align-self: stretch;
   margin-top: 0;
-  padding: 14px 0 max(14px, var(--safe-bottom));
+  padding: 0 0 calc(2px + env(safe-area-inset-bottom));
   gap:8px;
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.08);
-  position: relative;
-  z-index: 2;
+  position: static;
+  z-index: auto;
+  background: #0d0f13 !important;
 }
 
 #editOverlay .editTaskModalBody > .milestones,
@@ -871,30 +949,26 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .unitBtn.isOn,
 #editOverlay .timerTypePill.isOn{
-  border-color: rgba(116,198,226,.55) !important;
-  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32)) !important;
-  color: #eaf7ff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 10px rgba(92,170,201,.12) !important;
+  border-color: rgba(201,255,36,.56) !important;
+  background:
+    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
+  color: #f5f8f4 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
 }
 
 #editOverlay .switch.on{
-  border-color: rgba(116,198,226,.55) !important;
-  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 10px rgba(92,170,201,.12) !important;
+  border-color: rgba(201,255,36,.56) !important;
+  background:
+    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
 }
 
 #editOverlay .switch.on::after{
-  background: rgba(234,247,255,.96) !important;
-}
-
-#editOverlay .footerBtns{
-  position: static;
-  z-index: auto;
-  padding-top: 0;
-  padding-bottom: calc(2px + env(safe-area-inset-bottom));
-  background: transparent;
-  flex: 0 0 auto;
-  align-self: stretch;
+  background: rgba(245,248,244,.98) !important;
 }
 
 #editOverlay .footerBtns::before{
@@ -980,11 +1054,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .milestonesSummaryPrimary{
-  font-family: var(--font-tight);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  color: rgba(245,248,244,.88) !important;
 }
 
 #editOverlay .editTaskCheckpointToggleWrap{
@@ -1006,12 +1076,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font-family: var(--font-tight);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: rgba(190,240,255,.92);
+  color: rgba(245,248,244,.88) !important;
   white-space: nowrap;
 }
 
@@ -1028,6 +1093,22 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .milestones[open] .milestonesSummaryCollapseLabel::after{
   content: "▾";
+}
+
+#editOverlay .field label,
+#editOverlay .toggleRow > span,
+#editOverlay .editTaskInlineCheckboxLabel > span,
+#editOverlay .addTaskPlannedStartCheckboxRow > span,
+#editOverlay .milestonesSummary > span,
+#editOverlay .milestonesSummaryPrimary,
+#editOverlay .milestonesSummaryCollapseLabel,
+#editOverlay .checkpointAlertsTitle,
+#editOverlay .editTaskTimeGoalHeaderLabel{
+  font-family: var(--font-orbitron) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
 }
 
 #editOverlay .milestones.isInvalid .milestonesSummary{
@@ -1261,7 +1342,6 @@ body[data-theme="purple"] .rankLadderItemFlag{
   #editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect,
   #editOverlay #editPlannedStartMeridiemSelect{
-    font-family: var(--font-geist-sans) !important;
     font-size: 14px;
     line-height: 1.2;
     color: rgba(245,248,244,.94) !important;
@@ -1640,6 +1720,7 @@ body[data-theme="purple"] .rewardsInfoText{
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
   text-align: center;
   text-align-last: center;
+  font-family: var(--font-geist-sans) !important;
   font-weight: 700;
   padding: 7px 22px 7px 10px;
   line-height: 1.1;
@@ -1687,52 +1768,20 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #editOverlay .checkpointAlertsTitle{
   margin: 0 0 8px;
-  font-family: var(--font-tight);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: rgba(226,246,255,.92);
+  color: rgba(245,248,244,.88) !important;
 }
 
 #editOverlay .checkpointAlertsNote,
 #editOverlay .editPresetIntervalsInfoDialog,
 #editOverlay .milestonesBody,
 #editOverlay .presetIntervalsInfoSlot{
+  font-family: var(--font-readable) !important;
   font-size: 11px;
   line-height: 1.4;
 }
 
-#editOverlay .modal{
-  max-height: min(92dvh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-bottom: 72px;
-}
-
-@media (min-width: 981px){
-  #editOverlay .modal{
-    box-sizing: border-box;
-    max-height: none !important;
-    overflow: hidden !important;
-    scroll-padding-bottom: 0;
-  }
-
-  #editOverlay .editTaskModalBody{
-    display: flex;
-    flex-direction: column;
-    padding-bottom: 32px;
-  }
-
-  #editOverlay .footerBtns{
-    align-self: stretch !important;
-    margin-top: 18px;
-    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
-    background: #0d0f13 !important;
-    display: flex !important;
-    justify-content: flex-end !important;
-  }
+#editOverlay .checkpointAlertsNote{
+  color: rgba(245,248,244,.88) !important;
 }
 
 /* Ensure shared confirm dialog renders above Focus Mode */
@@ -2156,10 +2205,11 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .addTaskDurationPerLabel,
 #editOverlay .addTaskDurationPerLabel{
+  color: rgba(245,248,244,.88) !important;
+  font-family: var(--font-geist-sans);
   font-size: 12px;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: rgba(188,214,230,.76);
   flex: 0 0 auto;
 }
 
@@ -2182,8 +2232,7 @@ body[data-theme="purple"] .rewardsInfoText{
   gap: 8px;
 }
 
-#addTaskOverlay .presetIntervalsInfoSlot,
-#editOverlay .presetIntervalsInfoSlot{
+#addTaskOverlay .presetIntervalsInfoSlot{
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2193,8 +2242,7 @@ body[data-theme="purple"] .rewardsInfoText{
   z-index: 6;
 }
 
-#addTaskOverlay #addTaskPresetIntervalsToggleRow,
-#editOverlay #editPresetIntervalsToggleRow{
+#addTaskOverlay #addTaskPresetIntervalsToggleRow{
   clip-path: none;
   overflow: visible;
   position: relative;
@@ -2221,8 +2269,7 @@ body[data-theme="purple"] .rewardsInfoText{
   font-size: 11px;
 }
 
-#addTaskOverlay .addTaskPresetIntervalsInfoDialog,
-#editOverlay .editPresetIntervalsInfoDialog{
+#addTaskOverlay .addTaskPresetIntervalsInfoDialog{
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -2250,10 +2297,11 @@ body[data-theme="purple"] .rewardsInfoText{
   margin-top: -2px;
   margin-bottom: 2px;
   padding: 9px 10px;
-  border: 1px solid rgba(111,188,204,.3);
+  border: 1px solid rgba(201,255,36,.3) !important;
   border-radius: 10px;
-  background: rgba(20,28,38,.92);
-  color: rgba(206,228,238,.9);
+  background: #0d0f13 !important;
+  color: rgba(245,248,244,.88) !important;
+  font-family: var(--font-readable) !important;
   font-size: 11px;
   line-height: 1.4;
 }
@@ -3593,26 +3641,8 @@ body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
 }
 
-#editOverlay .editHead h2,
-#editOverlay label,
-#editOverlay .checkpointAlertsTitle,
-#editOverlay .checkpointAlertsNote,
-#editOverlay .editPresetIntervalsInfoDialog,
 #editOverlay .milestonesBody,
 #editOverlay .presetIntervalsInfoSlot,
-#editOverlay .editTaskTimeGoalToggleText,
-#editOverlay .toggleRow > span,
-#editOverlay .unitRow > span,
-#editOverlay .editMoveWrap > label,
-#editOverlay .editMoveWrap > .editMoveLabel,
-#editOverlay .editMoveMenu > summary,
-#editOverlay .milestonesSummaryPrimary,
-#editOverlay .milestonesSummaryCollapseLabel,
-#editOverlay .editValidationError,
-#editOverlay input[type="text"],
-#editOverlay input[type="number"],
-#editOverlay select,
-#editOverlay textarea,
 #editOverlay .btn{
   font-family: var(--font-readable) !important;
 }
@@ -3724,83 +3754,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(241,255,151,.88);
 }
 
-/* Final-final Edit Task landing-palette override:
-   keep this at EOF so it wins over older cyan/purple/lime modal rules. */
-#editOverlay .modal{
-  background: #0d0f13 !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-#editOverlay .editHead h2,
-#editOverlay label,
-#editOverlay .checkpointAlertsTitle,
-#editOverlay .milestonesSummaryPrimary,
-#editOverlay .milestonesSummaryCollapseLabel,
-#editOverlay .toggleRow > span,
-#editOverlay .addTaskDurationPerLabel,
-#editOverlay .checkpointAlertsNote,
-#editOverlay .editTaskDurationReadout,
-#editOverlay .editTaskTimeGoalToggleText{
+#editOverlay .editTaskDurationReadout{
   color: rgba(245,248,244,.88) !important;
-}
-
-#editOverlay input[type="text"],
-#editOverlay input[type="number"],
-#editOverlay select,
-#editOverlay textarea,
-#editOverlay .toggleRow,
-#editOverlay .milestonesSummary{
-  border-color: rgba(201,255,36,.34) !important;
-  background: #0d0f13 !important;
-  color: rgba(245,248,244,.94) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.04),
-    inset 0 0 0 1px rgba(201,255,36,.04) !important;
-}
-
-#editOverlay input[type="text"]::placeholder,
-#editOverlay input[type="number"]::placeholder,
-#editOverlay textarea::placeholder{
-  color: rgba(245,248,244,.54) !important;
-}
-
-#editOverlay input[type="text"]:focus,
-#editOverlay input[type="number"]:focus,
-#editOverlay select:focus,
-#editOverlay textarea:focus{
-  border-color: rgba(201,255,36,.66) !important;
-  outline: 1px solid rgba(201,255,36,.2) !important;
-  outline-offset: 0;
-  box-shadow:
-    inset 0 0 0 1px rgba(201,255,36,.12),
-    0 0 0 1px rgba(201,255,36,.12) !important;
-}
-
-#editOverlay .editPresetIntervalsInfoDialog{
-  border-color: rgba(201,255,36,.3) !important;
-  background: #0d0f13 !important;
-  color: rgba(245,248,244,.88) !important;
-}
-
-#editOverlay .unitBtn.isOn,
-#editOverlay .timerTypePill.isOn,
-#editOverlay .switch.on{
-  border-color: rgba(201,255,36,.56) !important;
-  background:
-    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
-  color: #f5f8f4 !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(201,255,36,.12),
-    0 0 12px rgba(201,255,36,.12) !important;
-}
-
-#editOverlay .switch.on::after{
-  background: rgba(245,248,244,.98) !important;
-}
-
-#editOverlay .footerBtns{
-  background: #0d0f13 !important;
 }
 
 #taskManualEntryOverlay .hmManualEntryFooterBtns,
@@ -3853,22 +3808,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 /* Migrated from tasktimer.css tail: overlay and confirm authority rules. */
-#editOverlay .field label,
-#editOverlay .toggleRow > span,
-#editOverlay .editTaskInlineCheckboxLabel > span,
-#editOverlay .addTaskPlannedStartCheckboxRow > span,
-#editOverlay .milestonesSummary > span,
-#editOverlay .milestonesSummaryPrimary,
-#editOverlay .milestonesSummaryCollapseLabel,
-#editOverlay .checkpointAlertsTitle,
-#editOverlay .editTaskTimeGoalHeaderLabel {
-  font-family: var(--font-orbitron) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-}
-
 #editOverlay .field input,
 #editOverlay .field select,
 #editOverlay .field textarea,
@@ -3879,18 +3818,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay .addTaskDurationPerLabel,
 #editOverlay .addTaskCheckpointInfoDialog,
 #editOverlay #msList .msSkewInput,
-#editOverlay option {
+#editOverlay option{
   font-family: var(--font-geist-sans);
 }
 
 #editOverlay .editHead h1,
-#editOverlay .editHead h2,
 #editOverlay .editHead h3,
 #editOverlay .editHead h4,
 #editOverlay .editHead h5,
 #editOverlay .editHead h6,
 #editOverlay .btn,
-#editOverlay .iconBtn {
+#editOverlay .iconBtn{
   font-family: inherit;
 }
 
@@ -4168,107 +4106,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   justify-content: center;
 }
 
-/* Migrated from retired tasktimer tail: Edit Task typography and field edge authority. */
+/* Migrated from retired tasktimer tail: Edit Task typography authority. */
 #editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select,
 #editOverlay #msList .msRow input[type="text"],
 #editOverlay #msList .msRow .msSkewInput {
   font-family: var(--font-geist-sans) !important;
 }
 
-#editOverlay input[type="text"],
-#editOverlay input[type="number"],
-#editOverlay select,
-#editOverlay textarea,
-#editOverlay .toggleRow,
-#editOverlay .milestonesSummary {
-  border-color: rgba(255, 255, 255, 0.02) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.02) !important;
-}
-
-#editOverlay input[type="text"]:focus,
-#editOverlay input[type="number"]:focus,
-#editOverlay select:focus,
-#editOverlay textarea:focus {
-  border-color: rgba(255, 255, 255, 0.02) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
-    0 0 0 1px rgba(201, 255, 36, 0.12) !important;
-}
-
-#editOverlay .modal {
-  border: 0 !important;
-}
-
-#editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
-#editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
-  border-color: rgba(201,255,36,.56) !important;
-  background:
-    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
-  color: #f5f8f4 !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(201,255,36,.12),
-    0 0 12px rgba(201,255,36,.12) !important;
-}
-
-body[data-theme="purple"] #editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
-body[data-theme="purple"] #editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
-  border-color: rgba(206,136,230,.42) !important;
-  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
-  color: #f3eaff !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(245,210,255,.08),
-    0 0 10px rgba(212,71,210,.10) !important;
-}
-
-body[data-theme="lime"] #editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
-body[data-theme="lime"] #editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
-  border-color: rgba(241,255,151,.42) !important;
-  background: rgba(18,20,24,.96) !important;
-  color: #f9ffd8 !important;
-  box-shadow: none !important;
-}
-
-@media (min-width: 981px){
-  #editOverlay,
-  #app[aria-label="TaskLaunch App"] #editOverlay{
-    position: fixed !important;
-    left: var(--desktop-rail-column, clamp(246px, 20vw, 292px)) !important;
-    right: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: auto !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    padding: 0 !important;
-  }
-
-  #editOverlay .modal,
-  #app[aria-label="TaskLaunch App"] #editOverlay .modal{
-    width: 100% !important;
-    max-width: none !important;
-    height: 100dvh !important;
-    max-height: none !important;
-    min-height: 100dvh !important;
-    padding: 18px !important;
-    overflow: hidden !important;
-  }
-
-  #editOverlay .editTaskModalFrame{
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-
-  #editOverlay .editTaskModalBody{
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    padding-bottom: 0 !important;
-  }
-
-  #editOverlay .footerBtns{
-    padding-bottom: max(14px, var(--safe-bottom)) !important;
-  }
-}
 

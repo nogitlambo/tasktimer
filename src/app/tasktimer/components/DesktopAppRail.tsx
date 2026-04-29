@@ -17,8 +17,8 @@ import { saveUserRootPatch } from "../lib/cloudStore";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
   ACCOUNT_PROFILE_UPDATED_EVENT,
-  customAvatarIdForUid,
   googleAvatarIdForUid,
+  isCustomAvatarIdForUid,
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
 } from "../lib/accountProfileStorage";
@@ -141,8 +141,6 @@ function rememberRailTransition(fromPage: DesktopRailPage, toPage: DesktopRailPa
 }
 
 function labelFromUser(user: User | null) {
-  const displayName = String(user?.displayName || "").trim();
-  if (displayName) return displayName;
   const email = String(user?.email || "").trim();
   if (email) return email.split("@")[0] || email;
   return "TaskLaunch User";
@@ -150,7 +148,7 @@ function labelFromUser(user: User | null) {
 
 function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
   const normalizedAvatarId = String(avatarId || "").trim();
-  if (normalizedAvatarId && normalizedAvatarId === customAvatarIdForUid(uid) && avatarCustomSrc) return avatarCustomSrc;
+  if (normalizedAvatarId && isCustomAvatarIdForUid(uid, normalizedAvatarId) && avatarCustomSrc) return avatarCustomSrc;
   if (normalizedAvatarId && normalizedAvatarId === googleAvatarIdForUid(uid) && googlePhotoUrl) return googlePhotoUrl;
   if (normalizedAvatarId) {
     const match = AVATAR_CATALOG.find((avatar) => avatar.id === normalizedAvatarId);
@@ -313,7 +311,7 @@ export default function DesktopAppRail({
 
     try {
       const snap = await getDoc(doc(db, "users", uid));
-      const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || snap.get("displayName") || "").trim() : "";
+      const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || "").trim() : "";
       const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
@@ -474,6 +472,7 @@ export default function DesktopAppRail({
               />
               <span className="appBrandLandingReplicaText">TaskLaunch</span>
             </div>
+            <div className="desktopRailHeaderDivider" aria-hidden="true" />
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">
               {DESKTOP_NAV_ITEMS.map((item) =>
@@ -499,7 +498,13 @@ export default function DesktopAppRail({
                 <div className="dashboardProfileHead dashboardRailProfileHead">
                   {profileAvatarSrc ? (
                     <div className="dashboardAvatar dashboardRailProfileAvatar" aria-hidden="true">
-                      <AppImg className="dashboardAvatarImage dashboardRailProfileAvatarImage" src={profileAvatarSrc} alt="" aria-hidden="true" />
+                      <AppImg
+                        className="dashboardAvatarImage dashboardRailProfileAvatarImage"
+                        src={profileAvatarSrc}
+                        alt=""
+                        aria-hidden="true"
+                        referrerPolicy={/^https?:\/\//i.test(profileAvatarSrc) ? "no-referrer" : undefined}
+                      />
                     </div>
                   ) : (
                     <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>

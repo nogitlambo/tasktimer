@@ -120,9 +120,8 @@ export function useSettingsAccountState(): {
       planRefreshIdRef.current += 1;
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
-      const nextAlias = (user?.displayName || "").trim();
-      setAuthUserAlias(nextAlias);
-      setAuthUserAliasDraft(nextAlias);
+      setAuthUserAlias("");
+      setAuthUserAliasDraft("");
       setAuthUserAliasEditing(false);
       setAuthUserAliasBusy(false);
       setAuthMemberSince(user?.metadata?.creationTime || null);
@@ -172,7 +171,7 @@ export function useSettingsAccountState(): {
         setAuthUserAlias(claimedUsername);
         setAuthUserAliasDraft((prev) => (authUserAliasEditing ? prev : claimedUsername));
       } catch {
-        // Keep auth display-name fallback when cloud username load fails.
+        // Keep the username field empty when the claimed username cannot be loaded.
       }
     };
     void loadUsername();

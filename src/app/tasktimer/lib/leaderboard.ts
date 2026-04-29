@@ -93,7 +93,7 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
   const uid = String(raw.uid || id || "").trim();
   if (!uid) return null;
   const username = normalizeString(raw.username, 64);
-  const displayLabel = normalizeString(raw.displayLabel, 80) || username || "User";
+  const displayLabel = username || "User";
   return {
     uid,
     username,
@@ -176,10 +176,8 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
 
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
-  const fallbackDisplayName = normalizeString(currentUser?.displayName, 80);
   const db = dbOrNull();
   let username: string | null = null;
-  let displayLabel: string | null = null;
   let avatarId: string | null = null;
   let avatarCustomSrc: string | null = null;
   let googlePhotoUrl: string | null = normalizeString(currentUser?.photoURL, 2_000);
@@ -191,7 +189,6 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
       const snap = await getDoc(doc(db, "users", uid));
       if (snap.exists()) {
         username = normalizeString(snap.get("username"), 64);
-        displayLabel = normalizeString(snap.get("displayName"), 80);
         avatarId = normalizeString(snap.get("avatarId"), 120);
         avatarCustomSrc = normalizeString(snap.get("avatarCustomSrc"), 900_000);
         googlePhotoUrl = normalizeString(snap.get("googlePhotoUrl"), 2_000) || googlePhotoUrl;
@@ -205,7 +202,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
 
   const resolved: LeaderboardIdentityFields = {
     username,
-    displayLabel: username || displayLabel || fallbackDisplayName || "User",
+    displayLabel: username || "User",
     avatarId,
     avatarCustomSrc,
     googlePhotoUrl,
@@ -288,7 +285,7 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
     nextPatch.username = normalizeString(patch.username, 64);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "displayName")) {
-    nextPatch.displayLabel = normalizeString(patch.displayName, 80);
+    nextPatch.displayLabel = null;
   }
   if (Object.prototype.hasOwnProperty.call(patch, "avatarId")) {
     nextPatch.avatarId = normalizeString(patch.avatarId, 120);
@@ -317,7 +314,7 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
         ...cachedIdentity.value,
         ...(Object.prototype.hasOwnProperty.call(nextPatch, "username") ? { username: normalizeString(nextPatch.username, 64) } : {}),
         ...(Object.prototype.hasOwnProperty.call(nextPatch, "displayLabel")
-          ? { displayLabel: normalizeString(nextPatch.displayLabel, 80) || cachedIdentity.value.displayLabel }
+          ? { displayLabel: cachedIdentity.value.username || "User" }
           : {}),
         ...(Object.prototype.hasOwnProperty.call(nextPatch, "avatarId") ? { avatarId: normalizeString(nextPatch.avatarId, 120) } : {}),
         ...(Object.prototype.hasOwnProperty.call(nextPatch, "avatarCustomSrc")

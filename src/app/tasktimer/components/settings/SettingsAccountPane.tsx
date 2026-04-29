@@ -93,7 +93,12 @@ export function SettingsAccountPane({
                     >
                       <div className="accountAvatarPlaceholder">
                         {avatar.selectedAvatar ? (
-                          <AppImg className="accountAvatarImage" src={avatar.selectedAvatar.src} alt={`${avatar.selectedAvatar.label} avatar`} />
+                          <AppImg
+                            className="accountAvatarImage"
+                            src={avatar.selectedAvatar.src}
+                            alt={`${avatar.selectedAvatar.label} avatar`}
+                            referrerPolicy={/^https?:\/\//i.test(avatar.selectedAvatar.src) ? "no-referrer" : undefined}
+                          />
                         ) : (
                           <div className="accountAvatarPlaceholderInner" />
                         )}
@@ -265,13 +270,13 @@ export function SettingsAccountPane({
                     aria-pressed={avatar.selectedAvatarId === option.id}
                     title={option.label}
                   >
-                    <AppImg src={option.src} alt={option.label} className="settingsAvatarOptionImg" />
+                    <AppImg
+                      src={option.src}
+                      alt={option.label}
+                      className="settingsAvatarOptionImg"
+                      referrerPolicy={/^https?:\/\//i.test(option.src) ? "no-referrer" : undefined}
+                    />
                     <span className="settingsAvatarOptionLabel">{option.label}</span>
-                    {avatar.selectedAvatarId === option.id ? (
-                      <span className="settingsAvatarOptionSelected" aria-hidden="true">
-                        Selected
-                      </span>
-                    ) : null}
                   </button>
                 ))}
               </div>

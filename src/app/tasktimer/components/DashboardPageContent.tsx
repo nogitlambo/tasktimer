@@ -1,6 +1,7 @@
 "use client";
 import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
 import RankThumbnail from "./RankThumbnail";
+import AppImg from "@/components/AppImg";
 
 const dashboardPanelOptions = [
   { id: "xp-progress", label: "XP Progress" },
@@ -288,17 +289,11 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                       <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
                         <div className="dashboardMomentumFooterTitle">
                           <span className="dashboardMomentumFooterTitleIcon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" focusable="false">
-                              <circle cx="12" cy="12" r="4.25" />
-                              <path d="M12 3.5v3" />
-                              <path d="M12 17.5v3" />
-                              <path d="M3.5 12h3" />
-                              <path d="M17.5 12h3" />
-                              <path d="M6 6l2.2 2.2" />
-                              <path d="M15.8 15.8 18 18" />
-                              <path d="M6 18l2.2-2.2" />
-                              <path d="M15.8 8.2 18 6" />
-                            </svg>
+                            <AppImg
+                              src="/icons/icons_default/insight.png"
+                              alt=""
+                              className="dashboardMomentumFooterTitleIconImage"
+                            />
                           </span>
                           <span>Momentum Insight</span>
                         </div>
@@ -342,7 +337,7 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                       <div className="dashboardHeatFace dashboardHeatFaceFront" id="dashboardHeatFaceFront" aria-hidden="false">
                         <div className="dashboardCardTitle">Focus Heatmap</div>
                         <div className="dashboardHeatHeaderRow">
-                          <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite">-</div>
+                          <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite" />
                         </div>
                         <div className="dashboardHeatWeekdays" id="dashboardHeatWeekdays" aria-hidden="true">
                           <span>Mon</span>

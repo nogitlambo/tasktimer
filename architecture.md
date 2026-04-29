@@ -95,6 +95,7 @@
 - [`src/app/tasktimer/client/history-entry-summary.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-entry-summary.ts)
 - [`src/app/tasktimer/client/history-inline.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline.test.ts)
 - [`src/app/tasktimer/client/history-inline.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline.ts)
+- [`src/app/tasktimer/client/history-manager-events.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-events.ts)
 - [`src/app/tasktimer/client/history-manager-generation.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-generation.test.ts)
 - [`src/app/tasktimer/client/history-manager-generation.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-generation.ts)
 - [`src/app/tasktimer/client/history-manager-render.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-render.test.ts)
@@ -214,7 +215,6 @@
 - `agents:update`
 - `docs:check`
 - `docs:update`
-- `docs:userguide:audit`
 - `hooks:install`
 
 ### Workflow Files

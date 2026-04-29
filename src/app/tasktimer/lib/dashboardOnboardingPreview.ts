@@ -116,7 +116,7 @@ export const ONBOARDING_DASHBOARD_PREVIEW: OnboardingDashboardPreviewData = {
     ],
   },
   heatmap: {
-    monthLabel: "Past 4 Weeks",
+    monthLabel: "",
     levels: [
       "low", "none", "medium", "none", "high", "medium", "none",
       "medium", "low", "high", "medium", "none", "low", "none",

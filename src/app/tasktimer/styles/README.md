@@ -25,3 +25,6 @@ Editing rules:
 - Use route-scoped selectors where practical.
 - Avoid new comment chains labeled `Final`, `Canonical`, or `authoritative`; resolve ownership instead.
 - Run `npm run css:audit:tasktimer` after meaningful CSS cleanup work.
+- Use `npm run css:audit:tasktimer:duplicates` to focus on cross-file and same-file selector collisions.
+- Use `npm run css:audit:tasktimer:important` to inspect `!important` hotspots by file and selector block.
+- Use `npm run css:audit:tasktimer:orphans` to inspect likely orphaned class/id/data selector atoms.

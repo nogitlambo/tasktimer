@@ -14,12 +14,19 @@ import {
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
 import {
+  appendStoredCustomAvatarUpload,
   customAvatarIdForUid,
+  customAvatarUploadIdForUid,
+  findStoredCustomAvatarUploadSrc,
   googleAvatarIdForUid,
+  isCustomAvatarIdForUid,
+  migrateStoredCustomAvatarSrcToUploads,
   notifyAccountAvatarUpdated,
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
+  readStoredCustomAvatarUploads,
   readStoredRankThumbnailSrc,
+  type StoredCustomAvatarUpload,
   writeStoredAvatarId,
   writeStoredCustomAvatarSrc,
   writeStoredRankThumbnailSrc,
@@ -27,6 +34,32 @@ import {
 import { getErrorMessage, saveUserDocPatch, userDocRef } from "./settingsAccountService";
 import { saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
 import type { SettingsAvatarGroup, SettingsAvatarViewModel } from "./types";
+
+export function buildSettingsAvatarOptions({
+  authUserUid,
+  authHasGoogleProvider,
+  authGooglePhotoUrl,
+  customAvatarUploads,
+}: {
+  authUserUid: string | null;
+  authHasGoogleProvider: boolean;
+  authGooglePhotoUrl: string | null;
+  customAvatarUploads: StoredCustomAvatarUpload[];
+}): AvatarOption[] {
+  if (!authUserUid) return AVATAR_CATALOG.slice();
+  const nextOptions = AVATAR_CATALOG.slice();
+  if (authHasGoogleProvider && authGooglePhotoUrl) {
+    nextOptions.push({ id: googleAvatarIdForUid(authUserUid), label: "Google Profile Photo", src: authGooglePhotoUrl });
+  }
+  for (const upload of customAvatarUploads) {
+    nextOptions.push({ id: upload.id, label: upload.label, src: upload.src });
+  }
+  return nextOptions;
+}
+
+export function resolveSelectedCustomAvatarSrc(uid: string, avatarId: string): string {
+  return findStoredCustomAvatarUploadSrc(uid, avatarId) || (avatarId === customAvatarIdForUid(uid) ? readStoredCustomAvatarSrc(uid) : "");
+}
 
 export function useSettingsAvatarState({
   authUserUid,
@@ -50,6 +83,7 @@ export function useSettingsAvatarState({
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [customAvatarUploads, setCustomAvatarUploads] = useState<StoredCustomAvatarUpload[]>([]);
   const avatarSyncNoticeTimerRef = useRef<number | null>(null);
 
   const showAvatarSyncNotice = useCallback((message: string, isError = false) => {
@@ -76,18 +110,19 @@ export function useSettingsAvatarState({
     void syncOwnFriendshipProfile(authUserUid, { currentRankId: rewardProgress.currentRankId }).catch(() => {});
   }, [authUserUid, rewardProgress.currentRankId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setCustomAvatarUploads(authUserUid ? migrateStoredCustomAvatarSrcToUploads(authUserUid) : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUserUid]);
+
   const avatarOptions = useMemo(() => {
-    if (!authUserUid) return AVATAR_CATALOG.slice();
-    const customSrc = readStoredCustomAvatarSrc(authUserUid);
-    const nextOptions = AVATAR_CATALOG.slice();
-    if (authHasGoogleProvider && authGooglePhotoUrl) {
-      nextOptions.push({ id: googleAvatarIdForUid(authUserUid), label: "Google Profile Photo", src: authGooglePhotoUrl });
-    }
-    if (customSrc) {
-      nextOptions.push({ id: customAvatarIdForUid(authUserUid), label: "Custom Upload", src: customSrc });
-    }
-    return nextOptions;
-  }, [authGooglePhotoUrl, authHasGoogleProvider, authUserUid]);
+    return buildSettingsAvatarOptions({ authUserUid, authHasGoogleProvider, authGooglePhotoUrl, customAvatarUploads });
+  }, [authGooglePhotoUrl, authHasGoogleProvider, authUserUid, customAvatarUploads]);
 
   useEffect(() => {
     if (!authUserUid) return;
@@ -114,17 +149,35 @@ export function useSettingsAvatarState({
       const savedRankThumbnail = snapshot.exists() ? String(snapshot.get("rankThumbnailSrc") || "").trim() : "";
       const customAvatarId = customAvatarIdForUid(authUserUid);
       const cachedCustomSrc = readStoredCustomAvatarSrc(authUserUid);
+      let nextCustomAvatarUploads = readStoredCustomAvatarUploads(authUserUid);
       const cachedRankThumbnail = readStoredRankThumbnailSrc(authUserUid);
 
       if (savedCustomSrc) {
         writeStoredCustomAvatarSrc(authUserUid, savedCustomSrc);
+        const savedCustomId = isCustomAvatarIdForUid(authUserUid, savedAvatarId) ? savedAvatarId : customAvatarId;
+        if (!nextCustomAvatarUploads.some((upload) => upload.id === savedCustomId || upload.src === savedCustomSrc)) {
+          nextCustomAvatarUploads = appendStoredCustomAvatarUpload(authUserUid, {
+            id: savedCustomId,
+            src: savedCustomSrc,
+            label: nextCustomAvatarUploads.length ? `Custom Upload ${nextCustomAvatarUploads.length + 1}` : "Custom Upload 1",
+            createdAt: Date.now(),
+          });
+        }
       } else if (cachedCustomSrc) {
         await saveUserDocPatch(authUserUid, { avatarCustomSrc: cachedCustomSrc });
       }
+      nextCustomAvatarUploads = migrateStoredCustomAvatarSrcToUploads(authUserUid);
 
       const validSavedAvatarId =
-        avatarOptions.some((avatar) => avatar.id === savedAvatarId) || (savedAvatarId === customAvatarId && !!savedCustomSrc) ? savedAvatarId : "";
-      const validCachedAvatarId = avatarOptions.some((avatar) => avatar.id === cachedAvatarId) ? cachedAvatarId : "";
+        avatarOptions.some((avatar) => avatar.id === savedAvatarId) ||
+        (isCustomAvatarIdForUid(authUserUid, savedAvatarId) && (savedCustomSrc || findStoredCustomAvatarUploadSrc(authUserUid, savedAvatarId)))
+          ? savedAvatarId
+          : "";
+      const validCachedAvatarId =
+        avatarOptions.some((avatar) => avatar.id === cachedAvatarId) ||
+        (isCustomAvatarIdForUid(authUserUid, cachedAvatarId) && findStoredCustomAvatarUploadSrc(authUserUid, cachedAvatarId))
+          ? cachedAvatarId
+          : "";
       const nextAvatarId = validSavedAvatarId || validCachedAvatarId || avatarOptions[0]?.id || "";
       const nextRankThumbnail = savedRankThumbnail || cachedRankThumbnail;
 
@@ -135,6 +188,7 @@ export function useSettingsAvatarState({
       else if (cachedRankThumbnail) await saveUserDocPatch(authUserUid, { rankThumbnailSrc: cachedRankThumbnail });
 
       if (!cancelled) {
+        setCustomAvatarUploads(nextCustomAvatarUploads);
         setSelectedAvatarId(nextAvatarId);
         setRankThumbnailSrc(nextRankThumbnail);
       }
@@ -242,17 +296,16 @@ export function useSettingsAvatarState({
         setAuthStatus("");
         return;
       }
-      const customAvatarId = customAvatarIdForUid(authUserUid);
       const googleAvatarId = googleAvatarIdForUid(authUserUid);
-      const isCustomAvatar = avatarId === customAvatarId;
+      const isCustomAvatar = isCustomAvatarIdForUid(authUserUid, avatarId);
       const isGoogleAvatar = avatarId === googleAvatarId;
-      const customAvatarSrc = readStoredCustomAvatarSrc(authUserUid);
+      const customAvatarSrc = resolveSelectedCustomAvatarSrc(authUserUid, avatarId);
       const patch: Record<string, unknown> = {
         avatarId,
         avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
         googlePhotoUrl: authHasGoogleProvider ? authGooglePhotoUrl || null : null,
       };
-      if (!isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, "");
+      if (isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, customAvatarSrc);
       writeStoredAvatarId(authUserUid, avatarId);
       setAuthError("");
       try {
@@ -304,7 +357,17 @@ export function useSettingsAvatarState({
         setAuthStatus("");
         return;
       }
-      const customAvatarId = customAvatarIdForUid(authUserUid);
+      let createdAt = Date.now();
+      const existingUploads = readStoredCustomAvatarUploads(authUserUid);
+      while (existingUploads.some((upload) => upload.id === customAvatarUploadIdForUid(authUserUid, createdAt))) createdAt += 1;
+      const customAvatarId = customAvatarUploadIdForUid(authUserUid, createdAt);
+      const nextCustomAvatarUploads = appendStoredCustomAvatarUpload(authUserUid, {
+        id: customAvatarId,
+        src: dataUrl,
+        label: `Custom Upload ${existingUploads.length + 1}`,
+        createdAt,
+      });
+      setCustomAvatarUploads(nextCustomAvatarUploads);
       setSelectedAvatarId(customAvatarId);
       writeStoredCustomAvatarSrc(authUserUid, dataUrl);
       writeStoredAvatarId(authUserUid, customAvatarId);

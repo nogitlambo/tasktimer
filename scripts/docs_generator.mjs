@@ -63,7 +63,6 @@ function getTaskLaunchRoutes(root) {
     "/friends",
     "/settings",
     "/history-manager",
-    "/user-guide",
     "/feedback",
   ]);
   return getPageRoutes(root).filter((route) => allowedRoutes.has(route));
@@ -181,7 +180,6 @@ function getTaskTimerPageFiles(root) {
     "src/app/friends/page.tsx",
     "src/app/settings/page.tsx",
     "src/app/history-manager/page.tsx",
-    "src/app/user-guide/page.tsx",
     "src/app/feedback/page.tsx",
   ]);
   const files = walk(appRoot)
@@ -247,7 +245,7 @@ export function generateArchitectureContent(root) {
     "",
     `- Package name: \`${pkg.name}\``,
     `- Frameworks: \`next@${pkg.nextVersion}\`, \`react@${pkg.reactVersion}\``,
-    "- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/user-guide`, and `/feedback`",
+    "- Primary product surface: authenticated TaskLaunch routes under `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, and `/feedback`",
     "- Documentation automation is generated from current repo structure and scripts",
     "",
     "## Top-Level Source Map",

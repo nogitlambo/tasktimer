@@ -266,6 +266,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         !!ctx.activeCheckpointToastTaskId() && String(ctx.activeCheckpointToastTaskId()) === taskId;
       taskEl.className =
         "task" +
+        (t.running ? " taskRunning" : "") +
         (t.collapsed ? " collapsed" : "") +
         ((ctx.checkpointRepeatActiveTaskId() && ctx.checkpointRepeatActiveTaskId() === taskId) || hasActiveToastForTask
           ? " taskAlertPulse"

@@ -134,9 +134,6 @@ function recommendForPath(filePath, target) {
     path.includes("feedbackscreen") ||
     path.includes("feedbackstore") ||
     path.includes("feedbackstatus");
-  const isUserGuideRoute =
-    path.startsWith("src/app/user-guide/") ||
-    path.includes("userguidescreen");
   const isLandingOrSignIn =
     path === "src/app/page.tsx" ||
     path.startsWith("src/app/web-sign-in/") ||
@@ -204,10 +201,6 @@ function recommendForPath(filePath, target) {
     addCommand(target, "npm run test:e2e:auth", `${filePath}: history manager route flow may regress.`);
   }
 
-  if (isUserGuideRoute) {
-    addCommand(target, "npm run test:e2e:auth", `${filePath}: user guide route flow may regress.`);
-  }
-
   if (isLandingOrSignIn) {
     addCommand(target, "npm run test:e2e", `${filePath}: public landing/sign-in flow changed.`);
   }
@@ -222,7 +215,7 @@ function recommendForPath(filePath, target) {
     if (isMobileSensitive || path.includes("schedule")) {
       addCommand(target, "npm run test:e2e:mobile", `${filePath}: responsive/touch styling can affect mobile flows.`);
     }
-    if (path.includes("settings") || path.includes("feedback") || path.includes("user-guide") || path.includes("history-manager")) {
+    if (path.includes("settings") || path.includes("feedback") || path.includes("history-manager")) {
       addCommand(target, "npm run test:e2e:auth", `${filePath}: route styling can affect authenticated UI behavior.`);
     }
     if (path.includes("friends") || path.includes("dashboard") || path.includes("tasklaunch") || path.includes("tasktimer")) {

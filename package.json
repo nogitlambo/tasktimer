@@ -1,6 +1,6 @@
 {
-  "name": "tasktimer",
-  "version": "0.1.0",
+  "name": "tasklaunch",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "clean:next": "node -e \"require('node:fs').rmSync('.next', { recursive: true, force: true })\"",
@@ -18,6 +18,9 @@
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
     "fonts:check": "node scripts/check-font-contract.mjs",
     "css:audit:tasktimer": "node scripts/audit-tasktimer-css.mjs",
+    "css:audit:tasktimer:duplicates": "node scripts/audit-tasktimer-css.mjs --focus=duplicates",
+    "css:audit:tasktimer:important": "node scripts/audit-tasktimer-css.mjs --focus=important",
+    "css:audit:tasktimer:orphans": "node scripts/audit-tasktimer-css.mjs --focus=orphans",
     "android:java:check": "node scripts/check-android-java.mjs",
     "android:sync": "npm run android:java:check && npm run build:android && npx cap sync android",
     "android:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",

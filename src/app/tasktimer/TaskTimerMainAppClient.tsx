@@ -68,16 +68,31 @@ function formatLeaderboardStreak(daysRaw: number): string {
 }
 
 function getLeaderboardLabel(profile: LeaderboardProfile): string {
-  return String(profile.displayLabel || profile.username || "User").trim() || "User";
+  return String(profile.username || profile.displayLabel || "User").trim() || "User";
+}
+
+function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {
+  const avatarSrc = getLeaderboardAvatarSrc(profile);
+  if (!avatarSrc) return "";
+  if (/^(?:data:|blob:)/i.test(avatarSrc)) return avatarSrc;
+  if (/^\/(?:tasklaunch\/)?avatars\//i.test(avatarSrc)) return avatarSrc;
+  const versionSeed = [
+    profile.uid,
+    String(profile.avatarId || "").trim(),
+    String(profile.avatarCustomSrc || "").trim(),
+    String(profile.googlePhotoUrl || "").trim(),
+  ].join("|");
+  const version = encodeURIComponent(versionSeed);
+  return avatarSrc.includes("?") ? `${avatarSrc}&lbav=${version}` : `${avatarSrc}?lbav=${version}`;
 }
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
-  const avatarSrc = getLeaderboardAvatarSrc(profile);
+  const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
   const initials = getLeaderboardInitials(getLeaderboardLabel(profile));
   return (
     <div className={`leaderboardAvatar${small ? " leaderboardAvatarSmall" : ""}`} aria-hidden="true">
       {avatarSrc ? (
-        <AppImg className="leaderboardAvatarImg" src={avatarSrc} alt="" />
+        <AppImg className="leaderboardAvatarImg" src={avatarSrc} alt="" referrerPolicy={/^https?:\/\//i.test(avatarSrc) ? "no-referrer" : undefined} />
       ) : (
         initials
       )}
@@ -285,13 +300,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </svg>
                     </summary>
                     <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
-                      <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" aria-pressed="false" role="menuitem">
+                      <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">
                         A-Z
                       </button>
-                      <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" aria-pressed="false" role="menuitem">
+                      <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">
                         Schedule/Time
                       </button>
-                      <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" aria-pressed="true" role="menuitem">
+                      <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">
                         Custom
                       </button>
                     </div>
@@ -388,10 +403,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           <div className="leaderboardStats">
                             <span className="leaderboardStatPrimary">
-                              <LeaderboardRankBadge profile={entry} />
                               <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
+                              <LeaderboardRankBadge profile={entry} />
                             </span>
-                            <span className="leaderboardTrend">{formatLeaderboardTrend(entry.weeklyXpGain)}</span>
                           </div>
                         </article>
                       ))

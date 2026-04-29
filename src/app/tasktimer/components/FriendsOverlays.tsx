@@ -59,7 +59,7 @@ export default function FriendsOverlays() {
             </button>
           </div>
           <div className="chkRow" id="friendProfileIdentityRow">
-            <AppImg id="friendProfileAvatar" src="/avatars/initials/initials-AN.svg" alt="" aria-hidden="true" />
+            <AppImg id="friendProfileAvatar" src="/avatars/toons/toonHead-male.svg" alt="" aria-hidden="true" />
             <div className="friendProfileIdentityText">
               <div id="friendProfileName">Friend</div>
               <div id="friendProfileMemberSince">Member since --</div>
