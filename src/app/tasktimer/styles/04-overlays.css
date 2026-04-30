@@ -584,7 +584,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   flex: 0 0 auto;
   width: auto;
   margin-bottom: 0;
-  margin-right: auto;
+  margin-right: 0;
 }
 
 #editOverlay .editTaskTimeGoalToggleWrap{
@@ -920,7 +920,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   margin-top: auto;
   padding: 0 0 calc(2px + env(safe-area-inset-bottom));
   gap:8px;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.08);
@@ -1243,7 +1243,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
     background: #0d0f13 !important;
     border-top: 1px solid rgba(255,255,255,.12);
     box-shadow: 0 -14px 28px rgba(0,0,0,.32);
-    justify-content: flex-start;
+    justify-content: flex-end;
     flex-wrap: nowrap;
   }
   #editOverlay .footerBtns .btn{
@@ -2398,7 +2398,7 @@ body[data-theme="purple"] .rewardsInfoText{
 
   #editOverlay .editTaskTimeGoalToggleWrap{
     width:100%;
-    justify-content:space-between;
+    justify-content:flex-start;
   }
 }
 
@@ -2639,14 +2639,14 @@ body[data-theme="purple"] .rewardsInfoText{
     text-transform: uppercase;
   }
 
-#historyEntryNoteOverlay .historyEntryNoteHeader .modalSubtext{
+#historyEntryNoteOverlay #historyEntryNoteMeta.modalSubtext{
     margin: 0;
     font-family: var(--font-orbitron);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: rgba(160,168,178,.72);
+    color: #c9ff24 !important;
   }
 
 #historyEntryNoteOverlay .historyEntryNoteTime{
@@ -2928,6 +2928,18 @@ body[data-theme="purple"] .rewardsInfoText{
     padding-bottom: 16px;
   }
 
+#historyEntryNoteOverlay .historyEntrySummarySessionDate:has(+ .historyEntrySummarySessionTime){
+    padding-bottom: 2px;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummarySessionTime{
+    width: 100%;
+    font-size:12px;
+    color: rgba(228,243,252,.82);
+    text-align:left;
+    padding-bottom: 16px;
+  }
+
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
     font-family: var(--font-orbitron);
     font-size: 24px;
@@ -3068,6 +3080,25 @@ body[data-theme="purple"] .rewardsInfoText{
   #historyEntryNoteOverlay .historyEntrySummarySessionHead{
       grid-template-columns: minmax(0, 1fr);
       display:grid;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummarySessionCard{
+      position: relative;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 2;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn{
+      min-width: 32px;
+      width: 32px;
+      min-height: 32px;
+      padding: 0;
+      align-items: center;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHeroValue{

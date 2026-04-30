@@ -1,6 +1,3 @@
-const ARCHIE_ENABLED_ENV_KEY = "NEXT_PUBLIC_ENABLE_ARCHIE";
-const ONBOARDING_ENABLED_ENV_KEY = "NEXT_PUBLIC_ENABLE_ONBOARDING";
-
 function normalizeEnvFlag(value: string | undefined, fallback: boolean) {
   const normalized = String(value || "").trim().toLowerCase();
   if (!normalized) return fallback;
@@ -10,10 +7,9 @@ function normalizeEnvFlag(value: string | undefined, fallback: boolean) {
 }
 
 export function isArchieEnabled() {
-  return normalizeEnvFlag(process.env[ARCHIE_ENABLED_ENV_KEY], true);
+  return normalizeEnvFlag(process.env.NEXT_PUBLIC_ENABLE_ARCHIE, true);
 }
 
 export function isOnboardingEnabled() {
-  return normalizeEnvFlag(process.env[ONBOARDING_ENABLED_ENV_KEY], true);
+  return normalizeEnvFlag(process.env.NEXT_PUBLIC_ENABLE_ONBOARDING, true);
 }
-

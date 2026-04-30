@@ -75,6 +75,7 @@ export type TaskTimerMutableState = {
   suppressAddTaskNameFocusOpen: boolean;
   confirmAction: null | (() => void);
   confirmActionAlt: null | (() => void);
+  confirmActionCancel: null | (() => void);
   themeMode: "purple" | "cyan" | "lime";
   menuButtonStyle: "parallelogram" | "square";
   addTaskCustomNames: string[];

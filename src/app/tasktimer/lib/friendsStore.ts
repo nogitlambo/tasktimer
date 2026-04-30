@@ -144,7 +144,7 @@ async function loadOwnProfile(uid: string): Promise<FriendProfile> {
       return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null };
     }
     return {
-      alias: normalizeAlias(snap.get("displayName")),
+      alias: normalizeAlias(snap.get("username")),
       avatarId: normalizeAvatarId(snap.get("avatarId")),
       avatarCustomSrc: normalizeAvatarCustomSrc(snap.get("avatarCustomSrc")),
       googlePhotoUrl: normalizeGooglePhotoUrl(snap.get("googlePhotoUrl")),
@@ -487,7 +487,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
     const pairSnap = await getDoc(pairRef);
     const profileByUid = {
       [row.senderUid]: {
-        alias: normalizeAlias(senderProfile.alias || row.senderAlias || row.senderEmail),
+        alias: normalizeAlias(senderProfile.alias || row.senderEmail || row.senderUid),
         avatarId: normalizeAvatarId(senderProfile.avatarId || row.senderAvatarId),
         avatarCustomSrc: normalizeAvatarCustomSrc(senderProfile.avatarCustomSrc),
         googlePhotoUrl: normalizeGooglePhotoUrl(senderProfile.googlePhotoUrl),
@@ -495,7 +495,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
         currentRankId: normalizeAvatarId(senderProfile.currentRankId || (snap.data() as Record<string, unknown>)?.senderCurrentRankId),
       },
       [row.receiverUid]: {
-        alias: normalizeAlias(receiverProfile.alias || row.receiverAlias || row.receiverEmail),
+        alias: normalizeAlias(receiverProfile.alias || row.receiverEmail || row.receiverUid),
         avatarId: normalizeAvatarId(receiverProfile.avatarId || row.receiverAvatarId),
         avatarCustomSrc: normalizeAvatarCustomSrc(receiverProfile.avatarCustomSrc),
         googlePhotoUrl: normalizeGooglePhotoUrl(receiverProfile.googlePhotoUrl),

@@ -39,9 +39,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   function confirm(title: string, text: string, opts?: TaskTimerConfirmOptions) {
     ctx.setConfirmAction(opts?.onOk || null);
     ctx.setConfirmActionAlt(opts?.onAlt || null);
+    ctx.setConfirmActionCancel(opts?.onCancel || null);
     confirmDangerMatchValue = String(opts?.dangerInputMatch || "").trim();
 
     const okLabel = opts?.okLabel || "OK";
+    const cancelLabel = opts?.cancelLabel || "Cancel";
     const altLabel = opts?.altLabel || null;
 
     if (els.confirmOkBtn) {
@@ -54,6 +56,10 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
         els.confirmOkBtn.classList.remove("btn-accent");
         els.confirmOkBtn.classList.add("btn-warn");
       }
+    }
+
+    if (els.confirmCancelBtn) {
+      els.confirmCancelBtn.textContent = cancelLabel;
     }
 
     if (els.confirmAltBtn) {
@@ -126,6 +132,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetAllDeleteConfirm");
     ctx.setConfirmAction(null);
     ctx.setConfirmActionAlt(null);
+    ctx.setConfirmActionCancel(null);
     confirmDangerMatchValue = "";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
@@ -197,7 +204,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   }
 
   function registerConfirmOverlayEvents() {
-    ctx.on(els.confirmCancelBtn, "click", closeConfirm);
+    ctx.on(els.confirmCancelBtn, "click", () => {
+      const action = ctx.getConfirmActionCancel();
+      if (typeof action === "function") action();
+      else closeConfirm();
+    });
     ctx.on(els.confirmDeleteAll, "change", syncConfirmPrimaryToggleUi);
     ctx.on(els.confirmDangerInput, "input", syncConfirmDangerInputUi);
     ctx.on(els.confirmAltBtn, "click", () => {

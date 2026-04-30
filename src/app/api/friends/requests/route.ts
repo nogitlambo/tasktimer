@@ -38,7 +38,7 @@ function normalizeField(value: unknown, maxLength: number) {
 
 function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) {
   return {
-    alias: normalizeField(data?.displayName, 40),
+    alias: normalizeField(data?.username, 40),
     avatarId: normalizeField(data?.avatarId, 120),
     rankThumbnailSrc: normalizeField(data?.rankThumbnailSrc, 900000),
     currentRankId: normalizeField(data?.rewardCurrentRankId, 120),

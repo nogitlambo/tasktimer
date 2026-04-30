@@ -4250,6 +4250,17 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     text-align:left;
     text-transform:uppercase;
     letter-spacing:.08em;
+    box-shadow:none !important;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:hover,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger:focus-visible,
+  #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger.isActive{
+    box-shadow:none !important;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{

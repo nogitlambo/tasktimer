@@ -18,11 +18,11 @@ import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
-import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
+import { ACCOUNT_AVATAR_UPDATED_EVENT } from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
@@ -32,7 +32,7 @@ import {
   type LeaderboardProfile,
   type LeaderboardScreenData,
 } from "./lib/leaderboard";
-import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
+import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
 import { subscribeCachedPreferences } from "./lib/storage";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
@@ -71,6 +71,10 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
 }
 
+function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
+  return getRankLabelById(String(profile.rewardCurrentRankId || ""));
+}
+
 function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {
   const avatarSrc = getLeaderboardAvatarSrc(profile);
   if (!avatarSrc) return "";
@@ -97,22 +101,6 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
         initials
       )}
     </div>
-  );
-}
-
-function LeaderboardRankBadge({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
-  return (
-    <span className={`leaderboardRankBadge${small ? " leaderboardRankBadgeSmall" : ""}`} aria-label="Rank insignia">
-      <RankThumbnail
-        rankId={String(profile.rewardCurrentRankId || "")}
-        storedThumbnailSrc={String(profile.rankThumbnailSrc || "")}
-        className="leaderboardRankBadgeShell"
-        imageClassName="leaderboardRankBadgeImg"
-        placeholderClassName="leaderboardRankBadgePlaceholder"
-        alt="Rank insignia"
-        size={small ? 24 : 28}
-      />
-    </span>
   );
 }
 
@@ -215,6 +203,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     if (typeof window !== "undefined") {
       window.addEventListener(LEADERBOARD_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
+      window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
     }
 
     if (activeUid) {
@@ -226,6 +215,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       unsubscribe();
       if (typeof window !== "undefined") {
         window.removeEventListener(LEADERBOARD_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
+        window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
       }
     };
   }, []);
@@ -403,8 +393,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           <div className="leaderboardStats">
                             <span className="leaderboardStatPrimary">
+                              <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
                               <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
-                              <LeaderboardRankBadge profile={entry} />
                             </span>
                           </div>
                         </article>
@@ -429,12 +419,24 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <p className="leaderboardPanelText">
                     {leaderboardState === "signedOut"
                       ? "Sign in to compare your progress against the rest of the app."
-                      : leaderboardState === "error"
-                        ? leaderboardError || "Your leaderboard summary is unavailable."
+                        : leaderboardState === "error"
+                          ? leaderboardError || "Your leaderboard summary is unavailable."
                         : leaderboardData.currentUserEntry
-                          ? `${currentUserLabel} has ${formatLeaderboardXp(leaderboardData.currentUserEntry.rewardTotalXp)}. ${currentUserGapLabel}`
+                          ? `${currentUserLabel}. ${currentUserGapLabel}`
                           : "Your public leaderboard profile has not synced yet."}
                   </p>
+                  <div className="leaderboardMiniRow">
+                    <span className="leaderboardMiniLabel">Rank</span>
+                    <strong>
+                      {leaderboardData.currentUserEntry ? getLeaderboardRankLabel(leaderboardData.currentUserEntry) : "--"}
+                    </strong>
+                  </div>
+                  <div className="leaderboardMiniRow">
+                    <span className="leaderboardMiniLabel">XP</span>
+                    <strong>
+                      {leaderboardData.currentUserEntry ? formatLeaderboardXp(leaderboardData.currentUserEntry.rewardTotalXp) : "--"}
+                    </strong>
+                  </div>
                   <div className="leaderboardMiniRow">
                     <span className="leaderboardMiniLabel">Focus logged</span>
                     <strong>
@@ -466,11 +468,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardSideText">
                             <strong>{getLeaderboardLabel(entry)}</strong>
                             <span>{formatLeaderboardStreak(entry.streakDays)}</span>
-                            <span className="leaderboardMobileXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                           </div>
                           <span className="leaderboardSideMetricWrap">
-                            <LeaderboardRankBadge profile={entry} small />
-                            <span className="leaderboardSideMetric">{formatLeaderboardTrend(entry.weeklyXpGain)}</span>
+                            <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
+                            <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                           </span>
                         </article>
                       ))
@@ -501,10 +502,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <div className="leaderboardSideText">
                               <strong>{getLeaderboardLabel(entry)}</strong>
                               <span>{gapLabel}</span>
-                              <span className="leaderboardMobileXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </div>
                             <span className="leaderboardSideMetricWrap">
-                              <LeaderboardRankBadge profile={entry} small />
+                              <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
                               <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </span>
                           </article>

@@ -714,6 +714,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         last.ms += ms;
         last.count += 1;
         if (ts >= last.ts) last.ts = ts;
+        if (historyTask) last.color = ctx.sessionColorForTaskMs(historyTask as any, last.ms);
       } else {
         groupedByDay.push({
           dayKey: key,
@@ -1351,6 +1352,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         onOk: () => {
           deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex);
           ctx.closeConfirm();
+        },
+        onCancel: () => {
+          ctx.closeConfirm();
+          const selectedEntries = getCurrentHistorySummarySelection(taskId, state);
+          openHistoryEntryNoteOverlay(taskId, selectedEntries.length ? selectedEntries : [entry]);
         },
       });
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");

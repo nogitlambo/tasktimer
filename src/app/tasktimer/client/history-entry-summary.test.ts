@@ -95,6 +95,8 @@ describe("history entry summary payload", () => {
       taskId: "task-1",
       name: "Deep Work",
       dateTimeText: "Logged Wednesday 15th November, 2023 - 9:13AM",
+      dateText: "Logged Wednesday 15th November, 2023",
+      timeText: "Time: 9:13AM",
       elapsedText: "1h 00m 00s",
       noteText: "Deep focus block",
       sentimentText: "Somewhat Easy",
@@ -104,6 +106,8 @@ describe("history entry summary payload", () => {
     const html = renderHistoryEntrySummaryHtml(payload!, escapeHtml);
     expect(html).not.toContain("Activity Summary");
     expect(html).not.toContain('<div class="historyEntrySummarySectionTitle">Session 1</div>');
+    expect(html).toContain('<div class="historyEntrySummarySessionDate">Logged Wednesday 15th November, 2023</div>');
+    expect(html).toContain('<div class="historyEntrySummarySessionTime">Time: 9:13AM</div>');
     expect(html).toContain("Deep focus block");
     expect(html).toContain('data-history-summary-action="delete-session"');
     expect(html).toContain('data-history-summary-action="edit-note"');

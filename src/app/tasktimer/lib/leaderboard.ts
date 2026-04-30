@@ -14,6 +14,13 @@ import {
 
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import {
+  findStoredCustomAvatarUploadSrc,
+  googleAvatarIdForUid,
+  isCustomAvatarIdForUid,
+  readStoredAvatarId,
+  readStoredCustomAvatarSrc,
+} from "./accountProfileStorage";
 import { AVATAR_CATALOG } from "./avatarCatalog";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
 import { getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
@@ -169,10 +176,27 @@ function dispatchLeaderboardProfileUpdated(uid: string): void {
   }
 }
 
+function applyLocalAvatarIdentity(uid: string, identity: LeaderboardIdentityFields): LeaderboardIdentityFields {
+  if (typeof window === "undefined" || !uid) return identity;
+  const storedAvatarId = readStoredAvatarId(uid);
+  if (!storedAvatarId) return identity;
+  const auth = getFirebaseAuthClient();
+  const currentUser = auth?.currentUser || null;
+  const customSrc = isCustomAvatarIdForUid(uid, storedAvatarId)
+    ? findStoredCustomAvatarUploadSrc(uid, storedAvatarId) || readStoredCustomAvatarSrc(uid)
+    : "";
+  return {
+    ...identity,
+    avatarId: storedAvatarId,
+    avatarCustomSrc: customSrc || null,
+    googlePhotoUrl: storedAvatarId === googleAvatarIdForUid(uid) ? normalizeString(currentUser?.photoURL, 2_000) : identity.googlePhotoUrl,
+  };
+}
+
 async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdentityFields> {
   const cached = leaderboardIdentityCache.get(uid);
   const nowValue = Date.now();
-  if (cached && cached.expiresAtMs > nowValue) return cached.value;
+  if (cached && cached.expiresAtMs > nowValue) return applyLocalAvatarIdentity(uid, cached.value);
 
   const auth = getFirebaseAuthClient();
   const currentUser = auth?.currentUser || null;
@@ -200,7 +224,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
     }
   }
 
-  const resolved: LeaderboardIdentityFields = {
+  const resolved: LeaderboardIdentityFields = applyLocalAvatarIdentity(uid, {
     username,
     displayLabel: username || "User",
     avatarId,
@@ -208,7 +232,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
     googlePhotoUrl,
     rankThumbnailSrc,
     rewardCurrentRankId,
-  };
+  });
 
   leaderboardIdentityCache.set(uid, {
     expiresAtMs: nowValue + LEADERBOARD_IDENTITY_CACHE_TTL_MS,
@@ -340,6 +364,20 @@ function filterCurrentUid(entries: LeaderboardProfile[], currentUid: string) {
   return entries.filter((entry) => entry.uid !== currentUid);
 }
 
+function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, identity: LeaderboardIdentityFields | null): LeaderboardProfile {
+  if (!identity || profile.uid !== currentUid) return profile;
+  return {
+    ...profile,
+    username: identity.username,
+    displayLabel: identity.displayLabel,
+    avatarId: identity.avatarId,
+    avatarCustomSrc: identity.avatarCustomSrc,
+    googlePhotoUrl: identity.googlePhotoUrl,
+    rankThumbnailSrc: identity.rankThumbnailSrc,
+    rewardCurrentRankId: identity.rewardCurrentRankId || profile.rewardCurrentRankId,
+  };
+}
+
 export async function loadLeaderboardScreenData(currentUid: string): Promise<LeaderboardScreenData> {
   const db = dbOrNull();
   if (!db || !currentUid) {
@@ -353,6 +391,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     };
   }
 
+  const ownIdentity = await loadOwnLeaderboardIdentity(currentUid).catch(() => null);
   const profiles = collection(db, "leaderboardProfiles");
   const [topSnap, risingSnap, currentUserSnap] = await Promise.all([
     getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(6))),
@@ -362,16 +401,21 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
 
   const topEntries = topSnap.docs
     .map((row) => asLeaderboardProfile(row))
-    .filter((row): row is LeaderboardProfile => !!row);
+    .filter((row): row is LeaderboardProfile => !!row)
+    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
   const currentUserEntry = currentUserSnap.exists()
     ? normalizeLeaderboardProfileRecord(currentUserSnap.id, currentUserSnap.data() as Record<string, unknown>)
     : null;
+  const currentUserEntryWithIdentity = currentUserEntry ? applyOwnIdentity(currentUserEntry, currentUid, ownIdentity) : null;
 
-  if (!currentUserEntry) {
+  if (!currentUserEntryWithIdentity) {
     return {
       topEntries,
       risingEntries: filterCurrentUid(
-        risingSnap.docs.map((row) => asLeaderboardProfile(row)).filter((row): row is LeaderboardProfile => !!row),
+        risingSnap.docs
+          .map((row) => asLeaderboardProfile(row))
+          .filter((row): row is LeaderboardProfile => !!row)
+          .map((row) => applyOwnIdentity(row, currentUid, ownIdentity)),
         currentUid
       ),
       rivalEntries: [],
@@ -382,32 +426,37 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   }
 
   const [higherXpSnap, aboveSnap, belowSnap] = await Promise.all([
-    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntry.rewardTotalXp))),
-    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntry.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(2))),
-    getDocs(query(profiles, where("rewardTotalXp", "<", currentUserEntry.rewardTotalXp), orderBy("rewardTotalXp", "desc"), limit(2))),
+    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
+    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(2))),
+    getDocs(query(profiles, where("rewardTotalXp", "<", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "desc"), limit(2))),
   ]);
 
   const risingEntries = filterCurrentUid(
-    risingSnap.docs.map((row) => asLeaderboardProfile(row)).filter((row): row is LeaderboardProfile => !!row),
+    risingSnap.docs
+      .map((row) => asLeaderboardProfile(row))
+      .filter((row): row is LeaderboardProfile => !!row)
+      .map((row) => applyOwnIdentity(row, currentUid, ownIdentity)),
     currentUid
   );
   const aboveEntries = aboveSnap.docs
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
+    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
     .filter((row) => row.uid !== currentUid);
   const belowEntries = belowSnap.docs
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
+    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
     .filter((row) => row.uid !== currentUid);
   const rivalEntries = [...aboveEntries, ...belowEntries].slice(0, 3);
   const currentUserGapToNextXp =
-    aboveEntries.length > 0 ? Math.max(0, aboveEntries[0]!.rewardTotalXp - currentUserEntry.rewardTotalXp) : null;
+    aboveEntries.length > 0 ? Math.max(0, aboveEntries[0]!.rewardTotalXp - currentUserEntryWithIdentity.rewardTotalXp) : null;
 
   return {
     topEntries,
     risingEntries,
     rivalEntries,
-    currentUserEntry,
+    currentUserEntry: currentUserEntryWithIdentity,
     currentUserRank: higherXpSnap.size + 1,
     currentUserGapToNextXp,
   };

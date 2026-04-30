@@ -202,6 +202,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const modalState = createTaskTimerMutableStore({
     confirmAction: initialState.confirmAction,
     confirmActionAlt: initialState.confirmActionAlt,
+    confirmActionCancel: initialState.confirmActionCancel,
     timeGoalModalTaskId: initialState.timeGoalModalTaskId,
     timeGoalModalFrozenElapsedMs: initialState.timeGoalModalFrozenElapsedMs,
   });
@@ -531,6 +532,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getConfirmActionAlt: () => modalState.get("confirmActionAlt"),
     setConfirmActionAlt: (value) => {
       modalState.set("confirmActionAlt", value);
+    },
+    getConfirmActionCancel: () => modalState.get("confirmActionCancel"),
+    setConfirmActionCancel: (value) => {
+      modalState.set("confirmActionCancel", value);
     },
     closeEdit: (saveChanges) => closeEditApi(saveChanges),
     closeElapsedPad: (applyValue) => closeElapsedPadApi(applyValue),

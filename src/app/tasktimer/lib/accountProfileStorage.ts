@@ -1,12 +1,11 @@
-import { STORAGE_KEY } from "./storage";
-
 export const ACCOUNT_AVATAR_UPDATED_EVENT = "tasktimer:accountAvatarUpdated";
 export const ACCOUNT_PROFILE_UPDATED_EVENT = "tasktimer:accountProfileUpdated";
 
-const AVATAR_SELECTION_STORAGE_PREFIX = `${STORAGE_KEY}:avatarSelection:`;
-const AVATAR_CUSTOM_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustom:`;
-const AVATAR_CUSTOM_UPLOADS_STORAGE_PREFIX = `${STORAGE_KEY}:avatarCustomUploads:`;
-const RANK_THUMBNAIL_STORAGE_PREFIX = `${STORAGE_KEY}:rankThumbnail:`;
+const TASKTIMER_STORAGE_KEY = "taskticker_tasks_v1";
+const AVATAR_SELECTION_STORAGE_PREFIX = `${TASKTIMER_STORAGE_KEY}:avatarSelection:`;
+const AVATAR_CUSTOM_STORAGE_PREFIX = `${TASKTIMER_STORAGE_KEY}:avatarCustom:`;
+const AVATAR_CUSTOM_UPLOADS_STORAGE_PREFIX = `${TASKTIMER_STORAGE_KEY}:avatarCustomUploads:`;
+const RANK_THUMBNAIL_STORAGE_PREFIX = `${TASKTIMER_STORAGE_KEY}:rankThumbnail:`;
 export const MAX_STORED_CUSTOM_AVATARS = 5;
 
 export type StoredCustomAvatarUpload = {

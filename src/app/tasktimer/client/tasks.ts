@@ -358,7 +358,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
             </div>
             ${progressHTML}
             <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
-              <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "SHOW CHART"}</span>
+              <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
             ${historyHTML}
             </div>
@@ -468,15 +468,19 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!t) return;
     const taskId = String(t.id || "");
     ctx.flushPendingFocusSessionNoteSave(taskId);
-    ctx.finalizeLiveSession(t, {
-      elapsedMs: ctx.getTaskElapsedMs(t),
-      note: opts?.sessionNote,
-      completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
-    });
-    t.accumulatedMs = 0;
-    t.running = false;
-    t.startMs = null;
-    t.hasStarted = false;
+    const elapsedMs = ctx.getTaskElapsedMs(t);
+    try {
+      ctx.finalizeLiveSession(t, {
+        elapsedMs,
+        note: opts?.sessionNote,
+        completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
+      });
+    } finally {
+      t.accumulatedMs = 0;
+      t.running = false;
+      t.startMs = null;
+      t.hasStarted = false;
+    }
     ctx.clearTaskTimeGoalFlow(taskId);
     ctx.clearRewardSessionTracker(taskId);
     ctx.resetCheckpointAlertTracking(t.id);

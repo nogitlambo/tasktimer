@@ -767,10 +767,21 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       loadOutgoingRequests(uid),
       loadFriendships(uid),
     ]);
+    const requestPeerUids = [...incoming, ...outgoing]
+      .map((row) => (row.senderUid === uid ? row.receiverUid : row.senderUid))
+      .map((peerUid) => String(peerUid || "").trim())
+      .filter(Boolean);
+    const profileUids = Array.from(
+      new Set([
+        ...friendships
+          .map((row) => (row.users[0] === uid ? row.users[1] : row.users[0]))
+          .map((peerUid) => String(peerUid || "").trim())
+          .filter(Boolean),
+        ...requestPeerUids,
+      ])
+    );
     const profileEntries = await Promise.allSettled(
-      friendships.map(async (row) => {
-        const peerUid = row.users[0] === uid ? row.users[1] : row.users[0];
-        if (!peerUid) return null;
+      profileUids.map(async (peerUid) => {
         const profile = await loadFriendProfile(peerUid);
         return [peerUid, profile] as const;
       })
@@ -849,7 +860,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     container.classList.remove("isEmptyStatus");
     container.innerHTML = rows
       .map((row) => {
-        const peerAliasRaw = opts.incoming ? row.senderAlias : row.receiverAlias;
+        const peerUid = String((opts.incoming ? row.senderUid : row.receiverUid) || "").trim();
+        const peerProfile = peerUid ? ctx.getFriendProfileCacheByUid()[peerUid] || null : null;
+        const peerAliasRaw = peerProfile?.alias;
         const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
         const peerAlias = String(peerAliasRaw || "").trim() || String(peerEmail || "").trim() || "Unknown user";
         const requestedAtMs =

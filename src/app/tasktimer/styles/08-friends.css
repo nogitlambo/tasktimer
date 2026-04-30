@@ -130,7 +130,9 @@
   object-fit: cover;
   object-position: center;
   overflow: hidden;
-  border: 1px solid rgba(121, 226, 255, 0.3);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   flex: 0 0 auto;
 }
 .friendIdentityText {
@@ -168,7 +170,9 @@
   object-fit: cover;
   object-position: center;
   overflow: hidden;
-  border: 1px solid rgba(121, 226, 255, 0.3);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .friendRequestIdentityText {
   min-width: 0;
@@ -362,7 +366,9 @@
   object-fit: cover;
   object-position: center;
   overflow: hidden;
-  border: 1px solid rgba(117, 231, 255, 0.3);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 #friendProfileName {
   min-width: 0;
@@ -653,12 +659,6 @@ body[data-theme="purple"] #shareTaskModal input[type="email"]:focus{
   border-color: rgba(233,134,245,.68) !important;
   outline: 1px solid rgba(255,164,250,.3) !important;
 }
-body[data-theme="purple"] .friendRequestAvatar{
-  border-color: rgba(214,96,229,.42) !important;
-}
-body[data-theme="purple"] .friendIdentityAvatar{
-  border-color: rgba(214,96,229,.42) !important;
-}
 body[data-theme="purple"] .friendIdentityUid,
 body[data-theme="purple"] .friendRequestUid,
 body[data-theme="purple"] .friendSharedTasksCountText{
@@ -770,10 +770,6 @@ body[data-theme="lime"] #shareTaskModal .shareTaskFriendOption{
   border-color: rgba(219,255,79,.2);
   background: rgba(18,20,24,.96);
 }
-body[data-theme="lime"] .friendRequestAvatar,
-body[data-theme="lime"] .friendIdentityAvatar{
-  box-shadow: 0 0 16px rgba(219,255,79,.14);
-}
 body[data-theme="lime"] .friendIdentityUid,
 body[data-theme="lime"] .friendRequestUid,
 body[data-theme="lime"] .friendSharedTasksCountText,
@@ -793,8 +789,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardShell{
   width: 100%;
   max-width: none;
-  background: #0d0f13;
-  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  border: 0;
   box-shadow: none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGrid{
@@ -806,13 +802,16 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   border-radius: 0;
   clip-path: none;
   overflow: visible;
-  border: 1px solid rgba(255,255,255,.12);
-  background: #17191d;
+  border: 0;
+  background: transparent;
   box-shadow: none;
+  font-size: 12px;
+  line-height: 1.25;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard{
   grid-column: span 12;
-  background: #17191d;
+  border: 0;
+  background: transparent;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroHead{
   display:flex;
@@ -833,6 +832,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText span,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniLabel,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMeta{
+  font-size: 12px;
+  line-height: 1.3;
   color: rgba(188, 214, 230, 0.82);
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRows,
@@ -844,7 +845,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
   border: 1px solid rgba(255,255,255,.12);
-  background: #17191d;
+  background: transparent;
   box-shadow: none;
   padding: 14px 15px;
   border-radius: 0;
@@ -855,10 +856,13 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   grid-template-columns: 34px 54px minmax(0, 1fr) auto;
   gap:12px;
   align-items:center;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRank{
   font-family: var(--font-tight);
-  font-size: 24px;
+  font-size: 18px;
+  line-height: 1;
   font-weight: 800;
   color: rgba(233, 252, 255, 0.94);
 }
@@ -868,9 +872,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   display:grid;
   place-items:center;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.12);
+  border: 0;
   border-radius: 0;
-  background: #17191d;
+  background: transparent;
   font-family: var(--font-tight);
   font-weight: 800;
   letter-spacing: .08em;
@@ -897,12 +901,13 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardName,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText strong{
   display:block;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-}
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardName{
-  font-family: var(--font-orbitron);
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStats{
     display:grid;
@@ -912,10 +917,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStatPrimary,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideMetricWrap{
-    display:inline-flex;
+    display:grid;
     align-items:center;
     justify-content:flex-end;
-    gap:8px;
+    gap:3px;
     min-width:0;
   }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardXp,
@@ -926,57 +931,17 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
     text-transform: uppercase;
   }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardXp{
-    font-family: var(--font-orbitron);
-    font-size: 16px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: .08em;
   }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMobileXp{
-    display:none;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankLabel{
     font-size: 12px;
     font-weight: 700;
     letter-spacing: .06em;
-    text-transform: uppercase;
     color: rgba(233, 252, 255, 0.94);
-  }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    flex:0 0 auto;
-  }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadgeSmall{
-    width:24px;
-    height:24px;
-  }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadgeShell,
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadgeShell.rankThumbnailPlaceholderShell{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:100% !important;
-    height:100% !important;
-    overflow:hidden !important;
-  }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadgeImg{
-    width:100%;
-    height:100%;
-    display:block;
-    object-fit:contain;
-  }
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadgePlaceholder{
-    width:100%;
-    height:100%;
-    display:grid;
-    place-items:center;
-    border:1px solid rgba(126,240,180,.22);
-    background:rgba(18,20,24,.92);
-    color:rgba(233,252,255,.86);
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.06em;
-    text-transform:uppercase;
+    white-space: nowrap;
   }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem{
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -990,18 +955,12 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   justify-content:space-between;
   gap:12px;
 }
-body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroCard,
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
   border-color: rgba(255,255,255,.12);
-  background: #17191d;
+  background: transparent;
 }
-body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardAvatar{
-  border-color: rgba(255,255,255,.12);
-  background: #17191d;
-}
-
 @media (max-width: 980px){
   body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] .appPages,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages,
@@ -1076,23 +1035,27 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
     gap:8px;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
     padding: 10px 12px;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow{
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 2px 12px;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem{
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr) auto;
     gap: 10px;
     align-items: center;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRank,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMeta,
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText span:not(.leaderboardMobileXp),
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideMetricWrap{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText span{
     display:none !important;
   }
 
@@ -1117,22 +1080,21 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStats{
-    display:flex;
+    display:grid;
     align-items:center;
     justify-content:flex-end;
     text-align:right;
+    min-width: max-content;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStatPrimary{
-    gap:0;
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardStatPrimary,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideMetricWrap{
+    justify-content: flex-end;
+    text-align: right;
+    min-width: max-content;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankBadge{
-    display:none;
-  }
-
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardXp,
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMobileXp{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardXp{
     display:inline-block;
   }
 }

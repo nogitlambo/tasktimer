@@ -98,6 +98,8 @@ export type TaskTimerConfirmOverlayContext = TaskTimerBindingsContext &
   setConfirmAction: (value: null | (() => void)) => void;
   getConfirmActionAlt: () => null | (() => void);
   setConfirmActionAlt: (value: null | (() => void)) => void;
+  getConfirmActionCancel: () => null | (() => void);
+  setConfirmActionCancel: (value: null | (() => void)) => void;
   };
 
 export type TaskTimerPopupMenuContext = TaskTimerBindingsContext & {

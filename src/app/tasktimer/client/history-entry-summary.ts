@@ -22,6 +22,8 @@ type HistoryEntrySummaryItem = {
   ts: number;
   ms: number;
   dateTimeText: string;
+  dateText: string;
+  timeText: string;
   elapsedText: string;
   timeGoalCompleted: boolean | null;
   timeGoalText: string;
@@ -110,6 +112,15 @@ function formatSummaryLoggedDateTime(value: number) {
   const timeText = formatSummaryTime(value);
   if (!timeText || dateText === "Unknown date/time") return `Logged ${dateText}`;
   return `Logged ${dateText} - ${timeText}`;
+}
+
+function formatSummaryLoggedDate(value: number) {
+  return `Logged ${formatSummaryLongDate(value)}`;
+}
+
+function formatSummaryLoggedTime(value: number) {
+  const timeText = formatSummaryTime(value);
+  return timeText ? `Time: ${timeText}` : "";
 }
 
 function deriveTaskTitle(entries: HistoryEntrySummarySource[]) {
@@ -204,6 +215,8 @@ function buildHistoryEntrySummaryItem(
     ts,
     ms,
     dateTimeText: formatSummaryLoggedDateTime(ts),
+    dateText: formatSummaryLoggedDate(ts),
+    timeText: formatSummaryLoggedTime(ts),
     elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
     timeGoalCompleted,
     timeGoalText: formatTimeGoalText(task),
@@ -313,7 +326,8 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummarySessionHead">
           <div class="historyEntrySummarySessionHeadMain">
             ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
-            <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateTimeText)}</div>
+            <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
+            ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}
             <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
           </div>
           ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}

@@ -33,4 +33,19 @@ describe("colors", () => {
     expect(sessionColorForTaskMs(task, 59.4 * 60 * 1000)).toBe("rgb(255,213,10)");
     expect(sessionColorForTaskMs(task, 60 * 60 * 1000)).toBe("rgb(12,245,127)");
   });
+
+  it("uses time goals ahead of milestone ranges for stored session colors", () => {
+    const task = {
+      timeGoalEnabled: true,
+      timeGoalMinutes: 60,
+      milestonesEnabled: true,
+      milestones: [{ hours: 2, description: "Later checkpoint" }],
+      milestoneTimeUnit: "hour",
+    } as Task;
+
+    expect(sessionColorForTaskMs(task, 30 * 60 * 1000)).toBe("rgb(255,140,0)");
+    expect(sessionColorForTaskMs(task, 59.4 * 60 * 1000)).toBe("rgb(255,213,10)");
+    expect(sessionColorForTaskMs(task, 60 * 60 * 1000)).toBe("rgb(12,245,127)");
+    expect(sessionColorForTaskMs(task, 75 * 60 * 1000)).toBe("rgb(12,245,127)");
+  });
 });

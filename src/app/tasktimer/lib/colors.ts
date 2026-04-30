@@ -39,6 +39,12 @@ export function sessionColorForTaskMs(t: Task, elapsedMs: number): string {
   try {
     const ms = Math.max(0, elapsedMs || 0);
     const elapsedSec = ms / 1000;
+    const timeGoalMinutes = Number(t?.timeGoalMinutes || 0);
+
+    if (t?.timeGoalEnabled && timeGoalMinutes > 0) {
+      const timeGoalMs = Math.max(1, timeGoalMinutes * 60 * 1000);
+      return fillBackgroundForPct((ms / timeGoalMs) * 100);
+    }
 
     const hasMilestones =
       !!t &&
