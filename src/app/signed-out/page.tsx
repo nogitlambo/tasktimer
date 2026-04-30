@@ -75,7 +75,7 @@ export default function SignedOutPage() {
         <header className="flex items-center justify-between">
           <Link href="/" className="launchWordBrand" aria-label="TaskLaunch home">
             <AppImg
-              src="/logo/launch-icon-original-transparent.png"
+              src="/logo/launch-icon-white-transparent.svg"
               alt=""
               className="launchWordBrandIcon"
             />

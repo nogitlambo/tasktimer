@@ -1049,11 +1049,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .historyPinBtn:hover{
   background: rgba(255,255,255,.1);
 }
-.historyCloseBtn.is-disabled,
-.historyCloseBtn:disabled{
-  opacity:.45;
-  cursor:not-allowed;
-}
 .historyMeta{
   display:flex;
   align-items:center;
@@ -1098,11 +1093,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .historyCanvasWrap{
   width:100%;
-  height:390px;
+  height:293px;
   padding-bottom:0;
   border-radius: 0;
   background: #0d0f13 !important;
-  border:1px solid rgba(255,255,255,.08);
+  border:0;
   overflow:hidden;
   position:relative;
   isolation:isolate;
@@ -1134,7 +1129,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .historyRangeRow{
   display:flex;
   justify-content:space-between;
-  align-items:center;
+  align-items:flex-end;
   gap:10px;
   margin-top:12px;
   flex-wrap:nowrap;
@@ -1176,21 +1171,8 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 /* Mobile-only history chart sizing: +25% from the original 260px baseline. */
 @media (max-width: 640px){
   .historyCanvasWrap{
-    height:325px;
+    height:244px;
   }
-}
-.historyCloseBtn{
-  min-width: 0;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  font-family: var(--font-tight);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  justify-content: center;
 }
 .historyActionIconBtn{
   width:30px;

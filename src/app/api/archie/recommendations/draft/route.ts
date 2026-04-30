@@ -6,6 +6,7 @@ import { buildRecommendationDraft } from "@/app/tasktimer/lib/archieEngine";
 import { maybeGenerateArchieDraftSeed } from "@/app/tasktimer/lib/archieModel";
 import { enforceUidRateLimit } from "../../../shared/rateLimit";
 import {
+  assertArchieEnabled,
   assertCanUseArchieAi,
   buildDraft,
   createArchieErrorResponse,
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    assertArchieEnabled();
     const body = (await req.json()) as ArchieRecommendationDraftRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);
     await enforceUidRateLimit({

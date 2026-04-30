@@ -67,7 +67,6 @@ export default function PrivacyPolicyPage() {
         </header>
 
         <section className="landingV2Hero isVisible" aria-label="TaskLaunch privacy policy hero">
-          <div className="landingV2Grid" aria-hidden="true" />
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />

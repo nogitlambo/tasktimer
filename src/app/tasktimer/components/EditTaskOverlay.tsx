@@ -120,7 +120,7 @@ export default function EditTaskOverlay() {
                     htmlFor="editPlannedStartPushReminders"
                   >
                     <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
-                    <span>Enable Push Reminders</span>
+                    <span>Remind Me</span>
                   </label>
                 </div>
                 <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
@@ -139,21 +139,6 @@ export default function EditTaskOverlay() {
                   <input id="editPresetIntervalsToggle" type="checkbox" aria-label="Use preset intervals" />
                   <span>Use Preset Intervals</span>
                 </label>
-                <span className="presetIntervalsInfoSlot" id="editPresetIntervalsInfoSlot">
-                  <button
-                    className="iconBtn editPresetIntervalsInfoBtn"
-                    id="editPresetIntervalsInfoBtn"
-                    type="button"
-                    aria-label="What are preset intervals?"
-                    aria-expanded="false"
-                    aria-controls="editPresetIntervalsInfoDialog"
-                  >
-                    ?
-                  </button>
-                  <div className="addTaskCheckpointInfoDialog editPresetIntervalsInfoDialog" id="editPresetIntervalsInfoDialog" role="note">
-                    Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.
-                  </div>
-                </span>
               </div>
               <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
                 <label htmlFor="editPresetIntervalInput">Preset interval</label>

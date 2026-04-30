@@ -4,6 +4,7 @@ import type { User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { isOnboardingEnabled } from "./featureFlags";
 import { STORAGE_KEY } from "./storage";
 
 export type OnboardingStep = "welcome" | "dashboard" | "tasks" | "friends" | "leaderboard" | "settings";
@@ -35,6 +36,12 @@ export const ONBOARDING_ADD_TASK_CLICK_EVENT = "tasktimer:onboardingAddTaskClick
 export const ONBOARDING_STATE_CHANGED_EVENT = "tasktimer:onboardingStateChanged";
 
 const cloudOnboardingCompleteCache = new Map<string, boolean>();
+
+function clearOnboardingSessionStateIfDisabled() {
+  if (isOnboardingEnabled()) return false;
+  clearOnboardingSessionState();
+  return true;
+}
 
 export function buildOnboardingSessionFingerprint(user: User | null | undefined) {
   const uid = String(user?.uid || "").trim();
@@ -115,10 +122,12 @@ export function getOnboardingDashboardPanelStepIndex(step: OnboardingDashboardPa
 }
 
 export function shouldOnboardingStepAwaitModuleClick(step: OnboardingStep | null | undefined) {
+  if (!isOnboardingEnabled()) return false;
   return isOnboardingModuleStep(step);
 }
 
 export function onboardingModuleStepFromNavPage(page: string | null | undefined): OnboardingModuleStep | null {
+  if (!isOnboardingEnabled()) return null;
   const normalized = String(page || "").trim().toLowerCase();
   if (normalized === "dashboard") return "dashboard";
   if (normalized === "tasks") return "tasks";
@@ -129,6 +138,7 @@ export function onboardingModuleStepFromNavPage(page: string | null | undefined)
 }
 
 export function readOnboardingStepForCurrentSession(user: User | null | undefined): OnboardingStep {
+  if (clearOnboardingSessionStateIfDisabled()) return "welcome";
   const expectedFingerprint = buildOnboardingSessionFingerprint(user);
   if (!expectedFingerprint) return "welcome";
   const storedFingerprint = readSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
@@ -138,6 +148,7 @@ export function readOnboardingStepForCurrentSession(user: User | null | undefine
 }
 
 export function readOnboardingStatusForCurrentSession(user: User | null | undefined): OnboardingSessionStatus | null {
+  if (clearOnboardingSessionStateIfDisabled()) return null;
   const expectedFingerprint = buildOnboardingSessionFingerprint(user);
   if (!expectedFingerprint) return null;
   const storedFingerprint = readSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
@@ -150,11 +161,13 @@ export function readOnboardingStatusForCurrentSession(user: User | null | undefi
 }
 
 export function hasCompletedOnboardingForCurrentSession(user: User | null | undefined) {
+  if (!isOnboardingEnabled()) return false;
   const status = readOnboardingStatusForCurrentSession(user);
   return status === "completed" || status === "skipped";
 }
 
 export function shouldResumeSkippedOnboarding(user: User | null | undefined) {
+  if (!isOnboardingEnabled()) return false;
   return readOnboardingStatusForCurrentSession(user) === "skipped";
 }
 
@@ -170,6 +183,7 @@ export function clearOnboardingSessionState() {
 }
 
 export function isOnboardingManualResumeRequired() {
+  if (clearOnboardingSessionStateIfDisabled()) return false;
   return readSessionStorage(ONBOARDING_SESSION_MANUAL_RESUME_REQUIRED_KEY) === "true";
 }
 
@@ -183,6 +197,7 @@ export function clearCachedCloudOnboardingComplete(uid?: string | null) {
 }
 
 export async function readCloudOnboardingComplete(uid: string | null | undefined) {
+  if (!isOnboardingEnabled()) return false;
   const normalizedUid = String(uid || "").trim();
   if (!normalizedUid) return false;
   if (cloudOnboardingCompleteCache.has(normalizedUid)) {
@@ -205,6 +220,7 @@ export async function readCloudOnboardingComplete(uid: string | null | undefined
 }
 
 export function startOnboardingForCurrentSession(user: User | null | undefined, step: OnboardingStep = "welcome") {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
@@ -216,6 +232,7 @@ export function startOnboardingForCurrentSession(user: User | null | undefined, 
 }
 
 export function saveOnboardingStepForCurrentSession(user: User | null | undefined, step: OnboardingStep) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
@@ -227,6 +244,7 @@ export function saveOnboardingStepForCurrentSession(user: User | null | undefine
 }
 
 export function readOnboardingDashboardPanelStepForCurrentSession(user: User | null | undefined) {
+  if (clearOnboardingSessionStateIfDisabled()) return null;
   const expectedFingerprint = buildOnboardingSessionFingerprint(user);
   if (!expectedFingerprint) return null;
   const storedFingerprint = readSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
@@ -239,6 +257,7 @@ export function saveOnboardingDashboardPanelStepForCurrentSession(
   user: User | null | undefined,
   step: OnboardingDashboardPanelStepId | null | undefined
 ) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
@@ -251,6 +270,7 @@ export function saveOnboardingDashboardPanelStepForCurrentSession(
 }
 
 export function readOnboardingTasksActionStepForCurrentSession(user: User | null | undefined) {
+  if (clearOnboardingSessionStateIfDisabled()) return null;
   const expectedFingerprint = buildOnboardingSessionFingerprint(user);
   if (!expectedFingerprint) return null;
   const storedFingerprint = readSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY);
@@ -263,6 +283,7 @@ export function saveOnboardingTasksActionStepForCurrentSession(
   user: User | null | undefined,
   step: OnboardingTasksActionStepId | null | undefined
 ) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
@@ -275,6 +296,7 @@ export function saveOnboardingTasksActionStepForCurrentSession(
 }
 
 export function skipOnboardingForCurrentSession(user: User | null | undefined, step: OnboardingStep) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (fingerprint) {
     writeSessionStorage(ONBOARDING_SESSION_FINGERPRINT_KEY, fingerprint);
@@ -285,6 +307,7 @@ export function skipOnboardingForCurrentSession(user: User | null | undefined, s
 }
 
 export function completeOnboardingForCurrentSession(user: User | null | undefined) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const fingerprint = buildOnboardingSessionFingerprint(user);
   if (!fingerprint) return;
   writeSessionStorage(ONBOARDING_SESSION_COMPLETED_KEY, fingerprint);
@@ -295,12 +318,14 @@ export function completeOnboardingForCurrentSession(user: User | null | undefine
 }
 
 export function setPendingOnboardingArchieMessage(message: string) {
+  if (clearOnboardingSessionStateIfDisabled()) return;
   const normalized = String(message || "").trim();
   if (!normalized) return;
   writeSessionStorage(ONBOARDING_PENDING_ARCHIE_MESSAGE_KEY, normalized);
 }
 
 export function consumePendingOnboardingArchieMessage() {
+  if (clearOnboardingSessionStateIfDisabled()) return "";
   const message = readSessionStorage(ONBOARDING_PENDING_ARCHIE_MESSAGE_KEY);
   if (message) removeSessionStorage(ONBOARDING_PENDING_ARCHIE_MESSAGE_KEY);
   return message;
@@ -350,6 +375,7 @@ export function getCompletedOnboardingNotice() {
 }
 
 export function notifyOnboardingStateChanged() {
+  if (!isOnboardingEnabled()) return;
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(ONBOARDING_STATE_CHANGED_EVENT));
 }

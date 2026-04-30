@@ -946,6 +946,7 @@ export type TaskTimerHistoryManagerContext = {
   render: () => void;
   navigateToAppRoute: (path: string) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;
   escapeHtmlUI: (value: unknown) => string;

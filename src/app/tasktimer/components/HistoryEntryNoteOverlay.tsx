@@ -22,9 +22,6 @@ export default function HistoryEntryNoteOverlay() {
           />
         </div>
         <div className="confirmBtns">
-          <button className="btn btn-ghost" id="historyEntryNoteEditBtn" type="button" style={{ display: "none" }}>
-            Add Note
-          </button>
           <button className="btn btn-ghost" id="historyEntryNoteCancelBtn" type="button" style={{ display: "none" }}>
             Cancel
           </button>

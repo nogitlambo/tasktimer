@@ -45,7 +45,7 @@ export default function WebSignIn(props: WebSignInProps) {
           <section className="webSignInLaunchPanel">
             <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
               <AppImg
-                src="/logo/launch-icon-original-transparent.png"
+                src="/logo/launch-icon-white-transparent.svg"
                 alt=""
                 className="launchWordBrandIcon"
               />
@@ -87,7 +87,7 @@ export default function WebSignIn(props: WebSignInProps) {
           <div className="relative z-10 flex flex-col items-center gap-3">
             <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
               <AppImg
-                src="/logo/launch-icon-original-transparent.png"
+                src="/logo/launch-icon-white-transparent.svg"
                 alt=""
                 className="launchWordBrandIcon"
               />

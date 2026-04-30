@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ArchieResponseActionRow,
@@ -21,6 +21,12 @@ import {
   skipOnboardingForCurrentSession,
   shouldOnboardingStepAwaitModuleClick,
 } from "../lib/onboarding";
+
+const originalOnboardingFlag = process.env.NEXT_PUBLIC_ENABLE_ONBOARDING;
+
+afterEach(() => {
+  process.env.NEXT_PUBLIC_ENABLE_ONBOARDING = originalOnboardingFlag;
+});
 
 describe("ArchieAssistantWidget response actions", () => {
   it("renders the Archie response action row with thumb and copy controls", () => {
@@ -205,5 +211,30 @@ describe("ArchieAssistantWidget response actions", () => {
   it("keeps onboarding heading-only usage scoped to layout cases", () => {
     expect(onboardingStepTargetPage("dashboard")).toBe("dashboard");
     expect(onboardingStepTargetPage("welcome")).toBeNull();
+  });
+
+  it("treats onboarding as inactive and clears stale session storage when the onboarding flag is off", () => {
+    process.env.NEXT_PUBLIC_ENABLE_ONBOARDING = "false";
+    const removedKeys: string[] = [];
+    const sessionStorage = {
+      getItem: vi.fn((key: string) => {
+        if (key.endsWith(":onboardingFingerprintThisLogin")) return "uid-1:signin-1";
+        if (key.endsWith(":onboardingStatusThisLogin")) return "active";
+        return null;
+      }),
+      setItem: vi.fn(),
+      removeItem: vi.fn((key: string) => {
+        removedKeys.push(key);
+      }),
+    };
+    vi.stubGlobal("window", { sessionStorage });
+    const user = { uid: "uid-1", metadata: { lastSignInTime: "signin-1" } } as never;
+
+    expect(readOnboardingStatusForCurrentSession(user)).toBeNull();
+    expect(readOnboardingDashboardPanelStepForCurrentSession(user)).toBeNull();
+    expect(shouldOnboardingStepAwaitModuleClick("dashboard")).toBe(false);
+    expect(onboardingModuleStepFromNavPage("dashboard")).toBeNull();
+    expect(removedKeys).toContain("taskticker_tasks_v1:onboardingStatusThisLogin");
+    expect(removedKeys).toContain("taskticker_tasks_v1:onboardingFingerprintThisLogin");
   });
 });

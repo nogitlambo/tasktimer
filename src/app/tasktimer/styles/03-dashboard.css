@@ -5323,9 +5323,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 0 !important;
   min-width: 0 !important;
   padding: 8px 10px 9px;
-  background:
-    linear-gradient(180deg, rgba(232, 220, 122, .08), rgba(232, 220, 122, .03)),
-    rgba(255,255,255,.03);
+  background: transparent;
   border-top: 1px solid rgba(255,255,255,.08);
   border-radius: 10px;
   overflow: hidden !important;

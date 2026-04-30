@@ -102,6 +102,7 @@
 }
 .taskLaunchMobileMenuBtn{
   display:none;
+  border: 0;
 }
 .taskLaunchMobileMenu{
   display:none;
@@ -671,6 +672,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     justify-self: end;
     position: relative;
     z-index: 42;
+    border: 0;
   }
 
   .taskLaunchMobileMenuBars{

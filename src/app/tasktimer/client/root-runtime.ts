@@ -56,7 +56,7 @@ type RegisterRootEventsOptions = {
   renderGroupsPage: () => void;
   openHistoryManager: () => void;
   pendingPushEvent: string;
-  archieNavigateEvent: string;
+  archieNavigateEvent?: string | null;
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;

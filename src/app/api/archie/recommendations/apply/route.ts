@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 
 import type { ArchieRecommendationApplyRequest } from "@/app/tasktimer/lib/archieAssistant";
 import { enforceUidRateLimit } from "../../../shared/rateLimit";
-import { applyArchieDraft, assertCanUseArchieAi, createArchieErrorResponse, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
+import { applyArchieDraft, assertArchieEnabled, assertCanUseArchieAi, createArchieErrorResponse, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    assertArchieEnabled();
     const body = (await req.json()) as ArchieRecommendationApplyRequest & Record<string, unknown>;
     const { uid } = await verifyArchieRequestUser(req, body);
     await enforceUidRateLimit({

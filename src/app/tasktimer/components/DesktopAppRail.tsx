@@ -12,6 +12,7 @@ import {
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
 } from "../lib/entitlements";
+import { isArchieEnabled, isOnboardingEnabled } from "../lib/featureFlags";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
 import { saveUserRootPatch } from "../lib/cloudStore";
 import {
@@ -284,7 +285,7 @@ export default function DesktopAppRail({
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
   const [isDesktopWebArchieEnabled, setIsDesktopWebArchieEnabled] = useState(false);
-  const shouldShowDesktopArchie = isDesktopWebArchieEnabled && activePage !== "history";
+  const shouldShowDesktopArchie = isArchieEnabled() && isDesktopWebArchieEnabled && activePage !== "history";
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -403,7 +404,12 @@ export default function DesktopAppRail({
     (page: DesktopRailPage, event?: { preventDefault?: () => void }) => {
       const onboardingModuleStep = onboardingModuleStepFromNavPage(page);
       if (!onboardingModuleStep) return;
-      if (onboardingState?.step === "settings" && onboardingState.awaitingClick && onboardingModuleStep === "settings") {
+      if (
+        isOnboardingEnabled()
+        && onboardingState?.step === "settings"
+        && onboardingState.awaitingClick
+        && onboardingModuleStep === "settings"
+      ) {
         event?.preventDefault?.();
       }
     },
@@ -441,6 +447,7 @@ export default function DesktopAppRail({
   }, [billingBusy]);
 
   const navActivePage: DesktopRailPage =
+    isOnboardingEnabled() &&
     onboardingState &&
     (
       onboardingState.step === "dashboard" ||

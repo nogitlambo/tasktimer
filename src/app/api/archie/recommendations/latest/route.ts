@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 
 import type { ArchieRecentDraftResponse } from "@/app/tasktimer/lib/archieAssistant";
 import { enforceUidRateLimit } from "../../../shared/rateLimit";
-import { assertCanUseArchieAi, createArchieErrorResponse, getLatestOpenArchieDraft, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
+import { assertArchieEnabled, assertCanUseArchieAi, createArchieErrorResponse, getLatestOpenArchieDraft, loadArchieUserPlan, verifyArchieRequestUser } from "../../shared";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    assertArchieEnabled();
     const { uid } = await verifyArchieRequestUser(req);
     await enforceUidRateLimit({
       namespace: "archie-recommendation-latest",

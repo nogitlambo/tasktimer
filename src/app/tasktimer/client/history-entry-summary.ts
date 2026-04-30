@@ -4,6 +4,8 @@ import type { Task } from "../lib/types";
 
 const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
+const DESKTOP_EMPTY_NOTE_PLACEHOLDER = "Click to add note";
+const MOBILE_EMPTY_NOTE_PLACEHOLDER = "Tap to add note";
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
@@ -25,7 +27,6 @@ type HistoryEntrySummaryItem = {
   timeGoalText: string;
   noteText: string;
   hasNote: boolean;
-  noteCopyText: string;
   sentimentText: string;
   xpEarned: number | null;
   xpText: string;
@@ -90,6 +91,25 @@ function formatSummaryLongDate(value: number) {
   const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(date);
   const year = new Intl.DateTimeFormat("en-US", { year: "numeric" }).format(date);
   return `${weekday} ${formatOrdinalDay(date.getDate())} ${month}, ${year}`;
+}
+
+function formatSummaryTime(value: number) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(new Date(timestamp))
+    .replace(/\s+/g, "");
+}
+
+function formatSummaryLoggedDateTime(value: number) {
+  const dateText = formatSummaryLongDate(value);
+  const timeText = formatSummaryTime(value);
+  if (!timeText || dateText === "Unknown date/time") return `Logged ${dateText}`;
+  return `Logged ${dateText} - ${timeText}`;
 }
 
 function deriveTaskTitle(entries: HistoryEntrySummarySource[]) {
@@ -183,13 +203,12 @@ function buildHistoryEntrySummaryItem(
     name,
     ts,
     ms,
-    dateTimeText: formatSummaryLongDate(ts),
+    dateTimeText: formatSummaryLoggedDateTime(ts),
     elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
     timeGoalCompleted,
     timeGoalText: formatTimeGoalText(task),
     noteText: hasNote ? noteText : NO_SESSION_NOTE_TEXT,
     hasNote,
-    noteCopyText: noteText,
     sentimentText: completionDifficultyLabel(entry?.completionDifficulty) || NOT_TRACKED_TEXT,
     xpEarned,
     xpText: formatXpText(xpEarned),
@@ -263,6 +282,7 @@ export function renderHistoryEntrySummaryHtml(
   payload: HistoryEntrySummaryPayload,
   escapeHtml: (value: unknown) => string
 ) {
+  const showSessionHeading = payload.sessions.length > 1;
   const renderField = (label: string, value: string) => `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
@@ -285,9 +305,6 @@ export function renderHistoryEntrySummaryHtml(
 
   const sessionsHtml = payload.sessions
     .map((session, index) => {
-      const noteCopyHtml = session.hasNote
-        ? `<button class="historyEntryNoteCopyLink" type="button" data-history-note-copy="${escapeHtml(session.noteCopyText)}">Copy</button>`
-        : "";
       const deleteButtonHtml =
         session.taskId && session.ts > 0 && session.name
           ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.png" alt="" aria-hidden="true" /></button>`
@@ -295,23 +312,22 @@ export function renderHistoryEntrySummaryHtml(
       return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
         <div class="historyEntrySummarySessionHead">
           <div class="historyEntrySummarySessionHeadMain">
-            <div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>
+            ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
             <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateTimeText)}</div>
+            <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
           </div>
           ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
         </div>
-        <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
         <div class="historyEntrySummaryGrid">
           ${renderField("Time goal", session.timeGoalText)}
           ${renderField("Sentiment", session.sentimentText)}
           ${renderField("XP earned", session.xpText)}
         </div>
         <div class="historyEntrySummaryNoteRow">
-          <div class="historyEntrySummaryNoteBlock">
+          <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">
             <div class="historyEntrySummaryLabel">Session note</div>
-            <div class="historyEntrySummaryNoteText">${escapeHtml(session.noteText)}</div>
+            <textarea class="historyEntrySummaryNoteText historyEntrySummaryNoteInput" rows="2" readonly aria-label="Session note" placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}">${escapeHtml(session.hasNote ? session.noteText : "")}</textarea>
           </div>
-          ${noteCopyHtml ? `<div class="historyEntrySummaryNoteActions">${noteCopyHtml}</div>` : ""}
         </div>
       </section>`;
     })

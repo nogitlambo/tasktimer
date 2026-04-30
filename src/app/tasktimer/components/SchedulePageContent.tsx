@@ -56,17 +56,6 @@ export default function SchedulePageContent({ active }: SchedulePageContentProps
             <div className="scheduleGrid" id="scheduleGrid" />
           </div>
         </div>
-
-        <section className="scheduleTray" aria-label="Unscheduled tasks">
-          <div className="scheduleTrayHeader">
-            <div>
-              <p className="scheduleTrayKicker">Quick Place</p>
-              <h3 className="scheduleTrayTitle">Unscheduled Tasks</h3>
-            </div>
-            <p className="scheduleTrayHint">Drag a task onto the planner to assign a day and start time.</p>
-          </div>
-          <div className="scheduleTrayList" id="scheduleTrayList" />
-        </section>
       </section>
     </section>
   );

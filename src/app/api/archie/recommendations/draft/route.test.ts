@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const verifyArchieRequestUser = vi.fn();
 const loadArchieUserPlan = vi.fn();
 const loadArchieWorkspaceContext = vi.fn();
+const assertArchieEnabled = vi.fn();
 const buildDraft = vi.fn((seed) => ({
   ...seed,
   id: "draft-1",
@@ -19,6 +20,7 @@ const createArchieErrorResponse = vi.fn((error: unknown) => {
 });
 
 vi.mock("../../shared", () => ({
+  assertArchieEnabled,
   verifyArchieRequestUser,
   loadArchieUserPlan,
   loadArchieWorkspaceContext,
@@ -61,6 +63,7 @@ function createRequest() {
 
 describe("POST /api/archie/recommendations/draft", () => {
   beforeEach(() => {
+    assertArchieEnabled.mockReset();
     verifyArchieRequestUser.mockReset().mockResolvedValue({ uid: "user-1" });
     loadArchieUserPlan.mockReset();
     loadArchieWorkspaceContext.mockReset().mockResolvedValue({});

@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 
 import type { ArchieTelemetryEventRequest } from "@/app/tasktimer/lib/archieAssistant";
 import { enforceUidRateLimit } from "../../shared/rateLimit";
-import { createArchieErrorResponse, recordArchieTelemetryEvent, verifyArchieRequestUser } from "../shared";
+import { assertArchieEnabled, createArchieErrorResponse, recordArchieTelemetryEvent, verifyArchieRequestUser } from "../shared";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    assertArchieEnabled();
     const body = (await req.json()) as ArchieTelemetryEventRequest & Record<string, unknown>;
     const { uid } = await verifyArchieRequestUser(req, body);
     await enforceUidRateLimit({

@@ -149,26 +149,28 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
 }
 
 export function renderTaskTimerSchedulePage(ctx: TaskTimerScheduleRenderContext) {
-  if (!ctx.els.scheduleGrid || !ctx.els.scheduleTrayList) return;
+  if (!ctx.els.scheduleGrid) return;
   const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   ctx.els.scheduleGrid.innerHTML = buildTaskTimerScheduleGridHtml(ctx);
-  const { unscheduled } = ctx.scheduleRuntime.buildViewModel();
-  ctx.els.scheduleTrayList.innerHTML = unscheduled.length
-    ? unscheduled
-        .map(({ task, canDrop }) => {
-          const unsupportedReason =
-            canDrop || (task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)
-              ? ""
-              : '<span class="scheduleTrayMeta">Needs a daily time goal before it can be placed.</span>';
-          return `<div class="scheduleTrayTask${canDrop ? "" : " isDisabled"}" ${
-            canDrop && !isMobileLayout ? 'draggable="true"' : ""
-          } data-schedule-task-id="${ctx.escapeHtmlUI(String(task.id || ""))}">
-            <span class="scheduleTrayTaskName">${ctx.escapeHtmlUI(task.name || "Task")}</span>
-            ${unsupportedReason}
-          </div>`;
-        })
-        .join("")
-    : '<div class="scheduleTrayEmpty">All schedulable tasks are already on the planner.</div>';
+  if (ctx.els.scheduleTrayList) {
+    const { unscheduled } = ctx.scheduleRuntime.buildViewModel();
+    ctx.els.scheduleTrayList.innerHTML = unscheduled.length
+      ? unscheduled
+          .map(({ task, canDrop }) => {
+            const unsupportedReason =
+              canDrop || (task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)
+                ? ""
+                : '<span class="scheduleTrayMeta">Needs a daily time goal before it can be placed.</span>';
+            return `<div class="scheduleTrayTask${canDrop ? "" : " isDisabled"}" ${
+              canDrop && !isMobileLayout ? 'draggable="true"' : ""
+            } data-schedule-task-id="${ctx.escapeHtmlUI(String(task.id || ""))}">
+              <span class="scheduleTrayTaskName">${ctx.escapeHtmlUI(task.name || "Task")}</span>
+              ${unsupportedReason}
+            </div>`;
+          })
+          .join("")
+      : '<div class="scheduleTrayEmpty">All schedulable tasks are already on the planner.</div>';
+  }
 
   if (ctx.els.scheduleMobileDayTabs) {
     const selectedDay = normalizeScheduleDay(ctx.state.get("selectedDay")) || "mon";

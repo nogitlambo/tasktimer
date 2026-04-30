@@ -6,6 +6,7 @@ import { buildArchieQueryResponse } from "@/app/tasktimer/lib/archieEngine";
 import { maybeGenerateArchieDraftSeed, maybeRefineArchieResponse } from "@/app/tasktimer/lib/archieModel";
 import { enforceUidRateLimit } from "../../shared/rateLimit";
 import {
+  assertArchieEnabled,
   attachArchieDraftSession,
   buildDraft,
   buildArchieUpgradeResponse,
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    assertArchieEnabled();
     const startedAt = Date.now();
     const body = (await req.json()) as ArchieQueryRequest;
     const { uid } = await verifyArchieRequestUser(req, body as Record<string, unknown>);

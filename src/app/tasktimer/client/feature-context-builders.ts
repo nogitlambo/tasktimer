@@ -196,6 +196,7 @@ type CreateHistoryManagerOptionsArgs = {
   render: () => void;
   navigateToAppRoute: (path: string) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
+  closeOverlay: (overlay: HTMLElement | null) => void;
   confirm: Parameters<typeof createTaskTimerHistoryManager>[0]["confirm"];
   closeConfirm: () => void;
   escapeHtmlUI: (value: unknown) => string;
@@ -1046,6 +1047,7 @@ export function createTaskTimerHistoryManagerContext(
     render: args.render,
     navigateToAppRoute: args.navigateToAppRoute,
     openOverlay: args.openOverlay,
+    closeOverlay: args.closeOverlay,
     confirm: args.confirm,
     closeConfirm: args.closeConfirm,
     escapeHtmlUI: args.escapeHtmlUI,

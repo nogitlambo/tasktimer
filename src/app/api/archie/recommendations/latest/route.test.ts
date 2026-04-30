@@ -4,12 +4,14 @@ const verifyArchieRequestUser = vi.fn();
 const loadArchieUserPlan = vi.fn();
 const getLatestOpenArchieDraft = vi.fn();
 const enforceUidRateLimit = vi.fn();
+const assertArchieEnabled = vi.fn();
 const createArchieErrorResponse = vi.fn((error: unknown) => {
   const typedError = error as Error & { code?: string; status?: number };
   return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
 });
 
 vi.mock("../../shared", () => ({
+  assertArchieEnabled,
   verifyArchieRequestUser,
   loadArchieUserPlan,
   assertCanUseArchieAi: (plan: string) => {
@@ -31,6 +33,7 @@ vi.mock("../../../shared/rateLimit", () => ({
 
 describe("GET /api/archie/recommendations/latest", () => {
   beforeEach(() => {
+    assertArchieEnabled.mockReset();
     verifyArchieRequestUser.mockReset();
     loadArchieUserPlan.mockReset().mockResolvedValue("pro");
     getLatestOpenArchieDraft.mockReset();

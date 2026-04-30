@@ -51,6 +51,7 @@ import {
   type OnboardingStep,
   type OnboardingTasksActionStepId,
 } from "../lib/onboarding";
+import { isArchieEnabled, isOnboardingEnabled } from "../lib/featureFlags";
 
 type ArchieBlinkPattern = "idle" | "flicker" | "slow" | "double";
 type ArchieResponseFeedback = "up" | "down";
@@ -1272,14 +1273,15 @@ export default function ArchieAssistantWidget({
   );
 
   const handleArchieToggle = useCallback(() => {
+    if (!isArchieEnabled()) return;
     if (isArchieBubbleOpen) {
       closeArchieBubble({ animated: true });
       return;
     }
     const currentUser = getFirebaseAuthClient()?.currentUser || null;
-    const onboardingStatus = readOnboardingStatusForCurrentSession(currentUser);
+    const onboardingStatus = isOnboardingEnabled() ? readOnboardingStatusForCurrentSession(currentUser) : null;
     void (async () => {
-      if (currentUser && (onboardingStatus === "active" || onboardingStatus === "skipped")) {
+      if (isOnboardingEnabled() && currentUser && (onboardingStatus === "active" || onboardingStatus === "skipped")) {
         const onboardingComplete = await readCloudOnboardingComplete(currentUser.uid);
         if (!onboardingComplete) {
           presentCompleteSetupPrompt();
@@ -1307,7 +1309,7 @@ export default function ArchieAssistantWidget({
 
   useEffect(() => {
     onOnboardingStepChange?.(
-      variant === "desktop" && archieOnboardingStep
+      isOnboardingEnabled() && variant === "desktop" && archieOnboardingStep
         ? {
             step: archieOnboardingStep,
             awaitingClick: archieOnboardingAwaitingClick,
@@ -1319,6 +1321,7 @@ export default function ArchieAssistantWidget({
   }, [archieOnboardingAwaitingClick, archieOnboardingDashboardPanelStep, archieOnboardingStep, archieOnboardingTasksActionStep, onOnboardingStepChange, variant]);
 
   useEffect(() => {
+    if (!isOnboardingEnabled()) return;
     if (variant !== "desktop" || typeof window === "undefined") return;
     const onModuleClick = (event: Event) => {
       const detail = (event as CustomEvent<OnboardingModuleClickDetail>).detail;
@@ -1359,6 +1362,7 @@ export default function ArchieAssistantWidget({
   }, [archieOnboardingAwaitingClick, archieOnboardingStep, presentDashboardPanelTourStep, presentOnboardingStep, presentTasksAddTaskPrompt, variant]);
 
   useEffect(() => {
+    if (!isOnboardingEnabled()) return;
     if (variant !== "desktop" || typeof window === "undefined") return;
     const onDashboardClick = (event: Event) => {
       const detail = (event as CustomEvent<OnboardingDashboardClickDetail>).detail;
@@ -1379,6 +1383,7 @@ export default function ArchieAssistantWidget({
   }, [archieOnboardingDashboardPanelStep, archieOnboardingStep, presentDashboardPanelTourStep, presentOnboardingStep, variant]);
 
   useEffect(() => {
+    if (!isOnboardingEnabled()) return;
     if (variant !== "desktop" || typeof window === "undefined") return;
     const onAddTaskClick = () => {
       if (archieOnboardingStep !== "tasks" || archieOnboardingTasksActionStep !== "open-add-task") return;
@@ -1391,6 +1396,7 @@ export default function ArchieAssistantWidget({
   }, [archieOnboardingStep, archieOnboardingTasksActionStep, presentOnboardingStep, variant]);
 
   useEffect(() => {
+    if (!isOnboardingEnabled()) return;
     if (
       !shouldAutoAdvanceOnboardingStep({
         step: archieOnboardingStep,
@@ -1432,6 +1438,10 @@ export default function ArchieAssistantWidget({
   ]);
 
   useEffect(() => {
+    if (!isOnboardingEnabled()) {
+      onboardingBootedRef.current = true;
+      return;
+    }
     if (onboardingBootedRef.current) return;
     if (activePage !== "dashboard") return;
     if (!isVisibleArchieVariant(variant)) return;

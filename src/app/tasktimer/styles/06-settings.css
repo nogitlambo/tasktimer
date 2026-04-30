@@ -21,6 +21,55 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   -webkit-overflow-scrolling: touch;
 }
 #app[aria-label="TaskLaunch Settings"]{
+  --settings-page-list-min-height: calc(100dvh - 72px - var(--safe-top) - var(--safe-bottom));
+  --settings-page-list-padding-bottom: 0px;
+  --settings-page-list-margin: 0px;
+  --settings-panel-max-height: calc(100dvh - 150px - var(--safe-top) - var(--safe-bottom));
+  --settings-dashboard-shell-width: auto;
+  --settings-dashboard-shell-max-width: none;
+  --settings-dashboard-shell-margin-left: 0px;
+  --settings-dashboard-shell-margin-right: 0px;
+  --settings-dashboard-shell-padding: 14px;
+  --settings-dashboard-shell-padding-left: 14px;
+  --settings-dashboard-shell-padding-right: 14px;
+  --settings-action-grid-columns: repeat(2, minmax(0, 1fr));
+  --settings-action-grid-gap: 10px;
+  --settings-data-tile-grid-columns: repeat(3, minmax(0, 144px));
+  --settings-data-tile-grid-gap: 8px;
+  --settings-data-tile-min-height: 72px;
+  --settings-data-tile-max-width: 144px;
+  --settings-data-tile-padding: 8px 6px;
+  --settings-data-tile-icon-size: 34px;
+  --settings-data-tile-text-size: 10px;
+  --settings-data-tile-text-letter-spacing: .05em;
+  --settings-account-header-padding: 18px 20px 44px;
+  --settings-account-header-flex-wrap: nowrap;
+  --settings-account-brand-eyebrow-size: 11px;
+  --settings-account-brand-eyebrow-letter-spacing: .22em;
+  --settings-account-brand-title-size: clamp(22px, 3.2vw, 30px);
+  --settings-account-brand-title-letter-spacing: .06em;
+  --settings-account-name-value-size: clamp(26px, 4vw, 38px);
+  --settings-account-name-value-line-height: 1.02;
+  --settings-detail-pane-exiting-top: 12px;
+  --settings-detail-pane-exiting-display: flex;
+  --settings-account-rank-cluster-flow: column;
+  --settings-account-rank-cluster-justify-content: end;
+  --settings-account-rank-cluster-justify-items: stretch;
+  --settings-account-rank-cluster-gap: 12px;
+  --settings-account-rank-cluster-text-align: inherit;
+  --settings-account-rank-cluster-width: auto;
+  --settings-account-rank-cluster-margin-top: 0px;
+  --settings-account-rank-meta-justify-items: end;
+  --settings-account-rank-meta-align-items: start;
+  --settings-account-rank-meta-text-align: right;
+  --settings-account-rank-button-margin-top: -6px;
+  --settings-account-rank-button-margin-bottom: -44px;
+  --settings-account-rank-badge-size: 128px;
+  --settings-nav-panel-position: sticky;
+  --settings-nav-panel-top: 0px;
+  --settings-nav-panel-align-items: stretch;
+  --settings-nav-panel-min-height: auto;
+  --settings-nav-panel-padding-bottom: 12px;
   -ms-overflow-style: none;
   scrollbar-width: none;
   overflow-y: visible;
@@ -136,12 +185,20 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 /* Settings screen restyled to match dashboard surface language */
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell,
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell.dashboardShell{
+  width: var(--settings-dashboard-shell-width);
+  max-width: var(--settings-dashboard-shell-max-width);
   border:none !important;
   outline:none !important;
   box-shadow:none !important;
   background:transparent !important;
   margin:0 !important;
-  padding:14px;
+  margin-left: var(--settings-dashboard-shell-margin-left) !important;
+  margin-right: var(--settings-dashboard-shell-margin-right) !important;
+  padding: var(--settings-dashboard-shell-padding);
+  padding-left: var(--settings-dashboard-shell-padding-left) !important;
+  padding-right: var(--settings-dashboard-shell-padding-right) !important;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsSceneBackdrop{
   display:none;
@@ -199,7 +256,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
   margin:0;
   padding:12px;
-  max-height: calc(100dvh - 150px - var(--safe-top) - var(--safe-bottom));
+  max-height: var(--settings-panel-max-height);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -215,9 +272,11 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
   display:flex;
   flex-direction:column;
-  padding:12px 8px 12px 0;
-  position:sticky;
-  top:0;
+  align-items: var(--settings-nav-panel-align-items);
+  min-height: var(--settings-nav-panel-min-height);
+  padding:12px 8px var(--settings-nav-panel-padding-bottom) 0;
+  position:var(--settings-nav-panel-position);
+  top:var(--settings-nav-panel-top);
   border:none;
   box-shadow:none;
   background:transparent;
@@ -280,9 +339,9 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   z-index:1;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
-  display:flex;
+  display:var(--settings-detail-pane-exiting-display);
   position:absolute;
-  inset:12px;
+  inset: var(--settings-detail-pane-exiting-top) 12px 12px 12px;
   z-index:0;
   pointer-events:none;
 }
@@ -334,13 +393,13 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   body.isRouteSlideEntering #app[aria-label="TaskLaunch Settings"] .settingsPageList{
     animation:none !important;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
-    display:none;
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-detail-pane-exiting-display: none;
   }
 }
 @media (max-width:640px){
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
-    top:64px;
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-detail-pane-exiting-top: 64px;
   }
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty{
@@ -385,8 +444,8 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:10px;
+  grid-template-columns: var(--settings-action-grid-columns);
+  gap:var(--settings-action-grid-gap);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsActionRow{
   min-height:54px;
@@ -420,16 +479,16 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   text-transform:uppercase;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
-  grid-template-columns: repeat(3, minmax(0, 144px));
-  gap:8px;
+  grid-template-columns: var(--settings-data-tile-grid-columns);
+  gap:var(--settings-data-tile-grid-gap);
   justify-content:flex-start;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
-  min-height: 72px;
-  max-width: 144px;
+  min-height: var(--settings-data-tile-min-height);
+  max-width: var(--settings-data-tile-max-width);
   aspect-ratio: 1 / 1;
   width:100%;
-  padding: 8px 6px;
+  padding: var(--settings-data-tile-padding);
   border-radius: 0;
   display:flex;
   flex-direction:column;
@@ -441,8 +500,8 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
   width:100%;
   height:100%;
-  max-width:34px;
-  max-height:34px;
+  max-width:var(--settings-data-tile-icon-size);
+  max-height:var(--settings-data-tile-icon-size);
   margin:0;
   flex:0 0 auto;
 }
@@ -450,21 +509,23 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   margin-top:0;
   text-align:center;
   line-height:1.15;
-  font-size:10px;
-  letter-spacing:.05em;
+  font-size:var(--settings-data-tile-text-size);
+  letter-spacing:var(--settings-data-tile-text-letter-spacing);
   text-transform:uppercase;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataList{
-  display:grid;
-  grid-template-columns: repeat(2, 144px);
-  gap:8px;
-  justify-content:flex-start;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:2px !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataList{
-  display:grid;
-  grid-template-columns: repeat(3, 144px);
-  gap:8px;
-  justify-content:flex-start;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:2px !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataTileDanger .settingsMenuItemText{
   color:#ff8a8a;
@@ -477,12 +538,16 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   border-color: rgba(255,77,77,.48) !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailNote{
-  border:1px solid rgba(121,226,255,.16);
-  background: rgba(255,255,255,.02);
+  border:none !important;
+  background: transparent !important;
+  box-shadow:none !important;
+  filter:none !important;
+  clip-path:none !important;
   padding:10px 12px;
   color: rgba(188,214,230,.78);
   font-size:12px;
   line-height:1.4;
+  font-family: var(--font-readable) !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDangerDisclosure{
   padding:0;
@@ -834,13 +899,11 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailTitle,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailText,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle{
   font-family:var(--font-tight);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsDetailTitle,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel{
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle{
   text-transform:uppercase;
   letter-spacing:.08em;
 }
@@ -848,18 +911,30 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   letter-spacing:.04em;
   line-height:1.45;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .modeSwitchesLabel{
+  font-family:var(--font-tight);
   font-size:11px;
   font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
+#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label{
+  font-family: var(--font-readable) !important;
+  font-size:11px;
+  font-weight:800;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select{
+  font-family: var(--font-readable) !important;
   font-size:11px;
   font-weight:700;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .categoryFieldControl{
   gap:8px;
@@ -1746,9 +1821,9 @@ body[data-theme="purple"] .historyMeta{
   grid-column:3;
   display:inline-flex;
   align-items:center;
-  gap:8px;
+  gap:var(--signed-in-header-badge-gap, 8px);
   min-width:0;
-  max-width:min(320px, 42vw);
+  max-width:var(--signed-in-header-badge-max-width, min(320px, 42vw));
   color:#d3faff;
   text-decoration:none;
   border:none;
@@ -2202,10 +2277,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 #app[aria-label="TaskLaunch Settings"] .settingsPageList{
   width:100%;
   max-width:none;
-  min-height: calc(100dvh - 72px - var(--safe-top) - var(--safe-bottom));
+  min-height: var(--settings-page-list-min-height);
   overflow: visible;
+  margin: var(--settings-page-list-margin);
   padding-left:0 !important;
-  padding-bottom: 0 !important;
+  padding-bottom: var(--settings-page-list-padding-bottom) !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -2216,7 +2292,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .desktopAppRail
 }
 /* Final Settings detail-pane override: remove shaded treatment from the right module panel. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailEmpty,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailNote,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .toggleRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .unitRow,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection .field{
@@ -2387,7 +2462,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDelete
 #app[aria-label="TaskLaunch Settings"] .settingsInlineSection textarea,
 #app[aria-label="TaskLaunch Settings"] .modeSwitchesLabel,
 #app[aria-label="TaskLaunch Settings"] .settingsInlineFooter .btn,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailNote,
 #app[aria-label="TaskLaunch Settings"] .settingsAuthNotice,
 #app[aria-label="TaskLaunch Settings"] .settingsAuthError{
   font-family: var(--font-readable) !important;
@@ -2623,7 +2697,8 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px 20px 44px;
+  padding: var(--settings-account-header-padding);
+  flex-wrap: var(--settings-account-header-flex-wrap);
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015) 60%, rgba(255,255,255,0)),
     linear-gradient(180deg, rgba(6,8,13,.96), rgba(5,7,12,.92));
@@ -2646,18 +2721,18 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandEyebrow{
   font-family: var(--font-tight);
-  font-size: 11px;
+  font-size: var(--settings-account-brand-eyebrow-size);
   font-weight: 800;
-  letter-spacing: .22em;
+  letter-spacing: var(--settings-account-brand-eyebrow-letter-spacing);
   text-transform: uppercase;
   color: rgba(228,248,255,.86);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandTitle{
   margin-top: 4px;
   font-family: var(--font-tight);
-  font-size: clamp(22px, 3.2vw, 30px);
+  font-size: var(--settings-account-brand-title-size);
   font-weight: 900;
-  letter-spacing: .06em;
+  letter-spacing: var(--settings-account-brand-title-letter-spacing);
   text-transform: uppercase;
   color: #f2fdff;
   text-shadow: 0 0 16px rgba(116,244,255,.2);
@@ -2687,19 +2762,23 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
   z-index: 1;
   align-self: flex-start;
   display: inline-grid;
-  grid-auto-flow: column;
+  grid-auto-flow: var(--settings-account-rank-cluster-flow);
   align-items: center;
-  justify-content: end;
-  gap: 12px;
+  justify-content: var(--settings-account-rank-cluster-justify-content);
+  justify-items: var(--settings-account-rank-cluster-justify-items);
+  gap: var(--settings-account-rank-cluster-gap);
   min-width: 0;
   padding-top: 2px;
+  width: var(--settings-account-rank-cluster-width);
+  margin-top: var(--settings-account-rank-cluster-margin-top);
+  text-align: var(--settings-account-rank-cluster-text-align);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta{
   display: grid !important;
   gap: 4px;
-  justify-items: end !important;
-  align-items: start !important;
-  text-align: right !important;
+  justify-items: var(--settings-account-rank-meta-justify-items) !important;
+  align-items: var(--settings-account-rank-meta-align-items) !important;
+  text-align: var(--settings-account-rank-meta-text-align) !important;
   min-width: 0;
   padding: 0 !important;
   border: none !important;
@@ -2719,17 +2798,17 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
   position: relative;
   z-index: 2;
   align-self: start;
-  margin-top: -6px;
-  margin-bottom: -44px;
+  margin-top: var(--settings-account-rank-button-margin-top);
+  margin-bottom: var(--settings-account-rank-button-margin-bottom);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadge{
-  width: 128px;
-  height: 128px;
+  width: var(--settings-account-rank-badge-size);
+  height: var(--settings-account-rank-badge-size);
   margin: 0;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadgeShell{
-  width: 128px;
-  height: 128px;
+  width: var(--settings-account-rank-badge-size);
+  height: var(--settings-account-rank-badge-size);
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody{
   position: relative;
@@ -2829,9 +2908,9 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
 }
 #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardNameValue{
   font-family: var(--font-readable);
-  font-size: clamp(26px, 4vw, 38px);
+  font-size: var(--settings-account-name-value-size);
   font-weight: 800;
-  line-height: 1.02;
+  line-height: var(--settings-account-name-value-line-height);
   color: #f4fbff;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardIdentity .settingsAccountAliasValueRow{
@@ -3017,6 +3096,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   background: linear-gradient(180deg, rgba(253,245,255,.92), rgba(224,196,240,.84));
 }
 @media (max-width: 900px){
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-account-rank-cluster-gap: 10px;
+    --settings-account-rank-meta-justify-items: start;
+    --settings-account-rank-meta-text-align: left;
+  }
+
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody{
     grid-template-columns: minmax(140px, 170px) minmax(0, 1fr);
     grid-template-areas:
@@ -3024,27 +3109,31 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
       "meta meta";
     gap: 16px 4px;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster{
-    gap: 10px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta{
-    justify-items: start !important;
-    text-align: left !important;
-  }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardIdentity{
     width: 100%;
     padding-top: 6px;
   }
 }
 @media (max-width: 640px){
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-account-header-padding: 16px 16px 42px;
+    --settings-account-header-flex-wrap: wrap;
+    --settings-account-name-value-size: clamp(22px, 8vw, 32px);
+    --settings-account-rank-cluster-justify-content: center;
+    --settings-account-rank-cluster-justify-items: center;
+    --settings-account-rank-cluster-text-align: center;
+    --settings-account-rank-cluster-width: 100%;
+    --settings-account-rank-cluster-margin-top: 2px;
+    --settings-account-rank-meta-justify-items: center;
+    --settings-account-rank-meta-align-items: center;
+    --settings-account-rank-meta-text-align: center;
+    --settings-account-rank-button-margin-top: -4px;
+    --settings-account-rank-button-margin-bottom: -36px;
+    --settings-account-rank-badge-size: 108px;
+  }
+
   #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCard{
     clip-path: none;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
-    padding: 16px 16px 42px;
-    flex-direction: row;
-    align-items: flex-start;
-    flex-wrap: wrap;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody{
     grid-template-columns: 1fr;
@@ -3076,73 +3165,35 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardMetaGrid{
     grid-template-columns: 1fr;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster{
-    justify-items: center;
-    text-align: center;
-    width: 100%;
-    justify-content: center;
-    margin-top: 2px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankMeta{
-    justify-items: center;
-    align-items: center;
-    text-align: center;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBtn{
-    margin-top: -4px;
-    margin-bottom: -36px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadge,
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadgeShell{
-    width: 108px;
-    height: 108px;
-  }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardIdentity .settingsAccountAliasValueRow{
     flex-wrap: wrap;
     align-items: flex-start;
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardNameValue{
-    font-size: clamp(22px, 8vw, 32px);
-  }
 }
 @media (max-width: 480px){
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeader{
-    padding:
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-account-header-padding:
       clamp(12px, 3vw, 14px)
       clamp(12px, 3vw, 14px)
       clamp(30px, 8vw, 34px);
+    --settings-account-brand-eyebrow-size: 10px;
+    --settings-account-brand-eyebrow-letter-spacing: .16em;
+    --settings-account-brand-title-size: clamp(17px, 7vw, 24px);
+    --settings-account-brand-title-letter-spacing: .04em;
+    --settings-account-name-value-size: clamp(18px, 9vw, 28px);
+    --settings-account-name-value-line-height: 1.06;
+    --settings-account-rank-cluster-flow: row;
+    --settings-account-rank-cluster-gap: 8px;
+    --settings-account-rank-button-margin-top: 0;
+    --settings-account-rank-button-margin-bottom: -30px;
+    --settings-account-rank-badge-size: clamp(84px, 23vw, 92px);
   }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandEyebrow{
-    font-size: 10px;
-    letter-spacing: .16em;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardBrandTitle{
-    font-size: clamp(17px, 7vw, 24px);
-    letter-spacing: .04em;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankCluster{
-    grid-auto-flow: row;
-    justify-items: center;
-    gap: 8px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBtn{
-    margin-top: 0;
-    margin-bottom: -30px;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadge,
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardHeaderRankBadgeShell{
-    width: clamp(84px, 23vw, 92px);
-    height: clamp(84px, 23vw, 92px);
-  }
+
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardAvatarDock .settingsAccountIdCardAvatarCaption{
     max-width: 18ch;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardLabel{
     letter-spacing: .12em;
-  }
-  #app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardNameValue{
-    font-size: clamp(18px, 9vw, 28px);
-    line-height: 1.06;
   }
   #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardIdentity .settingsAccountAliasValueRow{
     gap: 8px;
@@ -3187,11 +3238,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   text-shadow: none;
 }
 
-#app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
 #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell::-webkit-scrollbar{
   width:0;
   height:0;
@@ -3199,12 +3245,9 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
 }
 
 @media (min-width: 641px) and (max-width: 900px){
-  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
-    min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
-    max-height: none;
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-page-list-min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
+    --settings-panel-max-height: none;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isActive .settingsDetailHead{
@@ -3213,17 +3256,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
 }
 
 @media (max-width: 980px){
-  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
-  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
-    max-width:min(260px, 48vw);
+  #app[aria-label="TaskLaunch App"],
+  #app[aria-label="TaskLaunch Settings"]{
+    --signed-in-header-badge-max-width: min(260px, 48vw);
   }
 }
 
 @media (max-width: 720px){
-  #app[aria-label="TaskLaunch App"] .signedInHeaderBadge,
-  #app[aria-label="TaskLaunch Settings"] .signedInHeaderBadge{
-    max-width:min(200px, 46vw);
-    gap:6px;
+  #app[aria-label="TaskLaunch App"],
+  #app[aria-label="TaskLaunch Settings"]{
+    --signed-in-header-badge-max-width: min(200px, 46vw);
+    --signed-in-header-badge-gap: 6px;
   }
 
   #app[aria-label="TaskLaunch App"] .signedInHeaderBadgeInsigniaWrap,
@@ -3746,13 +3789,8 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetail
 /* Final Preferences/Appearance/Notifications typography pass: use Ligconsolata-style readable text and normal casing
    for the primary inline controls shown in these panes. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSectionTitle,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitRow > span,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .field > label,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection select,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection option,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection input{
   font-family: var(--font-readable) !important;
@@ -3985,15 +4023,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
 
 /* Migrated from tasktimer.css tail: settings detail list authority rules. */
 /* Final Settings right-pane Help Center and Data option rows: standard list buttons, not tiles. */
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataList,
-#app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataList{
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:2px !important;
-}
-
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem,
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem{
   width:min(100%, 252px) !important;
@@ -4018,11 +4047,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
 }
 
 @media (max-width: 900px){
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataList,
-  #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataList{
-    align-items:stretch !important;
-  }
-
   #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem,
   #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDataPane .settingsDataListItem{
     width:100% !important;
@@ -4118,8 +4142,16 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
 
 /* Responsive Settings shell authority migrated from 10-responsive.css. */
 @media (min-width: 641px) and (max-width: 980px){
-  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
-    padding-bottom: calc(20px + var(--safe-bottom));
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-page-list-padding-bottom: calc(20px + var(--safe-bottom));
+    --settings-action-grid-columns: 1fr;
+    --settings-action-grid-gap: 8px;
+    --settings-data-tile-grid-columns: repeat(3, minmax(0, 1fr));
+    --settings-data-tile-min-height: 63px;
+    --settings-data-tile-padding: 6px 5px;
+    --settings-data-tile-icon-size: 30px;
+    --settings-data-tile-text-size: 9px;
+    --settings-data-tile-text-letter-spacing: .04em;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
@@ -4147,46 +4179,30 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     text-align:left;
   }
 
-  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
-    grid-template-columns: 1fr;
-    gap:8px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap:8px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
-    min-height:63px;
-    padding:6px 5px;
-    border-radius:0;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
-    max-width:30px;
-    max-height:30px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
-    font-size:9px;
-    letter-spacing:.04em;
-  }
 }
 
 @media (max-width: 640px){
-  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
-    padding-bottom: calc(16px + var(--safe-bottom));
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDashboardShell{
-    width: 100% !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding:10px;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-dashboard-shell-width: 100%;
+    --settings-dashboard-shell-margin-left: 0px;
+    --settings-dashboard-shell-margin-right: 0px;
+    --settings-dashboard-shell-padding: 10px;
+    --settings-dashboard-shell-padding-left: 0px;
+    --settings-dashboard-shell-padding-right: 0px;
+    --settings-page-list-padding-bottom: calc(16px + var(--safe-bottom));
+    --settings-nav-panel-position: static;
+    --settings-nav-panel-top: auto;
+    --settings-nav-panel-align-items: center;
+    --settings-nav-panel-min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
+    --settings-nav-panel-padding-bottom: calc(14px + var(--safe-bottom));
+    --settings-action-grid-columns: 1fr;
+    --settings-action-grid-gap: 8px;
+    --settings-data-tile-grid-columns: repeat(3, minmax(0, 1fr));
+    --settings-data-tile-min-height: 57px;
+    --settings-data-tile-padding: 6px 3px;
+    --settings-data-tile-icon-size: 26px;
+    --settings-data-tile-text-size: 8px;
+    --settings-data-tile-text-letter-spacing: .03em;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout{
@@ -4208,13 +4224,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     overflow-x:hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
-    position:static;
-    align-items:center;
-    min-height: calc(100dvh - 64px - var(--safe-top) - var(--safe-bottom));
-    padding-bottom: calc(14px + var(--safe-bottom)) !important;
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions,
@@ -4285,40 +4294,14 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     min-width:72px;
   }
 
-  #app[aria-label="TaskLaunch Settings"] .settingsActionGrid{
-    grid-template-columns: 1fr;
-    gap:8px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTileGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap:8px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile{
-    min-height:57px;
-    padding:6px 3px;
-    border-radius:0;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemIcon{
-    max-width:26px;
-    max-height:26px;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsDataTile .settingsMenuItemText{
-    font-size:8px;
-    letter-spacing:.03em;
-  }
-
   .settingsMenu .menuTitle{
     font-size:18px;
   }
 }
 
 @media (min-width: 981px){
-  #app[aria-label="TaskLaunch Settings"] .settingsPageList{
-    margin:18px;
+  #app[aria-label="TaskLaunch Settings"]{
+    --settings-page-list-margin: 18px;
   }
 }
 

@@ -300,6 +300,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
     if (els.historyEntryNoteBody) {
       els.historyEntryNoteBody.innerHTML = renderHistoryEntrySummaryHtml(payload, ctx.escapeHtmlUI);
+      syncHistoryManagerNotePlaceholders();
     }
     const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
     const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
@@ -315,7 +316,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       overlay.dataset.historyEntryNote = note;
       overlay.dataset.historyEntryEditing = "false";
       const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
-      if (closeBtn) closeBtn.style.display = "";
+      if (closeBtn) {
+        closeBtn.style.display = "";
+        closeBtn.textContent = "Close";
+      }
     }
     if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = note;
     if (els.historyEntryNoteEditor) (els.historyEntryNoteEditor as HTMLElement).style.display = "none";
@@ -328,7 +332,42 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.openOverlay(overlay);
   }
 
-  async function saveHistoryManagerOverlayNote() {
+  function syncHistoryManagerNotePlaceholders() {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay) return;
+    const isMobile = window.matchMedia?.("(max-width: 640px)")?.matches ?? window.innerWidth <= 640;
+    overlay.querySelectorAll<HTMLTextAreaElement>("[data-history-summary-note-input]").forEach((input) => {
+      const desktopText = String(input.dataset.emptyNotePlaceholderDesktop || "Click to add note");
+      const mobileText = String(input.dataset.emptyNotePlaceholderMobile || "Tap to add note");
+      input.placeholder = isMobile ? mobileText : desktopText;
+    });
+  }
+
+  function getActiveHistoryManagerNoteInput() {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay) return null;
+    return overlay.querySelector(".historyEntrySummaryNoteInput.isEditing") as HTMLTextAreaElement | null;
+  }
+
+  function getActiveHistoryManagerNoteInputValue() {
+    return String(getActiveHistoryManagerNoteInput()?.value ?? els.historyEntryNoteInput?.value ?? "");
+  }
+
+  function syncHistoryManagerNoteCloseLabel() {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    const closeBtn = overlay?.querySelector(".closePopup") as HTMLButtonElement | null;
+    if (!overlay || !closeBtn) return;
+    closeBtn.textContent =
+      overlay.dataset.historyEntryEditing === "true" && getActiveHistoryManagerNoteInputValue().trim()
+        ? "Save & Close"
+        : "Close";
+    closeBtn.classList.toggle(
+      "isSaveAndClose",
+      overlay.dataset.historyEntryEditing === "true" && !!getActiveHistoryManagerNoteInputValue().trim()
+    );
+  }
+
+  async function saveHistoryManagerOverlayNote(options?: { reopen?: boolean }) {
     const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
     if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditable !== "true") return;
     const taskId = String(overlay.dataset.historyEntryTaskId || "").trim();
@@ -343,7 +382,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     );
     if (pos < 0) return;
     const nextEntry = { ...original[pos], taskId };
-    const note = String(els.historyEntryNoteInput?.value || "").trim();
+    const note = getActiveHistoryManagerNoteInputValue().trim();
     if (note) nextEntry.note = note;
     else delete nextEntry.note;
     const nextTaskHistory = original.slice();
@@ -353,7 +392,50 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.saveHistory(nextHistory);
     renderHistoryManager();
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    openHistoryManagerNoteOverlay(nextEntry);
+    if (options?.reopen !== false) openHistoryManagerNoteOverlay(nextEntry);
+  }
+
+  function beginHistoryManagerNoteEdit(trigger: HTMLElement | null) {
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
+    if (!trigger || overlay.dataset.historyEntryEditing === "true") return;
+
+    const taskId = String(trigger.getAttribute("data-history-summary-task-id") || "").trim();
+    const ts = Math.floor(Number(trigger.getAttribute("data-history-summary-ts") || 0));
+    const ms = Math.max(0, Math.floor(Number(trigger.getAttribute("data-history-summary-ms") || 0)));
+    const name = String(trigger.getAttribute("data-history-summary-name") || "").trim();
+    if (!taskId || ts <= 0 || !name) return;
+
+    const historyByTaskId = ctx.loadHistory();
+    const entries = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+    const entry = entries.find(
+      (candidate: any) => Number(candidate?.ts) === ts && Number(candidate?.ms) === ms && String(candidate?.name || "").trim() === name
+    );
+    if (!entry || (entry as any)?.isLiveSession) return;
+
+    const note = ctx.getHistoryEntryNote(entry);
+    overlay.dataset.historyEntryTaskId = taskId;
+    overlay.dataset.historyEntryEditable = "true";
+    overlay.dataset.historyEntryTs = String(ts);
+    overlay.dataset.historyEntryMs = String(ms);
+    overlay.dataset.historyEntryName = name;
+    overlay.dataset.historyEntryNote = note;
+    overlay.dataset.historyEntryEditing = "true";
+    if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = note;
+    if (els.historyEntryNoteEditor) (els.historyEntryNoteEditor as HTMLElement).style.display = "none";
+    if (els.historyEntryNoteCancelBtn) els.historyEntryNoteCancelBtn.style.display = "none";
+    if (els.historyEntryNoteSaveBtn) els.historyEntryNoteSaveBtn.style.display = "none";
+    if (els.historyEntryNoteEditBtn) els.historyEntryNoteEditBtn.style.display = "none";
+    const input = trigger.querySelector("[data-history-summary-note-input]") as HTMLTextAreaElement | null;
+    if (input) {
+      input.readOnly = false;
+      input.classList.add("isEditing");
+      input.value = note;
+    }
+    const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
+    if (closeBtn) closeBtn.style.display = "";
+    syncHistoryManagerNoteCloseLabel();
+    (input || els.historyEntryNoteInput)?.focus();
   }
 
   function importHistoryManagerCsvFromFile(file: File | null) {
@@ -1349,6 +1431,50 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         errorMessage: "",
       }));
       syncManualEntryOverlayFromDraft(taskId);
+    });
+    ctx.on(document, "click", (event: Event) => {
+      const editNoteTarget = (event.target as HTMLElement | null)?.closest?.(
+        '[data-history-summary-action="edit-note"]'
+      ) as HTMLElement | null;
+      if (!editNoteTarget) return;
+      beginHistoryManagerNoteEdit(editNoteTarget);
+    });
+    ctx.on(
+      document,
+      "click",
+      (event: Event) => {
+        const closeBtn = (event.target as HTMLElement | null)?.closest?.("#historyEntryNoteOverlay .closePopup");
+        if (!closeBtn) return;
+        const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+        if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
+        if (overlay.dataset.historyEntryEditing === "true") {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          void saveHistoryManagerOverlayNote({ reopen: false });
+          ctx.closeOverlay(overlay);
+        }
+      },
+      { capture: true }
+    );
+    ctx.on(document, "input", (event: Event) => {
+      const input = (event.target as HTMLElement | null)?.closest?.(
+        "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing"
+      ) as HTMLTextAreaElement | null;
+      if (!input) return;
+      if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = String(input.value || "");
+      syncHistoryManagerNoteCloseLabel();
+    });
+    ctx.on(document, "keydown", (event: Event) => {
+      const keyEvent = event as KeyboardEvent;
+      if (keyEvent.key !== "Enter" && keyEvent.key !== " ") return;
+      if ((event.target as HTMLElement | null)?.closest?.("textarea, input, select, [contenteditable='true']")) return;
+      const editNoteTarget = (event.target as HTMLElement | null)?.closest?.(
+        '[data-history-summary-action="edit-note"]'
+      ) as HTMLElement | null;
+      if (!editNoteTarget) return;
+      keyEvent.preventDefault();
+      beginHistoryManagerNoteEdit(editNoteTarget);
     });
     ctx.on(els.historyEntryNoteEditBtn, "click", () => {
       const overlay = els.historyEntryNoteOverlay as HTMLElement | null;

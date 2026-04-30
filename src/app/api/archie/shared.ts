@@ -15,6 +15,7 @@ import { normalizeArchieAssistantPage } from "@/app/tasktimer/lib/archieAssistan
 import type { ArchieWorkspaceContext } from "@/app/tasktimer/lib/archieEngine";
 import type { Task, HistoryEntry } from "@/app/tasktimer/lib/types";
 import { normalizeCompletionDifficulty } from "@/app/tasktimer/lib/completionDifficulty";
+import { isArchieEnabled } from "@/app/tasktimer/lib/featureFlags";
 import { getRequestIdToken } from "../feedback/shared";
 import {
   canUseFirebaseAdminDefaultCredentials,
@@ -58,6 +59,21 @@ export function buildArchieUpgradeResponse(): ArchieQueryResponse {
     confidence: "high",
     suggestedAction: { kind: "navigate", label: "Upgrade to Pro", href: "/pricing" },
   };
+}
+
+export function createArchieDisabledResponse() {
+  return Response.json(
+    {
+      error: "Archie is currently disabled.",
+      code: "archie/disabled",
+    },
+    { status: 503 }
+  );
+}
+
+export function assertArchieEnabled() {
+  if (isArchieEnabled()) return;
+  throw new ArchieApiError("archie/disabled", "Archie is currently disabled.", 503);
 }
 
 export async function loadArchieUserPlan(uid: string): Promise<ArchieServerPlan> {

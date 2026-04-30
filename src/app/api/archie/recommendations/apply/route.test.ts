@@ -4,12 +4,14 @@ const verifyArchieRequestUser = vi.fn();
 const loadArchieUserPlan = vi.fn();
 const applyArchieDraft = vi.fn();
 const enforceUidRateLimit = vi.fn();
+const assertArchieEnabled = vi.fn();
 const createArchieErrorResponse = vi.fn((error: unknown) => {
   const typedError = error as Error & { code?: string; status?: number };
   return Response.json({ error: typedError.message || String(error), code: typedError.code || "archie/internal" }, { status: typedError.status || 500 });
 });
 
 vi.mock("../../shared", () => ({
+  assertArchieEnabled,
   verifyArchieRequestUser,
   loadArchieUserPlan,
   applyArchieDraft,
@@ -42,6 +44,7 @@ function createRequest() {
 
 describe("POST /api/archie/recommendations/apply", () => {
   beforeEach(() => {
+    assertArchieEnabled.mockReset();
     verifyArchieRequestUser.mockReset().mockResolvedValue({ uid: "user-1" });
     loadArchieUserPlan.mockReset();
     applyArchieDraft.mockReset().mockResolvedValue({ ok: true, decision: "apply", appliedCount: 1 });

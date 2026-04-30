@@ -61,11 +61,12 @@
   }
 
   #editOverlay .modal{
-    width: 100% !important;
-    max-width: none !important;
+    width: min(50%, 640px) !important;
+    max-width: calc(100% - 24px) !important;
+    margin-right: auto;
     height: 100% !important;
     max-height: none !important;
-    min-height: 100dvh;
+    min-height: 0;
     box-sizing: border-box;
     border-radius: 0 !important;
     padding: 18px;
@@ -616,7 +617,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   height: 18px;
   margin: 0;
   flex: 0 0 auto;
-  accent-color: #d9f34a;
+  accent-color: #c9ff24;
   cursor: pointer;
 }
 
@@ -758,6 +759,17 @@ body[data-theme="purple"] .rankLadderItemFlag{
   border-color: rgba(255,255,255,.08) !important;
   background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
   box-shadow: none !important;
+}
+
+#editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
+#editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
+  border-color: rgba(201,255,36,.56) !important;
+  background:
+    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
+  color: #f5f8f4 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.12),
+    0 0 12px rgba(201,255,36,.12) !important;
 }
 
 #editOverlay .row3{
@@ -905,10 +917,10 @@ body[data-theme="purple"] .rankLadderItemFlag{
 #editOverlay .footerBtns{
   flex: 0 0 auto;
   align-self: stretch;
-  margin-top: 0;
+  margin-top: auto;
   padding: 0 0 calc(2px + env(safe-area-inset-bottom));
   gap:8px;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.08);
@@ -1136,9 +1148,10 @@ body[data-theme="purple"] .rankLadderItemFlag{
     position: absolute;
     top: 0;
     right: 0;
-    bottom: auto;
+    bottom: 0;
     left: 0;
-    height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 88px - (var(--desktop-shell-margin) * 2));
+    height: 100%;
+    min-height: 0;
     padding: 0;
     z-index: 35;
   }
@@ -1149,15 +1162,37 @@ body[data-theme="purple"] .rankLadderItemFlag{
   }
 
   #app[aria-label="TaskLaunch App"] #editOverlay .modal{
-    height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 88px - (var(--desktop-shell-margin) * 2));
+    width: min(50%, 640px);
+    max-width: calc(100% - 24px);
+    margin-right: auto;
+    height: 100%;
+    min-height: 0;
     max-height: none;
     padding: 18px 18px 14px;
     border-color: rgba(117,231,255,.22);
     box-shadow: 0 24px 48px rgba(0,0,0,.48), inset 0 0 0 1px rgba(255,255,255,.04);
   }
 
+  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills .timerTypePill{
+    width: 100%;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskDurationRow,
+  #app[aria-label="TaskLaunch App"] #editOverlay .addTaskPlannedStartSelectorRow{
+    flex-wrap: wrap;
+  }
+
   #app[aria-label="TaskLaunch App"] #editOverlay .footerBtns{
-    margin-top: 18px;
+    margin-top: auto;
+    padding-top: 12px;
   }
 }
 
@@ -1208,7 +1243,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
     background: #0d0f13 !important;
     border-top: 1px solid rgba(255,255,255,.12);
     box-shadow: 0 -14px 28px rgba(0,0,0,.32);
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-wrap: nowrap;
   }
   #editOverlay .footerBtns .btn{
@@ -2061,6 +2096,8 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow,
 #editOverlay .addTaskPlannedStartInlineCheckboxRow{
+  display:inline-flex;
+  align-items:center;
   gap:0;
   color: rgba(221,236,246,.92);
   font-size: 11px;
@@ -2080,13 +2117,14 @@ body[data-theme="purple"] .rewardsInfoText{
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"],
 #editOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"]{
   width:18px;
   height:18px;
-  accent-color: #d9f34a;
+  accent-color: #c9ff24;
 }
 
 #addTaskOverlay .addTaskPlannedStartHelp{
@@ -2169,6 +2207,8 @@ body[data-theme="purple"] .rewardsInfoText{
   flex-wrap: wrap;
   position: relative;
   isolation: isolate;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 #addTaskOverlay #addTaskDurationValueInput,
@@ -2185,7 +2225,8 @@ body[data-theme="purple"] .rewardsInfoText{
   flex-wrap:wrap;
   gap:6px;
   position: relative;
-  z-index: 1;
+  z-index: 4;
+  pointer-events: auto;
 }
 
 #editOverlay .addTaskDurationPills .unitBtn.small{
@@ -2195,7 +2236,8 @@ body[data-theme="purple"] .rewardsInfoText{
   padding: 0;
   text-align:center;
   position: relative;
-  z-index: 1;
+  z-index: 5;
+  pointer-events: auto;
 }
 
 #addTaskOverlay .addTaskDurationPills .unitBtn.isHidden,
@@ -2399,6 +2441,14 @@ body[data-theme="purple"] .rewardsInfoText{
   cursor: pointer;
 }
 
+#editOverlay .addTaskPlannedStartCheckboxRow input[type="checkbox"],
+#editOverlay .addTaskPlannedStartInlineCheckboxRow input[type="checkbox"],
+#editOverlay .addTaskPlannedStartInlineCheckboxRow span{
+  align-self: center;
+  vertical-align: middle;
+  transform: translateY(1px);
+}
+
 #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow,
 #editOverlay .addTaskPlannedStartInlineCheckboxRow{
   justify-content: flex-start;
@@ -2408,6 +2458,11 @@ body[data-theme="purple"] .rewardsInfoText{
   background: transparent;
   border: 0;
   clip-path: none;
+}
+
+#editOverlay .addTaskPlannedStartInlineCheckboxRow{
+  align-self: flex-start;
+  margin-left: 0;
 }
 
 #editOverlay .addTaskPlannedStartToggleWrap{
@@ -2526,7 +2581,8 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .modal{
   --history-entry-note-shell-pad-x: 22px;
-  background: #17191d;
+  --history-entry-note-surface: #17191d;
+  background: var(--history-entry-note-surface);
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 0;
   clip-path: none;
@@ -2638,16 +2694,7 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHero::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    left: calc(-1 * var(--history-entry-note-shell-pad-x));
-    right: calc(-1 * var(--history-entry-note-shell-pad-x));
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 60%),
-      rgba(8,10,14,.72);
-    z-index:-1;
-    pointer-events:none;
+    display:none;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroTop{
@@ -2662,7 +2709,7 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroEyebrow{
     font-family: var(--font-orbitron);
-    font-size:11px;
+    font-size:10px;
     font-weight:700;
     letter-spacing:.08em;
     text-transform:uppercase;
@@ -2735,23 +2782,22 @@ body[data-theme="purple"] .rewardsInfoText{
   border-top: 1px solid rgba(255,255,255,.08);
   position: relative;
   z-index: 2;
-  background: #0d0f13;
+  background: var(--history-entry-note-surface);
 }
 
 #historyEntryNoteOverlay .confirmBtns .btn{
   padding: 9px 12px;
   min-height: 36px;
   font-family: var(--font-readable) !important;
+  font-size: 11px;
 }
 
 #historyEntryNoteOverlay #historyEntryNoteEditBtn,
 #historyEntryNoteOverlay #historyEntryNoteCancelBtn,
 #historyEntryNoteOverlay .closePopup{
-  border-color: rgba(201,255,36,.34) !important;
+  border-color: rgba(174,184,194,.45) !important;
   color: rgba(245,248,244,.88) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
-    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+  background: transparent !important;
 }
 
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn,
@@ -2759,7 +2805,19 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
-  border-color: rgba(201,255,36,.86) !important;
+  border-color: rgba(174,184,194,.58) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
+  font-weight: 800;
+}
+
+#historyEntryNoteOverlay .closePopup.isSaveAndClose,
+#historyEntryNoteOverlay .closePopup.isSaveAndClose:hover,
+#historyEntryNoteOverlay .closePopup.isSaveAndClose:focus-visible{
+  background: #c9ff24 !important;
+  color: #02060d !important;
+  border-color: #c9ff24 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.22),
     0 0 16px rgba(201,255,36,.2) !important;
@@ -2772,18 +2830,18 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay #historyEntryNoteEditBtn:focus-visible,
 #historyEntryNoteOverlay #historyEntryNoteCancelBtn:hover,
 #historyEntryNoteOverlay #historyEntryNoteCancelBtn:focus-visible{
-  border-color: rgba(201,255,36,.5) !important;
+  border-color: rgba(174,184,194,.62) !important;
   color: rgba(250,253,247,.96) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.04),
-    0 0 0 1px rgba(201,255,36,.12),
-    0 0 12px rgba(201,255,36,.12) !important;
+    0 0 0 1px rgba(174,184,194,.12),
+    0 0 12px rgba(174,184,194,.1) !important;
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle{
     margin: 0;
     font-family: var(--font-orbitron);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
@@ -2818,7 +2876,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummarySessionHeadMain{
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   flex: 1 1 auto;
   justify-items: start;
 }
@@ -2834,6 +2892,10 @@ body[data-theme="purple"] .rewardsInfoText{
   min-width: 44px;
   width: 44px;
   min-height: 44px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
   border-color: transparent !important;
   box-shadow: none !important;
   background: transparent !important;
@@ -2847,6 +2909,7 @@ body[data-theme="purple"] .rewardsInfoText{
   height: 18px;
   object-fit: contain;
   margin: 0 auto;
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn:hover,
@@ -2862,6 +2925,7 @@ body[data-theme="purple"] .rewardsInfoText{
     font-size:12px;
     color: rgba(228,243,252,.82);
     text-align:left;
+    padding-bottom: 16px;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
@@ -2871,21 +2935,23 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight: 700;
     color: rgba(247,251,255,.96);
     letter-spacing: -.03em;
-    margin-top: -2px;
+    margin-top: 0;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryGrid{
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    align-items: start;
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryField{
     min-width: 0;
     display: grid;
     gap: 6px;
+    align-content: start;
+    justify-items: start;
     padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,.14);
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryLabel{
@@ -2894,14 +2960,14 @@ body[data-theme="purple"] .rewardsInfoText{
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: var(--accent3);
+  color: rgba(247,251,255,.96);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryValue{
     min-width: 0;
-    color: rgba(241,249,255,.94);
-    font-size: 14px;
-    line-height: 1.2;
+    color: rgba(174,184,194,.9);
+    font-size: 12px;
+    line-height: 1.55;
     font-weight: 400;
     white-space: pre-wrap;
     word-break: break-word;
@@ -2920,15 +2986,45 @@ body[data-theme="purple"] .rewardsInfoText{
   min-width: 0;
   display: grid;
   gap: 6px;
+  cursor: text;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock:focus-visible{
+  outline: 1px solid rgba(174,184,194,.62);
+  outline-offset: 4px;
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteText{
     min-width: 0;
-    color: rgba(230,245,255,.9);
+    width: 100%;
+    min-height: 22px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    resize: vertical;
+    background: transparent;
+    color: rgba(174,184,194,.9);
     font-size: 12px;
     line-height: 1.55;
+  font-family: var(--font-readable);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteInput::placeholder{
+  color: rgba(174,184,194,.9);
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteInput:not(.isEditing){
+  cursor: text;
+  resize: none;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing{
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid rgba(174,184,194,.45);
+  background: rgba(255,255,255,.02);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
@@ -2938,8 +3034,8 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryDivider{
-  height: 1px;
-  background: rgba(255,255,255,.08);
+  height: 2px;
+  background: rgba(255,255,255,.18);
   width: 100%;
 }
 
@@ -3303,7 +3399,6 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   height: 64px;
   display:grid;
   place-items:center;
-  border: 1px solid rgba(160,232,255,.28);
   background: rgba(255,255,255,.01);
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
 }

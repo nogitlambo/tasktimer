@@ -44,6 +44,7 @@ import {
   readOnboardingStatusForCurrentSession,
   readOnboardingStepForCurrentSession,
 } from "./lib/onboarding";
+import { isArchieEnabled, isOnboardingEnabled } from "./lib/featureFlags";
 import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
@@ -238,6 +239,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function getIsOnboardingDashboardPreview() {
+    if (!isOnboardingEnabled()) return false;
     const user = getFirebaseAuthClient()?.currentUser || null;
     return (
       readOnboardingStatusForCurrentSession(user) === "active"
@@ -1361,6 +1363,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       render,
       navigateToAppRoute,
       openOverlay: overlayBindings.openOverlay,
+      closeOverlay: overlayBindings.closeOverlay,
       confirm: overlayBindings.confirm,
       closeConfirm: overlayBindings.closeConfirm,
       escapeHtmlUI,
@@ -1710,7 +1713,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderGroupsPage,
       openHistoryManager,
       pendingPushEvent: PENDING_PUSH_TASK_EVENT,
-      archieNavigateEvent: ARCHIE_NAVIGATE_EVENT,
+      archieNavigateEvent: isArchieEnabled() ? ARCHIE_NAVIGATE_EVENT : null,
       maybeHandlePendingTaskJump: () => runtimeActions.maybeHandlePendingTaskJump(),
       maybeHandlePendingPushAction,
       rehydrateFromCloudAndRender,
@@ -1774,10 +1777,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     rehydrateFromCloudAndRender,
   });
 
-  runtime.on(window as any, ONBOARDING_STATE_CHANGED_EVENT, () => {
-    if (appRuntimeState.get("currentAppPage") !== "dashboard") return;
-    renderDashboardWidgetsWithBusy();
-  });
+  if (isOnboardingEnabled()) {
+    runtime.on(window as any, ONBOARDING_STATE_CHANGED_EVENT, () => {
+      if (appRuntimeState.get("currentAppPage") !== "dashboard") return;
+      renderDashboardWidgetsWithBusy();
+    });
+  }
 
   return { destroy };
 }

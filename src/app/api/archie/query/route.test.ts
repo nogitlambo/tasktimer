@@ -8,6 +8,7 @@ const loadArchieUserPlan = vi.fn();
 const saveArchieDraft = vi.fn();
 const writeArchieSession = vi.fn();
 const attachArchieDraftSession = vi.fn();
+const assertArchieEnabled = vi.fn();
 const buildDraft = vi.fn((seed: Omit<ArchieRecommendationDraft, "id" | "createdAt" | "status">) => ({
   ...seed,
   id: "draft-built",
@@ -20,6 +21,7 @@ const maybeGenerateArchieDraftSeed = vi.fn();
 const enforceUidRateLimit = vi.fn();
 
 vi.mock("../shared", () => ({
+  assertArchieEnabled,
   verifyArchieRequestUser,
   loadArchieWorkspaceContext,
   loadArchieUserPlan,
@@ -112,6 +114,7 @@ function createRequest(message = "Where do I change the theme?") {
 
 describe("POST /api/archie/query", () => {
   beforeEach(() => {
+    assertArchieEnabled.mockReset();
     verifyArchieRequestUser.mockReset().mockResolvedValue({ uid: "user-1" });
     loadArchieWorkspaceContext.mockReset().mockResolvedValue({});
     loadArchieUserPlan.mockReset();
@@ -139,6 +142,24 @@ describe("POST /api/archie/query", () => {
     expect(maybeRefineArchieResponse).not.toHaveBeenCalled();
     expect(saveArchieDraft).not.toHaveBeenCalled();
     expect(writeArchieSession).not.toHaveBeenCalled();
+  });
+
+  it("returns a disabled response before auth and rate limiting when Archie is off", async () => {
+    const error = new Error("Archie is currently disabled.") as Error & { code: string; status: number };
+    error.code = "archie/disabled";
+    error.status = 503;
+    assertArchieEnabled.mockImplementation(() => {
+      throw error;
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(createRequest());
+    const json = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(json.code).toBe("archie/disabled");
+    expect(verifyArchieRequestUser).not.toHaveBeenCalled();
+    expect(enforceUidRateLimit).not.toHaveBeenCalled();
   });
 
   it("returns deterministic fallback answers for Free users without Genkit refinement", async () => {

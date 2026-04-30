@@ -313,16 +313,20 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 <div class="historyMeta historyRangeText">&nbsp;</div>
                 <div class="historyRangeToggleRow" aria-label="History range">
                   <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
-                  <button class="historyRangeModePill isOn" type="button" data-history-range-mode="entries" aria-pressed="true">Entries</button>
-                  <button class="historyRangeModePill" type="button" data-history-range-mode="day" aria-pressed="false">Day</button>
+                  <div class="taskScreenPillGroup historyRangeModeGroup" role="group" aria-label="History display mode">
+                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab isOn" type="button" data-history-range-mode="entries" aria-pressed="true">
+                      <span class="taskScreenHeaderBtnText">Entries</span>
+                    </button>
+                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab" type="button" data-history-range-mode="day" aria-pressed="false">
+                      <span class="taskScreenHeaderBtnText">Day</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div class="historyMeta historyRangeActions">
-                <button class="btn btn-ghost small historyCloseBtn" type="button" data-history-action="close" aria-label="Close history chart">
-                  Close
-                </button>
-              </div>
             </div>
+            <button class="historyDrawerReveal" type="button" data-action="history" title="Hide history chart" aria-label="Hide history chart" aria-pressed="true" ${isHistoryPinned ? "disabled" : ""}>
+              <span class="historyDrawerRevealText">HIDE CHART</span>
+            </button>
           </section>
         `
         : "";
@@ -353,8 +357,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
               </div>
             </div>
             ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
-              <span class="taskHistoryRevealIcon" aria-hidden="true">&#8964;</span>
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
+              <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "SHOW CHART"}</span>
             </button>
             ${historyHTML}
             </div>
