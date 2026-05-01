@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeRecurringScheduleFieldsForSave } from "./edit-task";
+import { getEditTimeGoalSaveFields, normalizeRecurringScheduleFieldsForSave } from "./edit-task";
 import type { Task } from "../lib/types";
 
 function createTask(overrides?: Partial<Task>): Task {
@@ -83,5 +83,18 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     });
     expect(draftTask.plannedStartDay).toBeNull();
     expect(draftTask.plannedStartTime).toBeNull();
+  });
+});
+
+describe("getEditTimeGoalSaveFields", () => {
+  it("normalizes once-off tasks to daily saved time goals", () => {
+    expect(getEditTimeGoalSaveFields("once-off", 2, "hour", "week")).toEqual({
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 120,
+    });
+    expect(getEditTimeGoalSaveFields("once-off", 45, "minute", "week")).toEqual({
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 45,
+    });
   });
 });

@@ -881,6 +881,80 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .editTaskModalHeader{
   flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+#editOverlay .editValidationError{
+  grid-column: 1 / -1;
+}
+
+#editOverlay .editTaskColorPalette{
+  display: grid;
+  grid-template-columns: repeat(3, 18px);
+  gap: 6px;
+  justify-content: end;
+  align-items: center;
+  padding-top: 1px;
+}
+
+#editOverlay .editTaskColorTrigger{
+  justify-self: end;
+  margin-top: 1px;
+}
+
+#editOverlay .editTaskColorPopover{
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 52px 16px 16px;
+  pointer-events: auto;
+}
+
+#editOverlay .editTaskColorPopoverPanel{
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(13,15,19,.98);
+  box-shadow:
+    0 18px 34px rgba(0,0,0,.38),
+    inset 0 0 0 1px rgba(255,255,255,.035);
+}
+
+#editOverlay .editTaskColorSwatch{
+  --task-color: rgba(255,255,255,.18);
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  background: var(--task-color);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.2),
+    0 0 0 0 rgba(201,255,36,0);
+  cursor: pointer;
+}
+
+#editOverlay .editTaskColorSwatchNone{
+  position: relative;
+  background:
+    linear-gradient(135deg, transparent 0 calc(50% - 1px), rgba(255,255,255,.7) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+    rgba(255,255,255,.05);
+}
+
+#editOverlay .editTaskColorSwatch:hover,
+#editOverlay .editTaskColorSwatch:focus-visible,
+#editOverlay .editTaskColorSwatch.isSelected{
+  border-color: rgba(201,255,36,.72);
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.26),
+    0 0 0 2px rgba(201,255,36,.18),
+    0 0 12px rgba(201,255,36,.18);
 }
 
 #editOverlay .editTaskModalBody{
@@ -1834,9 +1908,56 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #confirmOverlay.isResetTaskConfirm .modal{
   background: #0d0f13;
+  border: 1px solid rgba(165, 172, 182, .62);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, .46),
+    inset 0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmCancelBtn,
+#confirmOverlay.isResetTaskConfirm #confirmOkBtn{
+  border-color: rgba(165, 172, 182, .66);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+  font-family: var(--font-archie);
+}
+
+#confirmOverlay.isResetTaskConfirm #confirmCancelBtn:hover:not(:disabled),
+#confirmOverlay.isResetTaskConfirm #confirmCancelBtn:focus-visible:not(:disabled),
+#confirmOverlay.isResetTaskConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isResetTaskConfirm #confirmOkBtn:focus-visible:not(:disabled){
+  border-color: rgba(194, 201, 211, .86);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .05),
+    0 0 0 1px rgba(194, 201, 211, .18);
+}
+
+#confirmOverlay.isApplySharedScheduleConfirm .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(165, 172, 182, .62);
+  border-radius: 0;
+  clip-path: none;
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, .46),
+    inset 0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+#confirmOverlay.isApplySharedScheduleConfirm #confirmCancelBtn,
+#confirmOverlay.isApplySharedScheduleConfirm #confirmOkBtn{
+  border-color: rgba(165, 172, 182, .66);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+}
+
+#confirmOverlay.isApplySharedScheduleConfirm #confirmCancelBtn:hover:not(:disabled),
+#confirmOverlay.isApplySharedScheduleConfirm #confirmCancelBtn:focus-visible:not(:disabled),
+#confirmOverlay.isApplySharedScheduleConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isApplySharedScheduleConfirm #confirmOkBtn:focus-visible:not(:disabled){
+  border-color: rgba(194, 201, 211, .86);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .05),
+    0 0 0 1px rgba(194, 201, 211, .18);
 }
 
 /* Export Task modal: match Edit Task modal style */
@@ -1926,6 +2047,10 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #confirmOverlay.isDeleteTaskConfirm .confirmText{
   color: rgba(226,246,255,.9);
+}
+
+#confirmOverlay.isDeleteTaskConfirm .confirmDanger{
+  font-size: 0.92rem;
 }
 
 #confirmOverlay.isDeleteTaskConfirm .confirmBtns{
@@ -2025,6 +2150,14 @@ body[data-theme="purple"] .rewardsInfoText{
   align-items:center;
   gap:6px;
   flex-wrap:nowrap;
+}
+
+#editOverlay .editPlannedStartCheckboxRow{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-top:10px;
 }
 
 #addTaskOverlay #addTaskPlannedStartHourSelect,
@@ -2465,6 +2598,10 @@ body[data-theme="purple"] .rewardsInfoText{
   margin-left: 0;
 }
 
+#editOverlay .addTaskPlannedStartInlineCheckboxRow span{
+  padding-left: 5px;
+}
+
 #editOverlay .addTaskPlannedStartToggleWrap{
   display: inline-flex;
   align-items: center;
@@ -2498,6 +2635,12 @@ body[data-theme="purple"] .rewardsInfoText{
 #editOverlay #saveEditBtn{
   min-width: 92px;
   justify-content: center;
+}
+
+#editOverlay #cancelEditBtn,
+#editOverlay #cancelEditBtn:hover,
+#editOverlay #cancelEditBtn:focus-visible{
+  background: transparent !important;
 }
 
 #taskManualEntryOverlay #taskManualEntryCancelBtn,
@@ -2948,6 +3091,10 @@ body[data-theme="purple"] .rewardsInfoText{
     color: rgba(247,251,255,.96);
     letter-spacing: -.03em;
     margin-top: 0;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummarySessionElapsed.isProgressColored{
+    color: var(--history-entry-summary-elapsed-color, rgba(247,251,255,.96));
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryGrid{
@@ -3605,6 +3752,52 @@ body[data-theme="cyan"] #timeGoalCompleteOverlay .modal{
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
 }
 
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
+  background: rgba(255,255,255,.01) !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  border-color: rgba(178,187,196,.46) !important;
+  box-shadow: none !important;
+}
+
+#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
+  background: #c9ff24 !important;
+  background-image: none !important;
+  color: #061006 !important;
+  border-color: #c9ff24 !important;
+  box-shadow: 0 0 14px rgba(201,255,36,.22);
+}
+
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible{
+  background: rgba(255,255,255,.05) !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  border-color: rgba(202,210,218,.62) !important;
+  box-shadow: 0 0 0 1px rgba(202,210,218,.12) inset !important;
+}
+
+#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
+#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
+body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
+body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible{
+  background: #d6ff57 !important;
+  background-image: none !important;
+  color: #061006 !important;
+  border-color: #d6ff57 !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px rgba(201,255,36,.3) !important;
+}
+
 body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
   clip-path: none;
 }
@@ -3889,12 +4082,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background: #0d0f13 !important;
 }
 
-#editOverlay #cancelEditBtn{
-  border-color: rgba(201,255,36,.34) !important;
+#editOverlay #cancelEditBtn,
+#editOverlay #cancelEditBtn:hover,
+#editOverlay #cancelEditBtn:focus-visible{
+  border-color: rgba(180,188,198,.34) !important;
   color: rgba(245,248,244,.88) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
-    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
+  background: transparent !important;
 }
 
 #taskManualEntryOverlay #taskManualEntryCancelBtn,
@@ -4022,23 +4215,24 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkRow {
   align-items: center;
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #16181d;
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+  accent-color: #c9ff24;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkLabel {
-  width: 100%;
+  width: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 0;
   cursor: pointer;
 }
 
@@ -4047,27 +4241,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch {
-  margin-left: auto;
-  flex: 0 0 auto;
-  width: 39px;
-  height: 21px;
-  min-width: 39px;
-}
-
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch::after {
-  width: 18px;
-  height: 18px;
-  top: 1px;
-  left: 1px;
-}
-
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch.on::after {
-  left: 19px;
-}
-
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch {
-  outline: 2px solid rgba(0, 217, 245, 0.95);
-  outline-offset: 2px;
+  display: none;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkRow.is-disabled {
@@ -4223,13 +4397,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 10px;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn {
   width: auto;
+  min-width: 0;
   justify-content: center;
+  white-space: normal;
 }
 
 /* Migrated from retired tasktimer tail: Edit Task typography authority. */

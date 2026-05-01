@@ -11,7 +11,13 @@ import {
   getAddTaskDurationMaxForPeriod,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
-import { resolveNextScheduleDayDate, type ScheduleDay } from "../lib/schedule-placement";
+import {
+  findNextAvailableScheduleSlot,
+  findScheduleOverlap,
+  formatScheduleSlotSuggestion,
+  resolveNextScheduleDayDate,
+  type ScheduleDay,
+} from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 import { bindToggleRow, eventTargetClosest, setSwitchState } from "./control-helpers";
 import type { TaskTimerAddTaskContext } from "./context";
@@ -177,6 +183,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       els.addTaskError.textContent = msg;
       els.addTaskError.classList.add("isOn");
     }
+  }
+
+  function formatPlannedStartOverlapMessage(tasks: Task[], candidate: Task) {
+    const baseMessage = "This planned start overlaps another scheduled task.";
+    const suggestion = findNextAvailableScheduleSlot(tasks, candidate);
+    return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
   function syncAddTaskDurationReadout() {
@@ -634,6 +646,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       } else {
         newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
       }
+    }
+    if (findScheduleOverlap(tasks, newTask)) {
+      showAddTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask));
+      return;
     }
     ctx.setTasks([...tasks, newTask]);
     closeAddTaskModal();

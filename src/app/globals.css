@@ -151,6 +151,13 @@ body.webSignInRoute .webSignInPage {
   height: auto;
 }
 
+.webSignInLaunchIcon {
+  display: block;
+  width: min(38vw, 168px);
+  height: auto;
+  object-fit: contain;
+}
+
 .webSignInAuthPanel {
   max-width: none;
 }

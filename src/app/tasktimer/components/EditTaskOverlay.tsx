@@ -1,4 +1,7 @@
 
+import type { CSSProperties } from "react";
+import { TASK_COLOR_PALETTE } from "../lib/taskColors";
+
 export default function EditTaskOverlay() {
   return (
     <div className="overlay" id="editOverlay">
@@ -8,6 +11,15 @@ export default function EditTaskOverlay() {
             <div className="editHead">
               <h2>Edit Task</h2>
             </div>
+            <button
+              className="editTaskColorTrigger editTaskColorSwatch editTaskColorSwatchNone"
+              id="editTaskColorTrigger"
+              type="button"
+              title="Choose task color"
+              aria-label="Choose task color"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+            />
             <div className="editValidationError" id="editValidationError" aria-live="polite" />
           </div>
           <div className="editTaskModalBody">
@@ -110,6 +122,8 @@ export default function EditTaskOverlay() {
                       <option value="PM">PM</option>
                     </select>
                   </div>
+                </div>
+                <div className="editPlannedStartCheckboxRow">
                   <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="editPlannedStartOpenEndedRow" htmlFor="editPlannedStartOpenEnded">
                     <input id="editPlannedStartOpenEnded" type="checkbox" />
                     <span>Flexible</span>
@@ -191,6 +205,35 @@ export default function EditTaskOverlay() {
             <button className="btn btn-accent" id="saveEditBtn" type="button">
               Save
             </button>
+          </div>
+          <div className="editTaskColorPopover" id="editTaskColorPopover" role="dialog" aria-modal="false" aria-label="Choose task color" style={{ display: "none" }}>
+            <div className="editTaskColorPopoverPanel">
+              <div className="editTaskColorPalette" id="editTaskColorPalette" role="radiogroup" aria-label="Task color">
+                <button
+                  className="editTaskColorSwatch editTaskColorSwatchNone isSelected"
+                  id="editTaskColorNone"
+                  type="button"
+                  data-task-color=""
+                  role="radio"
+                  aria-checked="true"
+                  title="No task color"
+                  aria-label="No task color"
+                />
+                {TASK_COLOR_PALETTE.map((color) => (
+                  <button
+                    className="editTaskColorSwatch"
+                    key={color}
+                    type="button"
+                    data-task-color={color}
+                    role="radio"
+                    aria-checked="false"
+                    title={`Use task color ${color}`}
+                    aria-label={`Use task color ${color}`}
+                    style={{ "--task-color": color } as CSSProperties}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

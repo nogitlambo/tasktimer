@@ -54,6 +54,9 @@ export default function TimeGoalCompleteOverlay() {
           <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button">
             Close
           </button>
+          <button className="btn btn-accent" id="timeGoalCompleteLaunchNextBtn" type="button" hidden>
+            Launch Next Task
+          </button>
         </div>
       </div>
     </div>

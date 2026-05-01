@@ -648,8 +648,26 @@ async function sendScheduledTaskNotification({
   if (nativeRows.length && !(skipIfForeground && hasForegroundNativeDevice)) {
     const nativeResponse = await messaging.sendEachForMulticast({
       tokens: nativeRows.map((row) => row.token),
+      notification: {
+        title: webTitle,
+        body: webBody,
+      },
       android: {
         priority: "high",
+        notification: {
+          channelId: "tasklaunch-default",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: webTitle,
+              body: webBody,
+            },
+            sound: "default",
+          },
+        },
       },
       data: payloadData,
     });

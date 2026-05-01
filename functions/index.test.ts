@@ -309,6 +309,21 @@ describe("timeGoalComplete push delivery", () => {
     expect(sendEachForMulticast).toHaveBeenCalledTimes(2);
     expect(sendEachForMulticast).toHaveBeenNthCalledWith(1, expect.objectContaining({
       tokens: ["native-token-2"],
+      notification: expect.objectContaining({
+        title: "Time Goal Reached",
+      }),
+      android: expect.objectContaining({
+        notification: expect.objectContaining({
+          channelId: "tasklaunch-default",
+        }),
+      }),
+      apns: expect.objectContaining({
+        payload: expect.objectContaining({
+          aps: expect.objectContaining({
+            sound: "default",
+          }),
+        }),
+      }),
       data: expect.objectContaining({
         eventType: "timeGoalComplete",
       }),

@@ -1,4 +1,5 @@
 import { completionDifficultyLabel } from "../lib/completionDifficulty";
+import { sessionColorForTaskMs } from "../lib/colors";
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { Task } from "../lib/types";
 
@@ -25,6 +26,7 @@ type HistoryEntrySummaryItem = {
   dateText: string;
   timeText: string;
   elapsedText: string;
+  elapsedColor: string;
   timeGoalCompleted: boolean | null;
   timeGoalText: string;
   noteText: string;
@@ -71,7 +73,7 @@ function normalizeElapsedMs(raw: unknown) {
 
 function formatXpText(xpEarned: number | null) {
   if (typeof xpEarned !== "number") return NOT_TRACKED_TEXT;
-  return `${Math.max(0, Math.floor(xpEarned))} XP`;
+  return String(Math.max(0, Math.floor(xpEarned)));
 }
 
 function formatOrdinalDay(day: number) {
@@ -110,12 +112,12 @@ function formatSummaryTime(value: number) {
 function formatSummaryLoggedDateTime(value: number) {
   const dateText = formatSummaryLongDate(value);
   const timeText = formatSummaryTime(value);
-  if (!timeText || dateText === "Unknown date/time") return `Logged ${dateText}`;
-  return `Logged ${dateText} - ${timeText}`;
+  if (!timeText || dateText === "Unknown date/time") return `Logged: ${dateText}`;
+  return `Logged: ${dateText} - ${timeText}`;
 }
 
 function formatSummaryLoggedDate(value: number) {
-  return `Logged ${formatSummaryLongDate(value)}`;
+  return `Logged: ${formatSummaryLongDate(value)}`;
 }
 
 function formatSummaryLoggedTime(value: number) {
@@ -218,6 +220,7 @@ function buildHistoryEntrySummaryItem(
     dateText: formatSummaryLoggedDate(ts),
     timeText: formatSummaryLoggedTime(ts),
     elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
+    elapsedColor: sessionColorForTaskMs(task || ({} as Task), ms),
     timeGoalCompleted,
     timeGoalText: formatTimeGoalText(task),
     noteText: hasNote ? noteText : NO_SESSION_NOTE_TEXT,
@@ -328,7 +331,7 @@ export function renderHistoryEntrySummaryHtml(
             ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
             <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
             ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}
-            <div class="historyEntrySummarySessionElapsed">${escapeHtml(session.elapsedText)}</div>
+            <div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>
           </div>
           ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
         </div>

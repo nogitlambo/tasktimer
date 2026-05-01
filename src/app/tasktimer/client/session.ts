@@ -4,6 +4,7 @@ import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
+import { findNextScheduledTaskAfterLocalTime } from "../lib/schedule-placement";
 import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 
@@ -213,6 +214,28 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null;
   }
 
+  function getNextScheduledTaskAfterNow(excludeTaskIdRaw?: string | null, nowDate = new Date()) {
+    return findNextScheduledTaskAfterLocalTime(ctx.getTasks(), { excludeTaskId: excludeTaskIdRaw, nowDate });
+  }
+
+  function syncTimeGoalCompleteLaunchNextButton() {
+    const button = els.timeGoalCompleteLaunchNextBtn as HTMLButtonElement | null;
+    if (!button) return;
+    const activeTaskId = getActiveTimeGoalModalTaskId();
+    const next = getNextScheduledTaskAfterNow(activeTaskId);
+    if (!next) {
+      button.hidden = true;
+      button.disabled = true;
+      delete button.dataset.nextTaskId;
+      button.textContent = "Launch Next Task";
+      return;
+    }
+    button.hidden = false;
+    button.disabled = false;
+    button.dataset.nextTaskId = String(next.task.id || "");
+    button.textContent = `Launch ${String(next.task.name || "Task")}`;
+  }
+
   function getSelectedTimeGoalCompletionDifficulty(): CompletionDifficulty | undefined {
     const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
     return normalizeCompletionDifficulty(overlay?.dataset.completionDifficulty);
@@ -279,6 +302,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     setTimeGoalCompletionValidation("");
     syncTimeGoalCompletionDifficultyUi();
+    syncTimeGoalCompleteLaunchNextButton();
     if (normalizedTaskId) delete ctx.getTimeGoalReminderAtMsByTaskId()[normalizedTaskId];
   }
 
@@ -375,6 +399,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       els.timeGoalCompleteNoteInput.value = captureSessionNoteSnapshot(taskId);
     }
     syncTimeGoalCompletionDifficultyUi(opts?.completionDifficulty);
+    syncTimeGoalCompleteLaunchNextButton();
     persistPendingTimeGoalFlow(task, "main", opts);
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
   }
@@ -409,9 +434,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function syncTimeGoalModalWithTaskState() {
     const activeTaskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
-    if (!activeTaskId) return;
+    if (!activeTaskId) {
+      syncTimeGoalCompleteLaunchNextButton();
+      return;
+    }
     const task = ctx.getTasks().find((row) => String(row.id || "") === activeTaskId) || null;
-    if (shouldKeepTimeGoalCompletionFlow(task, ctx.getTimeGoalModalFrozenElapsedMs())) return;
+    if (shouldKeepTimeGoalCompletionFlow(task, ctx.getTimeGoalModalFrozenElapsedMs())) {
+      syncTimeGoalCompleteLaunchNextButton();
+      return;
+    }
     clearTaskTimeGoalFlow(activeTaskId);
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
@@ -424,7 +455,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (opts.logHistory && !completionDifficulty) {
       setTimeGoalCompletionValidation("Select a sentiment before closing this session.");
       ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-      return;
+      return false;
     }
     if (taskId && els.timeGoalCompleteNoteInput) {
       setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
@@ -442,6 +473,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
+    return true;
   }
 
   function syncFocusRunButtons(task?: Task | null) {
@@ -1234,6 +1266,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();
       if (task) await resolveTimeGoalCompletion(task, { logHistory: true });
+    });
+    ctx.on(els.timeGoalCompleteLaunchNextBtn, "click", async () => {
+      const task = getActiveTimeGoalModalTask();
+      const nextTaskId = String((els.timeGoalCompleteLaunchNextBtn as HTMLButtonElement | null)?.dataset.nextTaskId || "").trim();
+      if (!task || !nextTaskId) return;
+      const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
+      if (!completed) return;
+      const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
+      if (nextIndex >= 0) ctx.startTask(nextIndex);
     });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {
       const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;

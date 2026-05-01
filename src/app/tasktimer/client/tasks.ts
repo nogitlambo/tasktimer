@@ -1,6 +1,7 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
+import { normalizeTaskColor } from "../lib/taskColors";
 import { createDefaultHistoryManagerManualDraft, parseHistoryManagerManualDraft, type HistoryManagerManualDraft } from "./history-manager-shared";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
@@ -257,6 +258,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       const elapsedSec = elapsedMs / 1000;
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
       const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
+      const taskColor = normalizeTaskColor(t.color);
+      const taskColorPillHtml = taskColor
+        ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${ctx.escapeHtmlUI(taskColor)}"></span>`
+        : "";
       const msSorted = hasMilestones ? ctx.sortMilestones(t.milestones) : [];
       const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
 
@@ -340,6 +345,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
                 : ""
             }
+            ${taskColorPillHtml}
             <div class="row">
               <div class="taskHeadMain"><div class="name" data-action="editName" title="Open focus mode">${ctx.escapeHtmlUI(t.name)}</div></div>
               <div class="time" data-action="focus" title="Open focus mode">${ctx.formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>

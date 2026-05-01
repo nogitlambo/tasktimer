@@ -4872,6 +4872,18 @@ body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch A
   border-color: rgba(219,255,79,.18);
   background: rgba(18,24,7,.76);
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressFill{
+  background: #c9ff24 !important;
+  box-shadow: 0 0 18px rgba(201,255,36,.2);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSegmentedBar > #dashboardStreakBarFill,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSegmentedBar > #dashboardTodayHoursProgressFill,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSegmentedBar > #dashboardWeeklyGoalsProgressFill{
+  background: #c9ff24 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(243,255,186,.16),
+    0 0 18px rgba(201,255,36,.2);
+}
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumBand{
   background:
     linear-gradient(90deg, rgba(90,110,18,.95) 0%, rgba(183,223,29,.95) 45%, rgba(243,255,122,.95) 100%) !important;
@@ -5532,8 +5544,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 4px 0 0 !important;
   max-height: none !important;
   min-height: 0 !important;
-  font-size: 14px !important;
-  line-height: 1.4 !important;
+  font-size: 11px !important;
+  line-height: 1.22 !important;
   overflow: visible !important;
 }
 
@@ -5684,6 +5696,13 @@ body[data-control-style="parallelogram"] .rewardSegmentedBarFill {
     #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
     transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
   ) !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .rewardSegmentedBarFill {
+  background: #c9ff24 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 255, 186, 0.16),
+    0 0 18px rgba(201, 255, 36, 0.2);
 }
 
 .rewardSegmentedBarSegment {
@@ -6815,8 +6834,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 /* Dashboard momentum footer responsive ownership. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
-    font-size: 14px !important;
-    line-height: 1.4 !important;
+    font-size: 11px !important;
+    line-height: 1.22 !important;
     max-height: none !important;
     overflow: visible !important;
   }

@@ -449,6 +449,53 @@ describe("schedule-runtime", () => {
     expect(gridHtml).not.toContain("isEarliestScheduledTask");
   });
 
+  it("fills the Daily badge with a selected task color", () => {
+    const tasks = [
+      makeTask({
+        id: "task-a",
+        plannedStartDay: null,
+        plannedStartTime: "09:00",
+        plannedStartByDay: {
+          mon: "09:00",
+          tue: "09:00",
+          wed: "09:00",
+          thu: "09:00",
+          fri: "09:00",
+          sat: "09:00",
+          sun: "09:00",
+        },
+        color: "#f59e0b",
+      }),
+      makeTask({
+        id: "task-b",
+        plannedStartDay: null,
+        plannedStartTime: "11:00",
+        plannedStartByDay: {
+          mon: "11:00",
+          tue: "11:00",
+          wed: "11:00",
+          thu: "11:00",
+          fri: "11:00",
+          sat: "11:00",
+          sun: "11:00",
+        },
+        color: null,
+      }),
+    ];
+    const runtime = createTaskTimerScheduleRuntime({
+      state: makeScheduleState(),
+      getTasks: () => tasks,
+      save: vi.fn(),
+      render: vi.fn(),
+    });
+
+    const gridHtml = buildTaskTimerScheduleGridHtml(createRenderContext(makeScheduleState(), runtime));
+
+    expect(gridHtml).toContain('class="scheduleTaskCardRecurringBadge hasTaskColor" style="--task-color:#f59e0b"');
+    expect(gridHtml).toContain(">Daily</span>");
+    expect(gridHtml).toContain('class="scheduleTaskCardRecurringBadge" aria-label="Repeats daily">Daily</span>');
+  });
+
   it("keeps scheduled flexible tasks on the planner and unscheduled flexible tasks in the tray", () => {
     const tasks = [
       makeTask({

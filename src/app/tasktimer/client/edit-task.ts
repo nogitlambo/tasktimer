@@ -9,6 +9,9 @@ import {
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
 import {
+  findNextAvailableScheduleSlot,
+  findScheduleOverlap,
+  formatScheduleSlotSuggestion,
   getTaskScheduledDays,
   hasTaskMixedScheduleTimes,
   hasTaskScheduledSlots,
@@ -20,6 +23,7 @@ import {
   type ScheduleDay,
   syncLegacyPlannedStartFields,
 } from "../lib/schedule-placement";
+import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerEditTaskContext } from "./context";
 import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from "./planned-start";
 
@@ -86,6 +90,30 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
   task.plannedStartByDay = null;
   task.plannedStartTime = normalizedPlannedStartTime;
   syncLegacyPlannedStartFields(task);
+}
+
+export function getEditTimeGoalSaveFields(
+  taskType: Task["taskType"],
+  value: number,
+  unit: "minute" | "hour",
+  period: "day" | "week"
+) {
+  const safeValue = Math.max(0, Number(value) || 0);
+  const timeGoalPeriod = taskType === "once-off" ? "day" : period;
+  const timeGoalMinutes =
+    taskType === "once-off"
+      ? unit === "minute"
+        ? safeValue
+        : safeValue * 60
+      : unit === "minute"
+        ? period === "day"
+          ? safeValue
+          : safeValue * 7
+        : period === "day"
+          ? safeValue * 60
+          : safeValue * 60 * 7;
+
+  return { timeGoalPeriod, timeGoalMinutes };
 }
 
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
@@ -574,6 +602,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
   }
 
+  function formatPlannedStartOverlapMessage(tasks: Task[], candidate: Task, excludeTaskId: string) {
+    const baseMessage = "This planned start overlaps another scheduled task.";
+    const suggestion = findNextAvailableScheduleSlot(tasks, candidate, { excludeTaskId });
+    return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
+  }
+
   function setMilestoneUnitUi(unit: "hour" | "minute") {
     els.elapsedPadUnitHourBtn?.classList.toggle("isOn", unit === "hour");
     els.elapsedPadUnitMinuteBtn?.classList.toggle("isOn", unit === "minute");
@@ -583,9 +617,33 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return false;
   }
 
+  function syncEditTaskColorPalette(t?: Task | null) {
+    const selectedColor = normalizeTaskColor(t?.color);
+    if (els.editTaskColorTrigger) {
+      els.editTaskColorTrigger.classList.toggle("editTaskColorSwatchNone", !selectedColor);
+      els.editTaskColorTrigger.style.setProperty("--task-color", selectedColor || "rgba(255,255,255,.18)");
+    }
+    const palette = els.editTaskColorPalette;
+    if (!palette) return;
+    Array.from(palette.querySelectorAll<HTMLElement>("[data-task-color]")).forEach((button) => {
+      const buttonColor = normalizeTaskColor(button.dataset.taskColor);
+      const isSelected = buttonColor === selectedColor;
+      button.classList.toggle("isSelected", isSelected);
+      button.setAttribute("aria-checked", String(isSelected));
+    });
+  }
+
+  function setEditTaskColorPopoverOpen(open: boolean) {
+    if (els.editTaskColorPopover instanceof HTMLElement) {
+      els.editTaskColorPopover.style.display = open ? "flex" : "none";
+    }
+    els.editTaskColorTrigger?.setAttribute("aria-expanded", String(open));
+  }
+
   function cloneTaskForEdit(task: Task): Task {
     return {
       ...task,
+      color: normalizeTaskColor(task.color),
       plannedStartByDay: task.plannedStartByDay ? { ...task.plannedStartByDay } : null,
       milestones: Array.isArray(task.milestones)
         ? task.milestones.map((milestone) => ({
@@ -646,6 +704,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function finalizeEditSave(sourceTask: Task, t: Task) {
     const timeGoalEnabledForSave = ctx.isEditTimeGoalEnabled();
+    t.color = normalizeTaskColor(t.color);
     const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
     t.checkpointSoundEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
     t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
@@ -657,12 +716,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (!t.timeGoalEnabled) t.milestonesEnabled = false;
     t.timeGoalValue = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
     t.timeGoalUnit = ctx.getEditTaskDurationUnit();
-    t.timeGoalPeriod = t.taskType === "once-off" ? "week" : ctx.getEditTaskDurationPeriod();
-    t.timeGoalMinutes = t.taskType === "once-off"
-      ? t.timeGoalUnit === "minute"
-        ? t.timeGoalValue
-        : t.timeGoalValue * 60
-      : ctx.getEditTaskTimeGoalMinutesFor(t.timeGoalValue, t.timeGoalUnit, t.timeGoalPeriod);
+    const timeGoalSaveFields = getEditTimeGoalSaveFields(
+      t.taskType,
+      t.timeGoalValue,
+      t.timeGoalUnit,
+      ctx.getEditTaskDurationPeriod()
+    );
+    t.timeGoalPeriod = timeGoalSaveFields.timeGoalPeriod;
+    t.timeGoalMinutes = timeGoalSaveFields.timeGoalMinutes;
     t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
     if (t.taskType === "once-off") {
       const onceOffDay = String(els.editTaskOnceOffDaySelect?.value || t.onceOffDay || t.plannedStartDay || "mon").trim().toLowerCase() as ScheduleDay;
@@ -680,11 +741,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
+    const sourceTaskId = String(sourceTask.id || "");
+    if (findScheduleOverlap(ctx.getTasks(), t, { excludeTaskId: sourceTaskId })) {
+      ctx.syncEditSaveAvailability(t);
+      ctx.showEditValidationError(t, formatPlannedStartOverlapMessage(ctx.getTasks(), t, sourceTaskId));
+      return false;
+    }
     delete (t as Task & { mode?: string }).mode;
     Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
+    return true;
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
@@ -784,6 +852,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       name: String(els.editName?.value || task.name || "").trim(),
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
       plannedStartOpenEnded: !!task.plannedStartOpenEnded,
+      color: normalizeTaskColor(task.color),
       plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
       timeGoalEnabled: isEditTimeGoalEnabled(),
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
@@ -988,6 +1057,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editName) els.editName.value = t.name || "";
     if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
     syncEditTaskTypeUi(t);
+    syncEditTaskColorPalette(t);
     syncEditPlannedStartSelectors(t);
     ctx.setEditTimeGoalEnabled(!!t.timeGoalEnabled);
     if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
@@ -1052,6 +1122,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         const sharedTime = readEditPlannedStartValueFromSelectors();
         const scheduledDays = getTaskScheduledDays(sourceTask);
         if (scheduledDays.length > 1) {
+          els.confirmOverlay?.classList.add("isApplySharedScheduleConfirm");
           return void ctx.confirm(
             "Apply Shared Schedule",
             `Flexible is off, so this task will use the same planned start time on each scheduled day. Apply ${sharedTime} to all scheduled days?`,
@@ -1067,7 +1138,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
                 t.plannedStartTime = sharedTime;
                 syncLegacyPlannedStartFields(t, nextByDay);
                 ctx.closeConfirm();
-                finalizeEditSave(sourceTask, t);
+                if (!finalizeEditSave(sourceTask, t)) return;
                 hideEditOverlay();
                 ctx.clearEditValidationState();
                 closeElapsedPad(false);
@@ -1080,9 +1151,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
           );
         }
       }
-      finalizeEditSave(sourceTask, t);
+      if (!finalizeEditSave(sourceTask, t)) return;
     }
     hideEditOverlay();
+    setEditTaskColorPopoverOpen(false);
     ctx.clearEditValidationState();
     closeElapsedPad(false);
     ctx.setEditIndex(null);
@@ -1153,6 +1225,23 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       closeEdit(true);
     });
     ctx.on(els.editName, "input", handleEditNameInput);
+    ctx.on(els.editTaskColorTrigger, "click", (event: any) => {
+      event?.preventDefault?.();
+      const isOpen = els.editTaskColorPopover instanceof HTMLElement && els.editTaskColorPopover.style.display === "flex";
+      setEditTaskColorPopoverOpen(!isOpen);
+    });
+    ctx.on(els.editTaskColorPopover, "click", (event: any) => {
+      if (event?.target === els.editTaskColorPopover) setEditTaskColorPopoverOpen(false);
+    });
+    ctx.on(els.editTaskColorPalette, "click", (event: any) => {
+      const button = (event?.target as HTMLElement | null)?.closest?.("[data-task-color]") as HTMLElement | null;
+      const t = getCurrentEditTask();
+      if (!button || !t || !els.editTaskColorPalette?.contains(button)) return;
+      t.color = normalizeTaskColor(button.dataset.taskColor);
+      syncEditTaskColorPalette(t);
+      syncEditSaveAvailability(t);
+      setEditTaskColorPopoverOpen(false);
+    });
     ctx.on(els.editTaskTypeRecurringBtn, "click", () => {
       const t = getCurrentEditTask();
       if (!t || t.taskType === "recurring") return;

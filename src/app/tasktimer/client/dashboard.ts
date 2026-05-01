@@ -1,5 +1,5 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions, DashboardTimelineDensity } from "./types";
+import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions } from "./types";
 import {
   ONBOARDING_DASHBOARD_CLICK_EVENT,
   readOnboardingDashboardPanelStepForCurrentSession,
@@ -11,7 +11,6 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
-  const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
   const DASHBOARD_PANEL_REGISTRY = [
     { panelId: "xp-progress", label: "XP Progress" },
     { panelId: "week-hours", label: "Today" },
@@ -19,7 +18,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     { panelId: "tasks-completed", label: "Tasks Completed" },
     { panelId: "momentum", label: "Momentum" },
     { panelId: "avg-session-by-task", label: "Avg Session by Task" },
-    { panelId: "timeline", label: "Timeline" },
     { panelId: "heatmap", label: "Focus Heatmap" },
   ] as const;
 
@@ -45,12 +43,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return "past7";
   }
 
-  function sanitizeDashboardTimelineDensity(value: unknown): DashboardTimelineDensity {
-    const raw = String(value || "").trim();
-    if (raw === "low" || raw === "high") return raw;
-    return "medium";
-  }
-
   function isQuarterDefaultDashboardCard(cardId: string) {
     return (
       cardId === "xp-progress" ||
@@ -64,8 +56,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return cardId === "momentum" || cardId === "avg-session-by-task" || cardId === "heatmap";
   }
 
-  function isFixedFullWidthDashboardCard(cardId: string) {
-    return cardId === "timeline";
+  function isFixedFullWidthDashboardCard(_cardId: string) {
+    return false;
   }
 
   function isFixedHalfWidthDashboardCard(cardId: string) {
@@ -80,7 +72,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return (
       cardId === "momentum" ||
       cardId === "avg-session-by-task" ||
-      cardId === "timeline" ||
       cardId === "heatmap"
     );
   }
@@ -92,7 +83,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function getDashboardLockedFeatureLabel(cardId: string) {
     if (cardId === "momentum") return "Momentum insights";
     if (cardId === "avg-session-by-task") return "Average session insights";
-    if (cardId === "timeline") return "Timeline insights";
     if (cardId === "heatmap") return "Focus heatmap insights";
     return "Advanced insights";
   }
@@ -276,7 +266,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const widgets =
       dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
     ctx.setDashboardAvgRange(sanitizeDashboardAvgRange((widgets as any).avgSessionByTaskRange));
-    ctx.setDashboardTimelineDensity(sanitizeDashboardTimelineDensity((widgets as any).timelineDensity));
     const nextSizes: Record<string, DashboardCardSize> = {};
     const rawSizes = (widgets as any).cardSizes;
     if (rawSizes && typeof rawSizes === "object") {
@@ -303,13 +292,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.setDashboardAvgRange(sanitizeDashboardAvgRange(range));
     saveDashboardWidgetState({
       avgSessionByTaskRange: ctx.getDashboardAvgRange(),
-    });
-  }
-
-  function saveDashboardTimelineDensity(value: DashboardTimelineDensity) {
-    ctx.setDashboardTimelineDensity(sanitizeDashboardTimelineDensity(value));
-    saveDashboardWidgetState({
-      timelineDensity: ctx.getDashboardTimelineDensity(),
     });
   }
 
@@ -608,25 +590,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       applyDashboardCardSizes();
       closeDashboardCardSizeMenus();
       if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
-      e.preventDefault();
-      return;
-    }
-    const densityBtn = e.target?.closest?.("[data-dashboard-timeline-density]") as HTMLElement | null;
-    if (densityBtn) {
-      const nextDensity = sanitizeDashboardTimelineDensity(densityBtn.getAttribute("data-dashboard-timeline-density"));
-      if (nextDensity !== ctx.getDashboardTimelineDensity()) saveDashboardTimelineDensity(nextDensity);
-      ctx.renderDashboardTimelineCard();
-      e.preventDefault();
-      return;
-    }
-    const timelineMarkerBtn = e.target?.closest?.("[data-dashboard-timeline-key]") as HTMLElement | null;
-    if (timelineMarkerBtn) {
-      const suggestionKey = String(timelineMarkerBtn.getAttribute("data-dashboard-timeline-key") || "").trim();
-      ctx.selectDashboardTimelineSuggestion(suggestionKey || null);
-      const message = String(timelineMarkerBtn.getAttribute("data-dashboard-timeline-message") || "").trim();
-      if (typeof window !== "undefined" && message) {
-        window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message } }));
-      }
       e.preventDefault();
       return;
     }

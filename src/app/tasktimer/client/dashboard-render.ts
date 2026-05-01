@@ -120,7 +120,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           };
         })();
     if (valueEl) valueEl.textContent = `${rewardsHeader.totalXp} XP`;
-    if (progressFillEl) progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+    if (progressFillEl) {
+      progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+      progressFillEl.style.setProperty("background", "#c9ff24", "important");
+    }
     if (progressBarEl) {
       progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
       progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
@@ -2347,7 +2350,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
-    renderDashboardTimelineCard();
     renderDashboardFocusTrend();
     if (opts?.includeAvgSession !== false) renderDashboardAvgSessionChart();
     renderDashboardHeatCalendar();

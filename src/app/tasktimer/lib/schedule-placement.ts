@@ -4,6 +4,16 @@ export const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "su
 
 export type ScheduleDay = (typeof SCHEDULE_DAY_ORDER)[number];
 
+const SCHEDULE_DAY_LABELS: Record<ScheduleDay, string> = {
+  mon: "Mon",
+  tue: "Tue",
+  wed: "Wed",
+  thu: "Thu",
+  fri: "Fri",
+  sat: "Sat",
+  sun: "Sun",
+};
+
 function normalizeScheduleDayValue(raw: unknown): ScheduleDay | null {
   const value = String(raw || "").trim().toLowerCase();
   return SCHEDULE_DAY_ORDER.includes(value as ScheduleDay) ? (value as ScheduleDay) : null;
@@ -44,6 +54,34 @@ export function normalizeScheduleStoredTime(raw: unknown): string | null {
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function parseScheduleTimeMinutes(raw: unknown): number | null {
+  const normalized = normalizeScheduleStoredTime(raw);
+  if (!normalized) return null;
+  const [hoursRaw, minutesRaw] = normalized.split(":");
+  const hours = Number(hoursRaw || 0);
+  const minutes = Number(minutesRaw || 0);
+  return hours * 60 + minutes;
+}
+
+export function formatScheduleSlotTime(totalMinutes: number) {
+  const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
+  const hours24 = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  const meridiem = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${String(minutes).padStart(2, "0")} ${meridiem}`;
+}
+
+export function formatScheduleDayLabel(day: ScheduleDay) {
+  return SCHEDULE_DAY_LABELS[day] || day;
+}
+
+export function formatScheduleSlotSuggestion(slot: NextAvailableScheduleSlotResult) {
+  const dayLabels = slot.days.map(formatScheduleDayLabel);
+  const dayText = dayLabels.length === 1 ? dayLabels[0] : dayLabels.join(", ");
+  return `Next available slot: ${formatScheduleSlotTime(slot.startMinutes)} on ${dayText}.`;
 }
 
 export function normalizeTaskPlannedStartByDay(raw: unknown): TaskPlannedStartByDay | null {
@@ -107,6 +145,202 @@ export function isRecurringDailyScheduleTask(task: Task): boolean {
 
 export function canNormalizeTaskSchedule(task: Task): boolean {
   return hasTaskMixedScheduleTimes(task);
+}
+
+export function getScheduleTaskDurationMinutes(task: Task): number {
+  const goalMinutes = Number(task.timeGoalMinutes || 0);
+  const hasScheduledDuration =
+    !!task.timeGoalEnabled &&
+    goalMinutes > 0 &&
+    (task.taskType === "once-off" || task.timeGoalPeriod === "day");
+  if (!hasScheduledDuration) return 0;
+  return Math.min(24 * 60, Math.max(15, Math.round(goalMinutes)));
+}
+
+export type NextScheduledTaskResult = {
+  task: Task;
+  index: number;
+  day: ScheduleDay;
+  startMinutes: number;
+};
+
+export function getLocalScheduleDay(nowDate = new Date()): ScheduleDay {
+  const day = nowDate.getDay();
+  if (day === 0) return "sun";
+  return SCHEDULE_DAY_ORDER[day - 1] || "mon";
+}
+
+export function getLocalScheduleMinutes(nowDate = new Date()): number {
+  return nowDate.getHours() * 60 + nowDate.getMinutes();
+}
+
+export function findNextScheduledTaskAfterLocalTime(
+  tasks: Task[],
+  options?: { excludeTaskId?: string | null; nowDate?: Date }
+): NextScheduledTaskResult | null {
+  const nowDate = options?.nowDate || new Date();
+  const today = getLocalScheduleDay(nowDate);
+  const currentMinutes = getLocalScheduleMinutes(nowDate);
+  const excludeTaskId = String(options?.excludeTaskId || "").trim();
+  const candidates = tasks.flatMap((task, index) => {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId || taskId === excludeTaskId || task.running) return [];
+    return getTaskScheduledDayEntries(task)
+      .filter((entry) => entry.day === today)
+      .flatMap((entry) => {
+        const startMinutes = parseScheduleTimeMinutes(entry.time);
+        if (startMinutes == null || startMinutes <= currentMinutes) return [];
+        return [{ task, index, day: entry.day, startMinutes }];
+      });
+  });
+
+  candidates.sort((a, b) => {
+    if (a.startMinutes !== b.startMinutes) return a.startMinutes - b.startMinutes;
+    return (a.task.order ?? a.index) - (b.task.order ?? b.index);
+  });
+
+  return candidates[0] || null;
+}
+
+export type ScheduleOverlapResult = {
+  day: ScheduleDay;
+  task: Task | null;
+};
+
+export type NextAvailableScheduleSlotResult = {
+  day: ScheduleDay;
+  days: ScheduleDay[];
+  startMinutes: number;
+};
+
+const SCHEDULE_SUGGESTION_STEP_MINUTES = 5;
+
+function snapScheduleSuggestionStartMinutes(totalMinutes: number) {
+  const safeMinutes = Math.max(0, Math.floor(Number(totalMinutes) || 0));
+  return Math.ceil(safeMinutes / SCHEDULE_SUGGESTION_STEP_MINUTES) * SCHEDULE_SUGGESTION_STEP_MINUTES;
+}
+
+function getBusyScheduleIntervalsForDay(tasks: Task[], day: ScheduleDay, excludeTaskId: string) {
+  const intervals: Array<{ startMinutes: number; endMinutes: number }> = [];
+  for (const task of tasks) {
+    const taskId = String(task.id || "").trim();
+    if (excludeTaskId && taskId === excludeTaskId) continue;
+    const taskDurationMinutes = getScheduleTaskDurationMinutes(task);
+    if (!(taskDurationMinutes > 0)) continue;
+
+    for (const taskEntry of getTaskScheduledDayEntries(task)) {
+      if (taskEntry.day !== day) continue;
+      const startMinutes = parseScheduleTimeMinutes(taskEntry.time);
+      if (startMinutes == null) continue;
+      const endMinutes = startMinutes + taskDurationMinutes;
+      if (endMinutes > 24 * 60) continue;
+      intervals.push({ startMinutes, endMinutes });
+    }
+  }
+  return intervals.sort((a, b) => a.startMinutes - b.startMinutes);
+}
+
+function scheduleSlotFits(
+  busyByDay: Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>,
+  days: ScheduleDay[],
+  startMinutes: number,
+  durationMinutes: number
+) {
+  const endMinutes = startMinutes + durationMinutes;
+  if (endMinutes > 24 * 60) return false;
+  return days.every((day) => {
+    const intervals = busyByDay.get(day) || [];
+    return intervals.every((interval) => startMinutes >= interval.endMinutes || endMinutes <= interval.startMinutes);
+  });
+}
+
+function getFirstConflictingScheduleDay(tasks: Task[], candidate: Task, options?: { excludeTaskId?: string | null }) {
+  const overlap = findScheduleOverlap(tasks, candidate, options);
+  if (overlap) return overlap.day;
+  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
+  if (!(candidateDurationMinutes > 0)) return null;
+  for (const entry of getTaskScheduledDayEntries(candidate)) {
+    const startMinutes = parseScheduleTimeMinutes(entry.time);
+    if (startMinutes != null && startMinutes + candidateDurationMinutes > 24 * 60) return entry.day;
+  }
+  return null;
+}
+
+export function findNextAvailableScheduleSlot(
+  tasks: Task[],
+  candidate: Task,
+  options?: { excludeTaskId?: string | null }
+): NextAvailableScheduleSlotResult | null {
+  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
+  if (!(candidateDurationMinutes > 0)) return null;
+
+  const scheduledEntries = getTaskScheduledDayEntries(candidate)
+    .map((entry) => ({ ...entry, startMinutes: parseScheduleTimeMinutes(entry.time) }))
+    .filter((entry): entry is { day: ScheduleDay; time: string; startMinutes: number } => entry.startMinutes != null);
+  if (scheduledEntries.length === 0) return null;
+
+  const uniqueTimes = Array.from(new Set(scheduledEntries.map((entry) => entry.time)));
+  const conflictingDay = getFirstConflictingScheduleDay(tasks, candidate, options);
+  const suggestionEntries =
+    scheduledEntries.length > 1 && uniqueTimes.length === 1
+      ? scheduledEntries
+      : scheduledEntries.filter((entry) => entry.day === conflictingDay);
+  const effectiveEntries = suggestionEntries.length > 0 ? suggestionEntries : [scheduledEntries[0]!];
+  const days = effectiveEntries.map((entry) => entry.day);
+  const searchStartMinutes = snapScheduleSuggestionStartMinutes(Math.min(...effectiveEntries.map((entry) => entry.startMinutes)));
+  const excludeTaskId = String(options?.excludeTaskId || "").trim();
+  const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
+  days.forEach((day) => busyByDay.set(day, getBusyScheduleIntervalsForDay(tasks, day, excludeTaskId)));
+
+  for (
+    let startMinutes = searchStartMinutes;
+    startMinutes + candidateDurationMinutes <= 24 * 60;
+    startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
+  ) {
+    if (scheduleSlotFits(busyByDay, days, startMinutes, candidateDurationMinutes)) {
+      return { day: days[0]!, days, startMinutes };
+    }
+  }
+
+  return null;
+}
+
+export function findScheduleOverlap(
+  tasks: Task[],
+  candidate: Task,
+  options?: { excludeTaskId?: string | null }
+): ScheduleOverlapResult | null {
+  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
+  if (!(candidateDurationMinutes > 0)) return null;
+
+  const excludeTaskId = String(options?.excludeTaskId || "").trim();
+  const scheduledEntries = getTaskScheduledDayEntries(candidate);
+  for (const candidateEntry of scheduledEntries) {
+    const candidateStartMinutes = parseScheduleTimeMinutes(candidateEntry.time);
+    if (candidateStartMinutes == null) continue;
+    const candidateEndMinutes = candidateStartMinutes + candidateDurationMinutes;
+    if (candidateEndMinutes > 24 * 60) return { day: candidateEntry.day, task: null };
+
+    for (const task of tasks) {
+      const taskId = String(task.id || "").trim();
+      if (excludeTaskId && taskId === excludeTaskId) continue;
+      const taskDurationMinutes = getScheduleTaskDurationMinutes(task);
+      if (!(taskDurationMinutes > 0)) continue;
+
+      for (const taskEntry of getTaskScheduledDayEntries(task)) {
+        if (taskEntry.day !== candidateEntry.day) continue;
+        const taskStartMinutes = parseScheduleTimeMinutes(taskEntry.time);
+        if (taskStartMinutes == null) continue;
+        const taskEndMinutes = taskStartMinutes + taskDurationMinutes;
+        if (taskEndMinutes > 24 * 60) continue;
+        if (candidateStartMinutes < taskEndMinutes && candidateEndMinutes > taskStartMinutes) {
+          return { day: candidateEntry.day, task };
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getSchedulePlacementDays(task: Task, dropDay: ScheduleDay, sourceDay?: ScheduleDay | null): ScheduleDay[] {

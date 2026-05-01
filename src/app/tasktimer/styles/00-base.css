@@ -149,8 +149,9 @@ body[data-app-page="leaderboard"] #modeSwitch{
 }
 .appFooterBtn.isOn{
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
-  border-color: rgba(53,232,255,.55);
-  box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 10px rgba(0,220,255,.22);
+  border-color: transparent;
+  border-bottom-color: rgba(53,232,255,.7);
+  box-shadow: inset 0 -2px 0 rgba(53,232,255,.7);
 }
 .appFooterBtn.isOn .appFooterLabel{
   color: rgba(142,242,255,.98);
@@ -173,7 +174,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   font-weight:700;
   letter-spacing:.06em;
   text-transform:uppercase;
-  color: rgba(63,233,255,.95);
+  color:#c9ff24;
   text-shadow: 0 0 8px rgba(0,220,255,.5);
   line-height:1;
 }
@@ -1262,9 +1263,10 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .focusDialWrap{
   display:flex;
   justify-content:center;
-  align-items:flex-start;
+  align-items:center;
   min-height: 0;
-  padding:28px 8px 64px;
+  grid-area: focusDial;
+  padding:0 8px 32px;
 }
 .focusDialPanel{
   display:flex;
@@ -1277,10 +1279,23 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:10px;
-  margin: 16px 0 30px;
+  gap:0;
+  grid-area: focusControls;
+  align-self:center;
+  min-height:0;
+  width:100%;
+  max-width:620px;
+  margin:0;
   position:relative;
   z-index:2;
+}
+#focusModeBackBtn{
+  border-color: rgba(180,188,198,.34);
+  box-shadow:none;
+}
+#focusModeBackBtn:hover,
+#focusModeBackBtn:focus-visible{
+  border-color: rgba(210,216,224,.48);
 }
 .focusCheckpointToggleRow{
   display:flex;
@@ -1384,7 +1399,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusDial{
   position:relative;
-  width:min(73.8vw, 468px);
+  width:min(33.75vw, 40.5dvh, 351px);
   aspect-ratio:1/1;
   border-radius:50%;
   container-type: inline-size;
@@ -1426,6 +1441,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .focusDial.isStopped .focusDialOuter{
   border-color: rgba(255,77,77,.95);
   box-shadow: 0 0 14px rgba(255,77,77,.72), 0 0 42px rgba(255,77,77,.42);
+}
+.focusDial.isStopped .focusDialTime,
+.focusDial.isStopped .focusDialDays{
+  color:#ff4d4d;
+  text-shadow: 0 0 1px rgba(255,145,145,.95), 0 0 4px rgba(255,77,77,.7), 0 0 8px rgba(255,40,40,.45);
 }
 @keyframes focusDialPulseGlow{
   0%, 100%{
@@ -1575,30 +1595,36 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusDialCenter{
   position:absolute;
-  inset:0;
+  inset: calc(var(--focus-inner-inset) + 8px);
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:clamp(3px, 1.3cqw, 8px);
+  min-width:0;
+  overflow:hidden;
 }
 .focusDialControls{
-  margin-top:8px;
+  margin-top:clamp(2px, 1.2cqw, 8px);
   display:flex;
   align-items:center;
   justify-content:center;
   gap:6px;
-  min-height:34px;
+  min-height:clamp(18px, 7cqw, 34px);
+  max-width:100%;
 }
 .focusDialHint{
   color: rgba(204,242,255,.9);
   font-family: var(--font-tight);
-  font-size: clamp(11px, 2.6cqw, 16px);
+  font-size: clamp(8px, 2.25cqw, 14px);
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
   text-align:center;
   white-space: nowrap;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 #focusResetBtn{
   min-width:0;
@@ -1612,20 +1638,23 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusInsights,
 .focusSessionNotes{
-  width:min(82vw, 620px);
-  margin: 22px auto 0;
+  width:100%;
+  margin: 0 auto;
   padding: 14px 16px;
   border:1px solid rgba(255,255,255,.08);
-  background:
-    radial-gradient(140% 140% at 20% 0%, rgba(74,196,255,.10), rgba(0,0,0,0) 34%),
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
-    #0d0f13;
+  background:#0d0f13;
   box-shadow:
     0 18px 34px rgba(0,0,0,.32),
     inset 0 0 0 1px rgba(255,255,255,.03),
     inset 0 1px 0 rgba(255,255,255,.04);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+.focusInsights{
+  grid-area: focusStats;
+  align-self:start;
+  max-height:100%;
+  overflow:hidden;
 }
 .focusInsightsTitle{
   margin-bottom:8px;
@@ -1672,7 +1701,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color: rgba(230,245,255,.96);
 }
 .focusSessionNotes{
-  margin-top: 2px;
+  margin-top: 0;
 }
 .focusSessionNotesSummary{
   list-style: none;
@@ -1720,8 +1749,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusSessionNotesInput{
   width: 100%;
-  min-height: 74px;
+  min-height: 38px;
+  max-height: 18dvh;
   resize: vertical;
+  font-size:12px;
+  line-height:1.35;
+  letter-spacing:.03em;
   background: rgba(255,255,255,.02) !important;
   background-color: rgba(255,255,255,.02) !important;
   background-image: none !important;
@@ -1805,8 +1838,9 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   }
 }
 .focusTaskTitle{
-  margin-top:12px;
-  margin-bottom:30px;
+  grid-area: focusTitle;
+  min-width:0;
+  margin:0;
   text-align:center;
   font-family:var(--font-tight);
   font-size:clamp(14px, 1.8vw, 20px);
@@ -1814,34 +1848,39 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   color: rgba(63,233,255,.95);
   text-shadow: 0 0 8px rgba(0,220,255,.8);
   text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .focusDialTime{
   font-family: var(--font-orbitron);
-  font-size:clamp(22px, 10.5cqw, 56px);
+  font-size:clamp(14px, 8.2cqw, 42px);
   font-weight:700;
-  letter-spacing:.06em;
+  letter-spacing:.035em;
   color:#46f4ff;
   text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
   font-variant-numeric: tabular-nums;
   line-height:1;
-  max-width: calc(100% - (var(--focus-inner-inset) * 2) - 12px);
+  max-width:100%;
   text-align:center;
   white-space:nowrap;
   overflow:hidden;
+  text-overflow:clip;
 }
 .focusDialDays{
   font-family: var(--font-orbitron);
-  font-size:clamp(14px, 4.8cqw, 24px);
+  font-size:clamp(10px, 3.4cqw, 18px);
   font-weight:700;
-  letter-spacing:.08em;
+  letter-spacing:.05em;
   color:#46f4ff;
   text-shadow: 0 0 1px rgba(110,255,255,.95), 0 0 4px rgba(0,210,255,.7), 0 0 8px rgba(0,150,255,.45);
   filter: saturate(1.12);
   text-transform:uppercase;
-  max-width: calc(100% - (var(--focus-inner-inset) * 2) - 12px);
+  max-width:100%;
   white-space:nowrap;
   overflow:hidden;
+  text-overflow:clip;
   text-align:center;
 }
 #focusModeScreen{
@@ -1850,28 +1889,50 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   inset:0;
   z-index:1300;
   isolation:isolate;
-  overflow-y:auto;
+  overflow:hidden;
   overflow-x:hidden;
-  -webkit-overflow-scrolling: touch;
   padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
     calc(16px + var(--safe-left));
   background: #000;
+}
+body.isFocusModeOpen #focusModeScreen{
+  display:grid !important;
+  grid-template-columns:minmax(0, min(620px, 100%));
+  grid-template-rows:auto auto minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+  grid-template-areas:
+    "focusHead"
+    "focusTitle"
+    "focusDial"
+    "focusControls"
+    "focusStats";
+  justify-content:center;
+  align-content:start;
+  align-items:start;
+  gap:clamp(6px, 1.3dvh, 14px);
+  height:100dvh;
+  max-height:100dvh;
 }
 body.isFocusModeOpen{
   overflow:hidden;
 }
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar,
-body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail{
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
   opacity:0;
   visibility:hidden;
   pointer-events:none;
+}
+@media (max-width: 980px){
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display:none !important;
+  }
 }
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View > :not(#focusModeScreen){
   display:none !important;
 }
 #focusModeScreen::before{
-  content:"";
+  content:none;
   pointer-events:none;
   position:fixed;
   inset:0;
@@ -2257,9 +2318,10 @@ body[data-theme="purple"] .appFooterNav{
     rgba(11,6,20,.96);
 }
 body[data-theme="purple"] .appFooterBtn.isOn{
-  border-color: rgba(233,134,245,.58);
+  border-color: transparent;
+  border-bottom-color: rgba(233,134,245,.72);
   background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(176,56,202,.22));
-  box-shadow: 0 0 14px rgba(198,73,216,.22);
+  box-shadow: inset 0 -2px 0 rgba(233,134,245,.72);
 }
 body[data-theme="purple"] .friendIdentityProfileBtn:focus-visible{
   outline-color: rgba(233,134,245,.78) !important;
@@ -2297,8 +2359,10 @@ body[data-theme="purple"] .appFooterNav{
   border-top-color: rgba(214,96,229,.28) !important;
 }
 body[data-theme="purple"] .appFooterBtn.isOn{
-  border-color: rgba(233,134,245,.72) !important;
+  border-color: transparent !important;
+  border-bottom-color: rgba(233,134,245,.72) !important;
   background: rgba(217,85,231,.18) !important;
+  box-shadow: inset 0 -2px 0 rgba(233,134,245,.72) !important;
 }
 body[data-theme="purple"] select,
 body[data-theme="purple"] input[type="text"],
@@ -2398,9 +2462,10 @@ body[data-theme="lime"] .appFooterNav{
   background: rgba(18,20,24,.96);
 }
 body[data-theme="lime"] .appFooterBtn.isOn{
-  border-color: rgba(241,255,151,.72) !important;
+  border-color: transparent !important;
+  border-bottom-color: rgba(241,255,151,.72) !important;
   background: rgba(18,20,24,.96) !important;
-  box-shadow: none !important;
+  box-shadow: inset 0 -2px 0 rgba(241,255,151,.72) !important;
 }
 body[data-theme="lime"] select,
 body[data-theme="lime"] input[type="text"],
@@ -2679,8 +2744,125 @@ body[data-theme="lime"] .settingsNavItemIcon{
 }
 
 @media (max-width: 980px){
+  body.isFocusModeOpen #focusModeScreen{
+    grid-template-columns:minmax(0, min(620px, 100%));
+    gap:clamp(5px, 1.1dvh, 10px);
+  }
+
+  .focusDial{
+    width:min(58.5vw, 28.5dvh, 315px);
+  }
+
   .focusCheckpointLabelDesc{
     display:none;
+  }
+}
+
+@media (max-width: 760px){
+  body.isFocusModeOpen #focusModeScreen{
+    gap:clamp(5px, 1dvh, 10px) 8px;
+    padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
+      calc(8px + var(--safe-left));
+  }
+
+  .focusDialWrap{
+    padding:0 0 32px;
+  }
+
+  .focusDial{
+    width:min(58.5vw, 26.25dvh, 270px);
+  }
+
+  .focusCheckpointToggleTop,
+  .focusInsights{
+    align-self:start;
+  }
+
+  .focusCheckpointToggleTop{
+    gap:6px;
+  }
+
+  .focusCheckpointToggleRow{
+    gap:6px;
+    padding:2px 0;
+  }
+
+  .focusCheckpointToggleRow > span,
+  .focusInsightLabel,
+  .focusInsightValue{
+    font-size:clamp(9px, 2.8vw, 11px);
+  }
+
+  .focusInsights,
+  .focusSessionNotes{
+    padding:8px 9px;
+    clip-path:none;
+  }
+
+  .focusInsightsTitle{
+    margin-bottom:5px;
+    font-size:clamp(10px, 3vw, 12px);
+  }
+
+  .focusInsightRow{
+    gap:6px;
+    padding:3px 0;
+  }
+
+  .focusSessionNotesBody{
+    margin-top:6px;
+    gap:5px;
+  }
+
+  .focusSessionNotesInput{
+    min-height:38px;
+    max-height:12dvh;
+    resize:vertical;
+  }
+}
+
+@media (max-height: 680px){
+  #focusModeScreen{
+    padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom))
+      calc(10px + var(--safe-left));
+  }
+
+  .focusModeTitle{
+    font-size:clamp(16px, 3.5dvh, 22px);
+  }
+
+  .focusTaskTitle{
+    font-size:clamp(11px, 2.5dvh, 16px);
+  }
+
+  .focusDial{
+    width:min(55.5vw, 24dvh, 285px);
+  }
+
+  .focusInsights,
+  .focusSessionNotes{
+    padding:8px 10px;
+  }
+
+  .focusInsightsTitle{
+    margin-bottom:5px;
+    font-size:11px;
+  }
+
+  .focusInsightRow{
+    padding:3px 0;
+  }
+
+  .focusSessionNotesInput{
+    min-height:38px;
+    max-height:12dvh;
+    resize:vertical;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 680px){
+  .focusDial{
+    width:min(55.5vw, 22.5dvh, 240px);
   }
 }
 
@@ -2691,32 +2873,30 @@ body[data-theme="lime"] .settingsNavItemIcon{
   }
 
   .focusDialWrap{
-    padding:20px 4px 72px;
+    padding:0 0 32px;
   }
 
   .focusCheckpointToggleTop{
-    margin: 16px 0 28px;
+    margin: 0;
   }
 
   .focusTaskTitle{
-    margin-top:6px;
-    margin-bottom:16px;
     font-size:14px;
     letter-spacing:.1em;
   }
 
   .focusDialTime{
-    font-size:clamp(24px, 9vw, 36px);
+    font-size:clamp(13px, 7.4cqw, 28px);
   }
 
   .focusDialDays{
-    font-size:clamp(16px, 5vw, 22px);
+    font-size:clamp(9px, 3.1cqw, 15px);
   }
 
   .focusInsights,
   .focusSessionNotes{
     width:100%;
-    margin:20px auto 0;
+    margin:0 auto;
     padding:10px 10px;
   }
 
@@ -2742,7 +2922,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   }
 
   .focusSessionNotesInput{
-    min-height: 66px;
+    min-height: 38px;
   }
 }
 

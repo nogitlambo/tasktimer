@@ -6,6 +6,7 @@ import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
 } from "../lib/productivityPeriod";
+import { normalizeTaskColor } from "../lib/taskColors";
 import {
   createTaskTimerScheduleRuntime,
   formatScheduleDurationMinutes,
@@ -85,8 +86,10 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
           const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
           const recurringTask = isRecurringDailyScheduleTask(entry.task);
+          const recurringColor = recurringTask && !entry.task.plannedStartOpenEnded ? normalizeTaskColor(entry.task.color) : null;
+          const recurringColorStyle = recurringColor ? ` style="--task-color:${ctx.escapeHtmlUI(recurringColor)}"` : "";
           const recurringBadge = recurringTask
-            ? `<span class="scheduleTaskCardRecurringBadge" aria-label="${
+            ? `<span class="scheduleTaskCardRecurringBadge${recurringColor ? " hasTaskColor" : ""}"${recurringColorStyle} aria-label="${
                 entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
               }">${entry.task.plannedStartOpenEnded ? "Flex" : "Daily"}</span>`
             : "";

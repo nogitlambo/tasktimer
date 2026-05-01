@@ -44,18 +44,14 @@ export default function FocusModeScreen() {
         </div>
       </div>
       <div className="focusCheckpointToggleTop">
-        <div className="focusCheckpointToggleRow">
-          <span>Show Checkpoint Markers</span>
-          <button className="switch on" id="focusCheckpointToggle" type="button" role="switch" aria-checked="true" />
-        </div>
         <div className="focusSessionNotes" id="focusSessionNotesSection">
-          <div className="focusInsightsTitle">Notes for this session</div>
+          <div className="focusInsightsTitle">Session Notes</div>
           <div className="focusSessionNotesBody">
             <textarea
               className="text focusSessionNotesInput"
               id="focusSessionNotesInput"
-              rows={3}
-              aria-label="Notes for this session"
+              rows={1}
+              aria-label="Session Notes"
             />
             <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
           </div>

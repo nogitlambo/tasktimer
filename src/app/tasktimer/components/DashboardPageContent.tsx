@@ -10,7 +10,6 @@ const dashboardPanelOptions = [
   { id: "tasks-completed", label: "Completed" },
   { id: "momentum", label: "Momentum" },
   { id: "avg-session-by-task", label: "Avg Session by Task" },
-  { id: "timeline", label: "Timeline" },
   { id: "heatmap", label: "Focus Heatmap" },
 ] as const;
 
@@ -98,7 +97,7 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                       aria-valuemax={100}
                       aria-valuenow={Math.round(rewardsHeader.progressPct)}
                     >
-                      <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                      <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%`, background: "#c9ff24" }} />
                       <span className="rewardSegmentedBarTrack" aria-hidden="true">
                         <span className="rewardSegmentedBarSegment" />
                         <span className="rewardSegmentedBarSegment" />
@@ -316,20 +315,6 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                         <span id="dashboardAvgRangeMenuLabel">Past 7 Days</span>
                       </button>
                     </div>
-                  </section>
-
-                  <section className="dashboardCard dashboardTimelineCard" data-dashboard-id="timeline" aria-label="Today timeline">
-                    <div className="dashboardTimelineHeader">
-                      <div className="dashboardCardTitle">Timeline</div>
-                      <div className="dashboardTimelineDensity" role="group" aria-label="Timeline suggestion density">
-                        <button className="dashboardTimelineDensityBtn" type="button" data-dashboard-timeline-density="low" aria-pressed="false">Low</button>
-                        <button className="dashboardTimelineDensityBtn" type="button" data-dashboard-timeline-density="medium" aria-pressed="true">Medium</button>
-                        <button className="dashboardTimelineDensityBtn" type="button" data-dashboard-timeline-density="high" aria-pressed="false">High</button>
-                      </div>
-                    </div>
-                    <div className="dashboardTimelineNote" id="dashboardTimelineNote" aria-live="polite" />
-                    <div className="dashboardTimeline" id="dashboardTimelineList" aria-live="polite" role="group" aria-label="Suggested daily timeline" />
-                    <div className="dashboardTimelineSummary" id="dashboardTimelineSummary" aria-live="polite" />
                   </section>
 
                   <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">

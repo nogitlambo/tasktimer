@@ -1,6 +1,8 @@
 import type { Task } from "../lib/types";
 import {
+  findScheduleOverlap,
   getSchedulePlacementDays,
+  getScheduleTaskDurationMinutes,
   hasTaskScheduledSlots,
   getTaskPlannedStartByDay,
   getTaskScheduledDayEntries,
@@ -8,6 +10,7 @@ import {
   hasTaskMixedScheduleTimes,
   isRecurringDailyScheduleTask,
   normalizeTaskPlannedStartByDay,
+  parseScheduleTimeMinutes,
   SCHEDULE_DAY_ORDER,
   syncLegacyPlannedStartFields,
   type ScheduleDay,
@@ -69,15 +72,7 @@ export function isScheduleMobileLayout() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
 }
 
-export function parseScheduleTimeMinutes(raw: unknown): number | null {
-  const match = String(raw || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-  const hours = Number(match[1] || 0);
-  const minutes = Number(match[2] || 0);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
+export { parseScheduleTimeMinutes };
 
 export function formatScheduleMinutes(totalMinutes: number) {
   const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
@@ -114,13 +109,6 @@ export function snapScheduleMinutes(totalMinutes: number) {
     0,
     Math.min(24 * 60 - SCHEDULE_SNAP_MINUTES, Math.round(Math.max(0, totalMinutes) / SCHEDULE_SNAP_MINUTES) * SCHEDULE_SNAP_MINUTES)
   );
-}
-
-function getScheduleTaskDurationMinutes(task: Task) {
-  const hasGoal = !!task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0;
-  if (!hasGoal) return 0;
-  const goalMinutes = Math.max(SCHEDULE_SNAP_MINUTES, Math.round(Number(task.timeGoalMinutes || 0)));
-  return Math.min(24 * 60, goalMinutes);
 }
 
 export function isScheduleRenderableTask(task: Task) {
@@ -175,15 +163,14 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
   }
 
   function placementHasOverlap(taskId: string, day: ScheduleDay, startMinutes: number, durationMinutes: number) {
-    const endMinutes = startMinutes + durationMinutes;
-    if (endMinutes > 24 * 60) return true;
-    const { scheduled } = buildViewModel();
-    return scheduled.some((entry) => {
-      if (String(entry.task.id || "") === taskId) return false;
-      if (entry.day !== day) return false;
-      const entryEnd = entry.startMinutes + entry.durationMinutes;
-      return startMinutes < entryEnd && endMinutes > entry.startMinutes;
-    });
+    const candidate = {
+      id: taskId,
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: durationMinutes,
+      plannedStartByDay: { [day]: formatScheduleStoredTime(startMinutes) },
+    } as Task;
+    return !!findScheduleOverlap(options.getTasks(), candidate, { excludeTaskId: taskId });
   }
 
   function placementHasOverlapOnAnyDay(

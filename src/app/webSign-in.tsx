@@ -42,22 +42,13 @@ export default function WebSignIn(props: WebSignInProps) {
       <main className="webSignInPage relative min-h-screen overflow-hidden text-white">
         <div className="webSignInGrid" aria-hidden="true" />
         <div className="webSignInContainer">
-          <section className="webSignInLaunchPanel">
-            <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
-              <AppImg
-                src="/logo/launch-icon-white-transparent.svg"
-                alt=""
-                className="launchWordBrandIcon"
-              />
-              <span className="launchWordBrandText">TaskLaunch</span>
-            </div>
-            <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
-              <h2 className="sr-only">Launching TaskLaunch</h2>
-              <p className="modalSubtext confirmText">Launching TaskLaunch...</p>
-              <div className="dashboardRefreshBusyProgress" aria-hidden="true">
-                <span className="dashboardRefreshBusyProgressBar" />
-              </div>
-            </div>
+          <section className="webSignInLaunchPanel" role="status" aria-live="polite" aria-atomic="true">
+            <h2 className="sr-only">Launching TaskLaunch</h2>
+            <AppImg
+              src="/logo/launch-icon-original-transparent.png"
+              alt=""
+              className="webSignInLaunchIcon"
+            />
           </section>
         </div>
         <footer className="webSignInFooter" aria-label="Security disclaimer">
@@ -87,7 +78,7 @@ export default function WebSignIn(props: WebSignInProps) {
           <div className="relative z-10 flex flex-col items-center gap-3">
             <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
               <AppImg
-                src="/logo/launch-icon-white-transparent.svg"
+                src="/logo/launch-icon-original-transparent.png"
                 alt=""
                 className="launchWordBrandIcon"
               />
