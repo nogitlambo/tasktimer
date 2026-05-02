@@ -14,7 +14,6 @@ export default function robots(): MetadataRoute.Robots {
           "/friends",
           "/history-manager",
           "/leaderboard",
-          "/playwright-auth-helper",
           "/settings",
           "/signed-out",
           "/tasklaunch",

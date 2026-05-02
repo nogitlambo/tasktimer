@@ -673,6 +673,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     position: relative;
     z-index: 42;
     border: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0;
+    clip-path: none;
+  }
+
+  .taskLaunchMobileMenuBtn:hover,
+  .taskLaunchMobileMenuBtn:focus-visible{
+    background: transparent !important;
   }
 
   .taskLaunchMobileMenuBars{

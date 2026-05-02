@@ -35,23 +35,7 @@
     "agents:check": "node scripts/docs_sync.mjs --check --target=agents",
     "subscriptions:migrate": "node scripts/migrate-user-subscriptions.mjs",
     "subscriptions:reconcile-plans": "node scripts/reconcile-user-plans.mjs",
-    "hooks:install": "node scripts/install_git_hooks.mjs",
-    "test:recommend": "node scripts/recommend-tests.mjs",
-    "test:unit": "vitest run",
-    "test:unit:runtime": "vitest run src/app/tasktimer/client/confirm-actions.test.ts src/app/tasktimer/client/runtime-bridge.test.ts src/app/tasktimer/client/tasktimer-bootstrap.test.ts",
-    "test:unit:schedule": "vitest run src/app/tasktimer/client/schedule-runtime.test.ts src/app/tasktimer/lib/schedule-placement.test.ts",
-    "test:unit:history": "vitest run src/app/tasktimer/client/history-manager-generation.test.ts src/app/tasktimer/client/history-manager-shared.test.ts",
-    "test:unit:archie": "vitest run src/app/api/archie/query/route.test.ts src/app/api/archie/recommendations/apply/route.test.ts src/app/api/archie/recommendations/draft/route.test.ts src/app/api/archie/recommendations/latest/route.test.ts src/app/api/archie/shared.drafts.test.ts src/app/api/archie/shared.test.ts src/app/tasktimer/lib/archieEngine.test.ts src/app/tasktimer/components/ArchieAssistantWidget.test.tsx",
-    "test:unit:rewards": "vitest run src/app/tasktimer/lib/rewards.test.ts src/app/tasktimer/lib/focusInsights.test.ts src/app/tasktimer/lib/preferencesService.test.ts src/app/tasktimer/lib/pending-sync.test.ts src/app/tasktimer/lib/completionDifficulty.test.ts",
-    "test:unit:subscriptions": "vitest run src/lib/subscriptionStore.test.ts",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:codegen": "playwright codegen http://127.0.0.1:3000",
-    "test:e2e:auth:setup": "playwright test tests/e2e/auth.setup.ts --project=auth-setup --headed",
-    "test:e2e:auth": "playwright test tests/e2e/authenticated.spec.ts --headed",
-    "test:e2e:mobile": "playwright test tests/e2e/mobile-schedule.spec.ts --project=mobile-chromium --headed"
+    "hooks:install": "node scripts/install_git_hooks.mjs"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.1.0",
@@ -74,7 +58,6 @@
     "@capacitor/android": "^8.1.0",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
-    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -85,7 +68,6 @@
     "googleapis": "^171.4.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.1.0"
+    "typescript": "^5"
   }
 }

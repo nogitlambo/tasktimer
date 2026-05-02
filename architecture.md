@@ -27,7 +27,6 @@
 - `/friends`
 - `/history-manager`
 - `/leaderboard`
-- `/playwright-auth-helper`
 - `/pricing`
 - `/privacy`
 - `/settings`
