@@ -1263,6 +1263,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       scheduleState,
       scheduleRuntime,
       escapeHtmlUI,
+      getWeekStarting: () => preferencesState.get("weekStarting"),
       getOptimalProductivityStartTime: () => preferencesState.get("optimalProductivityStartTime"),
       getOptimalProductivityEndTime: () => preferencesState.get("optimalProductivityEndTime"),
       renderTasksPage,

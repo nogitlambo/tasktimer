@@ -610,9 +610,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
     ctx.on(ctx.els.openScheduleBtn, "click", () => applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
-    ctx.on(ctx.els.scheduleAddTaskBtn, "click", () => {
-      ctx.els.openAddTaskBtn?.click();
-    });
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
       dispatchOnboardingModuleClick("dashboard");
       if (e?.defaultPrevented) return;

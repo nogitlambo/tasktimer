@@ -249,6 +249,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     type="button"
                   >
                     <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
+                    <span className="taskScreenTabLabel">Tasks</span>
                   </button>
                   <button
                     className="iconBtn taskScreenPill taskScreenHeaderBtn"
@@ -268,16 +269,17 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <path d="M13 13h3" />
                       <path d="M8 17h3" />
                     </svg>
+                    <span className="taskScreenTabLabel">Schedule</span>
                   </button>
                 </div>
                 <button
                   className="iconBtn taskScreenPill taskScreenHeaderBtn"
                   id="openAddTaskBtn"
-                  aria-label="Add Task"
-                  title="Add Task"
+                  aria-label="New Task"
+                  title="New Task"
                   type="button"
                 >
-                  <span className="taskScreenHeaderBtnText">Add Task</span>
+                  <span className="taskScreenHeaderBtnText">+ New Task</span>
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">

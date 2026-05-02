@@ -16,12 +16,14 @@ import type { TaskTimerScheduleState } from "./schedule-runtime";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import type { AppPage } from "./types";
 import type { TaskTimerElements } from "./elements";
+import type { DashboardWeekStart } from "../lib/historyChart";
 
 type CreateTaskTimerRuntimeCoordinatorOptions = {
   els: TaskTimerElements;
   scheduleState: TaskTimerMutableStore<TaskTimerScheduleState>;
   scheduleRuntime: unknown;
   escapeHtmlUI: (value: unknown) => string;
+  getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
   renderTasksPage: () => void;
@@ -345,6 +347,7 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
       state: options.scheduleState,
       scheduleRuntime,
       escapeHtmlUI: options.escapeHtmlUI,
+      getWeekStarting: options.getWeekStarting,
       getOptimalProductivityStartTime: options.getOptimalProductivityStartTime,
       getOptimalProductivityEndTime: options.getOptimalProductivityEndTime,
     });

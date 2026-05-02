@@ -2789,7 +2789,7 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: #c9ff24 !important;
+    color: rgba(174,184,194,.78) !important;
   }
 
 #historyEntryNoteOverlay .historyEntryNoteTime{
@@ -2988,7 +2988,7 @@ body[data-theme="purple"] .rewardsInfoText{
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: #c9ff24;
+    color: rgba(247,251,255,.98);
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle-overview{
@@ -3261,7 +3261,23 @@ body[data-theme="purple"] .rewardsInfoText{
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryGrid{
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummaryField{
+      gap: 4px;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummaryLabel{
+      font-size: 9px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+  #historyEntryNoteOverlay .historyEntrySummaryValue{
+      font-size: 11px;
+      line-height: 1.35;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryNoteRow{
@@ -3270,6 +3286,21 @@ body[data-theme="purple"] .rewardsInfoText{
 
   #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 360px){
+  #historyEntryNoteOverlay .historyEntrySummaryGrid{
+    gap: 4px;
+  }
+
+  #historyEntryNoteOverlay .historyEntrySummaryLabel{
+    font-size: 8px;
+  }
+
+  #historyEntryNoteOverlay .historyEntrySummaryValue{
+    font-size: 10px;
+    line-height: 1.3;
   }
 }
 

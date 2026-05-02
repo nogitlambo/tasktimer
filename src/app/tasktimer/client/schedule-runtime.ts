@@ -50,6 +50,9 @@ export const SCHEDULE_DAY_LABELS: Record<ScheduleDay, string> = {
 export const SCHEDULE_SNAP_MINUTES = 15;
 export const SCHEDULE_LABEL_MINUTES = 30;
 export const SCHEDULE_MINUTE_PX = 44 / 30;
+export const SCHEDULE_MIN_DAY_COLUMN_WIDTH_PX = 180;
+export const SCHEDULE_DESKTOP_TIME_RAIL_WIDTH_PX = 88;
+export const SCHEDULE_COMPACT_TIME_RAIL_WIDTH_PX = 72;
 
 type CreateTaskTimerScheduleRuntimeOptions = {
   state: TaskTimerMutableStore<TaskTimerScheduleState>;
@@ -73,6 +76,15 @@ export function isScheduleMobileLayout() {
 }
 
 export { parseScheduleTimeMinutes };
+
+export function resolveScheduleVisibleDayCount(availableWidthRaw: unknown) {
+  const availableWidth = Math.max(0, Math.floor(Number(availableWidthRaw) || 0));
+  const compactRail = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  const timeRailWidth = compactRail ? SCHEDULE_COMPACT_TIME_RAIL_WIDTH_PX : SCHEDULE_DESKTOP_TIME_RAIL_WIDTH_PX;
+  const dayAreaWidth = Math.max(0, availableWidth - timeRailWidth);
+  const visibleDayCount = Math.floor(dayAreaWidth / SCHEDULE_MIN_DAY_COLUMN_WIDTH_PX);
+  return Math.max(1, Math.min(SCHEDULE_DAY_ORDER.length, visibleDayCount || 1));
+}
 
 export function formatScheduleMinutes(totalMinutes: number) {
   const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
@@ -116,13 +128,14 @@ export function isScheduleRenderableTask(task: Task) {
 }
 
 export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleRuntimeOptions) {
-  function getVisibleDays(): ScheduleDay[] {
-    if (isScheduleMobileLayout()) {
-      const selectedDay = normalizeScheduleDay(options.state.get("selectedDay")) || "mon";
-      options.state.set("selectedDay", selectedDay);
-      return [selectedDay];
-    }
-    return [...SCHEDULE_DAY_ORDER];
+  function getVisibleDays(visibleDayCountRaw: number = SCHEDULE_DAY_ORDER.length): ScheduleDay[] {
+    const selectedDay = normalizeScheduleDay(options.state.get("selectedDay")) || "mon";
+    const selectedDayIndex = Math.max(0, SCHEDULE_DAY_ORDER.indexOf(selectedDay));
+    const visibleDayCount = Math.max(1, Math.min(SCHEDULE_DAY_ORDER.length, Math.floor(Number(visibleDayCountRaw) || 1)));
+    options.state.set("selectedDay", selectedDay);
+    return Array.from({ length: visibleDayCount }, (_, index) => {
+      return SCHEDULE_DAY_ORDER[(selectedDayIndex + index) % SCHEDULE_DAY_ORDER.length]!;
+    });
   }
 
   function getScheduleDaysForTask(task: Task): ScheduleDay[] {

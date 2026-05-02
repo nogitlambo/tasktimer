@@ -7,6 +7,7 @@ import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib
 import { findNextScheduledTaskAfterLocalTime } from "../lib/schedule-placement";
 import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
+import { buildTaskProgressModel } from "./task-card-view-model";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1138,6 +1139,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
   }
 
+  function updateTaskProgressFill(node: Element, task: Task, elapsedMs: number) {
+    const fill = node.querySelector(".progressFill") as HTMLElement | null;
+    if (!fill) return;
+    const hasMilestones = !!task.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.length > 0;
+    const hasTimeGoal = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
+    if (!hasMilestones && !hasTimeGoal) return;
+    const progressModel = buildTaskProgressModel({
+      milestones: hasMilestones ? ctx.sortMilestones(task.milestones) : [],
+      elapsedSec: Math.max(0, elapsedMs) / 1000,
+      milestoneUnitSec: sharedTasks.milestoneUnitSec(task),
+      unitSuffix: sharedTasks.milestoneUnitSuffix(task),
+      timeGoalSec: hasTimeGoal ? Number(task.timeGoalMinutes || 0) * 60 : 0,
+    });
+    if (!progressModel) return;
+    fill.style.width = `${progressModel.pct}%`;
+    fill.style.background = ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(progressModel.pct) : ctx.getModeColor("mode1");
+  }
+
   function tick() {
     if (runtime.destroyed) return;
     const tasks = ctx.getTasks();
@@ -1151,6 +1170,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
+        updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
           if (task.running) {

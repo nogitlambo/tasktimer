@@ -6,7 +6,6 @@ const els = {
   taskOrderByValue: documentRef.getElementById("taskOrderByValue"),
   openScheduleBtn: documentRef.getElementById("openScheduleBtn") as HTMLButtonElement | null,
   openAddTaskBtn: documentRef.getElementById("openAddTaskBtn"),
-  scheduleAddTaskBtn: documentRef.getElementById("scheduleAddTaskBtn") as HTMLButtonElement | null,
   closeScheduleBtn: documentRef.getElementById("closeScheduleBtn") as HTMLButtonElement | null,
   addTaskOverlay: documentRef.getElementById("addTaskOverlay"),
   addTaskForm: documentRef.getElementById("addTaskForm"),

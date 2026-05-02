@@ -1166,7 +1166,8 @@
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard,
-  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
     padding-left: 18px;
     padding-right: 18px;
     box-sizing: border-box;

@@ -23,18 +23,6 @@ export default function SchedulePageContent({ active }: SchedulePageContentProps
       aria-hidden={active ? "false" : "true"}
       >
       <div className="schedulePageBackdrop" aria-hidden="true" />
-      <button
-        className="iconBtn taskScreenPill taskScreenHeaderBtn"
-        id="scheduleAddTaskBtn"
-        aria-hidden="true"
-        tabIndex={-1}
-        type="button"
-        hidden
-      >
-        <span className="taskScreenIconBtnPlus" aria-hidden="true">
-          +
-        </span>
-      </button>
       <section className="schedulePageShell" aria-label="Weekly schedule planner">
         <div className="scheduleMobileDayTabs" id="scheduleMobileDayTabs" role="tablist" aria-label="Schedule day selector">
           {DAY_BUTTONS.map((day) => (

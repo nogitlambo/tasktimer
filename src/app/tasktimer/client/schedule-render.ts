@@ -1,5 +1,6 @@
 import type { TaskTimerElements } from "./elements";
 import type { TaskTimerMutableStore } from "./mutable-store";
+import type { DashboardWeekStart } from "../lib/historyChart";
 import {
   normalizeOptimalProductivityPeriod,
   timeOfDayToMinutes,
@@ -13,18 +14,21 @@ import {
   formatScheduleMinutes,
   isRecurringDailyScheduleTask,
   normalizeScheduleDay,
+  resolveScheduleVisibleDayCount,
   SCHEDULE_DAY_LABELS,
   SCHEDULE_LABEL_MINUTES,
   SCHEDULE_MINUTE_PX,
   SCHEDULE_SNAP_MINUTES,
   type TaskTimerScheduleState,
 } from "./schedule-runtime";
+import { SCHEDULE_DAY_ORDER, type ScheduleDay } from "../lib/schedule-placement";
 
 type TaskTimerScheduleRenderContext = {
   els: Pick<TaskTimerElements, "scheduleGrid" | "scheduleTrayList" | "scheduleMobileDayTabs">;
   state: TaskTimerMutableStore<TaskTimerScheduleState>;
   scheduleRuntime: ReturnType<typeof createTaskTimerScheduleRuntime>;
   escapeHtmlUI: (value: unknown) => string;
+  getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
 };
@@ -63,9 +67,27 @@ function buildScheduleProductivityHighlightSegments(ctx: TaskTimerScheduleRender
   ];
 }
 
+function resolveScheduleAvailableWidth(ctx: TaskTimerScheduleRenderContext) {
+  if (typeof window === "undefined") return 0;
+  const scheduleGridWidth = ctx.els.scheduleGrid?.getBoundingClientRect?.().width;
+  if (scheduleGridWidth && scheduleGridWidth > 0) return scheduleGridWidth;
+  return window.innerWidth || 0;
+}
+
+function rotateScheduleDaysForWeekStart(days: ScheduleDay[], weekStarting: DashboardWeekStart) {
+  const weekStart = normalizeScheduleDay(weekStarting) || "mon";
+  const startIndex = SCHEDULE_DAY_ORDER.indexOf(weekStart);
+  if (startIndex <= 0) return days;
+  const weekDays = SCHEDULE_DAY_ORDER.slice(startIndex).concat(SCHEDULE_DAY_ORDER.slice(0, startIndex));
+  return weekDays.slice(0, days.length);
+}
+
 export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderContext) {
-  const visibleDays = ctx.scheduleRuntime.getVisibleDays();
+  const visibleDayCount = resolveScheduleVisibleDayCount(resolveScheduleAvailableWidth(ctx));
   const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  const visibleDays = isMobileLayout
+    ? ctx.scheduleRuntime.getVisibleDays(visibleDayCount)
+    : rotateScheduleDaysForWeekStart(ctx.scheduleRuntime.getVisibleDays(SCHEDULE_DAY_ORDER.length), ctx.getWeekStarting());
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);
@@ -97,9 +119,9 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
             String(entry.task.id || "")
           )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
             <div class="scheduleTaskCardTopRow">
+              <span class="scheduleTaskCardName">${ctx.escapeHtmlUI(entry.task.name || "Task")}</span>
               ${recurringBadge}
             </div>
-            <span class="scheduleTaskCardName">${ctx.escapeHtmlUI(entry.task.name || "Task")}</span>
             <span class="scheduleTaskCardMeta">${ctx.escapeHtmlUI(metaText)}</span>
           </div>`;
         })
@@ -137,7 +159,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
     })
     .join("");
 
-  return `<div class="schedulePlanner${isMobileLayout ? " isMobile" : ""}">
+  return `<div class="schedulePlanner${isMobileLayout ? " isMobile" : ""}" style="--schedule-visible-days:${visibleDays.length}">
     <div class="schedulePlannerHead">
       <div class="schedulePlannerCorner">Time</div>
       <div class="schedulePlannerDays">${visibleDays
