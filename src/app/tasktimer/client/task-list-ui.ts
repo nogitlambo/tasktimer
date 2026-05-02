@@ -78,7 +78,16 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     if (ctx.getTaskOrderBy() !== "custom") return;
     const list = els.taskList;
     if (!list) return;
-    const draggedModeTaskIds = Array.from(list.querySelectorAll(".task[data-task-id]"))
+    const taskEls = Array.from(list.querySelectorAll(".task[data-task-id]")).filter(
+      (taskEl): taskEl is HTMLElement => taskEl instanceof HTMLElement
+    );
+    const draggedModeTaskIds = taskEls
+      .sort((a, b) => {
+        const aRect = a.getBoundingClientRect();
+        const bRect = b.getBoundingClientRect();
+        if (Math.abs(aRect.top - bRect.top) > 2) return aRect.top - bRect.top;
+        return aRect.left - bRect.left;
+      })
       .map((taskEl) => String((taskEl as HTMLElement).dataset.taskId || "").trim())
       .filter(Boolean);
     if (!draggedModeTaskIds.length) return;
@@ -257,13 +266,18 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const list = els.taskList;
     const placeholder = dragPlaceholderEl;
     if (!list || !placeholder) return;
+    const targetParent =
+      nextTask?.parentElement ||
+      (list.querySelector(".taskTileColumn:last-child") as HTMLElement | null) ||
+      list;
     const currentParent = placeholder.parentElement;
     const samePosition =
-      currentParent === list && (nextTask ? placeholder.nextElementSibling === nextTask : placeholder === list.lastElementChild);
+      currentParent === targetParent &&
+      (nextTask ? placeholder.nextElementSibling === nextTask : placeholder === targetParent.lastElementChild);
     if (samePosition) return;
     const beforeRects = captureTaskRects();
-    if (nextTask) list.insertBefore(placeholder, nextTask);
-    else list.appendChild(placeholder);
+    if (nextTask) targetParent.insertBefore(placeholder, nextTask);
+    else targetParent.appendChild(placeholder);
     animateTaskListReflow(beforeRects);
   }
 
@@ -275,7 +289,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     if (!list || !dragging || !placeholder) return;
     const dragCenterY = getDragCenterY(event?.clientY);
     event.preventDefault();
-    const candidateTasks = Array.from(list.children).filter(
+    const candidateTasks = Array.from(list.querySelectorAll(".task")).filter(
       (child): child is HTMLElement => child instanceof HTMLElement && child !== dragging && child !== placeholder && child.classList.contains("task")
     );
     const nextTask =
@@ -292,8 +306,8 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const placeholder = dragPlaceholderEl;
     if (!dragging || !list) return;
     dragging.classList.remove(TASK_DRAG_HIDDEN_CLASS);
-    if (placeholder?.parentElement === list) {
-      list.insertBefore(dragging, placeholder);
+    if (placeholder?.parentElement) {
+      placeholder.parentElement.insertBefore(dragging, placeholder);
     }
     clearTaskDragState();
     dragPointerOffsetY = 0;

@@ -292,6 +292,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </svg>
                     </summary>
                     <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
+                      <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
                       <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">
                         A-Z
                       </button>

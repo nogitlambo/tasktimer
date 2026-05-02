@@ -110,6 +110,34 @@
   position:relative;
   transform: translateY(-4px);
 }
+#dashboardEditCancelBtn,
+#dashboardEditDoneBtn{
+  min-width:92px;
+  min-height:0;
+  height:32px;
+  padding:0 12px;
+  justify-content:center;
+  align-items:center;
+  line-height:1;
+}
+#dashboardEditCancelBtn,
+#dashboardEditCancelBtn:hover:not(:disabled),
+#dashboardEditCancelBtn:focus-visible:not(:disabled){
+  border-color:rgba(180,190,194,.28) !important;
+  box-shadow:none !important;
+}
+#dashboardEditDoneBtn,
+#dashboardEditDoneBtn:hover:not(:disabled),
+#dashboardEditDoneBtn:focus-visible:not(:disabled){
+  border-color:transparent !important;
+  box-shadow:none !important;
+}
+#dashboardEditDoneBtn,
+#dashboardEditDoneBtn:hover:not(:disabled),
+#dashboardEditDoneBtn:focus-visible:not(:disabled){
+  background:#c9ff24 !important;
+  color:#04131c !important;
+}
 .dashboardRefreshBtn{
   position:relative;
   width:36px;
@@ -5929,6 +5957,96 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   border-radius: 999px;
   opacity: 0;
   pointer-events: none;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
+  grid-row: span var(--dashboard-pro-panel-span) !important;
+  grid-template-rows: 24px 36px minmax(0, 1fr) !important;
+  align-items: stretch !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
+  grid-row: 2;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTicks{
+  grid-row: 3 !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: 8px !important;
+  padding: 2px 2px 0 0;
+  transform: none !important;
+  overflow: auto !important;
+  pointer-events: auto !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedRow{
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 9px;
+  row-gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedRow .dashboardTasksCompletedTick{
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  flex: 0 0 18px;
+  width: 18px;
+  min-width: 18px;
+  max-width: 18px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTaskName{
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(245,248,244,.9);
+  font-family: var(--font-tight);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: .02em;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTaskStatus{
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(188,214,230,.64);
+  font-family: var(--font-readable);
+  font-size: 10px;
+  line-height: 1.1;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTracking{
+  display: inline-block;
+  margin-left: 4px;
+  color: #35e8ff;
+  font-weight: 800;
+  animation: dashboardTasksCompletedTrackingPulse 1.35s ease-in-out infinite;
+}
+@keyframes dashboardTasksCompletedTrackingPulse{
+  0%, 100%{
+    opacity: .45;
+    text-shadow: 0 0 4px rgba(53,232,255,.2);
+  }
+  50%{
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(53,232,255,.62);
+  }
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickSeparator{
+  display: none !important;
 }
 
 @media (min-width: 980px){

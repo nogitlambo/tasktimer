@@ -179,7 +179,7 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                       <span className="dashboardTasksCompletedSlash">/</span>
                       <span className="dashboardTasksCompletedTotal">0</span>
                     </div>
-                    <div className="dashboardTasksCompletedTicks" id="dashboardTasksCompletedTicks" aria-hidden="true" />
+                    <div className="dashboardTasksCompletedTicks" id="dashboardTasksCompletedTicks" role="list" aria-label="Daily task completion status" />
                     <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
                     <div className="dashboardSummaryStatus" aria-hidden="true" />
                     <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />

@@ -20,6 +20,15 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     { panelId: "avg-session-by-task", label: "Avg Session by Task" },
     { panelId: "heatmap", label: "Focus Heatmap" },
   ] as const;
+  let dashboardPointerDrag:
+    | {
+        card: HTMLElement;
+        pointerId: number;
+        startX: number;
+        startY: number;
+        active: boolean;
+      }
+    | null = null;
 
   function getDashboardGridEl() {
     return (document.querySelector("#appPageDashboard .dashboardGrid") as HTMLElement | null) || els.dashboardGrid || null;
@@ -478,7 +487,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const grid = getDashboardGridEl();
     if (!grid) return;
     ensureDashboardCardSizeControls();
-    if (!ctx.getDashboardEditMode()) closeDashboardCardSizeMenus();
+    if (!ctx.getDashboardEditMode()) {
+      finishDashboardPointerDrag();
+      closeDashboardCardSizeMenus();
+    }
     grid.classList.toggle("isEditMode", ctx.getDashboardEditMode());
     Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
       (el as HTMLElement).setAttribute("draggable", ctx.getDashboardEditMode() ? "true" : "false");
@@ -496,6 +508,54 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
     if (ctx.getDashboardEditMode()) closeDashboardPanelMenu();
     syncDashboardMenuFlipState();
+  }
+
+  function shouldUsePointerDashboardDrag(event: PointerEvent) {
+    if (event.pointerType && event.pointerType !== "mouse") return true;
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 980px)").matches;
+  }
+
+  function findDashboardDragTarget(clientX: number, clientY: number, dragging: HTMLElement) {
+    const grid = getDashboardGridEl();
+    if (!grid) return null;
+    const candidates = Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).filter(
+      (card): card is HTMLElement => card instanceof HTMLElement && card !== dragging && grid.contains(card)
+    );
+    return (
+      candidates.find((card) => {
+        const rect = card.getBoundingClientRect();
+        const sameRow = clientY >= rect.top && clientY <= rect.bottom;
+        if (sameRow) return clientX < rect.left + rect.width / 2 || clientY < rect.top + rect.height / 2;
+        return clientY < rect.top + rect.height / 2;
+      }) || null
+    );
+  }
+
+  function moveDashboardDraggedCard(clientX: number, clientY: number) {
+    const drag = dashboardPointerDrag;
+    const grid = getDashboardGridEl();
+    if (!drag || !grid || !grid.contains(drag.card)) return;
+    const target = findDashboardDragTarget(clientX, clientY, drag.card);
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const before = clientY < rect.top + rect.height / 2 || (clientY <= rect.bottom && clientX < rect.left + rect.width / 2);
+      grid.insertBefore(drag.card, before ? target : target.nextSibling);
+    } else {
+      grid.appendChild(drag.card);
+    }
+  }
+
+  function finishDashboardPointerDrag() {
+    const drag = dashboardPointerDrag;
+    if (!drag) return;
+    drag.card.classList.remove("isDragging");
+    try {
+      drag.card.releasePointerCapture?.(drag.pointerId);
+    } catch {
+      // ignore browsers that already released capture
+    }
+    ctx.setDashboardDragEl(null);
+    dashboardPointerDrag = null;
   }
 
   function renderDashboardWidgets(opts?: DashboardRenderOptions) {
@@ -618,9 +678,48 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function handleDashboardGridPointerDown(e: any) {
     const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
-    if (!momentumDriverBtn) return;
-    // Driver selection is handled on click. Triggering it here as well causes the
-    // momentum gauge animation to cancel and restart within the same interaction.
+    if (momentumDriverBtn) {
+      // Driver selection is handled on click. Triggering it here as well causes the
+      // momentum gauge animation to cancel and restart within the same interaction.
+      return;
+    }
+    if (!ctx.getDashboardEditMode() || !shouldUsePointerDashboardDrag(e as PointerEvent)) return;
+    if (e.target?.closest?.(".dashboardSizeControl, button, input, select, textarea, a, summary, [role='button']")) return;
+    const grid = getDashboardGridEl();
+    const card = e.target?.closest?.(".dashboardCard[data-dashboard-id]") as HTMLElement | null;
+    if (!grid || !card || !grid.contains(card)) return;
+    closeDashboardCardSizeMenus();
+    dashboardPointerDrag = {
+      card,
+      pointerId: Number(e.pointerId) || 0,
+      startX: Number(e.clientX) || 0,
+      startY: Number(e.clientY) || 0,
+      active: false,
+    };
+    ctx.setDashboardDragEl(card);
+    card.setPointerCapture?.(dashboardPointerDrag.pointerId);
+    e.preventDefault?.();
+  }
+
+  function handleDashboardGridPointerMove(e: any) {
+    const drag = dashboardPointerDrag;
+    if (!drag || !ctx.getDashboardEditMode()) return;
+    if (Number(e.pointerId) !== drag.pointerId) return;
+    const deltaX = Math.abs((Number(e.clientX) || 0) - drag.startX);
+    const deltaY = Math.abs((Number(e.clientY) || 0) - drag.startY);
+    if (!drag.active && deltaX + deltaY < 6) return;
+    drag.active = true;
+    drag.card.classList.add("isDragging");
+    moveDashboardDraggedCard(Number(e.clientX) || 0, Number(e.clientY) || 0);
+    e.preventDefault?.();
+  }
+
+  function handleDashboardGridPointerEnd(e: any) {
+    const drag = dashboardPointerDrag;
+    if (!drag) return;
+    if (Number(e.pointerId) !== drag.pointerId) return;
+    finishDashboardPointerDrag();
+    e.preventDefault?.();
   }
 
   function handleDashboardPanelMenuClick(e: Event) {
@@ -662,6 +761,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function handleDashboardDragStart(e: any) {
     if (!ctx.getDashboardEditMode()) return;
+    if (dashboardPointerDrag) {
+      e.preventDefault?.();
+      return;
+    }
     if (e.target?.closest?.(".dashboardSizeControl")) return;
     closeDashboardCardSizeMenus();
     const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
@@ -728,6 +831,9 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick, true);
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
     ctx.on(dashboardInteractionRoot, "pointerdown", handleDashboardGridPointerDown);
+    ctx.on(dashboardInteractionRoot, "pointermove", handleDashboardGridPointerMove);
+    ctx.on(dashboardInteractionRoot, "pointerup", handleDashboardGridPointerEnd);
+    ctx.on(dashboardInteractionRoot, "pointercancel", handleDashboardGridPointerEnd);
     ctx.on(document as any, "click", handleDocumentDashboardClick);
     ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);
     ctx.on(els.dashboardGrid, "dragover", handleDashboardDragOver);

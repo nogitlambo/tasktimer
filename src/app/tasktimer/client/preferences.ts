@@ -524,6 +524,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistInlineTaskSettingsImmediate();
       if (els.taskOrderByMenu) els.taskOrderByMenu.open = false;
     });
+    ctx.on(document, "pointerdown", (event: Event) => {
+      const menu = els.taskOrderByMenu;
+      if (!menu?.open) return;
+      const target = event.target as Node | null;
+      if (target && menu.contains(target)) return;
+      menu.open = false;
+    });
     bindToggleRow({
       on: ctx.on,
       control: els.taskAutoFocusOnLaunchToggle,

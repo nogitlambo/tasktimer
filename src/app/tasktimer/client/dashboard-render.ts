@@ -9,7 +9,14 @@ import {
 import { localDayKey } from "../lib/history";
 import { computeMomentumSnapshot, getMomentumBandLabel, type MomentumSnapshot } from "../lib/momentum";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
-import { getTaskScheduledDays, normalizeLocalDateValue, type ScheduleDay } from "../lib/schedule-placement";
+import {
+  getLocalScheduleDay,
+  getTaskScheduledDayEntries,
+  getTaskScheduledDays,
+  normalizeLocalDateValue,
+  parseScheduleTimeMinutes,
+  type ScheduleDay,
+} from "../lib/schedule-placement";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
 import type { Task } from "../lib/types";
 import { ONBOARDING_DASHBOARD_PREVIEW } from "../lib/dashboardOnboardingPreview";
@@ -1074,14 +1081,49 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const metaEl = document.getElementById("dashboardTasksCompletedMeta") as HTMLElement | null;
     const cardEl = valueEl?.closest(".dashboardTasksCompletedCard") as HTMLElement | null;
 
-    const renderCompletionRatio = (completed: number, total: number, progressValues?: number[]) => {
+    const renderCompletionRatio = (
+      completed: number,
+      total: number,
+      progressValues?: number[] | Array<{ name: string; progress: number; complete?: boolean; running?: boolean }>
+    ) => {
       const completedCount = Math.max(0, Math.round(completed));
       const totalCount = Math.max(0, Math.round(total));
       if (!valueEl) return;
       valueEl.innerHTML = `<span class="dashboardTasksCompletedDone">${completedCount}</span><span class="dashboardTasksCompletedSlash">/</span><span class="dashboardTasksCompletedTotal">${totalCount}</span>`;
       if (ticksEl) {
+        const namedProgressValues = Array.isArray(progressValues)
+          ? progressValues.filter((value): value is { name: string; progress: number; complete?: boolean; running?: boolean } => typeof value === "object" && value !== null)
+          : [];
+        if (namedProgressValues.length) {
+          ticksEl.innerHTML = namedProgressValues
+            .map((item) => {
+              const name = String(item.name || "Task").trim() || "Task";
+              const progress = Math.max(0, Math.min(1, Number(item.progress) || 0));
+              const isComplete = item.complete === true;
+              const isPartial = !isComplete && progress > 0;
+              const progressPct = Math.round(progress * 100);
+              const statusLabel = isComplete ? "Complete" : isPartial ? `${progressPct}% complete` : "Not complete";
+              const trackingHtml = item.running
+                ? '<span class="dashboardTasksCompletedTracking" aria-label="Task is currently tracking">- tracking</span>'
+                : "";
+              return `<div class="dashboardTasksCompletedRow${isComplete ? " isComplete" : ""}${isPartial ? " isPartial" : ""}" role="listitem">
+                <span class="dashboardTasksCompletedTick${isComplete ? " isComplete" : ""}${isPartial ? " isPartial" : ""}"${isPartial ? ` style="--dashboard-task-complete-progress:${progressPct}%"` : ""} aria-hidden="true"><span class="dashboardTasksCompletedTickMark">${isComplete ? "&#10003;" : ""}</span></span>
+                <span class="dashboardTasksCompletedTaskName">${ctx.escapeHtmlUI(name)}</span>
+                <span class="dashboardTasksCompletedTaskStatus">${ctx.escapeHtmlUI(statusLabel)}${trackingHtml}</span>
+              </div>`;
+            })
+            .join("");
+          return;
+        }
+        if (totalCount <= 0) {
+          ticksEl.innerHTML = `<div class="dashboardTasksCompletedRow isEmpty" role="listitem">
+            <span class="dashboardTasksCompletedTick" aria-hidden="true"><span class="dashboardTasksCompletedTickMark"></span></span>
+            <span class="dashboardTasksCompletedTaskName">No daily tasks due</span>
+          </div>`;
+          return;
+        }
         const normalizedProgressValues = Array.isArray(progressValues)
-          ? progressValues
+          ? (progressValues as number[])
               .map((value) => Math.max(0, Math.min(1, Number(value) || 0)))
               .sort((a, b) => b - a)
           : [];
@@ -1100,7 +1142,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (isOnboardingDashboardPreviewActive()) {
       const preview = ONBOARDING_DASHBOARD_PREVIEW.tasksCompleted;
       const previewTodayCompleted = Math.min(1, Math.max(0, Number(preview.dailyCompletedDays || 0)));
-      renderCompletionRatio(previewTodayCompleted, 1, [previewTodayCompleted]);
+      renderCompletionRatio(previewTodayCompleted, 1, [{ name: "Daily focus", progress: previewTodayCompleted }]);
       if (metaEl) {
         metaEl.textContent = "";
         metaEl.style.display = "none";
@@ -1118,14 +1160,32 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
     const todayKey = localDayKey(nowValue);
-    const goalTasks = getDashboardFilteredTasks().filter((task) => {
-      if (!task) return false;
-      if (!task.timeGoalEnabled) return false;
-      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
-      if (goalMinutes <= 0) return false;
-      if (!isTaskDueToday(task, nowValue)) return false;
-      return task.timeGoalPeriod === "day";
-    });
+    const todayScheduleDay = getLocalScheduleDay(new Date(nowValue));
+    const getTodayScheduledStartMinutes = (task: Task) => {
+      const todayEntries = getTaskScheduledDayEntries(task)
+        .filter((entry) => entry.day === todayScheduleDay)
+        .map((entry) => parseScheduleTimeMinutes(entry.time))
+        .filter((minutes): minutes is number => minutes != null);
+      return todayEntries.length ? Math.min(...todayEntries) : Number.POSITIVE_INFINITY;
+    };
+    const goalTasks = getDashboardFilteredTasks()
+      .filter((task) => {
+        if (!task) return false;
+        if (!task.timeGoalEnabled) return false;
+        const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+        if (goalMinutes <= 0) return false;
+        if (!isTaskDueToday(task, nowValue)) return false;
+        return task.timeGoalPeriod === "day";
+      })
+      .sort((a, b) => {
+        const aStart = getTodayScheduledStartMinutes(a);
+        const bStart = getTodayScheduledStartMinutes(b);
+        if (aStart !== bStart) return aStart - bStart;
+        const aOrder = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.POSITIVE_INFINITY;
+        const bOrder = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.POSITIVE_INFINITY;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
 
     const dailyTaskGoalMinutes = new Map<string, number>();
     goalTasks.forEach((task) => {
@@ -1136,7 +1196,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
 
     const dailyLoggedMsByTask = new Map<string, number>();
+    const dailyLiveMsByTask = new Map<string, number>();
     const dailyProgressByTask = new Map<string, number>();
+    const dailyLiveProgressByTask = new Map<string, number>();
 
     goalTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
@@ -1152,7 +1214,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         dailyLoggedMsByTask.set(taskId, (dailyLoggedMsByTask.get(taskId) || 0) + ms);
       });
       if (isDashboardTaskActivelyRunning(task)) {
-        dailyLoggedMsByTask.set(taskId, (dailyLoggedMsByTask.get(taskId) || 0) + Math.max(0, ctx.getElapsedMs(task)));
+        dailyLiveMsByTask.set(taskId, Math.max(0, ctx.getElapsedMs(task)));
       }
     });
 
@@ -1170,6 +1232,14 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (!taskId || !(goalMinutes > 0) || dailyProgressByTask.has(taskId)) return;
       dailyProgressByTask.set(taskId, 0);
     });
+    goalTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
+      const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
+      if (!taskId || !(goalMinutes > 0)) return;
+      const loggedMs = dailyLoggedMsByTask.get(taskId) || 0;
+      const liveMs = dailyLiveMsByTask.get(taskId) || 0;
+      dailyLiveProgressByTask.set(taskId, Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))));
+    });
 
     const totalCompleted = todayCompletedTasks;
     const totalPossible = dailyTaskGoalMinutes.size;
@@ -1180,7 +1250,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       ctx.getDashboardWidgetHasRenderedData().tasksCompleted = false;
     }
 
-    renderCompletionRatio(totalCompleted, totalPossible, Array.from(dailyProgressByTask.values()));
+    renderCompletionRatio(
+      totalCompleted,
+      totalPossible,
+      goalTasks.map((task) => {
+        const taskId = String(task.id || "").trim();
+        return {
+          name: String(task.name || "Task"),
+          progress: Math.max(0, Math.min(1, dailyLiveProgressByTask.get(taskId) ?? dailyProgressByTask.get(taskId) ?? 0)),
+          complete: Math.max(0, Math.min(1, dailyProgressByTask.get(taskId) || 0)) >= 1,
+          running: isDashboardTaskActivelyRunning(task),
+        };
+      })
+    );
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";

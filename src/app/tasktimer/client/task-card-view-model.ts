@@ -22,6 +22,7 @@ type TaskProgressMarkerModel =
       leftPos: number;
       edgeClass: string;
       reached: boolean;
+      label: string;
     };
 
 type TaskProgressModel = {
@@ -84,14 +85,19 @@ export function buildTaskProgressModel({
   });
 
   if (hasTimeGoal) {
+    const goalSec = Math.max(0, Number(timeGoalSec || 0));
     const goalLeft = Math.max(0, Math.min((Math.max(0, Number(timeGoalSec || 0)) / maxSec) * 100, 100));
     const edgeClass = goalLeft <= 1 ? "mkEdgeL" : goalLeft >= 99 ? "mkEdgeR" : "";
     const leftPos = edgeClass === "mkEdgeL" ? 0 : edgeClass === "mkEdgeR" ? 100 : goalLeft;
+    const goalMinutes = Math.round(goalSec / 60);
+    const label =
+      goalMinutes > 0 && goalMinutes % 60 === 0 ? `${goalMinutes / 60}h` : goalMinutes >= 60 ? `${Math.floor(goalMinutes / 60)}h ${goalMinutes % 60}m` : `${goalMinutes}m`;
     markers.push({
       kind: "goal",
       leftPos,
       edgeClass,
       reached: safeElapsedSec >= Math.max(0, Number(timeGoalSec || 0)),
+      label,
     });
   }
 
@@ -113,7 +119,8 @@ export function renderTaskProgressHtml(
       }
       if (marker.kind === "goal") {
         return `
-            <div class="mkFlag mkGoal ${marker.reached ? "mkAch" : "mkPend"} ${marker.edgeClass}" style="left:${marker.leftPos}%"></div>`;
+            <div class="mkFlag mkGoal ${marker.reached ? "mkAch" : "mkPend"} ${marker.edgeClass}" style="left:${marker.leftPos}%"></div>
+            <div class="mkTime mkGoalTime ${marker.reached ? "mkAch" : "mkPend"} ${marker.edgeClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>`;
       }
       const markerClass = marker.reached ? "mkAch" : "mkPend";
       return `

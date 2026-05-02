@@ -216,6 +216,16 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.setCurrentTileColumnCount(tileColumnCount);
     if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
     else taskListEl.removeAttribute("data-tile-columns");
+    const tileColumnEls: HTMLElement[] = [];
+    if (useTileColumns) {
+      for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
+        const columnEl = document.createElement("div");
+        columnEl.className = "taskTileColumn";
+        columnEl.dataset.tileColumn = String(columnIndex);
+        taskListEl.appendChild(columnEl);
+        tileColumnEls.push(columnEl);
+      }
+    }
 
     const openHistoryTaskIds = ctx.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = ctx.getPinnedHistoryTaskIds();
@@ -253,7 +263,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       return;
     }
 
-    displayedTasks.forEach((t) => {
+    displayedTasks.forEach((t, displayIndex) => {
       const elapsedMs = ctx.getElapsedMs(t);
       const elapsedSec = elapsedMs / 1000;
       const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
@@ -389,7 +399,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         </div>
       `;
       ctx.applyTaskFlipDomState(taskId, taskEl);
-      taskListEl.appendChild(taskEl);
+      const tileColumnEl = useTileColumns ? tileColumnEls[displayIndex % tileColumnCount] : null;
+      (tileColumnEl || taskListEl).appendChild(taskEl);
     });
 
     ctx.save();
