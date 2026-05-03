@@ -1,22 +1,17 @@
 import type { TaskTimerConfirmOptions, TaskTimerConfirmOverlayContext } from "./context";
-import { getVisibleOverlays, hideOverlay, showOverlay } from "./overlay-visibility";
+import { createTaskTimerOverlayLifecycle } from "./overlay-lifecycle";
 
 export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContext) {
   const { els } = ctx;
   let confirmDangerMatchValue = "";
-
-  function openOverlay(overlay: HTMLElement | null) {
-    showOverlay(overlay);
-  }
-
-  function closeOverlay(overlay: HTMLElement | null) {
-    try {
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    } catch {
-      // ignore
-    }
-    hideOverlay(overlay);
-  }
+  const overlayLifecycle = createTaskTimerOverlayLifecycle({
+    documentRef: document,
+    closeEdit: ctx.closeEdit,
+    closeElapsedPad: ctx.closeElapsedPad,
+    closeConfirm,
+    closeTaskExportModal: ctx.closeTaskExportModal,
+    closeShareTaskModal: ctx.closeShareTaskModal,
+  });
 
   function syncConfirmPrimaryToggleUi() {
     const toggle = document.getElementById("confirmDeleteAllSwitch");
@@ -121,11 +116,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
 
     syncConfirmDangerInputUi();
 
-    showOverlay(els.confirmOverlay as HTMLElement | null);
+    overlayLifecycle.openOverlay(els.confirmOverlay as HTMLElement | null);
   }
 
   function closeConfirm() {
-    hideOverlay(els.confirmOverlay as HTMLElement | null);
+    overlayLifecycle.closeOverlay(els.confirmOverlay as HTMLElement | null);
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
@@ -173,37 +168,6 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     syncConfirmPrimaryToggleUi();
   }
 
-  function closeTopOverlayIfOpen() {
-    const openOverlays = getVisibleOverlays(document);
-    if (!openOverlays.length) return false;
-    const top = openOverlays[openOverlays.length - 1];
-    if (top.id === "editOverlay") {
-      ctx.closeEdit(false);
-      return true;
-    }
-    if (top.id === "elapsedPadOverlay") {
-      ctx.closeElapsedPad(false);
-      return true;
-    }
-    if (top.id === "confirmOverlay") {
-      closeConfirm();
-      return true;
-    }
-    if (top.id === "timeGoalCompleteOverlay") {
-      return true;
-    }
-    if (top.id === "exportTaskOverlay") {
-      ctx.closeTaskExportModal();
-      return true;
-    }
-    if (top.id === "shareTaskModal") {
-      ctx.closeShareTaskModal();
-      return true;
-    }
-    closeOverlay(top);
-    return true;
-  }
-
   function registerConfirmOverlayEvents() {
     ctx.on(els.confirmCancelBtn, "click", () => {
       const action = ctx.getConfirmActionCancel();
@@ -224,13 +188,13 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   }
 
   return {
-    openOverlay,
-    closeOverlay,
+    openOverlay: overlayLifecycle.openOverlay,
+    closeOverlay: overlayLifecycle.closeOverlay,
     confirm,
     closeConfirm,
     setResetTaskConfirmBusy,
     syncConfirmPrimaryToggleUi,
-    closeTopOverlayIfOpen,
+    closeTopOverlayIfOpen: overlayLifecycle.closeTopOverlayIfOpen,
     registerConfirmOverlayEvents,
   };
 }

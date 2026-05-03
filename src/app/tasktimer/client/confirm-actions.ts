@@ -40,19 +40,19 @@ export function buildExitAppConfirmOptions(args: { closeConfirm: () => void; exi
 }
 
 export function buildDeleteTaskConfirmOptions(args: {
-  safeTaskName: string;
+  taskName: string;
   onDelete: () => void;
   onCancel: () => void;
 }) {
+  const taskName = String(args.taskName || "this task").trim() || "this task";
   return {
-    title: "Delete Task",
+    title: `Delete "${taskName}"?`,
     text: "",
     options: {
       okLabel: "Delete",
       cancelLabel: "Cancel",
-      checkboxLabel: "Delete history logs",
+      checkboxLabel: "Delete history entries",
       checkboxChecked: true,
-      textHtml: `<span class="confirmDanger">Delete "${args.safeTaskName}"?</span>`,
       onOk: args.onDelete,
       onCancel: args.onCancel,
     } satisfies TaskTimerConfirmOptions,

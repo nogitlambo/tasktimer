@@ -14,6 +14,8 @@
     "build:android": "npm run guard:no-dev && npm run clean:next && node scripts/build-android-export.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
     "fonts:check": "node scripts/check-font-contract.mjs",
@@ -68,6 +70,7 @@
     "googleapis": "^171.4.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }

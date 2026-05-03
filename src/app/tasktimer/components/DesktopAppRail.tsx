@@ -382,7 +382,6 @@ export default function DesktopAppRail({
   }, [shouldShowDesktopArchie, showDesktopRail]);
 
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
-  const currentPlanBadgeLabel = currentPlan === "pro" ? "Pro Plan" : currentPlanLabel;
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
     if (currentPlan !== "pro") return "No upcoming charge while on Free.";
@@ -526,17 +525,6 @@ export default function DesktopAppRail({
                       >
                         Settings
                       </a>
-                      <button
-                        className={`dashboardTag dashboardRailProfileTagLink dashboardRailProfilePlanBadge ${
-                          currentPlan === "pro" ? "dashboardRailProfilePlanBadgePro" : "dashboardRailProfilePlanBadgeFree"
-                        }`}
-                        id="rewardsInfoOpenBtn"
-                        type="button"
-                        aria-label={`Open ${currentPlanLabel} subscription details`}
-                        title={`${currentPlanLabel} subscription details`}
-                      >
-                        {currentPlanBadgeLabel}
-                      </button>
                     </div>
                   </div>
                 </div>

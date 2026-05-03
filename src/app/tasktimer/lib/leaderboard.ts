@@ -41,6 +41,7 @@ export type LeaderboardProfile = {
   streakDays: number;
   totalFocusMs: number;
   weeklyXpGain: number;
+  memberSinceMs: number | null;
   schemaVersion: 1;
 };
 
@@ -63,7 +64,7 @@ export type LeaderboardScreenData = {
 
 type LeaderboardIdentityFields = Pick<
   LeaderboardProfile,
-  "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "rewardCurrentRankId"
+  "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "rewardCurrentRankId" | "memberSinceMs"
 >;
 
 const LEADERBOARD_SCHEMA_VERSION = 1;
@@ -95,6 +96,26 @@ function normalizeInt(value: unknown): number {
   return Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
 }
 
+function normalizeOptionalTimestampMs(value: unknown): number | null {
+  if (!value) return null;
+  if (typeof value === "number" || typeof value === "string") {
+    const parsed = typeof value === "number" ? value : Date.parse(value);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
+  }
+  if (typeof value === "object") {
+    const record = value as { toMillis?: () => number; seconds?: number };
+    if (typeof record.toMillis === "function") {
+      const millis = record.toMillis();
+      return Number.isFinite(millis) && millis > 0 ? Math.floor(millis) : null;
+    }
+    if (Number.isFinite(Number(record.seconds))) {
+      const millis = Number(record.seconds) * 1000;
+      return millis > 0 ? Math.floor(millis) : null;
+    }
+  }
+  return null;
+}
+
 function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unknown> | null | undefined): LeaderboardProfile | null {
   if (!raw) return null;
   const uid = String(raw.uid || id || "").trim();
@@ -114,6 +135,7 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
     streakDays: normalizeInt(raw.streakDays),
     totalFocusMs: normalizeInt(raw.totalFocusMs),
     weeklyXpGain: normalizeInt(raw.weeklyXpGain),
+    memberSinceMs: normalizeOptionalTimestampMs(raw.memberSinceMs),
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
   };
 }
@@ -207,6 +229,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
   let googlePhotoUrl: string | null = normalizeString(currentUser?.photoURL, 2_000);
   let rankThumbnailSrc: string | null = null;
   let rewardCurrentRankId: string | null = null;
+  let memberSinceMs: number | null = normalizeOptionalTimestampMs(currentUser?.metadata?.creationTime);
 
   if (db && uid) {
     try {
@@ -218,6 +241,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
         googlePhotoUrl = normalizeString(snap.get("googlePhotoUrl"), 2_000) || googlePhotoUrl;
         rankThumbnailSrc = normalizeString(snap.get("rankThumbnailSrc"), 900_000);
         rewardCurrentRankId = normalizeString(snap.get("rewardCurrentRankId"), 120);
+        memberSinceMs = normalizeOptionalTimestampMs(snap.get("createdAt")) || memberSinceMs;
       }
     } catch {
       // Fall back to auth/local identity.
@@ -232,6 +256,7 @@ async function loadOwnLeaderboardIdentity(uid: string): Promise<LeaderboardIdent
     googlePhotoUrl,
     rankThumbnailSrc,
     rewardCurrentRankId,
+    memberSinceMs,
   });
 
   leaderboardIdentityCache.set(uid, {
@@ -289,6 +314,7 @@ export async function saveLeaderboardProfile(uid: string, metrics: LeaderboardMe
       streakDays: normalizeInt(metrics.streakDays),
       totalFocusMs: normalizeInt(metrics.totalFocusMs),
       weeklyXpGain: normalizeInt(metrics.weeklyXpGain),
+      memberSinceMs: identity.memberSinceMs,
       schemaVersion: LEADERBOARD_SCHEMA_VERSION,
       updatedAt: serverTimestamp(),
     },
@@ -329,6 +355,9 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
   if (Object.prototype.hasOwnProperty.call(patch, "rewardTotalXp")) {
     nextPatch.rewardTotalXp = normalizeInt(patch.rewardTotalXp);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, "createdAt")) {
+    nextPatch.memberSinceMs = normalizeOptionalTimestampMs(patch.createdAt);
+  }
   if (Object.keys(nextPatch).length <= 3) return;
   const cachedIdentity = leaderboardIdentityCache.get(uid);
   if (cachedIdentity) {
@@ -353,6 +382,9 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
         ...(Object.prototype.hasOwnProperty.call(nextPatch, "rewardCurrentRankId")
           ? { rewardCurrentRankId: normalizeString(nextPatch.rewardCurrentRankId, 120) }
           : {}),
+        ...(Object.prototype.hasOwnProperty.call(nextPatch, "memberSinceMs")
+          ? { memberSinceMs: normalizeOptionalTimestampMs(nextPatch.memberSinceMs) }
+          : {}),
       },
     });
   }
@@ -375,6 +407,7 @@ function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, ident
     googlePhotoUrl: identity.googlePhotoUrl,
     rankThumbnailSrc: identity.rankThumbnailSrc,
     rewardCurrentRankId: identity.rewardCurrentRankId || profile.rewardCurrentRankId,
+    memberSinceMs: identity.memberSinceMs || profile.memberSinceMs,
   };
 }
 

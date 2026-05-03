@@ -1,10 +1,8 @@
 import type { HistoryViewState } from "./types";
 import type { TaskTimerHistoryInlineContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
-import {
-  buildHistoryEntrySummaryPayload,
-  renderHistoryEntrySummaryHtml,
-} from "./history-entry-summary";
+import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
+import { createHistoryInlineSelectionInteraction } from "./history-inline-selection-interaction";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -30,6 +28,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
   const { sharedTasks } = ctx;
   const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
+  const historyInlineSelection = createHistoryInlineSelectionInteraction();
 
   function prefersReducedMotion() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
@@ -279,9 +278,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.clearTimeout(state.selectionClearTimer);
       state.selectionClearTimer = null;
     }
-    state.selectedRelIndex = null;
-    state.selectedAbsIndex = null;
-    state.lockedAbsIndexes.clear();
+    historyInlineSelection.clearSelection(state);
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
     startHistorySelectionAnimation(taskId, null);
   }
@@ -297,9 +294,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.cancelAnimationFrame(state.selectionAnimRaf);
       state.selectionAnimRaf = null;
     }
-    state.selectedRelIndex = null;
-    state.selectedAbsIndex = null;
-    state.lockedAbsIndexes.clear();
+    historyInlineSelection.clearSelection(state);
     state.visualSelectedAbsIndex = null;
     state.selectionZoom = 1;
     if (ctx.getHistoryEntryNoteAnchorTaskId() === taskId) closeHistoryEntryNoteOverlay();
@@ -314,7 +309,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function clearHistoryLockedSelections(taskId: string) {
     const state = ensureHistoryViewState(taskId);
-    state.lockedAbsIndexes.clear();
+    historyInlineSelection.clearLockedSelections(state);
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
   }
 
@@ -429,106 +424,37 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function isHistoryEntryNoteOverlayOpen() {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    return !!overlay && overlay.style.display !== "none";
+    return historyEntrySummaryInteraction.isOpen();
   }
 
-  function syncHistoryEntryNotePlaceholders() {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (!overlay) return;
-    const isMobile = window.matchMedia?.("(max-width: 640px)")?.matches ?? window.innerWidth <= 640;
-    overlay.querySelectorAll<HTMLTextAreaElement>("[data-history-summary-note-input]").forEach((input) => {
-      const desktopText = String(input.dataset.emptyNotePlaceholderDesktop || "Click to add note");
-      const mobileText = String(input.dataset.emptyNotePlaceholderMobile || "Tap to add note");
-      input.placeholder = isMobile ? mobileText : desktopText;
-    });
-  }
-
-  function syncHistoryEntryNoteEditorUi(editing: boolean) {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (!overlay) return;
-    const editable = overlay.dataset.historyEntryEditable === "true";
-    const currentNote = String(overlay.dataset.historyEntryNote || "");
-    if (els.historyEntryNoteEditor) {
-      (els.historyEntryNoteEditor as HTMLElement).style.display = "none";
-    }
-    if (els.historyEntryNoteEditBtn) {
-      els.historyEntryNoteEditBtn.textContent = currentNote ? "Edit Note" : "Add Note";
-      els.historyEntryNoteEditBtn.style.display = editable && !editing ? "" : "none";
-    }
-    if (els.historyEntryNoteCancelBtn) {
-      els.historyEntryNoteCancelBtn.style.display = "none";
-    }
-    if (els.historyEntryNoteSaveBtn) {
-      els.historyEntryNoteSaveBtn.style.display = "none";
-    }
-    const closeBtn = overlay.querySelector(".closePopup") as HTMLButtonElement | null;
-    if (closeBtn) {
-      closeBtn.style.display = "";
-      closeBtn.textContent = editing && getActiveHistoryEntryNoteInputValue().trim() ? "Save & Close" : "Close";
-      closeBtn.classList.toggle("isSaveAndClose", editing && !!getActiveHistoryEntryNoteInputValue().trim());
-    }
-    overlay.dataset.historyEntryEditing = editing ? "true" : "false";
-  }
-
-  function getActiveHistoryEntryNoteInput() {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (!overlay) return null;
-    return overlay.querySelector(".historyEntrySummaryNoteInput.isEditing") as HTMLTextAreaElement | null;
-  }
-
-  function getActiveHistoryEntryNoteInputValue() {
-    return String(getActiveHistoryEntryNoteInput()?.value ?? els.historyEntryNoteInput?.value ?? "");
-  }
-
-  function syncHistoryEntryNoteCloseLabel() {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    const closeBtn = overlay?.querySelector(".closePopup") as HTMLButtonElement | null;
-    if (!overlay || !closeBtn) return;
-    closeBtn.textContent =
-      overlay.dataset.historyEntryEditing === "true" && getActiveHistoryEntryNoteInputValue().trim()
-        ? "Save & Close"
-        : "Close";
-    closeBtn.classList.toggle(
-      "isSaveAndClose",
-      overlay.dataset.historyEntryEditing === "true" && !!getActiveHistoryEntryNoteInputValue().trim()
-    );
-  }
-
-  function setHistoryEntryOverlayTarget(taskId: string, entries: any[]) {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (!overlay) return;
-    overlay.dataset.historyEntryOwner = "inline";
-    overlay.dataset.historyEntryTaskId = String(taskId || "");
-    const entry = Array.isArray(entries) && entries.length === 1 ? entries[0] : null;
-    const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
-    const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
-    const name = String(entry?.name || "").trim();
-    const note = entry ? ctx.getHistoryEntryNote(entry) : "";
-    const editable = !!taskId && !!entry && ts > 0 && !!name;
-    overlay.dataset.historyEntryEditable = editable ? "true" : "false";
-    overlay.dataset.historyEntryTs = editable ? String(ts) : "";
-    overlay.dataset.historyEntryMs = editable ? String(ms) : "";
-    overlay.dataset.historyEntryName = editable ? name : "";
-    overlay.dataset.historyEntryNote = editable ? note : "";
-    if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = editable ? note : "";
-    syncHistoryEntryNoteEditorUi(false);
-  }
+  const historyEntrySummaryInteraction = createHistoryEntrySummaryInteraction({
+    owner: "inline",
+    elements: {
+      overlay: els.historyEntryNoteOverlay as HTMLElement | null,
+      title: els.historyEntryNoteTitle as HTMLElement | null,
+      meta: els.historyEntryNoteMeta as HTMLElement | null,
+      body: els.historyEntryNoteBody as HTMLElement | null,
+      editor: els.historyEntryNoteEditor as HTMLElement | null,
+      input: els.historyEntryNoteInput as HTMLTextAreaElement | null,
+      editBtn: els.historyEntryNoteEditBtn as HTMLButtonElement | null,
+      cancelBtn: els.historyEntryNoteCancelBtn as HTMLButtonElement | null,
+      saveBtn: els.historyEntryNoteSaveBtn as HTMLButtonElement | null,
+    },
+    escapeHtml: ctx.escapeHtmlUI,
+    formatDateTime: ctx.formatDateTime,
+    formatTwo: ctx.formatTwo,
+    getEntryNote: getHistoryEntryNote,
+    getTaskById: (taskId) =>
+      ctx.getTasks().find((candidate) => String(candidate?.id || "").trim() === String(taskId || "").trim()) || null,
+    getEntriesForTask: getHistoryForTask,
+    getRewardProgress: () => ctx.getRewardProgress(),
+    openOverlay: ctx.openOverlay,
+    closeOverlay: ctx.closeOverlay,
+    isMobileLayout: () => window.matchMedia?.("(max-width: 640px)")?.matches ?? window.innerWidth <= 640,
+  });
 
   function closeHistoryEntryNoteOverlay(opts?: { preservePosition?: boolean }) {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (overlay) {
-      overlay.dataset.historyEntryOwner = "";
-      overlay.dataset.historyEntryTaskId = "";
-      overlay.dataset.historyEntryEditable = "false";
-      overlay.dataset.historyEntryTs = "";
-      overlay.dataset.historyEntryMs = "";
-      overlay.dataset.historyEntryName = "";
-      overlay.dataset.historyEntryNote = "";
-      overlay.dataset.historyEntryEditing = "false";
-    }
-    if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = "";
-    syncHistoryEntryNoteEditorUi(false);
+    historyEntrySummaryInteraction.clearTarget();
     if (!opts?.preservePosition) clearHistoryEntryNoteOverlayPosition();
     ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
   }
@@ -540,32 +466,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
-    const task = ctx.getTasks().find((candidate) => String(candidate?.id || "").trim() === String(taskId || "").trim()) || null;
-    const payload = buildHistoryEntrySummaryPayload({
-      taskId,
-      task,
-      rewardProgress: ctx.getRewardProgress(),
-      entries,
-      formatDateTime: ctx.formatDateTime,
-      formatTwo: ctx.formatTwo,
-      getEntryNote: getHistoryEntryNote,
-    });
-    if (!payload) {
+    if (!historyEntrySummaryInteraction.openSummary(taskId, entries)) {
       closeHistoryEntryNoteOverlay();
       return;
     }
-    if (els.historyEntryNoteTitle) els.historyEntryNoteTitle.textContent = payload.titleText;
-    if (els.historyEntryNoteMeta) {
-      els.historyEntryNoteMeta.textContent = payload.metaText;
-      (els.historyEntryNoteMeta as HTMLElement).style.display = payload.metaText ? "" : "none";
-    }
-    if (els.historyEntryNoteBody) {
-      els.historyEntryNoteBody.innerHTML = renderHistoryEntrySummaryHtml(payload, ctx.escapeHtmlUI);
-      syncHistoryEntryNotePlaceholders();
-    }
-    setHistoryEntryOverlayTarget(taskId, entries);
     ctx.setHistoryEntryNoteAnchorTaskId(taskId);
-    ctx.openOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
     requestAnimationFrame(() => {
       refreshHistoryEntryNoteOverlayPosition();
     });
@@ -586,7 +491,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     );
     if (pos < 0) return;
     const nextEntry = { ...original[pos] };
-    const note = getActiveHistoryEntryNoteInputValue().trim();
+    const note = historyEntrySummaryInteraction.getActiveInputValue().trim();
     if (note) nextEntry.note = note;
     else delete nextEntry.note;
     const nextTaskHistory = original.slice();
@@ -600,38 +505,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function beginInlineHistoryEntryNoteEdit(trigger: HTMLElement | null) {
-    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
-    if (!overlay || overlay.dataset.historyEntryOwner !== "inline") return;
-    if (!trigger || overlay.dataset.historyEntryEditing === "true") return;
-
-    const taskId = String(trigger.getAttribute("data-history-summary-task-id") || "").trim();
-    const ts = Math.floor(Number(trigger.getAttribute("data-history-summary-ts") || 0));
-    const ms = Math.max(0, Math.floor(Number(trigger.getAttribute("data-history-summary-ms") || 0)));
-    const name = String(trigger.getAttribute("data-history-summary-name") || "").trim();
-    if (!taskId || ts <= 0 || !name) return;
-
-    const entry = getHistoryForTask(taskId).find(
-      (candidate: any) => Number(candidate?.ts) === ts && Number(candidate?.ms) === ms && String(candidate?.name || "").trim() === name
-    );
-    if (!entry || (entry as any)?.isLiveSession) return;
-
-    const note = getHistoryEntryNote(entry);
-    overlay.dataset.historyEntryTaskId = taskId;
-    overlay.dataset.historyEntryEditable = "true";
-    overlay.dataset.historyEntryTs = String(ts);
-    overlay.dataset.historyEntryMs = String(ms);
-    overlay.dataset.historyEntryName = name;
-    overlay.dataset.historyEntryNote = note;
-    if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = note;
-    const input = trigger.querySelector("[data-history-summary-note-input]") as HTMLTextAreaElement | null;
-    if (input) {
-      input.readOnly = false;
-      input.classList.add("isEditing");
-      input.value = note;
-    }
-    syncHistoryEntryNoteEditorUi(true);
-    (input || els.historyEntryNoteInput)?.focus();
-    refreshHistoryEntryNoteOverlayPosition();
+    if (historyEntrySummaryInteraction.beginEdit(trigger)) refreshHistoryEntryNoteOverlayPosition();
   }
 
   function findHistoryEntryIndexByIdentity(entries: any[], identity: { ts: number; ms: number; name: string }) {
@@ -651,20 +525,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory);
 
-    if (state.selectedAbsIndex === deleteAbsIndex) {
-      state.selectedAbsIndex = null;
-      state.selectedRelIndex = null;
+    const deletionSelection = historyInlineSelection.applyDeletedIndex(state, deleteAbsIndex);
+    if (deletionSelection.clearedSelected) {
       startHistorySelectionAnimation(taskId, null);
-    } else if (state.selectedAbsIndex != null && state.selectedAbsIndex > deleteAbsIndex) {
-      state.selectedAbsIndex -= 1;
-    }
-    if (state.lockedAbsIndexes.size > 0) {
-      const nextLocked = new Set<number>();
-      state.lockedAbsIndexes.forEach((idx) => {
-        if (idx === deleteAbsIndex) return;
-        nextLocked.add(idx > deleteAbsIndex ? idx - 1 : idx);
-      });
-      state.lockedAbsIndexes = nextLocked;
     }
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
 
@@ -678,7 +541,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   function syncHistoryEntryNoteOverlayForSelection(taskId: string, state?: HistoryViewState | null) {
     if (ctx.getHistoryEntryNoteAnchorTaskId() !== taskId) return;
     const nextState = state || ensureHistoryViewState(taskId);
-    const lockedIndexes = Array.from(nextState.lockedAbsIndexes.values()).sort((a, b) => a - b);
+    const lockedIndexes = historyInlineSelection.getSortedLockedIndexes(nextState);
     if (!lockedIndexes.length) {
       closeHistoryEntryNoteOverlay();
       return;
@@ -693,8 +556,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function getCurrentHistorySummarySelection(taskId: string, state?: HistoryViewState | null) {
     const nextState = state || ensureHistoryViewState(taskId);
-    const lockedIndexes = Array.from(nextState.lockedAbsIndexes.values()).sort((a, b) => a - b);
-    const targetAbsIndex = lockedIndexes[0] ?? nextState.selectedAbsIndex ?? null;
+    const targetAbsIndex = historyInlineSelection.getSummaryPrimaryIndex(nextState);
     if (targetAbsIndex == null) return [];
     return getHistorySummaryEntries(taskId, nextState, targetAbsIndex, nextState.lockedAbsIndexes);
   }
@@ -1109,18 +971,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
     if (ui.newerBtn) ui.newerBtn.disabled = end >= total;
 
-    if (state.selectedAbsIndex != null) {
-      const rel = state.selectedAbsIndex - start;
-      if (rel >= 0 && rel < slice.length) state.selectedRelIndex = rel;
-      else {
-        state.selectedAbsIndex = null;
-        state.selectedRelIndex = null;
-      }
-    } else {
-      state.selectedRelIndex = null;
-    }
-    const hasDeleteTarget = !isDayMode && (state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0);
-    const hasSummaryTarget = !isDayMode && (state.selectedAbsIndex != null || state.lockedAbsIndexes.size > 0);
+    historyInlineSelection.syncSelectedRelIndex(state, start, slice.length);
+    const { hasDeleteTarget, hasSummaryTarget } = historyInlineSelection.getRenderTargets(state, isDayMode);
     if (ui.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
     if (ui.viewSummaryBtn) {
       ui.viewSummaryBtn.disabled = !hasSummaryTarget;
@@ -1160,7 +1012,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const analyseBtn = ui.root.querySelector('[data-history-action="analyse"]') as HTMLButtonElement | null;
     if (analyseBtn) {
       const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
-      const canAnalyse = hasHistoryEntitlement && state.lockedAbsIndexes.size >= 2;
+      const canAnalyse = historyInlineSelection.getCanAnalyse(state, hasHistoryEntitlement);
       analyseBtn.classList.toggle("isDisabled", !canAnalyse);
       analyseBtn.disabled = !hasHistoryEntitlement;
       analyseBtn.setAttribute("aria-disabled", String(!canAnalyse));
@@ -1382,8 +1234,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.on(document, "input", (e: any) => {
       const input = findDelegatedElement(e.target, "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing");
       if (!input) return;
-      if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = String((input as HTMLTextAreaElement).value || "");
-      syncHistoryEntryNoteCloseLabel();
+      historyEntrySummaryInteraction.syncInputMirror(String((input as HTMLTextAreaElement).value || ""));
     });
     ctx.on(document, "keydown", (e: any) => {
       if (e.key !== "Enter" && e.key !== " ") return;
@@ -1400,14 +1251,13 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
       if (!overlay || overlay.dataset.historyEntryOwner !== "inline" || overlay.dataset.historyEntryEditable !== "true") return;
       if (els.historyEntryNoteInput) els.historyEntryNoteInput.focus();
-      syncHistoryEntryNoteEditorUi(true);
+      historyEntrySummaryInteraction.syncEditorUi(true);
       refreshHistoryEntryNoteOverlayPosition();
     });
     ctx.on(els.historyEntryNoteCancelBtn, "click", () => {
       const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
       if (!overlay || overlay.dataset.historyEntryOwner !== "inline") return;
-      if (els.historyEntryNoteInput) els.historyEntryNoteInput.value = String(overlay.dataset.historyEntryNote || "");
-      syncHistoryEntryNoteEditorUi(false);
+      historyEntrySummaryInteraction.cancelEdit();
       refreshHistoryEntryNoteOverlayPosition();
     });
     ctx.on(els.historyEntryNoteSaveBtn, "click", () => {
@@ -1488,7 +1338,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
             ctx.showUpgradePrompt("Inline history analysis", "pro");
             return;
           }
-          if (state.lockedAbsIndexes.size < 2) return;
+          if (!historyInlineSelection.getCanAnalyse(state, true)) return;
           openHistoryAnalysisModal(taskId);
         },
         viewSummary: () => {
@@ -1505,8 +1355,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         actionHandlers[action]?.();
         if (Object.prototype.hasOwnProperty.call(actionHandlers, action)) return;
       }
-      const lockedList = Array.from(state.lockedAbsIndexes.values());
-      const deleteAbsIndex = state.selectedAbsIndex != null ? state.selectedAbsIndex : lockedList[lockedList.length - 1] ?? null;
+      const deleteAbsIndex = historyInlineSelection.getDeleteTargetIndex(state);
       if (action !== "delete" || deleteAbsIndex == null) return;
 
       const all = getHistoryForTask(taskId);
@@ -1562,40 +1411,23 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         }
       }
 
-      if (hit) {
-        const isSameTransient = state.selectedAbsIndex != null && state.selectedAbsIndex === hit.abs;
-        const isSameLocked = state.lockedAbsIndexes.has(hit.abs);
-        if (isSameLocked) {
-          state.lockedAbsIndexes.delete(hit.abs);
-          syncHistoryEntryNoteOverlayForSelection(taskId, state);
-          const ui = getHistoryUi(taskId);
-          const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
-          if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
-        } else if (isSameTransient) {
-          state.lockedAbsIndexes.add(hit.abs);
-          if (state.selectionClearTimer != null) {
-            window.clearTimeout(state.selectionClearTimer);
-            state.selectionClearTimer = null;
-          }
-          state.selectedRelIndex = null;
-          state.selectedAbsIndex = null;
-          startHistorySelectionAnimation(taskId, null);
-          const ui = getHistoryUi(taskId);
-          if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
-        } else {
-          state.selectedRelIndex = hit.rel;
-          state.selectedAbsIndex = hit.abs;
-          startHistorySelectionAnimation(taskId, hit.abs);
-          scheduleHistorySelectionClear(taskId);
-          const ui = getHistoryUi(taskId);
-          if (ui?.deleteBtn) ui.deleteBtn.disabled = false;
-        }
-      } else {
-        clearHistoryChartSelection(taskId);
-        const ui = getHistoryUi(taskId);
-        const hasDeleteTargetNow = state.selectedRelIndex != null || state.lockedAbsIndexes.size > 0;
-        if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTargetNow;
+      const selectionResult = historyInlineSelection.applyHit(state, hit);
+      if (state.selectionClearTimer != null && (selectionResult.kind === "locked" || selectionResult.kind === "cleared")) {
+        window.clearTimeout(state.selectionClearTimer);
+        state.selectionClearTimer = null;
       }
+      if (selectionResult.kind === "selected") {
+        startHistorySelectionAnimation(taskId, selectionResult.animateTo);
+        scheduleHistorySelectionClear(taskId);
+      } else if (selectionResult.kind === "locked" || selectionResult.kind === "cleared") {
+        startHistorySelectionAnimation(taskId, null);
+      }
+      if (selectionResult.kind === "unlocked" || selectionResult.kind === "cleared") {
+        syncHistoryEntryNoteOverlayForSelection(taskId, state);
+      }
+      const ui = getHistoryUi(taskId);
+      const { hasDeleteTarget } = historyInlineSelection.getRenderTargets(state, state.rangeMode === "day");
+      if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
       renderHistory(taskId);
     });
 

@@ -67,6 +67,11 @@ function formatLeaderboardStreak(daysRaw: number): string {
   return days === 1 ? "1 day streak" : `${days} day streak`;
 }
 
+function formatLeaderboardMemberSince(memberSinceMs: number | null | undefined): string {
+  if (!memberSinceMs || !Number.isFinite(memberSinceMs) || memberSinceMs <= 0) return "";
+  return new Date(memberSinceMs).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 function getLeaderboardLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
 }
@@ -115,6 +120,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>(() =>
     getFirebaseAuthClient() ? null : "Leaderboard is unavailable in this session."
   );
+  const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
@@ -220,15 +226,22 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     };
   }, []);
 
-  const currentUserLabel = leaderboardData.currentUserEntry ? getLeaderboardLabel(leaderboardData.currentUserEntry) : "You";
-  const currentUserRankLabel =
-    leaderboardData.currentUserRank && leaderboardData.currentUserRank > 0 ? `Rank #${leaderboardData.currentUserRank}` : "Awaiting rank";
-  const currentUserGapLabel =
-    leaderboardData.currentUserGapToNextXp && leaderboardData.currentUserGapToNextXp > 0
-      ? `${new Intl.NumberFormat().format(leaderboardData.currentUserGapToNextXp)} XP to the next rival.`
-      : leaderboardData.currentUserEntry
-        ? "You are at the front of the current visible ladder."
-        : "Your profile will appear here after the first public snapshot sync.";
+  const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
+  const selectedLeaderboardRank =
+    selectedLeaderboardProfile && leaderboardData.currentUserEntry?.uid === selectedLeaderboardProfile.uid
+      ? leaderboardData.currentUserRank
+      : selectedLeaderboardProfile
+        ? leaderboardData.topEntries.findIndex((entry) => entry.uid === selectedLeaderboardProfile.uid) + 1
+        : null;
+  const selectedLeaderboardRankLabel =
+    selectedLeaderboardRank && selectedLeaderboardRank > 0 ? `#${selectedLeaderboardRank}` : "--";
+  const selectedLeaderboardMemberSince = selectedLeaderboardProfile
+    ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
+    : "";
+
+  const closeLeaderboardPositionModal = () => {
+    setSelectedLeaderboardProfile(null);
+  };
 
   return (
     <>
@@ -385,11 +398,27 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <div className="leaderboardRows">
                     {leaderboardData.topEntries.length ? (
                       leaderboardData.topEntries.map((entry, index) => (
-                        <article className="leaderboardRow" key={entry.uid}>
+                        <article
+                          className="leaderboardRow"
+                          key={entry.uid}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`View ${getLeaderboardLabel(entry)} leaderboard position`}
+                          onClick={() => setSelectedLeaderboardProfile(entry)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter" && event.key !== " ") return;
+                            event.preventDefault();
+                            setSelectedLeaderboardProfile(entry);
+                          }}
+                        >
                           <div className="leaderboardRank">{index + 1}</div>
-                          <LeaderboardAvatar profile={entry} />
+                          <span className="leaderboardAvatarButton">
+                            <LeaderboardAvatar profile={entry} />
+                          </span>
                           <div className="leaderboardIdentity">
-                            <strong className="leaderboardName">{getLeaderboardLabel(entry)}</strong>
+                            <span className="leaderboardNameButton">
+                              <strong className="leaderboardName">{getLeaderboardLabel(entry)}</strong>
+                            </span>
                             <span className="leaderboardMeta">
                               {formatDashboardDurationShort(entry.totalFocusMs)} focused - {formatLeaderboardStreak(entry.streakDays)}
                             </span>
@@ -413,50 +442,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               : "No leaderboard data yet. Launch a task to publish the first public snapshot."}
                       </div>
                     )}
-                  </div>
-                </section>
-
-                <section className="dashboardCard leaderboardCard" aria-label="Your leaderboard position">
-                  <p className="dashboardCardEyebrow">Your position</p>
-                  <h3 className="dashboardCardTitle">{currentUserRankLabel}</h3>
-                  <p className="leaderboardPanelText">
-                    {leaderboardState === "signedOut"
-                      ? "Sign in to compare your progress against the rest of the app."
-                        : leaderboardState === "error"
-                          ? leaderboardError || "Your leaderboard summary is unavailable."
-                        : leaderboardData.currentUserEntry
-                          ? `${currentUserLabel}. ${currentUserGapLabel}`
-                          : "Your public leaderboard profile has not synced yet."}
-                  </p>
-                  <div className="leaderboardMiniRow">
-                    <span className="leaderboardMiniLabel">Rank</span>
-                    <strong>
-                      {leaderboardData.currentUserEntry ? getLeaderboardRankLabel(leaderboardData.currentUserEntry) : "--"}
-                    </strong>
-                  </div>
-                  <div className="leaderboardMiniRow">
-                    <span className="leaderboardMiniLabel">XP</span>
-                    <strong>
-                      {leaderboardData.currentUserEntry ? formatLeaderboardXp(leaderboardData.currentUserEntry.rewardTotalXp) : "--"}
-                    </strong>
-                  </div>
-                  <div className="leaderboardMiniRow">
-                    <span className="leaderboardMiniLabel">Focus logged</span>
-                    <strong>
-                      {leaderboardData.currentUserEntry ? formatDashboardDurationShort(leaderboardData.currentUserEntry.totalFocusMs) : "--"}
-                    </strong>
-                  </div>
-                  <div className="leaderboardMiniRow">
-                    <span className="leaderboardMiniLabel">Current streak</span>
-                    <strong>
-                      {leaderboardData.currentUserEntry ? formatLeaderboardStreak(leaderboardData.currentUserEntry.streakDays) : "--"}
-                    </strong>
-                  </div>
-                  <div className="leaderboardMiniRow">
-                    <span className="leaderboardMiniLabel">Weekly XP</span>
-                    <strong>
-                      {leaderboardData.currentUserEntry ? formatLeaderboardTrend(leaderboardData.currentUserEntry.weeklyXpGain) : "--"}
-                    </strong>
                   </div>
                 </section>
 
@@ -527,6 +512,49 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               </div>
             </div>
           </section>
+
+          {selectedLeaderboardProfile ? (
+            <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
+              <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
+                <p className="dashboardCardEyebrow">Leaderboard position</p>
+                <h3 className="dashboardCardTitle">{selectedLeaderboardRankLabel}</h3>
+                <div className="leaderboardPositionModalIdentity">
+                  <LeaderboardAvatar profile={selectedLeaderboardProfile} />
+                  <div className="leaderboardPositionModalIdentityText">
+                    <strong className="leaderboardName">{selectedLeaderboardLabel}</strong>
+                    {selectedLeaderboardMemberSince ? (
+                      <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="leaderboardMiniRow">
+                  <span className="leaderboardMiniLabel">Rank</span>
+                  <strong>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
+                </div>
+                <div className="leaderboardMiniRow">
+                  <span className="leaderboardMiniLabel">XP</span>
+                  <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
+                </div>
+                <div className="leaderboardMiniRow">
+                  <span className="leaderboardMiniLabel">Time logged</span>
+                  <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
+                </div>
+                <div className="leaderboardMiniRow">
+                  <span className="leaderboardMiniLabel">Current streak</span>
+                  <strong>{formatLeaderboardStreak(selectedLeaderboardProfile.streakDays)}</strong>
+                </div>
+                <div className="leaderboardMiniRow">
+                  <span className="leaderboardMiniLabel">Weekly XP</span>
+                  <strong>{formatLeaderboardTrend(selectedLeaderboardProfile.weeklyXpGain)}</strong>
+                </div>
+                <div className="confirmBtns">
+                  <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <section className={`appPage${initialPage === "history" ? " appPageOn" : ""}`} id="appPageHistory" aria-label="History Manager page">
             <HistoryManagerScreen />

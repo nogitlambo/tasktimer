@@ -11,7 +11,6 @@ type CreateTaskDeleteOptions = {
   setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   getConfirmOverlay: () => HTMLElement | null;
   getConfirmDeleteAllChecked: () => boolean;
-  escapeHtmlUI: (value: unknown) => string;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;
   saveHistory: (history: Record<string, unknown[]>) => void;
@@ -34,7 +33,7 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
     };
 
     const confirmConfig = buildDeleteTaskConfirmOptions({
-      safeTaskName: options.escapeHtmlUI(task.name || "this task"),
+      taskName: task.name || "this task",
       onDelete: () => {
         clearDeleteTaskConfirmState();
         const deleteHistory = options.getConfirmDeleteAllChecked();

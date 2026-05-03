@@ -1,110 +1,47 @@
-import type { DeletedTaskMeta, Task } from "../lib/types";
-import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
-import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
-import { normalizeTaskColor } from "../lib/taskColors";
-import { createDefaultHistoryManagerManualDraft, parseHistoryManagerManualDraft, type HistoryManagerManualDraft } from "./history-manager-shared";
+import type { Task } from "../lib/types";
+import { parseHistoryManagerManualDraft } from "./history-manager-shared";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
-import { buildTaskProgressModel, renderTaskProgressHtml } from "./task-card-view-model";
+import { createTaskCardActionEffects } from "./task-card-action-effects";
+import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
+import { createTaskListRenderer } from "./task-list-renderer";
+import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
+import { createTaskTimerLifecycle } from "./task-timer-lifecycle";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
-  let taskManualEntryDraft: HistoryManagerManualDraft | null = null;
-  let activeTaskManualEntryTaskId: string | null = null;
-
-  function syncTaskManualEntryOverlay() {
-    const draft = taskManualEntryDraft || createDefaultHistoryManagerManualDraft(Date.now());
-    if (els.taskManualDateTimeInput) els.taskManualDateTimeInput.value = draft.dateTimeValue || "";
-    els.taskManualDateTimeInput?.parentElement?.setAttribute("data-empty", draft.dateTimeValue ? "false" : "true");
-    if (els.taskManualHoursInput) els.taskManualHoursInput.value = draft.hoursValue || "";
-    if (els.taskManualMinutesInput) els.taskManualMinutesInput.value = draft.minutesValue || "";
-    if (els.taskManualNoteInput) els.taskManualNoteInput.value = draft.noteValue || "";
-    const sentimentButtons = Array.from(
-      ((els.taskManualEntryDifficultyGroup as HTMLElement | null)?.querySelectorAll?.("[data-completion-difficulty]") || []) as Iterable<Element>
-    );
-    sentimentButtons.forEach((button) => {
-      const selected =
-        normalizeCompletionDifficulty((button as HTMLElement).dataset.completionDifficulty) ===
-        normalizeCompletionDifficulty(draft.completionDifficulty);
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-checked", selected ? "true" : "false");
-    });
-    if (els.taskManualEntryError) {
-      els.taskManualEntryError.textContent = draft.errorMessage || "";
-      (els.taskManualEntryError as HTMLElement).style.display = draft.errorMessage ? "block" : "none";
-    }
-  }
-
-  function closeTaskManualEntryOverlay() {
-    activeTaskManualEntryTaskId = null;
-    taskManualEntryDraft = null;
-    if (els.taskManualEntryOverlay) {
-      els.taskManualEntryOverlay.style.display = "none";
-      els.taskManualEntryOverlay.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  function openTaskManualEntryDateTimePicker() {
-    const input = els.taskManualDateTimeInput;
-    if (!input) return;
-    try {
-      if (typeof (input as HTMLInputElement & { showPicker?: () => void }).showPicker === "function") {
-        (input as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
-      } else {
-        input.focus();
-        input.click();
-      }
-    } catch {
-      try {
-        input.focus();
-        input.click();
-      } catch {
-        input.focus();
-      }
-    }
-  }
-
-  function openTaskManualEntryOverlay(taskId: string) {
-    const normalizedTaskId = String(taskId || "").trim();
-    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === normalizedTaskId) || null;
-    if (!task) return;
-    activeTaskManualEntryTaskId = normalizedTaskId;
-    taskManualEntryDraft = createDefaultHistoryManagerManualDraft(Date.now());
-    if (els.taskManualEntryTitle) {
-      els.taskManualEntryTitle.textContent = `Add Manual Entry for ${getTaskDisplayName(task)}`;
-    }
-    if (els.taskManualEntryMeta) {
-      els.taskManualEntryMeta.textContent = "";
-      (els.taskManualEntryMeta as HTMLElement).hidden = true;
-    }
-    syncTaskManualEntryOverlay();
-    if (els.taskManualEntryOverlay) {
-      els.taskManualEntryOverlay.style.display = "flex";
-      els.taskManualEntryOverlay.setAttribute("aria-hidden", "false");
-    }
-    window.setTimeout(() => {
-      try {
-        els.taskManualDateTimeBtn?.focus({ preventScroll: true });
-      } catch {
-        els.taskManualDateTimeBtn?.focus();
-      }
-    }, 0);
-  }
-
-  function updateTaskManualEntryDraft(updater: (draft: HistoryManagerManualDraft) => HistoryManagerManualDraft) {
-    const currentDraft = taskManualEntryDraft || createDefaultHistoryManagerManualDraft(Date.now());
-    taskManualEntryDraft = updater(currentDraft);
-  }
+  const taskManualEntry = createTaskManualEntryInteraction({
+    elements: {
+      overlay: els.taskManualEntryOverlay,
+      title: els.taskManualEntryTitle as HTMLElement | null,
+      meta: els.taskManualEntryMeta as HTMLElement | null,
+      dateTimeInput: els.taskManualDateTimeInput,
+      dateTimeButton: els.taskManualDateTimeBtn,
+      hoursInput: els.taskManualHoursInput,
+      minutesInput: els.taskManualMinutesInput,
+      difficultyGroup: els.taskManualEntryDifficultyGroup as HTMLElement | null,
+      noteInput: els.taskManualNoteInput,
+      error: els.taskManualEntryError as HTMLElement | null,
+    },
+    getTaskById: (taskId) => ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null,
+    getTaskDisplayName,
+    openOverlay: (overlay) => {
+      if (overlay) overlay.style.display = "flex";
+    },
+    closeOverlay: (overlay) => {
+      if (overlay) overlay.style.display = "none";
+    },
+  });
 
   function saveTaskManualEntryDraft() {
-    const taskId = String(activeTaskManualEntryTaskId || "").trim();
+    const taskId = String(taskManualEntry.getActiveTaskId() || "").trim();
     if (!taskId) return;
     const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
     if (!task) return;
-    const draft = taskManualEntryDraft;
+    const draft = taskManualEntry.getDraft();
     if (!draft) return;
     const parsed = parseHistoryManagerManualDraft({
       draft,
@@ -112,8 +49,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       taskColor: typeof (task as { color?: unknown }).color === "string" ? String((task as { color?: unknown }).color || "") : null,
     });
     if ("error" in parsed) {
-      updateTaskManualEntryDraft((currentDraft) => ({ ...currentDraft, errorMessage: parsed.error || "Could not save entry." }));
-      syncTaskManualEntryOverlay();
+      taskManualEntry.setError(parsed.error || "Could not save entry.");
       return;
     }
     const historyByTaskId = ctx.getHistoryByTaskId();
@@ -123,17 +59,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory);
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    closeTaskManualEntryOverlay();
+    taskManualEntry.close();
     ctx.render();
   }
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
     return name || "Unnamed task";
-  }
-
-  function findOtherRunningTaskIndex(targetIndex: number) {
-    return ctx.getTasks().findIndex((task, index) => index !== targetIndex && !!task?.running);
   }
 
   function canUseAdvancedHistory() {
@@ -144,57 +76,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return ctx.hasEntitlement("socialFeatures");
   }
 
-  function normalizeTaskNameForSort(task: Task | null | undefined) {
-    return String(task?.name || "").trim().toLocaleLowerCase();
-  }
-
-  function getTaskScheduleSortMinutes(task: Task | null | undefined) {
-    if (!task) return null;
-    const entries = getTaskScheduledDayEntries(task);
-    if (!entries.length) return null;
-    const minuteValues = entries
-      .map((entry) => {
-        const match = String(entry.time || "").match(/^(\d{2}):(\d{2})$/);
-        if (!match) return null;
-        const hours = Number(match[1] || 0);
-        const minutes = Number(match[2] || 0);
-        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-        return hours * 60 + minutes;
-      })
-      .filter((value): value is number => value != null);
-    if (!minuteValues.length) return null;
-    return Math.min(...minuteValues);
-  }
-
-  function compareTasksByCustomOrder(a: Task, b: Task) {
-    return (a.order || 0) - (b.order || 0);
-  }
-
-  function compareTasksByAlpha(a: Task, b: Task) {
-    const nameCompare = normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
-    if (nameCompare !== 0) return nameCompare;
-    return compareTasksByCustomOrder(a, b);
-  }
-
-  function compareTasksBySchedule(a: Task, b: Task) {
-    const aMinutes = getTaskScheduleSortMinutes(a);
-    const bMinutes = getTaskScheduleSortMinutes(b);
-    if (aMinutes == null && bMinutes != null) return 1;
-    if (aMinutes != null && bMinutes == null) return -1;
-    if (aMinutes != null && bMinutes != null && aMinutes !== bMinutes) return aMinutes - bMinutes;
-    const nameCompare = normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
-    if (nameCompare !== 0) return nameCompare;
-    return compareTasksByCustomOrder(a, b);
-  }
-
-  function buildDisplayedTasks(tasks: Task[]) {
-    const nextTasks = tasks.slice();
-    const taskOrderBy = ctx.getTaskOrderBy();
-    if (taskOrderBy === "alpha") return nextTasks.sort(compareTasksByAlpha);
-    if (taskOrderBy === "schedule") return nextTasks.sort(compareTasksBySchedule);
-    return nextTasks.sort(compareTasksByCustomOrder);
-  }
-
   function getTileColumnCount() {
     if (typeof window === "undefined") return 1;
     if (window.matchMedia("(min-width: 1500px)").matches) return 4;
@@ -203,312 +84,85 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return 1;
   }
 
+  const taskListRenderer = createTaskListRenderer({
+    taskListEl: els.taskList,
+    documentRef: document,
+    getTasks: ctx.getTasks,
+    getTaskView: ctx.getTaskView,
+    getTaskOrderBy: ctx.getTaskOrderBy,
+    getTileColumnCount,
+    setCurrentTileColumnCount: ctx.setCurrentTileColumnCount,
+    getOpenHistoryTaskIds: ctx.getOpenHistoryTaskIds,
+    getPinnedHistoryTaskIds: ctx.getPinnedHistoryTaskIds,
+    getHistoryViewByTaskId: ctx.getHistoryViewByTaskId,
+    syncTaskFlipStatesForVisibleTasks: ctx.syncTaskFlipStatesForVisibleTasks,
+    applyTaskFlipDomState: ctx.applyTaskFlipDomState,
+    renderHistory: ctx.renderHistory,
+    getCurrentAppPage: ctx.getCurrentAppPage,
+    renderDashboardWidgets: () => ctx.renderDashboardWidgets(),
+    syncTimeGoalModalWithTaskState: ctx.syncTimeGoalModalWithTaskState,
+    maybeRestorePendingTimeGoalFlow: ctx.maybeRestorePendingTimeGoalFlow,
+    save: () => ctx.save(),
+    clearTimeoutRef: (timer) => window.clearTimeout(timer),
+    requestAnimationFrameRef: (handler) => window.requestAnimationFrame(handler),
+    getElapsedMs: ctx.getElapsedMs,
+    sortMilestones: ctx.sortMilestones,
+    milestoneUnitSec: sharedTasks.milestoneUnitSec,
+    milestoneUnitSuffix: sharedTasks.milestoneUnitSuffix,
+    checkpointRepeatActiveTaskId: ctx.checkpointRepeatActiveTaskId,
+    activeCheckpointToastTaskId: ctx.activeCheckpointToastTaskId,
+    canUseAdvancedHistory,
+    canUseSocialFeatures,
+    isTaskSharedByOwner: ctx.isTaskSharedByOwner,
+    getDynamicColorsEnabled: ctx.getDynamicColorsEnabled,
+    getModeColor: ctx.getModeColor,
+    fillBackgroundForPct: ctx.fillBackgroundForPct,
+    escapeHtml: ctx.escapeHtmlUI,
+    formatMainTaskElapsedHtml: ctx.formatMainTaskElapsedHtml,
+  });
+
   function renderTasksPage() {
-    const taskListEl = els.taskList;
-    if (!taskListEl) return;
-
-    const tasks = ctx.getTasks();
-    const displayedTasks = buildDisplayedTasks(tasks);
-    const sourceIndexByTaskId = new Map(tasks.map((task, index) => [String(task.id || ""), index] as const));
-    taskListEl.innerHTML = "";
-    const useTileColumns = ctx.getTaskView() === "tile";
-    const tileColumnCount = useTileColumns ? getTileColumnCount() : 1;
-    ctx.setCurrentTileColumnCount(tileColumnCount);
-    if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
-    else taskListEl.removeAttribute("data-tile-columns");
-    const tileColumnEls: HTMLElement[] = [];
-    if (useTileColumns) {
-      for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
-        const columnEl = document.createElement("div");
-        columnEl.className = "taskTileColumn";
-        columnEl.dataset.tileColumn = String(columnIndex);
-        taskListEl.appendChild(columnEl);
-        tileColumnEls.push(columnEl);
-      }
-    }
-
-    const openHistoryTaskIds = ctx.getOpenHistoryTaskIds();
-    const pinnedHistoryTaskIds = ctx.getPinnedHistoryTaskIds();
-    const historyViewByTaskId = ctx.getHistoryViewByTaskId();
-    const activeTaskIds = new Set(tasks.map((t) => String(t.id || "")));
-
-    ctx.syncTaskFlipStatesForVisibleTasks(activeTaskIds);
-    for (const taskId of Array.from(pinnedHistoryTaskIds)) {
-      if (activeTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
-    }
-    for (const taskId of Array.from(openHistoryTaskIds)) {
-      if (!activeTaskIds.has(taskId)) {
-        const staleHistoryState = historyViewByTaskId[taskId];
-        if (staleHistoryState?.revealTimer != null) window.clearTimeout(staleHistoryState.revealTimer);
-        openHistoryTaskIds.delete(taskId);
-        delete historyViewByTaskId[taskId];
-      }
-    }
-
-    if (!displayedTasks.length) {
-      taskListEl.innerHTML = `
-        <section class="taskListEmptyState" aria-label="No tasks">
-          <div class="taskListEmptyContent">
-            <p class="taskListEmptyMessage">No Tasks found</p>
-            <button class="btn btn-accent taskListEmptyAddBtn" type="button" data-action="openAddTask">
-              + Add New Task
-            </button>
-          </div>
-        </section>
-      `;
-      ctx.save();
-      if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
-      ctx.syncTimeGoalModalWithTaskState();
-      ctx.maybeRestorePendingTimeGoalFlow();
-      return;
-    }
-
-    displayedTasks.forEach((t, displayIndex) => {
-      const elapsedMs = ctx.getElapsedMs(t);
-      const elapsedSec = elapsedMs / 1000;
-      const hasMilestones = t.milestonesEnabled && Array.isArray(t.milestones) && t.milestones.length > 0;
-      const hasTimeGoal = !!t.timeGoalEnabled && Number(t.timeGoalMinutes || 0) > 0;
-      const taskColor = normalizeTaskColor(t.color);
-      const taskColorPillHtml = taskColor
-        ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${ctx.escapeHtmlUI(taskColor)}"></span>`
-        : "";
-      const msSorted = hasMilestones ? ctx.sortMilestones(t.milestones) : [];
-      const timeGoalSec = hasTimeGoal ? Number(t.timeGoalMinutes || 0) * 60 : 0;
-
-      const taskEl = document.createElement("div");
-      const taskId = String(t.id || "");
-      const hasActiveToastForTask =
-        !!ctx.activeCheckpointToastTaskId() && String(ctx.activeCheckpointToastTaskId()) === taskId;
-      taskEl.className =
-        "task" +
-        (t.running ? " taskRunning" : "") +
-        (t.collapsed ? " collapsed" : "") +
-        ((ctx.checkpointRepeatActiveTaskId() && ctx.checkpointRepeatActiveTaskId() === taskId) || hasActiveToastForTask
-          ? " taskAlertPulse"
-          : "");
-      (taskEl as any).dataset.index = String(sourceIndexByTaskId.get(taskId) ?? -1);
-      (taskEl as any).dataset.taskId = taskId;
-      taskEl.setAttribute("draggable", ctx.getTaskOrderBy() === "custom" ? "true" : "false");
-
-      const collapseLabel = t.collapsed ? "Show progress bar" : "Hide progress bar";
-      const progressModel = buildTaskProgressModel({
-        milestones: msSorted,
-        elapsedSec,
-        milestoneUnitSec: sharedTasks.milestoneUnitSec(t),
-        unitSuffix: sharedTasks.milestoneUnitSuffix(t),
-        timeGoalSec,
-      });
-      const progressHTML = renderTaskProgressHtml(progressModel, {
-        fillColor: ctx.getDynamicColorsEnabled()
-          ? ctx.fillBackgroundForPct(progressModel?.pct || 0)
-          : ctx.getModeColor("mode1"),
-        escapeHtml: ctx.escapeHtmlUI,
-      });
-
-      const historyState = historyViewByTaskId[taskId];
-      const historyRevealPhase = historyState?.revealPhase || (openHistoryTaskIds.has(taskId) ? "open" : null);
-      const showHistory = openHistoryTaskIds.has(taskId) || historyRevealPhase === "closing";
-      const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
-      const historyHTML = showHistory
-        ? `
-          <section class="historyInline historyInlineMotion${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${ctx.escapeHtmlUI(t.name)}">
-              <div class="historyTop">
-                <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
-                <div class="historyMeta historyTopActions">
-                  <span class="historyTopDivider" aria-hidden="true"></span>
-                  <button class="btn btn-ghost small historyViewSummaryBtn" type="button" data-history-action="viewSummary" title="View Summary" aria-label="View Summary">View Summary</button>
-                  <button class="btn btn-ghost small historyClearLockBtn" type="button" data-history-action="clearLocks" title="Clear locked selections" aria-label="Clear locked selections" style="display:none">Clear</button>
-                  <button class="historyPinBtn ${isHistoryPinned ? "isOn" : ""}" type="button" data-history-action="pin" title="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" aria-label="${canUseAdvancedHistory() ? isHistoryPinned ? "Unpin chart" : "Pin chart" : "Pro feature: Pin chart"}" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>&#128204;</button>
-                </div>
-              </div>
-            <div class="historyCanvasWrap"><canvas class="historyChartInline"></canvas></div>
-            <div class="historyTrashRow"></div>
-            <div class="historyRangeRow">
-              <div class="historyRangeInfo">
-                <div class="historyMeta historyRangeText">&nbsp;</div>
-                <div class="historyRangeToggleRow" aria-label="History range">
-                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
-                  <div class="taskScreenPillGroup historyRangeModeGroup" role="group" aria-label="History display mode">
-                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab isOn" type="button" data-history-range-mode="entries" aria-pressed="true">
-                      <span class="taskScreenHeaderBtnText">Entries</span>
-                    </button>
-                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab" type="button" data-history-range-mode="day" aria-pressed="false">
-                      <span class="taskScreenHeaderBtnText">Day</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button class="historyDrawerReveal" type="button" data-action="history" title="Hide history chart" aria-label="Hide history chart" aria-pressed="true" ${isHistoryPinned ? "disabled" : ""}>
-              <span class="historyDrawerRevealText">HIDE CHART</span>
-            </button>
-          </section>
-        `
-        : "";
-
-      taskEl.innerHTML = `
-        <div class="taskFlipScene">
-          <div class="taskFace taskFaceFront">
-            <div class="taskFaceShell taskFaceShellFront">
-            ${
-              ctx.checkpointRepeatActiveTaskId() && ctx.checkpointRepeatActiveTaskId() === taskId
-                ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
-                : ""
-            }
-            ${taskColorPillHtml}
-            <div class="row">
-              <div class="taskHeadMain"><div class="name" data-action="editName" title="Open focus mode">${ctx.escapeHtmlUI(t.name)}</div></div>
-              <div class="time" data-action="focus" title="Open focus mode">${ctx.formatMainTaskElapsedHtml(elapsedMs, !!t.running)}</div>
-              <div class="actions">
-                ${
-                  t.running
-                    ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-                    : elapsedMs > 0
-                      ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
-                      : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>'
-                }
-                <button class="iconBtn" data-action="reset" title="${t.running ? "Stop task to reset" : "Reset"}" aria-label="${t.running ? "Stop task to reset" : "Reset"}" ${t.running ? "disabled" : ""}>&#10227;</button>
-                <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
-              </div>
-            </div>
-            ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
-              <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
-            </button>
-            ${historyHTML}
-            </div>
-          </div>
-          <div class="taskFace taskFaceBack" aria-hidden="true" inert>
-            <div class="taskFaceShell taskFaceShellBack">
-            <div class="taskBack">
-              <div class="taskBackHead">
-                <div class="taskBackTitle">${ctx.escapeHtmlUI(t.name)}</div>
-                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
-              </div>
-              <div class="taskBackActions">
-                <button class="taskMenuItem" data-action="manualEntry" title="${canUseAdvancedHistory() ? "Add Manual Entry" : "Pro feature: Manual history entry"}" type="button" ${canUseAdvancedHistory() ? "" : 'data-plan-locked="advancedHistory"'}>${canUseAdvancedHistory() ? "Add Manual Entry" : "Add Manual Entry (Pro)"}</button>
-                <button class="taskMenuItem" data-action="collapse" title="${ctx.escapeHtmlUI(collapseLabel)}" type="button">${ctx.escapeHtmlUI(collapseLabel)}</button>
-                <button class="taskMenuItem" data-action="${ctx.isTaskSharedByOwner(taskId) ? "unshareTask" : "shareTask"}" title="${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Pro feature: Sharing"}" type="button" ${canUseSocialFeatures() ? "" : 'data-plan-locked="socialFeatures"'}>${canUseSocialFeatures() ? ctx.isTaskSharedByOwner(taskId) ? "Unshare" : "Share" : "Share (Pro)"}</button>
-                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
-                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-      `;
-      ctx.applyTaskFlipDomState(taskId, taskEl);
-      const tileColumnEl = useTileColumns ? tileColumnEls[displayIndex % tileColumnCount] : null;
-      (tileColumnEl || taskListEl).appendChild(taskEl);
-    });
-
-    ctx.save();
-    for (const taskId of openHistoryTaskIds) ctx.renderHistory(taskId);
-    if (openHistoryTaskIds.size) {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          if (ctx.getCurrentAppPage() !== "tasks") return;
-          for (const taskId of ctx.getOpenHistoryTaskIds()) ctx.renderHistory(taskId);
-        });
-      });
-    }
-    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
-    ctx.syncTimeGoalModalWithTaskState();
-    ctx.maybeRestorePendingTimeGoalFlow();
+    taskListRenderer.renderTasksPage();
   }
 
-  function startTask(i: number) {
-    const t = ctx.getTasks()[i];
-    if (!t || t.running) return;
-    const otherRunningIndex = findOtherRunningTaskIndex(i);
-    if (otherRunningIndex >= 0) {
-      const runningTask = ctx.getTasks()[otherRunningIndex];
-      const clearTaskAlreadyRunningConfirmState = () => {
-        if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
-      };
+  const taskTimerLifecycle = createTaskTimerLifecycle({
+    getTasks: ctx.getTasks,
+    getTaskDisplayName,
+    confirm: ctx.confirm,
+    closeConfirm: ctx.closeConfirm,
+    addTaskAlreadyRunningConfirmClass: () => {
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isTaskAlreadyRunningConfirm");
-      ctx.confirm(
-        "Task Already Running",
-        `${getTaskDisplayName(runningTask)} is currently running. Do you want to stop this timer and launch ${getTaskDisplayName(t)}?`,
-        {
-          okLabel: "Yes",
-          cancelLabel: "Cancel",
-          onOk: () => {
-            clearTaskAlreadyRunningConfirmState();
-            ctx.closeConfirm();
-            stopTask(otherRunningIndex);
-            startTask(i);
-          },
-          onCancel: () => {
-            clearTaskAlreadyRunningConfirmState();
-            ctx.closeConfirm();
-          },
-        }
-      );
-      return;
-    }
-    ctx.clearTaskTimeGoalFlow(String(t.id || ""));
-    ctx.flushPendingFocusSessionNoteSave(String(t.id || ""));
-    t.running = true;
-    t.startMs = Date.now();
-    t.hasStarted = true;
-    ctx.openRewardSessionSegment(t, t.startMs);
-    ctx.upsertLiveSession(t, { elapsedMs: 0 });
-    ctx.clearCheckpointBaseline(t.id);
-    ctx.save();
-    void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-    ctx.render();
-    if (ctx.getAutoFocusOnTaskLaunchEnabled() && String(ctx.getFocusModeTaskId() || "") !== String(t.id || "")) {
-      ctx.openFocusMode(i);
-    }
-  }
+    },
+    removeTaskAlreadyRunningConfirmClass: () => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
+    },
+    clearTaskTimeGoalFlow: ctx.clearTaskTimeGoalFlow,
+    flushPendingFocusSessionNoteSave: ctx.flushPendingFocusSessionNoteSave,
+    openRewardSessionSegment: ctx.openRewardSessionSegment,
+    closeRewardSessionSegment: ctx.closeRewardSessionSegment,
+    clearRewardSessionTracker: ctx.clearRewardSessionTracker,
+    upsertLiveSession: ctx.upsertLiveSession,
+    finalizeLiveSession: ctx.finalizeLiveSession,
+    getElapsedMs: ctx.getElapsedMs,
+    getTaskElapsedMs: ctx.getTaskElapsedMs,
+    clearCheckpointBaseline: ctx.clearCheckpointBaseline,
+    resetCheckpointAlertTracking: ctx.resetCheckpointAlertTracking,
+    setCheckpointAutoResetDirty: ctx.setCheckpointAutoResetDirty,
+    clearFocusSessionDraft: ctx.clearFocusSessionDraft,
+    getFocusModeTaskId: ctx.getFocusModeTaskId,
+    syncFocusSessionNotesInput: ctx.syncFocusSessionNotesInput,
+    syncFocusSessionNotesAccordion: ctx.syncFocusSessionNotesAccordion,
+    getCurrentAppPage: ctx.getCurrentAppPage,
+    getAutoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled,
+    openFocusMode: ctx.openFocusMode,
+    save: ctx.save,
+    render: ctx.render,
+    renderDashboardWidgets: ctx.renderDashboardWidgets,
+    syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
+    nowMs: () => Date.now(),
+  });
+  const { startTask, stopTask, resetTaskStateImmediate } = taskTimerLifecycle;
 
-  function stopTask(i: number) {
-    const t = ctx.getTasks()[i];
-    if (!t || !t.running) return;
-    ctx.clearTaskTimeGoalFlow(String(t.id || ""));
-    ctx.flushPendingFocusSessionNoteSave(String(t.id || ""));
-    ctx.closeRewardSessionSegment(t, Date.now());
-    t.accumulatedMs = ctx.getElapsedMs(t);
-    ctx.finalizeLiveSession(t, { elapsedMs: t.accumulatedMs });
-    t.running = false;
-    t.startMs = null;
-    ctx.clearCheckpointBaseline(t.id);
-    ctx.save();
-    void ctx.syncSharedTaskSummariesForTask(String(t.id || "")).catch(() => {});
-    ctx.render();
-    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
-  }
-
-  function resetTaskStateImmediate(t: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: unknown }) {
-    if (!t) return;
-    const taskId = String(t.id || "");
-    ctx.flushPendingFocusSessionNoteSave(taskId);
-    const elapsedMs = ctx.getTaskElapsedMs(t);
-    try {
-      ctx.finalizeLiveSession(t, {
-        elapsedMs,
-        note: opts?.sessionNote,
-        completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
-      });
-    } finally {
-      t.accumulatedMs = 0;
-      t.running = false;
-      t.startMs = null;
-      t.hasStarted = false;
-    }
-    ctx.clearTaskTimeGoalFlow(taskId);
-    ctx.clearRewardSessionTracker(taskId);
-    ctx.resetCheckpointAlertTracking(t.id);
-    ctx.setCheckpointAutoResetDirty(true);
-    ctx.clearFocusSessionDraft(taskId);
-    if (String(ctx.getFocusModeTaskId() || "") === taskId) {
-      ctx.syncFocusSessionNotesInput(taskId);
-      ctx.syncFocusSessionNotesAccordion(taskId);
-    }
-    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
-  }
 
   function toggleCollapse(i: number) {
     const t = ctx.getTasks()[i];
@@ -522,105 +176,66 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.openHistoryInline(i);
   }
 
-  function resetTask(i: number) {
-    const t = ctx.getTasks()[i];
-    if (!t || t.running) return;
-    const shouldExitFocusModeAfterReset = String(ctx.getFocusModeTaskId() || "").trim() === String(t.id || "").trim();
-    const clearResetTaskConfirmState = () => {
-      ctx.setResetTaskConfirmBusy(false, false);
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetTaskConfirm");
-    };
-    ctx.confirm("Reset Task", "Reset timer to zero?", {
-      okLabel: "Reset",
-      cancelLabel: "Cancel",
-      onOk: async () => {
-        ctx.setResetTaskConfirmBusy(true, false);
-        const sessionNote = ctx.captureResetActionSessionNote(String(t.id || ""));
-        if (sessionNote) ctx.setFocusSessionDraft(String(t.id || ""), sessionNote);
-        try {
-          resetTaskStateImmediate(t, { logHistory: true, sessionNote });
-          ctx.save();
-          ctx.closeConfirm();
-          if (shouldExitFocusModeAfterReset) ctx.closeFocusMode();
-          else ctx.render();
-        } finally {
-          clearResetTaskConfirmState();
-        }
-      },
-      onCancel: () => {
-        clearResetTaskConfirmState();
-        ctx.closeConfirm();
-      },
-    });
-    ctx.setResetTaskConfirmBusy(false, false);
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetTaskConfirm");
-  }
+  const taskDestructiveActionEffects = createTaskDestructiveActionEffects({
+    getTasks: ctx.getTasks,
+    setTasks: ctx.setTasks,
+    getHistoryByTaskId: () => ctx.getHistoryByTaskId() as Record<string, unknown[]>,
+    setHistoryByTaskId: (history) => ctx.setHistoryByTaskId(history as any),
+    setDeletedTaskMeta: ctx.setDeletedTaskMeta,
+    currentUid: ctx.currentUid,
+    getFocusModeTaskId: ctx.getFocusModeTaskId,
+    confirm: ctx.confirm,
+    closeConfirm: ctx.closeConfirm,
+    getConfirmDeleteAllChecked: () => !!els.confirmDeleteAll?.checked,
+    addConfirmOverlayClass: (className) => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add(className);
+    },
+    removeConfirmOverlayClass: (className) => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove(className);
+    },
+    setResetTaskConfirmBusy: ctx.setResetTaskConfirmBusy,
+    captureResetActionSessionNote: ctx.captureResetActionSessionNote,
+    setFocusSessionDraft: ctx.setFocusSessionDraft,
+    resetTaskStateImmediate,
+    save: ctx.save,
+    saveHistory: (history) => ctx.saveHistory(history as any),
+    saveDeletedMeta: ctx.saveDeletedMeta,
+    render: ctx.render,
+    renderDashboardWidgets: ctx.renderDashboardWidgets,
+    closeFocusMode: ctx.closeFocusMode,
+    deleteSharedTaskSummariesForTask: ctx.deleteSharedTaskSummariesForTask,
+    refreshOwnSharedSummaries: ctx.refreshOwnSharedSummaries,
+    syncSharedTaskSummariesForTasks: ctx.syncSharedTaskSummariesForTasks,
+  });
 
-  function resetAll() {
-    const tasks = ctx.getTasks();
-    const renderAfterReset = () => {
-      ctx.render();
-      ctx.renderDashboardWidgets();
-    };
-    ctx.confirm(
-      "Delete Data",
-      "This will permanently delete all task history and tasks (if selected below) from your account.",
-      {
-        okLabel: "Delete",
-        checkboxLabel: "Also Delete All Tasks",
-        checkboxChecked: false,
-        dangerInputLabel: "",
-        dangerInputMatch: "DELETE",
-        dangerInputPlaceholder: "Enter 'DELETE' to proceed.",
-        onOk: () => {
-          const alsoDelete = !!els.confirmDeleteAll?.checked;
-          const affectedTaskIds = tasks.map((row) => String(row.id || "")).filter(Boolean);
-          const uid = String(ctx.currentUid() || "");
-          const historyByTaskId = ctx.getHistoryByTaskId();
-          const deletedHistoryEntryCount = Object.values(historyByTaskId || {}).reduce(
-            (sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0),
-            0
-          );
-          const deletedTaskCount = alsoDelete ? tasks.length : 0;
-          const nextHistory = {} as any;
-          const nextDeletedTaskMeta = {} as DeletedTaskMeta;
-          ctx.setHistoryByTaskId(nextHistory);
-          ctx.saveHistory(nextHistory);
-          ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
-          ctx.saveDeletedMeta(nextDeletedTaskMeta);
-          if (alsoDelete) {
-            ctx.setTasks([]);
-            ctx.save({ deletedTaskIds: affectedTaskIds });
-            if (uid && affectedTaskIds.length) {
-              void Promise.all(affectedTaskIds.map((taskId) => ctx.deleteSharedTaskSummariesForTask(uid, taskId).catch(() => {})))
-                .then(() => ctx.refreshOwnSharedSummaries())
-                .catch(() => {});
-            }
-            renderAfterReset();
-            ctx.closeConfirm();
-            ctx.confirm(
-              "Delete Complete",
-              `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
-                deletedHistoryEntryCount === 1 ? "y" : "ies"
-              } deleted.`,
-              { okLabel: "Close", cancelLabel: "Done", onOk: () => ctx.closeConfirm(), onCancel: () => ctx.closeConfirm() }
-            );
-            return;
-          }
-          ctx.save();
-          if (affectedTaskIds.length) void ctx.syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
-          renderAfterReset();
-          ctx.closeConfirm();
-          ctx.confirm(
-            "Delete Complete",
-            `${deletedHistoryEntryCount} history entr${deletedHistoryEntryCount === 1 ? "y" : "ies"} deleted.`,
-            { okLabel: "Close", cancelLabel: "Done", onOk: () => ctx.closeConfirm(), onCancel: () => ctx.closeConfirm() }
-          );
-        },
-      }
-    );
-    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isResetAllDeleteConfirm");
-  }
+  const taskCardActionEffects = createTaskCardActionEffects({
+    getTasks: ctx.getTasks,
+    canUseAdvancedHistory,
+    canUseSocialFeatures,
+    showUpgradePrompt: ctx.showUpgradePrompt,
+    startTask,
+    stopTask,
+    resetTask: taskDestructiveActionEffects.resetTask,
+    deleteTask: ctx.deleteTask,
+    openEdit: ctx.openEdit,
+    openHistory,
+    openFocusMode: ctx.openFocusMode,
+    toggleCollapse,
+    openTaskExportModal: ctx.openTaskExportModal,
+    openManualEntry: (taskId) => taskManualEntry.open(taskId),
+    openShareTaskModal: ctx.openShareTaskModal,
+    confirm: ctx.confirm,
+    currentUid: ctx.currentUid,
+    closeConfirm: ctx.closeConfirm,
+    deleteSharedTaskSummariesForTask: ctx.deleteSharedTaskSummariesForTask,
+    refreshOwnSharedSummaries: ctx.refreshOwnSharedSummaries,
+    getCurrentAppPage: ctx.getCurrentAppPage,
+    refreshGroupsData: () => ctx.refreshGroupsData(),
+    render: ctx.render,
+    broadcastCheckpointAlertMute: ctx.broadcastCheckpointAlertMute,
+    stopCheckpointRepeatAlert: ctx.stopCheckpointRepeatAlert,
+    setTimeoutRef: (handler, timeout) => window.setTimeout(handler, timeout),
+  });
 
   function handleTaskListClick(e: any) {
     const emptyAddBtn = findDelegatedElement(e.target, ".taskListEmptyAddBtn");
@@ -651,61 +266,12 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       return;
     }
     const { action, element } = delegatedAction;
-    if ((action === "shareTask" || action === "unshareTask") && !canUseSocialFeatures()) {
-      ctx.showUpgradePrompt("Task sharing and friends", "pro");
-      return;
-    }
-    if (action === "manualEntry" && !canUseAdvancedHistory()) {
-      ctx.showUpgradePrompt("Manual history entry", "pro");
-      return;
-    }
-    const actionHandlers: Record<string, () => void> = {
-      start: () => startTask(i),
-      stop: () => stopTask(i),
-      reset: () => resetTask(i),
-      delete: () => ctx.deleteTask(i),
-      edit: () => ctx.openEdit(i, element as HTMLElement),
-      history: () => openHistory(i),
-      editName: () => ctx.openFocusMode(i),
-      focus: () => ctx.openFocusMode(i),
-      collapse: () => toggleCollapse(i),
-      exportTask: () => ctx.openTaskExportModal(i),
-      manualEntry: () => {
-        if (!taskId) return;
-        window.setTimeout(() => {
-          openTaskManualEntryOverlay(taskId);
-        }, 0);
-      },
-      shareTask: () => ctx.openShareTaskModal(i),
-      unshareTask: () => {
-        const t = ctx.getTasks()[i];
-        if (!t) return;
-        ctx.confirm("Unshare Task", "Unshare this task from all friends?", {
-          okLabel: "Unshare",
-          cancelLabel: "Cancel",
-          onOk: () => {
-            const uid = ctx.currentUid();
-            if (!uid) {
-              ctx.closeConfirm();
-              return;
-            }
-            void ctx
-              .deleteSharedTaskSummariesForTask(uid, String(t.id || ""))
-              .then(async () => {
-                await ctx.refreshOwnSharedSummaries();
-                if (ctx.getCurrentAppPage() === "friends") await ctx.refreshGroupsData();
-                ctx.render();
-              })
-              .finally(() => ctx.closeConfirm());
-          },
-        });
-      },
-      muteCheckpointAlert: () => {
-        if (taskId) ctx.broadcastCheckpointAlertMute(taskId);
-        ctx.stopCheckpointRepeatAlert();
-      },
-    };
-    actionHandlers[action]?.();
+    taskCardActionEffects.handleAction({
+      action,
+      taskIndex: i,
+      taskId,
+      sourceElement: element as HTMLElement,
+    });
     if (taskId) ctx.setTaskFlipped(taskId, false, taskEl as HTMLElement);
   }
 
@@ -713,50 +279,42 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.on(els.taskList, "click", handleTaskListClick);
     ctx.on(els.resetAllBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      resetAll();
+      taskDestructiveActionEffects.resetAll();
     });
     ctx.on(els.taskManualEntryOverlay, "click", (ev: any) => {
       if (ev.target !== els.taskManualEntryOverlay) return;
-      closeTaskManualEntryOverlay();
+      taskManualEntry.close();
     });
     ctx.on(els.taskManualEntryCancelBtn, "click", () => {
-      closeTaskManualEntryOverlay();
+      taskManualEntry.close();
     });
     ctx.on(els.taskManualEntrySaveBtn, "click", () => {
       saveTaskManualEntryDraft();
     });
     ctx.on(els.taskManualDateTimeBtn, "click", () => {
-      openTaskManualEntryDateTimePicker();
+      taskManualEntry.openDateTimePicker();
     });
     ctx.on(els.taskManualDateTimeInput, "change", () => {
       const value = String(els.taskManualDateTimeInput?.value || "");
-      updateTaskManualEntryDraft((draft) => ({ ...draft, dateTimeValue: value, errorMessage: "" }));
-      syncTaskManualEntryOverlay();
+      taskManualEntry.setDateTimeValue(value);
     });
     ctx.on(els.taskManualHoursInput, "input", () => {
       const value = String(els.taskManualHoursInput?.value || "");
-      updateTaskManualEntryDraft((draft) => ({ ...draft, hoursValue: value, errorMessage: "" }));
-      syncTaskManualEntryOverlay();
+      taskManualEntry.setHoursValue(value);
     });
     ctx.on(els.taskManualMinutesInput, "input", () => {
       const value = String(els.taskManualMinutesInput?.value || "");
-      updateTaskManualEntryDraft((draft) => ({ ...draft, minutesValue: value, errorMessage: "" }));
-      syncTaskManualEntryOverlay();
+      taskManualEntry.setMinutesValue(value);
     });
     ctx.on(els.taskManualNoteInput, "input", () => {
       const value = String(els.taskManualNoteInput?.value || "");
-      updateTaskManualEntryDraft((draft) => ({ ...draft, noteValue: value, errorMessage: "" }));
+      taskManualEntry.setNoteValue(value);
     });
     ctx.on(els.taskManualEntryDifficultyGroup, "click", (ev: any) => {
       const btn = ev.target?.closest?.("[data-completion-difficulty]");
       if (!btn) return;
       const value = String(btn.getAttribute("data-completion-difficulty") || "");
-      updateTaskManualEntryDraft((draft) => ({
-        ...draft,
-        completionDifficulty: normalizeCompletionDifficulty(value) || "",
-        errorMessage: "",
-      }));
-      syncTaskManualEntryOverlay();
+      taskManualEntry.selectDifficulty(value);
     });
   }
 
@@ -764,8 +322,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     renderTasksPage,
     startTask,
     stopTask,
-    resetTask,
-    resetAll,
+    resetTask: taskDestructiveActionEffects.resetTask,
+    resetAll: taskDestructiveActionEffects.resetAll,
     resetTaskStateImmediate,
     openHistory,
     registerTaskEvents,

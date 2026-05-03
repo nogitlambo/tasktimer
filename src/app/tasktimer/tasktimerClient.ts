@@ -59,7 +59,7 @@ import type {
   TaskTimerMutableState,
 } from "./client/types";
 import { collectTaskTimerElements } from "./client/elements";
-import { createTaskTimerRuntime, destroyTaskTimerRuntime } from "./client/runtime";
+import { destroyTaskTimerRuntime } from "./client/runtime";
 import { createTaskTimerAppShell } from "./client/app-shell";
 import { createTaskTimerGroups } from "./client/groups";
 import { createTaskTimerSession } from "./client/session";
@@ -78,8 +78,6 @@ import { createTaskTimerImportExport } from "./client/import-export";
 import { createTaskTimerTaskListUi } from "./client/task-list-ui";
 import { createTaskTimerTaskUiPersistence } from "./client/task-ui-persistence";
 import { createTaskTimerRewardsHistory } from "./client/rewards-history";
-import { createTaskTimerMutableStore } from "./client/mutable-store";
-import { createTaskTimerRootBootstrap } from "./client/root-state";
 import { createTaskTimerSharedTask } from "./client/task-shared";
 import {
   buildExitAppConfirmOptions,
@@ -99,9 +97,7 @@ import {
 import {
   DEFAULT_MODE_COLORS,
 } from "./client/state";
-import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { type ScheduleDay } from "./lib/schedule-placement";
 import {
   createTaskTimerScheduleRuntime,
   formatScheduleDayLabel,
@@ -110,7 +106,6 @@ import {
   isRecurringDailyScheduleTask,
   normalizeScheduleDay,
   SCHEDULE_MINUTE_PX,
-  type TaskTimerScheduleState,
 } from "./client/schedule-runtime";
 import {
   broadcastTaskTimerCheckpointAlertMute,
@@ -147,6 +142,7 @@ import {
   createTaskTimerRuntimeCoordinator,
 } from "./client/runtime-coordinator";
 import { createTaskTimerRuntimeFacade } from "./client/runtime-facade";
+import { createTaskTimerRuntimeComposition } from "./client/runtime-composition";
 
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
@@ -155,8 +151,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
   }
+  const composition = createTaskTimerRuntimeComposition(initialAppPage, STORAGE_KEY);
   const {
-    initialState,
+    runtime,
+    workspaceRepository,
     storageKeys: {
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       MOBILE_PUSH_ALERTS_KEY,
@@ -174,61 +172,47 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       NAV_STACK_MAX,
       NATIVE_BACK_DEBOUNCE_MS,
     },
-  } = createTaskTimerRootBootstrap(initialAppPage, STORAGE_KEY);
-  const TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow`;
-  const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
-  const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
-  const REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers`;
-  const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
-  const ARCHIE_NAVIGATE_EVENT = "tasktimer:archieNavigate";
-
-  const runtime = createTaskTimerRuntime();
-  const workspaceRepository = createTaskTimerWorkspaceRepository();
-  const cloudSyncState = createTaskTimerMutableStore({
-    cloudRefreshInFlight: initialState.cloudRefreshInFlight,
-    lastCloudRefreshAtMs: initialState.lastCloudRefreshAtMs,
-    deferredCloudRefreshTimer: null as number | null,
-    pendingDeferredCloudRefresh: initialState.pendingDeferredCloudRefresh,
-    lastUiInteractionAtMs: initialState.lastUiInteractionAtMs,
-  });
-  const dashboardBusyState = createTaskTimerMutableStore({
-    stack: initialState.dashboardBusyStack,
-    keySeq: initialState.dashboardBusyKeySeq,
-    overlayActive: initialState.dashboardBusyOverlayActive,
-    restoreFocusEl: initialState.dashboardBusyRestoreFocusEl,
-    shownAtMs: initialState.dashboardBusyShownAtMs,
-    hideTimer: initialState.dashboardBusyHideTimer,
-  });
-  const modalState = createTaskTimerMutableStore({
-    confirmAction: initialState.confirmAction,
-    confirmActionAlt: initialState.confirmActionAlt,
-    confirmActionCancel: initialState.confirmActionCancel,
-    timeGoalModalTaskId: initialState.timeGoalModalTaskId,
-    timeGoalModalFrozenElapsedMs: initialState.timeGoalModalFrozenElapsedMs,
-  });
-  const scheduleState = createTaskTimerMutableStore<TaskTimerScheduleState>({
-    selectedDay: "mon",
-    dragTaskId: null as string | null,
-    dragSourceDay: null as ScheduleDay | null,
-    dragPreviewDay: null as ScheduleDay | null,
-    dragPreviewStartMinutes: null as number | null,
-    dragPointerOffsetMinutes: 0,
-  });
-  const workingIndicatorState = createTaskTimerMutableStore({
-    stack: initialState.workingIndicatorStack,
-    keySeq: initialState.workingIndicatorKeySeq,
-    overlayActive: initialState.workingIndicatorOverlayActive,
-    restoreFocusEl: initialState.workingIndicatorRestoreFocusEl,
-  });
-  const appRuntimeState = createTaskTimerMutableStore({
-    dashboardMenuFlipped: initialState.dashboardMenuFlipped,
-    currentAppPage: initialState.currentAppPage,
-    currentTileColumnCount: initialState.currentTileColumnCount,
-    suppressNavStackPush: initialState.suppressNavStackPush,
-    lastNativeBackHandledAtMs: initialState.lastNativeBackHandledAtMs,
-    dashboardRefreshPending: false,
-    initialAuthHydrating: initialState.initialAuthHydrating,
-  });
+    derivedKeys: {
+      TIME_GOAL_PENDING_FLOW_KEY,
+      PENDING_PUSH_TASK_ID_KEY,
+      PENDING_PUSH_ACTION_KEY,
+      REWARD_SESSION_TRACKERS_KEY,
+    },
+    events: {
+      PENDING_PUSH_TASK_EVENT,
+      ARCHIE_NAVIGATE_EVENT,
+    },
+    stores: {
+      cloudSyncState,
+      dashboardBusyState,
+      modalState,
+      scheduleState,
+      workingIndicatorState,
+      appRuntimeState,
+      taskDataState,
+      focusState,
+      preferencesState,
+      sessionRuntimeState,
+      historyUiState,
+      addTaskState,
+      editTaskState,
+      dashboardUiState,
+      taskListRuntimeState,
+      cacheRuntimeState,
+      rewardState,
+      groupsState,
+    },
+    refs: {
+      openHistoryTaskIds,
+      historyViewByTaskId,
+      timeGoalReminderAtMsByTaskId,
+      checkpointToastQueue,
+      checkpointFiredKeysByTaskId,
+      checkpointBaselineSecByTaskId,
+      openFriendSharedTaskUids,
+      dashboardWidgetHasRenderedData,
+    },
+  } = composition;
   const { on } = runtime;
 
   function getCurrentPlan(): TaskTimerPlan {
@@ -279,158 +263,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     confirm(confirmConfig.title, confirmConfig.text, confirmConfig.options);
   }
 
-  const taskDataState = createTaskTimerMutableStore({
-    deletedTaskMeta: initialState.deletedTaskMeta,
-    tasks: initialState.tasks,
-    historyByTaskId: initialState.historyByTaskId,
-    liveSessionsByTaskId: initialState.liveSessionsByTaskId,
-  });
-  const focusState = createTaskTimerMutableStore({
-    focusCheckpointSig: initialState.focusCheckpointSig,
-    focusModeTaskId: initialState.focusModeTaskId,
-    focusModeTaskName: initialState.focusModeTaskName,
-    focusShowCheckpoints: initialState.focusShowCheckpoints,
-    focusSessionNotesByTaskId: initialState.focusSessionNotesByTaskId,
-    focusSessionNoteSaveTimer: null as number | null,
-  });
-  const preferencesState = createTaskTimerMutableStore({
-    themeMode: initialState.themeMode,
-    menuButtonStyle: initialState.menuButtonStyle,
-    addTaskCustomNames: initialState.addTaskCustomNames,
-    weekStarting: initialState.weekStarting,
-    startupModule: initialState.startupModule,
-    taskView: initialState.taskView,
-    taskOrderBy: initialState.taskOrderBy,
-    dynamicColorsEnabled: initialState.dynamicColorsEnabled,
-    autoFocusOnTaskLaunchEnabled: initialState.autoFocusOnTaskLaunchEnabled,
-    mobilePushAlertsEnabled: initialState.mobilePushAlertsEnabled,
-    webPushAlertsEnabled: initialState.webPushAlertsEnabled,
-    checkpointAlertSoundEnabled: initialState.checkpointAlertSoundEnabled,
-    checkpointAlertToastEnabled: initialState.checkpointAlertToastEnabled,
-    optimalProductivityStartTime: initialState.optimalProductivityStartTime,
-    optimalProductivityEndTime: initialState.optimalProductivityEndTime,
-  });
-  const sessionRuntimeState = createTaskTimerMutableStore({
-    deferredFocusModeTimeGoalModals: [] as Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>,
-    timeGoalCompleteDurationUnit: "hour" as "minute" | "hour",
-    timeGoalCompleteDurationPeriod: "day" as "day" | "week",
-    activeCheckpointToast: initialState.activeCheckpointToast,
-    checkpointToastAutoCloseTimer: null as number | null,
-    checkpointToastCountdownRefreshTimer: null as number | null,
-    checkpointBeepAudio: initialState.checkpointBeepAudio,
-    checkpointBeepQueueCount: initialState.checkpointBeepQueueCount,
-    checkpointBeepQueueTimer: null as number | null,
-    checkpointRepeatStopAtMs: initialState.checkpointRepeatStopAtMs,
-    checkpointRepeatCycleTimer: null as number | null,
-    checkpointRepeatActiveTaskId: initialState.checkpointRepeatActiveTaskId,
-    checkpointAutoResetDirty: initialState.checkpointAutoResetDirty,
-    historyNoteCloudRepairAttempted: initialState.historyNoteCloudRepairAttempted,
-  });
-  const rewardSessionTrackersByTaskIdInitial: Record<string, {
-    taskId: string;
-    untrackedMs: number;
-    segments: Array<{ startMs: number; endMs: number; multiplier: number }>;
-    activeSegmentStartMs: number | null;
-    activeMultiplier: number | null;
-  }> = {};
-
-  const historyUiState = createTaskTimerMutableStore({
-    historyRangeDaysByTaskId: initialState.historyRangeDaysByTaskId,
-    historyRangeModeByTaskId: initialState.historyRangeModeByTaskId,
-    pinnedHistoryTaskIds: initialState.pinnedHistoryTaskIds,
-    hmExpandedTaskGroups: initialState.hmExpandedTaskGroups,
-    hmExpandedDateGroups: initialState.hmExpandedDateGroups,
-    hmSortKey: initialState.hmSortKey,
-    hmSortDir: initialState.hmSortDir,
-    hmBulkEditMode: initialState.hmBulkEditMode,
-    hmBulkSelectedRows: initialState.hmBulkSelectedRows,
-    hmRowsByTask: initialState.hmRowsByTask,
-    hmRowsByTaskDate: initialState.hmRowsByTaskDate,
-    historyEntryNoteAnchorTaskId: initialState.historyEntryNoteAnchorTaskId,
-  });
-  const openHistoryTaskIds = initialState.openHistoryTaskIds;
-  const historyViewByTaskId = initialState.historyViewByTaskId;
-  const addTaskState = createTaskTimerMutableStore({
-    addTaskMilestonesEnabled: initialState.addTaskMilestonesEnabled,
-    addTaskMilestoneTimeUnit: initialState.addTaskMilestoneTimeUnit,
-    addTaskMilestones: initialState.addTaskMilestones,
-    addTaskCheckpointSoundEnabled: initialState.addTaskCheckpointSoundEnabled,
-    addTaskCheckpointSoundMode: initialState.addTaskCheckpointSoundMode,
-    addTaskCheckpointToastEnabled: initialState.addTaskCheckpointToastEnabled,
-    addTaskCheckpointToastMode: initialState.addTaskCheckpointToastMode,
-    addTaskPresetIntervalsEnabled: initialState.addTaskPresetIntervalsEnabled,
-    addTaskPresetIntervalValue: initialState.addTaskPresetIntervalValue,
-    addTaskWizardStep: initialState.addTaskWizardStep,
-    addTaskType: initialState.addTaskType,
-    addTaskOnceOffDay: initialState.addTaskOnceOffDay,
-    addTaskPlannedStartTime: initialState.addTaskPlannedStartTime,
-    addTaskPlannedStartOpenEnded: initialState.addTaskPlannedStartOpenEnded,
-    addTaskDurationValue: initialState.addTaskDurationValue,
-    addTaskDurationUnit: initialState.addTaskDurationUnit,
-    addTaskDurationPeriod: initialState.addTaskDurationPeriod,
-    addTaskNoTimeGoal: initialState.addTaskNoTimeGoal,
-    suppressAddTaskNameFocusOpen: initialState.suppressAddTaskNameFocusOpen,
-  });
-  const timeGoalReminderAtMsByTaskId = initialState.timeGoalReminderAtMsByTaskId;
-  const editTaskState = createTaskTimerMutableStore({
-    editIndex: initialState.editIndex,
-    editDraftSnapshot: initialState.editDraftSnapshot,
-    editTaskDurationUnit: "hour" as "minute" | "hour",
-    editTaskDurationPeriod: "week" as "day" | "week",
-    editTaskDraft: null as Task | null,
-    elapsedPadTarget: initialState.elapsedPadTarget,
-    elapsedPadMilestoneRef: initialState.elapsedPadMilestoneRef,
-    elapsedPadDraft: initialState.elapsedPadDraft,
-    elapsedPadOriginal: initialState.elapsedPadOriginal,
-  });
-  const dashboardUiState = createTaskTimerMutableStore({
-    dashboardEditMode: initialState.dashboardEditMode,
-    dashboardDragEl: initialState.dashboardDragEl,
-    dashboardOrderDraftBeforeEdit: initialState.dashboardOrderDraftBeforeEdit,
-    dashboardCardSizes: initialState.dashboardCardSizes,
-    dashboardCardSizesDraftBeforeEdit: initialState.dashboardCardSizesDraftBeforeEdit,
-    dashboardCardVisibility: initialState.dashboardCardVisibility,
-    dashboardAvgRange: initialState.dashboardAvgRange,
-    dashboardTimelineDensity: initialState.dashboardTimelineDensity,
-  });
-  const taskListRuntimeState = createTaskTimerMutableStore({
-    taskDragEl: initialState.taskDragEl,
-    lastRenderedTaskFlipView: null as "list" | "tile" | null,
-  });
-  const checkpointToastQueue = initialState.checkpointToastQueue;
-  const checkpointFiredKeysByTaskId = initialState.checkpointFiredKeysByTaskId;
-  const checkpointBaselineSecByTaskId = initialState.checkpointBaselineSecByTaskId;
-  const cacheRuntimeState = createTaskTimerMutableStore({
-    cloudPreferencesCache: workspaceRepository.loadCachedPreferences(),
-    cloudDashboardCache: workspaceRepository.loadCachedDashboard(),
-    cloudTaskUiCache: workspaceRepository.loadCachedTaskUi(),
-    navStackMemory: initialState.navStackMemory,
-    pendingTaskJumpMemory: initialState.pendingTaskJumpMemory,
-    exportTaskIndex: initialState.exportTaskIndex,
-    historyManagerRefreshInFlight: null as Promise<void> | null,
-    lastDashboardLiveSignature: "",
-  });
-  const rewardState = createTaskTimerMutableStore({
-    rewardProgress: normalizeRewardProgress((cacheRuntimeState.get("cloudPreferencesCache") || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS),
-    rewardSessionTrackersByTaskId: rewardSessionTrackersByTaskIdInitial,
-    cloudPreferencesCache: cacheRuntimeState.get("cloudPreferencesCache"),
-  });
-  const groupsState = createTaskTimerMutableStore({
-    groupsIncomingRequests: initialState.groupsIncomingRequests,
-    groupsOutgoingRequests: initialState.groupsOutgoingRequests,
-    groupsFriendships: initialState.groupsFriendships,
-    groupsSharedSummaries: initialState.groupsSharedSummaries,
-    ownSharedSummaries: initialState.ownSharedSummaries,
-    shareTaskIndex: initialState.shareTaskIndex,
-    shareTaskMode: initialState.shareTaskMode,
-    shareTaskTaskId: initialState.shareTaskTaskId,
-    groupsLoading: initialState.groupsLoading,
-    groupsLoadingDepth: initialState.groupsLoadingDepth,
-    groupsRefreshSeq: initialState.groupsRefreshSeq,
-    activeFriendProfileUid: initialState.activeFriendProfileUid,
-    activeFriendProfileName: initialState.activeFriendProfileName,
-    friendProfileCacheByUid: initialState.friendProfileCacheByUid,
-  });
   let historyInlineApi: ReturnType<typeof createTaskTimerHistoryInline> | null = null;
   let sessionApi: ReturnType<typeof createTaskTimerSession> | null = null;
   let addTaskApi: ReturnType<typeof createTaskTimerAddTask> | null = null;
@@ -444,11 +276,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       () => {};
   let closeElapsedPadApi: (applyValue: boolean) => void = () => {};
   let registerEditTaskEvents: () => void = () => {};
-  const openFriendSharedTaskUids = initialState.openFriendSharedTaskUids;
   const flippedTaskIds = new Set<string>();
   let rewardsHistoryApi: ReturnType<typeof createTaskTimerRewardsHistory> | null = null;
   let runtimeActions = null as unknown as ReturnType<typeof createTaskTimerRuntimeActions>;
-  const dashboardWidgetHasRenderedData = initialState.dashboardWidgetHasRenderedData;
   let unsubscribeCheckpointAlertMuteSignals: (() => void) | null = null;
   const unsubscribeCachedPreferences = workspaceRepository.subscribeCachedPreferences((prefs) => {
     cacheRuntimeState.set("cloudPreferencesCache", prefs);
@@ -1322,7 +1152,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setDeletedTaskMeta: taskCollectionBindings.setDeletedTaskMeta,
     getConfirmOverlay: () => els.confirmOverlay as HTMLElement | null,
     getConfirmDeleteAllChecked: () => !!els.confirmDeleteAll?.checked,
-    escapeHtmlUI,
     confirm,
     closeConfirm,
     saveHistory: (history) => saveHistory(history as TaskTimerMutableState["historyByTaskId"]),

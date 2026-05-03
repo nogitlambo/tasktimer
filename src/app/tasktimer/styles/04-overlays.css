@@ -2041,7 +2041,11 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #confirmOverlay.isDeleteTaskConfirm .modal{
   background: #0d0f13;
+  border: 1px solid rgba(255,77,77,.78);
   border-radius: 0;
+  box-shadow:
+    0 18px 54px rgba(0,0,0,.48),
+    0 0 24px rgba(255,77,77,.14);
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
@@ -2068,6 +2072,13 @@ body[data-theme="purple"] .rewardsInfoText{
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
   min-width: 92px;
   justify-content: center;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn,
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn:hover:not(:disabled),
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn:focus-visible:not(:disabled),
+#confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn:active:not(:disabled){
+  border-color: rgba(226,232,240,.86) !important;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,
@@ -4246,6 +4257,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkRow {
   align-items: center;
+  gap: 8px;
   padding: 0;
   background: transparent;
   border: 0;
@@ -4264,11 +4276,20 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   align-items: center;
   justify-content: flex-start;
   gap: 0;
+  line-height: 1;
   cursor: pointer;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkLabel .confirmChkLabelText {
   flex: 1 1 auto;
+  align-items: center;
+  min-height: 13px;
+  font-family: var(--font-readable);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+  color: rgba(226,232,240,.92);
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch {
