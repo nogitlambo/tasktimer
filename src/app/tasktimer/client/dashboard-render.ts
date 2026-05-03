@@ -7,6 +7,7 @@ import {
   startOfCurrentWeekMs,
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
+import { sessionColorForTaskMs } from "../lib/colors";
 import { computeMomentumSnapshot, getMomentumBandLabel, type MomentumSnapshot } from "../lib/momentum";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import {
@@ -2013,13 +2014,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const historyByTaskId = ctx.getHistoryByTaskId();
     const includedTaskIds = getDashboardIncludedTaskIds();
     const taskNameById = new Map<string, string>();
+    const taskById = new Map<string, Task>();
     getDashboardFilteredTasks().forEach((task) => {
       const taskId = String(task?.id || "").trim();
       if (!taskId) return;
       taskNameById.set(taskId, String(task?.name || "").trim() || "Task");
+      taskById.set(taskId, task);
     });
 
-    const rows: Array<{ taskId: string; taskName: string; totalMs: number }> = [];
+    const rows: Array<{ taskId: string; taskName: string; totalMs: number; color: string }> = [];
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId || !includedTaskIds.has(taskId)) return;
@@ -2036,6 +2039,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         taskId,
         taskName: taskNameById.get(taskId) || "Task",
         totalMs,
+        color: taskById.has(taskId) ? sessionColorForTaskMs(taskById.get(taskId) as Task, totalMs) : "",
       });
     });
 
@@ -2108,7 +2112,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
             .map(
               (row) => `<div class="dashboardHeatSummaryRow" role="listitem">
                 <span class="dashboardHeatSummaryTask">${ctx.escapeHtmlUI(row.taskName)}</span>
-                <span class="dashboardHeatSummaryTime">${ctx.escapeHtmlUI(formatTime(row.totalMs))}</span>
+                <span class="dashboardHeatSummaryTime"${row.color ? ` style="color:${ctx.escapeHtmlUI(row.color)}"` : ""}>${ctx.escapeHtmlUI(formatTime(row.totalMs))}</span>
               </div>`
             )
             .join("")}

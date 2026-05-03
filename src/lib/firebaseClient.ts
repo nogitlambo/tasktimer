@@ -27,9 +27,13 @@ const defaultAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const mobileAuthDomainOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_AUTH_DOMAIN;
 const defaultApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const mobileApiKeyOverride = process.env.NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY;
-const recaptchaEnterpriseSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+const recaptchaEnterpriseSiteKey = String(process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || "").trim();
 const appCheckDebugTokenOverride = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
 const shouldLogFirebaseDiagnostics = process.env.NODE_ENV !== "production";
+
+export function hasFirebaseAppCheckClientConfig() {
+  return Boolean(recaptchaEnterpriseSiteKey);
+}
 
 function isLocalhostWebRuntime() {
   if (typeof window === "undefined" || isNativeOrFileRuntime()) return false;
@@ -248,6 +252,7 @@ export function getFirebaseAppClient() {
     app &&
     typeof window !== "undefined" &&
     !isNativeOrFileRuntime() &&
+    hasFirebaseAppCheckClientConfig() &&
     firebaseAppCheckInstance === undefined
   ) {
     getFirebaseAppCheckClient();
@@ -275,6 +280,13 @@ export function getFirebaseAppCheckClient(): AppCheck | null {
     firebaseAppCheckInstance = null;
     return firebaseAppCheckInstance;
   }
+  if (!hasFirebaseAppCheckClientConfig()) {
+    logFirebaseAppCheck("Skipping initialization because App Check site key is not configured", {
+      hasSiteKey: false,
+    });
+    firebaseAppCheckInstance = null;
+    return firebaseAppCheckInstance;
+  }
   firebaseAppCheckInitStarted = true;
   const usingDebugToken = configureFirebaseAppCheckDebugToken();
   logFirebaseAppCheck("Initialization requested", {
@@ -283,10 +295,10 @@ export function getFirebaseAppCheckClient(): AppCheck | null {
     usingDebugToken,
   });
   const app = getOrCreateFirebaseAppClient();
-  if (!app || !recaptchaEnterpriseSiteKey) {
+  if (!app) {
     warnFirebaseAppCheck("Initialization skipped because config is incomplete", {
       hasApp: Boolean(app),
-      hasSiteKey: Boolean(recaptchaEnterpriseSiteKey),
+      hasSiteKey: hasFirebaseAppCheckClientConfig(),
     });
     firebaseAppCheckInstance = null;
     return firebaseAppCheckInstance;

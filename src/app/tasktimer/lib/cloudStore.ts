@@ -171,12 +171,16 @@ function isExpectedIdentitySyncError(error: unknown): boolean {
   const described = describeError(error);
   const code = String(described.code || "").trim().toLowerCase();
   const message = String(described.message || "").trim().toLowerCase();
+  const status = Number(described.status || 0) || null;
   return (
     code === "account/sync-identity-rate-limited" ||
     code === "auth/unauthenticated" ||
+    code === "auth/admin-config-missing" ||
     code === "auth/invalid-session" ||
+    status === 503 ||
     message.includes("too many identity sync attempts recently") ||
     message.includes("you must be signed in to continue") ||
+    message.includes("firebase admin credentials are not configured") ||
     message.includes("your sign-in session is no longer valid")
   );
 }
@@ -474,7 +478,15 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
       }),
     });
     if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+      const responseText = await response.text().catch(() => "");
+      const payload = ((): { error?: string; code?: string } => {
+        if (!responseText) return {};
+        try {
+          return JSON.parse(responseText) as { error?: string; code?: string };
+        } catch {
+          return { error: responseText };
+        }
+      })();
       const status = Number(response.status || 0) || null;
       const code = String(payload.code || "").trim();
       const message = String(payload.error || "").trim() || "Could not sync user identity lookup.";
@@ -1214,7 +1226,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         theme: normalizeThemeMode(prefSnap.get("theme")),
         menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
         startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
-        taskView: prefSnap.get("taskView") === "tile" ? "tile" : "list",
+        taskView: "tile",
         taskOrderBy:
           prefSnap.get("taskOrderBy") === "alpha"
             ? "alpha"
@@ -1667,7 +1679,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     theme: normalizeThemeMode(data.theme),
     menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
     startupModule: normalizeStartupModule(data.startupModule),
-    taskView: data.taskView === "tile" ? "tile" : "list",
+    taskView: "tile",
     taskOrderBy: data.taskOrderBy === "alpha" ? "alpha" : data.taskOrderBy === "schedule" ? "schedule" : "custom",
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),

@@ -6,11 +6,12 @@ import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClie
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { saveUserRootPatch } from "@/app/tasktimer/lib/cloudStore";
 import { normalizeUsername, validateUsername } from "@/lib/username";
-import { clearScopedStorageState, waitForPendingTaskSync } from "@/app/tasktimer/lib/storage";
+import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 export function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -63,9 +64,9 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
-  await waitForPendingTaskSync().catch(() => {});
+  await workspaceRepository.waitForPendingTaskSync().catch(() => {});
   await signOut(auth);
-  clearScopedStorageState();
+  workspaceRepository.clearScopedState();
   redirectToSignedOutHome();
 }
 
@@ -126,7 +127,7 @@ export async function resumePendingDeleteFlow(uid: string) {
   }).catch(() => {});
   await callDeleteUserDataRoute(idToken, auth.currentUser.uid);
   await deleteUser(auth.currentUser);
-  clearScopedStorageState();
+  workspaceRepository.clearScopedState();
   redirectToSignedOutHome();
   return { resumed: true };
 }
@@ -172,7 +173,7 @@ export async function handleDeleteAccountFlow(user: User) {
     await deleteUser(targetUser);
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
-    clearScopedStorageState();
+    workspaceRepository.clearScopedState();
     redirectToSignedOutHome();
   };
 

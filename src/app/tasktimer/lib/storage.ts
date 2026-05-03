@@ -984,7 +984,7 @@ export function buildDefaultCloudPreferences() {
     theme: "lime" as const,
     menuButtonStyle: "square" as const,
     startupModule: "dashboard" as const,
-    taskView: "list" as const,
+    taskView: "tile" as const,
     taskOrderBy: "custom" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,

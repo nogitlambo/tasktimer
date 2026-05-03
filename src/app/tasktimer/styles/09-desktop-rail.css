@@ -1285,6 +1285,222 @@
     padding-top: 18px;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileDock,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileDock,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileDock,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileDock{
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenu,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenu,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenu,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenu{
+    position: relative;
+    z-index: 3;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger{
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    list-style: none;
+    text-align: left;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger{
+    background: #282828 !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileHead,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileHead,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailProfileHead,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileHead{
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileIdentity,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailProfileIdentity,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileIdentity{
+    text-align: left;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker{
+    display: none;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuDropdown{
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 10px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+    background: #282828;
+    opacity: 0;
+    transform: translateY(14px);
+    transform-origin: bottom center;
+    pointer-events: none;
+    transition: opacity .32s ease, transform .32s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuDropdown{
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    animation: desktopRailProfileMenuSlideUp .32s ease both;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenu[data-closing="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenu[data-closing="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenu[data-closing="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenu[data-closing="true"] .desktopRailProfileMenuDropdown{
+    opacity: 0;
+    transform: translateY(14px);
+    pointer-events: none;
+    animation: desktopRailProfileMenuSlideDown .32s ease both;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuBtn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuBtn,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuBtn,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuBtn{
+    min-height: 48px;
+    padding: 8px 16px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenu,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu{
+    position: relative;
+    display: block;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenuTrigger{
+    border: 0;
+    list-style: none;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuTrigger::after,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenuTrigger::after,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenuTrigger::after,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenuTrigger::after{
+    content: ">";
+    margin-left: auto;
+    color: rgba(233,246,252,.62);
+    transition: transform .18s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenuList{
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: min(220px, calc(100vw - 32px));
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    background: #282828;
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList{
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn{
+    min-height: 42px;
+    padding: 7px 14px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSignOutBtn:disabled,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileSignOutBtn:disabled,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSignOutBtn:disabled,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSignOutBtn:disabled{
+    cursor: wait;
+    opacity: .7;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuError,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailProfileMenuError,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuError,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuError{
+    margin: 2px 0 0;
+    text-align: left;
+  }
+
+  @keyframes desktopRailProfileMenuSlideUp{
+    from{
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to{
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes desktopRailProfileMenuSlideDown{
+    from{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to{
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail{
     --desktop-rail-pad-x: 14px;
     --desktop-rail-pad-top: 14px;
@@ -1915,6 +2131,12 @@
     min-width: 0;
     flex: 1 1 auto;
   }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileEmail,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileEmail,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileEmail{
+    display: block;
+    margin-top: 0;
+  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardCardTitle,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardCardTitle,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardProfileName,
@@ -2184,11 +2406,15 @@
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileIdentity{
     display: grid;
     align-content: start;
-    gap: 8px;
+    gap: 2px;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardProfileMeta,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileIdentity .dashboardProfileMeta{
     display: none;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileEmail,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileEmail{
+    display: block;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileTags{
@@ -2234,7 +2460,7 @@
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileSummarySdCard{
     position: relative;
     overflow: hidden !important;
-    padding: 18px 18px 18px 18px !important;
+    padding: 0 18px 2px !important;
     border-radius: 8px !important;
     border: 0 !important;
     background: transparent !important;
@@ -3817,4 +4043,31 @@ body[data-theme="lime"] .archieDraftSection{
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-profile-menu-open="true"],
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail[data-profile-menu-open="true"],
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail[data-profile-menu-open="true"],
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail[data-profile-menu-open="true"]{
+    z-index: 50;
+    overflow: visible !important;
+    -webkit-clip-path: none !important;
+    clip-path: none !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileMenuDropdown{
+    overflow: visible;
+    z-index: 51;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileSubmenuList{
+    z-index: 52;
+  }
 }

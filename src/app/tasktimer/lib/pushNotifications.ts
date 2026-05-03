@@ -30,6 +30,9 @@ const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
 const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 export const TASKLAUNCH_PUSH_CHANNEL_ID = "tasklaunch-default";
+const firebaseWebPushVapidKey = normalizePublicFirebaseConfigValue(
+  process.env.NEXT_PUBLIC_FIREBASE_WEB_PUSH_VAPID_KEY
+);
 
 type PendingPushAction = {
   taskId: string;
@@ -86,6 +89,12 @@ let desiredPushEnabled: PushChannelPreference = { mobileEnabled: false, webEnabl
 let syncPromise: Promise<PushChannelPreference> = Promise.resolve(desiredPushEnabled);
 let lastSyncedUid = "";
 
+function normalizePublicFirebaseConfigValue(value: string | undefined): string {
+  const normalized = String(value || "").trim();
+  if (!normalized || /^replace-with-/i.test(normalized)) return "";
+  return normalized;
+}
+
 function normalizePushChannelPreference(input: boolean | Partial<PushChannelPreference>): PushChannelPreference {
   if (typeof input === "boolean") {
     return { mobileEnabled: input, webEnabled: input };
@@ -112,6 +121,7 @@ function isNativePushRuntime() {
 
 async function isWebPushRuntimeSupported() {
   if (typeof window === "undefined" || isNativeOrFileRuntime()) return false;
+  if (!firebaseWebPushVapidKey) return false;
   if (!("Notification" in window) || !("serviceWorker" in navigator)) return false;
   try {
     return await isSupported();
@@ -625,10 +635,9 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   if (webRuntime) {
     try {
       const app = getFirebaseAppClient();
-      const vapidKey = String(process.env.NEXT_PUBLIC_FIREBASE_WEB_PUSH_VAPID_KEY || "").trim();
-      if (!app || !vapidKey) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("[push] Web push registration skipped because Firebase app or VAPID key is missing");
+      if (!app || !firebaseWebPushVapidKey) {
+        if (process.env.NODE_ENV !== "production" && !app && firebaseWebPushVapidKey) {
+          console.warn("[push] Web push registration skipped because Firebase app is missing");
         }
       } else {
         let permission = Notification.permission;
@@ -637,7 +646,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
           console.info("[push] Web push permission status", {
             permission,
             hasApp: !!app,
-            hasVapidKey: !!vapidKey,
+            hasVapidKey: !!firebaseWebPushVapidKey,
           });
         }
         if (permission === "granted") {
@@ -673,7 +682,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
           try {
             webToken = String(
               (await getToken(messaging, {
-                vapidKey,
+                vapidKey: firebaseWebPushVapidKey,
                 serviceWorkerRegistration,
               })) || ""
             ).trim();
@@ -774,6 +783,9 @@ export async function syncTaskTimerPushNotificationsEnabled(
   enabled: boolean | Partial<PushChannelPreference>
 ): Promise<PushChannelPreference> {
   desiredPushEnabled = normalizePushChannelPreference(enabled);
+  if (!firebaseWebPushVapidKey) {
+    desiredPushEnabled = { ...desiredPushEnabled, webEnabled: false };
+  }
   syncPromise = syncPromise
     .catch(() => ({ mobileEnabled: false, webEnabled: false }))
     .then(async () => {

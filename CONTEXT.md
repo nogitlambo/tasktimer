@@ -2,6 +2,7 @@
 
 ## TaskTimer
 
+- TaskTimer workspace persistence module: the module that owns TaskTimer workspace hydration, cached task/history/live-session reads, task/history writes, cloud collection subscriptions, pending sync status, and preferences/dashboard/task-UI cache adapters.
 - TaskTimer runtime composition: the module that creates runtime stores, derived storage keys, runtime adapters, and long-lived mutable references before feature modules are wired.
 - Task card action effects: the module that owns task-card `data-action` side-effect routing, entitlement gates, deferred manual-entry opening, unshare confirmation, and checkpoint mute behavior.
 - Task card rendering contract: the module that owns Task card HTML, stable `data-action` hooks, feature-gated menu labels, and action dispatch gating for the Tasks page.

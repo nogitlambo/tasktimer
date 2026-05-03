@@ -90,7 +90,7 @@ export function createTaskTimerRuntimeComposition(
     addTaskCustomNames: initialState.addTaskCustomNames,
     weekStarting: initialState.weekStarting,
     startupModule: initialState.startupModule,
-    taskView: initialState.taskView,
+    taskView: "tile",
     taskOrderBy: initialState.taskOrderBy,
     dynamicColorsEnabled: initialState.dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled: initialState.autoFocusOnTaskLaunchEnabled,

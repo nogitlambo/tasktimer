@@ -136,14 +136,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncThemeAvailabilityUi();
   }
 
-  function applyTaskViewPreference(next: "list" | "tile") {
-    const taskView = next === "tile" ? "tile" : "list";
-    ctx.setTaskViewState(taskView);
-    document.body.setAttribute("data-task-view", taskView);
-    els.taskViewList?.classList.toggle("isOn", taskView === "list");
-    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
-    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
-    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
+  function applyTaskViewPreference() {
+    ctx.setTaskViewState("tile");
+    document.body.setAttribute("data-task-view", "tile");
   }
 
   function getTaskOrderByLabel(value: TaskOrderBy) {
@@ -241,12 +236,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function loadTaskViewPreference() {
-    applyTaskViewPreference(preferenceService.loadTaskView());
+    applyTaskViewPreference();
   }
 
   function saveTaskViewPreference() {
     try {
-      localStorage.setItem(ctx.storageKeys.TASK_VIEW_KEY, ctx.getTaskView());
+      localStorage.setItem(ctx.storageKeys.TASK_VIEW_KEY, "tile");
     } catch {
       // ignore localStorage write failures
     }
@@ -285,7 +280,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   function syncTaskSettingsUi() {
     const weekStarting = ctx.getWeekStarting();
     const startupModule = ctx.getStartupModule();
-    const taskView = ctx.getTaskView();
+    ctx.setTaskViewState("tile");
     ctx.toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
@@ -304,10 +299,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.optimalProductivityEndTimeInput) {
       els.optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
     }
-    els.taskViewList?.classList.toggle("isOn", taskView === "list");
-    els.taskViewTile?.classList.toggle("isOn", taskView === "tile");
-    els.taskViewList?.setAttribute("aria-pressed", taskView === "list" ? "true" : "false");
-    els.taskViewTile?.setAttribute("aria-pressed", taskView === "tile" ? "true" : "false");
     syncTaskOrderByMenuUi();
     const lockAdvancedTaskConfig = !canUseAdvancedTaskConfig();
     if (els.taskDynamicColorsToggle) {
@@ -495,20 +486,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskStartupModuleSelect, "change", () => {
       applyStartupModulePreference(els.taskStartupModuleSelect?.value || "dashboard");
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskViewList, "click", () => {
-      applyTaskViewPreference("list");
-      ctx.clearTaskFlipStates();
-      ctx.render();
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-    });
-    ctx.on(els.taskViewTile, "click", () => {
-      applyTaskViewPreference("tile");
-      ctx.clearTaskFlipStates();
-      ctx.render();
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });

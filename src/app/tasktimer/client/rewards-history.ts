@@ -473,7 +473,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
     const liveSession = ctx.getLiveSessionsByTaskId()[taskId];
-    if (!liveSession) return 0;
     const elapsedMs = Math.max(
       0,
       Math.floor(Number(opts?.elapsedMs ?? liveSession?.elapsedMs ?? ctx.getTaskElapsedMs(task)) || 0)

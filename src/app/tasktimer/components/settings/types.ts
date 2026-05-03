@@ -54,11 +54,8 @@ export type SettingsAccountViewModel = {
   syncMessage: string;
   syncAtMs: number | null;
   uidCopyStatus: string;
-  showSignOutConfirm: boolean;
-  setShowSignOutConfirm: (open: boolean) => void;
   showDeleteAccountConfirm: boolean;
   setShowDeleteAccountConfirm: (open: boolean) => void;
-  onSignOut: () => Promise<void>;
   onDeleteAccount: () => Promise<void>;
   onCopyUid: () => Promise<void>;
   onStartAliasEdit: () => void;

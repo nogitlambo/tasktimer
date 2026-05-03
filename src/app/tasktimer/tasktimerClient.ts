@@ -14,27 +14,8 @@ import {
 } from "./lib/friendsStore";
 import {
   STORAGE_KEY,
-  buildDefaultCloudPreferences,
-  refreshHistoryFromCloud,
-  loadHistory,
-  appendHistoryEntry,
-  clearLiveSession,
-  saveHistoryLocally,
-  saveHistory,
-  saveHistoryAndWait,
-  saveLiveSession,
-  loadDeletedMeta,
-  saveDeletedMeta,
-  cleanupHistory,
-  loadCachedDashboard,
-  primeDashboardCacheFromShadow,
-  loadCachedPreferences,
-  loadCachedTaskUi,
-  saveCloudDashboard,
-  saveCloudPreferences,
-  saveCloudTaskUi,
 } from "./lib/storage";
-import type { TaskUiConfig } from "./lib/cloudStore";
+import type { DashboardConfig, TaskUiConfig, UserPreferencesV1 } from "./lib/cloudStore";
 import {
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
@@ -449,14 +430,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     ...overlayBindings,
     ...renderBindings,
-    saveHistory,
+    saveHistory: workspaceRepository.saveHistory,
     createId: () => cryptoRandomId(),
     makeTask: (name, order) => makeTask(name, order),
     sortMilestones,
     ensureMilestoneIdentity: (task) => ensureMilestoneIdentity(task),
     getPresetIntervalValueNum: (task) => getPresetIntervalValueNum(task),
     getPresetIntervalNextSeqNum: (task) => getPresetIntervalNextSeqNum(task),
-    cleanupHistory,
+    cleanupHistory: workspaceRepository.cleanupHistory,
     ...planBindings,
   });
   const {
@@ -472,7 +453,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTasks: taskCollectionBindings.getTasks,
     setTasks: taskCollectionBindings.setTasks,
     ...currentAppPageBinding,
-    getTaskView: () => preferencesState.get("taskView"),
+    getTaskView: () => "tile",
     getTaskOrderBy: () => preferencesState.get("taskOrderBy"),
     getTaskDragEl: () => taskListRuntimeState.get("taskDragEl"),
     setTaskDragEl: (value) => {
@@ -507,13 +488,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setCloudTaskUiCache: (value) => {
       cacheRuntimeState.set("cloudTaskUiCache", value as TaskUiConfig | null);
     },
-    loadCachedTaskUi,
+    loadCachedTaskUi: workspaceRepository.loadCachedTaskUi,
     saveCloudTaskUi: (value) => {
-      saveCloudTaskUi(value as Parameters<typeof saveCloudTaskUi>[0]);
+      workspaceRepository.saveTaskUi(value as TaskUiConfig);
     },
     getTasks: taskCollectionBindings.getTasks,
     getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
-    saveHistory,
+    saveHistory: workspaceRepository.saveHistory,
     getWorkingIndicatorStack: () => workingIndicatorState.get("stack"),
     getWorkingIndicatorKeySeq: () => workingIndicatorState.get("keySeq"),
     setWorkingIndicatorKeySeq: (value) => {
@@ -658,12 +639,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       dashboardLayoutBindings,
       getCloudDashboardCache: () => cacheRuntimeState.get("cloudDashboardCache"),
       setCloudDashboardCache: (value: unknown) => {
-        cacheRuntimeState.set("cloudDashboardCache", value as ReturnType<typeof loadCachedDashboard>);
+        cacheRuntimeState.set("cloudDashboardCache", value as DashboardConfig | null);
       },
-      loadCachedDashboard,
+      loadCachedDashboard: workspaceRepository.loadCachedDashboard,
       saveCloudDashboard: (value: unknown) => {
-        const nextDashboard = value as NonNullable<ReturnType<typeof loadCachedDashboard>>;
-        if (nextDashboard) saveCloudDashboard(nextDashboard);
+        const nextDashboard = value as DashboardConfig | null;
+        if (nextDashboard) workspaceRepository.saveDashboard(nextDashboard);
       },
     },
   });
@@ -760,8 +741,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getElapsedMs: (task) => sessionApi?.getElapsedMs(task) ?? 0,
       getTaskElapsedMs: (task) => sessionApi?.getTaskElapsedMs(task) ?? 0,
       save: renderBindings.save,
-      saveHistory,
-      saveDeletedMeta,
+      saveHistory: workspaceRepository.saveHistory,
+      saveDeletedMeta: workspaceRepository.saveDeletedMeta,
       escapeHtmlUI,
       getModeColor: (mode) => getModeColor(mode),
       fillBackgroundForPct,
@@ -867,10 +848,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
       getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
-      loadCachedTaskUi: () => cacheRuntimeState.get("cloudTaskUiCache") || loadCachedTaskUi(),
+      loadCachedTaskUi: () => cacheRuntimeState.get("cloudTaskUiCache") || workspaceRepository.loadCachedTaskUi(),
       saveCloudTaskUi: (next) => {
         cacheRuntimeState.set("cloudTaskUiCache", next as TaskUiConfig | null);
-        saveCloudTaskUi(next as Parameters<typeof saveCloudTaskUi>[0]);
+        workspaceRepository.saveTaskUi(next as TaskUiConfig);
       },
       openOverlay: overlayBindings.openOverlay,
       closeOverlay: overlayBindings.closeOverlay,
@@ -994,7 +975,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCurrentUid: () => getCurrentTaskTimerUid(),
     })
   );
-  rewardSessionBridge.bootstrapRewardSessionTrackers();
   const { loadFocusSessionNotes: loadFocusSessionNotesApi, tick: tickApi, syncTimeGoalModalWithTaskState: syncTimeGoalModalWithTaskStateApi, maybeRestorePendingTimeGoalFlow: maybeRestorePendingTimeGoalFlowApi, registerSessionEvents } = sessionApi;
   let openHistoryManagerFromShell = () => {};
 
@@ -1060,7 +1040,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       preferencesState,
       rewardState,
       focusBindings,
-      setCloudPreferencesCache: (value: Parameters<typeof saveCloudPreferences>[0] | null) => {
+      setCloudPreferencesCache: (value: UserPreferencesV1 | null) => {
         rewardState.set("cloudPreferencesCache", value ?? null);
         cacheRuntimeState.set("cloudPreferencesCache", value ?? null);
       },
@@ -1074,12 +1054,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       clearFocusSessionDraft: (taskId) => runtimeActions.clearFocusSessionDraft(taskId),
       syncFocusSessionNotesInput: (taskId) => runtimeActions.syncFocusSessionNotesInput(taskId),
       syncFocusSessionNotesAccordion: (taskId) => runtimeActions.syncFocusSessionNotesAccordion(taskId),
-      appendHistoryEntry: (taskId, entry) => appendHistoryEntry(taskId, entry as any),
-      saveLiveSession: (session) => saveLiveSession(session as any),
-      clearLiveSession: (taskId) => clearLiveSession(taskId),
-      saveHistoryLocally,
-      buildDefaultCloudPreferences: () => buildDefaultCloudPreferences(),
-      saveCloudPreferences: (prefs) => saveCloudPreferences(prefs),
+      appendHistoryEntry: (taskId, entry) => workspaceRepository.appendHistoryEntry(taskId, entry as any),
+      saveLiveSession: (session) => workspaceRepository.saveLiveSession(session as any),
+      clearLiveSession: (taskId) => workspaceRepository.clearLiveSession(taskId),
+      saveHistoryLocally: workspaceRepository.saveHistoryLocally,
+      buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
+      saveCloudPreferences: (prefs) => workspaceRepository.savePreferences(prefs),
       syncSharedTaskSummariesForTask,
       syncOwnFriendshipProfile,
     })
@@ -1087,6 +1067,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const {
     syncRewardSessionTrackerForRunningTask,
   } = rewardsHistoryApi;
+  rewardSessionBridge.bootstrapRewardSessionTrackers();
 
   const runtimeCoordinator = createTaskTimerRuntimeCoordinator({
       els,
@@ -1154,8 +1135,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getConfirmDeleteAllChecked: () => !!els.confirmDeleteAll?.checked,
     confirm,
     closeConfirm,
-    saveHistory: (history) => saveHistory(history as TaskTimerMutableState["historyByTaskId"]),
-    saveDeletedMeta,
+    saveHistory: (history) => workspaceRepository.saveHistory(history as TaskTimerMutableState["historyByTaskId"]),
+    saveDeletedMeta: workspaceRepository.saveDeletedMeta,
     save: renderBindings.save,
     deleteSharedTaskSummariesForTask,
     refreshOwnSharedSummaries,
@@ -1188,12 +1169,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       sortMilestones,
       sessionColorForTaskMs,
       save: renderBindings.save,
-      saveHistory,
-      saveHistoryAndWait,
-      loadHistory,
-      refreshHistoryFromCloud,
-      saveDeletedMeta,
-      loadDeletedMeta,
+      saveHistory: workspaceRepository.saveHistory,
+      saveHistoryAndWait: workspaceRepository.saveHistoryAndWait,
+      loadHistory: workspaceRepository.loadHistory,
+      refreshHistoryFromCloud: workspaceRepository.refreshHistoryFromCloud,
+      saveDeletedMeta: workspaceRepository.saveDeletedMeta,
+      loadDeletedMeta: workspaceRepository.loadDeletedMeta,
       load: () => runtimeActions.load(),
       render,
       navigateToAppRoute,
@@ -1226,7 +1207,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCurrentAppPage: currentAppPageBinding.getCurrentAppPage,
       savePinnedHistoryTaskIds,
       persistTaskUiToCloud,
-      saveHistory,
+      saveHistory: workspaceRepository.saveHistory,
       confirm: overlayBindings.confirm,
       closeConfirm: overlayBindings.closeConfirm,
       navigateToAppRoute,
@@ -1280,15 +1261,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       defaultModeColors: DEFAULT_MODE_COLORS,
       normalizeRewardProgress,
       getCurrentUid: () => getCurrentTaskTimerUid(),
-      loadCachedPreferences,
-      loadCachedTaskUi,
+      loadCachedPreferences: workspaceRepository.loadCachedPreferences,
+      loadCachedTaskUi: workspaceRepository.loadCachedTaskUi,
       getCloudPreferencesCache: () => cacheRuntimeState.get("cloudPreferencesCache"),
       setCloudPreferencesCache: (value) => {
         cacheRuntimeState.set("cloudPreferencesCache", value ?? null);
       },
-      buildDefaultCloudPreferences: () => buildDefaultCloudPreferences() as NonNullable<ReturnType<typeof loadCachedPreferences>>,
+      buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
       saveCloudPreferences: (prefs) => {
-        saveCloudPreferences(prefs as Parameters<typeof saveCloudPreferences>[0]);
+        workspaceRepository.savePreferences(prefs as UserPreferencesV1);
       },
       syncOwnFriendshipProfile,
       saveDashboardWidgetState: saveDashboardWidgetStateApi,
@@ -1405,6 +1386,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     createTaskTimerPersistenceContext({
       focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
       pendingTaskJumpKey: PENDING_PUSH_TASK_ID_KEY,
+      workspaceRepository,
       taskCollectionBindings,
       historyUiState,
       focusState,
@@ -1427,12 +1409,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getInitialAppPageFromLocation,
       initialAppPage,
       getCloudTaskUiCache: () => cacheRuntimeState.get("cloudTaskUiCache"),
-      loadCachedTaskUi,
-      loadDeletedMeta,
+      loadCachedTaskUi: workspaceRepository.loadCachedTaskUi,
+      loadDeletedMeta: workspaceRepository.loadDeletedMeta,
       setDeletedTaskMeta: (value) => {
         taskCollectionBindings.setDeletedTaskMeta(value);
       },
-      primeDashboardCacheFromShadow,
+      primeDashboardCacheFromShadow: workspaceRepository.primeDashboardCacheFromShadow,
       loadFocusSessionNotes: () => loadFocusSessionNotesApi(),
       loadAddTaskCustomNames: () => loadAddTaskCustomNamesApi(),
       loadWeekStartingPreference,
@@ -1462,7 +1444,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       maybeRepairHistoryNotesInCloudAfterHydrate: () => {
         if (sessionRuntimeState.get("historyNoteCloudRepairAttempted")) return;
         sessionRuntimeState.set("historyNoteCloudRepairAttempted", true);
-        saveHistory(taskCollectionBindings.getHistoryByTaskId(), { showIndicator: false });
+        workspaceRepository.saveHistory(taskCollectionBindings.getHistoryByTaskId(), { showIndicator: false });
       },
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
@@ -1471,6 +1453,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   );
 
   cloudSyncApi = createTaskTimerCloudSync({
+    workspaceRepository,
     runtime,
     on,
     nowMs,
@@ -1540,7 +1523,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       moveTaskOnSchedule: (taskId, day, startMinutes, sourceDay) => scheduleRuntime.moveTaskOnSchedule(taskId, day, startMinutes, sourceDay),
       toggleTaskScheduleFlexible: (taskId) => scheduleRuntime.toggleTaskScheduleFlexible(taskId),
       openOverlay,
-      getTaskView: () => preferencesState.get("taskView"),
+      getTaskView: () => "tile",
       hasTaskList: () => !!els.taskList,
       getTileColumnCount,
       getCurrentTileColumnCount: () => appRuntimeState.get("currentTileColumnCount"),

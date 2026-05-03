@@ -2030,7 +2030,7 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 }
 
-/* Final modal button sizing override: match Account Sign Out button dimensions. */
+/* Final modal button sizing override: keep shared dialog actions compact. */
 
 .overlay .modal .btn{
   min-height: 28px !important;

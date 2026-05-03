@@ -1,5 +1,5 @@
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
-import { cleanupHistory, loadHistory, loadLiveSessions, loadTasks, saveHistory, saveTasks } from "../lib/storage";
+import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 
@@ -11,6 +11,10 @@ type TaskUiCacheShape = {
 } | null;
 
 type CreateTaskTimerPersistenceOptions = {
+  workspaceRepository: Pick<
+    TaskTimerWorkspaceRepository,
+    "cleanupHistory" | "loadHistory" | "loadLiveSessions" | "loadTasks" | "saveHistory" | "saveTasks"
+  >;
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
   getTasks: () => Task[];
@@ -77,7 +81,7 @@ type CreateTaskTimerPersistenceOptions = {
 
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
   function load() {
-    const loaded = loadTasks();
+    const loaded = options.workspaceRepository.loadTasks();
     if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
       options.setTasks([]);
       return;
@@ -87,11 +91,11 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       return true;
     });
     options.setTasks(migratedTasks);
-    options.setLiveSessionsByTaskId(loadLiveSessions());
+    options.setLiveSessionsByTaskId(options.workspaceRepository.loadLiveSessions());
   }
 
   function save(opts?: PersistOptions) {
-    saveTasks(options.getTasks(), opts);
+    options.workspaceRepository.saveTasks(options.getTasks(), opts);
   }
 
   function savePendingTaskJump(taskId: string | null) {
@@ -231,16 +235,16 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
   }
 
   function loadHistoryIntoMemory() {
-    const loadedHistory = loadHistory();
-    const cleanedHistory = cleanupHistory(loadedHistory);
+    const loadedHistory = options.workspaceRepository.loadHistory();
+    const cleanedHistory = options.workspaceRepository.cleanupHistory(loadedHistory);
     options.setHistoryByTaskId(cleanedHistory);
     if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
-      saveHistory(cleanedHistory, { showIndicator: false });
+      options.workspaceRepository.saveHistory(cleanedHistory, { showIndicator: false });
     }
   }
 
   function loadLiveSessionsIntoMemory() {
-    options.setLiveSessionsByTaskId(loadLiveSessions());
+    options.setLiveSessionsByTaskId(options.workspaceRepository.loadLiveSessions());
   }
 
   function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {

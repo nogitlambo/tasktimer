@@ -131,6 +131,7 @@ service cloud.firestore {
         "streakDays",
         "totalFocusMs",
         "weeklyXpGain",
+        "memberSinceMs",
         "updatedAt",
         "schemaVersion"
       ])
@@ -146,6 +147,7 @@ service cloud.firestore {
       && request.resource.data.streakDays is int
       && request.resource.data.totalFocusMs is int
       && request.resource.data.weeklyXpGain is int
+      && (!("memberSinceMs" in request.resource.data) || request.resource.data.memberSinceMs == null || request.resource.data.memberSinceMs is int)
       && request.resource.data.updatedAt is timestamp
       && request.resource.data.schemaVersion is int;
     }
@@ -411,6 +413,33 @@ service cloud.firestore {
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
       && (!("deletedAt" in request.resource.data) || request.resource.data.deletedAt is int)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isLiveSessionDoc(taskId) {
+      return onlyKeys([
+        "sessionId",
+        "taskId",
+        "name",
+        "startedAtMs",
+        "elapsedMs",
+        "updatedAtMs",
+        "status",
+        "note",
+        "color",
+        "createdAt",
+        "serverUpdatedAt"
+      ])
+      && request.resource.data.taskId == taskId
+      && request.resource.data.sessionId is string
+      && request.resource.data.name is string
+      && request.resource.data.startedAtMs is int
+      && request.resource.data.elapsedMs is int
+      && request.resource.data.updatedAtMs is int
+      && request.resource.data.status == "running"
+      && (!("note" in request.resource.data) || request.resource.data.note is string)
+      && (!("color" in request.resource.data) || request.resource.data.color is string)
+      && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
+      && (!("serverUpdatedAt" in request.resource.data) || request.resource.data.serverUpdatedAt is timestamp);
     }
 
     function isFriendRequestDocShape() {
@@ -782,6 +811,12 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId) && isHistoryDoc();
         allow delete: if isOwner(userId);
+      }
+
+      match /activeSession/{sessionId} {
+        allow read: if isOwner(userId) && sessionId == "current";
+        allow create, update: if isOwner(userId) && sessionId == "current" && isLiveSessionDoc(taskId);
+        allow delete: if isOwner(userId) && sessionId == "current";
       }
     }
 

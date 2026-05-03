@@ -50,8 +50,10 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   --settings-account-brand-title-letter-spacing: .06em;
   --settings-account-name-value-size: clamp(26px, 4vw, 38px);
   --settings-account-name-value-line-height: 1.02;
+  --settings-detail-panel-padding-inline: 12px;
   --settings-detail-pane-exiting-top: 12px;
   --settings-detail-pane-exiting-display: flex;
+  --settings-desktop-nav-panel-height: calc(100dvh - 106px - var(--safe-top));
   --settings-account-rank-cluster-flow: column;
   --settings-account-rank-cluster-justify-content: end;
   --settings-account-rank-cluster-justify-items: stretch;
@@ -206,7 +208,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .menuHead{
   min-height:auto;
   margin-bottom:12px;
-  border-bottom:1px solid rgba(121,226,255,.18);
+  border-bottom:none;
   background: transparent;
   border-radius:0;
   padding:4px 4px 10px;
@@ -279,7 +281,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   top:var(--settings-nav-panel-top);
   border:none;
   box-shadow:none;
-  background:transparent;
+  background:transparent !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsSideLabel{
   text-align:left;
@@ -310,6 +312,8 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPanel{
   position:relative;
   min-height:520px;
+  padding-left: var(--settings-detail-panel-padding-inline);
+  padding-right: var(--settings-detail-panel-padding-inline);
   border:none;
   background:transparent !important;
   box-shadow:none;
@@ -341,7 +345,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.isExiting{
   display:var(--settings-detail-pane-exiting-display);
   position:absolute;
-  inset: var(--settings-detail-pane-exiting-top) 12px 12px 12px;
+  inset: var(--settings-detail-pane-exiting-top) var(--settings-detail-panel-padding-inline) 12px var(--settings-detail-panel-padding-inline);
   z-index:0;
   pointer-events:none;
 }
@@ -682,10 +686,6 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   justify-content:flex-start;
   margin-top:8px;
 }
-#app[aria-label="TaskLaunch Settings"] .settingsSignOutBtn{
-  min-height:28px;
-  padding:4px 10px;
-}
 #app[aria-label="TaskLaunch Settings"] .settingsPushTestBtn{
   min-height: 24px;
   padding: 3px 8px;
@@ -1022,7 +1022,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
   font-size:12px;
   letter-spacing:.05em;
-  text-transform:uppercase;
+  text-transform:none;
 }
 .settingsMenuItemIcon{
   width:100%;
@@ -1318,7 +1318,6 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsPushTestBtn,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-radius: 0 !important;
@@ -1329,7 +1328,6 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsPushTestBtn:hover:not(:disabled),
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(53,232,255,.56);
@@ -1338,7 +1336,6 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:focus-visible .accountAvatarPlaceholder,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsPushTestBtn:focus-visible,
-#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
   border-color: rgba(53,232,255,.64);
@@ -1370,7 +1367,8 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%) !important;
   border-color: transparent !important;
-  background: #0d0f13 !important;
+  background: transparent !important;
+  background-image: none !important;
   box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile::before{
@@ -1395,6 +1393,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   font-family:var(--font-tight);
   font-size:12px;
   font-weight:700;
+  text-transform: none;
   color: rgba(228,248,255,.94);
   width: auto !important;
   min-width: 0 !important;
@@ -1408,7 +1407,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:hover,
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile:focus-visible{
-  background: #0d0f13 !important;
+  background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
@@ -1423,15 +1422,15 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   border-color: transparent !important;
-  background:
-    linear-gradient(90deg, rgba(53,232,255,.16), rgba(255,255,255,.03) 55%),
-    rgba(255,255,255,.04) !important;
+  background: transparent !important;
+  background-image: none !important;
   box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger{
   border-color: transparent !important;
-  background: #0d0f13 !important;
-  box-shadow: 0 0 8px rgba(255,77,77,.08) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger .settingsNavRowText{
   color: rgba(255,170,170,.95);
@@ -1443,8 +1442,9 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isDanger.isActive{
   border-color: transparent !important;
-  background: linear-gradient(180deg, rgba(255,77,77,.12), rgba(255,255,255,.04)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 body[data-control-style="square"] .btn,
 body[data-control-style="square"] .iconBtn,
@@ -1621,7 +1621,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn .accountAvatarPlaceholder,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsPushTestBtn,
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-color: rgba(214,96,229,.52) !important;
@@ -1630,7 +1629,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .accountAvatarFrameBtn:hover .accountAvatarPlaceholder,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsPushTestBtn:hover:not(:disabled),
-body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsSignOutBtn:hover:not(:disabled),
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(233,134,245,.66) !important;
@@ -3220,18 +3218,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
     height: 34px;
   }
 }
-/* Final Account footer alignment override: keep Sign Out left-aligned below sync status. */
-#app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardFooter .settingsInlineFooter.settingsAuthActionsInline{
-  width: 100%;
-  justify-content: flex-start !important;
-  align-items: center;
-  gap: 8px;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsAccountIdCardFooter .settingsInlineFooter.settingsAuthActionsInline .settingsSignOutBtn{
-  margin-left: 0;
-  margin-right: auto;
-}
-
 /* Final Preferences selected-pill override */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .unitBtn.isOn{
   color: #000;
@@ -3320,10 +3306,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsAccoun
   #app[aria-label="TaskLaunch Settings"] .settingsNavExitBtn{
     justify-content: center !important;
     text-align: center !important;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions .settingsSignOutBtn{
-    justify-content: center !important;
   }
 
 }
@@ -3611,14 +3593,15 @@ body[data-theme="lime"] .settingsDetailNote{
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile{
   --settings-nav-hover-accent: rgba(214,246,116,.94);
   border-color: rgba(219,255,79,.16);
-  background: rgba(18,20,24,.96);
+  background: transparent !important;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
   color: rgba(246,255,204,.94);
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive{
   border-color: transparent !important;
-  background: rgba(18,20,24,.96) !important;
+  background: transparent !important;
+  background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.isActive .settingsNavRowText{
@@ -3796,17 +3779,6 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .settingsDetail
   font-family: var(--font-readable) !important;
   text-transform: none !important;
   letter-spacing: 0.01em !important;
-}
-
-#app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
-  margin-top: auto;
-  padding-top: 10px;
-  display: flex;
-  justify-content: flex-start;
-  width: 100%;
-}
-#app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions .settingsSignOutBtn{
-  width: 100%;
 }
 
 /* Final About pane layout and typography overrides. */
@@ -4016,11 +3988,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     grid-template-columns: 1fr;
   }
 }
-#app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions .settingsSignOutBtn:disabled{
-  opacity: .55;
-  cursor: default;
-}
-
 /* Migrated from tasktimer.css tail: settings detail list authority rules. */
 /* Final Settings right-pane Help Center and Data option rows: standard list buttons, not tiles. */
 #app[aria-label="TaskLaunch Settings"] .settingsDetailPane.settingsHelpPane .settingsDataListItem,
@@ -4227,8 +4194,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsNavTopActions,
-  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid,
-  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
+  #app[aria-label="TaskLaunch Settings"] .settingsNavGrid{
     width:min(100%, 420px);
     margin-left:auto;
     margin-right:auto;
@@ -4248,7 +4214,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     gap:8px;
     padding:10px 12px 10px 24px;
     text-align:left;
-    text-transform:uppercase;
+    text-transform:none;
     letter-spacing:.08em;
     box-shadow:none !important;
   }
@@ -4267,15 +4233,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     text-align:left;
     font-size:12px;
     line-height:1.15;
-  }
-
-  #app[aria-label="TaskLaunch Settings"] .settingsNavBottomActions{
-    position:sticky;
-    bottom:0;
-    margin-top:auto;
-    padding-top:12px;
-    padding-bottom: max(2px, var(--safe-bottom));
-    background: linear-gradient(180deg, rgba(13,15,19,0), rgba(13,15,19,.94) 22%, rgba(13,15,19,.98));
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
@@ -4312,7 +4269,15 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
 
 @media (min-width: 981px){
   #app[aria-label="TaskLaunch Settings"]{
+    --settings-detail-panel-padding-inline: clamp(28px, 4vw, 56px);
     --settings-page-list-margin: 18px;
+  }
+
+  #app[aria-label="TaskLaunch Settings"] .settingsNavPanel{
+    height: var(--settings-desktop-nav-panel-height);
+    min-height: var(--settings-desktop-nav-panel-height);
+    max-height: var(--settings-desktop-nav-panel-height);
+    background: transparent !important;
   }
 }
 

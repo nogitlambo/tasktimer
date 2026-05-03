@@ -1,7 +1,13 @@
 import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 
 import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
-import { getFirebaseAppCheckClient, getFirebaseAppClient, hasFirebaseAuthClientConfig, isNativeOrFileRuntime } from "./firebaseClient";
+import {
+  getFirebaseAppCheckClient,
+  getFirebaseAppClient,
+  hasFirebaseAppCheckClientConfig,
+  hasFirebaseAuthClientConfig,
+  isNativeOrFileRuntime,
+} from "./firebaseClient";
 
 let firestoreClient: Firestore | null | undefined;
 const configuredFirestoreDatabaseId = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "").trim();
@@ -90,7 +96,7 @@ export function getFirebaseFirestoreClient(): Firestore | null {
   }
   try {
     const app = getFirebaseAppClient();
-    const appCheck = getFirebaseAppCheckClient();
+    const appCheck = hasFirebaseAppCheckClientConfig() ? getFirebaseAppCheckClient() : null;
     const transportConfig = getFirestoreTransportConfig();
     firestoreClient = app
       ? transportConfig.forceLongPolling

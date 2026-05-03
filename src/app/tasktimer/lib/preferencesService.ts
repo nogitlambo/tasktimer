@@ -100,7 +100,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       menuButtonStyle: state.menuButtonStyle,
       weekStarting: state.weekStarting,
       startupModule: state.startupModule,
-      taskView: state.taskView,
+      taskView: "tile",
       taskOrderBy: state.taskOrderBy,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
@@ -122,7 +122,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
     safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "dashboard"));
-    safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, String(snapshot.taskView || "list"));
+    safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, "tile");
     safeWriteLocalStorage(storageKeys.TASK_ORDER_BY_KEY, String(snapshot.taskOrderBy || "custom"));
     safeWriteLocalStorage(
       storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
@@ -182,10 +182,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadTaskView(): "list" | "tile" {
-    const localRaw = safeReadLocalStorage(storageKeys.TASK_VIEW_KEY).toLowerCase();
-    if (localRaw === "tile" || localRaw === "list") return localRaw;
-    const cloudRaw = String(getStoredOrCachedPreferences().taskView || "").trim().toLowerCase();
-    return cloudRaw === "tile" ? "tile" : "list";
+    return "tile";
   }
 
   function loadTaskOrderBy(): "custom" | "alpha" | "schedule" {

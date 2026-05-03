@@ -1,12 +1,7 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import type { Task } from "../lib/types";
-import {
-  hasPendingTaskOrHistorySync,
-  hydrateStorageFromCloud,
-  subscribeCloudTaskCollection,
-  subscribeCloudTaskLiveSessions,
-} from "../lib/storage";
+import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerStateAccessor } from "./root-state";
 
@@ -14,6 +9,10 @@ import type { DashboardRenderOptions } from "./types";
 import { isOverlayVisible } from "./overlay-visibility";
 
 type CreateTaskTimerCloudSyncOptions = {
+  workspaceRepository: Pick<
+    TaskTimerWorkspaceRepository,
+    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection" | "subscribeTaskLiveSessions"
+  >;
   runtime: TaskTimerRuntime;
   on: (target: EventTarget | null | undefined, type: string, handler: EventListenerOrEventListenerObject) => void;
   nowMs: () => number;
@@ -109,7 +108,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
       }, CLOUD_REFRESH_TIMEOUT_MS);
     });
     const nextInFlight = Promise.race([
-      hydrateStorageFromCloud(opts),
+      options.workspaceRepository.hydrateFromCloud(opts),
       timeoutPromise,
     ])
       .then(() => {
@@ -193,14 +192,14 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     const uid = options.currentUid();
     if (!uid) return;
     const handleCloudActivity = () => {
-      if (hasPendingTaskOrHistorySync()) {
+      if (options.workspaceRepository.hasPendingTaskOrHistorySync()) {
         scheduleDeferredCloudRefresh(5000);
         return;
       }
       refreshCloudStateIfStale(1500);
     };
-    const removeTaskCollectionListener = subscribeCloudTaskCollection(uid, handleCloudActivity);
-    const removeTaskLiveSessionListener = subscribeCloudTaskLiveSessions(
+    const removeTaskCollectionListener = options.workspaceRepository.subscribeTaskCollection(uid, handleCloudActivity);
+    const removeTaskLiveSessionListener = options.workspaceRepository.subscribeTaskLiveSessions(
       uid,
       options.getTasks().map((task) => String(task?.id || "").trim()).filter(Boolean),
       handleCloudActivity

@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
-import { loadCachedPreferences, STORAGE_KEY, subscribeCachedPreferences } from "@/app/tasktimer/lib/storage";
+import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
+import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
 import {
   clearCachedCloudOnboardingComplete,
   clearOnboardingSessionState,
 } from "@/app/tasktimer/lib/onboarding";
 
 type GuardStatus = "checking" | "authed";
+const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 export default function TaskLaunchAuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -63,7 +65,7 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
     const syncPreference = (mobileEnabled: boolean, webEnabled: boolean) => {
       void syncTaskTimerPushNotificationsEnabled({ mobileEnabled, webEnabled }).catch(() => {});
     };
-    const cachedPreferences = loadCachedPreferences();
+    const cachedPreferences = workspaceRepository.loadCachedPreferences();
     const initialMobileEnabled =
       cachedPreferences && typeof cachedPreferences === "object" && "mobilePushAlertsEnabled" in cachedPreferences
         ? !!cachedPreferences.mobilePushAlertsEnabled
@@ -73,7 +75,7 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
         ? !!cachedPreferences.webPushAlertsEnabled
         : readStoredWebPushAlertsEnabled(initialMobileEnabled);
     syncPreference(initialMobileEnabled, initialWebEnabled);
-    const unsub = subscribeCachedPreferences((prefs) => {
+    const unsub = workspaceRepository.subscribeCachedPreferences((prefs) => {
       if (!prefs || typeof prefs !== "object" || !("mobilePushAlertsEnabled" in prefs)) return;
       const mobileEnabled = !!prefs.mobilePushAlertsEnabled;
       const webEnabled = "webPushAlertsEnabled" in prefs ? !!prefs.webPushAlertsEnabled : mobileEnabled;

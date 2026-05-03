@@ -984,20 +984,13 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #leaderboardPositionOverlay{
   display: flex;
 }
-#leaderboardPositionOverlay .dashboardCardEyebrow{
-  margin: 0 0 6px;
+#leaderboardPositionOverlay .leaderboardUserSummaryTitle{
+  margin: 0 0 8px;
   font-size: 11px;
-  letter-spacing: .14em;
+  font-weight: 800;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  color: #c9ff24;
-}
-#leaderboardPositionOverlay .dashboardCardTitle{
-  margin: 0 0 10px;
-  font-size: 30px;
-  line-height: 1;
-}
-#leaderboardPositionOverlay .modalSubtext{
-  margin-bottom: 14px;
+  color: #c9ff24 !important;
 }
 #leaderboardPositionOverlay .leaderboardPositionModalIdentity{
   display: flex;

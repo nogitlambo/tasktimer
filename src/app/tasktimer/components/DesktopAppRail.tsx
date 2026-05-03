@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -25,6 +25,7 @@ import {
 } from "../lib/accountProfileStorage";
 import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
 import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
+import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "history" | "settings" | "none";
 
@@ -97,7 +98,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "settings",
     label: "Settings",
     ariaLabel: "Settings",
-    iconSrc: "/Settings.svg",
+    iconSrc: "/icons/icons_default/settings.png",
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
     href: "/settings",
@@ -105,7 +106,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "settings");
+const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "history" && item.page !== "settings");
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 const DESKTOP_ARCHIE_MEDIA_QUERY = "(min-width: 981px)";
@@ -142,9 +143,18 @@ function rememberRailTransition(fromPage: DesktopRailPage, toPage: DesktopRailPa
 }
 
 function labelFromUser(user: User | null) {
-  const email = String(user?.email || "").trim();
+  const email = emailFromUser(user);
   if (email) return email.split("@")[0] || email;
   return "TaskLaunch User";
+}
+
+function emailFromUser(user: User | null) {
+  const authEmail = String(user?.email || "").trim();
+  if (authEmail) return authEmail;
+  const providerEmail = user?.providerData
+    ?.map((provider) => String(provider.email || "").trim())
+    .find(Boolean);
+  return providerEmail || "";
 }
 
 function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
@@ -271,6 +281,107 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   );
 }
 
+function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNavigate?: () => void) {
+  const isActive = activePage === item.page;
+  return (
+    <a
+      key={`profile-${item.page}`}
+      className={`btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn${isActive ? " isOn" : ""}`}
+      href={item.href}
+      aria-label={item.ariaLabel}
+      data-nav-page={item.page}
+      role="menuitem"
+      {...(isActive ? { "aria-current": "page" as const } : {})}
+      onClick={() => {
+        onNavigate?.();
+        rememberRailTransition(activePage, item.page);
+      }}
+    >
+      <AppImg
+        className="dashboardRailMenuIconImage"
+        src={item.iconSrc}
+        alt=""
+        aria-hidden="true"
+      />
+      <span className="dashboardRailMenuLabel">{item.label}</span>
+    </a>
+  );
+}
+
+function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void) {
+  return (
+    <button
+      key="profile-sign-out"
+      className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSignOutBtn"
+      type="button"
+      role="menuitem"
+      aria-label="Sign Out"
+      onClick={onSignOut}
+      disabled={signOutBusy}
+    >
+      <AppImg
+        className="dashboardRailMenuIconImage"
+        src="/icons/icons_default/signout.png"
+        alt=""
+        aria-hidden="true"
+      />
+      <span className="dashboardRailMenuLabel">{signOutBusy ? "Signing Out" : "Sign Out"}</span>
+    </button>
+  );
+}
+
+function renderProfileHelpMenu() {
+  return (
+    <div className="desktopRailProfileSubmenu" role="none">
+      <button
+        className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSubmenuTrigger"
+        type="button"
+        role="menuitem"
+        aria-label="Help Center"
+        aria-haspopup="menu"
+      >
+        <AppImg
+          className="dashboardRailMenuIconImage"
+          src="/icons/icons_default/question.svg"
+          alt=""
+          aria-hidden="true"
+        />
+        <span className="dashboardRailMenuLabel">Help Center</span>
+      </button>
+      <div className="desktopRailProfileSubmenuList" role="menu" aria-label="Help Center">
+        <a
+          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
+          href="/privacy"
+          role="menuitem"
+          aria-label="Privacy Policy"
+        >
+          <AppImg
+            className="dashboardRailMenuIconImage"
+            src="/About.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="dashboardRailMenuLabel">Privacy Policy</span>
+        </a>
+        <a
+          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
+          href="/feedback"
+          role="menuitem"
+          aria-label="Feedback"
+        >
+          <AppImg
+            className="dashboardRailMenuIconImage"
+            src="/About.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="dashboardRailMenuLabel">Feedback</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function DesktopAppRail({
   activePage,
   useClientNavButtons = false,
@@ -280,17 +391,26 @@ export default function DesktopAppRail({
   const archieActivePage = activePage === "history" ? "none" : activePage;
   const [onboardingState, setOnboardingState] = useState<ArchieOnboardingUiState | null>(null);
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
+  const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const [isDesktopWebArchieEnabled, setIsDesktopWebArchieEnabled] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileMenuClosing, setProfileMenuClosing] = useState(false);
+  const profileMenuCloseTimerRef = useRef<number | null>(null);
   const shouldShowDesktopArchie = isArchieEnabled() && isDesktopWebArchieEnabled && activePage !== "history";
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
     const fallbackLabel = labelFromUser(user);
+    const email = emailFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
+
+    setProfileEmail(email);
 
     if (!uid) {
       setProfileLabel(fallbackLabel);
@@ -312,6 +432,7 @@ export default function DesktopAppRail({
 
     try {
       const snap = await getDoc(doc(db, "users", uid));
+      const remoteEmail = snap.exists() ? String(snap.get("email") || "").trim() : "";
       const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || "").trim() : "";
       const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
@@ -322,6 +443,7 @@ export default function DesktopAppRail({
           // Keep rendering from local auth state when cloud sync is unavailable.
         });
       }
+      setProfileEmail(email || remoteEmail);
       setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       if (remotePlan === "free" || remotePlan === "pro") {
@@ -381,6 +503,14 @@ export default function DesktopAppRail({
     setOnboardingState(null);
   }, [shouldShowDesktopArchie, showDesktopRail]);
 
+  useEffect(() => {
+    return () => {
+      if (profileMenuCloseTimerRef.current != null) {
+        window.clearTimeout(profileMenuCloseTimerRef.current);
+      }
+    };
+  }, []);
+
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
@@ -398,6 +528,44 @@ export default function DesktopAppRail({
     if (typeof window === "undefined") return;
     window.open("/pricing", "_blank", "noopener,noreferrer");
   }, []);
+
+  const closeProfileMenu = useCallback(() => {
+    if (profileMenuCloseTimerRef.current != null) {
+      window.clearTimeout(profileMenuCloseTimerRef.current);
+      profileMenuCloseTimerRef.current = null;
+    }
+    setProfileMenuClosing(true);
+    profileMenuCloseTimerRef.current = window.setTimeout(() => {
+      setProfileMenuOpen(false);
+      setProfileMenuClosing(false);
+      profileMenuCloseTimerRef.current = null;
+    }, 320);
+  }, []);
+
+  const toggleProfileMenu = useCallback(() => {
+    if (profileMenuCloseTimerRef.current != null) {
+      window.clearTimeout(profileMenuCloseTimerRef.current);
+      profileMenuCloseTimerRef.current = null;
+    }
+    if (profileMenuOpen && !profileMenuClosing) {
+      closeProfileMenu();
+      return;
+    }
+    setProfileMenuOpen(true);
+    setProfileMenuClosing(false);
+  }, [closeProfileMenu, profileMenuClosing, profileMenuOpen]);
+
+  const handleProfileSignOut = useCallback(async () => {
+    if (signOutBusy) return;
+    setSignOutBusy(true);
+    setSignOutError("");
+    try {
+      await handleSignOutFlow();
+    } catch (error: unknown) {
+      setSignOutError(getErrorMessage(error, "Could not sign out."));
+      setSignOutBusy(false);
+    }
+  }, [signOutBusy]);
 
   const handleDesktopNavClick = useCallback(
     (page: DesktopRailPage, event?: { preventDefault?: () => void }) => {
@@ -468,6 +636,7 @@ export default function DesktopAppRail({
           data-onboarding-awaiting-click={onboardingState?.awaitingClick ? "true" : undefined}
           data-onboarding-dashboard-panel-step={onboardingState?.dashboardPanelStep || undefined}
           data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
+          data-profile-menu-open={profileMenuOpen && !profileMenuClosing ? "true" : undefined}
         >
           <div className="desktopRailTopSection">
             <div className="desktopRailBrandLockup landingV2FooterBrand appBrandLandingReplica displayFont" aria-hidden="true">
@@ -496,14 +665,23 @@ export default function DesktopAppRail({
           </div>
 
           <div className="desktopRailBottomSection">
-            <div className="desktopRailProfileDock">
-              <section
-                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard"
-                aria-label="Profile summary"
+            <details
+              className="desktopRailProfileDock desktopRailProfileMenu"
+              open={profileMenuOpen || profileMenuClosing}
+              data-closing={profileMenuClosing ? "true" : undefined}
+            >
+              <summary
+                className="dashboardCard dashboardProfileCard dashboardRailProfileSummary dashboardRailProfileSummarySdCard desktopRailProfileMenuTrigger"
+                aria-label="Profile summary menu"
+                aria-expanded={profileMenuOpen && !profileMenuClosing}
+                onClick={(event) => {
+                  event.preventDefault();
+                  toggleProfileMenu();
+                }}
               >
-                <div className="dashboardProfileHead dashboardRailProfileHead">
+                <span className="dashboardProfileHead dashboardRailProfileHead">
                   {profileAvatarSrc ? (
-                    <div className="dashboardAvatar dashboardRailProfileAvatar" aria-hidden="true">
+                    <span className="dashboardAvatar dashboardRailProfileAvatar" aria-hidden="true">
                       <AppImg
                         className="dashboardAvatarImage dashboardRailProfileAvatarImage"
                         src={profileAvatarSrc}
@@ -511,25 +689,30 @@ export default function DesktopAppRail({
                         aria-hidden="true"
                         referrerPolicy={/^https?:\/\//i.test(profileAvatarSrc) ? "no-referrer" : undefined}
                       />
-                    </div>
+                    </span>
                   ) : (
-                    <div className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</div>
+                    <span className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</span>
                   )}
-                  <div className="dashboardRailProfileIdentity">
-                    <div className="dashboardProfileName">{profileLabel}</div>
-                    <div className="dashboardTagRow dashboardRailProfileTags">
-                      <a
-                        className="dashboardTag dashboardRailProfileTagLink"
-                        href="/settings?pane=general"
-                        onClick={() => rememberRailTransition(activePage, "settings")}
-                      >
-                        Settings
-                      </a>
-                    </div>
+                  <span className="dashboardRailProfileIdentity">
+                    <span className="dashboardProfileName">{profileLabel}</span>
+                    {profileEmail ? <span className="dashboardProfileMeta dashboardRailProfileEmail">{profileEmail}</span> : null}
+                  </span>
+                </span>
+              </summary>
+              <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
+                {(["settings", "history"] as const)
+                  .map((page) => NAV_ITEMS.find((item) => item.page === page))
+                  .filter((item): item is NavItem => !!item)
+                  .map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
+                {renderProfileHelpMenu()}
+                {renderProfileSignOutButton(signOutBusy, handleProfileSignOut)}
+                {signOutError ? (
+                  <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">
+                    {signOutError}
                   </div>
-                </div>
-              </section>
-            </div>
+                ) : null}
+              </div>
+            </details>
           </div>
 
         </aside>

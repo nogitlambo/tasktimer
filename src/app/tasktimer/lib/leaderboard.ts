@@ -8,6 +8,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
@@ -335,7 +336,7 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
     nextPatch.username = normalizeString(patch.username, 64);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "displayName")) {
-    nextPatch.displayLabel = null;
+    nextPatch.displayLabel = normalizeString(patch.displayName, 120) || "User";
   }
   if (Object.prototype.hasOwnProperty.call(patch, "avatarId")) {
     nextPatch.avatarId = normalizeString(patch.avatarId, 120);
@@ -388,7 +389,9 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
       },
     });
   }
-  await setDoc(ref, nextPatch, { merge: true });
+  const existingProfile = await getDoc(ref);
+  if (!existingProfile.exists()) return;
+  await updateDoc(ref, nextPatch);
   dispatchLeaderboardProfileUpdated(uid);
 }
 

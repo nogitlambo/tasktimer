@@ -283,8 +283,6 @@ const els = {
   taskMobilePushAlertsToggle: documentRef.getElementById("taskMobilePushAlertsToggle"),
   taskWebPushAlertsToggleRow: documentRef.getElementById("taskWebPushAlertsToggleRow"),
   taskWebPushAlertsToggle: documentRef.getElementById("taskWebPushAlertsToggle"),
-  taskViewList: documentRef.getElementById("taskViewList") as HTMLButtonElement | null,
-  taskViewTile: documentRef.getElementById("taskViewTile") as HTMLButtonElement | null,
   taskCheckpointSoundToggleRow: documentRef.getElementById("taskCheckpointSoundToggleRow"),
   taskCheckpointSoundToggle: documentRef.getElementById("taskCheckpointSoundToggle"),
   taskCheckpointToastToggleRow: documentRef.getElementById("taskCheckpointToastToggleRow"),

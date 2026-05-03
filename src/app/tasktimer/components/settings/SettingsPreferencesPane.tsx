@@ -25,17 +25,6 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="leaderboard">Leaderboard</option>
             </select>
           </div>
-          <div className="unitRow" id="taskViewRow">
-            <span>Task View</span>
-            <div className="unitButtons" role="group" aria-label="Task view">
-              <button className="btn btn-ghost small unitBtn" id="taskViewList" type="button" aria-pressed="false">
-                List
-              </button>
-              <button className="btn btn-ghost small unitBtn isOn" id="taskViewTile" type="button" aria-pressed="true">
-                Tile
-              </button>
-            </div>
-          </div>
           <div className="unitRow" id="taskWeekStartingRow">
             <span>Week Starts On</span>
             <select id="taskWeekStartingSelect" aria-label="Week start">

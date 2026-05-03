@@ -10,7 +10,6 @@ import { readTaskTimerPlanCacheFromStorage, readTaskTimerPlanFromStorage, TASKTI
 import {
   getErrorMessage,
   handleDeleteAccountFlow,
-  handleSignOutFlow,
   loadClaimedUsername,
   resumePendingDeleteFlow,
   saveUserDocPatch,
@@ -48,7 +47,6 @@ export function useSettingsAccountState(): {
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
@@ -212,21 +210,6 @@ export function useSettingsAccountState(): {
     };
   }, [authUserUid]);
 
-  const onSignOut = useCallback(async () => {
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("");
-    setShowSignOutConfirm(false);
-    try {
-      await handleSignOutFlow();
-      setAuthStatus("Signed out.");
-    } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not sign out."));
-    } finally {
-      setAuthBusy(false);
-    }
-  }, []);
-
   const onDeleteAccount = useCallback(async () => {
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser || null;
@@ -360,11 +343,8 @@ export function useSettingsAccountState(): {
       syncMessage,
       syncAtMs,
       uidCopyStatus,
-      showSignOutConfirm,
-      setShowSignOutConfirm,
       showDeleteAccountConfirm,
       setShowDeleteAccountConfirm,
-      onSignOut,
       onDeleteAccount,
       onCopyUid,
       onStartAliasEdit: () => {

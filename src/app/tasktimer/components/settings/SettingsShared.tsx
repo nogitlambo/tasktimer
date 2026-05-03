@@ -44,16 +44,10 @@ export function SettingsNav({
   navItems,
   activePane,
   onSelectPane,
-  canSignOut,
-  signOutBusy,
-  onSignOut,
 }: {
   navItems: SettingsNavItem[];
   activePane: SettingsNavItem["key"] | null;
   onSelectPane: (pane: SettingsNavItem["key"]) => void;
-  canSignOut: boolean;
-  signOutBusy: boolean;
-  onSignOut: () => void;
 }) {
   return (
     <aside className="settingsNavPanel dashboardCard" aria-label="Settings navigation">
@@ -74,20 +68,6 @@ export function SettingsNav({
           />
         ))}
       </div>
-      {canSignOut ? (
-        <div className="settingsNavBottomActions">
-          <button
-            className="menuItem settingsNavTile settingsSignOutBtn"
-            id="signInGoogleBtn"
-            type="button"
-            disabled={signOutBusy}
-            onClick={onSignOut}
-          >
-            <AppImg className="settingsMenuItemIcon settingsNavItemIcon" src="/Export.svg" alt="" aria-hidden="true" />
-            <span className="settingsNavRowText">Sign Out</span>
-          </button>
-        </div>
-      ) : null}
     </aside>
   );
 }

@@ -33,7 +33,7 @@ import {
   type LeaderboardScreenData,
 } from "./lib/leaderboard";
 import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
-import { subscribeCachedPreferences } from "./lib/storage";
+import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
 import "./tasktimer.css";
@@ -41,6 +41,8 @@ import "./tasktimer.css";
 type TaskTimerMainAppClientProps = {
   initialPage: AppPage;
 };
+
+const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
   topEntries: [],
@@ -134,7 +136,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, [initialPage]);
 
   useEffect(() => {
-    const unsubscribe = subscribeCachedPreferences((prefs) => {
+    const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
     });
     return () => unsubscribe();
@@ -425,7 +427,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           <div className="leaderboardStats">
                             <span className="leaderboardStatPrimary">
-                              <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
+                              <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
                               <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </span>
                           </div>
@@ -458,7 +460,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span>{formatLeaderboardStreak(entry.streakDays)}</span>
                           </div>
                           <span className="leaderboardSideMetricWrap">
-                            <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
+                            <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
                             <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                           </span>
                         </article>
@@ -492,7 +494,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span>{gapLabel}</span>
                             </div>
                             <span className="leaderboardSideMetricWrap">
-                              <span className="leaderboardRankLabel">Rank: {getLeaderboardRankLabel(entry)}</span>
+                              <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
                               <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </span>
                           </article>
@@ -516,8 +518,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           {selectedLeaderboardProfile ? (
             <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
               <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
-                <p className="dashboardCardEyebrow">Leaderboard position</p>
-                <h3 className="dashboardCardTitle">{selectedLeaderboardRankLabel}</h3>
+                <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
                 <div className="leaderboardPositionModalIdentity">
                   <LeaderboardAvatar profile={selectedLeaderboardProfile} />
                   <div className="leaderboardPositionModalIdentityText">
@@ -526,6 +527,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
                     ) : null}
                   </div>
+                </div>
+                <div className="leaderboardMiniRow leaderboardPositionInfo">
+                  <span className="leaderboardMiniLabel">Leaderboard position</span>
+                  <strong>{selectedLeaderboardRankLabel}</strong>
                 </div>
                 <div className="leaderboardMiniRow">
                   <span className="leaderboardMiniLabel">Rank</span>
