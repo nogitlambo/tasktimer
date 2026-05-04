@@ -167,6 +167,8 @@ export function createTaskTimerRuntimeComposition(
     dashboardEditMode: initialState.dashboardEditMode,
     dashboardDragEl: initialState.dashboardDragEl,
     dashboardOrderDraftBeforeEdit: initialState.dashboardOrderDraftBeforeEdit,
+    dashboardCardPlacements: initialState.dashboardCardPlacements,
+    dashboardCardPlacementsDraftBeforeEdit: initialState.dashboardCardPlacementsDraftBeforeEdit,
     dashboardCardSizes: initialState.dashboardCardSizes,
     dashboardCardSizesDraftBeforeEdit: initialState.dashboardCardSizesDraftBeforeEdit,
     dashboardCardVisibility: initialState.dashboardCardVisibility,

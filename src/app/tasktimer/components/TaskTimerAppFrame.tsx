@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
+import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
+import { RANK_LADDER, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
@@ -33,10 +35,19 @@ export default function TaskTimerAppFrame({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const railPage = activePage === "schedule" ? "tasks" : activePage;
   const searchParamsKey = searchParams.toString();
+  const currentRankIndex = useMemo(
+    () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === currentRankId)),
+    [currentRankId]
+  );
+  const rankSummary = rewardsHeader.xpToNext != null
+    ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
+    : "You have reached the highest configured rank.";
+  const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -83,11 +94,16 @@ export default function TaskTimerAppFrame({
           />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
           <section className="taskLaunchTopbarXp" aria-label="XP progress">
-            <div className="taskLaunchTopbarXpBody">
-              <div className="taskLaunchTopbarXpBottomRow">
-                <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                  <RankThumbnail
-                    rankId={currentRankId}
+              <div className="taskLaunchTopbarXpBody">
+                <button
+                  className="taskLaunchTopbarXpBottomRow taskLaunchTopbarXpTrigger"
+                  type="button"
+                  aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                  onClick={() => setShowRankLadderModal(true)}
+                >
+                  <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                    <RankThumbnail
+                      rankId={currentRankId}
                     className="taskLaunchTopbarXpInsigniaShell"
                     imageClassName="taskLaunchTopbarXpInsigniaImg"
                     placeholderClassName="taskLaunchTopbarXpInsigniaPlaceholder"
@@ -104,13 +120,13 @@ export default function TaskTimerAppFrame({
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                >
-                  <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                </div>
-                <strong className="taskLaunchTopbarXpValue">{rewardsHeader.totalXp} XP</strong>
+                  >
+                    <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                  </div>
+                  <strong className="taskLaunchTopbarXpValue">{rewardsHeader.totalXp} XP</strong>
+                </button>
               </div>
-            </div>
-          </section>
+            </section>
         </div>
         <button
           ref={mobileMenuBtnRef}
@@ -159,7 +175,12 @@ export default function TaskTimerAppFrame({
             <div className="appShellHeaderSpacer" aria-hidden="true" />
             <section className="appShellHeaderXp" aria-label="XP progress">
               <div className="appShellHeaderXpBody">
-                <div className="appShellHeaderXpBottomRow">
+                <button
+                  className="appShellHeaderXpBottomRow appShellHeaderXpTrigger"
+                  type="button"
+                  aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                  onClick={() => setShowRankLadderModal(true)}
+                >
                   <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
                     <RankThumbnail
                       rankId={currentRankId}
@@ -183,13 +204,25 @@ export default function TaskTimerAppFrame({
                     <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                   </div>
                   <strong className="appShellHeaderXpValue">{rewardsHeader.totalXp} XP</strong>
-                </div>
+                </button>
               </div>
             </section>
           </div>
           {children}
         </div>
       </div>
+      <RankLadderModal
+        open={showRankLadderModal}
+        onClose={() => setShowRankLadderModal(false)}
+        rankLabel={rewardsHeader.rankLabel}
+        totalXp={rewardsHeader.totalXp}
+        rankSummary={rankSummary}
+        currentRankId={currentRankId}
+        currentRankIndex={currentRankIndex}
+        rankThumbnailSrc={rankThumbnailSrc}
+        canSelectRankInsignia={false}
+        onSelectRankThumbnail={async () => {}}
+      />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} />
       <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>
         <div className="initialAuthBusyPanel" role="status" aria-live="polite" aria-atomic="true">

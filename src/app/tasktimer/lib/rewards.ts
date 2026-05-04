@@ -277,7 +277,9 @@ function clampAwardTimestamp(previous: RewardProgressV1, awardedAtRaw: number): 
   const awardedAt = Math.max(0, Math.floor(Number(awardedAtRaw || 0) || 0)) || Date.now();
   const latestLedgerTs = previous.awardLedger.reduce((maxTs, entry) => Math.max(maxTs, entry.ts), 0);
   if (awardedAt > Date.now() + CLOCK_SKEW_ALLOWANCE_MS) return null;
-  if (latestLedgerTs > 0 && awardedAt + CLOCK_SKEW_ALLOWANCE_MS < latestLedgerTs) return null;
+  if (latestLedgerTs > 0 && awardedAt + CLOCK_SKEW_ALLOWANCE_MS < latestLedgerTs) {
+    return latestLedgerTs;
+  }
   return awardedAt;
 }
 
@@ -801,6 +803,39 @@ export function awardTaskLaunchXp(
   void _context;
   const previous = normalizeRewardProgress(progress);
   return awardEntries(previous, [], 0);
+}
+
+export function rebuildRewardProgressFromHistory(context: {
+  historyByTaskId: HistoryByTaskId;
+  tasks: Task[];
+  weekStarting: DashboardWeekStart;
+  momentumEntitled?: boolean;
+}): RewardProgressV1 {
+  const orderedSessions = Object.entries(context.historyByTaskId || {})
+    .flatMap(([taskId, entries]) =>
+      (Array.isArray(entries) ? entries : [])
+        .map((entry) => ({
+          taskId: String(taskId || "").trim(),
+          ts: Math.max(0, Math.floor(Number(entry?.ts || 0) || 0)),
+          ms: Math.max(0, Math.floor(Number(entry?.ms || 0) || 0)),
+        }))
+        .filter((entry) => !!entry.taskId && entry.ts > 0 && entry.ms >= 0)
+    )
+    .sort((a, b) => a.ts - b.ts || a.taskId.localeCompare(b.taskId) || a.ms - b.ms);
+
+  let next = normalizeRewardProgress(DEFAULT_REWARD_PROGRESS);
+  for (const session of orderedSessions) {
+    next = awardCompletedSessionXp(next, {
+      taskId: session.taskId,
+      awardedAt: session.ts,
+      elapsedMs: session.ms,
+      historyByTaskId: context.historyByTaskId || {},
+      tasks: Array.isArray(context.tasks) ? context.tasks : [],
+      weekStarting: context.weekStarting,
+      momentumEntitled: context.momentumEntitled === true,
+    }).next;
+  }
+  return normalizeRewardProgress(next);
 }
 
 export function buildRewardsHeaderViewModel(progress: RewardProgressV1): RewardsHeaderViewModel {

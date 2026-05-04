@@ -97,6 +97,16 @@ function formatSummaryLongDate(value: number) {
   return `${weekday} ${formatOrdinalDay(date.getDate())} ${month}, ${year}`;
 }
 
+function formatSummaryShortDate(value: number) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "Unknown date/time";
+  const date = new Date(timestamp);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  return `${day}-${month}-${year}`;
+}
+
 function formatSummaryTime(value: number) {
   const timestamp = Number(value);
   if (!Number.isFinite(timestamp) || timestamp <= 0) return "";
@@ -256,8 +266,8 @@ function buildAggregateSummary(
   const dateSpanText =
     latestTs > 0 && earliestTs > 0
       ? latestTs === earliestTs
-        ? formatSummaryLongDate(latestTs)
-        : `${formatSummaryLongDate(latestTs)} to ${formatSummaryLongDate(earliestTs)}`
+        ? formatSummaryShortDate(latestTs)
+        : `${formatSummaryShortDate(latestTs)} to ${formatSummaryShortDate(earliestTs)}`
       : "Unknown date/time";
 
   return {
@@ -314,7 +324,7 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryHeroLabel">Total Time Logged</div>
         <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
         <div class="historyEntrySummaryHeroStats">
-          ${[renderField("XP Earned", payload.aggregate.xpText)].join("")}
+          ${[renderField("Total XP Earned", payload.aggregate.xpText)].join("")}
         </div>
       </section>`
     : "";

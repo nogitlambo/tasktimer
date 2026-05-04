@@ -124,6 +124,8 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardDragEl: null,
     taskDragEl: null,
     dashboardOrderDraftBeforeEdit: null,
+    dashboardCardPlacements: {},
+    dashboardCardPlacementsDraftBeforeEdit: null,
     dashboardCardSizes: {},
     dashboardCardSizesDraftBeforeEdit: null,
     dashboardCardVisibility: {},

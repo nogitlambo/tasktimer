@@ -4,6 +4,7 @@ import type { TaskTimerSharedTaskApi } from "./task-shared";
 import type {
   AppPage,
   DashboardAvgRange,
+  DashboardCardPlacement,
   DashboardCardSize,
   DashboardMomentumDriverKey,
   DashboardRenderOptions,
@@ -762,6 +763,10 @@ export type TaskTimerDashboardContext = {
   setDashboardDragEl: (value: HTMLElement | null) => void;
   getDashboardOrderDraftBeforeEdit: () => string[] | null;
   setDashboardOrderDraftBeforeEdit: (value: string[] | null) => void;
+  getDashboardCardPlacements: () => Record<string, DashboardCardPlacement>;
+  setDashboardCardPlacements: (value: Record<string, DashboardCardPlacement>) => void;
+  getDashboardCardPlacementsDraftBeforeEdit: () => Record<string, DashboardCardPlacement> | null;
+  setDashboardCardPlacementsDraftBeforeEdit: (value: Record<string, DashboardCardPlacement> | null) => void;
   getDashboardCardSizes: () => Record<string, DashboardCardSize>;
   setDashboardCardSizes: (value: Record<string, DashboardCardSize>) => void;
   getDashboardCardSizesDraftBeforeEdit: () => Record<string, DashboardCardSize> | null;

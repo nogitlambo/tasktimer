@@ -28,11 +28,12 @@ import {
 } from "./leaderboard";
 import {
   clearTaskTimerPlanStorage,
+  hasTaskTimerEntitlement,
   writeTaskTimerPlanToStorage,
 } from "./entitlements";
 import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
-import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./rewards";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, rebuildRewardProgressFromHistory } from "./rewards";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
@@ -44,6 +45,7 @@ import {
   normalizeTaskPlannedStartByDay,
   syncLegacyPlannedStartFields,
 } from "./schedule-placement";
+import { normalizeDashboardWeekStart } from "./historyChart";
 import {
   filterPendingSyncEntries,
   PENDING_PREFERENCES_SYNC_TTL_MS,
@@ -71,6 +73,23 @@ let historySaveWorkingActiveCount = 0;
 let historySaveWorkingShownAtMs = 0;
 let historySaveWorkingHideTimer: number | null = null;
 let historySaveWorkingMinVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS;
+
+function loadStoredWeekStartingPreference() {
+  if (typeof window === "undefined") return "mon" as const;
+  try {
+    return normalizeDashboardWeekStart(window.localStorage.getItem(`${STORAGE_KEY}:weekStarting`));
+  } catch {
+    return "mon" as const;
+  }
+}
+
+function rewardProgressSignature(input: unknown): string {
+  try {
+    return JSON.stringify(normalizeRewardProgress(input));
+  } catch {
+    return "";
+  }
+}
 
 function applyHistorySaveWorkingVisibility(visible: boolean): void {
   if (typeof document === "undefined") return;
@@ -897,6 +916,24 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       : shadowUpdatedAtMs > cloudUpdatedAtMs
         ? shadowPreferences
         : cloudPreferences || shadowPreferences || pendingPreferences || null;
+  const weekStarting = loadStoredWeekStartingPreference();
+  const rebuiltRewards = rebuildRewardProgressFromHistory({
+    historyByTaskId: cachedHistory || {},
+    tasks: cachedTasks || [],
+    weekStarting,
+    momentumEntitled: hasTaskTimerEntitlement(snapshot.plan, "advancedInsights"),
+  });
+  const currentRewardsSignature = rewardProgressSignature(cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS);
+  const rebuiltRewardsSignature = rewardProgressSignature(rebuiltRewards);
+  if (currentRewardsSignature !== rebuiltRewardsSignature) {
+    cachedPreferences = {
+      ...(cachedPreferences || buildDefaultCloudPreferences()),
+      rewards: rebuiltRewards,
+      updatedAtMs: Date.now(),
+    };
+    queuedPreferencesSyncSnapshot = cachedPreferences;
+    flushQueuedCloudPreferences(uid);
+  }
   saveShadowPreferences(uid, cachedPreferences);
   if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
     void savePreferences(uid, pendingPreferences)

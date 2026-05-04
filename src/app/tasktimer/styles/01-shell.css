@@ -551,6 +551,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width:0;
   width:100%;
 }
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpTrigger{
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  cursor:pointer;
+  text-align:inherit;
+}
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpTrigger:focus-visible{
+  outline:1px solid rgba(53,232,255,.7);
+  outline-offset:4px;
+}
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaShell{
   width:16px;
   height:16px;
@@ -604,6 +616,18 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   gap:8px;
   min-width:0;
   width:100%;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrigger{
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  cursor:pointer;
+  text-align:inherit;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrigger:focus-visible{
+  outline:1px solid rgba(53,232,255,.7);
+  outline-offset:4px;
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpValue{
   flex:0 0 auto;
@@ -837,7 +861,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   .wrap {
     width: 100%;
     height: calc(100dvh - (14px + var(--safe-top)));
-    border-radius: 12px;
+    border-radius: 0;
   }
 
   .topbar {
@@ -852,6 +876,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   .topbar.topbarBrandOnly.taskLaunchAppTopbar{
     grid-template-columns:minmax(0, 1fr) auto;
     grid-template-areas: "brand controls";
+    background: #282828;
     z-index: 60;
   }
 
@@ -1039,7 +1064,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
 @media (max-width: 640px) {
   .wrap {
     height: calc(100dvh - (10px + var(--safe-top)));
-    border-radius: 10px;
+    border-radius: 0;
   }
 
   .topbar {

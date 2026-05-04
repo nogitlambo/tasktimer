@@ -53,6 +53,10 @@ export type HistoryViewState = {
 };
 
 export type DashboardCardSize = "full" | "half" | "quarter";
+export type DashboardCardPlacement = {
+  col: number;
+  row: number;
+};
 
 export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
@@ -143,6 +147,8 @@ export type TaskTimerMutableState = {
   dashboardDragEl: HTMLElement | null;
   taskDragEl: HTMLElement | null;
   dashboardOrderDraftBeforeEdit: string[] | null;
+  dashboardCardPlacements: Record<string, DashboardCardPlacement>;
+  dashboardCardPlacementsDraftBeforeEdit: Record<string, DashboardCardPlacement> | null;
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;

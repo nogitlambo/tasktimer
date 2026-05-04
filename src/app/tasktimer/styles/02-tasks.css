@@ -650,6 +650,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   display:none;
 }
 .cloudSyncNotice{
+  position:relative;
   pointer-events:auto;
   width:min(560px, calc(100vw - 28px));
   display:grid;
@@ -689,27 +690,81 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   font-weight:400;
   color:#ff6b6b;
 }
-.cloudSyncNoticeCopyBtn{
-  width:28px;
-  height:28px;
-  min-width:28px;
+.cloudSyncNotice .cloudSyncNoticeLogIdValue{
+  appearance:none;
+  border:none;
+  padding:0;
+  margin:0;
+  background:transparent;
+  font:inherit;
+  font-family:var(--font-mono);
+  font-weight:400;
   color:#ff6b6b;
-  border-color:rgba(255,77,77,.42);
-  background:rgba(255,77,77,.06);
+  cursor:pointer;
+  text-align:left;
 }
-.cloudSyncNoticeCopyBtn svg{
-  width:15px;
-  height:15px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:2;
-  stroke-linecap:round;
-  stroke-linejoin:round;
+.cloudSyncNotice .cloudSyncNoticeLogIdValue:hover,
+.cloudSyncNotice .cloudSyncNoticeLogIdValue:focus-visible,
+.cloudSyncNotice .cloudSyncNoticeLogIdValue:active{
+  color:#ff8b8b;
+  text-decoration:underline;
+}
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeLogIdValue,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeLogIdValue{
+  color:#ff6b6b;
+}
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:hover,
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:focus-visible,
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:active,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:hover,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:focus-visible,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeLogIdValue:active{
+  color:#ff8b8b;
+  text-decoration:underline;
 }
 .cloudSyncNoticeActions{
+  position:absolute;
+  right:14px;
+  bottom:10px;
   display:flex;
+  align-items:flex-end;
   justify-content:flex-end;
-  margin-top:4px;
+  margin-top:0;
+}
+.cloudSyncNotice .cloudSyncNoticeActions .btn{
+  min-height:32px;
+  padding:7px 12px;
+  font-size:11px;
+}
+.cloudSyncNotice .cloudSyncNoticeActions .btn-ghost{
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:rgba(235,239,214,.9) !important;
+}
+.cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:hover,
+.cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:focus-visible,
+.cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:active{
+  border-color:transparent !important;
+  background:rgba(255,255,255,.06) !important;
+  box-shadow:none !important;
+}
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost{
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:rgba(235,239,214,.9) !important;
+}
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:hover,
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:focus-visible,
+body[data-theme="purple"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:active,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:hover,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:focus-visible,
+body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:active{
+  border-color:transparent !important;
+  background:rgba(255,255,255,.06) !important;
+  box-shadow:none !important;
 }
 .taskJumpFlash{
   animation: taskJumpFlashPulse 1.2s ease-out 1;
@@ -1434,8 +1489,20 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   position:sticky;
   top:0;
   z-index:16;
+  isolation:isolate;
   padding:8px 0 10px;
-  background:transparent;
+  background:#0d0f13;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:16px;
+  pointer-events:none;
+  background:linear-gradient(180deg, #0d0f13 0, rgba(13,15,19,.94) 50%, rgba(13,15,19,0) 100%);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
@@ -1583,7 +1650,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem:focus-visible{
   border:none;
-  background:transparent;
+  background:rgba(214,224,231,.14);
   color:rgba(214,224,231,.82);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuItem:disabled{
@@ -1854,6 +1921,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList .tasksModeMenuItem:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList .tasksModeMenuItem:focus-visible{
+  background:rgba(214,224,231,.14);
   color:rgba(214,224,231,.82);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuList .tasksModeMenuItem.isOn{
@@ -1908,7 +1976,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   padding-bottom:2px;
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayTab{
-  border-color:rgba(190,198,208,.22) !important;
+  border-color:transparent !important;
   min-width:72px;
   white-space:nowrap;
 }
@@ -2633,6 +2701,12 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
     place-items:center;
     font-size:10px;
     line-height:1;
+  }
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayTab.isOn,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayTab[aria-selected="true"]{
+    transform:none !important;
+    border-color:transparent !important;
+    border-bottom:2px solid #c9ff24 !important;
   }
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller{
     max-height:58vh;

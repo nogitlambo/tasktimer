@@ -2794,7 +2794,7 @@ body[data-theme="purple"] .rewardsInfoText{
   min-width: min(520px, calc(100vw - 36px));
   min-height: min(420px, calc(100vh - 36px));
   max-height: calc(100vh - 36px);
-  padding: 22px 22px 18px;
+  padding: 12px;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -2925,8 +2925,12 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroLabel{
-    font-size:12px;
-    color: rgba(182,210,224,.82);
+    font-family: var(--font-orbitron);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(174,184,194,.9);
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryHeroValue{
@@ -2942,6 +2946,11 @@ body[data-theme="purple"] .rewardsInfoText{
     display:grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap:12px;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummaryHeroStats .historyEntrySummaryValue{
+    font-family: var(--font-orbitron);
+    font-size: 18px;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessions{
@@ -3177,12 +3186,12 @@ body[data-theme="purple"] .rewardsInfoText{
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(247,251,255,.96);
+  color: rgba(174,184,194,.9);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryValue{
     min-width: 0;
-    color: rgba(174,184,194,.9);
+    color: rgba(247,251,255,.96);
     font-size: 14px;
     line-height: 1.55;
     font-weight: 400;
@@ -3220,7 +3229,7 @@ body[data-theme="purple"] .rewardsInfoText{
     outline: 0;
     resize: vertical;
     background: transparent;
-    color: rgba(174,184,194,.9);
+    color: rgba(247,251,255,.96);
     font-size: 14px;
     line-height: 1.55;
   font-family: var(--font-readable);
@@ -3274,7 +3283,7 @@ body[data-theme="purple"] .rewardsInfoText{
       min-width: 0;
       min-height: 0;
       max-height: calc(100dvh - 72px - 96px - var(--safe-top) - var(--safe-bottom));
-      padding: 16px 12px 14px;
+      padding: 12px;
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryHero{

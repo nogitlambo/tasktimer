@@ -24,6 +24,7 @@ import {
 import { getFirebaseAppClient, getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { STORAGE_KEY } from "./storage";
+import { normalizePendingPushActionId } from "./pushNotificationAction";
 
 const PUSH_DEVICE_ID_KEY = "tasktimer:pushDeviceId";
 const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
@@ -345,11 +346,7 @@ function normalizePendingPushAction(
   const taskId = String(input?.taskId || "").trim();
   if (!taskId) return null;
   const route = String(input?.route || "/tasklaunch").trim() || "/tasklaunch";
-  const rawActionId = String(input?.actionId || "").trim();
-  const actionId =
-    rawActionId === "launchTask" || rawActionId === "snooze10m" || rawActionId === "postponeNextGap"
-      ? rawActionId
-      : "default";
+  const actionId = normalizePendingPushActionId(input?.actionId);
   return { taskId, route, actionId };
 }
 
@@ -477,16 +474,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   }
 
   await disableTaskTimerPushRuntime({ clearCloudRegistration: false });
-  const handlePushPayload = (data: Record<string, unknown>) => {
+  const handlePushPayload = (data: Record<string, unknown>, actionIdOverride?: unknown) => {
     const taskId = String(data.taskId || "").trim();
     const route = String(data.route || "/tasklaunch").trim();
-    const actionIdRaw =
-      String(data.tasktimerActionId || data.actionId || "").trim() ||
-      "default";
-    const actionId =
-      actionIdRaw === "launchTask" || actionIdRaw === "snooze10m" || actionIdRaw === "postponeNextGap"
-        ? actionIdRaw
-        : "default";
+    const actionId = normalizePendingPushActionId(actionIdOverride ?? data.tasktimerActionId ?? data.actionId);
     if (taskId) setPendingPushTaskId(taskId);
     if (taskId) setPendingPushAction({ taskId, route, actionId });
     try {
@@ -534,7 +525,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       const data = event?.notification?.data && typeof event.notification.data === "object"
         ? (event.notification.data as Record<string, unknown>)
         : {};
-      handlePushPayload(data);
+      handlePushPayload(data, event?.actionId);
       if (process.env.NODE_ENV !== "production") {
         console.info("[push] Notification action", event);
       }

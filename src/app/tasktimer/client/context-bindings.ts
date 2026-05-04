@@ -2,6 +2,7 @@ import type { Task } from "../lib/types";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import type {
   DashboardAvgRange,
+  DashboardCardPlacement,
   DashboardCardSize,
   DashboardTimelineDensity,
 } from "./types";
@@ -10,6 +11,8 @@ type DashboardLayoutState = {
   dashboardEditMode: boolean;
   dashboardDragEl: HTMLElement | null;
   dashboardOrderDraftBeforeEdit: string[] | null;
+  dashboardCardPlacements: Record<string, DashboardCardPlacement>;
+  dashboardCardPlacementsDraftBeforeEdit: Record<string, DashboardCardPlacement> | null;
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
@@ -82,6 +85,14 @@ export function createTaskTimerDashboardLayoutBindings(
     getDashboardOrderDraftBeforeEdit: () => dashboardUiState.get("dashboardOrderDraftBeforeEdit"),
     setDashboardOrderDraftBeforeEdit: (value: string[] | null) => {
       dashboardUiState.set("dashboardOrderDraftBeforeEdit", value);
+    },
+    getDashboardCardPlacements: () => dashboardUiState.get("dashboardCardPlacements"),
+    setDashboardCardPlacements: (value: Record<string, DashboardCardPlacement>) => {
+      dashboardUiState.set("dashboardCardPlacements", value);
+    },
+    getDashboardCardPlacementsDraftBeforeEdit: () => dashboardUiState.get("dashboardCardPlacementsDraftBeforeEdit"),
+    setDashboardCardPlacementsDraftBeforeEdit: (value: Record<string, DashboardCardPlacement> | null) => {
+      dashboardUiState.set("dashboardCardPlacementsDraftBeforeEdit", value);
     },
     getDashboardCardSizes: () => dashboardUiState.get("dashboardCardSizes"),
     setDashboardCardSizes: (value: Record<string, DashboardCardSize>) => {

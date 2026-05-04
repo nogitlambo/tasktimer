@@ -48,7 +48,7 @@ export function renderCloudSyncNotice(host: HTMLElement | null, detail: CloudSyn
     <div class="cloudSyncNotice" role="status">
       <p class="cloudSyncNoticeTitle">Account Sync Notice</p>
       <p class="cloudSyncNoticeText">${escapeHtml(message)}</p>
-      ${logId ? `<p class="cloudSyncNoticeLogId">Log ID: <span>${escapeHtml(logId)}</span><button class="iconBtn cloudSyncNoticeCopyBtn" type="button" data-action="copyCloudSyncLogId" data-log-id="${escapeHtml(logId)}" aria-label="Copy Log ID" title="Copy Log ID"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="9" width="10" height="10" rx="2"></rect><path d="M5 15V7a2 2 0 0 1 2-2h8"></path></svg></button></p>` : ""}
+      ${logId ? `<p class="cloudSyncNoticeLogId">Log ID: <button class="cloudSyncNoticeLogIdValue" type="button" data-action="copyCloudSyncLogId" data-log-id="${escapeHtml(logId)}" aria-label="Copy Log ID" title="Copy Log ID">${escapeHtml(logId)}</button></p>` : ""}
       <div class="cloudSyncNoticeActions">
         <button class="btn btn-ghost small" type="button" data-action="dismissCloudSyncNotice">Dismiss</button>
       </div>
@@ -81,6 +81,7 @@ export function registerCloudSyncNoticeRuntime(options: CloudSyncNoticeRuntimeOp
       const logId = String(actionButton.dataset.logId || "").trim();
       if (!logId || !navigator.clipboard?.writeText) return;
       void navigator.clipboard.writeText(logId).then(() => {
+        actionButton.textContent = logId;
         actionButton.setAttribute("aria-label", "Copied Log ID");
         actionButton.setAttribute("title", "Copied Log ID");
       });

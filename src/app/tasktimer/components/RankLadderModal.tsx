@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import RankThumbnail from "./RankThumbnail";
 import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
 
@@ -28,14 +29,26 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     onSelectRankThumbnail,
   } = props;
 
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(max-width: 700px)");
+    const syncLayout = () => setIsMobileLayout(mediaQuery.matches);
+    syncLayout();
+    mediaQuery.addEventListener("change", syncLayout);
+    return () => mediaQuery.removeEventListener("change", syncLayout);
+  }, []);
+
   if (!open) return null;
 
-  const displayRanks = Array.from({ length: Math.ceil(RANK_LADDER.length / 4) }, (_, rowIndex) =>
+  const ladderRows = Array.from({ length: Math.ceil(RANK_LADDER.length / 4) }, (_, rowIndex) =>
     RANK_LADDER.slice(rowIndex * 4, rowIndex * 4 + 4).map((rank, columnIndex) => ({
       rank,
       index: rowIndex * 4 + columnIndex,
     }))
-  ).reverse().flat();
+  );
+  const displayRanks = (isMobileLayout ? ladderRows : [...ladderRows].reverse()).flat();
 
   return (
     <div className="overlay" id="rankLadderOverlay" onClick={onClose}>
