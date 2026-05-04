@@ -435,6 +435,7 @@ const els = {
   historyDeleteBtn: documentRef.getElementById("historyDeleteBtn") as HTMLButtonElement | null,
   historyTrashRow: documentRef.getElementById("historyTrashRow"),
   checkpointToastHost: documentRef.getElementById("checkpointToastHost"),
+  cloudSyncNoticeHost: documentRef.getElementById("cloudSyncNoticeHost"),
 };
 
 

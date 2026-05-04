@@ -522,6 +522,10 @@
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
     padding-bottom: 0;
   }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellHeader{
+    height: 51px;
+  }
 }
 
 @media (max-width: 980px){
@@ -865,7 +869,7 @@
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileDock{
     margin-top: auto;
     padding-top: 0;
-    border-top: 1px solid rgba(196,204,214,.16);
+    border-top: 1px solid #282828;
   }
 }
 
@@ -1109,7 +1113,7 @@
     width: 100%;
     height: 1px;
     margin: -16px 0 12px;
-    background: rgba(196,204,214,.24);
+    background: #282828;
     flex: 0 0 auto;
   }
 
@@ -1165,11 +1169,16 @@
     background: transparent !important;
   }
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard,
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
     padding-left: 18px;
     padding-right: 18px;
+    box-sizing: border-box;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
+    padding-left: 0;
+    padding-right: 0;
     box-sizing: border-box;
   }
 
@@ -1404,6 +1413,9 @@
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu{
     position: relative;
     display: block;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #282828;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
@@ -1461,6 +1473,13 @@
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn{
     min-height: 42px;
     padding: 7px 14px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailPrivacyPolicyIcon,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailPrivacyPolicyIcon,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailPrivacyPolicyIcon,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailPrivacyPolicyIcon{
+    filter: brightness(0) saturate(100%) invert(92%) sepia(39%) saturate(4747%) hue-rotate(23deg) brightness(106%) contrast(101%);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSignOutBtn:disabled,

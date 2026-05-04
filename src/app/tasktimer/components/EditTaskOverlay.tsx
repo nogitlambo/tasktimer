@@ -167,36 +167,32 @@ export default function EditTaskOverlay() {
               </div>
             </div>
 
-            <div className="checkpointAlertsGroup" id="editCheckpointAlertsGroup">
-              <div className="checkpointAlertsTitle">Checkpoint Alerts</div>
-              <div className="toggleRow" id="editCheckpointSoundToggleRow">
-                <label className="editTaskInlineCheckboxLabel" htmlFor="editCheckpointSoundToggle">
-                  <input id="editCheckpointSoundToggle" type="checkbox" aria-label="Enable sound alert" />
-                  <span>Sound Alert</span>
-                </label>
+            <details className="editTaskAdvancedMenu checkpointAlertsGroup" id="editTaskAdvancedMenu">
+              <summary className="editTaskAdvancedSummary">
+                <span>Advanced</span>
+              </summary>
+              <div className="editTaskAdvancedBody">
+                <div className="field checkpointAlertBehaviourField" id="editCheckpointAlertBehaviourField">
+                  <label htmlFor="editCheckpointSoundModeSelect">Checkpoint alert behaviour</label>
+                  <div className="editCheckpointAlertBehaviourGrid">
+                    <div className="field checkpointAlertSoundModeField" id="editCheckpointSoundModeField">
+                      <label htmlFor="editCheckpointSoundModeSelect">Sound</label>
+                      <select id="editCheckpointSoundModeSelect" defaultValue="once">
+                        <option value="once">Once</option>
+                        <option value="repeat">Repeat until dismissed</option>
+                      </select>
+                    </div>
+                    <div className="field checkpointAlertSoundModeField" id="editCheckpointToastModeField">
+                      <label htmlFor="editCheckpointToastModeSelect">Toast</label>
+                      <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
+                        <option value="auto5s">Auto dismiss after 5 seconds</option>
+                        <option value="manual">Dismiss manually</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointSoundModeField">
-                <label htmlFor="editCheckpointSoundModeSelect">Sound Alert Behaviour</label>
-                <select id="editCheckpointSoundModeSelect" defaultValue="once">
-                  <option value="once">Sound alert once only (default)</option>
-                  <option value="repeat">Wait for user to dismiss sound alert</option>
-                </select>
-              </div>
-              <div className="toggleRow" id="editCheckpointToastToggleRow">
-                <label className="editTaskInlineCheckboxLabel" htmlFor="editCheckpointToastToggle">
-                  <input id="editCheckpointToastToggle" type="checkbox" aria-label="Enable toast alert" />
-                  <span>Toast Alert</span>
-                </label>
-              </div>
-              <div className="field checkpointAlertSoundModeField isHidden" id="editCheckpointToastModeField">
-                <label htmlFor="editCheckpointToastModeSelect">Toast Alert Behaviour</label>
-                <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
-                  <option value="auto5s">Dismiss toast alert after 5 seconds (default)</option>
-                  <option value="manual">Wait for user to dismiss toast alert</option>
-                </select>
-              </div>
-              <p className="checkpointAlertsNote" id="editCheckpointAlertsNote" style={{ display: "none" }} />
-            </div>
+            </details>
           </div>
           <div className="footerBtns">
             <button className="btn btn-ghost" id="cancelEditBtn" type="button">

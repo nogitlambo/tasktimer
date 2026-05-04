@@ -129,7 +129,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         })();
     if (valueEl) valueEl.textContent = `${rewardsHeader.totalXp} XP`;
     if (progressFillEl) {
-      progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+      progressFillEl.style.height = `${rewardsHeader.progressPct}%`;
+      progressFillEl.style.width = "";
       progressFillEl.style.setProperty("background", "#c9ff24", "important");
     }
     if (progressBarEl) {

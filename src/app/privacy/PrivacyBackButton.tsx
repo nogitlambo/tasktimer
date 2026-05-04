@@ -1,16 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { resolveStandaloneRouteBackTarget } from "../tasktimer/lib/routeBack";
 
 export default function PrivacyBackButton() {
   const router = useRouter();
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    router.push("/settings");
+    router.push(resolveStandaloneRouteBackTarget("/settings"));
   };
 
   return (

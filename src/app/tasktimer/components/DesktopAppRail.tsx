@@ -283,6 +283,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
 
 function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNavigate?: () => void) {
   const isActive = activePage === item.page;
+  const profileLabel = item.page === "history" ? "History Manager" : item.label;
   return (
     <a
       key={`profile-${item.page}`}
@@ -296,14 +297,14 @@ function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNav
         onNavigate?.();
         rememberRailTransition(activePage, item.page);
       }}
-    >
+      >
       <AppImg
         className="dashboardRailMenuIconImage"
         src={item.iconSrc}
         alt=""
         aria-hidden="true"
       />
-      <span className="dashboardRailMenuLabel">{item.label}</span>
+      <span className="dashboardRailMenuLabel">{profileLabel}</span>
     </a>
   );
 }
@@ -356,8 +357,8 @@ function renderProfileHelpMenu() {
           aria-label="Privacy Policy"
         >
           <AppImg
-            className="dashboardRailMenuIconImage"
-            src="/About.svg"
+            className="dashboardRailMenuIconImage desktopRailPrivacyPolicyIcon"
+            src="/icons/icons_default/privacy-policy.svg"
             alt=""
             aria-hidden="true"
           />

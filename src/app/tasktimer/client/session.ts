@@ -1081,6 +1081,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     msSorted.forEach((m) => {
       const targetSec = Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task)));
       if (targetSec <= 0 || targetSec <= prevBaseline || targetSec > elapsedWholeSec) return;
+      if (m.alertsEnabled === false) return;
       const key = checkpointKeyForTask(m, task);
       if (fired.has(key)) return;
       fired.add(key);

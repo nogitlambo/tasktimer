@@ -635,6 +635,82 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   white-space:nowrap;
   background: transparent !important;
 }
+.cloudSyncNoticeHost{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:18px;
+  z-index:155;
+  display:flex;
+  justify-content:center;
+  padding:0 14px;
+  pointer-events:none;
+}
+.cloudSyncNoticeHost:not(.isActive){
+  display:none;
+}
+.cloudSyncNotice{
+  pointer-events:auto;
+  width:min(560px, calc(100vw - 28px));
+  display:grid;
+  gap:8px;
+  padding:14px;
+  background:#0d0f13;
+  border:2px solid rgba(255,77,77,.72);
+  box-shadow:0 16px 34px rgba(0,0,0,.45), 0 0 0 1px rgba(255,77,77,.16) inset;
+  color:#ff6b6b;
+  font-weight:400;
+}
+.cloudSyncNoticeTitle{
+  margin:0;
+  font-family:var(--font-tight);
+  font-size:10px;
+  font-weight:400;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#ff6b6b;
+}
+.cloudSyncNoticeText,
+.cloudSyncNoticeLogId{
+  margin:0;
+  color:#ff6b6b;
+  font-size:12px;
+  font-weight:400;
+  line-height:1.4;
+}
+.cloudSyncNoticeLogId{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.cloudSyncNoticeLogId span{
+  font-family:var(--font-mono);
+  font-weight:400;
+  color:#ff6b6b;
+}
+.cloudSyncNoticeCopyBtn{
+  width:28px;
+  height:28px;
+  min-width:28px;
+  color:#ff6b6b;
+  border-color:rgba(255,77,77,.42);
+  background:rgba(255,77,77,.06);
+}
+.cloudSyncNoticeCopyBtn svg{
+  width:15px;
+  height:15px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.cloudSyncNoticeActions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:4px;
+}
 .taskJumpFlash{
   animation: taskJumpFlashPulse 1.2s ease-out 1;
 }

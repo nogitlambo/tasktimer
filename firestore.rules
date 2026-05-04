@@ -712,6 +712,11 @@ service cloud.firestore {
         "snoozedUntilMs",
         "sentAtMs",
         "sentDueAtMs",
+        "missedCheckDueAtMs",
+        "missedScheduledStartDueAtMs",
+        "nextPlannedStartDueAtMs",
+        "lastMissedAtMs",
+        "lastMissedDueAtMs",
         "lastActionAtMs",
         "lastActionByDeviceId",
         "lastGapAlertDayKey",
@@ -744,6 +749,11 @@ service cloud.firestore {
       && (!("snoozedUntilMs" in request.resource.data) || request.resource.data.snoozedUntilMs == null || request.resource.data.snoozedUntilMs is int)
       && (!("sentAtMs" in request.resource.data) || request.resource.data.sentAtMs == null || request.resource.data.sentAtMs is int)
       && (!("sentDueAtMs" in request.resource.data) || request.resource.data.sentDueAtMs == null || request.resource.data.sentDueAtMs is int)
+      && (!("missedCheckDueAtMs" in request.resource.data) || request.resource.data.missedCheckDueAtMs == null || request.resource.data.missedCheckDueAtMs is int)
+      && (!("missedScheduledStartDueAtMs" in request.resource.data) || request.resource.data.missedScheduledStartDueAtMs == null || request.resource.data.missedScheduledStartDueAtMs is int)
+      && (!("nextPlannedStartDueAtMs" in request.resource.data) || request.resource.data.nextPlannedStartDueAtMs == null || request.resource.data.nextPlannedStartDueAtMs is int)
+      && (!("lastMissedAtMs" in request.resource.data) || request.resource.data.lastMissedAtMs == null || request.resource.data.lastMissedAtMs is int)
+      && (!("lastMissedDueAtMs" in request.resource.data) || request.resource.data.lastMissedDueAtMs == null || request.resource.data.lastMissedDueAtMs is int)
       && (!("lastActionAtMs" in request.resource.data) || request.resource.data.lastActionAtMs == null || request.resource.data.lastActionAtMs is int)
       && (!("lastActionByDeviceId" in request.resource.data) || request.resource.data.lastActionByDeviceId == null || request.resource.data.lastActionByDeviceId is string)
       && (!("lastGapAlertDayKey" in request.resource.data) || request.resource.data.lastGapAlertDayKey == null || request.resource.data.lastGapAlertDayKey is string)

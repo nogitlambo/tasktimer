@@ -1266,7 +1266,8 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   align-items:center;
   min-height: 0;
   grid-area: focusDial;
-  padding:0 8px 32px;
+  padding:10px 42px 40px;
+  overflow:visible;
 }
 .focusDialPanel{
   display:flex;
@@ -1562,22 +1563,24 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:absolute;
   top:50%;
   left:50%;
-  transform: translate(calc(var(--lxpx, 0px) + clamp(8px, 2cqw, 14px)), var(--lypx, 0px)) translateY(-50%);
-  white-space:nowrap;
+  transform: translate(calc(var(--lxpx, 0px) + clamp(12px, 3.2cqw, 20px)), var(--lypx, 0px)) translateY(-50%);
+  white-space:normal;
   display:block;
   min-width:0;
-  max-width: clamp(84px, 26cqw, 150px);
+  max-width: clamp(96px, 22cqw, 128px);
   color: rgba(132,146,166,.9);
   text-shadow: 0 0 2px rgba(85,100,124,.3);
   font-family:var(--font-tight);
   font-size:11px;
-  line-height:1.1;
+  line-height:1.15;
   letter-spacing:.02em;
   pointer-events:none;
   text-align:left;
+  overflow-wrap:anywhere;
+  word-break:break-word;
 }
 .focusCheckpointLabel.left{
-  transform: translate(calc(var(--lxpx, 0px) - clamp(8px, 2cqw, 14px)), var(--lypx, 0px)) translate(-100%, -50%);
+  transform: translate(calc(var(--lxpx, 0px) - clamp(12px, 3.2cqw, 20px)), var(--lypx, 0px)) translate(-100%, -50%);
   text-align:right;
 }
 .focusCheckpointLabel.reached{
@@ -2766,7 +2769,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   }
 
   .focusDialWrap{
-    padding:0 0 32px;
+    padding:8px 18px 34px;
   }
 
   .focusDial{
@@ -2873,7 +2876,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   }
 
   .focusDialWrap{
-    padding:0 0 32px;
+    padding:8px 14px 34px;
   }
 
   .focusCheckpointToggleTop{

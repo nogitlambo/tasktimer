@@ -81,11 +81,13 @@ export type WorkspaceSnapshot = {
 function describeError(error: unknown): Record<string, unknown> {
   if (!error) return { value: error };
   if (error instanceof Error) {
-    const withCode = error as Error & { code?: unknown; customData?: unknown };
+    const withCode = error as Error & { code?: unknown; customData?: unknown; status?: unknown; logId?: unknown };
     return {
       name: error.name,
       message: error.message,
       code: typeof withCode.code === "string" ? withCode.code : withCode.code,
+      status: typeof withCode.status === "number" ? withCode.status : withCode.status,
+      logId: typeof withCode.logId === "string" ? withCode.logId : withCode.logId,
       stack: error.stack || null,
       customData: withCode.customData ?? null,
     };
@@ -96,6 +98,8 @@ function describeError(error: unknown): Record<string, unknown> {
     if (typeof source.name === "string" && source.name.trim()) describedObject.name = source.name;
     if (typeof source.message === "string" && source.message.trim()) describedObject.message = source.message;
     if ("code" in source) describedObject.code = source.code;
+    if ("status" in source) describedObject.status = source.status;
+    if ("logId" in source) describedObject.logId = source.logId;
     if ("stack" in source) describedObject.stack = source.stack ?? null;
     if ("customData" in source) describedObject.customData = source.customData ?? null;
     try {
@@ -147,10 +151,12 @@ async function safeGetDocsArray<T>(
 
 const userRootPermissionWarnedUids = new Set<string>();
 const IDENTITY_SYNC_RECENT_WINDOW_MS = 60_000;
+const IDENTITY_SYNC_DEFERRED_WINDOW_MS = 10 * 60_000;
 const USER_PROFILE_BOOTSTRAP_RECENT_WINDOW_MS = 60_000;
 const inFlightIdentitySyncByKey = new Map<string, Promise<void>>();
 const lastSuccessfulIdentitySyncAtByKey = new Map<string, number>();
 const lastDeferredIdentitySyncAtByKey = new Map<string, number>();
+const lastDeferredIdentitySyncWarningAtByKey = new Map<string, number>();
 const inFlightUserProfileBootstrapByUid = new Map<string, Promise<void>>();
 const lastUserProfileBootstrapAtByUid = new Map<string, number>();
 
@@ -182,6 +188,55 @@ function isExpectedIdentitySyncError(error: unknown): boolean {
     message.includes("you must be signed in to continue") ||
     message.includes("firebase admin credentials are not configured") ||
     message.includes("your sign-in session is no longer valid")
+  );
+}
+
+export async function buildIdentitySyncResponseError(response: Response): Promise<Error & {
+  code?: string;
+  status?: number | null;
+  logId?: string;
+}> {
+  const responseText = await response.text().catch(() => "");
+  const payload = ((): { error?: string; code?: string; logId?: string } => {
+    if (!responseText) return {};
+    try {
+      return JSON.parse(responseText) as { error?: string; code?: string; logId?: string };
+    } catch {
+      return { error: responseText };
+    }
+  })();
+  const status = Number(response.status || 0) || null;
+  const code = String(payload.code || "").trim();
+  const logId = String(payload.logId || "").trim();
+  const message = String(payload.error || "").trim() || "Could not sync user identity lookup.";
+  const nextError = new Error(status ? `${message} (status ${status})` : message) as Error & {
+    code?: string;
+    status?: number | null;
+    logId?: string;
+  };
+  if (code) nextError.code = code;
+  if (status) nextError.status = status;
+  if (logId) nextError.logId = logId;
+  return nextError;
+}
+
+function dispatchCloudSyncNotice(error: unknown) {
+  if (typeof window === "undefined") return;
+  const described = describeError(error);
+  const code = String(described.code || "").trim();
+  const status = Number(described.status || 0) || null;
+  const logId = String(described.logId || "").trim();
+  if (code !== "account/sync-identity-rate-limited") return;
+  window.dispatchEvent(
+    new CustomEvent("tasktimer:cloud-sync-notice", {
+      detail: {
+        code,
+        message: "Account sync is temporarily limited. Your task was saved locally and will retry later.",
+        logId: logId || undefined,
+        status: status || undefined,
+        retryable: true,
+      },
+    })
   );
 }
 
@@ -458,7 +513,7 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
   const lastSuccessAt = lastSuccessfulIdentitySyncAtByKey.get(requestKey) || 0;
   if (now - lastSuccessAt < IDENTITY_SYNC_RECENT_WINDOW_MS) return;
   const lastDeferredAt = lastDeferredIdentitySyncAtByKey.get(requestKey) || 0;
-  if (now - lastDeferredAt < IDENTITY_SYNC_RECENT_WINDOW_MS) return;
+  if (now - lastDeferredAt < IDENTITY_SYNC_DEFERRED_WINDOW_MS) return;
   const inFlight = inFlightIdentitySyncByKey.get(requestKey);
   if (inFlight) {
     await inFlight;
@@ -478,38 +533,26 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
       }),
     });
     if (!response.ok) {
-      const responseText = await response.text().catch(() => "");
-      const payload = ((): { error?: string; code?: string } => {
-        if (!responseText) return {};
-        try {
-          return JSON.parse(responseText) as { error?: string; code?: string };
-        } catch {
-          return { error: responseText };
-        }
-      })();
-      const status = Number(response.status || 0) || null;
-      const code = String(payload.code || "").trim();
-      const message = String(payload.error || "").trim() || "Could not sync user identity lookup.";
-      const nextError = new Error(status ? `${message} (status ${status})` : message) as Error & {
-        code?: string;
-        status?: number | null;
-      };
-      if (code) nextError.code = code;
-      if (status) nextError.status = status;
-      throw nextError;
+      throw await buildIdentitySyncResponseError(response);
     }
     lastSuccessfulIdentitySyncAtByKey.set(requestKey, Date.now());
     lastDeferredIdentitySyncAtByKey.delete(requestKey);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       if (isExpectedIdentitySyncError(error)) {
-        lastDeferredIdentitySyncAtByKey.set(requestKey, Date.now());
-        console.warn("[tasktimer-cloud] Deferred account identity index sync", {
-          uid,
-          email: authEmail || null,
-          prevEmail: options?.prevEmail || null,
-          error: describeError(error),
-        });
+        const deferredAt = Date.now();
+        const lastWarningAt = lastDeferredIdentitySyncWarningAtByKey.get(requestKey) || 0;
+        lastDeferredIdentitySyncAtByKey.set(requestKey, deferredAt);
+        if (deferredAt - lastWarningAt >= IDENTITY_SYNC_DEFERRED_WINDOW_MS) {
+          lastDeferredIdentitySyncWarningAtByKey.set(requestKey, deferredAt);
+          console.warn("[tasktimer-cloud] Deferred account identity index sync", {
+            uid,
+            email: authEmail || null,
+            prevEmail: options?.prevEmail || null,
+            retryAfterMs: IDENTITY_SYNC_DEFERRED_WINDOW_MS,
+            error: describeError(error),
+          });
+        }
       } else {
         console.error("[tasktimer-cloud] Failed to sync account identity index", {
           uid,
@@ -640,7 +683,8 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
         prevEmail: prevEmail || null,
         displayName: nextDisplayName,
       }).catch((error) => {
-        if (process.env.NODE_ENV !== "production") {
+        dispatchCloudSyncNotice(error);
+        if (process.env.NODE_ENV !== "production" && !isExpectedIdentitySyncError(error)) {
           console.warn("[tasktimer-cloud] Continuing without account identity sync", {
             uid,
             error: describeError(error),
@@ -780,7 +824,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
   const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
   const timeGoalCompleteDueAtMs = computeTimeGoalCompletePushDueAtMs(task);
   const fallbackDueAtMs = plannedStartDueAtMs ?? (unscheduledGapCandidate ? Date.now() : null);
-  const effectiveDueAtMs = timeGoalCompleteDueAtMs ?? fallbackDueAtMs;
+  let effectiveDueAtMs = timeGoalCompleteDueAtMs ?? fallbackDueAtMs;
   if (effectiveDueAtMs == null) {
     try {
       await deleteDoc(ref);
@@ -813,13 +857,23 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
   }
   const existingDueAtMs = existing?.exists() ? normalizeNullableInt(existing.get("dueAtMs")) : null;
   const existingKind = existing?.exists() ? String(existing.get("notificationKind") || "").trim() : "";
-  const notificationKind =
+  const existingEffectiveEventType = existing?.exists() ? String(existing.get("effectiveEventType") || existing.get("eventType") || "").trim() : "";
+  const preservePendingMissedCheck =
+    !!existing?.exists() &&
+    plannedStartDueAtMs != null &&
+    timeGoalCompleteDueAtMs == null &&
+    existingDueAtMs != null &&
+    existingKind === "missedScheduledTask" &&
+    existingEffectiveEventType === "missedScheduledTask" &&
+    normalizeNullableInt(existing.get("missedCheckDueAtMs")) === existingDueAtMs;
+  if (preservePendingMissedCheck) effectiveDueAtMs = existingDueAtMs;
+  const notificationKind = preservePendingMissedCheck ? "missedScheduledTask" :
     timeGoalCompleteDueAtMs != null ? "timeGoalComplete" : plannedStartDueAtMs != null ? "plannedStart" : "unscheduledGap";
   const preserveSendBookkeeping = !!existing?.exists() && existingDueAtMs === effectiveDueAtMs && existingKind === notificationKind;
-  const eventType =
+  const eventType = preservePendingMissedCheck ? "missedScheduledTask" :
     timeGoalCompleteDueAtMs != null ? "timeGoalComplete" : plannedStartDueAtMs != null ? "plannedStartReminder" : "unscheduledGapReminder";
-  const baseEventType = eventType;
-  const effectiveEventType = eventType;
+  const baseEventType = preservePendingMissedCheck ? "plannedStartReminder" : eventType;
+  const effectiveEventType = preservePendingMissedCheck ? "missedScheduledTask" : eventType;
   const timeGoalMinutes = normalizeDayTimeGoalMinutes(task);
   const payload = {
     ownerUid: uid,
@@ -839,6 +893,11 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
     snoozedUntilMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("snoozedUntilMs")) : null,
     sentAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentAtMs")) : null,
     sentDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("sentDueAtMs")) : null,
+    missedCheckDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("missedCheckDueAtMs")) : null,
+    missedScheduledStartDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("missedScheduledStartDueAtMs")) : null,
+    nextPlannedStartDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("nextPlannedStartDueAtMs")) : null,
+    lastMissedAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastMissedAtMs")) : null,
+    lastMissedDueAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastMissedDueAtMs")) : null,
     lastActionAtMs: preserveSendBookkeeping ? normalizeNullableInt(existing!.get("lastActionAtMs")) : null,
     lastActionByDeviceId: preserveSendBookkeeping ? String(existing!.get("lastActionByDeviceId") || "").trim() || null : null,
     lastGapAlertDayKey: preserveSendBookkeeping ? String(existing!.get("lastGapAlertDayKey") || "").trim() || null : null,
@@ -926,6 +985,12 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   if (Array.isArray(row.checkpoints) && !Array.isArray(row.milestones)) {
     row.milestones = row.checkpoints;
   }
+  if (Array.isArray(row.milestones)) {
+    row.milestones = row.milestones.map((milestone) => ({
+      ...(milestone as Record<string, unknown>),
+      alertsEnabled: (milestone as { alertsEnabled?: unknown })?.alertsEnabled !== false,
+    }));
+  }
 
   const presetLastCheckpointId = row.presetIntervalLastCheckpointId;
   if (
@@ -973,7 +1038,12 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     hasStarted: !!task.hasStarted,
     checkpointsEnabled: !!task.milestonesEnabled,
     checkpointTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
-    checkpoints: Array.isArray(task.milestones) ? task.milestones : [],
+    checkpoints: Array.isArray(task.milestones)
+      ? task.milestones.map((milestone) => ({
+          ...milestone,
+          alertsEnabled: milestone?.alertsEnabled !== false,
+        }))
+      : [],
     checkpointSoundEnabled: !!task.checkpointSoundEnabled,
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
     checkpointToastEnabled: !!task.checkpointToastEnabled,
@@ -1074,7 +1144,8 @@ export async function ensureUserProfileIndex(uid: string): Promise<void> {
       try {
         await syncUserIdentityIndex(normalizedUid);
       } catch (error) {
-        if (process.env.NODE_ENV !== "production") {
+        dispatchCloudSyncNotice(error);
+        if (process.env.NODE_ENV !== "production" && !isExpectedIdentitySyncError(error)) {
           console.warn("[tasktimer-cloud] Continuing without account identity bootstrap", {
             uid: normalizedUid,
             error: describeError(error),

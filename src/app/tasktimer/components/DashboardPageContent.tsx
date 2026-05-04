@@ -38,6 +38,8 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
       <div className="dashboardNeonLayout">
         <div className="dashboardMain">
           <div className="dashboardShell">
+            <div className="dashboardShellHeader" aria-hidden="true" />
+            <div className="dashboardShellBody">
             <div className="dashboardShellScene" id="dashboardShellScene">
               <div
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
@@ -47,7 +49,7 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                 <div className="dashboardTopRow">
                   <div className="dashboardEditActions">
                     <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
-                      <span className="dashboardRefreshIcon" aria-hidden="true" />
+                      <AppImg className="dashboardRefreshIcon" src="/icons/icons_default/refresh.png" alt="" aria-hidden="true" />
                     </button>
                     <button
                       className="btn btn-ghost small dashboardPanelMenuBtn"
@@ -72,43 +74,49 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
 
                 <div className="dashboardGrid">
                   <section className="dashboardCard dashboardSummaryCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
-                    <div className="dashboardXpProgressTitleRow">
-                      <div className="dashboardCardTitle">XP Progress</div>
-                      <span className="dashboardXpProgressInsignia" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                        <RankThumbnail
-                          rankId={currentRankId}
-                          className="dashboardXpProgressInsigniaShell"
-                          imageClassName="dashboardXpProgressInsigniaImg"
-                          placeholderClassName="dashboardXpProgressInsigniaPlaceholder"
-                          alt=""
-                          size={24}
-                          aria-hidden
-                        />
-                      </span>
-                    </div>
-                    <div className="dashboardXpProgressValue">
-                      <strong>{rewardsHeader.totalXp} XP</strong>
-                    </div>
-                    <div
-                      className="dashboardXpProgressTrack dashboardSummaryProgress rewardSegmentedBar"
-                      role="progressbar"
-                      aria-label="XP progress toward the next rank"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                    >
-                      <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ width: `${rewardsHeader.progressPct}%`, background: "#c9ff24" }} />
-                      <span className="rewardSegmentedBarTrack" aria-hidden="true">
-                        <span className="rewardSegmentedBarSegment" />
-                        <span className="rewardSegmentedBarSegment" />
-                        <span className="rewardSegmentedBarSegment" />
-                        <span className="rewardSegmentedBarSegment" />
-                        <span className="rewardSegmentedBarSegment" />
-                      </span>
-                    </div>
-                    <div className="dashboardSummaryStatus" aria-hidden="true" />
-                    <div className="dashboardXpProgressMeta dashboardSummaryFoot">
-                      <span>{rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}</span>
+                    <div className="dashboardXpProgressMain">
+                      <div className="dashboardXpProgressContent">
+                        <div className="dashboardXpProgressTitleRow">
+                          <div className="dashboardCardTitle">XP Progress</div>
+                          <span className="dashboardXpProgressInsignia" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                            <RankThumbnail
+                              rankId={currentRankId}
+                              className="dashboardXpProgressInsigniaShell"
+                              imageClassName="dashboardXpProgressInsigniaImg"
+                              placeholderClassName="dashboardXpProgressInsigniaPlaceholder"
+                              alt=""
+                              size={24}
+                              aria-hidden
+                            />
+                          </span>
+                        </div>
+                        <div className="dashboardXpProgressValue">
+                          <strong>{rewardsHeader.totalXp} XP</strong>
+                        </div>
+                        <div className="dashboardSummaryStatus dashboardXpProgressStatus" aria-hidden="true" />
+                        <div className="dashboardXpProgressMeta dashboardSummaryFoot">
+                          <span>{rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}</span>
+                        </div>
+                      </div>
+                      <div className="dashboardXpProgressRail">
+                        <div
+                          className="dashboardXpProgressTrack dashboardSummaryProgress rewardSegmentedBar"
+                          role="progressbar"
+                          aria-label="XP progress toward the next rank"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                        >
+                          <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ height: `${rewardsHeader.progressPct}%`, background: "#c9ff24" }} />
+                          <span className="rewardSegmentedBarTrack" aria-hidden="true">
+                            <span className="rewardSegmentedBarSegment" />
+                            <span className="rewardSegmentedBarSegment" />
+                            <span className="rewardSegmentedBarSegment" />
+                            <span className="rewardSegmentedBarSegment" />
+                            <span className="rewardSegmentedBarSegment" />
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -406,6 +414,7 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                   <span className="dashboardRefreshBusyProgressBar" />
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

@@ -55,6 +55,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
           : undefined,
         hours: Number.isFinite(+milestone.hours) ? +milestone.hours : 0,
         description: String(milestone.description || ""),
+        alertsEnabled: milestone?.alertsEnabled !== false,
       })),
       checkpointSoundEnabled: !!task.checkpointSoundEnabled,
       checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
@@ -135,6 +136,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
           createdSeq: Number.isFinite(+milestone?.createdSeq) ? Math.max(1, Math.floor(+milestone.createdSeq)) : undefined,
           hours: Number.isFinite(+milestone.hours) ? +milestone.hours : 0,
           description: String(milestone.description || ""),
+          alertsEnabled: milestone?.alertsEnabled !== false,
         }))
       : [];
     nextTask.milestones = ctx.sortMilestones(nextTask.milestones);

@@ -1,15 +1,15 @@
 /* Generated from tasktimer.css split. */
 /* Dashboard container overrides */
-.dashboardShell{
+.dashboardShellBody{
   border: none !important;
   box-shadow: none !important;
   padding-left: 0 !important;
 }
-.dashboardShell{
-  margin:18px;
+.dashboardShellBody{
+  margin:0 18px;
   padding:14px;
   border:1px solid rgba(121,226,255,.2);
-  background:#0d0f13;
+  background:transparent;
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
   perspective:1800px;
 }
@@ -95,6 +95,13 @@
   gap:12px;
   margin-bottom:12px;
 }
+.dashboardShellHeader{
+  display:block;
+  width:100%;
+  height:32px;
+  background:#1a1b20;
+  margin:0 0 12px;
+}
 .dashboardTitleWrap{
   flex:1 1 auto;
   min-width:0;
@@ -175,21 +182,7 @@
   display:block;
   width:16px;
   height:16px;
-  border:2px solid currentColor;
-  border-right-color: transparent;
-  border-radius:999px;
-  position:relative;
-}
-.dashboardRefreshIcon::after{
-  content:"";
-  position:absolute;
-  top:-2px;
-  right:-3px;
-  width:6px;
-  height:6px;
-  border-top:2px solid currentColor;
-  border-right:2px solid currentColor;
-  transform: rotate(18deg);
+  object-fit:contain;
 }
 .dashboardRefreshBtn.isBusy .dashboardRefreshIcon{
   animation: dashboardRefreshIconSpin .85s linear infinite;
@@ -449,6 +442,7 @@
   display:grid;
   gap:12px;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  background:transparent;
 }
 .dashboardGrid.isEditMode .dashboardCard{
   cursor: grab;
@@ -2281,7 +2275,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-size: clamp(20px, 2.1vw, 34px);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard{
-  grid-template-rows: auto auto auto auto;
+  grid-row: span var(--dashboard-pro-panel-span) !important;
+  display:grid;
+  grid-template-rows:minmax(0, 1fr);
+  align-items:stretch;
+  min-height:0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTitleRow{
   display:flex;
@@ -2324,18 +2322,43 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-family: var(--font-tight);
   white-space: nowrap;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressMain{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 42px;
+  align-items:stretch;
+  gap:16px;
+  min-height:0;
+  height:100%;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressContent{
+  display:grid;
+  grid-template-rows:auto auto 1fr auto;
+  align-items:start;
+  min-width:0;
+  min-height:0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressRail{
+  display:flex;
+  align-items:stretch;
+  justify-content:flex-end;
+  min-height:0;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressTrack{
-  align-self: end;
+  align-self: stretch;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   margin-top: 8px;
-  height: 12px;
+  height: 100%;
   border-color: rgba(118,225,255,.18);
   background: linear-gradient(180deg, rgba(0,0,0,.4), rgba(0,0,0,.22));
   box-shadow: inset 0 0 10px rgba(0,190,255,.15);
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressStatus{
+  min-height:14px;
+}
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressFill{
-  background: linear-gradient(90deg, #d447d2, #f06ee0);
+  background: linear-gradient(180deg, #f06ee0, #d447d2);
   box-shadow: 0 0 10px rgba(212,71,210,.35);
 }
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGoalProgressBar{
@@ -5036,7 +5059,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .dashboardXpProgressTrack{
   margin-top: 0 !important;
-  transform: translateY(10px);
+  transform: none;
+  width: 26px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  align-self: stretch !important;
 }
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardGoalProgressBar,
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard .dashboardGoalProgressBar,
@@ -5072,7 +5099,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   height: 100%;
   overflow: hidden;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
@@ -5736,6 +5762,42 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     inset 0 0 0 1px rgba(243, 255, 186, 0.16),
     0 0 18px rgba(201, 255, 36, 0.2);
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .rewardSegmentedBar{
+  background:
+    repeating-linear-gradient(
+      180deg,
+      var(--reward-bar-track-fill) 0 calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      var(--reward-bar-gap-color) calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+    var(--reward-bar-track-base);
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .rewardSegmentedBarFill{
+  inset: auto 1px 1px 1px;
+  min-height: 0;
+  width: auto !important;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      var(--reward-bar-fill-mid) 0,
+      var(--reward-bar-fill-deep) calc(var(--reward-bar-segment) - var(--reward-bar-gap)),
+      transparent calc(var(--reward-bar-segment) - var(--reward-bar-gap)) var(--reward-bar-segment)
+    ) !important;
+  -webkit-mask-image: repeating-linear-gradient(
+    180deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+  mask-image: repeating-linear-gradient(
+    180deg,
+    #000 0 calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)),
+    transparent calc(var(--reward-bar-segment, 18px) - var(--reward-bar-gap, 3px)) var(--reward-bar-segment, 18px)
+  ) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .rewardSegmentedBarTrack{
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+}
 
 .rewardSegmentedBarSegment {
   clip-path: polygon(var(--reward-bar-block-cut) 0, 100% 0, 100% calc(100% - var(--reward-bar-block-cut)), calc(100% - var(--reward-bar-block-cut)) 100%, 0 100%, 0 var(--reward-bar-block-cut)) !important;
@@ -5884,7 +5946,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  background: #282828 !important;
+  background: #14161a !important;
   border: 0 !important;
   box-shadow: none !important;
 }
@@ -5895,7 +5957,7 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  background: #282828 !important;
+  background: #14161a !important;
   border: 0 !important;
 }
 

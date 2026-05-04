@@ -365,6 +365,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
               : index + 1,
           value: String(Number(milestone?.hours || 0)),
           description: String(milestone?.description || ""),
+          alertsEnabled: milestone?.alertsEnabled !== false,
         }))
       ),
       checkpointSoundEnabled: !!currentTask?.checkpointSoundEnabled,
@@ -471,14 +472,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.addMsBtn.disabled = checkpointControlsDisabled;
       els.addMsBtn.title = checkpointControlsDisabled ? "Set a time goal to add checkpoints" : "";
     }
-    if (els.editCheckpointSoundToggle) {
-      els.editCheckpointSoundToggle.toggleAttribute("disabled", checkpointControlsDisabled);
-      els.editCheckpointSoundToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
-    }
-    if (els.editCheckpointToastToggle) {
-      els.editCheckpointToastToggle.toggleAttribute("disabled", checkpointControlsDisabled);
-      els.editCheckpointToastToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
-    }
     if (els.editCheckpointSoundModeSelect) {
       els.editCheckpointSoundModeSelect.disabled =
         checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointSoundEnabled;
@@ -487,19 +480,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editCheckpointToastModeSelect.disabled =
         checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointToastEnabled;
     }
-    els.editCheckpointSoundToggleRow?.classList.toggle(
-      "isDisabled",
-      checkpointControlsDisabled || !currentTask?.milestonesEnabled || !ctx.getCheckpointAlertSoundEnabled()
-    );
-    els.editCheckpointToastToggleRow?.classList.toggle(
-      "isDisabled",
-      checkpointControlsDisabled || !currentTask?.milestonesEnabled || !ctx.getCheckpointAlertToastEnabled()
-    );
     if (currentTask) {
       syncEditCheckpointAlertUi(currentTask);
     } else {
       els.editTimerSettingsGroup?.classList.add("isHidden");
-      els.editCheckpointAlertsGroup?.classList.add("isHidden");
     }
   }
 
@@ -653,10 +637,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
               ? Math.floor(Number((milestone as { createdSeq?: number }).createdSeq))
               : 0,
             description: String(milestone?.description || ""),
+            alertsEnabled: milestone?.alertsEnabled !== false,
           }))
         : [],
       presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId ? String(task.presetIntervalLastMilestoneId) : null,
     };
+  }
+
+  function hasAnyMilestoneAlertsEnabled(task: Task | null | undefined) {
+    return !!task?.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.some((milestone) => milestone?.alertsEnabled !== false);
   }
 
   function renderMilestoneEditor(t: Task) {
@@ -671,10 +660,21 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
 
       row.innerHTML = `
+        <button type="button" class="iconBtn checkpointBellBtn${m.alertsEnabled !== false ? " isOn" : ""}" data-action="toggleMsAlert" aria-label="${m.alertsEnabled !== false ? "Disable checkpoint alerts" : "Enable checkpoint alerts"}" aria-pressed="${m.alertsEnabled !== false ? "true" : "false"}" title="${m.alertsEnabled !== false ? "Checkpoint alerts on" : "Checkpoint alerts off"}">
+          <span class="checkpointBellBtnIcon" aria-hidden="true"></span>
+        </button>
         <div class="pill msSkewField">${ctx.escapeHtmlUI(String(+m.hours || 0))}${sharedTasks.milestoneUnitSuffix(t)}</div>
         <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
+
+      const bell = row.querySelector('[data-action="toggleMsAlert"]') as HTMLButtonElement | null;
+      ctx.on(bell, "click", () => {
+        m.alertsEnabled = m.alertsEnabled === false;
+        t.milestones = ms;
+        syncEditCheckpointAlertUi(t);
+        renderMilestoneEditor(t);
+      });
 
       const pill = row.querySelector(".pill") as HTMLElement | null;
       ctx.on(pill, "click", () => {
@@ -706,9 +706,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const timeGoalEnabledForSave = ctx.isEditTimeGoalEnabled();
     t.color = normalizeTaskColor(t.color);
     const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
-    t.checkpointSoundEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null);
+    const hasEnabledMilestoneAlerts = checkpointingEnabledForSave && hasAnyMilestoneAlertsEnabled(t);
+    t.checkpointSoundEnabled = hasEnabledMilestoneAlerts;
     t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-    t.checkpointToastEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null);
+    t.checkpointToastEnabled = hasEnabledMilestoneAlerts;
     t.presetIntervalsEnabled = checkpointingEnabledForSave && ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null);
     t.presetIntervalValue = Math.max(0, parseFloat(els.editPresetIntervalInput?.value || "0") || 0);
     t.timeGoalAction = "confirmModal";
@@ -760,7 +761,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const timeGoalEnabled = isEditTimeGoalEnabled();
     const hasActiveTimeGoal = timeGoalEnabled && editTaskHasActiveTimeGoal();
     const checkpointingEnabled = !!t.milestonesEnabled && hasActiveTimeGoal;
-    els.editCheckpointAlertsGroup?.classList.toggle("isHidden", !timeGoalEnabled || !checkpointingEnabled);
     if (els.editPresetIntervalsToggle) {
       ctx.toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, checkpointingEnabled && !!t.presetIntervalsEnabled);
     }
@@ -781,10 +781,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         els.editPresetIntervalNote.textContent = "";
       }
     }
-    ctx.toggleSwitchElement(els.editCheckpointSoundToggle as HTMLElement | null, checkpointingEnabled && !!t.checkpointSoundEnabled);
-    ctx.toggleSwitchElement(els.editCheckpointToastToggle as HTMLElement | null, checkpointingEnabled && !!t.checkpointToastEnabled);
-    els.editCheckpointSoundToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled());
-    els.editCheckpointToastToggleRow?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled());
+    const derivedAlertState = sharedTasks.deriveCheckpointAlertEnabledState(t);
+    t.checkpointSoundEnabled = checkpointingEnabled && derivedAlertState.soundEnabled;
+    t.checkpointToastEnabled = checkpointingEnabled && derivedAlertState.toastEnabled;
     if (els.editCheckpointSoundModeSelect) {
       els.editCheckpointSoundModeSelect.value = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
       els.editCheckpointSoundModeSelect.disabled =
@@ -795,30 +794,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editCheckpointToastModeSelect.disabled =
         !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled;
     }
-    els.editCheckpointSoundModeField?.classList.toggle(
-      "isHidden",
-      !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled
-    );
-    els.editCheckpointToastModeField?.classList.toggle(
-      "isHidden",
-      !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled
-    );
+    els.editCheckpointSoundModeField?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled);
+    els.editCheckpointToastModeField?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled);
     els.editTimerSettingsGroup?.classList.toggle("isHidden", !timeGoalEnabled || !hasActiveTimeGoal);
-    const notes: string[] = [];
-    if (!timeGoalEnabled || !hasActiveTimeGoal) notes.push("set a time goal to enable checkpoints");
-    if (!ctx.getCheckpointAlertSoundEnabled()) notes.push("sound alerts are disabled globally");
-    if (!ctx.getCheckpointAlertToastEnabled()) notes.push("toast alerts are disabled globally");
-    if (els.editCheckpointAlertsNote) {
-      if (notes.length) {
-        (els.editCheckpointAlertsNote as HTMLElement).style.display = "block";
-        els.editCheckpointAlertsNote.textContent = !timeGoalEnabled || !hasActiveTimeGoal
-          ? "Set a time goal to enable Time Checkpoints and related alerts."
-          : "Sound and toast notifications can be enabled via Settings > Notifications";
-      } else {
-        (els.editCheckpointAlertsNote as HTMLElement).style.display = "none";
-        els.editCheckpointAlertsNote.textContent = "";
-      }
-    }
   }
 
   function syncEditMilestoneSectionUi(t: Task) {
@@ -847,7 +825,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       createdSeq: Number.isFinite(+(m as { createdSeq?: number }).createdSeq!) ? Math.floor(+(m as { createdSeq?: number }).createdSeq!) : 0,
       hours: Number.isFinite(+m.hours) ? +m.hours : 0,
       description: String(m.description || ""),
+      alertsEnabled: m.alertsEnabled !== false,
     }));
+    const hasEnabledMilestoneAlerts = hasAnyMilestoneAlertsEnabled(task);
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
@@ -862,9 +842,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       milestoneTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestonesEnabled: !!task.milestonesEnabled,
       milestones,
-      checkpointSoundEnabled: !!ctx.isSwitchOn(els.editCheckpointSoundToggle as HTMLElement | null),
+      checkpointSoundEnabled: hasEnabledMilestoneAlerts,
       checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
-      checkpointToastEnabled: !!ctx.isSwitchOn(els.editCheckpointToastToggle as HTMLElement | null),
+      checkpointToastEnabled: hasEnabledMilestoneAlerts,
       checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: !!ctx.isSwitchOn(els.editPresetIntervalsToggle as HTMLElement | null),
@@ -1198,24 +1178,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     };
-    const syncCheckpointToggleState = (
-      toggleEl: HTMLElement | null,
-      readEnabled: () => boolean,
-      writeEnabled: (task: Task, enabled: boolean) => void
-    ) => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      if (!readEnabled() || !ctx.editTaskHasActiveTimeGoal()) return;
-      const enabled =
-        toggleEl instanceof HTMLInputElement && toggleEl.type === "checkbox"
-          ? toggleEl.checked
-          : !ctx.isSwitchOn(toggleEl);
-      ctx.toggleSwitchElement(toggleEl, enabled);
-      writeEnabled(t, enabled);
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
-    };
-
     ctx.on(els.cancelEditBtn, "click", (e: any) => {
       e?.preventDefault?.();
       closeEdit(false);
@@ -1352,30 +1314,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditTaskTimeGoalUi(t);
       ctx.syncEditSaveAvailability(t);
     });
-    ctx.on(els.editCheckpointSoundToggle, "change", () => {
-      syncCheckpointToggleState(
-        els.editCheckpointSoundToggle as HTMLElement | null,
-        () => ctx.getCheckpointAlertSoundEnabled(),
-        (task, enabled) => {
-          task.checkpointSoundEnabled = enabled;
-        }
-      );
-    });
     ctx.on(els.editCheckpointSoundModeSelect, "change", () => {
       const t = getCurrentEditTask();
       if (!t) return;
       t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editCheckpointToastToggle, "change", () => {
-      syncCheckpointToggleState(
-        els.editCheckpointToastToggle as HTMLElement | null,
-        () => ctx.getCheckpointAlertToastEnabled(),
-        (task, enabled) => {
-          task.checkpointToastEnabled = enabled;
-        }
-      );
     });
     ctx.on(els.editCheckpointToastModeSelect, "change", () => {
       const t = getCurrentEditTask();
@@ -1451,7 +1395,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         t.milestones = t.milestones || [];
         sharedTasks.ensureMilestoneIdentity(t);
         const nextSeq = sharedTasks.getPresetIntervalNextSeqNum(t);
-        t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "" });
+        t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "", alertsEnabled: true });
         t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
         t.presetIntervalNextSeq = nextSeq + 1;
       }

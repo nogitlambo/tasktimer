@@ -553,11 +553,17 @@ Allowed fields (`isScheduledTimeGoalPushDoc`):
 - `timeGoalMinutes: int | null`
 - `plannedStartDay: string | null`
 - `plannedStartTime: string | null`
+- `plannedStartByDay: map | null`
 - `plannedStartPushRemindersEnabled: bool`
 - `route: string`
 - `snoozedUntilMs: int | null`
 - `sentAtMs: int | null`
 - `sentDueAtMs: int | null`
+- `missedCheckDueAtMs: int | null`
+- `missedScheduledStartDueAtMs: int | null`
+- `nextPlannedStartDueAtMs: int | null`
+- `lastMissedAtMs: int | null`
+- `lastMissedDueAtMs: int | null`
 - `lastActionAtMs: int | null`
 - `lastActionByDeviceId: string | null`
 - `lastGapAlertDayKey: string | null`

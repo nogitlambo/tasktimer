@@ -36,6 +36,7 @@ export type TaskTimerSharedTaskApi = {
   makeTask: (name: string, order?: number) => Task;
   normalizeLoadedTask: (task: Task) => void;
   ensureMilestoneIdentity: (task: Task) => void;
+  deriveCheckpointAlertEnabledState: (task: Task | null | undefined) => { soundEnabled: boolean; toastEnabled: boolean };
   hasValidPresetInterval: (task: Task | null | undefined) => boolean;
   getPresetIntervalValueNum: (task: Task | null | undefined) => number;
   getPresetIntervalNextSeqNum: (task: Task | null | undefined) => number;
@@ -135,6 +136,10 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     }
     syncLegacyPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
+    ensureMilestoneIdentity(task);
+    const derivedAlerts = deriveCheckpointAlertEnabledState(task);
+    task.checkpointSoundEnabled = derivedAlerts.soundEnabled;
+    task.checkpointToastEnabled = derivedAlerts.toastEnabled;
   }
 
   function ensureMilestoneIdentity(task: Task) {
@@ -144,6 +149,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.milestones.forEach((milestone) => {
       if (!milestone) return;
       if (!milestone.id) milestone.id = ctx.createId();
+      milestone.alertsEnabled = milestone.alertsEnabled !== false;
       const milestoneAny = milestone as { createdSeq?: number };
       const createdSeq = Number(milestoneAny.createdSeq ?? 0);
       if (!Number.isFinite(createdSeq) || createdSeq <= 0) {
@@ -164,6 +170,17 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       const exists = task.milestones.some((milestone) => String(milestone.id || "") === String(taskAny.presetIntervalLastMilestoneId || ""));
       if (!exists) taskAny.presetIntervalLastMilestoneId = null;
     }
+  }
+
+  function deriveCheckpointAlertEnabledState(task: Task | null | undefined) {
+    const hasEnabledMilestone =
+      !!task?.milestonesEnabled &&
+      Array.isArray(task.milestones) &&
+      task.milestones.some((milestone) => milestone?.alertsEnabled !== false);
+    return {
+      soundEnabled: hasEnabledMilestone,
+      toastEnabled: hasEnabledMilestone,
+    };
   }
 
   function hasValidPresetInterval(task: Task | null | undefined) {
@@ -249,7 +266,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     const timeGoalMinutes = timeGoalMinutesOverride == null ? Number(task.timeGoalMinutes || 0) : timeGoalMinutesOverride;
     if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(task), timeGoalMinutes)) return false;
     const nextSeq = Math.max(1, Math.floor(Number(taskAny.presetIntervalNextSeq ?? 1) || 1));
-    const milestone = { id: ctx.createId(), createdSeq: nextSeq, hours: nextHours, description: "" };
+    const milestone = { id: ctx.createId(), createdSeq: nextSeq, hours: nextHours, description: "", alertsEnabled: true };
     task.milestones.push(milestone);
     taskAny.presetIntervalLastMilestoneId = milestone.id;
     taskAny.presetIntervalNextSeq = nextSeq + 1;
@@ -295,6 +312,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     makeTask,
     normalizeLoadedTask,
     ensureMilestoneIdentity,
+    deriveCheckpointAlertEnabledState,
     hasValidPresetInterval,
     getPresetIntervalValueNum,
     getPresetIntervalNextSeqNum,

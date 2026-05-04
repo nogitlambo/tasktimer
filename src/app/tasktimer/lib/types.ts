@@ -5,6 +5,7 @@ export type Milestone = {
   description: string;
   id?: string;
   createdSeq?: number;
+  alertsEnabled?: boolean;
 };
 
 export type TaskPlannedStartDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";

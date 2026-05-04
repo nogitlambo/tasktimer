@@ -1,8 +1,9 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
-import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { createApiAuthErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
+import { createReportableLogId, writeReportableLog } from "../../shared/reportableLog";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 function asString(value: unknown, maxLength = 0) {
@@ -19,9 +20,11 @@ function emailLookupDocKey(email: string) {
 }
 
 export async function POST(req: Request) {
+  let requestUid = "";
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid, email } = await verifyFirebaseRequestUser(req, body);
+    requestUid = uid;
     await enforceUidRateLimit({
       namespace: "account-sync-identity",
       uid,
@@ -61,15 +64,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      const logId = createReportableLogId("acct-sync");
+      writeReportableLog("warn", "[api/account/sync-identity] Rate limited", {
+        logId,
+        route: "/api/account/sync-identity",
+        uid: requestUid || null,
+        code: error.code,
+        status: error.status,
+      });
+      return NextResponse.json({ error: error.message, code: error.code, logId }, { status: error.status });
     }
     if (error instanceof Error && "status" in error) {
       return createApiAuthErrorResponse(error, "Could not sync account identity.");
     }
-    return createApiInternalErrorResponse(
+    const logId = createReportableLogId("acct-sync");
+    writeReportableLog("error", "[api/account/sync-identity] Request failed", {
+      logId,
+      route: "/api/account/sync-identity",
+      uid: requestUid || null,
       error,
-      "Could not sync account identity.",
-      "[api/account/sync-identity] Request failed"
+    });
+    return NextResponse.json(
+      { error: "Could not sync account identity.", code: "internal", logId },
+      { status: 500 }
     );
   }
 }

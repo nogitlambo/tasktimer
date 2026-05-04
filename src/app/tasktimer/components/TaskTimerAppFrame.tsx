@@ -101,6 +101,12 @@ export default function TaskTimerAppFrame({
               role="menuitem"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <AppImg
+                className="taskLaunchMobileMenuItemIcon"
+                src="/icons/icons_default/settings.png"
+                alt=""
+                aria-hidden="true"
+              />
               <span className="taskLaunchMobileMenuItemText">Settings</span>
             </a>
           </div>
@@ -120,6 +126,7 @@ export default function TaskTimerAppFrame({
           </div>
         </div>
       </div>
+      <div className="cloudSyncNoticeHost" id="cloudSyncNoticeHost" aria-live="polite" aria-atomic="true" />
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>
   );

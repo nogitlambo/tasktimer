@@ -1550,11 +1550,58 @@ body[data-theme="purple"] .rankLadderItemFlag{
   margin-top:6px;
   padding:5px 6px;
   gap:6px;
+  align-items:center;
 }
 
 #editOverlay .msRow button{
   width:28px;
   height:28px;
+}
+
+#editOverlay .msRow .checkpointBellBtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  min-width:34px;
+  padding:0;
+  border:0;
+  box-shadow:none;
+  background: transparent;
+  color:rgba(255,255,255,.42);
+}
+
+#editOverlay .msRow .checkpointBellBtn::after{
+  content:"";
+  position:absolute;
+  width:24px;
+  height:2px;
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  transform:rotate(-45deg);
+}
+
+#editOverlay .msRow .checkpointBellBtn.isOn{
+  border:0;
+  box-shadow:none;
+  background: transparent;
+  color:#c9ff24;
+}
+
+#editOverlay .msRow .checkpointBellBtn.isOn::after{
+  display:none;
+}
+
+#editOverlay .msRow .checkpointBellBtnIcon{
+  display:block;
+  width:20px;
+  height:20px;
+  background-color: currentColor;
+  -webkit-mask: url("/icons/icons_default/bell-notification.svg") center / contain no-repeat;
+  mask: url("/icons/icons_default/bell-notification.svg") center / contain no-repeat;
 }
 
 #editOverlay .msRow input[type="text"]{
@@ -3988,6 +4035,65 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   clip-path: none;
 }
 
+#editOverlay #editTaskAdvancedMenu{
+  margin: 8px 0 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+#editOverlay #editTaskAdvancedMenu > summary{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  list-style:none;
+  cursor:pointer;
+  padding: 10px 12px;
+  border:0;
+  background: transparent;
+  clip-path: none;
+  font-family: var(--font-tight);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(228,248,255,.94);
+}
+
+#editOverlay #editTaskAdvancedMenu > summary::-webkit-details-marker{
+  display:none;
+}
+
+#editOverlay #editTaskAdvancedMenu > summary::before{
+  content:"▸";
+  font-size:13px;
+  line-height:1;
+  color:#fff;
+}
+
+#editOverlay #editTaskAdvancedMenu[open] > summary::before{
+  content:"▾";
+}
+
+#editOverlay .editTaskAdvancedBody{
+  padding-top:10px;
+}
+
+#editOverlay .checkpointAlertBehaviourField{
+  padding:0;
+  border:0;
+  background:transparent;
+}
+
+#editOverlay .editCheckpointAlertBehaviourGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+
 #editOverlay .editTaskModalBody > :is(.field, .milestones, .checkpointAlertsGroup)
   + :is(.field, .milestones, .checkpointAlertsGroup){
   margin-top: 18px;
@@ -4000,6 +4106,26 @@ body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
   background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
   color: #fff8ff !important;
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
+}
+
+body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn{
+  border:0;
+  box-shadow:none;
+  background: transparent;
+}
+
+body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn.isOn{
+  border:0;
+  box-shadow:none;
+  background: transparent;
+}
+
+body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary{
+  color: #f5eaff;
+}
+
+body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary::before{
+  color:#fff;
 }
 
 #editOverlay .milestonesBody,
@@ -4465,6 +4591,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #msList .msRow input[type="text"],
 #editOverlay #msList .msRow .msSkewInput {
   font-family: var(--font-geist-sans) !important;
+}
+
+@media (max-width: 640px){
+  #editOverlay .editCheckpointAlertBehaviourGrid{
+    grid-template-columns: 1fr;
+  }
 }
 
 

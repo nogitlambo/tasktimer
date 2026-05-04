@@ -8,6 +8,7 @@ type TaskConfigMilestoneDraft = {
   createdSeq: number;
   value: string;
   description: string;
+  alertsEnabled?: boolean;
 };
 
 type TaskConfigReadoutOptions = {
@@ -135,6 +136,7 @@ export function normalizeTaskConfigMilestones(milestones: TaskConfigMilestoneDra
           : index + 1,
       value: String(milestone?.value || "").trim(),
       description: String(milestone?.description || "").trim(),
+      alertsEnabled: milestone?.alertsEnabled !== false,
     }))
     .sort((a, b) => a.createdSeq - b.createdSeq);
 }

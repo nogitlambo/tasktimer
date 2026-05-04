@@ -2,6 +2,7 @@ import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, Task, Deleted
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
+import { applyLiveSessionsToTasks } from "./live-session-task-state";
 
 type PersistOptions = { deletedTaskIds?: string[] };
 
@@ -77,6 +78,7 @@ type CreateTaskTimerPersistenceOptions = {
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   normalizeLoadedTask?: (task: Task) => void;
+  nowMs?: () => number;
 };
 
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
@@ -86,12 +88,13 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       options.setTasks([]);
       return;
     }
+    const liveSessionsByTaskId = options.workspaceRepository.loadLiveSessions();
     const migratedTasks = loaded.filter((task) => {
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
       return true;
     });
-    options.setTasks(migratedTasks);
-    options.setLiveSessionsByTaskId(options.workspaceRepository.loadLiveSessions());
+    options.setTasks(applyLiveSessionsToTasks(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now));
+    options.setLiveSessionsByTaskId(liveSessionsByTaskId);
   }
 
   function save(opts?: PersistOptions) {

@@ -22,9 +22,12 @@ const db = getFirestore(app, databaseId);
 const messaging = getMessaging(app);
 const TASK_TIME_GOAL_ACTIVE_TTL_MS = 2 * 60 * 1000;
 const PUSH_ACTION_SNOOZE_MS = 10 * 60 * 1000;
+const MISSED_SCHEDULED_TASK_GRACE_MS = 10 * 60 * 1000;
 const PLANNED_START_REMINDER_EVENT = "plannedStartReminder";
 const PLANNED_START_SNOOZED_EVENT = "plannedStartReminderSnoozed";
 const PLANNED_START_NOTIFICATION_KIND = "plannedStart";
+const MISSED_SCHEDULED_TASK_EVENT = "missedScheduledTask";
+const MISSED_SCHEDULED_TASK_NOTIFICATION_KIND = "missedScheduledTask";
 const UNSCHEDULED_GAP_REMINDER_EVENT = "unscheduledGapReminder";
 const UNSCHEDULED_GAP_NOTIFICATION_KIND = "unscheduledGap";
 const TIME_GOAL_COMPLETE_EVENT = "timeGoalComplete";
@@ -450,6 +453,40 @@ function computeNextPlannedStartDueAtMs(plannedStartDay, plannedStartTime, fromM
   return next.getTime();
 }
 
+function normalizePlannedStartByDay(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const result = {};
+  for (const day of ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]) {
+    const time = asString(value[day]);
+    if (/^\d{1,2}:\d{2}$/.test(time)) result[day] = time;
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+function getPlannedStartEntries(plannedStartDay, plannedStartTime, plannedStartByDay) {
+  const byDay = normalizePlannedStartByDay(plannedStartByDay);
+  if (byDay) {
+    return Object.entries(byDay).map(([day, time]) => ({day, time}));
+  }
+  const time = asString(plannedStartTime);
+  if (!/^\d{1,2}:\d{2}$/.test(time)) return [];
+  const day = normalizeScheduleDay(plannedStartDay);
+  if (day) return [{day, time}];
+  return [{day: "", time}];
+}
+
+function computeNextPlannedStartDueAtMsFromSchedule(plannedStartDay, plannedStartTime, plannedStartByDay, fromMs) {
+  const entries = getPlannedStartEntries(plannedStartDay, plannedStartTime, plannedStartByDay);
+  let nextDueAtMs = null;
+  for (const entry of entries) {
+    const dueAtMs = computeNextPlannedStartDueAtMs(entry.day, entry.time, fromMs);
+    if (dueAtMs != null && (nextDueAtMs == null || dueAtMs < nextDueAtMs)) {
+      nextDueAtMs = dueAtMs;
+    }
+  }
+  return nextDueAtMs;
+}
+
 function localDayKeyFromMs(ts) {
   const date = new Date(ts);
   const year = date.getFullYear();
@@ -734,17 +771,24 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   const effectiveEventType = asString(data.effectiveEventType, eventType || baseEventType) || baseEventType;
   const plannedStartDay = asString(data.plannedStartDay);
   const plannedStartTime = asString(data.plannedStartTime);
+  const plannedStartByDay = normalizePlannedStartByDay(data.plannedStartByDay);
   const remindersEnabled = data.plannedStartPushRemindersEnabled !== false;
   const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
   const snoozedUntilMs = asInt(data.snoozedUntilMs, null);
+  const isMissedCheck = effectiveEventType === MISSED_SCHEDULED_TASK_EVENT;
+  const missedScheduledStartDueAtMs = asInt(data.missedScheduledStartDueAtMs, null);
+  const lastMissedDueAtMs = asInt(data.lastMissedDueAtMs, null);
 
   if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || baseEventType !== PLANNED_START_REMINDER_EVENT) {
     return {status: "skipped"};
   }
+  if (isMissedCheck && missedScheduledStartDueAtMs != null && lastMissedDueAtMs === missedScheduledStartDueAtMs) {
+    return {status: "duplicate"};
+  }
   if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
     return {status: "duplicate"};
   }
-  if (!remindersEnabled || !plannedStartTime) {
+  if (!remindersEnabled || !getPlannedStartEntries(plannedStartDay, plannedStartTime, plannedStartByDay).length) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
@@ -762,26 +806,105 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   const taskReminderEnabled = taskData.plannedStartPushRemindersEnabled !== false;
   const taskPlannedStartDay = asString(taskData.plannedStartDay || plannedStartDay);
   const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
-  if (taskOpenEnded || !taskReminderEnabled || !taskPlannedStartTime) {
+  const taskPlannedStartByDay = normalizePlannedStartByDay(taskData.plannedStartByDay) || plannedStartByDay;
+  const hasTaskPlannedStart = getPlannedStartEntries(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay).length > 0;
+  if (taskOpenEnded || !taskReminderEnabled || !hasTaskPlannedStart) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
+  const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(
+    taskPlannedStartDay,
+    taskPlannedStartTime,
+    taskPlannedStartByDay,
+    Math.max(nowMs, missedScheduledStartDueAtMs || dueAtMs)
+  );
   if (taskRunning) {
-    const nextRunningDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
-    if (nextRunningDueAtMs != null) {
+    if (nextDueAtMs != null) {
       await docSnap.ref.set({
-        dueAtMs: nextRunningDueAtMs,
+        dueAtMs: nextDueAtMs,
+        notificationKind: PLANNED_START_NOTIFICATION_KIND,
         eventType: PLANNED_START_REMINDER_EVENT,
         baseEventType: PLANNED_START_REMINDER_EVENT,
         effectiveEventType: PLANNED_START_REMINDER_EVENT,
         plannedStartDay: taskPlannedStartDay || null,
         plannedStartTime: taskPlannedStartTime,
+        plannedStartByDay: taskPlannedStartByDay || null,
         plannedStartPushRemindersEnabled: true,
         snoozedUntilMs: null,
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+        nextPlannedStartDueAtMs: null,
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
     }
     return {status: "running"};
+  }
+
+  if (isMissedCheck) {
+    const scheduledStartDueAtMs = missedScheduledStartDueAtMs || sentDueAtMs || Math.max(0, dueAtMs - MISSED_SCHEDULED_TASK_GRACE_MS);
+    const dayStartMs = startOfLocalDayMs(scheduledStartDueAtMs);
+    const dayEndMs = nextLocalDayStartMs(scheduledStartDueAtMs);
+    if (await hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs)) {
+      await docSnap.ref.set({
+        dueAtMs: nextDueAtMs,
+        notificationKind: PLANNED_START_NOTIFICATION_KIND,
+        eventType: PLANNED_START_REMINDER_EVENT,
+        baseEventType: PLANNED_START_REMINDER_EVENT,
+        effectiveEventType: PLANNED_START_REMINDER_EVENT,
+        plannedStartDay: taskPlannedStartDay || null,
+        plannedStartTime: taskPlannedStartTime || null,
+        plannedStartByDay: taskPlannedStartByDay || null,
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+        nextPlannedStartDueAtMs: null,
+        snoozedUntilMs: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return {status: "skipped"};
+    }
+    const missedPayloadData = {
+      eventType: MISSED_SCHEDULED_TASK_EVENT,
+      baseEventType: PLANNED_START_REMINDER_EVENT,
+      effectiveEventType: MISSED_SCHEDULED_TASK_EVENT,
+      route,
+      taskId,
+      taskName,
+      notificationKind: MISSED_SCHEDULED_TASK_NOTIFICATION_KIND,
+      plannedStartDay: taskPlannedStartDay || "",
+      dueAtMs: String(scheduledStartDueAtMs),
+    };
+    const missedResponse = await sendScheduledTaskNotification({
+      uid,
+      nowMs,
+      route,
+      taskId,
+      taskName,
+      payloadData: missedPayloadData,
+      webTitle: "Missed Scheduled Task",
+      webBody: `You missed your scheduled task: ${taskName}.`,
+    });
+    if (missedResponse.successCount > 0) {
+      await docSnap.ref.set({
+        sentAtMs: nowMs,
+        sentDueAtMs: dueAtMs,
+        dueAtMs: nextDueAtMs,
+        notificationKind: PLANNED_START_NOTIFICATION_KIND,
+        eventType: PLANNED_START_REMINDER_EVENT,
+        baseEventType: PLANNED_START_REMINDER_EVENT,
+        effectiveEventType: PLANNED_START_REMINDER_EVENT,
+        plannedStartDay: taskPlannedStartDay || null,
+        plannedStartTime: taskPlannedStartTime || null,
+        plannedStartByDay: taskPlannedStartByDay || null,
+        snoozedUntilMs: null,
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+        nextPlannedStartDueAtMs: null,
+        lastMissedAtMs: nowMs,
+        lastMissedDueAtMs: scheduledStartDueAtMs,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
+    return missedResponse;
   }
 
   const payloadData = {
@@ -806,18 +929,23 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     webTitle: "Task Reminder",
     webBody: `${taskName} is scheduled to start now.`,
   });
-  const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
   if (response.successCount > 0) {
+    const missedCheckDueAtMs = dueAtMs + MISSED_SCHEDULED_TASK_GRACE_MS;
     await docSnap.ref.set({
       sentAtMs: nowMs,
       sentDueAtMs: dueAtMs,
-      dueAtMs: nextDueAtMs,
-      eventType: PLANNED_START_REMINDER_EVENT,
+      dueAtMs: missedCheckDueAtMs,
+      notificationKind: MISSED_SCHEDULED_TASK_NOTIFICATION_KIND,
+      eventType: MISSED_SCHEDULED_TASK_EVENT,
       baseEventType: PLANNED_START_REMINDER_EVENT,
-      effectiveEventType: PLANNED_START_REMINDER_EVENT,
+      effectiveEventType: MISSED_SCHEDULED_TASK_EVENT,
       plannedStartDay: taskPlannedStartDay || null,
-      plannedStartTime: taskPlannedStartTime,
+      plannedStartTime: taskPlannedStartTime || null,
+      plannedStartByDay: taskPlannedStartByDay || null,
       snoozedUntilMs: null,
+      missedCheckDueAtMs,
+      missedScheduledStartDueAtMs: dueAtMs,
+      nextPlannedStartDueAtMs: nextDueAtMs,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }
@@ -1077,6 +1205,8 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
   const data = scheduledSnap.data() || {};
   const plannedStartDay = asString(data.plannedStartDay);
   const plannedStartTime = asString(data.plannedStartTime);
+  const plannedStartByDay = normalizePlannedStartByDay(data.plannedStartByDay);
+  const dueAtMs = asInt(data.dueAtMs, null);
   const remindersEnabled = data.plannedStartPushRemindersEnabled !== false;
   const eventType = asString(data.eventType, PLANNED_START_REMINDER_EVENT) || PLANNED_START_REMINDER_EVENT;
   const baseEventType = asString(data.baseEventType, eventType) || eventType;
@@ -1093,6 +1223,8 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
   const taskReminderEnabled = taskData.plannedStartPushRemindersEnabled !== false;
   const taskPlannedStartDay = asString(taskData.plannedStartDay || plannedStartDay);
   const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
+  const taskPlannedStartByDay = normalizePlannedStartByDay(taskData.plannedStartByDay) || plannedStartByDay;
+  const taskHasPlannedStart = getPlannedStartEntries(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay).length > 0;
 
   if (baseEventType === UNSCHEDULED_GAP_REMINDER_EVENT) {
     if (!isUnscheduledGapCandidateTask(taskData)) {
@@ -1140,21 +1272,26 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
     return {ok: true, applied: false, reason: "unsupported-action"};
   }
 
-  if (!remindersEnabled || !taskReminderEnabled || taskOpenEnded || !taskPlannedStartTime || baseEventType !== PLANNED_START_REMINDER_EVENT) {
+  if (!remindersEnabled || !taskReminderEnabled || taskOpenEnded || !taskHasPlannedStart || baseEventType !== PLANNED_START_REMINDER_EVENT) {
     await scheduledRef.delete().catch(() => {});
     return {ok: true, applied: false, reason: "disabled"};
   }
 
   if (taskRunning) {
-    const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
+    const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay, nowMs);
     await scheduledRef.set({
       dueAtMs: nextDueAtMs,
+      notificationKind: PLANNED_START_NOTIFICATION_KIND,
       eventType: PLANNED_START_REMINDER_EVENT,
       baseEventType: PLANNED_START_REMINDER_EVENT,
       effectiveEventType: PLANNED_START_REMINDER_EVENT,
       plannedStartDay: taskPlannedStartDay || null,
-      plannedStartTime: taskPlannedStartTime,
+      plannedStartTime: taskPlannedStartTime || null,
+      plannedStartByDay: taskPlannedStartByDay || null,
       snoozedUntilMs: null,
+      missedCheckDueAtMs: null,
+      missedScheduledStartDueAtMs: null,
+      nextPlannedStartDueAtMs: null,
       lastActionAtMs: nowMs,
       lastActionByDeviceId: deviceId || null,
       updatedAt: FieldValue.serverTimestamp(),
@@ -1167,17 +1304,22 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
     if (!activation.ok) {
       return {ok: true, applied: false, reason: activation.reason || "missing-task"};
     }
-    const nextDueAtMs = computeNextPlannedStartDueAtMs(taskPlannedStartDay, taskPlannedStartTime, nowMs);
+    const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay, nowMs);
     await scheduledRef.set({
       dueAtMs: nextDueAtMs,
+      notificationKind: PLANNED_START_NOTIFICATION_KIND,
       eventType: PLANNED_START_REMINDER_EVENT,
       baseEventType: PLANNED_START_REMINDER_EVENT,
       effectiveEventType: PLANNED_START_REMINDER_EVENT,
       plannedStartDay: taskPlannedStartDay || null,
-      plannedStartTime: taskPlannedStartTime,
+      plannedStartTime: taskPlannedStartTime || null,
+      plannedStartByDay: taskPlannedStartByDay || null,
       sentAtMs: nowMs,
       sentDueAtMs: dueAtMs,
       snoozedUntilMs: null,
+      missedCheckDueAtMs: null,
+      missedScheduledStartDueAtMs: null,
+      nextPlannedStartDueAtMs: null,
       lastActionAtMs: nowMs,
       lastActionByDeviceId: deviceId || null,
       route,
@@ -1190,14 +1332,19 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
   await scheduledRef.set({
     dueAtMs: snoozedUntilMs,
     route,
+    notificationKind: PLANNED_START_NOTIFICATION_KIND,
     eventType: PLANNED_START_SNOOZED_EVENT,
     baseEventType: PLANNED_START_REMINDER_EVENT,
     effectiveEventType: PLANNED_START_SNOOZED_EVENT,
     plannedStartDay: taskPlannedStartDay || null,
-    plannedStartTime: taskPlannedStartTime,
+    plannedStartTime: taskPlannedStartTime || null,
+    plannedStartByDay: taskPlannedStartByDay || null,
     snoozedUntilMs,
     sentAtMs: null,
     sentDueAtMs: null,
+    missedCheckDueAtMs: null,
+    missedScheduledStartDueAtMs: null,
+    nextPlannedStartDueAtMs: null,
     lastActionAtMs: nowMs,
     lastActionByDeviceId: deviceId || null,
     updatedAt: FieldValue.serverTimestamp(),

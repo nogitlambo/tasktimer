@@ -52,6 +52,7 @@ import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
 import { createTaskTimerCloudSync } from "./client/cloud-sync";
+import { registerCloudSyncNoticeRuntime } from "./client/cloud-sync-notice";
 import { createTaskTimerPersistence } from "./client/persistence";
 import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
 import { createTaskTimerPopupMenu } from "./client/popup-menu";
@@ -294,6 +295,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   });
 
   const els = collectTaskTimerElements(document);
+  registerCloudSyncNoticeRuntime({
+    host: els.cloudSyncNoticeHost as HTMLElement | null,
+    on,
+  });
   const sharedTaskApi = createTaskTimerSharedTask({
     createId: () => cryptoRandomId(),
     getEditTimeGoalDraft: () => ({

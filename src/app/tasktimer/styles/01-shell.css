@@ -760,12 +760,21 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     min-height: 54px;
     text-decoration: none;
     width: 100%;
     border: none !important;
     box-shadow: none !important;
     clip-path: none !important;
+  }
+
+  .taskLaunchMobileMenuItemIcon{
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    object-fit: contain;
   }
 
   .taskLaunchMobileMenuItemText{

@@ -8,6 +8,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
 import { createFeedbackItem, type FeedbackAttachmentUploadInput, type FeedbackType } from "../lib/feedbackStore";
+import { resolveStandaloneRouteBackTarget } from "../lib/routeBack";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
 
@@ -154,11 +155,7 @@ export default function FeedbackScreen() {
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    window.location.assign(resolveTaskTimerRouteHref("/tasklaunch"));
+    window.location.assign(resolveTaskTimerRouteHref(resolveStandaloneRouteBackTarget("/tasklaunch")));
   }, []);
 
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());

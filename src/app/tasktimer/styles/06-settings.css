@@ -4210,10 +4210,10 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
     aspect-ratio:auto;
     flex-direction:row;
     align-items:center;
-    justify-content:flex-start;
+    justify-content:center;
     gap:8px;
-    padding:10px 12px 10px 24px;
-    text-align:left;
+    padding:10px 16px;
+    text-align:center;
     text-transform:none;
     letter-spacing:.08em;
     box-shadow:none !important;
@@ -4230,7 +4230,8 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   }
 
   #app[aria-label="TaskLaunch Settings"] .settingsNavTile .settingsNavRowText{
-    text-align:left;
+    flex:0 1 auto;
+    text-align:center;
     font-size:12px;
     line-height:1.15;
   }

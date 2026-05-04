@@ -605,7 +605,12 @@ function taskSignature(task: Task | null | undefined): string {
     collapsed: !!task.collapsed,
     milestonesEnabled: !!task.milestonesEnabled,
     milestoneTimeUnit: task.milestoneTimeUnit || "hour",
-    milestones: Array.isArray(task.milestones) ? task.milestones : [],
+    milestones: Array.isArray(task.milestones)
+      ? task.milestones.map((milestone) => ({
+          ...milestone,
+          alertsEnabled: milestone?.alertsEnabled !== false,
+        }))
+      : [],
     hasStarted: !!task.hasStarted,
     color: task.color == null ? null : String(task.color),
     checkpointSoundEnabled: !!task.checkpointSoundEnabled,
