@@ -1435,7 +1435,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   top:0;
   z-index:16;
   padding:8px 0 10px;
-  background:#0d0f13;
+  background:transparent;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{
@@ -1919,7 +1919,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleBoard,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTray{
   border:1px solid rgba(255,255,255,.08);
-  background:#0d0f13;
+  background:transparent;
   box-shadow:0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.02);
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller{
@@ -2510,7 +2510,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   font-weight:800;
   letter-spacing:.08em;
   line-height:1;
-  text-transform:uppercase;
+  text-transform:none;
   white-space:nowrap;
 }
 @media (min-width: 900px){

@@ -108,11 +108,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderOnboardingXpProgressCard() {
-    const cardEl = document.querySelector("#appPageDashboard .dashboardXpProgressCard") as HTMLElement | null;
-    const valueEl = cardEl?.querySelector(".dashboardXpProgressValue strong") as HTMLElement | null;
-    const progressBarEl = cardEl?.querySelector(".dashboardXpProgressTrack") as HTMLElement | null;
-    const progressFillEl = cardEl?.querySelector(".dashboardXpProgressFill") as HTMLElement | null;
-    const metaEl = cardEl?.querySelector(".dashboardXpProgressMeta span") as HTMLElement | null;
+    const cardEl = document.querySelector("#app .appShellHeaderXp") as HTMLElement | null;
+    const valueEl = cardEl?.querySelector(".appShellHeaderXpValue") as HTMLElement | null;
+    const progressBarEl = cardEl?.querySelector(".appShellHeaderXpTrack") as HTMLElement | null;
+    const progressFillEl = cardEl?.querySelector(".appShellHeaderXpFill") as HTMLElement | null;
+    const metaEl = cardEl?.querySelector(".appShellHeaderXpMeta") as HTMLElement | null;
     const rewardsHeader = isOnboardingDashboardPreviewActive()
       ? {
           totalXp: ONBOARDING_DASHBOARD_PREVIEW.xpProgress.totalXp,
@@ -129,9 +129,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         })();
     if (valueEl) valueEl.textContent = `${rewardsHeader.totalXp} XP`;
     if (progressFillEl) {
-      progressFillEl.style.height = `${rewardsHeader.progressPct}%`;
-      progressFillEl.style.width = "";
-      progressFillEl.style.setProperty("background", "#c9ff24", "important");
+      progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
     }
     if (progressBarEl) {
       progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));

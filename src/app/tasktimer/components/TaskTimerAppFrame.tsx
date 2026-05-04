@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
+import RankThumbnail from "./RankThumbnail";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
@@ -12,12 +13,22 @@ type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
   children: ReactNode;
   useClientNavButtons?: boolean;
+  currentRankId: string;
+  rewardsHeader: {
+    rankLabel: string;
+    totalXp: number;
+    progressPct: number;
+    progressLabel: string;
+    xpToNext: number | null;
+  };
 };
 
 export default function TaskTimerAppFrame({
   activePage,
   children,
   useClientNavButtons = activePage !== "history",
+  currentRankId,
+  rewardsHeader,
 }: TaskTimerAppFrameProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -71,6 +82,35 @@ export default function TaskTimerAppFrame({
             alt=""
           />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
+          <section className="taskLaunchTopbarXp" aria-label="XP progress">
+            <div className="taskLaunchTopbarXpBody">
+              <div className="taskLaunchTopbarXpBottomRow">
+                <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                  <RankThumbnail
+                    rankId={currentRankId}
+                    className="taskLaunchTopbarXpInsigniaShell"
+                    imageClassName="taskLaunchTopbarXpInsigniaImg"
+                    placeholderClassName="taskLaunchTopbarXpInsigniaPlaceholder"
+                    alt=""
+                    size={16}
+                    aria-hidden
+                  />
+                  <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
+                </span>
+                <div
+                  className="taskLaunchTopbarXpTrack"
+                  role="progressbar"
+                  aria-label="XP progress toward the next rank"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                >
+                  <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                </div>
+                <strong className="taskLaunchTopbarXpValue">{rewardsHeader.totalXp} XP</strong>
+              </div>
+            </div>
+          </section>
         </div>
         <button
           ref={mobileMenuBtnRef}
@@ -114,7 +154,41 @@ export default function TaskTimerAppFrame({
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showMobileFooter={false} />
-        <div className="desktopAppMain">{children}</div>
+        <div className="desktopAppMain">
+          <div className="appShellHeader">
+            <div className="appShellHeaderSpacer" aria-hidden="true" />
+            <section className="appShellHeaderXp" aria-label="XP progress">
+              <div className="appShellHeaderXpBody">
+                <div className="appShellHeaderXpBottomRow">
+                  <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                    <RankThumbnail
+                      rankId={currentRankId}
+                      className="appShellHeaderXpInsigniaShell"
+                      imageClassName="appShellHeaderXpInsigniaImg"
+                      placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                      alt=""
+                      size={16}
+                      aria-hidden
+                    />
+                    <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>
+                  </span>
+                  <div
+                    className="appShellHeaderXpTrack"
+                    role="progressbar"
+                    aria-label="XP progress toward the next rank"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                  >
+                    <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                  </div>
+                  <strong className="appShellHeaderXpValue">{rewardsHeader.totalXp} XP</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+          {children}
+        </div>
       </div>
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} />
       <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>

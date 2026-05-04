@@ -66,7 +66,7 @@ export function createHistoryInlineSelectionInteraction(): HistoryInlineSelectio
       const hasLocked = state.lockedAbsIndexes.size > 0;
       return {
         hasDeleteTarget: !isDayMode && (state.selectedRelIndex != null || hasLocked),
-        hasSummaryTarget: !isDayMode && (state.selectedAbsIndex != null || hasLocked),
+        hasSummaryTarget: state.selectedAbsIndex != null || hasLocked,
       };
     },
 

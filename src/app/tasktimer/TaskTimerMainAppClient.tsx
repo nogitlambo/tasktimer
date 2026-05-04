@@ -247,7 +247,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   return (
     <>
-      <TaskTimerAppFrame activePage={initialPage}>
+      <TaskTimerAppFrame activePage={initialPage} currentRankId={rewardProgress.currentRankId} rewardsHeader={rewardsHeader}>
         <div className="appPages">
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="dashboardTopRow">
@@ -330,7 +330,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </section>
           </section>
 
-          <DashboardPageContent currentRankId={rewardProgress.currentRankId} rewardsHeader={rewardsHeader} active={initialPage === "dashboard"} />
+          <DashboardPageContent active={initialPage === "dashboard"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">

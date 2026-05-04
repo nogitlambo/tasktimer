@@ -373,7 +373,7 @@
     pointer-events: none;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="xp-progress"],
+  #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain .appShellHeader .appShellHeaderXp,
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="week-hours"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="week-hours"],
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="weekly-time-goals"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="weekly-time-goals"],
   #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="tasks-completed"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="tasks-completed"]{
@@ -523,7 +523,7 @@
     padding-bottom: 0;
   }
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellHeader{
+  #app[aria-label="TaskLaunch App"] .appShellHeader{
     height: 51px;
   }
 }
@@ -1696,7 +1696,7 @@
       drop-shadow(0 0 10px rgba(240,110,224,.62));
   }
 
-  body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="xp-progress"],
+  body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain .appShellHeader .appShellHeaderXp,
   body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="week-hours"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="week-hours"],
   body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="weekly-time-goals"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="weekly-time-goals"],
   body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="tasks-completed"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="tasks-completed"]{
@@ -1738,7 +1738,7 @@
     text-shadow: 0 0 8px rgba(53,232,255,.38);
   }
 
-  body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="xp-progress"],
+  body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain .appShellHeader .appShellHeaderXp,
   body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="week-hours"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="week-hours"],
   body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="weekly-time-goals"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="weekly-time-goals"],
   body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="tasks-completed"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="tasks-completed"]{
@@ -1901,7 +1901,7 @@
     text-shadow: 0 0 8px rgba(219,255,79,.42);
   }
 
-  body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="xp-progress"],
+  body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="xp-progress"] ~ .desktopAppMain .appShellHeader .appShellHeaderXp,
   body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="week-hours"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="week-hours"],
   body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="weekly-time-goals"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="weekly-time-goals"],
   body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail[data-onboarding-step="dashboard"][data-onboarding-dashboard-panel-step="tasks-completed"] ~ .desktopAppMain #appPageDashboard .dashboardCard[data-dashboard-id="tasks-completed"]{

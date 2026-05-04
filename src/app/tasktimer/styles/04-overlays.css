@@ -3183,7 +3183,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .historyEntrySummaryValue{
     min-width: 0;
     color: rgba(174,184,194,.9);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.55;
     font-weight: 400;
     white-space: pre-wrap;
@@ -3221,7 +3221,7 @@ body[data-theme="purple"] .rewardsInfoText{
     resize: vertical;
     background: transparent;
     color: rgba(174,184,194,.9);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.55;
   font-family: var(--font-readable);
   white-space: pre-wrap;
@@ -3334,7 +3334,7 @@ body[data-theme="purple"] .rewardsInfoText{
     }
 
   #historyEntryNoteOverlay .historyEntrySummaryValue{
-      font-size: 11px;
+      font-size: 13px;
       line-height: 1.35;
     }
 
@@ -3357,7 +3357,7 @@ body[data-theme="purple"] .rewardsInfoText{
   }
 
   #historyEntryNoteOverlay .historyEntrySummaryValue{
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.3;
   }
 }

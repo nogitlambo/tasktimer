@@ -1,10 +1,8 @@
 "use client";
 import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
-import RankThumbnail from "./RankThumbnail";
 import AppImg from "@/components/AppImg";
 
 const dashboardPanelOptions = [
-  { id: "xp-progress", label: "XP Progress" },
   { id: "week-hours", label: "Today" },
   { id: "weekly-time-goals", label: "This Week" },
   { id: "tasks-completed", label: "Completed" },
@@ -13,21 +11,11 @@ const dashboardPanelOptions = [
   { id: "heatmap", label: "Focus Heatmap" },
 ] as const;
 
-type RewardsHeader = {
-  rankLabel: string;
-  totalXp: number;
-  progressPct: number;
-  progressLabel: string;
-  xpToNext: number | null;
-};
-
 type DashboardPageContentProps = {
-  currentRankId: string;
-  rewardsHeader: RewardsHeader;
   active: boolean;
 };
 
-export default function DashboardPageContent({ currentRankId, rewardsHeader, active }: DashboardPageContentProps) {
+export default function DashboardPageContent({ active }: DashboardPageContentProps) {
   const handleOnboardingAdvanceClick = () => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
@@ -38,7 +26,6 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
       <div className="dashboardNeonLayout">
         <div className="dashboardMain">
           <div className="dashboardShell">
-            <div className="dashboardShellHeader" aria-hidden="true" />
             <div className="dashboardShellBody">
             <div className="dashboardShellScene" id="dashboardShellScene">
               <div
@@ -73,53 +60,6 @@ export default function DashboardPageContent({ currentRankId, rewardsHeader, act
                 </div>
 
                 <div className="dashboardGrid">
-                  <section className="dashboardCard dashboardSummaryCard dashboardXpProgressCard" data-dashboard-id="xp-progress" aria-label="XP progress">
-                    <div className="dashboardXpProgressMain">
-                      <div className="dashboardXpProgressContent">
-                        <div className="dashboardXpProgressTitleRow">
-                          <div className="dashboardCardTitle">XP Progress</div>
-                          <span className="dashboardXpProgressInsignia" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                            <RankThumbnail
-                              rankId={currentRankId}
-                              className="dashboardXpProgressInsigniaShell"
-                              imageClassName="dashboardXpProgressInsigniaImg"
-                              placeholderClassName="dashboardXpProgressInsigniaPlaceholder"
-                              alt=""
-                              size={24}
-                              aria-hidden
-                            />
-                          </span>
-                        </div>
-                        <div className="dashboardXpProgressValue">
-                          <strong>{rewardsHeader.totalXp} XP</strong>
-                        </div>
-                        <div className="dashboardSummaryStatus dashboardXpProgressStatus" aria-hidden="true" />
-                        <div className="dashboardXpProgressMeta dashboardSummaryFoot">
-                          <span>{rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached"}</span>
-                        </div>
-                      </div>
-                      <div className="dashboardXpProgressRail">
-                        <div
-                          className="dashboardXpProgressTrack dashboardSummaryProgress rewardSegmentedBar"
-                          role="progressbar"
-                          aria-label="XP progress toward the next rank"
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                        >
-                          <div className="dashboardXpProgressFill rewardSegmentedBarFill" style={{ height: `${rewardsHeader.progressPct}%`, background: "#c9ff24" }} />
-                          <span className="rewardSegmentedBarTrack" aria-hidden="true">
-                            <span className="rewardSegmentedBarSegment" />
-                            <span className="rewardSegmentedBarSegment" />
-                            <span className="rewardSegmentedBarSegment" />
-                            <span className="rewardSegmentedBarSegment" />
-                            <span className="rewardSegmentedBarSegment" />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" data-dashboard-label="Today" aria-label="Today's logged time">
                     <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
                     <div className="dashboardTrendIndicator" id="dashboardTodayTrendIndicator" aria-hidden="true">--</div>

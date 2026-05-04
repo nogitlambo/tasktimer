@@ -12,7 +12,6 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
   const DASHBOARD_PANEL_REGISTRY = [
-    { panelId: "xp-progress", label: "XP Progress" },
     { panelId: "week-hours", label: "Today" },
     { panelId: "weekly-time-goals", label: "This Week" },
     { panelId: "tasks-completed", label: "Tasks Completed" },
@@ -54,7 +53,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function isQuarterDefaultDashboardCard(cardId: string) {
     return (
-      cardId === "xp-progress" ||
       cardId === "week-hours" ||
       cardId === "weekly-time-goals" ||
       cardId === "tasks-completed"

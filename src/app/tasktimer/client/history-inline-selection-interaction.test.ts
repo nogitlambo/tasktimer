@@ -58,7 +58,7 @@ describe("history inline selection interaction", () => {
     });
     expect(selection.getRenderTargets(state, true)).toEqual({
       hasDeleteTarget: false,
-      hasSummaryTarget: false,
+      hasSummaryTarget: true,
     });
   });
 
