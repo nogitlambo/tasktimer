@@ -145,7 +145,6 @@ export function createTaskTimerRuntimeComposition(
     addTaskType: initialState.addTaskType,
     addTaskOnceOffDay: initialState.addTaskOnceOffDay,
     addTaskPlannedStartTime: initialState.addTaskPlannedStartTime,
-    addTaskPlannedStartOpenEnded: initialState.addTaskPlannedStartOpenEnded,
     addTaskDurationValue: initialState.addTaskDurationValue,
     addTaskDurationUnit: initialState.addTaskDurationUnit,
     addTaskDurationPeriod: initialState.addTaskDurationPeriod,

@@ -44,7 +44,6 @@ type AddTaskState = {
   addTaskType: "recurring" | "once-off";
   addTaskOnceOffDay: Task["onceOffDay"] extends infer T ? Exclude<T, null | undefined> : never;
   addTaskPlannedStartTime: string;
-  addTaskPlannedStartOpenEnded: boolean;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";
   addTaskDurationPeriod: "day" | "week";
@@ -175,10 +174,6 @@ export function createTaskTimerAddTaskStateBindings(addTaskState: TaskTimerMutab
     getAddTaskPlannedStartTime: () => addTaskState.get("addTaskPlannedStartTime"),
     setAddTaskPlannedStartTimeState: (value: string) => {
       addTaskState.set("addTaskPlannedStartTime", value);
-    },
-    getAddTaskPlannedStartOpenEnded: () => addTaskState.get("addTaskPlannedStartOpenEnded"),
-    setAddTaskPlannedStartOpenEndedState: (value: boolean) => {
-      addTaskState.set("addTaskPlannedStartOpenEnded", value);
     },
     getAddTaskDurationValue: () => addTaskState.get("addTaskDurationValue"),
     setAddTaskDurationValueState: (value: number) => {

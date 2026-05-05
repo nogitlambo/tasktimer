@@ -97,12 +97,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function commitAddTaskPlannedStartState() {
-    if (ctx.getAddTaskPlannedStartOpenEnded()) return;
     syncPlannedStartValueFromSelectors();
   }
 
   function syncAddTaskPlannedStartUi() {
-    const openEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
     const taskName = String(els.addTaskName?.value || "").trim() || "this task";
     if (els.addTaskPlannedStartPrompt) {
       els.addTaskPlannedStartPrompt.textContent = `What time of the day do you plan to start ${taskName}?`;
@@ -113,14 +111,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         minuteSelect: els.addTaskPlannedStartMinuteSelect,
         meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
       },
-      ctx.getAddTaskPlannedStartTime() || "09:00",
-      { disabled: openEnded }
+      ctx.getAddTaskPlannedStartTime() || "09:00"
     );
     if (els.addTaskPlannedStartInput) {
       els.addTaskPlannedStartInput.value = String(ctx.getAddTaskPlannedStartTime() || "09:00");
-    }
-    if (els.addTaskPlannedStartOpenEnded) {
-      els.addTaskPlannedStartOpenEnded.checked = openEnded;
     }
   }
 
@@ -619,19 +613,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (onceOff) {
       const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
       const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || "09:00";
-      newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
+      newTask.plannedStartOpenEnded = false;
       newTask.plannedStartDay = onceOffDay;
       newTask.plannedStartTime = plannedTime;
       newTask.plannedStartByDay = { [onceOffDay]: plannedTime };
     } else {
-      newTask.plannedStartOpenEnded = !!ctx.getAddTaskPlannedStartOpenEnded();
-      if (newTask.plannedStartOpenEnded) {
-        newTask.plannedStartTime = null;
-        newTask.plannedStartDay = null;
-        newTask.plannedStartByDay = null;
-      } else {
-        newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
-      }
+      newTask.plannedStartOpenEnded = false;
+      newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
     }
     if (findScheduleOverlap(tasks, newTask)) {
       showAddTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask));
@@ -649,7 +637,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskTypeState("recurring");
     ctx.setAddTaskOnceOffDayState("mon");
     ctx.setAddTaskPlannedStartTimeState("09:00");
-    ctx.setAddTaskPlannedStartOpenEndedState(false);
     ctx.setAddTaskDurationValueState(5);
     ctx.setAddTaskDurationUnitState("hour");
     ctx.setAddTaskMilestoneTimeUnitState("hour");
@@ -659,7 +646,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskNoGoalCheckbox) els.addTaskNoGoalCheckbox.checked = false;
     if (els.addTaskOnceOffDaySelect) els.addTaskOnceOffDaySelect.value = "mon";
     if (els.addTaskPlannedStartInput) els.addTaskPlannedStartInput.value = "09:00";
-    if (els.addTaskPlannedStartOpenEnded) els.addTaskPlannedStartOpenEnded.checked = false;
     setAddTaskCheckpointInfoOpen(false);
     setAddTaskPresetIntervalsInfoOpen(false);
     syncAddTaskWizardUi();
@@ -933,10 +919,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMinuteSelect, "input", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", syncPlannedStartValueFromSelectors);
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartOpenEnded, "change", () => {
-      ctx.setAddTaskPlannedStartOpenEndedState(!!els.addTaskPlannedStartOpenEnded?.checked);
-      syncAddTaskPlannedStartUi();
-    });
     bindToggleRow({
       on: ctx.on,
       control: els.addTaskPresetIntervalsToggle,

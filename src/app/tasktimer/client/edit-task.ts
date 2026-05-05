@@ -14,7 +14,6 @@ import {
   formatScheduleSlotSuggestion,
   getTaskScheduledDays,
   hasTaskMixedScheduleTimes,
-  hasTaskScheduledSlots,
   isRecurringDailyScheduleTask,
   normalizeScheduleStoredTime,
   normalizeTaskPlannedStartByDay,
@@ -259,9 +258,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
-    const onceOff = currentTask?.taskType === "once-off";
-    const openEnded = !!currentTask?.plannedStartOpenEnded;
-    const disableForUnscheduledFlexible = !onceOff && openEnded && !hasTaskScheduledSlots(currentTask || ({} as Task));
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
     syncPlannedStartSelectors(
       {
@@ -269,22 +265,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         minuteSelect: els.editPlannedStartMinuteSelect,
         meridiemSelect: els.editPlannedStartMeridiemSelect,
       },
-      currentTask?.plannedStartTime || "09:00",
-      { disabled: disableForUnscheduledFlexible }
+      currentTask?.plannedStartTime || "09:00"
     );
     if (els.editPlannedStartInput) {
       els.editPlannedStartInput.value = String(currentTask?.plannedStartTime || "09:00");
     }
-    if (els.editPlannedStartOpenEnded) {
-      els.editPlannedStartOpenEnded.checked = openEnded;
-      els.editPlannedStartOpenEnded.disabled = !!onceOff;
-    }
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
-      els.editPlannedStartPushReminders.disabled = disableForUnscheduledFlexible;
     }
-    els.editPlannedStartOpenEndedRow?.classList.toggle("isDisabled", !!onceOff);
-    els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", disableForUnscheduledFlexible);
+    els.editPlannedStartPushRemindersRow?.classList.remove("isDisabled");
   }
 
   function syncEditPlannedStartValueFromSelectors() {
@@ -867,7 +856,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
-      plannedStartOpenEnded: !!task.plannedStartOpenEnded,
       color: normalizeTaskColor(task.color),
       plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
       timeGoalEnabled: isEditTimeGoalEnabled(),
@@ -1132,16 +1120,16 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         return void ctx.showEditValidationError(t, "Enter a preset interval greater than 0.");
       }
       t.name = (els.editName?.value || "").trim() || t.name;
-      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
+      t.plannedStartOpenEnded = false;
       t.plannedStartTime = readEditPlannedStartValueFromSelectors();
-      if (!t.plannedStartOpenEnded && hasTaskMixedScheduleTimes(sourceTask)) {
+      if (hasTaskMixedScheduleTimes(sourceTask)) {
         const sharedTime = readEditPlannedStartValueFromSelectors();
         const scheduledDays = getTaskScheduledDays(sourceTask);
         if (scheduledDays.length > 1) {
           els.confirmOverlay?.classList.add("isApplySharedScheduleConfirm");
           return void ctx.confirm(
             "Apply Shared Schedule",
-            `Flexible is off, so this task will use the same planned start time on each scheduled day. Apply ${sharedTime} to all scheduled days?`,
+            `This task will use the same planned start time on each scheduled day. Apply ${sharedTime} to all scheduled days?`,
             {
               okLabel: "Apply",
               cancelLabel: "Cancel",
@@ -1279,16 +1267,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
-    ctx.on(els.editPlannedStartOpenEnded, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.plannedStartOpenEnded = !!els.editPlannedStartOpenEnded?.checked;
-      syncEditPlannedStartSelectors(t);
-      syncEditSaveAvailability(t);
-    });
     ctx.on(els.editPlannedStartPushReminders, "change", () => {
       const t = getCurrentEditTask();
-      if (!t || (t.plannedStartOpenEnded && !hasTaskScheduledSlots(t))) return;
+      if (!t) return;
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);

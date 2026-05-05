@@ -235,16 +235,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         </ul>
                       </section>
                       <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
-                        <div className="dashboardMomentumFooterTitle">
-                          <span className="dashboardMomentumFooterTitleIcon" aria-hidden="true">
-                            <AppImg
-                              src="/icons/icons_default/insight.png"
-                              alt=""
-                              className="dashboardMomentumFooterTitleIconImage"
-                            />
-                          </span>
-                          <span>Momentum Insight</span>
-                        </div>
                         <p className="dashboardMomentumFooterMessage" id="dashboardMomentumFooterMessage" aria-live="polite">
                           Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
                         </p>

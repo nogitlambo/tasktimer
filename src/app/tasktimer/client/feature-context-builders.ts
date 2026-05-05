@@ -398,8 +398,6 @@ type CreateAddTaskOptionsArgs = {
     | "setAddTaskOnceOffDayState"
     | "getAddTaskPlannedStartTime"
     | "setAddTaskPlannedStartTimeState"
-    | "getAddTaskPlannedStartOpenEnded"
-    | "setAddTaskPlannedStartOpenEndedState"
     | "getAddTaskDurationValue"
     | "setAddTaskDurationValueState"
     | "getAddTaskDurationUnit"

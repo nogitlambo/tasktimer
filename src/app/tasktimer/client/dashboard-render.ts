@@ -27,6 +27,58 @@ import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDe
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export function buildMomentumDriverMessages(momentum: MomentumSnapshot) {
+  const recentLabels = ["today", "yesterday", "two days ago"];
+  const recentText = momentum.recentDaysMs
+    .map((ms, index) => `${formatDashboardDurationShort(ms)} ${recentLabels[index]}`)
+    .join(", ");
+  const weeklyPct = momentum.currentWeekGoalMs > 0 ? Math.round((momentum.currentWeekLoggedMs / momentum.currentWeekGoalMs) * 100) : null;
+  const consistencyMessage =
+    momentum.trailingStreak >= 2
+      ? `Consistency contributed ${Math.round(momentum.consistencyScore)} of 45 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`
+      : `Consistency contributed 0 of 45 momentum points because momentum streaks start at 2 consecutive days. You currently have ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`;
+  return {
+    recentActivity: `Recent Activity contributed ${Math.round(momentum.recentActivityScore)} of 25 momentum points from ${recentText}.`,
+    consistency: consistencyMessage,
+    weeklyProgress:
+      weeklyPct == null
+        ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points. Add weekly or daily time goals to give this driver more signal.`
+        : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
+    liveBonus:
+      momentum.runningTaskCount > 0
+        ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 10 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`
+        : "Live Bonus contributed 0 of 10 momentum points because no task is currently running.",
+  } satisfies Record<DashboardMomentumDriverKey, string>;
+}
+
+export function getPrimaryMomentumDriverKey(momentum: MomentumSnapshot): DashboardMomentumDriverKey {
+  const driverScores: ReadonlyArray<readonly [DashboardMomentumDriverKey, number]> = [
+    ["recentActivity", momentum.recentActivityScore],
+    ["consistency", momentum.consistencyScore],
+    ["weeklyProgress", momentum.weeklyProgressScore],
+    ["liveBonus", momentum.activeSessionBonus],
+  ];
+
+  let leadingDriver: DashboardMomentumDriverKey = "recentActivity";
+  let leadingScore = Number.NEGATIVE_INFINITY;
+  driverScores.forEach(([key, score]) => {
+    if (score > leadingScore) {
+      leadingDriver = key;
+      leadingScore = score;
+    }
+  });
+  return leadingDriver;
+}
+
+export function buildMomentumSummaryMessage(momentum: MomentumSnapshot) {
+  const roundedScore = Math.round(momentum.score);
+  const bandLabel = getMomentumBandLabel(roundedScore);
+  const primaryDriverKey = getPrimaryMomentumDriverKey(momentum);
+  const driverMessages = buildMomentumDriverMessages(momentum);
+  const driverSummary = driverMessages[primaryDriverKey];
+  return `Momentum is ${bandLabel.toLowerCase()} at ${roundedScore}/100. ${driverSummary}`;
+}
+
 export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderContext) {
   const { els } = ctx;
   let dashboardHeatSelectedDayKey = "";
@@ -375,38 +427,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         textEl.textContent = rowText;
       }
     });
-  }
-
-  function buildMomentumDriverMessages(momentum: MomentumSnapshot) {
-    const recentLabels = ["today", "yesterday", "two days ago"];
-    const recentText = momentum.recentDaysMs
-      .map((ms, index) => `${formatDashboardDurationShort(ms)} ${recentLabels[index]}`)
-      .join(", ");
-    const weeklyPct = momentum.currentWeekGoalMs > 0 ? Math.round((momentum.currentWeekLoggedMs / momentum.currentWeekGoalMs) * 100) : null;
-    const consistencyMessage =
-      momentum.trailingStreak >= 2
-        ? `Consistency contributed ${Math.round(momentum.consistencyScore)} of 45 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`
-        : `Consistency contributed 0 of 45 momentum points because momentum streaks start at 2 consecutive days. You currently have ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-day trailing streak.`;
-    return {
-      recentActivity: `Recent Activity contributed ${Math.round(momentum.recentActivityScore)} of 25 momentum points from ${recentText}.`,
-      consistency: consistencyMessage,
-      weeklyProgress:
-        weeklyPct == null
-          ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points. Add weekly or daily time goals to give this driver more signal.`
-          : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
-      liveBonus:
-        momentum.runningTaskCount > 0
-          ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 10 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`
-          : "Live Bonus contributed 0 of 10 momentum points because no task is currently running.",
-    } satisfies Record<DashboardMomentumDriverKey, string>;
-  }
-
-  function buildMomentumSummaryMessage(momentum: MomentumSnapshot) {
-    const roundedScore = Math.round(momentum.score);
-    const bandLabel = getMomentumBandLabel(roundedScore);
-    const activityDays = momentum.activeDayCount;
-    const loggedThisWeek = formatDashboardDurationShort(momentum.currentWeekLoggedMs);
-    return `Momentum is ${bandLabel.toLowerCase()} at ${roundedScore}/100, driven by ${activityDays} active day${activityDays === 1 ? "" : "s"} this week and ${loggedThisWeek} logged so far.`;
   }
 
   function renderMomentumFooterMessage(targetEl: HTMLElement | null, message: string) {
@@ -982,7 +1002,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         };
       });
       const totalProgress = safeItems.reduce((sum, item) => sum + item.progress, 0);
-      const totalGoalMinutes = safeItems.reduce((sum, item) => sum + item.goalMinutes, 0);
+      const totalSliceWeightUnits = safeItems.reduce((sum, item) => sum + (item.goalMinutes > 0 ? item.goalMinutes : 1), 0);
       ticksEl.classList.toggle("isEmpty", totalCount <= 0);
       ticksEl.classList.toggle("hasProgress", totalProgress > 0);
       svgEl.innerHTML = '<circle class="dashboardTasksCompletedTrack" cx="160" cy="160" r="88" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="160" y1="106" x2="160" y2="82"></line>';
@@ -999,9 +1019,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
       const labelWeightTotal = safeItems.length || 1;
       const weightedSlices = safeItems.map((item) => {
-        const sliceWeight = totalGoalMinutes > 0 ? item.goalMinutes / totalGoalMinutes : 1 / labelWeightTotal;
+        const sliceWeightUnits = item.goalMinutes > 0 ? item.goalMinutes : 1;
+        const sliceWeight = totalSliceWeightUnits > 0 ? sliceWeightUnits / totalSliceWeightUnits : 1 / labelWeightTotal;
+        const statusLabel =
+          item.goalMinutes > 0
+            ? item.complete
+              ? "Complete"
+              : item.progress > 0
+                ? `${Math.round(item.progress * 100)}% complete`
+                : "Not complete"
+            : item.complete
+              ? "Active today"
+              : "No activity yet";
         return {
           item,
+          statusLabel,
           sliceWeight,
           minSlicePct: item.goalMinutes > 0 ? DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT : 0,
           weightedSlicePct: sliceWeight * 100,
@@ -1016,9 +1048,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const minSliceTotal = weightedSlices.reduce((sum, entry) => sum + entry.minSlicePct, 0);
       const sliceEntries = (minSliceTotal >= usablePct && minSliceTotal > 0)
         ? weightedSlices.map((entry) => ({
-            item: entry.item,
-            slicePct: (entry.minSlicePct / minSliceTotal) * usablePct,
-          }))
+          item: entry.item,
+          statusLabel: entry.statusLabel,
+          slicePct: (entry.minSlicePct / minSliceTotal) * usablePct,
+        }))
         : (() => {
             const clampedEntries = weightedSlices.filter((entry) => entry.weightedSlicePct < entry.minSlicePct);
             const unclampedEntries = weightedSlices.filter((entry) => entry.weightedSlicePct >= entry.minSlicePct);
@@ -1027,16 +1060,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
             const remainingWeight = unclampedEntries.reduce((sum, entry) => sum + entry.sliceWeight, 0);
             return weightedSlices.map((entry) => {
               if (entry.weightedSlicePct < entry.minSlicePct) {
-                return { item: entry.item, slicePct: entry.minSlicePct };
+                return { item: entry.item, statusLabel: entry.statusLabel, slicePct: entry.minSlicePct };
               }
               const nextSlicePct = remainingWeight > 0 ? (entry.sliceWeight / remainingWeight) * remainingPct : 0;
-              return { item: entry.item, slicePct: nextSlicePct };
+              return { item: entry.item, statusLabel: entry.statusLabel, slicePct: nextSlicePct };
             });
           })();
       let runningOffset = sliceCount > 1 ? DASHBOARD_COMPLETED_SEGMENT_GAP_PCT / 2 : 0;
       let runningNeedlePct: number | null = null;
       let stoppedPartialNeedlePct: number | null = null;
-      sliceEntries.forEach(({ item, slicePct }) => {
+      sliceEntries.forEach(({ item, statusLabel, slicePct }) => {
         const segmentStartPct = runningOffset + slicePct / 2;
         const fillPctWithinSlice = Math.max(0, Math.min(1, item.progress)) * slicePct;
         const dash = item.progress > 0 ? `${fillPctWithinSlice} ${Math.max(0, 100 - fillPctWithinSlice)}` : "0 100";
@@ -1055,8 +1088,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const leftLabelMidRingOffset = 10;
         const labelX = isRightSide ? ringOuterX : ringOuterX - leftLabelMidRingOffset;
         const labelY = ringOuterY;
-        const statusLabel = item.complete ? "Complete" : item.progress > 0 ? `${Math.round(item.progress * 100)}% complete` : "Not complete";
-
         const trackSegmentEl = document.createElementNS(svgNs, "circle");
         trackSegmentEl.setAttribute("class", "dashboardTasksCompletedTrackSegment");
         trackSegmentEl.setAttribute("cx", "160");
@@ -1121,14 +1152,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         .filter((minutes): minutes is number => minutes != null);
       return todayEntries.length ? Math.min(...todayEntries) : Number.POSITIVE_INFINITY;
     };
-    const goalTasks = getDashboardFilteredTasks()
+    const dueTasks = getDashboardFilteredTasks()
       .filter((task) => {
         if (!task) return false;
-        if (!task.timeGoalEnabled) return false;
-        const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
-        if (goalMinutes <= 0) return false;
         if (!isTaskDueToday(task, nowValue)) return false;
-        return task.timeGoalPeriod === "day";
+        return true;
       })
       .sort((a, b) => {
         const aStart = getTodayScheduledStartMinutes(a);
@@ -1141,11 +1169,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       });
 
     const dailyTaskGoalMinutes = new Map<string, number>();
-    goalTasks.forEach((task) => {
+    dueTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return;
-      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
-      if (task.timeGoalPeriod === "day") dailyTaskGoalMinutes.set(taskId, goalMinutes);
+      const goalMinutes =
+        task.timeGoalEnabled && task.timeGoalPeriod === "day" ? Math.max(0, Number(task.timeGoalMinutes || 0)) : 0;
+      dailyTaskGoalMinutes.set(taskId, goalMinutes);
     });
 
     const dailyLoggedMsByTask = new Map<string, number>();
@@ -1153,7 +1182,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const dailyProgressByTask = new Map<string, number>();
     const dailyLiveProgressByTask = new Map<string, number>();
 
-    goalTasks.forEach((task) => {
+    dueTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
@@ -1162,7 +1191,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue) return;
         if (!Number.isFinite(ms) || ms <= 0) return;
-        if (!dailyTaskGoalMinutes.has(taskId)) return;
         if (localDayKey(ts) !== todayKey) return;
         dailyLoggedMsByTask.set(taskId, (dailyLoggedMsByTask.get(taskId) || 0) + ms);
       });
@@ -1172,30 +1200,37 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
 
     let todayCompletedTasks = 0;
-    dailyLoggedMsByTask.forEach((loggedMs, taskId) => {
+    dueTasks.forEach((task) => {
+      const taskId = String(task.id || "").trim();
       const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
-      if (!(goalMinutes > 0)) return;
-      const progress = Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000)));
+      const loggedMs = dailyLoggedMsByTask.get(taskId) || 0;
+      const liveMs = dailyLiveMsByTask.get(taskId) || 0;
+      const progress =
+        goalMinutes > 0
+          ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000)))
+          : loggedMs > 0 || liveMs > 0
+            ? 1
+            : 0;
       dailyProgressByTask.set(taskId, progress);
       if (progress >= 1) todayCompletedTasks += 1;
     });
-    goalTasks.forEach((task) => {
+    dueTasks.forEach((task) => {
       const taskId = String(task.id || "").trim();
       const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
-      if (!taskId || !(goalMinutes > 0) || dailyProgressByTask.has(taskId)) return;
-      dailyProgressByTask.set(taskId, 0);
-    });
-    goalTasks.forEach((task) => {
-      const taskId = String(task.id || "").trim();
-      const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
-      if (!taskId || !(goalMinutes > 0)) return;
+      if (!taskId) return;
       const loggedMs = dailyLoggedMsByTask.get(taskId) || 0;
       const liveMs = dailyLiveMsByTask.get(taskId) || 0;
-      dailyLiveProgressByTask.set(taskId, Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))));
+      const liveProgress =
+        goalMinutes > 0
+          ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000)))
+          : loggedMs > 0 || liveMs > 0
+            ? 1
+            : 0;
+      dailyLiveProgressByTask.set(taskId, liveProgress);
     });
 
     const totalCompleted = todayCompletedTasks;
-    const totalPossible = dailyTaskGoalMinutes.size;
+    const totalPossible = dueTasks.length;
     const hasData = totalCompleted > 0 || totalPossible > 0;
     if (hasData) {
       if (shouldHoldDashboardWidget("tasksCompleted", true)) return;
@@ -1206,7 +1241,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderCompletionRatio(
       totalCompleted,
       totalPossible,
-      goalTasks.map((task) => {
+      dueTasks.map((task) => {
         const taskId = String(task.id || "").trim();
         return {
           name: String(task.name || "Task"),

@@ -33,7 +33,7 @@ export default function EditTaskOverlay() {
                 Recurring
               </button>
               <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
-                Once-off
+                Once-Off
               </button>
             </div>
 
@@ -124,10 +124,6 @@ export default function EditTaskOverlay() {
                   </div>
                 </div>
                 <div className="editPlannedStartCheckboxRow">
-                  <label className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow" id="editPlannedStartOpenEndedRow" htmlFor="editPlannedStartOpenEnded">
-                    <input id="editPlannedStartOpenEnded" type="checkbox" />
-                    <span>Flexible</span>
-                  </label>
                   <label
                     className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
                     id="editPlannedStartPushRemindersRow"

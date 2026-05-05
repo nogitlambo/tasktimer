@@ -128,7 +128,6 @@ export type TaskTimerMutableState = {
   addTaskType: "recurring" | "once-off";
   addTaskOnceOffDay: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
   addTaskPlannedStartTime: string;
-  addTaskPlannedStartOpenEnded: boolean;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";
   addTaskDurationPeriod: "day" | "week";

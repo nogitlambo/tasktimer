@@ -110,7 +110,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskType: "recurring",
     addTaskOnceOffDay: "mon",
     addTaskPlannedStartTime: "09:00",
-    addTaskPlannedStartOpenEnded: false,
     addTaskDurationValue: 5,
     addTaskDurationUnit: "hour",
     addTaskDurationPeriod: "day",
