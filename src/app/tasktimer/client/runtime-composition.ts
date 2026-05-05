@@ -23,7 +23,8 @@ export function createTaskTimerRuntimeComposition(
   } = createTaskTimerRootBootstrap(initialAppPage, storageKey);
   const runtime = (factories.createRuntime ?? createTaskTimerRuntime)();
   const workspaceRepository = (factories.createWorkspaceRepository ?? createTaskTimerWorkspaceRepository)();
-  const cloudPreferencesCache = workspaceRepository.loadCachedPreferences();
+  const workspaceSnapshot = workspaceRepository.loadWorkspaceSnapshot();
+  const cloudPreferencesCache = workspaceSnapshot.preferences;
 
   const cloudSyncState = createTaskTimerMutableStore({
     cloudRefreshInFlight: initialState.cloudRefreshInFlight,
@@ -180,8 +181,8 @@ export function createTaskTimerRuntimeComposition(
   });
   const cacheRuntimeState = createTaskTimerMutableStore({
     cloudPreferencesCache,
-    cloudDashboardCache: workspaceRepository.loadCachedDashboard(),
-    cloudTaskUiCache: workspaceRepository.loadCachedTaskUi(),
+    cloudDashboardCache: workspaceSnapshot.dashboard,
+    cloudTaskUiCache: workspaceSnapshot.taskUi,
     navStackMemory: initialState.navStackMemory,
     pendingTaskJumpMemory: initialState.pendingTaskJumpMemory,
     exportTaskIndex: initialState.exportTaskIndex,

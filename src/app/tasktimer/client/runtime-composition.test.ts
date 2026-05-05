@@ -10,6 +10,17 @@ const createRuntimeStub = createTaskTimerRuntime;
 function createWorkspaceRepositoryStub(overrides: Partial<TaskTimerWorkspaceRepository> = {}): TaskTimerWorkspaceRepository {
   return {
     buildDefaultPreferences: () => ({ rewards: DEFAULT_REWARD_PROGRESS }),
+    loadWorkspaceSnapshot: vi.fn(() => ({
+      tasks: [],
+      historyByTaskId: {},
+      cleanedHistoryByTaskId: {},
+      historyWasCleaned: false,
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    })),
     loadTasks: vi.fn(),
     saveTasks: vi.fn(),
     loadHistory: vi.fn(),
@@ -77,7 +88,7 @@ describe("createTaskTimerRuntimeComposition", () => {
     });
   });
 
-  it("hydrates cache-backed stores through the workspace repository adapter", () => {
+  it("hydrates cache-backed stores through the workspace snapshot adapter", () => {
     const cachedPreferences = {
       schemaVersion: 1,
       theme: "lime",
@@ -103,9 +114,17 @@ describe("createTaskTimerRuntimeComposition", () => {
       pinnedHistoryTaskIds: ["task-1"],
     } satisfies TaskUiConfig;
     const workspaceRepository = createWorkspaceRepositoryStub({
-      loadCachedPreferences: vi.fn(() => cachedPreferences),
-      loadCachedDashboard: vi.fn(() => cachedDashboard),
-      loadCachedTaskUi: vi.fn(() => cachedTaskUi),
+      loadWorkspaceSnapshot: vi.fn(() => ({
+        tasks: [],
+        historyByTaskId: {},
+        cleanedHistoryByTaskId: {},
+        historyWasCleaned: false,
+        liveSessionsByTaskId: {},
+        deletedTaskMeta: {},
+        preferences: cachedPreferences,
+        dashboard: cachedDashboard,
+        taskUi: cachedTaskUi,
+      })),
     });
 
     const composition = createTaskTimerRuntimeComposition("tasks", "taskticker_tasks_v1", {
@@ -113,9 +132,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       createWorkspaceRepository: () => workspaceRepository,
     });
 
-    expect(workspaceRepository.loadCachedPreferences).toHaveBeenCalledTimes(1);
-    expect(workspaceRepository.loadCachedDashboard).toHaveBeenCalledTimes(1);
-    expect(workspaceRepository.loadCachedTaskUi).toHaveBeenCalledTimes(1);
+    expect(workspaceRepository.loadWorkspaceSnapshot).toHaveBeenCalledTimes(1);
     expect(composition.stores.cacheRuntimeState.get("cloudPreferencesCache")).toBe(cachedPreferences);
     expect(composition.stores.cacheRuntimeState.get("cloudDashboardCache")).toBe(cachedDashboard);
     expect(composition.stores.cacheRuntimeState.get("cloudTaskUiCache")).toBe(cachedTaskUi);
