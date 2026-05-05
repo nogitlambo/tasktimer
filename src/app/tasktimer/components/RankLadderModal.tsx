@@ -73,7 +73,6 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                     className="rankLadderItemBadgeShell"
                     imageClassName="rankLadderItemBadgeImage"
                     placeholderClassName="rankLadderItemBadgePlaceholder"
-                    forcePlaceholder
                     alt=""
                     size={34}
                     aria-hidden

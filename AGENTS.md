@@ -1,5 +1,19 @@
 ﻿# AGENTS.md
 
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in this repo's GitHub Issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The canonical triage labels map directly to this repo's GitHub labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `docs/agents/domain.md`.
+
 ## Project
 - App: Next.js (App Router) TaskTimer app
 - Main route: `/tasklaunch`

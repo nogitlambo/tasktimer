@@ -15,6 +15,7 @@ type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
   children: ReactNode;
   useClientNavButtons?: boolean;
+  mobileToolbar?: ReactNode;
   currentRankId: string;
   currentUserAvatarSrc?: string;
   currentUserAvatarInitials?: string;
@@ -31,6 +32,7 @@ export default function TaskTimerAppFrame({
   activePage,
   children,
   useClientNavButtons = activePage !== "history",
+  mobileToolbar = null,
   currentRankId,
   currentUserAvatarSrc = "",
   currentUserAvatarInitials = "U",
@@ -169,6 +171,7 @@ export default function TaskTimerAppFrame({
             </a>
           </div>
         </div>
+        {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showMobileFooter={false} />

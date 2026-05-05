@@ -94,7 +94,8 @@
   align-items:flex-start;
   justify-content:space-between;
   gap:12px;
-  margin-bottom:12px;
+  padding:4px 0;
+  margin-bottom:1px;
 }
 .dashboardTitleWrap{
   flex:1 1 auto;
@@ -1435,8 +1436,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-  padding: 0;
-  margin-bottom: 18px;
+  padding: 4px 0;
+  margin-top: 4px;
+  margin-bottom: 1px;
   align-items: flex-start;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
@@ -6843,7 +6845,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     gap: 12px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    padding: 0;
+    padding: 4px 0;
+    margin-top: 4px;
+    margin-bottom: 1px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
     grid-template-columns: 1fr;

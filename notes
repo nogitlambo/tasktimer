@@ -1,0 +1,47 @@
+## Change Recent Activity Scoring in Momentum Panel
+
+### Summary
+Update the Momentum dashboard panel so `Recent Activity` is no longer based on recent logged minutes. Instead, it should score **daily presence** across the last 3 days, where a day only qualifies if it contains at least one session of **5 minutes or more**.
+
+The 3-day window stays in place. The recency emphasis also stays in place conceptually, but it applies to **day presence** rather than duration:
+- Today weight: `1.0`
+- Yesterday weight: `0.65`
+- Two days ago weight: `0.35`
+
+Recent Activity should still contribute **0–25 points**, and it should reach the full 25 points when all 3 days qualify.
+
+### Key Changes
+- In `src/app/tasktimer/lib/momentum.ts`, replace the current Recent Activity calculation:
+  - Remove the weighted-minutes formula and the 120-minute cap logic.
+  - Keep collecting the last 3 local days, but track **presence flags** per day instead of only accumulated milliseconds for scoring.
+  - A day counts as active for Recent Activity only if that day contains at least one history or running-session contribution of **>= 5 minutes**.
+  - Compute a weighted presence total from the 3 days using `1.0 / 0.65 / 0.35`.
+  - Normalize that weighted total against the maximum possible weighted presence (`1.0 + 0.65 + 0.35 = 2.0`) to produce a 0–25 Recent Activity score.
+- Keep the rest of the Momentum formula unchanged:
+  - `consistencyScore`, `weeklyProgressScore`, `activeSessionBonus`, overall `score`, band labels, and multiplier thresholds stay as-is.
+- Keep the existing `MomentumSnapshot` shape unless implementation requires an internal helper value only. Do not change public interfaces unless strictly necessary.
+- Update dashboard messaging in `src/app/tasktimer/client/dashboard-render.ts` so the Recent Activity explainer reflects the new logic:
+  - It should describe qualifying recent days, not recent logged time.
+  - It should mention the 5-minute minimum and the 3-day recency weighting.
+- If any reward-multiplier paths depend on `computeMomentumSnapshot`, they should inherit the new Recent Activity behavior automatically. No separate scoring fork should be introduced.
+
+### Test Plan
+- Add or update unit tests around `computeMomentumSnapshot` for:
+  - No recent qualifying sessions -> `recentActivityScore = 0`
+  - Only today has one qualifying session >= 5 min -> partial score from today weight only
+  - Today plus yesterday qualify -> score reflects `1.0 + 0.65`
+  - All 3 days qualify -> full 25 points
+  - Sessions under 5 minutes do not count toward Recent Activity
+  - Multiple sessions in the same qualifying day do not increase Recent Activity beyond that day’s single presence contribution
+  - A running session counts only if its effective contribution for the day reaches 5 minutes
+- Verify dashboard copy/output:
+  - Recent Activity message no longer references recent duration
+  - It correctly references qualifying recent days and the 5-minute threshold
+- Regression-check overall momentum output:
+  - Other drivers remain unchanged for the same input set
+  - Overall band/multiplier behavior only changes insofar as Recent Activity now uses presence scoring
+
+### Assumptions
+- “Session” means the same recorded history/live-session units already used by `computeMomentumSnapshot`; no new session model is introduced.
+- The 5-minute threshold applies per day-presence qualification, not per aggregate multi-session daily total, unless implementation discovers the existing data model only supports safe aggregation at day level. If that happens, use **same-day accumulated qualifying time >= 5 minutes** as the fallback and keep that decision local to implementation notes/tests.
+- No UI layout changes are needed; this is a scoring-and-copy change only.

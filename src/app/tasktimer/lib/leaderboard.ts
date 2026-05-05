@@ -24,7 +24,7 @@ import {
 } from "./accountProfileStorage";
 import { AVATAR_CATALOG } from "./avatarCatalog";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
-import { getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
+import { getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
 
 export const LEADERBOARD_PROFILE_UPDATED_EVENT = "tasktimer:leaderboardProfileUpdated";
@@ -123,6 +123,8 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
   if (!uid) return null;
   const username = normalizeString(raw.username, 64);
   const displayLabel = username || "User";
+  const rewardTotalXp = normalizeInt(raw.rewardTotalXp);
+  const rewardCurrentRankId = getRankForXp(rewardTotalXp).id;
   return {
     uid,
     username,
@@ -131,8 +133,8 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
     avatarCustomSrc: normalizeString(raw.avatarCustomSrc, 900_000),
     googlePhotoUrl: normalizeString(raw.googlePhotoUrl, 2_000),
     rankThumbnailSrc: normalizeString(raw.rankThumbnailSrc, 900_000),
-    rewardCurrentRankId: normalizeString(raw.rewardCurrentRankId, 120),
-    rewardTotalXp: normalizeInt(raw.rewardTotalXp),
+    rewardCurrentRankId,
+    rewardTotalXp,
     streakDays: normalizeInt(raw.streakDays),
     totalFocusMs: normalizeInt(raw.totalFocusMs),
     weeklyXpGain: normalizeInt(raw.weeklyXpGain),

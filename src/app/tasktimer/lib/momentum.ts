@@ -31,6 +31,8 @@ const MOMENTUM_THRESHOLDS = {
   strong: 50,
   surging: 75,
 } as const;
+const RECENT_ACTIVITY_DAY_WEIGHTS: readonly [number, number, number] = [1, 0.65, 0.35];
+const RECENT_ACTIVITY_MIN_SESSION_MS = 5 * 60 * 1000;
 
 function clampMomentumScore(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -62,6 +64,7 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
 
   const historyByTaskId = ctx.historyByTaskId || {};
   const recentDaysMs: [number, number, number] = [0, 0, 0];
+  const recentDayQualified: [boolean, boolean, boolean] = [false, false, false];
   const activeDayKeys = new Set<string>();
   let currentWeekLoggedMs = 0;
   let currentWeekGoalMs = 0;
@@ -90,7 +93,10 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
       if (ts >= currentWeekStartMs && ts <= nowValue) currentWeekLoggedMs += ms;
 
       const dayOffset = Math.floor((todayStartMs - new Date(localDayKey(ts) + "T00:00:00").getTime()) / dayLengthMs);
-      if (dayOffset >= 0 && dayOffset < 3) recentDaysMs[dayOffset] += ms;
+      if (dayOffset >= 0 && dayOffset < 3) {
+        recentDaysMs[dayOffset] += ms;
+        if (ms >= RECENT_ACTIVITY_MIN_SESSION_MS) recentDayQualified[dayOffset] = true;
+      }
 
       if (ts >= todayStartMs - 6 * dayLengthMs && ts <= nowValue) activeDayKeys.add(localDayKey(ts));
     });
@@ -101,12 +107,22 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
     const startMs = Math.max(0, Math.floor(Number(task.startMs || 0) || 0));
     const runStart = Math.max(startMs, currentWeekStartMs);
     if (runStart < nowValue) currentWeekLoggedMs += nowValue - runStart;
-    recentDaysMs[0] += Math.max(0, nowValue - Math.max(startMs, todayStartMs));
+    for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {
+      const dayStartMs = todayStartMs - dayOffset * dayLengthMs;
+      const dayEndMs = dayStartMs + dayLengthMs;
+      const overlapMs = Math.max(0, Math.min(nowValue, dayEndMs) - Math.max(startMs, dayStartMs));
+      if (overlapMs <= 0) continue;
+      recentDaysMs[dayOffset as 0 | 1 | 2] += overlapMs;
+      if (overlapMs >= RECENT_ACTIVITY_MIN_SESSION_MS) recentDayQualified[dayOffset as 0 | 1 | 2] = true;
+    }
     activeDayKeys.add(localDayKey(nowValue));
   });
 
-  const recentWeightedMs = recentDaysMs[0] * 1 + recentDaysMs[1] * 0.65 + recentDaysMs[2] * 0.35;
-  const recentActivityScore = Math.max(0, Math.min(25, (recentWeightedMs / (120 * 60000)) * 25));
+  const recentPresenceWeight = recentDayQualified.reduce((sum, qualified, index) => {
+    return sum + (qualified ? RECENT_ACTIVITY_DAY_WEIGHTS[index] : 0);
+  }, 0);
+  const maxRecentPresenceWeight = RECENT_ACTIVITY_DAY_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
+  const recentActivityScore = Math.max(0, Math.min(25, (recentPresenceWeight / maxRecentPresenceWeight) * 25));
 
   const qualifyingDayKeys = Array.from(activeDayKeys).sort();
   let trailingStreak = 0;
@@ -126,7 +142,7 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
 
   const score = clampMomentumScore(recentActivityScore + consistencyScore + weeklyProgressScore + activeSessionBonus);
   const hasSignal =
-    recentWeightedMs > 0 || activeDayKeys.size > 0 || currentWeekLoggedMs > 0 || currentWeekGoalMs > 0 || runningTaskCount > 0;
+    recentPresenceWeight > 0 || activeDayKeys.size > 0 || currentWeekLoggedMs > 0 || currentWeekGoalMs > 0 || runningTaskCount > 0;
 
   return {
     score,

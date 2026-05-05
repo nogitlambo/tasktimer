@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
@@ -26,9 +26,11 @@ import { ACCOUNT_AVATAR_UPDATED_EVENT } from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  buildLeaderboardMetricsSnapshot,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   loadLeaderboardScreenData,
+  saveLeaderboardProfile,
   type LeaderboardProfile,
   type LeaderboardScreenData,
 } from "./lib/leaderboard";
@@ -113,6 +115,7 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [dismissedHighlightParam, setDismissedHighlightParam] = useState<string | null>(null);
   const [leaderboardState, setLeaderboardState] = useState<LeaderboardLoadState>(() =>
@@ -126,6 +129,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 980px)");
+    const sync = () => setIsMobileViewport(media.matches);
+    sync();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", sync);
+      return () => media.removeEventListener("change", sync);
+    }
+    media.addListener(sync);
+    return () => media.removeListener(sync);
+  }, []);
 
   useEffect(() => {
     void bootstrapFirebaseWebAppCheck();
@@ -179,6 +195,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setLeaderboardState("loading");
       setLeaderboardError(null);
       try {
+        const cachedPreferences = workspaceRepository.loadCachedPreferences();
+        await saveLeaderboardProfile(
+          uid,
+          buildLeaderboardMetricsSnapshot({
+            historyByTaskId: workspaceRepository.loadHistory(),
+            liveSessionsByTaskId: workspaceRepository.loadLiveSessions(),
+            rewards: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
+          })
+        ).catch(() => {});
         const nextData = await loadLeaderboardScreenData(uid);
         if (cancelled || activeUid !== uid) return;
         setLeaderboardData(nextData);
@@ -247,10 +272,63 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(null);
   };
 
+  const mobileToolbar: ReactNode = useMemo(() => {
+    if (!isMobileViewport) return null;
+    if (initialPage === "tasks" || initialPage === "schedule") {
+      return (
+        <div className="taskLaunchMobileToolbarInner taskLaunchMobileToolbarTasks" aria-label="Tasks controls">
+          <div className="taskPageHeaderActions">
+            <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
+              <button className="iconBtn taskScreenPill taskScreenHeaderBtn isOn" id="closeScheduleBtn" data-screen-pill="tasks" aria-current="page" aria-label="Tasks" title="Tasks" role="tab" type="button">
+                <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
+                <span className="taskScreenTabLabel">Tasks</span>
+              </button>
+              <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openScheduleBtn" data-screen-pill="schedule" aria-label="Schedule" title="Schedule" role="tab" type="button">
+                <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                  <path d="M3.5 9.5h17" />
+                  <path d="M8 3.75v3.5" />
+                  <path d="M16 3.75v3.5" />
+                  <path d="M8 13h3" />
+                  <path d="M13 13h3" />
+                  <path d="M8 17h3" />
+                </svg>
+                <span className="taskScreenTabLabel">Schedule</span>
+              </button>
+            </div>
+            <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="New Task" title="New Task" type="button">
+              <span className="taskScreenHeaderBtnText">+ New Task</span>
+            </button>
+            <div className="tasksModeControlGroup" aria-label="Task ordering controls">
+              <details className="tasksModeMenu" id="taskOrderByMenu">
+                <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
+                  <span id="taskOrderByValue" className="sr-only">Custom</span>
+                  <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 6.5h16" />
+                    <path d="M7.5 12h9" />
+                    <path d="M10.5 17.5h3" />
+                  </svg>
+                </summary>
+                <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
+                  <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
+                  <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">A-Z</button>
+                  <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">Schedule/Time</button>
+                  <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">Custom</button>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }, [initialPage, isMobileViewport]);
+
   return (
     <>
       <TaskTimerAppFrame
         activePage={initialPage}
+        mobileToolbar={mobileToolbar}
         currentRankId={rewardProgress.currentRankId}
         currentUserAvatarSrc={currentUserAvatarSrc}
         currentUserAvatarInitials={currentUserAvatarInitials}
@@ -258,6 +336,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       >
         <div className="appPages">
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
+            {!isMobileViewport ? (
             <div className="dashboardTopRow">
               <div className="taskPageHeaderActions">
                 <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
@@ -330,6 +409,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </div>
               </div>
             </div>
+            ) : null}
             <section className="modeView modeViewOn" id="mode1View" aria-label="Tasks view">
               <div className="list" id="taskList" />
               <HistoryScreen />

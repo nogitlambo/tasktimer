@@ -148,6 +148,7 @@ export const RANK_LADDER: RankDefinition[] = [
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
+  initiate: "/insignias/initiate.png",
   specialist: "/insignias/specialist.png?v=20260402",
   strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",
@@ -159,6 +160,7 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
 export const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
 
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
+  initiate: "/insignias/initiate.png",
   specialist: "/insignias/specialist.png?v=20260402",
   strategist: "/insignias/strategist.png",
   director: "/insignias/director.png",

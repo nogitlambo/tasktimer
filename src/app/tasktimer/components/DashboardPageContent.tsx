@@ -12,9 +12,10 @@ const dashboardPanelOptions = [
 
 type DashboardPageContentProps = {
   active: boolean;
+  showTopRow?: boolean;
 };
 
-export default function DashboardPageContent({ active }: DashboardPageContentProps) {
+export default function DashboardPageContent({ active, showTopRow = true }: DashboardPageContentProps) {
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
@@ -26,31 +27,33 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
                 id="dashboardShellContent"
               >
-                <div className="dashboardTopRow">
-                  <div className="dashboardEditActions">
-                    <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
-                      <AppImg className="dashboardRefreshIcon" src="/icons/icons_default/refresh.png" alt="" aria-hidden="true" />
-                    </button>
-                    <button
-                      className="btn btn-ghost small dashboardPanelMenuBtn"
-                      id="dashboardPanelMenuBtn"
-                      type="button"
-                      aria-label="Customize dashboard panels"
-                      aria-expanded="false"
-                    >
-                      <span className="dashboardPanelMenuIcon" aria-hidden="true" />
-                    </button>
-                    <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
-                      &#9998;
-                    </button>
-                    <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
-                      Cancel
-                    </button>
-                    <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
-                      Done
-                    </button>
+                {showTopRow ? (
+                  <div className="dashboardTopRow">
+                    <div className="dashboardEditActions">
+                      <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
+                        <AppImg className="dashboardRefreshIcon" src="/icons/icons_default/refresh.png" alt="" aria-hidden="true" />
+                      </button>
+                      <button
+                        className="btn btn-ghost small dashboardPanelMenuBtn"
+                        id="dashboardPanelMenuBtn"
+                        type="button"
+                        aria-label="Customize dashboard panels"
+                        aria-expanded="false"
+                      >
+                        <span className="dashboardPanelMenuIcon" aria-hidden="true" />
+                      </button>
+                      <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
+                        &#9998;
+                      </button>
+                      <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
+                        Cancel
+                      </button>
+                      <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
+                        Done
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="dashboardGrid">
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" data-dashboard-label="Today" aria-label="Today's logged time">

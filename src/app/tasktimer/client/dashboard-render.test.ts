@@ -224,4 +224,29 @@ describe("momentum summary copy", () => {
     expect(buildMomentumSummaryMessage(momentum)).toContain("Weekly Progress contributed 20 of 20 momentum points");
     expect(buildMomentumSummaryMessage(momentum)).not.toContain("driven by 3 active days this week");
   });
+
+  it("describes recent activity using qualifying days instead of duration", () => {
+    const momentum: MomentumSnapshot = {
+      score: 25,
+      bandLabel: "Building",
+      multiplier: 1.2,
+      hasSignal: true,
+      recentActivityScore: 13,
+      consistencyScore: 0,
+      weeklyProgressScore: 0,
+      activeSessionBonus: 0,
+      currentWeekLoggedMs: 5 * 60 * 1000,
+      currentWeekGoalMs: 0,
+      runningTaskCount: 0,
+      activeDayCount: 1,
+      trailingStreak: 1,
+      recentDaysMs: [5 * 60 * 1000, 0, 0],
+    };
+
+    const message = buildMomentumSummaryMessage(momentum);
+    expect(message).toContain("Recent Activity contributed 13 of 25 momentum points from today");
+    expect(message).toContain("3-day weighted presence model");
+    expect(message).toContain("5-minute minimum session threshold");
+    expect(message).not.toContain("5m today, 0m yesterday");
+  });
 });

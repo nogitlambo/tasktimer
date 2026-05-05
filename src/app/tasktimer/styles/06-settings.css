@@ -2118,7 +2118,7 @@ body[data-theme="purple"] .historyMeta{
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
-  gap:8px;
+  gap:0;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemTitleRow,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemTitleRow{
@@ -2150,7 +2150,7 @@ body[data-theme="purple"] .historyMeta{
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemMeta,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemMeta{
-  margin-top:auto;
+  margin-top:0;
   color:rgba(226,232,240,0.82);
   font-size:11px;
   white-space:nowrap;

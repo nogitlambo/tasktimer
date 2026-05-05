@@ -2,7 +2,7 @@
 import AppImg from "../../../components/AppImg";
 import { COMPLETION_DIFFICULTY_OPTIONS } from "../lib/completionDifficulty";
 
-export default function HistoryManagerScreen() {
+export default function HistoryManagerScreen({ showHeader = true }: { showHeader?: boolean }) {
   return (
     <>
       <section id="historyManagerScreen" aria-hidden="true">
@@ -15,20 +15,22 @@ export default function HistoryManagerScreen() {
             </div>
           </div>
         </div>
-        <div className="hmHead">
-          <div className="hmTitle">History Manager</div>
-          <div className="hmHeadActions">
-            <button className="btn btn-ghost small" id="historyManagerGenerateBtn" type="button">
-              Generate Test Data
-            </button>
-            <button className="btn btn-ghost small" id="historyManagerBulkBtn" type="button">
-              Bulk Edit
-            </button>
-            <button className="btn btn-warn small" id="historyManagerBulkDeleteBtn" type="button" style={{ display: "none" }}>
-              Delete
-            </button>
+        {showHeader ? (
+          <div className="hmHead">
+            <div className="hmTitle">History Manager</div>
+            <div className="hmHeadActions">
+              <button className="btn btn-ghost small" id="historyManagerGenerateBtn" type="button">
+                Generate Test Data
+              </button>
+              <button className="btn btn-ghost small" id="historyManagerBulkBtn" type="button">
+                Bulk Edit
+              </button>
+              <button className="btn btn-warn small" id="historyManagerBulkDeleteBtn" type="button" style={{ display: "none" }}>
+                Delete
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
         <div className="hmList" id="hmList" />
       </section>
 

@@ -1245,7 +1245,7 @@
     display: block;
     margin-top: 4px;
     padding-top: 8px;
-    border-top: 1px solid #282828;
+    border-top: 1px solid rgba(233, 246, 252, 0.16);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
