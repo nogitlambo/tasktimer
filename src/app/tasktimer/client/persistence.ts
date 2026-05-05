@@ -1,5 +1,5 @@
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
-import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
+import type { TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasks } from "./live-session-task-state";
@@ -14,7 +14,7 @@ type TaskUiCacheShape = {
 type CreateTaskTimerPersistenceOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
-    "cleanupHistory" | "loadHistory" | "loadLiveSessions" | "loadTasks" | "saveHistory" | "saveTasks"
+    "cleanupHistory" | "loadHistory" | "loadWorkspaceSnapshot" | "saveHistory" | "saveTasks"
   >;
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
@@ -82,19 +82,23 @@ type CreateTaskTimerPersistenceOptions = {
 };
 
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
-  function load() {
-    const loaded = options.workspaceRepository.loadTasks();
+  function applyTaskSnapshot(snapshot: Pick<TaskTimerWorkspaceSnapshot, "tasks" | "liveSessionsByTaskId">) {
+    const loaded = snapshot.tasks;
+    const liveSessionsByTaskId = snapshot.liveSessionsByTaskId;
+    options.setLiveSessionsByTaskId(liveSessionsByTaskId);
     if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
       options.setTasks([]);
       return;
     }
-    const liveSessionsByTaskId = options.workspaceRepository.loadLiveSessions();
     const migratedTasks = loaded.filter((task) => {
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
       return true;
     });
     options.setTasks(applyLiveSessionsToTasks(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now));
-    options.setLiveSessionsByTaskId(liveSessionsByTaskId);
+  }
+
+  function load() {
+    applyTaskSnapshot(options.workspaceRepository.loadWorkspaceSnapshot());
   }
 
   function save(opts?: PersistOptions) {
@@ -237,17 +241,22 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     return parts.join("||");
   }
 
-  function loadHistoryIntoMemory() {
-    const loadedHistory = options.workspaceRepository.loadHistory();
-    const cleanedHistory = options.workspaceRepository.cleanupHistory(loadedHistory);
-    options.setHistoryByTaskId(cleanedHistory);
-    if (historySignature(cleanedHistory) !== historySignature(loadedHistory)) {
-      options.workspaceRepository.saveHistory(cleanedHistory, { showIndicator: false });
+  function applyHistorySnapshot(
+    snapshot: Pick<TaskTimerWorkspaceSnapshot, "cleanedHistoryByTaskId" | "historyWasCleaned">
+  ) {
+    options.setHistoryByTaskId(snapshot.cleanedHistoryByTaskId);
+    if (snapshot.historyWasCleaned) {
+      options.workspaceRepository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
     }
   }
 
-  function loadLiveSessionsIntoMemory() {
-    options.setLiveSessionsByTaskId(options.workspaceRepository.loadLiveSessions());
+  function loadHistoryIntoMemory() {
+    const loadedHistory = options.workspaceRepository.loadHistory();
+    const cleanedHistory = options.workspaceRepository.cleanupHistory(loadedHistory);
+    applyHistorySnapshot({
+      cleanedHistoryByTaskId: cleanedHistory,
+      historyWasCleaned: historySignature(cleanedHistory) !== historySignature(loadedHistory),
+    });
   }
 
   function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
@@ -284,13 +293,13 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
     options.primeDashboardCacheFromShadow();
-    options.setDeletedTaskMeta(options.loadDeletedMeta());
-    loadHistoryIntoMemory();
-    loadLiveSessionsIntoMemory();
+    const workspaceSnapshot = options.workspaceRepository.loadWorkspaceSnapshot();
+    options.setDeletedTaskMeta(workspaceSnapshot.deletedTaskMeta);
+    applyHistorySnapshot(workspaceSnapshot);
+    applyTaskSnapshot(workspaceSnapshot);
     options.setFocusSessionNotesByTaskId(options.loadFocusSessionNotes());
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
-    load();
     options.loadAddTaskCustomNames();
     options.loadWeekStartingPreference();
     options.loadStartupModulePreference();

@@ -1,4 +1,4 @@
-import type { DeletedTaskMeta, HistoryByTaskId, LiveTaskSession, Task } from "./types";
+import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
 import type { UserPreferencesV1, DashboardConfig, TaskUiConfig } from "./cloudStore";
 import {
   appendHistoryEntry,
@@ -32,16 +32,70 @@ import {
   waitForPendingTaskSync,
 } from "./storage";
 
+export type TaskTimerWorkspaceSnapshot = {
+  tasks: Task[];
+  historyByTaskId: HistoryByTaskId;
+  cleanedHistoryByTaskId: HistoryByTaskId;
+  historyWasCleaned: boolean;
+  liveSessionsByTaskId: LiveSessionsByTaskId;
+  deletedTaskMeta: DeletedTaskMeta;
+  preferences: UserPreferencesV1 | null;
+  dashboard: DashboardConfig | null;
+  taskUi: TaskUiConfig | null;
+};
+
 export type TaskTimerWorkspaceRepository = ReturnType<typeof createTaskTimerWorkspaceRepository>;
+
+function historyRowsSignature(historyByTaskId: HistoryByTaskId) {
+  return Object.keys(historyByTaskId || {})
+    .sort()
+    .map((taskId) => {
+      const rows = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      const rowSig = rows
+        .map((entry) =>
+          [
+            Number(entry?.ts || 0),
+            Number(entry?.ms || 0),
+            String(entry?.name || ""),
+            String(entry?.note || ""),
+            String(entry?.completionDifficulty || ""),
+            String(entry?.sessionId || ""),
+          ].join("|")
+        )
+        .join(",");
+      return `${taskId}:${rowSig}`;
+    })
+    .join("||");
+}
+
+function buildWorkspaceSnapshot(): TaskTimerWorkspaceSnapshot {
+  const historyByTaskId = loadHistory();
+  const cleanedHistoryByTaskId = cleanupHistory(historyByTaskId);
+  return {
+    tasks: loadTasks() || [],
+    historyByTaskId,
+    cleanedHistoryByTaskId,
+    historyWasCleaned: historyRowsSignature(cleanedHistoryByTaskId) !== historyRowsSignature(historyByTaskId),
+    liveSessionsByTaskId: loadLiveSessions(),
+    deletedTaskMeta: loadDeletedMeta(),
+    preferences: loadCachedPreferences(),
+    dashboard: loadCachedDashboard(),
+    taskUi: loadCachedTaskUi(),
+  };
+}
 
 export function createTaskTimerWorkspaceRepository() {
   return {
     buildDefaultPreferences: () => buildDefaultCloudPreferences(),
+    loadWorkspaceSnapshot: () => buildWorkspaceSnapshot(),
     loadTasks: () => loadTasks(),
     saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[] }) => saveTasks(tasks, opts),
     loadHistory: () => loadHistory(),
     loadLiveSessions: () => loadLiveSessions(),
-    hydrateFromCloud: (opts?: { force?: boolean }) => hydrateStorageFromCloud(opts),
+    hydrateFromCloud: async (opts?: { force?: boolean }) => {
+      await hydrateStorageFromCloud(opts);
+      return buildWorkspaceSnapshot();
+    },
     hasPendingTaskOrHistorySync: () => hasPendingTaskOrHistorySync(),
     subscribeTaskCollection: (uid: string, listener: () => void) => subscribeCloudTaskCollection(uid, listener),
     subscribeTaskLiveSessions: (uid: string, taskIds: string[], listener: () => void) =>
