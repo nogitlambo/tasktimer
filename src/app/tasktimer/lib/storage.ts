@@ -33,7 +33,7 @@ import {
 } from "./entitlements";
 import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
-import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, rebuildRewardProgressFromHistory } from "./rewards";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, reconcileRewardProgressWithHistory } from "./rewards";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
@@ -727,7 +727,7 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
   return arr
     .map(
       (row) =>
-        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}`
+        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}|${String(row?.sessionId || "")}`
     )
     .join(",");
 }
@@ -757,10 +757,12 @@ function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const sessionId = (row as HistoryEntry).sessionId;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
+  if (typeof sessionId === "string" && sessionId.trim()) next.sessionId = sessionId.trim();
   return next;
 }
 
@@ -917,18 +919,19 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
         ? shadowPreferences
         : cloudPreferences || shadowPreferences || pendingPreferences || null;
   const weekStarting = loadStoredWeekStartingPreference();
-  const rebuiltRewards = rebuildRewardProgressFromHistory({
+  const reconciledRewards = reconcileRewardProgressWithHistory({
+    currentProgress: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
     historyByTaskId: cachedHistory || {},
     tasks: cachedTasks || [],
     weekStarting,
     momentumEntitled: hasTaskTimerEntitlement(snapshot.plan, "advancedInsights"),
   });
   const currentRewardsSignature = rewardProgressSignature(cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS);
-  const rebuiltRewardsSignature = rewardProgressSignature(rebuiltRewards);
-  if (currentRewardsSignature !== rebuiltRewardsSignature) {
+  const reconciledRewardsSignature = rewardProgressSignature(reconciledRewards);
+  if (currentRewardsSignature !== reconciledRewardsSignature) {
     cachedPreferences = {
       ...(cachedPreferences || buildDefaultCloudPreferences()),
-      rewards: rebuiltRewards,
+      rewards: reconciledRewards,
       updatedAtMs: Date.now(),
     };
     queuedPreferencesSyncSnapshot = cachedPreferences;

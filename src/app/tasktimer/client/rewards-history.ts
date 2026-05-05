@@ -3,7 +3,7 @@ import { awardCompletedSessionXp } from "../lib/rewards";
 import { computeMomentumSnapshot } from "../lib/momentum";
 import { localDayKey } from "../lib/history";
 import { nowMs } from "../lib/time";
-import type { LiveTaskSession, Task } from "../lib/types";
+import type { HistoryEntry, LiveTaskSession, Task } from "../lib/types";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 
@@ -348,15 +348,20 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     if (!taskId) return;
     const historyByTaskId = ctx.getHistoryByTaskId();
     const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
-    const normalizedEntry = {
+    const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
+    const normalizedEntry: HistoryEntry = {
       ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
       name: String(entry?.name || ""),
       ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
       ...(entry?.color != null && String(entry.color).trim() ? { color: String(entry.color).trim() } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
+      ...(sessionId ? { sessionId } : {}),
     };
     if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
+    if (normalizedEntry.sessionId && historyByTaskId[taskId]!.some((row) => row?.sessionId === normalizedEntry.sessionId)) {
+      return;
+    }
     historyByTaskId[taskId].push(normalizedEntry);
     ctx.appendHistoryEntry(taskId, normalizedEntry);
     ctx.saveHistoryLocally(historyByTaskId);
@@ -425,6 +430,8 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!task || !task.id || safeElapsedMs <= 0) return;
     const taskId = String(task.id || "");
+    const liveSession = ctx.getLiveSessionsByTaskId()[taskId];
+    const sessionId = typeof liveSession?.sessionId === "string" ? liveSession.sessionId.trim() : "";
     const liveNote = getCurrentSessionNoteForTask(taskId);
     const note = String(noteOverride || liveNote || "").trim();
     const completionDifficulty = normalizeCompletionDifficulty(completionDifficultyRaw);
@@ -435,6 +442,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ms: safeElapsedMs,
       color: ctx.sessionColorForTaskMs(task, safeElapsedMs),
       ...(note ? { note } : {}),
+      ...(sessionId ? { sessionId } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
     });
     ctx.clearFocusSessionDraft(taskId);

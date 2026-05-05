@@ -102,6 +102,9 @@ function createHarness(overrides: Partial<{ liveSessionsByTaskId: LiveSessionsBy
     tasks,
     getHistoryByTaskId: () => historyByTaskId,
     getLiveSessionsByTaskId: () => liveSessionsByTaskId,
+    setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => {
+      liveSessionsByTaskId = value;
+    },
     getRewardProgress: () => rewardProgress,
     getRewardSessionTrackersByTaskId: () => rewardSessionTrackersByTaskId,
   };
@@ -149,7 +152,7 @@ describe("task timer rewards history", () => {
 
     harness.api.finalizeLiveSession(harness.tasks[0]!);
 
-    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({ note: "live note" });
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({ note: "live note", sessionId: "session-1" });
     expect(harness.getLiveSessionsByTaskId()).toEqual({});
     expect(harness.getRewardSessionTrackersByTaskId()).toEqual({});
     expect(harness.calls).toContain("set-focus-draft:task-1:live note");
@@ -166,5 +169,30 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().totalXp).toBe(0);
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls).toContain("save-preferences:0");
+  });
+
+  it("deduplicates completed history for the same live session id", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const liveSession = {
+      sessionId: "session-1",
+      taskId: "task-1",
+      name: "Focus",
+      startedAtMs: Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      updatedAtMs: Date.now(),
+      status: "running" as const,
+    };
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      liveSessionsByTaskId: { "task-1": liveSession },
+    });
+
+    harness.api.appendCompletedSessionHistory(harness.tasks[0]!, Date.now(), MIN_REWARD_ELIGIBLE_SESSION_MS, undefined, 4);
+    harness.setLiveSessionsByTaskId({ "task-1": liveSession });
+    harness.api.appendCompletedSessionHistory(harness.tasks[0]!, Date.now(), MIN_REWARD_ELIGIBLE_SESSION_MS, undefined, 4);
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({ sessionId: "session-1" });
+    expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
   });
 });

@@ -56,6 +56,7 @@ export type HistoryEntry = {
   color?: string;
   note?: string;
   completionDifficulty?: CompletionDifficulty;
+  sessionId?: string;
 };
 
 export type HistoryByTaskId = Record<string, HistoryEntry[]>;

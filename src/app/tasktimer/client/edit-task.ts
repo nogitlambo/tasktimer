@@ -624,6 +624,42 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.editTaskColorTrigger?.setAttribute("aria-expanded", String(open));
   }
 
+  function getEditModalScrollBody(): HTMLElement | null {
+    return (els.editOverlay as HTMLElement | null)?.querySelector?.(".editTaskModalBody") as HTMLElement | null;
+  }
+
+  function scrollEditModalBodyToReveal(target: HTMLElement | null | undefined, options?: { align?: "top" | "bottom" }) {
+    if (!(target instanceof HTMLElement)) return;
+    const scrollBody = getEditModalScrollBody();
+    if (!(scrollBody instanceof HTMLElement)) return;
+    const align = options?.align === "top" ? "top" : "bottom";
+    const performScroll = () => {
+      if (!target.isConnected) return;
+      target.scrollIntoView({ behavior: "smooth", block: align === "top" ? "start" : "end", inline: "nearest" });
+      window.requestAnimationFrame(() => {
+        const bodyRect = scrollBody.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const padding = 16;
+        const targetTop = targetRect.top - bodyRect.top + scrollBody.scrollTop;
+        const targetBottom = targetRect.bottom - bodyRect.top + scrollBody.scrollTop;
+        const visibleTop = scrollBody.scrollTop;
+        const visibleBottom = visibleTop + scrollBody.clientHeight;
+        if (targetBottom + padding > visibleBottom) {
+          const nextTop = Math.max(0, targetBottom - scrollBody.clientHeight + padding);
+          scrollBody.scrollTo({ top: nextTop, behavior: "smooth" });
+          return;
+        }
+        if (targetTop - padding < visibleTop) {
+          scrollBody.scrollTo({ top: Math.max(0, targetTop - padding), behavior: "smooth" });
+        }
+      });
+    };
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(performScroll);
+    });
+    window.setTimeout(performScroll, 80);
+  }
+
   function cloneTaskForEdit(task: Task): Task {
     return {
       ...task,
@@ -665,7 +701,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         </button>
         <div class="pill msSkewField">${ctx.escapeHtmlUI(String(+m.hours || 0))}${sharedTasks.milestoneUnitSuffix(t)}</div>
         <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
-        <button type="button" title="Remove" data-action="rmMs">&times;</button>
+        <button type="button" class="iconBtn checkpointDeleteBtn" title="Remove checkpoint" aria-label="Remove checkpoint" data-action="rmMs">&times;</button>
       `;
 
       const bell = row.querySelector('[data-action="toggleMsAlert"]') as HTMLButtonElement | null;
@@ -1177,6 +1213,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.syncEditMilestoneSectionUi(t);
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
+      if (nextEnabled) scrollEditModalBodyToReveal((els.msArea as HTMLElement | null) || (els.editTaskDurationRow as HTMLElement | null), { align: "bottom" });
     };
     ctx.on(els.cancelEditBtn, "click", (e: any) => {
       e?.preventDefault?.();
@@ -1203,6 +1240,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditTaskColorPalette(t);
       syncEditSaveAvailability(t);
       setEditTaskColorPopoverOpen(false);
+    });
+    const editTaskAdvancedMenu = document.getElementById("editTaskAdvancedMenu") as HTMLDetailsElement | null;
+    ctx.on(editTaskAdvancedMenu, "toggle", () => {
+      if (!editTaskAdvancedMenu?.open) return;
+      scrollEditModalBodyToReveal(
+        (editTaskAdvancedMenu.querySelector(".editTaskAdvancedBody") as HTMLElement | null) || editTaskAdvancedMenu,
+        { align: "bottom" }
+      );
     });
     ctx.on(els.editTaskTypeRecurringBtn, "click", () => {
       const t = getCurrentEditTask();
@@ -1342,6 +1387,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
       ctx.maybeToggleEditPresetIntervals(!!nextEnabled);
       ctx.syncEditSaveAvailability(t);
+      if (nextEnabled) scrollEditModalBodyToReveal(els.editPresetIntervalField as HTMLElement | null, { align: "bottom" });
     });
     ctx.on(els.editPresetIntervalInput, "input", () => {
       const t = getCurrentEditTask();
@@ -1372,7 +1418,11 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         t.presetIntervalsEnabled = false;
         ctx.toggleSwitchElement(els.editPresetIntervalsToggle as HTMLElement | null, false);
         ctx.syncEditMilestoneSectionUi(t);
+        return;
       }
+      scrollEditModalBodyToReveal((els.addMsBtn as HTMLElement | null) || (els.msList?.parentElement as HTMLElement | null) || (els.editPresetIntervalsToggleRow as HTMLElement | null), {
+        align: "bottom",
+      });
     });
     ctx.on(els.addMsBtn, "click", () => {
       const t = getCurrentEditTask();

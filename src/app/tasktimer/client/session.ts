@@ -1,4 +1,4 @@
-import type { Task } from "../lib/types";
+import type { LiveTaskSession, Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
@@ -24,6 +24,57 @@ type CheckpointToast = {
   taskId: string | null;
   muteRepeatOnManualDismiss: boolean;
 };
+
+type DeferredTimeGoalModalEntry = { taskId: string; frozenElapsedMs: number; reminder: boolean };
+
+export function shouldKeepTimeGoalCompletionFlowForTask(
+  task: Task | null | undefined,
+  opts: {
+    elapsedMs: number;
+    liveSession?: LiveTaskSession | null;
+    getTaskTimeGoalAction?: (task: Task) => string;
+  }
+) {
+  if (!task || !task.running) return false;
+  const taskId = String(task.id || "").trim();
+  const liveSessionTaskId = String(opts.liveSession?.taskId || "").trim();
+  if (!taskId || liveSessionTaskId !== taskId) return false;
+  const timeGoalMinutes = Number(task.timeGoalMinutes || 0);
+  if (!(task.timeGoalEnabled && timeGoalMinutes > 0)) return false;
+  if ((opts.getTaskTimeGoalAction?.(task) || "confirmModal") !== "confirmModal") return false;
+  const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
+  return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
+}
+
+export function shiftValidDeferredTimeGoalModal(
+  queue: DeferredTimeGoalModalEntry[],
+  opts: {
+    tasks: Task[];
+    liveSessionsByTaskId: Record<string, LiveTaskSession | undefined | null>;
+    getTaskTimeGoalAction?: (task: Task) => string;
+  }
+): { nextPending: DeferredTimeGoalModalEntry | null; remainingQueue: DeferredTimeGoalModalEntry[] } {
+  const pendingQueue = Array.isArray(queue) ? queue : [];
+  for (let index = 0; index < pendingQueue.length; index += 1) {
+    const pending = pendingQueue[index];
+    const taskId = String(pending?.taskId || "").trim();
+    const task = opts.tasks.find((row) => String(row.id || "").trim() === taskId) || null;
+    const liveSession = taskId ? opts.liveSessionsByTaskId[taskId] || null : null;
+    if (
+      shouldKeepTimeGoalCompletionFlowForTask(task, {
+        elapsedMs: Math.max(0, Math.floor(Number(pending?.frozenElapsedMs || 0) || 0)),
+        liveSession,
+        getTaskTimeGoalAction: opts.getTaskTimeGoalAction,
+      })
+    ) {
+      return {
+        nextPending: pending,
+        remainingQueue: pendingQueue.slice(index + 1),
+      };
+    }
+  }
+  return { nextPending: null, remainingQueue: [] };
+}
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const { els, runtime } = ctx;
@@ -352,15 +403,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
-    if (!task || !task.running) return false;
-    const timeGoalMinutes = Number(task.timeGoalMinutes || 0);
-    if (!(task.timeGoalEnabled && timeGoalMinutes > 0)) return false;
-    if (getTaskTimeGoalAction(task) !== "confirmModal") return false;
+    if (!task) return false;
+    const taskId = String(task.id || "").trim();
     const elapsedMs =
       elapsedMsOverride != null && Number.isFinite(Number(elapsedMsOverride))
         ? Math.max(0, Math.floor(Number(elapsedMsOverride) || 0))
         : getTaskElapsedMs(task);
-    return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
+    return shouldKeepTimeGoalCompletionFlowForTask(task, {
+      elapsedMs,
+      liveSession: taskId ? ctx.getLiveSessionsByTaskId()[taskId] || null : null,
+      getTaskTimeGoalAction,
+    });
   }
 
   function getTimeGoalCompletionAwardXp(task: Task, elapsedMs: number) {
@@ -830,16 +883,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function openDeferredFocusModeTimeGoalModal() {
-    const queue = getDeferredQueue();
-    if (!queue.length) return;
-    const [nextPending, ...rest] = queue;
-    ctx.setDeferredFocusModeTimeGoalModals(rest);
+    const { nextPending, remainingQueue } = shiftValidDeferredTimeGoalModal(getDeferredQueue(), {
+      tasks: ctx.getTasks(),
+      liveSessionsByTaskId: ctx.getLiveSessionsByTaskId(),
+      getTaskTimeGoalAction,
+    });
+    ctx.setDeferredFocusModeTimeGoalModals(remainingQueue);
     if (!nextPending) return;
     const task = ctx.getTasks().find((row) => String(row.id || "").trim() === nextPending.taskId);
-    if (!task || !task.timeGoalEnabled || !(Number(task.timeGoalMinutes || 0) > 0)) {
-      openDeferredFocusModeTimeGoalModal();
-      return;
-    }
+    if (!task) return;
     openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
   }
 

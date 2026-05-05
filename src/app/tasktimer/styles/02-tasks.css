@@ -1491,18 +1491,11 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   z-index:16;
   isolation:isolate;
   padding:8px 0 10px;
-  background:#0d0f13;
+  background:transparent;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:-1px;
-  height:16px;
-  pointer-events:none;
-  background:linear-gradient(180deg, #0d0f13 0, rgba(13,15,19,.94) 50%, rgba(13,15,19,0) 100%);
+  content:none;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitleWrap{

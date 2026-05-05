@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import path from "node:path";
 import { google } from "googleapis";
@@ -8,35 +8,6 @@ const sourceApkPath = path.join(root, "android", "app", "build", "outputs", "apk
 const defaultServiceAccountPath = path.join(root, "tasktimer-prod-7ce230e31df3.json");
 const defaultDriveFolderId = "1WiAeikmzft6HgRCvpPIL-9q57chgCwbj";
 const uploadedFilename = "app-debug.apk";
-
-const userProfile = process.env.USERPROFILE || "";
-const driveBaseCandidates = [
-  process.env.ANDROID_APK_COPY_BASE_DIR || "",
-  process.env.GOOGLE_DRIVE_BASE_DIR || "",
-  "G:\\My Drive",
-  "G:\\Google Drive",
-  userProfile ? path.join(userProfile, "My Drive") : "",
-  userProfile ? path.join(userProfile, "Google Drive") : "",
-  userProfile ? path.join(userProfile, "Documents", "My Drive") : "",
-  userProfile ? path.join(userProfile, "Documents", "Google Drive") : "",
-].filter(Boolean);
-
-function unique(values) {
-  return [...new Set(values)];
-}
-
-function resolveCandidateDestDirs() {
-  const explicitDestDir = (process.env.ANDROID_APK_COPY_DIR || "").trim();
-  if (explicitDestDir) return [explicitDestDir];
-  return unique(driveBaseCandidates).map((baseDir) => path.join(baseDir, "Apps"));
-}
-
-async function copyToLocalDir(destDir) {
-  await mkdir(destDir, { recursive: true });
-  const destApkPath = path.join(destDir, uploadedFilename);
-  await copyFile(sourceApkPath, destApkPath);
-  console.log(`Copied APK to ${destApkPath}`);
-}
 
 async function loadServiceAccountCredentials() {
   const rawJson = (process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "").trim();
@@ -63,7 +34,7 @@ async function uploadToDriveFolder() {
   const credentials = await loadServiceAccountCredentials();
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ["https://www.googleapis.com/auth/drive.file"],
+    scopes: ["https://www.googleapis.com/auth/drive"],
   });
   const drive = google.drive({ version: "v3", auth });
 
@@ -107,11 +78,19 @@ async function uploadToDriveFolder() {
     if (created.data.webViewLink) console.log(created.data.webViewLink);
   } catch (error) {
     const message = String(error?.message || error);
+    const serviceAccountEmail = credentials.client_email || "the configured service account";
     if (message.includes("drive.googleapis.com") && message.includes("disabled")) {
       throw new Error(
         "Google Drive API is disabled for project tasktimer-prod (project number 996538028829).\n" +
           "Enable it here, wait a few minutes, then rerun `npm run android:apk`:\n" +
           "https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=996538028829"
+      );
+    }
+    if (message.includes("insufficientParentPermissions")) {
+      throw new Error(
+        `Google Drive rejected upload to folder ${folderId} because ${serviceAccountEmail} does not have permission to add files there.\n` +
+          `Share https://drive.google.com/drive/folders/${folderId} with ${serviceAccountEmail} as Editor.\n` +
+          "If the folder is inside a shared drive, grant Content manager (or stronger) on that shared drive or target folder, then rerun `npm run android:apk`."
       );
     }
     throw error;
@@ -121,13 +100,6 @@ async function uploadToDriveFolder() {
 async function main() {
   if (!existsSync(sourceApkPath)) {
     throw new Error(`APK not found at ${sourceApkPath}. Run the Android debug build before copying.`);
-  }
-
-  const candidateDestDirs = resolveCandidateDestDirs();
-  const resolvedLocalDestDir = candidateDestDirs.find((dirPath) => existsSync(dirPath));
-  if (resolvedLocalDestDir) {
-    await copyToLocalDir(resolvedLocalDestDir);
-    return;
   }
 
   await uploadToDriveFolder();

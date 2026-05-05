@@ -963,8 +963,16 @@ body[data-theme="purple"] .rankLadderItemFlag{
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   padding-right: 4px;
   padding-bottom: 32px;
+}
+
+#editOverlay .editTaskModalBody::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 #editOverlay .editTaskTypePills .timerTypePill{
@@ -974,8 +982,21 @@ body[data-theme="purple"] .rankLadderItemFlag{
   font-size: 11px;
   white-space: nowrap;
   border-color: rgba(255,255,255,.08) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,.006)) !important;
+  color: rgba(245,248,244,.56) !important;
+  opacity: .72;
   box-shadow: none !important;
+}
+
+#editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: #c9ff24 !important;
+  color: #f5f8f4 !important;
+  opacity: 1;
+}
+
+#editOverlay .editTaskTypePills .timerTypePill.isOn,
+body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: #c9ff24 !important;
 }
 
 #editOverlay .editMoveWrap{
@@ -1042,6 +1063,10 @@ body[data-theme="purple"] .rankLadderItemFlag{
   box-shadow:
     inset 0 0 0 1px rgba(201,255,36,.12),
     0 0 12px rgba(201,255,36,.12) !important;
+}
+
+#editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: #c9ff24 !important;
 }
 
 #editOverlay .switch.on{
@@ -1556,6 +1581,29 @@ body[data-theme="purple"] .rankLadderItemFlag{
 #editOverlay .msRow button{
   width:28px;
   height:28px;
+}
+
+#editOverlay .msRow .checkpointDeleteBtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 28px;
+  padding:0;
+  border:0;
+  box-shadow:none;
+  background: transparent;
+  color: #ff5f6d;
+  font-size: 22px;
+  line-height: 1;
+}
+
+#editOverlay .msRow .checkpointDeleteBtn:hover,
+#editOverlay .msRow .checkpointDeleteBtn:focus-visible,
+#editOverlay .msRow .checkpointDeleteBtn:active{
+  border:0;
+  box-shadow:none;
+  background: transparent;
+  color: #ff7b88;
 }
 
 #editOverlay .msRow .checkpointBellBtn{
@@ -4117,6 +4165,15 @@ body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
   box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
 }
 
+body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill,
+body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: #c9ff24 !important;
+}
+
 body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn{
   border:0;
   box-shadow:none;
@@ -4234,6 +4291,10 @@ body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
   background: rgba(18,20,24,.96) !important;
   color: #f9ffd8 !important;
   box-shadow: none !important;
+}
+
+body[data-theme="lime"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
+  border-color: #c9ff24 !important;
 }
 body[data-theme="lime"] #editOverlay .switch.on{
   background: rgba(219,255,79,.2) !important;

@@ -289,10 +289,12 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const sessionId = (row as HistoryEntry).sessionId;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
+  if (typeof sessionId === "string" && sessionId.trim()) next.sessionId = sessionId.trim();
   return next;
 }
 
@@ -1566,11 +1568,13 @@ export async function appendHistoryEntry(uid: string, taskId: string, entry: His
   const name = String(entry?.name || "");
   const color = entry?.color == null ? null : String(entry.color);
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
+  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
   const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
-  const entryId = `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
+  const entryId = sessionId ? `session-${fnv1a32(`${taskId}|${sessionId}`)}` : `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
   const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
   if (color) payload.color = color;
   if (note) payload.note = note;
+  if (sessionId) payload.sessionId = sessionId;
   if (completionDifficulty) payload.completionDifficulty = completionDifficulty;
   await setDoc(doc(col, entryId), payload);
 }
@@ -1607,7 +1611,8 @@ function historyEntryFingerprint(entry: HistoryEntry): string {
   const name = String(entry?.name || "");
   const note = typeof entry?.note === "string" ? entry.note.trim() : "";
   const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty) || "";
-  return `${ts}|${ms}|${name}|${note}|${completionDifficulty}`;
+  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
+  return `${ts}|${ms}|${name}|${note}|${completionDifficulty}|${sessionId}`;
 }
 
 function fnv1a32(input: string): string {
@@ -1641,6 +1646,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
       name: String(entry?.name || ""),
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+      ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
       ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
         ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
         : {}),
@@ -1660,6 +1666,7 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
         name: String(entry?.name || ""),
         ...(entry?.color != null ? { color: String(entry.color) } : {}),
         ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+        ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
         ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
           ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
           : {}),

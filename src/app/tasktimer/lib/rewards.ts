@@ -838,6 +838,52 @@ export function rebuildRewardProgressFromHistory(context: {
   return normalizeRewardProgress(next);
 }
 
+export function reconcileRewardProgressWithHistory(context: {
+  currentProgress: unknown;
+  historyByTaskId: HistoryByTaskId;
+  tasks: Task[];
+  weekStarting: DashboardWeekStart;
+  momentumEntitled?: boolean;
+}): RewardProgressV1 {
+  const current = normalizeRewardProgress(context.currentProgress);
+  const rebuilt = rebuildRewardProgressFromHistory({
+    historyByTaskId: context.historyByTaskId,
+    tasks: context.tasks,
+    weekStarting: context.weekStarting,
+    momentumEntitled: context.momentumEntitled,
+  });
+  const hasCanonicalRewards =
+    current.awardLedger.length > 0 ||
+    current.totalXpPrecise > 0 ||
+    current.totalXp > 0 ||
+    current.completedSessions > 0 ||
+    current.lastAwardedAt != null;
+  if (!hasCanonicalRewards) return rebuilt;
+  if (!current.awardLedger.length) return current;
+
+  const existingSourceKeys = getExistingSourceKeys(current);
+  const missingEntries = rebuilt.awardLedger.filter((entry) => !existingSourceKeys.has(entry.sourceKey));
+  if (!missingEntries.length) return current;
+
+  const addedXp = missingEntries.reduce((sum, entry) => sum + Math.max(0, Number(entry.xp) || 0), 0);
+  const mergedLedger = normalizeAwardLedger(current.awardLedger.concat(missingEntries));
+  const totalXpPrecise = Math.max(current.totalXpPrecise, current.totalXp) + addedXp;
+  const totalXp = Math.max(0, Math.floor(totalXpPrecise));
+  const lastAwardedAt = mergedLedger.reduce<number | null>(
+    (latest, entry) => (latest == null || entry.ts > latest ? entry.ts : latest),
+    current.lastAwardedAt
+  );
+
+  return {
+    totalXp,
+    totalXpPrecise,
+    currentRankId: getRankForXp(totalXp).id,
+    lastAwardedAt,
+    completedSessions: Math.max(current.completedSessions, rebuilt.completedSessions),
+    awardLedger: mergedLedger,
+  };
+}
+
 export function buildRewardsHeaderViewModel(progress: RewardProgressV1): RewardsHeaderViewModel {
   const normalized = normalizeRewardProgress(progress);
   const currentRank = getRankForXp(normalized.totalXp);

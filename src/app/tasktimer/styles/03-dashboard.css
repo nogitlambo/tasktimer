@@ -3039,22 +3039,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardCardTitle{
   align-self: start;
+  min-height: 24px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
-  position: absolute;
-  top: 15px;
-  right: 18px;
-  z-index: 1;
-  display: inline-flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: .08em;
-  margin: 0;
-  transform: none;
-  font-size: clamp(22px, 2.2vw, 32px);
-  font-weight: 900;
-  line-height: .92;
-  text-align: right;
+  display: none;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardTasksCompletedDone{
   font-size: 1em;
@@ -3065,14 +3053,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-size: .56em;
   font-weight: 700;
   line-height: 1;
-  transform: translateY(.35em);
+  transform: none;
   color: rgba(209, 220, 228, .72);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardTasksCompletedTotal{
   font-size: .48em;
   font-weight: 700;
   line-height: 1;
-  transform: translateY(.42em);
+  transform: none;
   color: rgba(209, 220, 228, .64);
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTicks{
