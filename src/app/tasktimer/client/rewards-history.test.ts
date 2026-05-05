@@ -193,6 +193,9 @@ describe("task timer rewards history", () => {
 
     expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
     expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({ sessionId: "session-1" });
+    expect(harness.getRewardProgress().totalXp).toBe(1);
+    expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
+    expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
   });
 });

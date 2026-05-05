@@ -1,7 +1,6 @@
 import { collection, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 
 import type { Task } from "../lib/types";
-import type { AppPage } from "./types";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getTaskTimerPushDeviceId, loadPendingPushAction } from "../lib/pushNotifications";
@@ -13,11 +12,6 @@ type HandlePendingPushActionOptions = {
   startTaskByIndex: (index: number) => void;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
-};
-
-type HandleArchieNavigateOptions = {
-  applyAppPage: (page: AppPage, opts?: { pushNavStack?: boolean; syncUrl?: "replace" | "push" | false }) => void;
-  navigateToAppRoute: (path: string) => void;
 };
 
 type SubscribeToCheckpointAlertMuteSignalsOptions = {
@@ -87,28 +81,6 @@ export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendi
   options.jumpToTaskById(taskId);
   options.maybeRestorePendingTimeGoalFlow();
   window.setTimeout(() => options.maybeRestorePendingTimeGoalFlow(), 120);
-}
-
-export function handleTaskTimerArchieNavigate(hrefRaw: unknown, options: HandleArchieNavigateOptions) {
-  const href = String(hrefRaw || "").trim();
-  if (!href) return;
-  if (href === "/tasklaunch") {
-    options.applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
-    return;
-  }
-  if (href === "/dashboard") {
-    options.applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" });
-    return;
-  }
-  if (href === "/friends") {
-    options.applyAppPage("friends", { pushNavStack: true, syncUrl: "push" });
-    return;
-  }
-  if (href === "/leaderboard") {
-    options.applyAppPage("leaderboard", { pushNavStack: true, syncUrl: "push" });
-    return;
-  }
-  options.navigateToAppRoute(href);
 }
 
 export function broadcastTaskTimerCheckpointAlertMute(taskIdRaw: string) {

@@ -16,7 +16,7 @@ Current ownership:
 - `08-feedback.css`: Feedback route
 - `08-friends.css`: Friends route
 - `09-desktop-rail.css`: desktop rail base styling
-- `10-responsive.css`: breakpoint-specific overrides, including mobile dashboard and mobile Archie behavior
+- `10-responsive.css`: breakpoint-specific overrides, including mobile dashboard behavior
 
 Editing rules:
 

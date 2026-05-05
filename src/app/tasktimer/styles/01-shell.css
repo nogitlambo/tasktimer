@@ -529,8 +529,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
 }
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrack{
   position:relative;
-  flex:1 1 auto;
-  min-width:0;
+  flex:0 0 clamp(64px, 12vw, 112px);
+  width:clamp(64px, 12vw, 112px);
+  min-width:clamp(64px, 12vw, 112px);
   height:9px;
   overflow:hidden;
   border-radius:999px;
@@ -639,12 +640,42 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack{
   position:relative;
-  flex:1 1 auto;
-  min-width:0;
+  flex:0 0 clamp(56px, 18vw, 96px);
+  width:clamp(56px, 18vw, 96px);
+  min-width:clamp(56px, 18vw, 96px);
   height:9px;
   overflow:hidden;
   border-radius:999px;
   background:rgba(255,255,255,.08);
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarWrap{
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarImg,
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarFallback{
+  width:100%;
+  height:100%;
+  display:block;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarImg{
+  object-fit:cover;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarFallback{
+  display:grid;
+  place-items:center;
+  font-family:var(--font-orbitron);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  color:rgba(247,251,255,.9);
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRankWrap{
   flex:0 0 auto;
@@ -884,8 +915,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     gap:12px;
   }
 
+  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .brand{
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp{
     display:flex !important;
+    flex: 1 1 auto;
     width:100%;
     min-width:0;
     align-items:center;
@@ -894,7 +932,15 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBody{
+    flex: 1 1 auto;
     width:100%;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpTrigger,
+  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBottomRow{
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaIcon,
@@ -1106,265 +1152,3 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
   }
 }
 
-/* Route-scoped onboarding shell */
-
-.onboardingArchieApp{
-  min-height: 100dvh;
-  background:
-    radial-gradient(110% 90% at 15% 0%, rgba(64, 245, 255, 0.12), transparent 40%),
-    radial-gradient(90% 80% at 100% 10%, rgba(123, 78, 255, 0.14), transparent 44%),
-    linear-gradient(180deg, #0d0f13 0%, #090b10 100%);
-}
-
-.onboardingArchieTopbar{
-  position: relative;
-  z-index: 2;
-}
-
-.onboardingArchieShell{
-  display: grid;
-  gap: 24px;
-  width: min(1180px, calc(100% - 28px));
-  margin: 0 auto;
-  padding: 18px 0 42px;
-}
-
-.onboardingArchieIntro{
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 20px 0;
-}
-
-.onboardingArchieEyebrow{
-  margin: 0;
-  font-family: var(--font-inconsolata);
-  font-size: 12px;
-  letter-spacing: .24em;
-  text-transform: uppercase;
-  color: rgba(134, 236, 255, 0.78);
-}
-
-.onboardingArchieTitle{
-  margin: 0;
-  font-family: var(--font-geist-sans);
-  font-size: clamp(28px, 5vw, 46px);
-  font-weight: 500;
-  line-height: .98;
-  color: #f4fbff;
-}
-
-.onboardingArchieText{
-  max-width: 58ch;
-  margin: 0;
-  font-family: var(--font-geist-sans);
-  font-size: 15px;
-  line-height: 1.6;
-  color: rgba(228, 239, 245, 0.78);
-}
-
-.onboardingArchieStage{
-  position: relative;
-  min-height: 520px;
-  padding: 0 12px 18px;
-}
-
-.onboardingArchieRail{
-  min-height: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 24%, rgba(255,255,255,0) 100%),
-    linear-gradient(180deg, rgba(7, 10, 16, 0.94) 0%, rgba(5, 7, 11, 0.98) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.05),
-    0 30px 80px rgba(0,0,0,.34);
-  border-radius: 28px;
-  padding: 22px 18px 28px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: hidden;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascot{
-  width: min(420px, 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubble{
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  z-index: auto !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 260px !important;
-  height: auto !important;
-  max-height: none !important;
-  padding: 18px 18px 44px !important;
-  border: 1px solid rgba(94, 230, 255, 0.16) !important;
-  background: #060d14 !important;
-  color: #f2fbff !important;
-  font-family: var(--font-geist-sans) !important;
-  font-size: inherit !important;
-  font-weight: 400 !important;
-  letter-spacing: normal !important;
-  line-height: 1.24 !important;
-  text-align: left !important;
-  white-space: normal !important;
-  display: grid !important;
-  align-content: start !important;
-  gap: 14px !important;
-  overflow: visible !important;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 34px), 58% calc(100% - 34px), 50% 100%, 42% calc(100% - 34px), 0 calc(100% - 34px)) !important;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(14px) !important;
-  transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s !important;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubble.isOpen,
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubble.isClosing{
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-  transition: opacity .16s ease, transform .16s ease, visibility 0s linear 0s !important;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubbleOutline,
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubbleLine,
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubbleTailSvg{
-  display: none !important;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubbleTitle{
-  min-height: 120px;
-  font-family: var(--font-geist-sans);
-  font-size: clamp(18px, 2.2vw, 24px);
-  line-height: 1.24;
-  color: #f2fbff;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubbleTitleText{
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  color: #f2fbff !important;
-  opacity: 1 !important;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  animation: none !important;
-  border-right: 0 !important;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotActionRow{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition: opacity .16s ease, transform .16s ease;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotActionRow.isVisible{
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotActionBtn{
-  min-width: 104px;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotInputRow,
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotMeta,
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotResponseActions{
-  display: none !important;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotTrigger{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 126px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotFigure{
-  position: relative;
-  display: inline-flex;
-  align-items: flex-end;
-  justify-content: center;
-  width: 126px;
-  height: 132px;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotImage{
-  width: 100px;
-  height: auto;
-  position: relative;
-  z-index: 2;
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBody{
-  position: absolute;
-  inset: auto 18px 8px;
-  height: 44px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(79, 239, 255, 0.12), rgba(79, 239, 255, 0.03));
-  filter: blur(.2px);
-}
-
-#app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBlinkOverlay{
-  position: absolute;
-  inset: 22px 34px auto;
-  height: 16px;
-  border-radius: 999px;
-  background: rgba(86, 232, 255, 0.18);
-  opacity: 0;
-}
-
-@media (max-width: 980px){
-  .onboardingArchieShell{
-    width: min(100%, calc(100% - 20px));
-    padding-bottom: 24px;
-  }
-
-  .onboardingArchieIntro{
-    padding: 16px 10px 0;
-  }
-
-  .onboardingArchieStage{
-    min-height: 0;
-    padding: 0 4px 18px;
-  }
-
-  .onboardingArchieRail{
-    padding: 18px 14px 22px;
-    border-radius: 22px;
-  }
-
-  #app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascot{
-    width: 100%;
-  }
-
-  #app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotBubble{
-    min-height: 236px !important;
-    padding: 16px 14px 40px !important;
-  }
-
-  #app[aria-label="TaskLaunch App"] .onboardingArchieRail.desktopAppRail .desktopRailMascotActionBtn{
-    flex: 1 1 120px;
-  }
-}

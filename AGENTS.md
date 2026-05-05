@@ -7,7 +7,7 @@
 - Key files: `src/app/tasklaunch/page.tsx`, `src/app/tasktimer/tasktimerClient.ts`, `src/app/tasktimer/lib/*`, `src/app/tasktimer/components/*`
 
 ## Current architecture context
-- Repo-level architectural overview lives in `architecture.md`; use it for high-level system boundaries, runtime ownership, and onboarding context.
+- Repo-level architectural overview lives in `architecture.md`; use it for high-level system boundaries and runtime ownership context.
 - Treat `architecture.md` as a secondary reference only: current source files remain the final authority when behavior and documentation differ.
 - Runtime behavior is primarily wired through `initTaskTimerClient()` in `src/app/tasktimer/tasktimerClient.ts`.
 - The active `/tasklaunch` route now uses the same `initTaskTimerClient()` runtime path as in-app Tasks/Dashboard/Friends navigation; do not assume a separate React-only Tasks mount on direct load.
@@ -57,7 +57,7 @@
   - dashboard: `03-dashboard.css` and `10-responsive.css`
   - overlays/modals: `04-overlays.css`
   - settings/account/about/rank ladder: `06-settings.css`
-  - desktop rail and Archie: `09-desktop-rail.css` and `10-responsive.css`
+  - desktop rail: `09-desktop-rail.css` and `10-responsive.css`
 - Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure purple/cyan theme parity when introducing new visual elements.
 - New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
@@ -154,22 +154,20 @@
 - `NAV_STACK_KEY = `${storageKey}:navStack``
 - `OPTIMAL_PRODUCTIVITY_END_TIME_KEY = `${storageKey}:optimalProductivityEndTime``
 - `OPTIMAL_PRODUCTIVITY_START_TIME_KEY = `${storageKey}:optimalProductivityStartTime``
-- `PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction``
-- `PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId``
-- `REWARD_SESSION_TRACKERS_KEY = `${STORAGE_KEY}:rewardSessionTrackers``
 - `STARTUP_MODULE_KEY = `${storageKey}:startupModule``
 - `STORAGE_KEY = "taskticker_tasks_v1"`
 - `TASK_ORDER_BY_KEY = `${storageKey}:taskOrderBy``
 - `TASK_VIEW_KEY = `${storageKey}:taskView``
 - `THEME_KEY = `${storageKey}:theme``
-- `TIME_GOAL_PENDING_FLOW_KEY = `${STORAGE_KEY}:timeGoalPendingFlow``
 - `WEB_PUSH_ALERTS_KEY = `${storageKey}:webPushAlertsEnabled``
 - `WEEK_STARTING_KEY = `${storageKey}:weekStarting``
 
 ### Data hooks (derived from client/components)
 - `data-action="closeCheckpointToast"`
 - `data-action="collapse"`
+- `data-action="copyCloudSyncLogId"`
 - `data-action="delete"`
+- `data-action="dismissCloudSyncNotice"`
 - `data-action="edit"`
 - `data-action="editName"`
 - `data-action="exportTask"`
@@ -181,11 +179,13 @@
 - `data-action="openAddTask"`
 - `data-action="reset"`
 - `data-action="rmMs"`
+- `data-action="shareTask"`
 - `data-action="start"`
 - `data-action="stop"`
+- `data-action="toggleMsAlert"`
+- `data-action="unshareTask"`
 - `data-history-action="analyse"`
 - `data-history-action="clearLocks"`
-- `data-history-action="close"`
 - `data-history-action="delete"`
 - `data-history-action="manage"`
 - `data-history-action="newer"`

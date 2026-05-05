@@ -104,17 +104,6 @@ Firebase client identifiers should be supplied via environment variables or depl
 - Git hygiene:
   - `android/app/google-services.json` is intentionally ignored and should not be committed.
 
-## Archie Telemetry Retention
-
-Archie session telemetry now writes an `expiresAt` field for 90-day retention.
-
-- Production logging stores structured Archie telemetry only by default. Raw user messages and raw Archie replies are not persisted.
-- Local development can enable temporary raw Archie logging with `ARCHIE_LOG_RAW_TEXT=1`. This is ignored in production.
-- In Firebase, enable Firestore TTL for:
-  - `users/{uid}/archieSessions` on `expiresAt`
-  - `users/{uid}/archieSessions/{sessionId}/events` on `expiresAt`
-- If Firestore TTL is not enabled in the target project, add an equivalent scheduled cleanup job before relying on long-term retention behavior.
-
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

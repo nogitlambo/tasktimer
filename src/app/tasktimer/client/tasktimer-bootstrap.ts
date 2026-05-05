@@ -14,7 +14,6 @@ type BootstrapOptions = {
   setEventsWired: (value: boolean) => void;
   wireEvents: () => void;
   onWindowPendingPush: () => void;
-  onWindowArchieNavigate: () => void;
   maybeOpenImportFromQuery: () => void;
   syncDashboardMenuFlipUi: () => void;
   syncDashboardRefreshButtonUi: () => void;
@@ -70,7 +69,6 @@ export function bootstrapTaskTimerRuntime(options: BootstrapOptions) {
     options.setEventsWired(true);
   }
   options.onWindowPendingPush();
-  options.onWindowArchieNavigate();
   options.maybeOpenImportFromQuery();
   options.syncDashboardMenuFlipUi();
   options.syncDashboardRefreshButtonUi();

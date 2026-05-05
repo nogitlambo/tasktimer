@@ -836,21 +836,6 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    match /users/{userId}/archieDrafts/{draftId} {
-      allow read: if isOwner(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /users/{userId}/archieSessions/{sessionId} {
-      allow read: if isOwner(userId);
-      allow create, update, delete: if false;
-
-      match /events/{eventId} {
-        allow read: if isOwner(userId);
-        allow create, update, delete: if false;
-      }
-    }
-
     match /friend_requests/{requestId} {
       allow read: if request.auth != null
         && (

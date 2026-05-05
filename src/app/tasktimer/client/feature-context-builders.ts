@@ -591,7 +591,6 @@ type CreateDashboardRenderOptionsArgs = {
   };
   dashboardBusyState: MutableStore;
   cloudSyncState: MutableStore;
-  getIsOnboardingDashboardPreview: () => boolean;
   getElapsedMs: (task: Task) => number;
   escapeHtmlUI: (value: unknown) => string;
   normalizeHistoryTimestampMs: (value: unknown) => number;
@@ -611,7 +610,6 @@ type CreateDashboardRuntimeOptionsArgs = {
   };
   preferencesState: MutableStore;
   appRuntimeState: MutableStore;
-  getIsOnboardingDashboardPreview: () => boolean;
   setLastDashboardLiveSignature: (value: string) => void;
   getLastDashboardLiveSignature: () => string;
   isDashboardBusy: () => boolean;
@@ -1410,7 +1408,6 @@ export function createTaskTimerDashboardRenderContext(
       asType<Array<unknown>>(args.dashboardBusyState.get("stack")).length > 0 ||
       args.dashboardBusyState.get("hideTimer") != null,
     getCloudRefreshInFlight: () => asType<Promise<void> | null>(args.cloudSyncState.get("cloudRefreshInFlight")),
-    getIsOnboardingDashboardPreview: args.getIsOnboardingDashboardPreview,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getElapsedMs: args.getElapsedMs,
     escapeHtmlUI: args.escapeHtmlUI,
@@ -1432,7 +1429,6 @@ export function createTaskTimerDashboardRuntimeContext(
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
-    getIsOnboardingDashboardPreview: args.getIsOnboardingDashboardPreview,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getDashboardMenuFlipped: () => asType<boolean>(args.appRuntimeState.get("dashboardMenuFlipped")),
     getDashboardRefreshPending: () => asType<boolean>(args.appRuntimeState.get("dashboardRefreshPending")),

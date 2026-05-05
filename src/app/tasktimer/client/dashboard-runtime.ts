@@ -10,7 +10,6 @@ type DashboardWidgetRenderSummaryState = {
   historyByTaskId: HistoryByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
   dynamicColorsEnabled: boolean;
-  onboardingPreviewActive: boolean;
   currentDayKey: string;
   nowMs: number;
 };
@@ -22,7 +21,6 @@ type CreateDashboardRuntimeOptions = {
   getHistoryByTaskId: () => HistoryByTaskId;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getDynamicColorsEnabled: () => boolean;
-  getIsOnboardingDashboardPreview: () => boolean;
   getCurrentAppPage: () => AppPage;
   getDashboardMenuFlipped: () => boolean;
   getDashboardRefreshPending: () => boolean;
@@ -45,7 +43,6 @@ function buildSummaryState(options: CreateDashboardRuntimeOptions): DashboardWid
     historyByTaskId: options.getHistoryByTaskId(),
     deletedTaskMeta: options.getDeletedTaskMeta(),
     dynamicColorsEnabled: options.getDynamicColorsEnabled(),
-    onboardingPreviewActive: options.getIsOnboardingDashboardPreview(),
     currentDayKey: localDayKey(options.nowMs()),
     nowMs: options.nowMs(),
   };

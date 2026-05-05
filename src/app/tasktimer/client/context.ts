@@ -813,7 +813,6 @@ export type TaskTimerDashboardRenderContext = {
   };
   getDashboardRefreshHoldActive: () => boolean;
   getCloudRefreshInFlight: () => Promise<void> | null;
-  getIsOnboardingDashboardPreview: () => boolean;
   getDynamicColorsEnabled: () => boolean;
   getElapsedMs: (task: Task) => number;
   escapeHtmlUI: (value: unknown) => string;

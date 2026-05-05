@@ -240,6 +240,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile
     ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
     : "";
+  const currentUserAvatarSrc = leaderboardData.currentUserEntry ? getLeaderboardAvatarRenderSrc(leaderboardData.currentUserEntry) : "";
+  const currentUserAvatarInitials = leaderboardData.currentUserEntry ? getLeaderboardInitials(getLeaderboardLabel(leaderboardData.currentUserEntry)) : "U";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -247,7 +249,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   return (
     <>
-      <TaskTimerAppFrame activePage={initialPage} currentRankId={rewardProgress.currentRankId} rewardsHeader={rewardsHeader}>
+      <TaskTimerAppFrame
+        activePage={initialPage}
+        currentRankId={rewardProgress.currentRankId}
+        currentUserAvatarSrc={currentUserAvatarSrc}
+        currentUserAvatarInitials={currentUserAvatarInitials}
+        rewardsHeader={rewardsHeader}
+      >
         <div className="appPages">
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="dashboardTopRow">

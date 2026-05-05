@@ -25,7 +25,7 @@ export default function InfoOverlays() {
             <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
             <li>Focus Mode for a single-task timer view with dedicated controls and insights</li>
             <li>Backup export/import, including import merge/overwrite options</li>
-            <li>Dashboard and guide pages for overview and onboarding</li>
+            <li>Dashboard and guide pages for overview and support</li>
           </ul>
         </div>
       </InfoOverlayFrame>

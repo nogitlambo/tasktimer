@@ -4,7 +4,6 @@ import {
   parseRecentCustomTaskNames,
   rememberRecentCustomTaskName,
 } from "../lib/addTaskNames";
-import { ONBOARDING_ADD_TASK_CLICK_EVENT } from "../lib/onboarding";
 import {
   formatAddTaskDurationReadout,
   formatAggregateTimeGoalValidationMessage,
@@ -26,19 +25,6 @@ import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlanne
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
-  const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
-
-  function requestArchieHelp(message: string) {
-    if (typeof window === "undefined") return;
-    const nextMessage = String(message || "").trim();
-    if (!nextMessage) return;
-    window.dispatchEvent(new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, { detail: { message: nextMessage } }));
-  }
-
-  function notifyOnboardingAddTaskClick() {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(ONBOARDING_ADD_TASK_CLICK_EVENT));
-  }
 
   function canUseAdvancedTaskConfig() {
     // Time Goals and Checkpoints are available on the free plan; keep this gate local so
@@ -723,7 +709,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function registerAddTaskEvents() {
     ctx.on(els.openAddTaskBtn, "click", () => {
-      notifyOnboardingAddTaskClick();
       openAddTaskModal();
     });
     ctx.on(els.addTaskCancelBtn, "click", closeAddTaskModal);
@@ -881,18 +866,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskCheckpointInfoBtn, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      setAddTaskCheckpointInfoOpen(false);
-      requestArchieHelp(
-        "Time checkpoints are optional milestone markers during a task timer run. Use them to track progress points and trigger checkpoint alerts while the task is active."
-      );
+      setAddTaskCheckpointInfoOpen(true);
     });
     ctx.on(els.addTaskPresetIntervalsInfoBtn, "click", (e: Event) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      setAddTaskPresetIntervalsInfoOpen(false);
-      requestArchieHelp(
-        "Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint."
-      );
+      setAddTaskPresetIntervalsInfoOpen(true);
     });
     ctx.on(document, "click", (e: Event) => {
       if (eventTargetClosest(e.target, "#addTaskCheckpointInfoBtn")) return;

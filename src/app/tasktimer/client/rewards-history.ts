@@ -345,7 +345,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
   }
 
   function appendHistory(taskId: string, entry: Record<string, unknown>) {
-    if (!taskId) return;
+    if (!taskId) return false;
     const historyByTaskId = ctx.getHistoryByTaskId();
     const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
     const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
@@ -360,12 +360,13 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     };
     if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
     if (normalizedEntry.sessionId && historyByTaskId[taskId]!.some((row) => row?.sessionId === normalizedEntry.sessionId)) {
-      return;
+      return false;
     }
     historyByTaskId[taskId].push(normalizedEntry);
     ctx.appendHistoryEntry(taskId, normalizedEntry);
     ctx.saveHistoryLocally(historyByTaskId);
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    return true;
   }
 
   function getCurrentSessionNoteForTask(taskId: string): string {
@@ -436,7 +437,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const note = String(noteOverride || liveNote || "").trim();
     const completionDifficulty = normalizeCompletionDifficulty(completionDifficultyRaw);
     if (note) ctx.setFocusSessionDraft(taskId, note);
-    appendHistory(task.id, {
+    const didAppendHistory = appendHistory(task.id, {
       ts: completedAtMs,
       name: task.name,
       ms: safeElapsedMs,
@@ -445,6 +446,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...(sessionId ? { sessionId } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
     });
+    if (!didAppendHistory) return;
     ctx.clearFocusSessionDraft(taskId);
     if (String(ctx.getFocusModeTaskId() || "") === taskId) {
       ctx.syncFocusSessionNotesInput(taskId);

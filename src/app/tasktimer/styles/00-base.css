@@ -2540,34 +2540,6 @@ body[data-theme="lime"] .settingsNavItemIcon{
 }
 
 /* Migrated from retired tasktimer tail: app-wide typography, reward bar clipping, and cursor authority. */
-#app input:not([type]),
-#app input[type="text"],
-#app input[type="email"],
-#app input[type="number"],
-#app input[type="password"],
-#app input[type="search"],
-#app input[type="tel"],
-#app input[type="url"],
-#app textarea,
-#app select,
-#app option,
-#app optgroup,
-#editOverlay input:not([type]),
-#editOverlay input[type="text"],
-#editOverlay input[type="email"],
-#editOverlay input[type="number"],
-#editOverlay input[type="password"],
-#editOverlay input[type="search"],
-#editOverlay input[type="tel"],
-#editOverlay input[type="url"],
-#editOverlay textarea,
-#editOverlay select,
-#editOverlay option,
-#editOverlay optgroup,
-.desktopRailMascotInput,
-.addTaskNameItem {
-  font-family: var(--font-archie) !important;
-}
 
 #app,
 #app :where(
@@ -2609,7 +2581,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   em,
   div
 ) {
-  font-family: var(--font-archie) !important;
+  font-family: var(--font-readable) !important;
 }
 
 #app :where(

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
 import {
@@ -12,7 +12,6 @@ import {
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
 } from "../lib/entitlements";
-import { isArchieEnabled, isOnboardingEnabled } from "../lib/featureFlags";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
 import { saveUserRootPatch } from "../lib/cloudStore";
 import {
@@ -23,8 +22,6 @@ import {
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
 } from "../lib/accountProfileStorage";
-import { onboardingModuleStepFromNavPage } from "../lib/onboarding";
-import ArchieAssistantWidget, { type ArchieOnboardingUiState } from "./ArchieAssistantWidget";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "history" | "settings" | "none";
@@ -109,14 +106,6 @@ const NAV_ITEMS: NavItem[] = [
 const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "history" && item.page !== "settings");
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
-const DESKTOP_ARCHIE_MEDIA_QUERY = "(min-width: 981px)";
-
-function shouldEnableDesktopWebArchie() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  if (isNativeOrFileRuntime()) return false;
-  return window.matchMedia(DESKTOP_ARCHIE_MEDIA_QUERY).matches;
-}
-
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "tasks") return 1;
@@ -389,8 +378,6 @@ export default function DesktopAppRail({
   showDesktopRail = true,
   showMobileFooter = true,
 }: DesktopAppRailProps) {
-  const archieActivePage = activePage === "history" ? "none" : activePage;
-  const [onboardingState, setOnboardingState] = useState<ArchieOnboardingUiState | null>(null);
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
@@ -399,11 +386,9 @@ export default function DesktopAppRail({
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
-  const [isDesktopWebArchieEnabled, setIsDesktopWebArchieEnabled] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const profileMenuCloseTimerRef = useRef<number | null>(null);
-  const shouldShowDesktopArchie = isArchieEnabled() && isDesktopWebArchieEnabled && activePage !== "history";
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -484,27 +469,6 @@ export default function DesktopAppRail({
   }, [syncProfileFromUser]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      setIsDesktopWebArchieEnabled(false);
-      return;
-    }
-    const mediaQuery = window.matchMedia(DESKTOP_ARCHIE_MEDIA_QUERY);
-    const syncArchieAvailability = () => {
-      setIsDesktopWebArchieEnabled(shouldEnableDesktopWebArchie());
-    };
-    syncArchieAvailability();
-    mediaQuery.addEventListener("change", syncArchieAvailability);
-    return () => {
-      mediaQuery.removeEventListener("change", syncArchieAvailability);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (showDesktopRail && shouldShowDesktopArchie) return;
-    setOnboardingState(null);
-  }, [shouldShowDesktopArchie, showDesktopRail]);
-
-  useEffect(() => {
     return () => {
       if (profileMenuCloseTimerRef.current != null) {
         window.clearTimeout(profileMenuCloseTimerRef.current);
@@ -568,22 +532,6 @@ export default function DesktopAppRail({
     }
   }, [signOutBusy]);
 
-  const handleDesktopNavClick = useCallback(
-    (page: DesktopRailPage, event?: { preventDefault?: () => void }) => {
-      const onboardingModuleStep = onboardingModuleStepFromNavPage(page);
-      if (!onboardingModuleStep) return;
-      if (
-        isOnboardingEnabled()
-        && onboardingState?.step === "settings"
-        && onboardingState.awaitingClick
-        && onboardingModuleStep === "settings"
-      ) {
-        event?.preventDefault?.();
-      }
-    },
-    [onboardingState]
-  );
-
   const handleOpenBillingPortal = useCallback(async () => {
     const auth = getFirebaseAuthClient();
     const currentUser = auth?.currentUser || null;
@@ -614,18 +562,7 @@ export default function DesktopAppRail({
     }
   }, [billingBusy]);
 
-  const navActivePage: DesktopRailPage =
-    isOnboardingEnabled() &&
-    onboardingState &&
-    (
-      onboardingState.step === "dashboard" ||
-      onboardingState.step === "tasks" ||
-      onboardingState.step === "friends" ||
-      onboardingState.step === "leaderboard" ||
-      onboardingState.step === "settings"
-    )
-      ? "none"
-      : activePage;
+  const navActivePage: DesktopRailPage = activePage;
 
   return (
     <>
@@ -633,10 +570,6 @@ export default function DesktopAppRail({
         <aside
           className="dashboardRail desktopAppRail"
           aria-label="TaskLaunch navigation"
-          data-onboarding-step={onboardingState?.step || undefined}
-          data-onboarding-awaiting-click={onboardingState?.awaitingClick ? "true" : undefined}
-          data-onboarding-dashboard-panel-step={onboardingState?.dashboardPanelStep || undefined}
-          data-onboarding-tasks-action-step={onboardingState?.tasksActionStep || undefined}
           data-profile-menu-open={profileMenuOpen && !profileMenuClosing ? "true" : undefined}
         >
           <div className="desktopRailTopSection">
@@ -653,17 +586,13 @@ export default function DesktopAppRail({
             <nav className="dashboardRailNav">
               {DESKTOP_NAV_ITEMS.map((item) =>
                 renderDesktopNavItem(item, navActivePage, useClientNavButtons, {
-                  onClick: (event) => handleDesktopNavClick(item.page, event),
+                  onClick: undefined,
                 })
               )}
             </nav>
           </div>
 
-          <div className="desktopRailMiddleSection">
-            {shouldShowDesktopArchie ? (
-              <ArchieAssistantWidget activePage={archieActivePage} onOnboardingStepChange={setOnboardingState} />
-            ) : null}
-          </div>
+          <div className="desktopRailMiddleSection" aria-hidden="true" />
 
           <div className="desktopRailBottomSection">
             <details

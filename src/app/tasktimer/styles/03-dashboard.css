@@ -8,7 +8,7 @@
 }
 .dashboardShellBody{
   margin:0;
-  padding:14px 0;
+  padding:0 0 14px;
   border:1px solid rgba(121,226,255,.2);
   background:transparent;
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
@@ -1435,7 +1435,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 0;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-  padding: 22px 0 0;
+  padding: 0;
   margin-bottom: 18px;
   align-items: flex-start;
 }
@@ -4531,7 +4531,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverText{
   min-width: 0 !important;
-  font-family: var(--font-archie) !important;
+  font-family: var(--font-readable) !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverTextList .dashboardMomentumDriver{
   min-height: 24px !important;
@@ -6007,89 +6007,167 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
   grid-row: span var(--dashboard-pro-panel-span) !important;
-  grid-template-rows: 24px 36px minmax(0, 1fr) !important;
+  grid-template-rows: 24px minmax(0, 1fr) !important;
   align-items: stretch !important;
-}
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard .dashboardBigValue{
-  grid-row: 2;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTicks{
-  grid-row: 3 !important;
+  grid-row: 2 !important;
   align-self: stretch !important;
   justify-self: stretch !important;
-  display: flex !important;
-  flex-direction: column;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: 8px;
+  display: grid !important;
+  place-items: center;
   width: 100%;
-  height: auto !important;
+  height: 100% !important;
   min-height: 0 !important;
-  margin-top: 8px !important;
-  padding: 2px 2px 0 0;
+  margin-top: 0 !important;
+  padding: 0;
   transform: none !important;
-  overflow: auto !important;
+  overflow: hidden !important;
   pointer-events: auto !important;
+  position: relative;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedRow{
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  column-gap: 9px;
-  row-gap: 2px;
-  align-items: center;
-  min-width: 0;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedChart{
+  position: relative;
+  width: min(100%, 308px);
+  aspect-ratio: 1;
+  min-height: 308px;
+  align-self: center;
+  justify-self: center;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedRow .dashboardTasksCompletedTick{
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  flex: 0 0 18px;
-  width: 18px;
-  min-width: 18px;
-  max-width: 18px;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSvg{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTaskName{
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: rgba(245,248,244,.9);
-  font-family: var(--font-tight);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: .02em;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTrack{
+  fill: none;
+  stroke: rgba(67, 77, 92, .7);
+  stroke-width: 30;
+  opacity: .95;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTaskStatus{
-  grid-column: 2;
-  grid-row: 2;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: rgba(188,214,230,.64);
-  font-family: var(--font-readable);
-  font-size: 10px;
-  line-height: 1.1;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedNeedle{
+  stroke: rgba(226, 236, 244, .92);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,.18));
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTracking{
-  display: inline-block;
-  margin-left: 4px;
-  color: #35e8ff;
-  font-weight: 800;
-  animation: dashboardTasksCompletedTrackingPulse 1.35s ease-in-out infinite;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTrackSegment{
+  fill: none;
+  stroke-width: 24;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 160px 160px;
+  opacity: .34;
 }
-@keyframes dashboardTasksCompletedTrackingPulse{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment{
+  fill: none;
+  stroke-width: 24;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 160px 160px;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.28));
+  shape-rendering: geometricPrecision;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment.isRunning{
+  animation: dashboardTasksCompletedSegmentPulse 1.35s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 3px rgba(0,0,0,.32))
+    drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
+  will-change: opacity, filter;
+}
+@keyframes dashboardTasksCompletedSegmentPulse{
   0%, 100%{
-    opacity: .45;
-    text-shadow: 0 0 4px rgba(53,232,255,.2);
+    opacity: .78;
+    filter:
+      drop-shadow(0 0 3px rgba(0,0,0,.32))
+      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
+    stroke-width: 24;
   }
   50%{
     opacity: 1;
-    text-shadow: 0 0 10px rgba(53,232,255,.62);
+    filter:
+      drop-shadow(0 0 3px rgba(0,0,0,.32))
+      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
+    stroke-width: 27;
   }
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenter{
+  position: absolute;
+  inset: 33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(17, 22, 29, .98), rgba(10, 13, 18, 1));
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 0 0 8px rgba(12, 16, 22, .92);
+  text-align: center;
+  z-index: 2;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenterLabel{
+  color: rgba(245,248,244,.95);
+  font-family: var(--font-tight);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: .03em;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenterSubtext{
+  color: rgba(188,214,230,.72);
+  font-family: var(--font-readable);
+  font-size: 10px;
+  line-height: 1.15;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabels{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel{
+  --dashboard-task-label-color: #35e8ff;
+  position: absolute;
+  width: max-content;
+  max-width: 88px;
+  min-width: 0;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isLeft{
+  transform: translate(-100%, -50%);
+  text-align: right;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRight{
+  transform: translateY(-50%);
+  text-align: left;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelName{
+  color: rgba(245,248,244,.92);
+  font-family: var(--font-tight);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: .02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelStatus{
+  color: rgba(188,214,230,.7);
+  font-family: var(--font-readable);
+  font-size: 9px;
+  line-height: 1.08;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickSeparator{
   display: none !important;
@@ -6765,7 +6843,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     gap: 12px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    padding: 16px 0 0;
+    padding: 0;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
     grid-template-columns: 1fr;
@@ -6805,7 +6883,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     margin: 0;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    padding: 14px 0 0;
+    padding: 0;
     gap: 10px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{

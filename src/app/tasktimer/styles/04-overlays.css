@@ -104,71 +104,6 @@
     position: relative;
     z-index: 81;
   }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail > *:not(.desktopRailMascot),
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail > *:not(.desktopRailMascot),
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail > *:not(.desktopRailMascot),
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail > *:not(.desktopRailMascot){
-    opacity: .46;
-    filter: blur(4px) saturate(.58) brightness(.78);
-    transition: opacity .2s ease, filter .2s ease;
-  }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMascot,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascot,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascot,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascot{
-    position: relative;
-    z-index: 2;
-  }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotFigure{
-    filter: none !important;
-    backdrop-filter: none !important;
-    transition: opacity .2s ease, filter .2s ease;
-  }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMascotFigure{
-    opacity: .64;
-  }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotFigure,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotBubble,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotTrigger,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMascotFigure{
-    opacity: 1;
-    transition: opacity .2s ease, filter .2s ease;
-  }
 }
 
 @media (min-width: 981px){
@@ -193,18 +128,6 @@
     filter: none !important;
     backdrop-filter: none !important;
     transition: opacity .2s ease, filter .2s ease;
-  }
-
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail:has(.desktopRailMascotBubble.isOpen) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail:has(.desktopRailMascotBubble.isOpen) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail:has(.desktopRailMascotBubble.isOpen) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotBubble.isOpen) .desktopRailMiddleSection,
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail:has(.desktopRailMascotActionRow.isVisible) .desktopRailMiddleSection{
-    opacity: 1 !important;
   }
 }
 
@@ -2016,7 +1939,7 @@ body[data-theme="purple"] .rewardsInfoText{
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn{
   border-color: rgba(165, 172, 182, .66);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
-  font-family: var(--font-archie);
+  font-family: var(--font-readable);
 }
 
 #confirmOverlay.isResetTaskConfirm #confirmCancelBtn:hover:not(:disabled),

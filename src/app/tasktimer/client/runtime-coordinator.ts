@@ -8,7 +8,6 @@ import { renderTaskTimerSchedulePage } from "./schedule-render";
 import { SCHEDULE_MINUTE_PX, type TaskTimerScheduleViewModel } from "./schedule-runtime";
 import {
   clearTaskTimerPendingPushAction,
-  handleTaskTimerArchieNavigate,
   maybeHandleTaskTimerPendingPushAction,
   subscribeToTaskTimerCheckpointAlertMuteSignals,
 } from "./runtime-bridge";
@@ -414,13 +413,6 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
     });
   }
 
-  function handleArchieNavigate(hrefRaw: unknown) {
-    handleTaskTimerArchieNavigate(hrefRaw, {
-      applyAppPage: options.applyAppPage,
-      navigateToAppRoute: options.navigateToAppRoute,
-    });
-  }
-
   function subscribeToCheckpointAlertMuteSignals(
     unsubscribeRef: { current: (() => void) | null }
   ) {
@@ -450,7 +442,6 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
     initCloudRefreshSync,
     clearPendingPushAction,
     maybeHandlePendingPushAction,
-    handleArchieNavigate,
     subscribeToCheckpointAlertMuteSignals,
     resetAllOpenHistoryChartSelections,
     renderHistory,

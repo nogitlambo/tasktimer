@@ -1,5 +1,4 @@
 "use client";
-import { ONBOARDING_DASHBOARD_CLICK_EVENT } from "../lib/onboarding";
 import AppImg from "@/components/AppImg";
 
 const dashboardPanelOptions = [
@@ -16,11 +15,6 @@ type DashboardPageContentProps = {
 };
 
 export default function DashboardPageContent({ active }: DashboardPageContentProps) {
-  const handleOnboardingAdvanceClick = () => {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
-  };
-
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
@@ -31,7 +25,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
               <div
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
                 id="dashboardShellContent"
-                onClick={handleOnboardingAdvanceClick}
               >
                 <div className="dashboardTopRow">
                   <div className="dashboardEditActions">
@@ -122,12 +115,20 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
 
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                     <div className="dashboardCardTitle">Completed</div>
-                    <div className="dashboardBigValue dashboardTasksCompletedValue" id="dashboardTasksCompletedValue">
-                      <span className="dashboardTasksCompletedDone">0</span>
-                      <span className="dashboardTasksCompletedSlash">/</span>
-                      <span className="dashboardTasksCompletedTotal">0</span>
+                    <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
+                      <svg
+                        className="dashboardTasksCompletedSvg"
+                        id="dashboardTasksCompletedSvg"
+                        viewBox="0 0 320 320"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <circle className="dashboardTasksCompletedTrack" cx="160" cy="160" r="88" pathLength="100" />
+                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="160" y1="106" x2="160" y2="82" />
+                      </svg>
+                      <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
+                      <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
                     </div>
-                    <div className="dashboardTasksCompletedTicks" id="dashboardTasksCompletedTicks" role="list" aria-label="Daily task completion status" />
                     <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
                     <div className="dashboardSummaryStatus" aria-hidden="true" />
                     <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />

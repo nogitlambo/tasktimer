@@ -18,9 +18,9 @@ const auditFiles = [tasktimerCss, globalsCss, ...styleFiles];
 const authorityCommentPattern = /\b(Final|Canonical|authoritative)\b/gi;
 const importantPattern = /!important\b/g;
 const taskTimerGlobalPattern =
-  /#app\[aria-label=|data-app-page=|desktopRail|mobileArchie|dashboard|settings|feedback|historyManager|taskLaunch|tasktimer/i;
+  /#app\[aria-label=|data-app-page=|desktopRail|dashboard|settings|feedback|historyManager|taskLaunch|tasktimer/i;
 const responsiveOwnershipPattern =
-  /\.appBrandLandingReplica|(?:^|[\s>])\.modal(?:$|[\s:.[#>])|#(?:editOverlay|addTaskOverlay) \.modal|\.mobileArchieAssistant|\.desktopRailMascot|\.dashboard(?:Grid|Card|Shell|NeonLayout|Momentum|Avg|TopRow|Title|EditActions)/;
+  /\.appBrandLandingReplica|(?:^|[\s>])\.modal(?:$|[\s:.[#>])|#(?:editOverlay|addTaskOverlay) \.modal|\.dashboard(?:Grid|Card|Shell|NeonLayout|Momentum|Avg|TopRow|Title|EditActions)/;
 
 const SECTION_ALIASES = {
   duplicates: [

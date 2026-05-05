@@ -48,14 +48,8 @@ function main() {
 
   assertMatch(
     globals,
-    /--font-archie:\s*[^;]+;/m,
-    "globals.css must define --font-archie."
-  );
-
-  assertMatch(
-    globals,
-    /--font-readable:\s*var\(--font-archie\);/m,
-    "globals.css must keep --font-readable mapped to --font-archie."
+    /--font-readable:\s*Inconsolata,\s*var\(--font-geist-mono\);/m,
+    "globals.css must keep --font-readable mapped to Inconsolata."
   );
 
   assertMatch(

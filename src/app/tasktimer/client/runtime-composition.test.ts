@@ -74,7 +74,6 @@ describe("createTaskTimerRuntimeComposition", () => {
     });
     expect(composition.events).toEqual({
       PENDING_PUSH_TASK_EVENT: "tasktimer:pendingTaskJump",
-      ARCHIE_NAVIGATE_EVENT: "tasktimer:archieNavigate",
     });
   });
 

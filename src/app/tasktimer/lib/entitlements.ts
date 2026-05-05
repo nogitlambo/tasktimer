@@ -8,8 +8,7 @@ export type TaskTimerEntitlement =
   | "advancedInsights"
   | "advancedTaskConfig"
   | "advancedBackup"
-  | "socialFeatures"
-  | "archieAi";
+  | "socialFeatures";
 
 export const TASKTIMER_PLAN_STORAGE_KEY = `${TASKTIMER_STORAGE_KEY}:plan`;
 export const TASKTIMER_PLAN_CHANGED_EVENT = "tasktimer:plan-changed";
@@ -26,7 +25,6 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedTaskConfig: false,
     advancedBackup: false,
     socialFeatures: true,
-    archieAi: false,
   },
   pro: {
     advancedHistory: true,
@@ -34,7 +32,6 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedTaskConfig: true,
     advancedBackup: true,
     socialFeatures: true,
-    archieAi: true,
   },
 };
 

@@ -93,22 +93,6 @@ export type RewardsHeaderViewModel = {
   nextBandXp: number | null;
 };
 
-type XpReasonSummary = {
-  totalXp: number;
-  sessionTaskXp: Map<string, number>;
-  dailyConsistencyXp: number;
-  streakBonusXp: number;
-  weeklyGoal60Xp: number;
-  weeklyGoal100Xp: number;
-  launchXp: number;
-};
-
-type XpProgressArchieOptions = {
-  historyByTaskId?: HistoryByTaskId;
-  weekStarting?: DashboardWeekStart;
-  momentumEntitled?: boolean;
-};
-
 type RewardMomentumContext = {
   historyByTaskId?: HistoryByTaskId;
   tasks?: Task[];
@@ -120,7 +104,6 @@ export const XP_PER_TASK_LAUNCH = 5;
 export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
 export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
 export const SESSION_XP_INTERVAL_MS = 10 * 60 * 1000;
-export const DAILY_BASE_SESSION_XP_CAP = 12;
 export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;
 export const QUALIFIED_DAY_MIN_SESSION_COUNT = 2;
 export const QUALIFIED_DAY_MIN_SPAN_MS = 2 * 60 * 60 * 1000;
@@ -291,13 +274,6 @@ function getSessionEligibleMs(elapsedMs: number): number {
   const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
   if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
   return Math.min(safeElapsedMs, MAX_REWARD_ELIGIBLE_SESSION_MS);
-}
-
-function sumDailySessionXp(ledger: RewardLedgerEntry[], dayKey: string): number {
-  return ledger.reduce((sum, entry) => {
-    if (entry.reason !== "session" || entry.dayKey !== dayKey) return sum;
-    return sum + Math.max(0, entry.baseXp);
-  }, 0);
 }
 
 function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], completedSessionsDelta: number): RewardAwardResult {
@@ -554,11 +530,10 @@ function buildScaledSessionLedgerEntries(
   taskId: string | null,
   awardedAt: number,
   eligibleMs: number,
-  remainingDailyXp: number,
   segments: Array<{ startMs: number; endMs: number; multiplier: number }>
 ): RewardLedgerEntry[] {
-  if (!(eligibleMs > 0) || !(remainingDailyXp > 0) || !segments.length) return [];
-  const maxAwardableMs = Math.min(eligibleMs, remainingDailyXp * SESSION_XP_INTERVAL_MS);
+  if (!(eligibleMs > 0) || !segments.length) return [];
+  const maxAwardableMs = eligibleMs;
   if (!(maxAwardableMs > 0)) return [];
 
   let remainingMs = maxAwardableMs;
@@ -657,10 +632,7 @@ export function awardCompletedSessionXp(progress: RewardProgressV1, context: Com
   const normalizedSegments = normalizeSessionSegments(context, awardedAt, completionMultiplier);
 
   if (eligibleMs > 0) {
-    const dayKey = localDayKey(awardedAt);
-    const awardedToday = sumDailySessionXp(previous.awardLedger, dayKey);
-    const remainingDailyXp = Math.max(0, DAILY_BASE_SESSION_XP_CAP - awardedToday);
-    const sessionEntries = buildScaledSessionLedgerEntries(taskId, awardedAt, eligibleMs, remainingDailyXp, normalizedSegments).filter(
+    const sessionEntries = buildScaledSessionLedgerEntries(taskId, awardedAt, eligibleMs, normalizedSegments).filter(
       (entry) => !existingSources.has(entry.sourceKey)
     );
     sessionEntries.forEach((entry) => existingSources.add(entry.sourceKey));
@@ -907,140 +879,3 @@ export function buildRewardsHeaderViewModel(progress: RewardProgressV1): Rewards
   };
 }
 
-function formatWholeXp(value: number): string {
-  return `${Math.round(Math.max(0, Number(value) || 0))} XP`;
-}
-
-function humanJoin(parts: string[]): string {
-  const cleaned = parts.map((part) => String(part || "").trim()).filter(Boolean);
-  if (!cleaned.length) return "";
-  if (cleaned.length === 1) return cleaned[0]!;
-  if (cleaned.length === 2) return `${cleaned[0]} and ${cleaned[1]}`;
-  return `${cleaned.slice(0, -1).join(", ")}, and ${cleaned[cleaned.length - 1]}`;
-}
-
-function formatTaskNameList(taskNames: string[]): string {
-  const names = taskNames.map((taskName) => String(taskName || "").trim()).filter(Boolean);
-  if (!names.length) return "a task";
-  return humanJoin(names.slice(0, 3));
-}
-
-function summarizeRecentXpRewards(
-  progress: RewardProgressV1,
-  tasks: Task[],
-  nowValue: number
-): XpReasonSummary {
-  const windowStart = Math.max(0, nowValue - DAY_MS);
-  const taskNameById = new Map(
-    (Array.isArray(tasks) ? tasks : [])
-      .map((task) => [String(task?.id || "").trim(), String(task?.name || "").trim()] as const)
-      .filter(([taskId]) => !!taskId)
-  );
-  const summary: XpReasonSummary = {
-    totalXp: 0,
-    sessionTaskXp: new Map<string, number>(),
-    dailyConsistencyXp: 0,
-    streakBonusXp: 0,
-    weeklyGoal60Xp: 0,
-    weeklyGoal100Xp: 0,
-    launchXp: 0,
-  };
-
-  progress.awardLedger.forEach((entry) => {
-    const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
-    if (!ts || ts < windowStart || ts > nowValue) return;
-    const xp = Math.max(0, Number(entry?.xp) || 0);
-    if (!(xp > 0)) return;
-    summary.totalXp += xp;
-    if (entry.reason === "session") {
-      const taskId = String(entry.taskId || "").trim();
-      const taskName = taskNameById.get(taskId) || "a task";
-      summary.sessionTaskXp.set(taskName, (summary.sessionTaskXp.get(taskName) || 0) + xp);
-      return;
-    }
-    if (entry.reason === "dailyConsistency") {
-      summary.dailyConsistencyXp += xp;
-      return;
-    }
-    if (entry.reason === "streakBonus") {
-      summary.streakBonusXp += xp;
-      return;
-    }
-    if (entry.reason === "weeklyGoal60") {
-      summary.weeklyGoal60Xp += xp;
-      return;
-    }
-    if (entry.reason === "weeklyGoal100") {
-      summary.weeklyGoal100Xp += xp;
-      return;
-    }
-    if (entry.reason === "launch") {
-      summary.launchXp += xp;
-    }
-  });
-
-  return summary;
-}
-
-function formatXpRateLabel(multiplier: number): string {
-  const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
-  if (Math.abs(safeMultiplier - 1) < 0.001) return "You are currently earning XP at the standard 1x rate.";
-  const formatted = Number.isInteger(safeMultiplier) ? String(safeMultiplier) : safeMultiplier.toFixed(1).replace(/\.0$/, "");
-  return `You are currently earning XP at a ${formatted}x multiplier.`;
-}
-
-function getXpProgressRateSummary(tasks: Task[], nowValue: number, opts?: XpProgressArchieOptions): string {
-  if (!opts?.momentumEntitled) return formatXpRateLabel(1);
-  if (!opts.historyByTaskId || !opts.weekStarting) {
-    return formatXpRateLabel(1);
-  }
-  const multiplier = computeMomentumSnapshot({
-    tasks,
-    historyByTaskId: opts.historyByTaskId,
-    weekStarting: opts.weekStarting,
-    nowValue,
-  }).multiplier;
-  return formatXpRateLabel(multiplier);
-}
-
-export function buildXpProgressArchieMessage(
-  progressInput: unknown,
-  tasks: Task[],
-  nowValue = Date.now(),
-  opts?: XpProgressArchieOptions
-): string {
-  const progress = normalizeRewardProgress(progressInput);
-  const safeNow = Math.max(0, Math.floor(Number(nowValue || 0) || 0)) || Date.now();
-  const recentSummary = summarizeRecentXpRewards(progress, tasks, safeNow);
-  const rateSummary = getXpProgressRateSummary(tasks, safeNow, opts);
-
-  if (!(recentSummary.totalXp > 0)) {
-    return `In the last 24 hours, you have not earned any XP yet. ${rateSummary}`;
-  }
-
-  const detailParts: string[] = [];
-  if (recentSummary.sessionTaskXp.size) {
-    const sessionTasks = Array.from(recentSummary.sessionTaskXp.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([taskName]) => taskName);
-    const sessionXp = Array.from(recentSummary.sessionTaskXp.values()).reduce((sum, value) => sum + value, 0);
-    detailParts.push(`${formatWholeXp(sessionXp)} from session time on ${formatTaskNameList(sessionTasks)}`);
-  }
-  if (recentSummary.dailyConsistencyXp > 0) {
-    detailParts.push(`${formatWholeXp(recentSummary.dailyConsistencyXp)} from daily consistency`);
-  }
-  if (recentSummary.streakBonusXp > 0) {
-    detailParts.push(`${formatWholeXp(recentSummary.streakBonusXp)} from streak bonus`);
-  }
-  if (recentSummary.weeklyGoal60Xp > 0) {
-    detailParts.push(`${formatWholeXp(recentSummary.weeklyGoal60Xp)} from the 60% weekly goal bonus`);
-  }
-  if (recentSummary.weeklyGoal100Xp > 0) {
-    detailParts.push(`${formatWholeXp(recentSummary.weeklyGoal100Xp)} from the 100% weekly goal bonus`);
-  }
-  if (recentSummary.launchXp > 0) {
-    detailParts.push(`${formatWholeXp(recentSummary.launchXp)} from launches`);
-  }
-
-  return `In the last 24 hours, you earned ${formatWholeXp(recentSummary.totalXp)}: ${humanJoin(detailParts)}. ${rateSummary}`;
-}

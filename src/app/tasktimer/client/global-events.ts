@@ -39,12 +39,10 @@ type RegisterWindowRuntimeEventsOptions = {
   windowRef: Window;
   runtimeDestroyed: () => boolean;
   pendingPushEvent: string;
-  archieNavigateEvent?: string | null;
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
   maybeRestorePendingTimeGoalFlow: () => void;
-  handleArchieNavigate: (href: unknown) => void;
 };
 
 type RegisterDashboardShellEventsOptions = {
@@ -179,14 +177,6 @@ export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRunt
       options.maybeRestorePendingTimeGoalFlow();
     });
   });
-
-  if (options.archieNavigateEvent) {
-    options.on(options.windowRef, options.archieNavigateEvent as any, (event: any) => {
-      if (options.runtimeDestroyed()) return;
-      const href = event?.detail && typeof event.detail === "object" ? event.detail.href : "";
-      options.handleArchieNavigate(href);
-    });
-  }
 }
 
 export function registerTaskTimerDashboardShellEvents(options: RegisterDashboardShellEventsOptions) {

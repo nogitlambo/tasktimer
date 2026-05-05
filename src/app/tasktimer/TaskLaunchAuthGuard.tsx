@@ -7,10 +7,6 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
 import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
-import {
-  clearCachedCloudOnboardingComplete,
-  clearOnboardingSessionState,
-} from "@/app/tasktimer/lib/onboarding";
 
 type GuardStatus = "checking" | "authed";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -54,8 +50,6 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
         setStatus("authed");
         return;
       }
-      clearCachedCloudOnboardingComplete();
-      clearOnboardingSessionState();
       router.replace("/");
     });
     return () => unsub();

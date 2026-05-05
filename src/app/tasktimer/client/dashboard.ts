@@ -6,13 +6,6 @@ import {
   resolveDashboardCardPlacements,
   sanitizeDashboardCardPlacements,
 } from "./dashboard-layout";
-import {
-  ONBOARDING_DASHBOARD_CLICK_EVENT,
-  readOnboardingDashboardPanelStepForCurrentSession,
-  readOnboardingStatusForCurrentSession,
-} from "../lib/onboarding";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 type DashboardClosestTarget = {
@@ -22,16 +15,15 @@ type DashboardClosestTarget = {
 function isQuarterDefaultDashboardCard(cardId: string) {
   return (
     cardId === "week-hours" ||
-    cardId === "weekly-time-goals" ||
-    cardId === "tasks-completed"
+    cardId === "weekly-time-goals"
   );
 }
 
 function isHalfDefaultDashboardCard(cardId: string) {
-  return cardId === "momentum" || cardId === "avg-session-by-task" || cardId === "heatmap";
+  return cardId === "tasks-completed" || cardId === "momentum" || cardId === "avg-session-by-task" || cardId === "heatmap";
 }
 
-function isFixedFullWidthDashboardCard(_cardId: string) {
+function isFixedFullWidthDashboardCard() {
   return false;
 }
 
@@ -40,19 +32,27 @@ function isFixedHalfWidthDashboardCard(cardId: string) {
 }
 
 function isFixedDashboardCard(cardId: string) {
-  return isFixedFullWidthDashboardCard(cardId) || isFixedHalfWidthDashboardCard(cardId);
+  return isFixedFullWidthDashboardCard() || isFixedHalfWidthDashboardCard(cardId);
+}
+
+function getDefaultDashboardCardSize(cardId: string): DashboardCardSize | null {
+  if (isQuarterDefaultDashboardCard(cardId)) return "quarter";
+  if (isHalfDefaultDashboardCard(cardId)) return "half";
+  return null;
 }
 
 export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
   const normalizedCardId = String(cardId || "").trim();
-  if (isFixedFullWidthDashboardCard(normalizedCardId)) return "full";
+  if (isFixedFullWidthDashboardCard()) return "full";
   if (isFixedHalfWidthDashboardCard(normalizedCardId)) return "half";
+  if (normalizedCardId === "tasks-completed" && (value === "quarter" || value === "eighth")) return "half";
   if (value === "eighth") return isQuarterDefaultDashboardCard(normalizedCardId) ? "quarter" : null;
   if (value === "full" || value === "half" || value === "quarter") return value;
   return null;
 }
 
-export function isDashboardCardSizeOptionAllowed(size: string, _cardId: string) {
+export function isDashboardCardSizeOptionAllowed(size: string, cardId: string) {
+  if (String(cardId || "").trim() === "tasks-completed") return size === "full" || size === "half";
   return size === "full" || size === "half" || size === "quarter";
 }
 
@@ -366,8 +366,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       if (!cardId) return;
       const size =
         sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-        || (isQuarterDefaultDashboardCard(cardId) ? "quarter" : null)
-        || (isHalfDefaultDashboardCard(cardId) ? "half" : null);
+        || getDefaultDashboardCardSize(cardId);
       if (size) card.setAttribute("data-dashboard-size", size);
       else card.removeAttribute("data-dashboard-size");
     });
@@ -383,8 +382,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
         const size =
           sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-          || (isQuarterDefaultDashboardCard(cardId) ? "quarter" : null)
-          || (isHalfDefaultDashboardCard(cardId) ? "half" : null);
+          || getDefaultDashboardCardSize(cardId);
         return {
           id: cardId,
           size,
@@ -452,8 +450,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       if (!cardId) return;
       const selectedSize =
         sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-        || (isQuarterDefaultDashboardCard(cardId) ? "quarter" : null)
-        || (isHalfDefaultDashboardCard(cardId) ? "half" : null);
+        || getDefaultDashboardCardSize(cardId);
       const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
       const menuOpen = card.classList.contains("isSizeMenuOpen");
       if (isFixedDashboardCard(cardId)) {
@@ -622,22 +619,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     syncDashboardMenuFlipState();
   }
 
-  function findDashboardDragTarget(clientX: number, clientY: number, dragging: HTMLElement) {
-    const grid = getDashboardGridEl();
-    if (!grid) return null;
-    const candidates = Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).filter(
-      (card): card is HTMLElement => card instanceof HTMLElement && card !== dragging && grid.contains(card)
-    );
-    return (
-      candidates.find((card) => {
-        const rect = card.getBoundingClientRect();
-        const sameRow = clientY >= rect.top && clientY <= rect.bottom;
-        if (sameRow) return clientX < rect.left + rect.width / 2 || clientY < rect.top + rect.height / 2;
-        return clientY < rect.top + rect.height / 2;
-      }) || null
-    );
-  }
-
   function resolveDashboardGridDropPlacement(clientX: number, clientY: number, dragging: HTMLElement) {
     const grid = getDashboardGridEl();
     if (!grid) return null;
@@ -676,8 +657,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const currentSizes = ctx.getDashboardCardSizes();
     const size =
       sanitizeDashboardCardSize(currentSizes[draggedId], draggedId)
-      || (isQuarterDefaultDashboardCard(draggedId) ? "quarter" : null)
-      || (isHalfDefaultDashboardCard(draggedId) ? "half" : null);
+      || getDefaultDashboardCardSize(draggedId);
     return clampDashboardPlacement({ col: rawCol, row: rawRow }, size, columnCount);
   }
 
@@ -960,19 +940,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.setDashboardDragEl(null);
   }
 
-  function handleDashboardOnboardingClick(event: Event) {
-    const target = event.target as HTMLElement | null;
-    if (!target?.closest("#appPageDashboard")) return;
-    const currentUser = getFirebaseAuthClient()?.currentUser || null;
-    const onboardingStatus = readOnboardingStatusForCurrentSession(currentUser);
-    const activeDashboardPanelStep = readOnboardingDashboardPanelStepForCurrentSession(currentUser);
-    if (onboardingStatus !== "active" || !activeDashboardPanelStep) return;
-    event.preventDefault?.();
-    event.stopPropagation?.();
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(ONBOARDING_DASHBOARD_CLICK_EVENT, { detail: { source: "dashboard-content" } }));
-  }
-
   function registerDashboardEvents() {
     const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
     ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
@@ -982,7 +949,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.on(els.dashboardPanelMenuBackBtn, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
     ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
-    ctx.on(els.appPageDashboard, "click", handleDashboardOnboardingClick, true);
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
     ctx.on(dashboardInteractionRoot, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(dashboardInteractionRoot, "pointermove", handleDashboardGridPointerMove);

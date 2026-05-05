@@ -234,7 +234,6 @@ export function createTaskTimerRuntimeComposition(
     },
     events: {
       PENDING_PUSH_TASK_EVENT: "tasktimer:pendingTaskJump",
-      ARCHIE_NAVIGATE_EVENT: "tasktimer:archieNavigate",
     },
     runtime,
     workspaceRepository,

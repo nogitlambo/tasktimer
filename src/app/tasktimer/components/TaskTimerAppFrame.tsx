@@ -16,6 +16,8 @@ type TaskTimerAppFrameProps = {
   children: ReactNode;
   useClientNavButtons?: boolean;
   currentRankId: string;
+  currentUserAvatarSrc?: string;
+  currentUserAvatarInitials?: string;
   rewardsHeader: {
     rankLabel: string;
     totalXp: number;
@@ -30,6 +32,8 @@ export default function TaskTimerAppFrame({
   children,
   useClientNavButtons = activePage !== "history",
   currentRankId,
+  currentUserAvatarSrc = "",
+  currentUserAvatarInitials = "U",
   rewardsHeader,
 }: TaskTimerAppFrameProps) {
   const pathname = usePathname();
@@ -101,16 +105,14 @@ export default function TaskTimerAppFrame({
                   aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
                   onClick={() => setShowRankLadderModal(true)}
                 >
-                  <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                    <RankThumbnail
-                      rankId={currentRankId}
-                    className="taskLaunchTopbarXpInsigniaShell"
-                    imageClassName="taskLaunchTopbarXpInsigniaImg"
-                    placeholderClassName="taskLaunchTopbarXpInsigniaPlaceholder"
-                    alt=""
-                    size={16}
-                    aria-hidden
-                  />
+                  <span className="taskLaunchTopbarXpAvatarWrap" aria-hidden="true">
+                    {currentUserAvatarSrc ? (
+                      <AppImg className="taskLaunchTopbarXpAvatarImg" src={currentUserAvatarSrc} alt="" referrerPolicy={/^https?:\/\//i.test(currentUserAvatarSrc) ? "no-referrer" : undefined} />
+                    ) : (
+                      <span className="taskLaunchTopbarXpAvatarFallback">{currentUserAvatarInitials}</span>
+                    )}
+                  </span>
+                  <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
                   <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
                 </span>
                 <div

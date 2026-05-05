@@ -21,12 +21,6 @@ import {
   normalizeRewardProgress,
 } from "./lib/rewards";
 import {
-  ONBOARDING_STATE_CHANGED_EVENT,
-  readOnboardingStatusForCurrentSession,
-  readOnboardingStepForCurrentSession,
-} from "./lib/onboarding";
-import { isArchieEnabled, isOnboardingEnabled } from "./lib/featureFlags";
-import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
@@ -79,7 +73,6 @@ import {
 import {
   DEFAULT_MODE_COLORS,
 } from "./client/state";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   createTaskTimerScheduleRuntime,
   formatScheduleDayLabel,
@@ -162,7 +155,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     events: {
       PENDING_PUSH_TASK_EVENT,
-      ARCHIE_NAVIGATE_EVENT,
     },
     stores: {
       cloudSyncState,
@@ -203,15 +195,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function hasEntitlement(entitlement: TaskTimerEntitlement) {
     return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
-  }
-
-  function getIsOnboardingDashboardPreview() {
-    if (!isOnboardingEnabled()) return false;
-    const user = getFirebaseAuthClient()?.currentUser || null;
-    return (
-      readOnboardingStatusForCurrentSession(user) === "active"
-      && readOnboardingStepForCurrentSession(user) === "dashboard"
-    );
   }
 
   const destroy = () => {
@@ -587,7 +570,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       dashboardWidgetHasRenderedData,
       dashboardBusyState,
       cloudSyncState,
-      getIsOnboardingDashboardPreview,
       getElapsedMs,
       escapeHtmlUI,
       normalizeHistoryTimestampMs,
@@ -605,7 +587,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
       preferencesState,
       appRuntimeState,
-      getIsOnboardingDashboardPreview,
       setLastDashboardLiveSignature: (value) => {
         cacheRuntimeState.set("lastDashboardLiveSignature", value);
       },
@@ -1103,7 +1084,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     rehydrateFromCloudAndRender,
     initCloudRefreshSync,
     maybeHandlePendingPushAction,
-    handleArchieNavigate,
     getTileColumnCount,
     isArchitectUser,
   } = runtimeCoordinator;
@@ -1536,12 +1516,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderGroupsPage,
       openHistoryManager,
       pendingPushEvent: PENDING_PUSH_TASK_EVENT,
-      archieNavigateEvent: isArchieEnabled() ? ARCHIE_NAVIGATE_EVENT : null,
       maybeHandlePendingTaskJump: () => runtimeActions.maybeHandlePendingTaskJump(),
       maybeHandlePendingPushAction,
       rehydrateFromCloudAndRender,
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
-      handleArchieNavigate,
       registerAppShellEvents,
       registerGroupsEvents,
       registerAddTaskEvents,
@@ -1599,13 +1577,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     currentUid: () => getCurrentTaskTimerUid(),
     rehydrateFromCloudAndRender,
   });
-
-  if (isOnboardingEnabled()) {
-    runtime.on(window as any, ONBOARDING_STATE_CHANGED_EVENT, () => {
-      if (appRuntimeState.get("currentAppPage") !== "dashboard") return;
-      renderDashboardWidgetsWithBusy();
-    });
-  }
 
   return { destroy };
 }

@@ -56,12 +56,10 @@ type RegisterRootEventsOptions = {
   renderGroupsPage: () => void;
   openHistoryManager: () => void;
   pendingPushEvent: string;
-  archieNavigateEvent?: string | null;
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
   maybeRestorePendingTimeGoalFlow: () => void;
-  handleArchieNavigate: (hrefRaw: unknown) => void;
   registerAppShellEvents: () => void;
   registerGroupsEvents: () => void;
   registerAddTaskEvents: () => void;
@@ -117,7 +115,6 @@ type StartRootLifecycleOptions = {
 
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
-  const ARCHIE_HELP_REQUEST_EVENT = "tasktimer:archieHelpRequest";
 
   const setEditPresetIntervalsInfoOpen = (open: boolean) => {
     const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
@@ -131,14 +128,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     const e = event as { preventDefault?: () => void; stopPropagation?: () => void };
     e.preventDefault?.();
     e.stopPropagation?.();
-    setEditPresetIntervalsInfoOpen(false);
-    windowRef.dispatchEvent(
-      new CustomEvent(ARCHIE_HELP_REQUEST_EVENT, {
-        detail: {
-          message: "Preset intervals auto-fill checkpoint times using a fixed increment each time you add a checkpoint.",
-        },
-      })
-    );
+    setEditPresetIntervalsInfoOpen(true);
   });
 
   on(documentRef as unknown as EventTarget, "click", (event: unknown) => {
@@ -205,12 +195,10 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     windowRef,
     runtimeDestroyed: () => runtime.destroyed,
     pendingPushEvent: options.pendingPushEvent,
-    archieNavigateEvent: options.archieNavigateEvent,
     maybeHandlePendingTaskJump: options.maybeHandlePendingTaskJump,
     maybeHandlePendingPushAction: options.maybeHandlePendingPushAction,
     rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,
     maybeRestorePendingTimeGoalFlow: options.maybeRestorePendingTimeGoalFlow,
-    handleArchieNavigate: options.handleArchieNavigate,
   });
 
   options.registerGroupsEvents();
@@ -285,7 +273,6 @@ export function startTaskTimerRootLifecycle(options: StartRootLifecycleOptions) 
     },
     wireEvents: options.wireEvents,
     onWindowPendingPush: () => {},
-    onWindowArchieNavigate: () => {},
     maybeOpenImportFromQuery: options.maybeOpenImportFromQuery,
     syncDashboardMenuFlipUi: options.syncDashboardMenuFlipUi,
     syncDashboardRefreshButtonUi: options.syncDashboardRefreshButtonUi,
