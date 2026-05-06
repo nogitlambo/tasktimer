@@ -138,6 +138,43 @@ describe("history inline selection interaction", () => {
     expect(Array.from(state.lockedAbsIndexes)).toEqual([3]);
   });
 
+  it("falls back to the transient selection as the summary target when there are no locks", () => {
+    const selection = createHistoryInlineSelectionInteraction();
+    const state = createState({ selectedAbsIndex: 8, selectedRelIndex: 3 });
+
+    expect(selection.getSummaryPrimaryIndex(state)).toBe(8);
+  });
+
+  it("clear locks preserves the transient selected entry", () => {
+    const selection = createHistoryInlineSelectionInteraction();
+    const state = createState({
+      selectedAbsIndex: 8,
+      selectedRelIndex: 3,
+      lockedAbsIndexes: new Set([1, 2]),
+    });
+
+    selection.clearLockedSelections(state);
+
+    expect(state.lockedAbsIndexes.size).toBe(0);
+    expect(state.selectedAbsIndex).toBe(8);
+    expect(state.selectedRelIndex).toBe(3);
+  });
+
+  it("clear selection handles click-away clearing for selected and locked entries", () => {
+    const selection = createHistoryInlineSelectionInteraction();
+    const state = createState({
+      selectedAbsIndex: 8,
+      selectedRelIndex: 3,
+      lockedAbsIndexes: new Set([1, 2]),
+    });
+
+    selection.clearSelection(state);
+
+    expect(state.lockedAbsIndexes.size).toBe(0);
+    expect(state.selectedAbsIndex).toBeNull();
+    expect(state.selectedRelIndex).toBeNull();
+  });
+
   it("requires entitlement and at least two locked entries for analysis", () => {
     const selection = createHistoryInlineSelectionInteraction();
     const state = createState({ lockedAbsIndexes: new Set([1, 3]) });

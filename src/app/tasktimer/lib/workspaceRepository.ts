@@ -32,6 +32,12 @@ import {
   waitForPendingTaskSync,
 } from "./storage";
 
+export type TaskTimerHistorySnapshot = {
+  historyByTaskId: HistoryByTaskId;
+  cleanedHistoryByTaskId: HistoryByTaskId;
+  historyWasCleaned: boolean;
+};
+
 export type TaskTimerWorkspaceSnapshot = {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
@@ -68,14 +74,21 @@ function historyRowsSignature(historyByTaskId: HistoryByTaskId) {
     .join("||");
 }
 
-function buildWorkspaceSnapshot(): TaskTimerWorkspaceSnapshot {
+function buildHistorySnapshot(): TaskTimerHistorySnapshot {
   const historyByTaskId = loadHistory();
   const cleanedHistoryByTaskId = cleanupHistory(historyByTaskId);
   return {
-    tasks: loadTasks() || [],
     historyByTaskId,
     cleanedHistoryByTaskId,
     historyWasCleaned: historyRowsSignature(cleanedHistoryByTaskId) !== historyRowsSignature(historyByTaskId),
+  };
+}
+
+function buildWorkspaceSnapshot(): TaskTimerWorkspaceSnapshot {
+  const historySnapshot = buildHistorySnapshot();
+  return {
+    tasks: loadTasks() || [],
+    ...historySnapshot,
     liveSessionsByTaskId: loadLiveSessions(),
     deletedTaskMeta: loadDeletedMeta(),
     preferences: loadCachedPreferences(),
@@ -88,6 +101,7 @@ export function createTaskTimerWorkspaceRepository() {
   return {
     buildDefaultPreferences: () => buildDefaultCloudPreferences(),
     loadWorkspaceSnapshot: () => buildWorkspaceSnapshot(),
+    loadHistorySnapshot: () => buildHistorySnapshot(),
     loadTasks: () => loadTasks(),
     saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[] }) => saveTasks(tasks, opts),
     loadHistory: () => loadHistory(),

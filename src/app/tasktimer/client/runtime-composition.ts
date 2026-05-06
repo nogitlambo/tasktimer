@@ -223,6 +223,22 @@ export function createTaskTimerRuntimeComposition(
     friendProfileCacheByUid: initialState.friendProfileCacheByUid,
   });
 
+  const workspaceAdapters = {
+    historyPersistence: {
+      loadSnapshot: () => workspaceRepository.loadHistorySnapshot(),
+      saveCleanedSnapshot: (snapshot: ReturnType<TaskTimerWorkspaceRepository["loadHistorySnapshot"]>) => {
+        if (snapshot.historyWasCleaned) {
+          workspaceRepository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
+        }
+      },
+    },
+    preferencesPersistence: {
+      loadCached: () => workspaceRepository.loadCachedPreferences(),
+      buildDefault: () => workspaceRepository.buildDefaultPreferences(),
+      save: (prefs: Parameters<TaskTimerWorkspaceRepository["savePreferences"]>[0]) => workspaceRepository.savePreferences(prefs),
+    },
+  };
+
   return {
     initialState,
     storageKeys,
@@ -237,6 +253,7 @@ export function createTaskTimerRuntimeComposition(
     },
     runtime,
     workspaceRepository,
+    workspaceAdapters,
     stores: {
       cloudSyncState,
       dashboardBusyState,

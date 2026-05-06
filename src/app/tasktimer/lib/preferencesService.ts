@@ -1,6 +1,5 @@
 import type { UserPreferencesV1 } from "./cloudStore";
 import type { RewardProgressV1 } from "./rewards";
-import type { TaskTimerWorkspaceRepository } from "./workspaceRepository";
 import { normalizeDashboardWeekStart } from "./historyChart";
 import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
 import {
@@ -51,7 +50,11 @@ export type TaskTimerStoredPreferences = StoredPreferences;
 
 type PreferencesServiceOptions = {
   storageKeys: TaskTimerPreferenceStorageKeys;
-  repository: TaskTimerWorkspaceRepository;
+  repository: {
+    loadCachedPreferences: () => StoredPreferences | null;
+    buildDefaultPreferences: () => StoredPreferences;
+    savePreferences: (prefs: StoredPreferences) => void;
+  };
   getCloudPreferencesCache: () => StoredPreferences | null;
   setCloudPreferencesCache: (prefs: StoredPreferences) => void;
   currentUid: () => string;
