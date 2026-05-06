@@ -571,7 +571,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     }
     const palette = els.editTaskColorPalette;
     if (!palette) return;
-    const activeFamily = getTaskColorFamilyForColor(selectedColor)?.id || palette.getAttribute("data-active-family") || TASK_COLOR_FAMILIES[0].id;
+    const activeFamily =
+      palette.getAttribute("data-active-family") ||
+      getTaskColorFamilyForColor(selectedColor)?.id ||
+      TASK_COLOR_FAMILIES[0].id;
     palette.setAttribute("data-active-family", activeFamily);
     if (!palette.getAttribute("data-view")) palette.setAttribute("data-view", "main");
     Array.from(palette.querySelectorAll<HTMLElement>("[data-task-color]")).forEach((button) => {

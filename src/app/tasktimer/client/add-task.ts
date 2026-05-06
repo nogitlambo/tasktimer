@@ -454,7 +454,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       els.addTaskColorTrigger.style.setProperty("--task-color", selectedColor || "rgba(255,255,255,.18)");
     }
     const palette = els.addTaskColorPalette;
-    const activeFamily = getTaskColorFamilyForColor(selectedColor)?.id || palette?.getAttribute("data-active-family") || TASK_COLOR_FAMILIES[0].id;
+    const activeFamily =
+      palette?.getAttribute("data-active-family") ||
+      getTaskColorFamilyForColor(selectedColor)?.id ||
+      TASK_COLOR_FAMILIES[0].id;
     if (palette) palette.setAttribute("data-active-family", activeFamily);
     if (palette && !palette.getAttribute("data-view")) palette.setAttribute("data-view", "main");
     palette?.querySelectorAll?.("[data-task-color]")?.forEach((node) => {

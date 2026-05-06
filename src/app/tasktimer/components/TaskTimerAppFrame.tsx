@@ -175,8 +175,8 @@ export default function TaskTimerAppFrame({
             </a>
           </div>
         </div>
-        {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
       </div>
+      {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
       <div className="desktopAppShell">
         <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showMobileFooter={false} />
         <div className="desktopAppMain">
