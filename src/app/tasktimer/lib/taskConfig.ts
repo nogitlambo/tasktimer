@@ -148,10 +148,10 @@ export function formatAddTaskDurationReadout({
   taskType,
   noTimeGoal,
 }: TaskConfigReadoutOptions): string {
-  if (noTimeGoal) return "No time goal";
+  if (noTimeGoal) return "";
 
   const parsedValue = Math.max(0, Math.floor(Number(durationValue) || 0));
-  if (!(parsedValue > 0)) return "Set a time goal";
+  if (!(parsedValue > 0)) return "";
 
   const unitLabel = parsedValue === 1 ? durationUnit : `${durationUnit}s`;
   if (taskType === "once-off") return `${parsedValue} ${unitLabel} once`;

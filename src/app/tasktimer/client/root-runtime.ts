@@ -116,28 +116,6 @@ type StartRootLifecycleOptions = {
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
 
-  const setEditPresetIntervalsInfoOpen = (open: boolean) => {
-    const dialog = els.editPresetIntervalsInfoDialog as HTMLElement | null;
-    dialog?.classList.toggle("isOpen", open);
-    if (els.editPresetIntervalsInfoBtn) {
-      els.editPresetIntervalsInfoBtn.setAttribute("aria-expanded", String(open));
-    }
-  };
-
-  on(els.editPresetIntervalsInfoBtn, "click", (event: unknown) => {
-    const e = event as { preventDefault?: () => void; stopPropagation?: () => void };
-    e.preventDefault?.();
-    e.stopPropagation?.();
-    setEditPresetIntervalsInfoOpen(true);
-  });
-
-  on(documentRef as unknown as EventTarget, "click", (event: unknown) => {
-    const target = (event as { target?: EventTarget | null } | null)?.target as HTMLElement | null;
-    if (target?.closest?.("#editPresetIntervalsInfoBtn")) return;
-    if (target?.closest?.("#editPresetIntervalsInfoDialog")) return;
-    setEditPresetIntervalsInfoOpen(false);
-  });
-
   options.registerAppShellEvents();
 
   registerTaskTimerScheduleEvents({

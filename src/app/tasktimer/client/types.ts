@@ -119,13 +119,11 @@ export type TaskTimerMutableState = {
   addTaskCheckpointSoundMode: "once" | "repeat";
   addTaskCheckpointToastEnabled: boolean;
   addTaskCheckpointToastMode: "auto5s" | "manual";
-  addTaskPresetIntervalsEnabled: boolean;
-  addTaskPresetIntervalValue: number;
   timeGoalModalTaskId: string | null;
   timeGoalModalFrozenElapsedMs: number;
   timeGoalReminderAtMsByTaskId: Record<string, number>;
   addTaskWizardStep: 1 | 2 | 3 | 4 | 5;
-  addTaskType: "recurring" | "once-off";
+  addTaskType: "recurring" | "once-off" | null;
   addTaskOnceOffDay: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
   addTaskPlannedStartTime: string;
   addTaskDurationValue: number;

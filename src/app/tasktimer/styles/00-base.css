@@ -2094,15 +2094,6 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
       0 0 0 rgba(53, 232, 255, 0);
   }
 }
-#addTaskPresetIntervalsToggleRow,
-#editPresetIntervalsToggleRow{
-  justify-content: flex-start;
-  gap: 8px;
-}
-#addTaskPresetIntervalsToggleRow .switch,
-#editPresetIntervalsToggleRow .switch{
-  margin-left: auto;
-}
 /* Appearance setting: Menu and button style */
 body[data-control-style="square"]{
   --control-slant: 0px;

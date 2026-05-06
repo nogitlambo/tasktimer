@@ -191,6 +191,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     let cancelled = false;
     let activeUid = String(auth.currentUser?.uid || "").trim();
+    let refreshTimer: number | null = null;
 
     const loadForUid = async (uid: string) => {
       setLeaderboardState("loading");
@@ -217,6 +218,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       }
     };
 
+    const scheduleRefresh = () => {
+      if (refreshTimer != null) window.clearInterval(refreshTimer);
+      refreshTimer = window.setInterval(() => {
+        if (!activeUid || document.visibilityState !== "visible") return;
+        void loadForUid(activeUid);
+      }, 60_000);
+    };
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       activeUid = String(user?.uid || "").trim();
       if (!activeUid) {
@@ -225,6 +234,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         setLeaderboardError(null);
         return;
       }
+      scheduleRefresh();
       void loadForUid(activeUid);
     });
 
@@ -238,18 +248,24 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (typeof window !== "undefined") {
       window.addEventListener(LEADERBOARD_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
       window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
+      window.addEventListener("focus", handleProfileUpdated as EventListener);
+      document.addEventListener("visibilitychange", handleProfileUpdated as EventListener);
     }
 
     if (activeUid) {
+      scheduleRefresh();
       void loadForUid(activeUid);
     }
 
     return () => {
       cancelled = true;
       unsubscribe();
+      if (refreshTimer != null) window.clearInterval(refreshTimer);
       if (typeof window !== "undefined") {
         window.removeEventListener(LEADERBOARD_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
         window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
+        window.removeEventListener("focus", handleProfileUpdated as EventListener);
+        document.removeEventListener("visibilitychange", handleProfileUpdated as EventListener);
       }
     };
   }, []);

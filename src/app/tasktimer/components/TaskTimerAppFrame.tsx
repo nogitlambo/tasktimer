@@ -50,6 +50,7 @@ export default function TaskTimerAppFrame({
     () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === currentRankId)),
     [currentRankId]
   );
+  const showMaxXpAlert = rewardsHeader.xpToNext == null;
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";
@@ -127,7 +128,10 @@ export default function TaskTimerAppFrame({
                   >
                     <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                   </div>
-                  <strong className="taskLaunchTopbarXpValue">{rewardsHeader.totalXp} XP</strong>
+                  <strong className="taskLaunchTopbarXpValue">
+                    {rewardsHeader.totalXp} XP
+                    {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
+                  </strong>
                 </button>
               </div>
             </section>
@@ -208,7 +212,10 @@ export default function TaskTimerAppFrame({
                   >
                     <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                   </div>
-                  <strong className="appShellHeaderXpValue">{rewardsHeader.totalXp} XP</strong>
+                  <strong className="appShellHeaderXpValue">
+                    {rewardsHeader.totalXp} XP
+                    {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
+                  </strong>
                 </button>
               </div>
             </section>

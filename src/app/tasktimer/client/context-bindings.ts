@@ -41,7 +41,7 @@ type EditState = {
 
 type AddTaskState = {
   addTaskWizardStep: 1 | 2 | 3 | 4 | 5;
-  addTaskType: "recurring" | "once-off";
+  addTaskType: "recurring" | "once-off" | null;
   addTaskOnceOffDay: Task["onceOffDay"] extends infer T ? Exclude<T, null | undefined> : never;
   addTaskPlannedStartTime: string;
   addTaskDurationValue: number;
@@ -55,8 +55,6 @@ type AddTaskState = {
   addTaskCheckpointSoundMode: "once" | "repeat";
   addTaskCheckpointToastEnabled: boolean;
   addTaskCheckpointToastMode: "auto5s" | "manual";
-  addTaskPresetIntervalsEnabled: boolean;
-  addTaskPresetIntervalValue: number;
   suppressAddTaskNameFocusOpen: boolean;
 };
 
@@ -164,7 +162,7 @@ export function createTaskTimerAddTaskStateBindings(addTaskState: TaskTimerMutab
       addTaskState.set("addTaskWizardStep", value);
     },
     getAddTaskType: () => addTaskState.get("addTaskType"),
-    setAddTaskTypeState: (value: "recurring" | "once-off") => {
+    setAddTaskTypeState: (value: "recurring" | "once-off" | null) => {
       addTaskState.set("addTaskType", value);
     },
     getAddTaskOnceOffDay: () => addTaskState.get("addTaskOnceOffDay"),
@@ -218,14 +216,6 @@ export function createTaskTimerAddTaskStateBindings(addTaskState: TaskTimerMutab
     getAddTaskCheckpointToastMode: () => addTaskState.get("addTaskCheckpointToastMode"),
     setAddTaskCheckpointToastModeState: (value: "auto5s" | "manual") => {
       addTaskState.set("addTaskCheckpointToastMode", value);
-    },
-    getAddTaskPresetIntervalsEnabled: () => addTaskState.get("addTaskPresetIntervalsEnabled"),
-    setAddTaskPresetIntervalsEnabledState: (value: boolean) => {
-      addTaskState.set("addTaskPresetIntervalsEnabled", value);
-    },
-    getAddTaskPresetIntervalValue: () => addTaskState.get("addTaskPresetIntervalValue"),
-    setAddTaskPresetIntervalValueState: (value: number) => {
-      addTaskState.set("addTaskPresetIntervalValue", value);
     },
     getSuppressAddTaskNameFocusOpen: () => addTaskState.get("suppressAddTaskNameFocusOpen"),
     setSuppressAddTaskNameFocusOpenState: (value: boolean) => {

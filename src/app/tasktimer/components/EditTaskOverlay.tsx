@@ -1,6 +1,4 @@
-
-import type { CSSProperties } from "react";
-import { TASK_COLOR_PALETTE } from "../lib/taskColors";
+import TaskColorPickerPopover from "./TaskColorPickerPopover";
 
 export default function EditTaskOverlay() {
   return (
@@ -11,21 +9,23 @@ export default function EditTaskOverlay() {
             <div className="editHead">
               <h2>Edit Task</h2>
             </div>
-            <button
-              className="editTaskColorTrigger editTaskColorSwatch editTaskColorSwatchNone"
-              id="editTaskColorTrigger"
-              type="button"
-              title="Choose task color"
-              aria-label="Choose task color"
-              aria-haspopup="dialog"
-              aria-expanded="false"
-            />
             <div className="editValidationError" id="editValidationError" aria-live="polite" />
           </div>
           <div className="editTaskModalBody">
             <div className="field">
               <label htmlFor="editName">Task Name</label>
-              <input type="text" id="editName" />
+              <div className="taskNameRow">
+                <input type="text" id="editName" />
+                <button
+                  className="editTaskColorTrigger editTaskColorSwatch editTaskColorSwatchNone"
+                  id="editTaskColorTrigger"
+                  type="button"
+                  title="Choose task color"
+                  aria-label="Choose task color"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                />
+              </div>
             </div>
 
             <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
@@ -38,12 +38,8 @@ export default function EditTaskOverlay() {
             </div>
 
             <div className="field editTaskTimeGoalField">
-              <div className="editTaskTimeGoalHeader toggleRow" id="editTaskTimeGoalToggleRow">
-                <label className="editTaskTimeGoalToggleWrap" htmlFor="editTimeGoalToggle">
-                  <input id="editTimeGoalToggle" type="checkbox" aria-label="Enable time goal" defaultChecked />
-                  <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
-                </label>
-                <input id="editNoGoalCheckbox" type="checkbox" hidden />
+              <div className="editTaskTimeGoalHeader" id="editTaskTimeGoalToggleRow">
+                <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
               </div>
               <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
                 <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
@@ -144,17 +140,6 @@ export default function EditTaskOverlay() {
                   <span className="milestonesSummaryPrimary">Time Checkpoints</span>
                 </label>
               </div>
-              <div className="toggleRow" id="editPresetIntervalsToggleRow">
-                <label className="editTaskInlineCheckboxLabel" htmlFor="editPresetIntervalsToggle">
-                  <input id="editPresetIntervalsToggle" type="checkbox" aria-label="Use preset intervals" />
-                  <span>Use Preset Intervals</span>
-                </label>
-              </div>
-              <div className="field checkpointAlertSoundModeField isHidden" id="editPresetIntervalField">
-                <label htmlFor="editPresetIntervalInput">Preset interval</label>
-                <input id="editPresetIntervalInput" type="number" min={0} step="any" inputMode="decimal" />
-              </div>
-              <p className="checkpointAlertsNote" id="editPresetIntervalNote" style={{ display: "none" }} />
               <div className="milestonesBody">
                 <div id="msList" />
                 <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
@@ -200,31 +185,7 @@ export default function EditTaskOverlay() {
           </div>
           <div className="editTaskColorPopover" id="editTaskColorPopover" role="dialog" aria-modal="false" aria-label="Choose task color" style={{ display: "none" }}>
             <div className="editTaskColorPopoverPanel">
-              <div className="editTaskColorPalette" id="editTaskColorPalette" role="radiogroup" aria-label="Task color">
-                <button
-                  className="editTaskColorSwatch editTaskColorSwatchNone isSelected"
-                  id="editTaskColorNone"
-                  type="button"
-                  data-task-color=""
-                  role="radio"
-                  aria-checked="true"
-                  title="No task color"
-                  aria-label="No task color"
-                />
-                {TASK_COLOR_PALETTE.map((color) => (
-                  <button
-                    className="editTaskColorSwatch"
-                    key={color}
-                    type="button"
-                    data-task-color={color}
-                    role="radio"
-                    aria-checked="false"
-                    title={`Use task color ${color}`}
-                    aria-label={`Use task color ${color}`}
-                    style={{ "--task-color": color } as CSSProperties}
-                  />
-                ))}
-              </div>
+              <TaskColorPickerPopover paletteId="editTaskColorPalette" noneId="editTaskColorNone" />
             </div>
           </div>
         </div>

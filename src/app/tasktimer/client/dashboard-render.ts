@@ -58,6 +58,22 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_SEGMENT_GAP_PCT = 1.2;
   const DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT = 1.4;
 
+  function syncXpValueAlert(valueEl: HTMLElement | null, totalXp: number, showAlert: boolean, alertClassName: string) {
+    if (!valueEl) return;
+    valueEl.textContent = `${totalXp} XP`;
+    const existingAlert = valueEl.querySelector(`.${alertClassName}`);
+    if (showAlert) {
+      if (existingAlert) return;
+      const alertEl = document.createElement("span");
+      alertEl.className = alertClassName;
+      alertEl.setAttribute("aria-hidden", "true");
+      alertEl.textContent = " !";
+      valueEl.appendChild(alertEl);
+      return;
+    }
+    existingAlert?.remove();
+  }
+
   function setDashboardPlanLockedState(cardEl: HTMLElement | null, isLocked: boolean) {
     if (!cardEl) return;
     const shouldShowCenteredLock = isLocked && ctx.getCurrentPlan() === "free";
@@ -111,7 +127,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       progressPct: liveHeader.progressPct,
       xpToNext: liveHeader.xpToNext,
     };
-    if (valueEl) valueEl.textContent = `${rewardsHeader.totalXp} XP`;
+    syncXpValueAlert(valueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "appShellXpValueAlert");
     if (progressFillEl) {
       progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
     }

@@ -140,8 +140,6 @@ export function createTaskTimerRuntimeComposition(
     addTaskCheckpointSoundMode: initialState.addTaskCheckpointSoundMode,
     addTaskCheckpointToastEnabled: initialState.addTaskCheckpointToastEnabled,
     addTaskCheckpointToastMode: initialState.addTaskCheckpointToastMode,
-    addTaskPresetIntervalsEnabled: initialState.addTaskPresetIntervalsEnabled,
-    addTaskPresetIntervalValue: initialState.addTaskPresetIntervalValue,
     addTaskWizardStep: initialState.addTaskWizardStep,
     addTaskType: initialState.addTaskType,
     addTaskOnceOffDay: initialState.addTaskOnceOffDay,

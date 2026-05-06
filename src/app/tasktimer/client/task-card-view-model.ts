@@ -33,6 +33,8 @@ type TaskProgressModel = {
 
 type TaskHistoryRevealPhase = "opening" | "closing" | "open" | null;
 
+const TASK_HISTORY_TAB_BORDER_GAP_PX = 160;
+
 type RenderTaskCardOptions = {
   task: Task;
   taskId: string;
@@ -149,7 +151,12 @@ export function renderTaskProgressHtml(
   model: TaskProgressModel | null,
   opts: { fillColor: string; escapeHtml: (value: string) => string }
 ) {
-  if (!model) return "";
+  if (!model) {
+    return `
+          <div class="progressRow progressRowEmpty" aria-hidden="true">
+            <div class="progressWrap"></div>
+          </div>`;
+  }
   const { escapeHtml, fillColor } = opts;
   const markersHtml = model.markers
     .map((marker) => {
@@ -328,7 +335,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
             </div>
             ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" style="--task-history-tab-border-gap:${TASK_HISTORY_TAB_BORDER_GAP_PX}px" ${isHistoryPinned ? "disabled" : ""}>
               <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
             ${historyHTML}

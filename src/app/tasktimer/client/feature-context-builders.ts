@@ -355,9 +355,6 @@ type CreateTasksOptionsArgs = {
   buildEditDraftSnapshot: (task: Task) => string;
   getCurrentEditTask: () => Task | null;
   syncEditTaskDurationReadout: Parameters<typeof createTaskTimerTasks>[0]["syncEditTaskDurationReadout"];
-  maybeToggleEditPresetIntervals: (nextEnabled: boolean) => void;
-  hasValidPresetInterval: (task: Task) => boolean;
-  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutes: number) => boolean;
   getPresetIntervalNextSeqNum: (task: Task) => number;
   isEditMilestoneUnitDay: () => boolean;
   setTaskFlipped: (taskId: string, flipped: boolean, taskEl?: HTMLElement | null) => void;
@@ -421,10 +418,6 @@ type CreateAddTaskOptionsArgs = {
     | "setAddTaskCheckpointToastEnabledState"
     | "getAddTaskCheckpointToastMode"
     | "setAddTaskCheckpointToastModeState"
-    | "getAddTaskPresetIntervalsEnabled"
-    | "setAddTaskPresetIntervalsEnabledState"
-    | "getAddTaskPresetIntervalValue"
-    | "setAddTaskPresetIntervalValueState"
     | "getSuppressAddTaskNameFocusOpen"
     | "setSuppressAddTaskNameFocusOpenState"
   >;
@@ -1203,9 +1196,6 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     buildEditDraftSnapshot: args.buildEditDraftSnapshot,
     getCurrentEditTask: args.getCurrentEditTask,
     syncEditTaskDurationReadout: args.syncEditTaskDurationReadout,
-    maybeToggleEditPresetIntervals: args.maybeToggleEditPresetIntervals,
-    hasValidPresetInterval: args.hasValidPresetInterval,
-    addMilestoneWithCurrentPreset: args.addMilestoneWithCurrentPreset,
     getPresetIntervalNextSeqNum: args.getPresetIntervalNextSeqNum,
     isEditMilestoneUnitDay: args.isEditMilestoneUnitDay,
     setTaskFlipped: args.setTaskFlipped,

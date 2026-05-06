@@ -96,6 +96,13 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Share (Pro)");
   });
 
+  it("renders a history-tab border footprint for shell border alignment", () => {
+    const rendered = renderCard();
+
+    expect(rendered.html).toContain('class="taskHistoryReveal ');
+    expect(rendered.html).toContain('style="--task-history-tab-border-gap:160px"');
+  });
+
   it("dispatches allowed task card actions", () => {
     const calls: string[] = [];
 

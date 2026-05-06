@@ -262,6 +262,12 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
 }
 /* Progress row */
 .progressRow{ margin-top:12px; }
+.progressRow.progressRowEmpty{
+  pointer-events:none;
+}
+.progressRow.progressRowEmpty .progressWrap{
+  visibility:hidden;
+}
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressWrap{
   padding-bottom: 42px;
 }
@@ -3135,7 +3141,7 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
   --task-card-bottom-border-color: rgba(255,255,255,.12);
-  --task-card-tab-border-gap: 150px;
+  --task-card-tab-border-gap: var(--task-history-tab-border-gap, 160px);
   border-bottom-color: transparent !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront::after,

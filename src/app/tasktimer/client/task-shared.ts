@@ -1,4 +1,3 @@
-import { sortMilestones } from "../lib/milestones";
 import {
   hasLocalDatePassed,
   normalizeLocalDateValue,
@@ -37,11 +36,8 @@ export type TaskTimerSharedTaskApi = {
   normalizeLoadedTask: (task: Task) => void;
   ensureMilestoneIdentity: (task: Task) => void;
   deriveCheckpointAlertEnabledState: (task: Task | null | undefined) => { soundEnabled: boolean; toastEnabled: boolean };
-  hasValidPresetInterval: (task: Task | null | undefined) => boolean;
   getPresetIntervalValueNum: (task: Task | null | undefined) => number;
   getPresetIntervalNextSeqNum: (task: Task | null | undefined) => number;
-  getPresetIntervalLastMilestone: (task: Task | null | undefined) => { hours: number; description: string } | null;
-  addMilestoneWithCurrentPreset: (task: Task, timeGoalMinutesOverride?: number | null) => boolean;
   milestoneUnitSec: (task: Task | null | undefined) => number;
   milestoneUnitSuffix: (task: Task | null | undefined) => string;
   hasNonPositiveCheckpoint: (milestones: Task["milestones"] | null | undefined) => boolean;
@@ -183,11 +179,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     };
   }
 
-  function hasValidPresetInterval(task: Task | null | undefined) {
-    const presetIntervalValue = Number((task as { presetIntervalValue?: number } | null | undefined)?.presetIntervalValue ?? 0);
-    return !!task && Number.isFinite(presetIntervalValue) && presetIntervalValue > 0;
-  }
-
   function getPresetIntervalValueNum(task: Task | null | undefined) {
     const presetIntervalValue = Number((task as { presetIntervalValue?: number } | null | undefined)?.presetIntervalValue ?? 0);
     return Number.isFinite(presetIntervalValue) ? Math.max(0, presetIntervalValue) : 0;
@@ -196,25 +187,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
   function getPresetIntervalNextSeqNum(task: Task | null | undefined) {
     const presetIntervalNextSeq = Number((task as { presetIntervalNextSeq?: number } | null | undefined)?.presetIntervalNextSeq ?? 0);
     return Number.isFinite(presetIntervalNextSeq) ? Math.max(1, Math.floor(presetIntervalNextSeq)) : 1;
-  }
-
-  function getPresetIntervalLastMilestone(task: Task | null | undefined) {
-    if (!task || !Array.isArray(task.milestones) || task.milestones.length === 0) return null;
-    const taskAny = task as { presetIntervalLastMilestoneId?: string | null };
-    ensureMilestoneIdentity(task);
-    const lastId = String(taskAny.presetIntervalLastMilestoneId || "");
-    let match = task.milestones.find((milestone) => String(milestone.id || "") === lastId) || null;
-    if (match) return match;
-    match =
-      task.milestones
-        .slice()
-        .sort(
-          (a, b) =>
-            (Number((a as { createdSeq?: number }).createdSeq ?? 0) || 0) - (Number((b as { createdSeq?: number }).createdSeq ?? 0) || 0)
-        )
-        .pop() || null;
-    if (match?.id) taskAny.presetIntervalLastMilestoneId = String(match.id);
-    return match;
   }
 
   function milestoneUnitSec(task: Task | null | undefined): number {
@@ -250,28 +222,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
   ): boolean {
     if (!Array.isArray(milestones) || milestones.length === 0) return false;
     return milestones.some((milestone) => isCheckpointAtOrAboveTimeGoal(milestone?.hours, milestoneUnitSeconds, timeGoalMinutes));
-  }
-
-  function addMilestoneWithCurrentPreset(task: Task, timeGoalMinutesOverride?: number | null): boolean {
-    const taskAny = task as Task & {
-      presetIntervalValue?: number;
-      presetIntervalLastMilestoneId?: string | null;
-      presetIntervalNextSeq?: number;
-    };
-    task.milestones = Array.isArray(task.milestones) ? task.milestones : [];
-    ensureMilestoneIdentity(task);
-    const interval = Math.max(0, Number(taskAny.presetIntervalValue ?? 0) || 0);
-    const last = getPresetIntervalLastMilestone(task);
-    const nextHours = Math.max(0, (last ? +last.hours || 0 : 0) + interval);
-    const timeGoalMinutes = timeGoalMinutesOverride == null ? Number(task.timeGoalMinutes || 0) : timeGoalMinutesOverride;
-    if (isCheckpointAtOrAboveTimeGoal(nextHours, milestoneUnitSec(task), timeGoalMinutes)) return false;
-    const nextSeq = Math.max(1, Math.floor(Number(taskAny.presetIntervalNextSeq ?? 1) || 1));
-    const milestone = { id: ctx.createId(), createdSeq: nextSeq, hours: nextHours, description: "", alertsEnabled: true };
-    task.milestones.push(milestone);
-    taskAny.presetIntervalLastMilestoneId = milestone.id;
-    taskAny.presetIntervalNextSeq = nextSeq + 1;
-    task.milestones = sortMilestones(task.milestones);
-    return true;
   }
 
   function hasNonPositiveCheckpoint(milestones: Task["milestones"] | null | undefined): boolean {
@@ -313,11 +263,8 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     normalizeLoadedTask,
     ensureMilestoneIdentity,
     deriveCheckpointAlertEnabledState,
-    hasValidPresetInterval,
     getPresetIntervalValueNum,
     getPresetIntervalNextSeqNum,
-    getPresetIntervalLastMilestone,
-    addMilestoneWithCurrentPreset,
     milestoneUnitSec,
     milestoneUnitSuffix,
     hasNonPositiveCheckpoint,
