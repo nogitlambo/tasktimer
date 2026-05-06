@@ -1,5 +1,5 @@
 import type { HistoryByTaskId, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
-import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
+import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceHistoryPersistence, TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasks } from "./live-session-task-state";
@@ -13,10 +13,8 @@ type TaskUiCacheShape = {
 } | null;
 
 type CreateTaskTimerPersistenceOptions = {
-  workspaceRepository: Pick<
-    TaskTimerWorkspaceRepository,
-    "loadHistorySnapshot" | "loadWorkspaceSnapshot" | "saveHistory" | "saveTasks"
-  >;
+  workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "saveTasks">;
+  historyPersistence: TaskTimerWorkspaceHistoryPersistence;
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
   getTasks: () => Task[];
@@ -192,13 +190,11 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
 
   function applyHistorySnapshot(snapshot: TaskTimerHistorySnapshot) {
     options.setHistoryByTaskId(snapshot.cleanedHistoryByTaskId);
-    if (snapshot.historyWasCleaned) {
-      options.workspaceRepository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
-    }
+    options.historyPersistence.saveCleanedSnapshot(snapshot);
   }
 
   function loadHistoryIntoMemory() {
-    applyHistorySnapshot(options.workspaceRepository.loadHistorySnapshot());
+    applyHistorySnapshot(options.historyPersistence.loadSnapshot());
   }
 
   function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
