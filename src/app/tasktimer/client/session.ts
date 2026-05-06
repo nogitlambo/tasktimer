@@ -8,6 +8,7 @@ import { findNextScheduledTaskAfterLocalTime } from "../lib/schedule-placement";
 import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
+import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -84,77 +85,45 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const getActiveToast = () => ctx.getActiveCheckpointToast() as CheckpointToast | null;
   const setActiveToast = (value: CheckpointToast | null) => ctx.setActiveCheckpointToast(value as unknown);
 
+  const focusSessionDrafts = createFocusSessionDrafts(
+    {
+      getDrafts: () => ctx.getFocusSessionNotesByTaskId(),
+      setDrafts: (next) => ctx.setFocusSessionNotesByTaskId(next),
+      getActiveTaskId: () => ctx.getFocusModeTaskId(),
+      getPendingSaveTimer: () => ctx.getFocusSessionNoteSaveTimer(),
+      setPendingSaveTimer: (next) => ctx.setFocusSessionNoteSaveTimer(next),
+      getInputValue: () => String(els.focusSessionNotesInput?.value || ""),
+      setInputValue: (next) => {
+        if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = next;
+      },
+      setSectionOpen: (open) => {
+        if (els.focusSessionNotesSection) {
+          els.focusSessionNotesSection.setAttribute("data-notes-visible", String(open));
+        }
+      },
+    },
+    createLocalStorageFocusSessionDraftStorage(ctx.storageKeys.FOCUS_SESSION_NOTES_KEY)
+  );
+
   function loadFocusSessionNotes() {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = window.localStorage.getItem(ctx.storageKeys.FOCUS_SESSION_NOTES_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      if (!parsed || typeof parsed !== "object") return {};
-      const next: Record<string, string> = {};
-      Object.keys(parsed).forEach((taskId) => {
-        const value = String(parsed[taskId] || "").trim();
-        if (value) next[taskId] = value;
-      });
-      return next;
-    } catch {
-      return {};
-    }
-  }
-
-  function persistFocusSessionNotes() {
-    if (typeof window === "undefined") return;
-    try {
-      const notes = ctx.getFocusSessionNotesByTaskId();
-      const next: Record<string, string> = {};
-      Object.keys(notes || {}).forEach((taskId) => {
-        const value = String(notes[taskId] || "").trim();
-        if (value) next[taskId] = value;
-      });
-      if (Object.keys(next).length) window.localStorage.setItem(ctx.storageKeys.FOCUS_SESSION_NOTES_KEY, JSON.stringify(next));
-      else window.localStorage.removeItem(ctx.storageKeys.FOCUS_SESSION_NOTES_KEY);
-    } catch {
-      // ignore localStorage failures
-    }
-  }
-
-  function getFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    return String(ctx.getFocusSessionNotesByTaskId()[taskKey] || "");
+    return focusSessionDrafts.load();
   }
 
   function setFocusSessionDraft(taskId: string, noteRaw: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return;
-    const notes = { ...ctx.getFocusSessionNotesByTaskId() };
-    const value = String(noteRaw || "").trim();
-    if (value) notes[taskKey] = value;
-    else delete notes[taskKey];
-    ctx.setFocusSessionNotesByTaskId(notes);
-    persistFocusSessionNotes();
+    focusSessionDrafts.setDraft(taskId, noteRaw);
   }
 
   function clearFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return;
-    const notes = { ...ctx.getFocusSessionNotesByTaskId() };
-    if (!notes[taskKey]) return;
-    delete notes[taskKey];
-    ctx.setFocusSessionNotesByTaskId(notes);
-    persistFocusSessionNotes();
+    focusSessionDrafts.clearDraft(taskId);
   }
 
   function syncFocusSessionNotesInput(taskId: string | null) {
-    if (!els.focusSessionNotesInput) return;
-    els.focusSessionNotesInput.value = taskId ? getFocusSessionDraft(taskId) : "";
+    focusSessionDrafts.syncInput(taskId);
     clearFocusSessionNotesSavedStatus();
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    if (els.focusSessionNotesSection) {
-      els.focusSessionNotesSection.setAttribute("data-notes-visible", String(!!String(taskId || "").trim()));
-    }
+    focusSessionDrafts.syncAccordion(taskId);
   }
 
   function clearFocusSessionNotesSavedStatus() {
@@ -189,53 +158,22 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     ctx.setFocusSessionNoteSaveTimer(
       window.setTimeout(() => {
-        setFocusSessionDraft(taskId, noteRaw);
+        focusSessionDrafts.setDraft(taskId, noteRaw);
         ctx.setFocusSessionNoteSaveTimer(null);
       }, 250)
     );
   }
 
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {
-    const pendingTaskId = String(taskId || ctx.getFocusModeTaskId() || "").trim();
-    const timer = ctx.getFocusSessionNoteSaveTimer();
-    if (timer != null) {
-      window.clearTimeout(timer);
-      ctx.setFocusSessionNoteSaveTimer(null);
-    }
-    if (!pendingTaskId) return;
-    if (String(ctx.getFocusModeTaskId() || "").trim() === pendingTaskId && els.focusSessionNotesInput) {
-      setFocusSessionDraft(pendingTaskId, String(els.focusSessionNotesInput.value || ""));
-    }
-  }
-
-  function getLiveFocusSessionNoteValue(taskId?: string | null) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    if (String(ctx.getFocusModeTaskId() || "").trim() !== taskKey) return "";
-    return String(els.focusSessionNotesInput?.value || "").trim();
+    focusSessionDrafts.flushPendingSave(taskId);
   }
 
   function captureSessionNoteSnapshot(taskId?: string | null) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    flushPendingFocusSessionNoteSave(taskKey);
-    const liveNote = getLiveFocusSessionNoteValue(taskKey);
-    if (liveNote) {
-      setFocusSessionDraft(taskKey, liveNote);
-      return liveNote;
-    }
-    return getFocusSessionDraft(taskKey);
+    return focusSessionDrafts.captureSnapshot(taskId);
   }
 
   function captureResetActionSessionNote(taskId?: string | null) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    const liveFocusNote = getLiveFocusSessionNoteValue(taskKey);
-    if (liveFocusNote) {
-      setFocusSessionDraft(taskKey, liveFocusNote);
-      return liveFocusNote;
-    }
-    return captureSessionNoteSnapshot(taskKey);
+    return focusSessionDrafts.captureResetActionSnapshot(taskId);
   }
 
   function getElapsedMs(task: Task) {

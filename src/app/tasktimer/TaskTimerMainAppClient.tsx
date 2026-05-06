@@ -29,12 +29,13 @@ import {
   buildLeaderboardMetricsSnapshot,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
+  getLeaderboardResolvedRank,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
   type LeaderboardProfile,
   type LeaderboardScreenData,
 } from "./lib/leaderboard";
-import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, getRankLabelById, normalizeRewardProgress } from "./lib/rewards";
+import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
@@ -81,7 +82,7 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
 }
 
 function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
-  return getRankLabelById(String(profile.rewardCurrentRankId || ""));
+  return getLeaderboardResolvedRank(profile).label;
 }
 
 function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {

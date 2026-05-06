@@ -525,3 +525,7 @@ export function getLeaderboardInitials(labelRaw: string): string {
   if (!parts.length) return label.charAt(0).toUpperCase() || "?";
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
+
+export function getLeaderboardResolvedRank(profile: Pick<LeaderboardProfile, "rewardTotalXp">) {
+  return getRankForXp(profile.rewardTotalXp);
+}

@@ -21,6 +21,7 @@ function createWorkspaceRepositoryStub(overrides: Partial<TaskTimerWorkspaceRepo
       dashboard: null,
       taskUi: null,
     })),
+    loadHistorySnapshot: vi.fn(() => ({ historyByTaskId: {}, cleanedHistoryByTaskId: {}, historyWasCleaned: false })),
     loadTasks: vi.fn(),
     saveTasks: vi.fn(),
     loadHistory: vi.fn(),
@@ -68,6 +69,27 @@ describe("createTaskTimerRuntimeComposition", () => {
     expect(composition.stores.appRuntimeState.get("currentAppPage")).toBe("dashboard");
     expect(composition.stores.scheduleState.get("selectedDay")).toBe("mon");
     expect(composition.stores.cloudSyncState.get("deferredCloudRefreshTimer")).toBeNull();
+  });
+
+  it("exposes focused workspace domain adapters for feature modules", () => {
+    const historySnapshot = {
+      historyByTaskId: { "task-1": [{ ts: 1, name: "Focus", ms: 0 }] },
+      cleanedHistoryByTaskId: { "task-1": [] },
+      historyWasCleaned: true,
+    };
+    const workspaceRepository = createWorkspaceRepositoryStub({
+      loadHistorySnapshot: vi.fn(() => historySnapshot),
+      saveHistory: vi.fn(),
+    });
+
+    const composition = createTaskTimerRuntimeComposition("tasks", "taskticker_tasks_v1", {
+      createRuntime: createRuntimeStub,
+      createWorkspaceRepository: () => workspaceRepository,
+    });
+
+    expect(composition.workspaceAdapters.historyPersistence.loadSnapshot()).toBe(historySnapshot);
+    composition.workspaceAdapters.historyPersistence.saveCleanedSnapshot(historySnapshot);
+    expect(workspaceRepository.saveHistory).toHaveBeenCalledWith(historySnapshot.cleanedHistoryByTaskId, { showIndicator: false });
   });
 
   it("derives storage keys and event names in one testable module", () => {

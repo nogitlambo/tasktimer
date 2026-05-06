@@ -10,7 +10,6 @@ import {
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
 import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
-import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import { bindToggleRow } from "./control-helpers";
 
 type PreferenceEventDeps = {
@@ -19,10 +18,13 @@ type PreferenceEventDeps = {
 
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
-  const repository = createTaskTimerWorkspaceRepository();
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
-    repository,
+    repository: {
+      loadCachedPreferences: () => (ctx.loadCachedPreferences() || null) as TaskTimerStoredPreferences | null,
+      buildDefaultPreferences: () => ctx.buildDefaultCloudPreferences() as TaskTimerStoredPreferences,
+      savePreferences: (prefs) => ctx.saveCloudPreferences(prefs),
+    },
     getCloudPreferencesCache: () => (ctx.getCloudPreferencesCache() || null) as TaskTimerStoredPreferences | null,
     setCloudPreferencesCache: (prefs) => {
       ctx.setCloudPreferencesCache(prefs);

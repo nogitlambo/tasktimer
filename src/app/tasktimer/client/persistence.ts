@@ -1,8 +1,9 @@
-import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
-import type { TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
+import type { HistoryByTaskId, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
+import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasks } from "./live-session-task-state";
+import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
 type PersistOptions = { deletedTaskIds?: string[] };
 
@@ -14,7 +15,7 @@ type TaskUiCacheShape = {
 type CreateTaskTimerPersistenceOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
-    "cleanupHistory" | "loadHistory" | "loadWorkspaceSnapshot" | "saveHistory" | "saveTasks"
+    "loadHistorySnapshot" | "loadWorkspaceSnapshot" | "saveHistory" | "saveTasks"
   >;
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
@@ -82,6 +83,19 @@ type CreateTaskTimerPersistenceOptions = {
 };
 
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
+  const focusSessionDrafts = createFocusSessionDrafts(
+    {
+      getDrafts: options.getFocusSessionNotesByTaskId,
+      setDrafts: options.setFocusSessionNotesByTaskId,
+      getActiveTaskId: options.getFocusModeTaskId,
+      getPendingSaveTimer: options.getFocusSessionNoteSaveTimer,
+      setPendingSaveTimer: options.setFocusSessionNoteSaveTimer,
+      getInputValue: options.getFocusSessionNotesInputValue,
+      setInputValue: options.setFocusSessionNotesInputValue,
+      setSectionOpen: options.setFocusSessionNotesSectionOpen,
+    },
+    createLocalStorageFocusSessionDraftStorage(options.focusSessionNotesKey)
+  );
   function applyTaskSnapshot(snapshot: Pick<TaskTimerWorkspaceSnapshot, "tasks" | "liveSessionsByTaskId">) {
     const loaded = snapshot.tasks;
     const liveSessionsByTaskId = snapshot.liveSessionsByTaskId;
@@ -141,109 +155,42 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
   }
 
   function persistFocusSessionNotes() {
-    if (typeof window === "undefined") return;
-    try {
-      const next: Record<string, string> = {};
-      const source = options.getFocusSessionNotesByTaskId();
-      Object.keys(source || {}).forEach((taskId) => {
-        const value = String(source[taskId] || "").trim();
-        if (value) next[taskId] = value;
-      });
-      if (Object.keys(next).length) window.localStorage.setItem(options.focusSessionNotesKey, JSON.stringify(next));
-      else window.localStorage.removeItem(options.focusSessionNotesKey);
-    } catch {
-      // ignore localStorage failures
-    }
+    focusSessionDrafts.persist();
   }
 
   function setFocusSessionDraft(taskId: string, noteRaw: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return;
-    const nextValue = String(noteRaw || "").trim();
-    const nextDrafts = { ...(options.getFocusSessionNotesByTaskId() || {}) };
-    if (nextValue) nextDrafts[taskKey] = nextValue;
-    else delete nextDrafts[taskKey];
-    options.setFocusSessionNotesByTaskId(nextDrafts);
-    persistFocusSessionNotes();
+    focusSessionDrafts.setDraft(taskId, noteRaw);
   }
 
   function getFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    return String(options.getFocusSessionNotesByTaskId()[taskKey] || "");
+    return focusSessionDrafts.getDraft(taskId);
   }
 
   function clearFocusSessionDraft(taskId: string) {
-    const taskKey = String(taskId || "").trim();
-    const current = options.getFocusSessionNotesByTaskId();
-    if (!taskKey || !current[taskKey]) return;
-    const nextDrafts = { ...current };
-    delete nextDrafts[taskKey];
-    options.setFocusSessionNotesByTaskId(nextDrafts);
-    persistFocusSessionNotes();
+    focusSessionDrafts.clearDraft(taskId);
   }
 
   function syncFocusSessionNotesInput(taskId: string | null) {
-    options.setFocusSessionNotesInputValue(taskId ? getFocusSessionDraft(taskId) : "");
+    focusSessionDrafts.syncInput(taskId);
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
-    options.setFocusSessionNotesSectionOpen(!!String(taskId || "").trim());
+    focusSessionDrafts.syncAccordion(taskId);
   }
 
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {
-    const pendingTaskId = String(taskId || options.getFocusModeTaskId() || "").trim();
-    const timer = options.getFocusSessionNoteSaveTimer();
-    if (timer != null) {
-      window.clearTimeout(timer);
-      options.setFocusSessionNoteSaveTimer(null);
-    }
-    if (!pendingTaskId) return;
-    const isActiveFocusTask = String(options.getFocusModeTaskId() || "").trim() === pendingTaskId;
-    if (isActiveFocusTask) {
-      setFocusSessionDraft(pendingTaskId, options.getFocusSessionNotesInputValue());
-    }
+    focusSessionDrafts.flushPendingSave(taskId);
   }
 
   function getLiveFocusSessionNoteValue(taskId?: string | null): string {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    if (String(options.getFocusModeTaskId() || "").trim() !== taskKey) return "";
-    return String(options.getFocusSessionNotesInputValue() || "").trim();
+    return focusSessionDrafts.getLiveValue(taskId);
   }
 
   function captureSessionNoteSnapshot(taskId?: string | null): string {
-    const taskKey = String(taskId || "").trim();
-    if (!taskKey) return "";
-    flushPendingFocusSessionNoteSave(taskKey);
-    const liveNote = getLiveFocusSessionNoteValue(taskKey);
-    if (liveNote) {
-      setFocusSessionDraft(taskKey, liveNote);
-      return liveNote;
-    }
-    return getFocusSessionDraft(taskKey);
+    return focusSessionDrafts.captureSnapshot(taskId);
   }
 
-  function historySignature(history: HistoryByTaskId) {
-    const parts: string[] = [];
-    Object.keys(history || {})
-      .sort()
-      .forEach((taskId) => {
-        const rows = Array.isArray(history?.[taskId]) ? history[taskId] : [];
-        const rowSig = rows
-          .map(
-            (entry: HistoryEntry) =>
-              `${Number(entry?.ts || 0)}|${Number(entry?.ms || 0)}|${String(entry?.name || "")}|${String(entry?.note || "")}`
-          )
-          .join(",");
-        parts.push(`${taskId}:${rowSig}`);
-      });
-    return parts.join("||");
-  }
-
-  function applyHistorySnapshot(
-    snapshot: Pick<TaskTimerWorkspaceSnapshot, "cleanedHistoryByTaskId" | "historyWasCleaned">
-  ) {
+  function applyHistorySnapshot(snapshot: TaskTimerHistorySnapshot) {
     options.setHistoryByTaskId(snapshot.cleanedHistoryByTaskId);
     if (snapshot.historyWasCleaned) {
       options.workspaceRepository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
@@ -251,12 +198,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
   }
 
   function loadHistoryIntoMemory() {
-    const loadedHistory = options.workspaceRepository.loadHistory();
-    const cleanedHistory = options.workspaceRepository.cleanupHistory(loadedHistory);
-    applyHistorySnapshot({
-      cleanedHistoryByTaskId: cleanedHistory,
-      historyWasCleaned: historySignature(cleanedHistory) !== historySignature(loadedHistory),
-    });
+    applyHistorySnapshot(options.workspaceRepository.loadHistorySnapshot());
   }
 
   function hasHistoryEntryNotes(history: HistoryByTaskId | null | undefined) {
@@ -297,7 +239,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.setDeletedTaskMeta(workspaceSnapshot.deletedTaskMeta);
     applyHistorySnapshot(workspaceSnapshot);
     applyTaskSnapshot(workspaceSnapshot);
-    options.setFocusSessionNotesByTaskId(options.loadFocusSessionNotes());
+    options.setFocusSessionNotesByTaskId(focusSessionDrafts.load());
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     options.loadAddTaskCustomNames();
