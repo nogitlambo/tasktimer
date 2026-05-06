@@ -95,9 +95,12 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
   const showFinalCta = showActions && revealStage >= 5;
 
   return (
-    <main className="landingV2">
+    <main className="landingV2" style={{ backgroundColor: "#121212" }}>
       <div className="landingV2Shell">
-        <header className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}>
+        <header
+          className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
+          style={{ background: "#1a1b20" }}
+        >
           <Link href="/" className="landingV2FooterBrand displayFont">
             <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
             <span>TaskLaunch</span>
@@ -111,7 +114,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
         </header>
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
-          <div className="landingV2Grid" aria-hidden="true" />
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />

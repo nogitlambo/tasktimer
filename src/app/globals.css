@@ -1161,6 +1161,12 @@ canvas {
   align-items: center;
 }
 
+.landingV2.landingV2ComingSoon,
+.landingV2ComingSoon .landingV2Shell {
+  background: #121212;
+  background-image: none;
+}
+
 .landingV2ComingSoon .landingV2HeroMain {
   max-width: 780px;
 }
