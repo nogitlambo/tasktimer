@@ -101,6 +101,7 @@ type CreatePreferencesOptionsArgs = {
 
 type CreatePersistenceOptionsArgs = {
   workspaceRepository: Parameters<typeof createTaskTimerPersistence>[0]["workspaceRepository"];
+  historyPersistence: Parameters<typeof createTaskTimerPersistence>[0]["historyPersistence"];
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
   taskCollectionBindings: {
@@ -913,6 +914,7 @@ export function createTaskTimerPersistenceContext(
 ): Parameters<typeof createTaskTimerPersistence>[0] {
   return {
     workspaceRepository: args.workspaceRepository,
+    historyPersistence: args.historyPersistence,
     focusSessionNotesKey: args.focusSessionNotesKey,
     pendingTaskJumpKey: args.pendingTaskJumpKey,
     getTasks: args.taskCollectionBindings.getTasks,

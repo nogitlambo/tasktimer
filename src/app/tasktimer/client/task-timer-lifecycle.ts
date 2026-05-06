@@ -15,13 +15,13 @@ type ResetTaskStateOptions = {
   completionDifficulty?: unknown;
 };
 
-type TaskTimerLifecycleOptions = {
-  getTasks: () => Task[];
-  getTaskDisplayName: (task: Task | null | undefined) => string;
-  confirm: (title: string, text: string, opts: ConfirmOptions) => void;
-  closeConfirm: () => void;
-  addTaskAlreadyRunningConfirmClass: () => void;
-  removeTaskAlreadyRunningConfirmClass: () => void;
+type TaskTimerLifecycleCommands = {
+  startTaskTimer: (task: Task, index: number, startMs: number) => void;
+  stopTaskTimer: (task: Task, stopMs: number) => void;
+  resetTaskStateImmediate: (task: Task, opts?: ResetTaskStateOptions) => void;
+};
+
+type TaskTimerLifecycleCommandAdapters = {
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;
   openRewardSessionSegment: (task: Task, startMs: number) => void;
@@ -48,8 +48,91 @@ type TaskTimerLifecycleOptions = {
   render: () => void;
   renderDashboardWidgets: () => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<unknown>;
+};
+
+type TaskTimerLifecycleOptions = {
+  getTasks: () => Task[];
+  getTaskDisplayName: (task: Task | null | undefined) => string;
+  confirm: (title: string, text: string, opts: ConfirmOptions) => void;
+  closeConfirm: () => void;
+  addTaskAlreadyRunningConfirmClass: () => void;
+  removeTaskAlreadyRunningConfirmClass: () => void;
+  commands: TaskTimerLifecycleCommands;
   nowMs: () => number;
 };
+
+export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleCommandAdapters): TaskTimerLifecycleCommands {
+  function persistTaskTimerCommand(taskId: string) {
+    options.save();
+    void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    options.render();
+  }
+
+  function startTaskTimer(task: Task, index: number, startMs: number) {
+    const taskId = String(task.id || "");
+    options.clearTaskTimeGoalFlow(taskId);
+    options.flushPendingFocusSessionNoteSave(taskId);
+    task.running = true;
+    task.startMs = startMs;
+    task.hasStarted = true;
+    options.openRewardSessionSegment(task, startMs);
+    options.upsertLiveSession(task, { elapsedMs: 0 });
+    options.clearCheckpointBaseline(task.id);
+    persistTaskTimerCommand(taskId);
+    if (options.getAutoFocusOnTaskLaunchEnabled() && String(options.getFocusModeTaskId() || "") !== taskId) {
+      options.openFocusMode(index);
+    }
+  }
+
+  function stopTaskTimer(task: Task, stopMs: number) {
+    const taskId = String(task.id || "");
+    options.clearTaskTimeGoalFlow(taskId);
+    options.flushPendingFocusSessionNoteSave(taskId);
+    options.closeRewardSessionSegment(task, stopMs);
+    task.accumulatedMs = options.getElapsedMs(task);
+    options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs });
+    task.running = false;
+    task.startMs = null;
+    options.clearCheckpointBaseline(task.id);
+    persistTaskTimerCommand(taskId);
+    if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
+  }
+
+  function resetTaskStateImmediate(task: Task, opts?: ResetTaskStateOptions) {
+    if (!task) return;
+    const taskId = String(task.id || "");
+    options.flushPendingFocusSessionNoteSave(taskId);
+    const elapsedMs = options.getTaskElapsedMs(task);
+    try {
+      options.finalizeLiveSession(task, {
+        elapsedMs,
+        note: opts?.sessionNote,
+        completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
+      });
+    } finally {
+      task.accumulatedMs = 0;
+      task.running = false;
+      task.startMs = null;
+      task.hasStarted = false;
+    }
+    options.clearTaskTimeGoalFlow(taskId);
+    options.clearRewardSessionTracker(taskId);
+    options.resetCheckpointAlertTracking(task.id);
+    options.setCheckpointAutoResetDirty(true);
+    options.clearFocusSessionDraft(taskId);
+    if (String(options.getFocusModeTaskId() || "") === taskId) {
+      options.syncFocusSessionNotesInput(taskId);
+      options.syncFocusSessionNotesAccordion(taskId);
+    }
+    if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
+  }
+
+  return {
+    startTaskTimer,
+    stopTaskTimer,
+    resetTaskStateImmediate,
+  };
+}
 
 export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function findOtherRunningTaskIndex(targetIndex: number) {
@@ -84,69 +167,17 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
       return;
     }
 
-    const taskId = String(task.id || "");
-    options.clearTaskTimeGoalFlow(taskId);
-    options.flushPendingFocusSessionNoteSave(taskId);
-    const startMs = options.nowMs();
-    task.running = true;
-    task.startMs = startMs;
-    task.hasStarted = true;
-    options.openRewardSessionSegment(task, startMs);
-    options.upsertLiveSession(task, { elapsedMs: 0 });
-    options.clearCheckpointBaseline(task.id);
-    options.save();
-    void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    options.render();
-    if (options.getAutoFocusOnTaskLaunchEnabled() && String(options.getFocusModeTaskId() || "") !== taskId) {
-      options.openFocusMode(index);
-    }
+    options.commands.startTaskTimer(task, index, options.nowMs());
   }
 
   function stopTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || !task.running) return;
-    const taskId = String(task.id || "");
-    options.clearTaskTimeGoalFlow(taskId);
-    options.flushPendingFocusSessionNoteSave(taskId);
-    options.closeRewardSessionSegment(task, options.nowMs());
-    task.accumulatedMs = options.getElapsedMs(task);
-    options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs });
-    task.running = false;
-    task.startMs = null;
-    options.clearCheckpointBaseline(task.id);
-    options.save();
-    void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    options.render();
-    if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
+    options.commands.stopTaskTimer(task, options.nowMs());
   }
 
   function resetTaskStateImmediate(task: Task, opts?: ResetTaskStateOptions) {
-    if (!task) return;
-    const taskId = String(task.id || "");
-    options.flushPendingFocusSessionNoteSave(taskId);
-    const elapsedMs = options.getTaskElapsedMs(task);
-    try {
-      options.finalizeLiveSession(task, {
-        elapsedMs,
-        note: opts?.sessionNote,
-        completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
-      });
-    } finally {
-      task.accumulatedMs = 0;
-      task.running = false;
-      task.startMs = null;
-      task.hasStarted = false;
-    }
-    options.clearTaskTimeGoalFlow(taskId);
-    options.clearRewardSessionTracker(taskId);
-    options.resetCheckpointAlertTracking(task.id);
-    options.setCheckpointAutoResetDirty(true);
-    options.clearFocusSessionDraft(taskId);
-    if (String(options.getFocusModeTaskId() || "") === taskId) {
-      options.syncFocusSessionNotesInput(taskId);
-      options.syncFocusSessionNotesAccordion(taskId);
-    }
-    if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
+    options.commands.resetTaskStateImmediate(task, opts);
   }
 
   return {

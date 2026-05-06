@@ -130,6 +130,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const {
     runtime,
     workspaceRepository,
+    workspaceAdapters,
     storageKeys: {
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       MOBILE_PUSH_ALERTS_KEY,
@@ -1372,6 +1373,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
       pendingTaskJumpKey: PENDING_PUSH_TASK_ID_KEY,
       workspaceRepository,
+      historyPersistence: workspaceAdapters.historyPersistence,
       taskCollectionBindings,
       historyUiState,
       focusState,

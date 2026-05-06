@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
-import { createTaskTimerLifecycle } from "./task-timer-lifecycle";
+import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -22,16 +22,7 @@ function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focu
   const calls: string[] = [];
   const confirmOptions: Array<{ onOk: () => void; onCancel?: () => void }> = [];
   const tasks = overrides.tasks || [task()];
-  const lifecycle = createTaskTimerLifecycle({
-    getTasks: () => tasks,
-    getTaskDisplayName: (entry) => String(entry?.name || "Unnamed task"),
-    confirm: (title, text, opts) => {
-      calls.push(`confirm:${title}:${text}`);
-      confirmOptions.push(opts);
-    },
-    closeConfirm: () => calls.push("close-confirm"),
-    addTaskAlreadyRunningConfirmClass: () => calls.push("add-running-confirm-class"),
-    removeTaskAlreadyRunningConfirmClass: () => calls.push("remove-running-confirm-class"),
+  const commands = createTaskTimerLifecycleCommands({
     clearTaskTimeGoalFlow: (taskId) => calls.push(`clear-goal:${taskId}`),
     flushPendingFocusSessionNoteSave: (taskId) => calls.push(`flush-note:${taskId}`),
     openRewardSessionSegment: (entry, startMs) => calls.push(`open-reward:${entry.id}:${startMs}`),
@@ -57,6 +48,18 @@ function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focu
     syncSharedTaskSummariesForTask: vi.fn(async (taskId: string) => {
       calls.push(`sync-shared:${taskId}`);
     }),
+  });
+  const lifecycle = createTaskTimerLifecycle({
+    getTasks: () => tasks,
+    getTaskDisplayName: (entry) => String(entry?.name || "Unnamed task"),
+    confirm: (title, text, opts) => {
+      calls.push(`confirm:${title}:${text}`);
+      confirmOptions.push(opts);
+    },
+    closeConfirm: () => calls.push("close-confirm"),
+    addTaskAlreadyRunningConfirmClass: () => calls.push("add-running-confirm-class"),
+    removeTaskAlreadyRunningConfirmClass: () => calls.push("remove-running-confirm-class"),
+    commands,
     nowMs: () => 123,
   });
   return { lifecycle, tasks, calls, confirmOptions };
@@ -160,13 +163,7 @@ describe("task timer lifecycle", () => {
   it("resets task state even when live-session finalization throws", () => {
     const calls: string[] = [];
     const entry = task({ running: true, startMs: 1, accumulatedMs: 55, hasStarted: true });
-    const adapter = createTaskTimerLifecycle({
-      getTasks: () => [entry],
-      getTaskDisplayName: () => "Focus",
-      confirm: () => {},
-      closeConfirm: () => {},
-      addTaskAlreadyRunningConfirmClass: () => {},
-      removeTaskAlreadyRunningConfirmClass: () => {},
+    const commands = createTaskTimerLifecycleCommands({
       clearTaskTimeGoalFlow: (taskId) => calls.push(`clear-goal:${taskId}`),
       flushPendingFocusSessionNoteSave: (taskId) => calls.push(`flush-note:${taskId}`),
       openRewardSessionSegment: () => {},
@@ -192,6 +189,15 @@ describe("task timer lifecycle", () => {
       render: () => {},
       renderDashboardWidgets: () => {},
       syncSharedTaskSummariesForTask: async () => {},
+    });
+    const adapter = createTaskTimerLifecycle({
+      getTasks: () => [entry],
+      getTaskDisplayName: () => "Focus",
+      confirm: () => {},
+      closeConfirm: () => {},
+      addTaskAlreadyRunningConfirmClass: () => {},
+      removeTaskAlreadyRunningConfirmClass: () => {},
+      commands,
       nowMs: () => 123,
     });
 
