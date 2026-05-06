@@ -27,6 +27,7 @@ import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDe
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
+import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1157,112 +1158,40 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectionMarkerEl = document.getElementById("dashboardTodayHoursProjectionMarker") as HTMLElement | null;
     const projectionFillEl = document.getElementById("dashboardTodayHoursProjectionFill") as HTMLElement | null;
     const progressFillEl = document.getElementById("dashboardTodayHoursProgressFill") as HTMLElement | null;
-    const historyByTaskId = ctx.getHistoryByTaskId();
-
-    const nowValue = nowMs();
-    const todayStartDate = new Date(nowValue);
-    todayStartDate.setHours(0, 0, 0, 0);
-    const todayStartMs = todayStartDate.getTime();
-    const elapsedTodayMs = Math.max(0, nowValue - todayStartMs);
-    const yesterdayStartMs = todayStartMs - 86400000;
-    const yesterdaySameTimeCutoffMs = yesterdayStartMs + elapsedTodayMs;
-    const todayKey = localDayKey(nowValue);
-    const yesterdayDate = new Date(nowValue);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayKey = localDayKey(yesterdayDate.getTime());
-    const includedTaskIds = new Set(
-      getDashboardFilteredTasks()
-        .map((task) => String(task?.id || "").trim())
-        .filter(Boolean)
-    );
-    const dailyGoalTasks = getDashboardFilteredTasks().filter((task) => {
-      if (!task) return false;
-      if (!task.timeGoalEnabled) return false;
-      if (task.timeGoalPeriod !== "day") return false;
-      return Math.max(0, Number(task.timeGoalMinutes || 0)) > 0;
+    const todayHoursModel = buildDashboardTodayHoursModel({
+      tasks: getDashboardFilteredTasks(),
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      nowMs: nowMs(),
+      trendMinBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      getElapsedMs: (task) => ctx.getElapsedMs(task),
+      isTaskRunning: (task) => isDashboardTaskActivelyRunning(task),
+      normalizeHistoryTimestampMs: (value) => ctx.normalizeHistoryTimestampMs(value),
     });
-    const totalDailyGoalMs = dailyGoalTasks.reduce((sum, task) => sum + Math.max(0, Number(task.timeGoalMinutes || 0)) * 60000, 0);
 
-    let todayLoggedMs = 0;
-    let yesterdaySameTimeMs = 0;
-    let yesterdaySameTimeEntryCount = 0;
-    includedTaskIds.forEach((taskId) => {
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      entries.forEach((entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ms <= 0) return;
-        const entryDayKey = localDayKey(ts);
-        if (entryDayKey === todayKey) todayLoggedMs += ms;
-        else if (entryDayKey === yesterdayKey && ts <= yesterdaySameTimeCutoffMs) {
-          yesterdaySameTimeMs += ms;
-          yesterdaySameTimeEntryCount += 1;
-        }
-      });
-    });
-    const todayInProgressMs = getDashboardFilteredTasks().reduce((sum, task) => {
-      const taskId = String(task?.id || "").trim();
-      if (!taskId || !includedTaskIds.has(taskId)) return sum;
-      if (!isDashboardTaskActivelyRunning(task)) return sum;
-      const elapsedMs = Math.max(0, ctx.getElapsedMs(task));
-      if (elapsedMs <= 0) return sum;
-      return sum + elapsedMs;
-    }, 0);
-    const todayMs = todayLoggedMs + todayInProgressMs;
-    const dailyGoalLoggedMs = dailyGoalTasks.reduce((sum, task) => {
-      const taskId = String(task.id || "").trim();
-      if (!taskId) return sum;
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      const taskTodayMs = entries.reduce((entrySum, entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ms <= 0) return entrySum;
-        return localDayKey(ts) === todayKey ? entrySum + ms : entrySum;
-      }, 0);
-      return sum + taskTodayMs;
-    }, 0);
-    const dailyGoalInProgressMs = dailyGoalTasks.reduce((sum, task) => {
-      if (!isDashboardTaskActivelyRunning(task)) return sum;
-      const elapsedMs = Math.max(0, ctx.getElapsedMs(task));
-      if (elapsedMs <= 0) return sum;
-      return sum + elapsedMs;
-    }, 0);
-    const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalInProgressMs;
-    const dailyGoalProgressPct =
-      totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalLoggedMs / totalDailyGoalMs) * 100))) : 0;
-    const dailyGoalProjectedPct =
-      totalDailyGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((dailyGoalProjectedMs / totalDailyGoalMs) * 100))) : 0;
     if (titleEl) titleEl.textContent = "Today";
-    if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayMs);
-    const yesterdayHasUsableTrendBaseline =
-      yesterdaySameTimeEntryCount > 0 && yesterdaySameTimeMs >= DASHBOARD_TREND_MIN_BASELINE_MS;
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayMs, yesterdayHasUsableTrendBaseline ? yesterdaySameTimeMs : 0, {
+    if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
       minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
-      showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+      showDirectionalArrow: todayHoursModel.showDirectionalTrendArrow,
     });
     applyDashboardGoalProgressUi({
       progressBarEl,
       progressFillEl,
       projectionFillEl,
       projectionMarkerEl,
-      goalTotalMs: totalDailyGoalMs,
-      loggedMs: dailyGoalLoggedMs,
-      projectedMs: dailyGoalProjectedMs,
-      runningMs: dailyGoalInProgressMs,
-      activeMarkerRunning: dailyGoalInProgressMs > 0,
-      activeMarkerPct: totalDailyGoalMs > 0 ? dailyGoalProjectedPct : dailyGoalProgressPct,
+      goalTotalMs: todayHoursModel.totalDailyGoalMs,
+      loggedMs: todayHoursModel.dailyGoalLoggedMs,
+      projectedMs: todayHoursModel.dailyGoalProjectedMs,
+      runningMs: todayHoursModel.dailyGoalInProgressMs,
+      activeMarkerRunning: todayHoursModel.dailyGoalInProgressMs > 0,
+      activeMarkerPct: todayHoursModel.totalDailyGoalMs > 0 ? todayHoursModel.dailyGoalProjectedPct : todayHoursModel.dailyGoalProgressPct,
       emptyLabel: "Today's time goal progress: no daily time goals enabled",
       activeLabel: "Today's time goal progress",
       projectedLabel: "projected if running tasks are logged",
     });
     if (metaEl) {
-      if (totalDailyGoalMs > 0) {
-        metaEl.textContent = "";
-        metaEl.style.display = "none";
-      } else {
-        metaEl.textContent = "";
-        metaEl.style.display = "none";
-      }
+      metaEl.textContent = "";
+      metaEl.style.display = "none";
     }
     const cardEl = trendIndicatorEl?.closest(".dashboardWeekHoursCard") as HTMLElement | null;
     if (cardEl) {
@@ -1272,34 +1201,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     if (!deltaEl) return;
 
+    const delta = formatDashboardTodayHoursDeltaText(todayHoursModel, formatDashboardDurationShort);
     deltaEl.classList.remove("positive", "negative");
-    if (todayMs <= 0 && yesterdaySameTimeMs <= 0) {
-      deltaEl.textContent = "No time logged today";
-      return;
-    }
-    if (yesterdaySameTimeMs <= 0) {
-      if (todayMs > 0) {
-        deltaEl.textContent = `+${formatDashboardDurationShort(todayMs)} vs this time yesterday`;
-        deltaEl.classList.add("positive");
-      } else {
-        deltaEl.textContent = "Same as this time yesterday";
-      }
-      return;
-    }
-
-    const deltaMs = todayMs - yesterdaySameTimeMs;
-    const deltaText = formatDashboardDurationShort(Math.abs(deltaMs));
-    if (deltaMs > 0) {
-      deltaEl.textContent = `+${deltaText} vs this time yesterday`;
-      deltaEl.classList.add("positive");
-      return;
-    }
-    if (deltaMs < 0) {
-      deltaEl.textContent = `-${deltaText} vs this time yesterday`;
-      deltaEl.classList.add("negative");
-      return;
-    }
-    deltaEl.textContent = "Same as this time yesterday";
+    deltaEl.textContent = delta.text;
+    if (delta.sentiment === "positive") deltaEl.classList.add("positive");
+    else if (delta.sentiment === "negative") deltaEl.classList.add("negative");
   }
 
   function renderDashboardTimelineCard() {

@@ -5,7 +5,7 @@ import { createTaskCardActionEffects } from "./task-card-action-effects";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import { createTaskListRenderer } from "./task-list-renderer";
 import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
-import { createTaskTimerLifecycle } from "./task-timer-lifecycle";
+import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -102,17 +102,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     taskListRenderer.renderTasksPage();
   }
 
-  const taskTimerLifecycle = createTaskTimerLifecycle({
-    getTasks: ctx.getTasks,
-    getTaskDisplayName,
-    confirm: ctx.confirm,
-    closeConfirm: ctx.closeConfirm,
-    addTaskAlreadyRunningConfirmClass: () => {
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isTaskAlreadyRunningConfirm");
-    },
-    removeTaskAlreadyRunningConfirmClass: () => {
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
-    },
+  const taskTimerLifecycleCommands = createTaskTimerLifecycleCommands({
     clearTaskTimeGoalFlow: ctx.clearTaskTimeGoalFlow,
     flushPendingFocusSessionNoteSave: ctx.flushPendingFocusSessionNoteSave,
     openRewardSessionSegment: ctx.openRewardSessionSegment,
@@ -136,6 +126,20 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     render: ctx.render,
     renderDashboardWidgets: ctx.renderDashboardWidgets,
     syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
+  });
+
+  const taskTimerLifecycle = createTaskTimerLifecycle({
+    getTasks: ctx.getTasks,
+    getTaskDisplayName,
+    confirm: ctx.confirm,
+    closeConfirm: ctx.closeConfirm,
+    addTaskAlreadyRunningConfirmClass: () => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isTaskAlreadyRunningConfirm");
+    },
+    removeTaskAlreadyRunningConfirmClass: () => {
+      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
+    },
+    commands: taskTimerLifecycleCommands,
     nowMs: () => Date.now(),
   });
   const { startTask, stopTask, resetTaskStateImmediate } = taskTimerLifecycle;

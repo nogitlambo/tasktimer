@@ -1,6 +1,6 @@
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "../lib/rewards";
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
-import { createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
+import { createTaskTimerWorkspaceHistoryPersistence, createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import { createTaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerRootBootstrap } from "./root-state";
 import { createTaskTimerRuntime, type TaskTimerRuntime } from "./runtime";
@@ -224,14 +224,7 @@ export function createTaskTimerRuntimeComposition(
   });
 
   const workspaceAdapters = {
-    historyPersistence: {
-      loadSnapshot: () => workspaceRepository.loadHistorySnapshot(),
-      saveCleanedSnapshot: (snapshot: ReturnType<TaskTimerWorkspaceRepository["loadHistorySnapshot"]>) => {
-        if (snapshot.historyWasCleaned) {
-          workspaceRepository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
-        }
-      },
-    },
+    historyPersistence: createTaskTimerWorkspaceHistoryPersistence(workspaceRepository),
     preferencesPersistence: {
       loadCached: () => workspaceRepository.loadCachedPreferences(),
       buildDefault: () => workspaceRepository.buildDefaultPreferences(),

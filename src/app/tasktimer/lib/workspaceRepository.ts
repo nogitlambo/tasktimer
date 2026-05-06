@@ -52,6 +52,8 @@ export type TaskTimerWorkspaceSnapshot = {
 
 export type TaskTimerWorkspaceRepository = ReturnType<typeof createTaskTimerWorkspaceRepository>;
 
+export type TaskTimerWorkspaceHistoryPersistence = ReturnType<typeof createTaskTimerWorkspaceHistoryPersistence>;
+
 function historyRowsSignature(historyByTaskId: HistoryByTaskId) {
   return Object.keys(historyByTaskId || {})
     .sort()
@@ -94,6 +96,19 @@ function buildWorkspaceSnapshot(): TaskTimerWorkspaceSnapshot {
     preferences: loadCachedPreferences(),
     dashboard: loadCachedDashboard(),
     taskUi: loadCachedTaskUi(),
+  };
+}
+
+export function createTaskTimerWorkspaceHistoryPersistence(
+  repository: Pick<TaskTimerWorkspaceRepository, "loadHistorySnapshot" | "saveHistory">
+) {
+  return {
+    loadSnapshot: () => repository.loadHistorySnapshot(),
+    saveCleanedSnapshot: (snapshot: TaskTimerHistorySnapshot) => {
+      if (snapshot.historyWasCleaned) {
+        repository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
+      }
+    },
   };
 }
 
