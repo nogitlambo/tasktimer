@@ -110,6 +110,26 @@ describe("TaskTimer workspace repository snapshots", () => {
     expect(storageMocks.cleanupHistory).toHaveBeenCalledWith(snapshot.historyByTaskId);
   });
 
+  it("loads history cleanup state through a focused history snapshot", () => {
+    const repository = createTaskTimerWorkspaceRepository();
+
+    const snapshot = repository.loadHistorySnapshot();
+
+    expect(snapshot).toEqual({
+      historyByTaskId: {
+        "task-1": [
+          { ts: 1, name: "Focus", ms: 1000 },
+          { ts: 2, name: "Focus", ms: 0 },
+        ],
+      },
+      cleanedHistoryByTaskId: {
+        "task-1": [{ ts: 1, name: "Focus", ms: 1000 }],
+      },
+      historyWasCleaned: true,
+    });
+    expect(storageMocks.cleanupHistory).toHaveBeenCalledWith(snapshot.historyByTaskId);
+  });
+
   it("returns a fresh workspace snapshot after cloud hydration completes", async () => {
     const repository = createTaskTimerWorkspaceRepository();
 

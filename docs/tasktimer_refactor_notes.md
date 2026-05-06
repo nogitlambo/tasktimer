@@ -107,3 +107,16 @@ Deepen Task manual entry interaction so it owns the full “open/edit/save/cance
 ### Benefits
 
 Better locality for validation and save behavior. Tests could cover the whole manual entry flow through one interface rather than testing draft UI separately from history mutation.
+
+---
+
+## Second-Pass Architecture Vocabulary Review
+
+The second-pass slices kept the existing user experience and selectors while making several seams durable enough for future agents to reuse:
+
+- **Workspace history snapshots** are now part of the workspace persistence interface. Callers should ask the workspace module for cleanup-aware history snapshots instead of rebuilding cleanup/signature checks locally.
+- **Workspace domain adapters** are the preferred runtime-composition shape when a feature needs a narrow persistence capability. Avoid creating hidden repository instances inside feature modules.
+- **Focus session drafts** are the single owner for focus-note draft load, set, clear, persist, pending-save flush, live capture, and reset snapshot behavior. Timer lifecycle and Session UI should route through that interface rather than duplicating localStorage/timer rules.
+- **Dashboard card render modules** are suitable for cards with meaningful calculations or DOM contracts. The pattern is useful for Momentum and Tasks Completed, and can be applied incrementally to other high-risk cards without a broad dashboard rewrite.
+
+Rejected seam for now: a catch-all dashboard renderer facade. It would hide too much ID-driven DOM behavior behind a new broad abstraction and risks becoming another pass-through layer. Prefer card-level modules with focused tests.
