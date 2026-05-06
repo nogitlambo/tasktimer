@@ -1,5 +1,4 @@
 import type { Task } from "../lib/types";
-import { parseHistoryManagerManualDraft } from "./history-manager-shared";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { createTaskCardActionEffects } from "./task-card-action-effects";
@@ -34,34 +33,12 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     closeOverlay: (overlay) => {
       if (overlay) overlay.style.display = "none";
     },
+    getHistoryByTaskId: ctx.getHistoryByTaskId,
+    setHistoryByTaskId: ctx.setHistoryByTaskId,
+    saveHistory: ctx.saveHistory,
+    syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
+    render: ctx.render,
   });
-
-  function saveTaskManualEntryDraft() {
-    const taskId = String(taskManualEntry.getActiveTaskId() || "").trim();
-    if (!taskId) return;
-    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
-    if (!task) return;
-    const draft = taskManualEntry.getDraft();
-    if (!draft) return;
-    const parsed = parseHistoryManagerManualDraft({
-      draft,
-      taskName: getTaskDisplayName(task),
-      taskColor: typeof (task as { color?: unknown }).color === "string" ? String((task as { color?: unknown }).color || "") : null,
-    });
-    if ("error" in parsed) {
-      taskManualEntry.setError(parsed.error || "Could not save entry.");
-      return;
-    }
-    const historyByTaskId = ctx.getHistoryByTaskId();
-    const nextTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
-    nextTaskHistory.push(parsed.entry);
-    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
-    ctx.setHistoryByTaskId(nextHistory);
-    ctx.saveHistory(nextHistory);
-    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    taskManualEntry.close();
-    ctx.render();
-  }
 
   function getTaskDisplayName(task: Task | null | undefined) {
     const name = String(task?.name || "").trim();
@@ -289,7 +266,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       taskManualEntry.close();
     });
     ctx.on(els.taskManualEntrySaveBtn, "click", () => {
-      saveTaskManualEntryDraft();
+      taskManualEntry.save();
     });
     ctx.on(els.taskManualDateTimeBtn, "click", () => {
       taskManualEntry.openDateTimePicker();
