@@ -992,7 +992,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const statusLabel =
           item.goalMinutes > 0
             ? item.complete
-              ? "Complete"
+              ? "Completed"
               : item.progress > 0
                 ? `${Math.round(item.progress * 100)}% complete`
                 : "Not complete"

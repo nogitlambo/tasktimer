@@ -2566,6 +2566,19 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   background:transparent !important;
   box-shadow:none !important;
 }
+#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
+  border:1px solid #c9ff24 !important;
+  color:#c9ff24 !important;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenHeaderBtnText{
+  color:#c9ff24 !important;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:uppercase;
+}
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn:hover,
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn:focus-visible{
   background:rgba(255,255,255,.045) !important;

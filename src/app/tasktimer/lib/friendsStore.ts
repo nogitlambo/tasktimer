@@ -164,7 +164,30 @@ async function loadOwnProfile(uid: string): Promise<FriendProfile> {
 }
 
 export async function loadFriendProfile(uid: string): Promise<FriendProfile> {
-  return loadOwnProfile(uid);
+  const db = dbOrNull();
+  const targetUid = String(uid || "").trim();
+  if (!db || !targetUid) {
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null };
+  }
+
+  try {
+    const snap = await getDoc(doc(db, "leaderboardProfiles", targetUid));
+    if (snap.exists()) {
+      return {
+        alias: normalizeAlias(snap.get("username") || snap.get("displayLabel")),
+        avatarId: normalizeAvatarId(snap.get("avatarId")),
+        avatarCustomSrc: normalizeAvatarCustomSrc(snap.get("avatarCustomSrc")),
+        googlePhotoUrl: normalizeGooglePhotoUrl(snap.get("googlePhotoUrl")),
+        rankThumbnailSrc: normalizeRankThumbnailSrc(snap.get("rankThumbnailSrc")),
+        currentRankId: normalizeAvatarId(snap.get("rewardCurrentRankId")),
+        totalXp: normalizeTotalXp(snap.get("rewardTotalXp")),
+      };
+    }
+  } catch {
+    // Fall back to the private user profile read below for the current signed-in user.
+  }
+
+  return loadOwnProfile(targetUid);
 }
 
 function asFriendRequest(id: string, row: Record<string, unknown>): FriendRequest {

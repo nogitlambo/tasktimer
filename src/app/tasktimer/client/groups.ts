@@ -267,6 +267,18 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     return parts.join(" ");
   }
 
+  function renderRankInsigniaMarkup(rankIdRaw: string): string {
+    const rankThumbnail = getRankThumbnailDescriptor(rankIdRaw);
+    if (rankThumbnail.kind === "image") {
+      return `<span class="leaderboardRankInsignia" aria-hidden="true"><img class="leaderboardRankInsigniaImg" src="${ctx.escapeHtmlUI(
+        rankThumbnail.src
+      )}" alt="" /></span>`;
+    }
+    return `<span class="leaderboardRankInsignia leaderboardRankInsigniaPlaceholder" aria-hidden="true">${ctx.escapeHtmlUI(
+      rankThumbnail.label
+    )}</span>`;
+  }
+
   function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
     const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
     const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
@@ -992,6 +1004,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
         const rankLabel = getRankLabelById(row.currentRankId);
         const totalXpLabel = `${row.totalXp.toLocaleString()} XP`;
+        const rankInsigniaHtml = renderRankInsigniaMarkup(row.currentRankId);
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow leaderboardRow">
@@ -1013,6 +1026,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   <span class="leaderboardXp friendSharedTasksCountText">${ctx.escapeHtmlUI(totalXpLabel)}</span>
                 </span>
               </div>
+              ${rankInsigniaHtml}
             </summary>
             <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
           </details>

@@ -35,7 +35,12 @@ import {
   type LeaderboardProfile,
   type LeaderboardScreenData,
 } from "./lib/leaderboard";
-import { buildRewardsHeaderViewModel, DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "./lib/rewards";
+import {
+  buildRewardsHeaderViewModel,
+  DEFAULT_REWARD_PROGRESS,
+  getRankThumbnailDescriptor,
+  normalizeRewardProgress,
+} from "./lib/rewards";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
@@ -92,6 +97,15 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
 
 function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
   return getLeaderboardResolvedRank(profile).label;
+}
+
+function LeaderboardRankInsignia({ profile }: { profile: LeaderboardProfile }) {
+  const descriptor = getRankThumbnailDescriptor(profile.rewardCurrentRankId || "unranked");
+  return (
+    <span className={`leaderboardRankInsignia${descriptor.kind === "placeholder" ? " leaderboardRankInsigniaPlaceholder" : ""}`} aria-hidden="true">
+      {descriptor.kind === "image" ? <AppImg className="leaderboardRankInsigniaImg" src={descriptor.src} alt="" /> : descriptor.label}
+    </span>
+  );
 }
 
 function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {
@@ -557,6 +571,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </span>
                           </div>
+                          <LeaderboardRankInsignia profile={entry} />
                         </article>
                       ))
                     ) : (
@@ -589,6 +604,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
                             <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                           </span>
+                          <LeaderboardRankInsignia profile={entry} />
                         </article>
                       ))
                     ) : (
@@ -623,6 +639,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
                               <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
                             </span>
+                            <LeaderboardRankInsignia profile={entry} />
                           </article>
                         );
                       })

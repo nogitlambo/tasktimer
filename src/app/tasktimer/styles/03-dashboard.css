@@ -6171,6 +6171,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-size: 9px;
   line-height: 1.08;
 }
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isComplete .dashboardTasksCompletedLabelStatus{
+  color: rgba(65, 230, 145, .92);
+  font-weight: 800;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTickSeparator{
   display: none !important;
 }
