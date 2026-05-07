@@ -135,9 +135,15 @@ export function createTaskTimerWorkspaceRepository() {
     ) =>
       appendHistoryEntry(taskId, entry),
     saveHistoryLocally: (historyByTaskId: HistoryByTaskId) => saveHistoryLocally(historyByTaskId),
-    saveHistory: (historyByTaskId: HistoryByTaskId, opts?: { showIndicator?: boolean; minVisibleMs?: number }) =>
+    saveHistory: (
+      historyByTaskId: HistoryByTaskId,
+      opts?: { showIndicator?: boolean; minVisibleMs?: number; allowDestructiveReplace?: boolean }
+    ) =>
       saveHistory(historyByTaskId, opts),
-    saveHistoryAndWait: (historyByTaskId: HistoryByTaskId, opts?: { showIndicator?: boolean; minVisibleMs?: number }) =>
+    saveHistoryAndWait: (
+      historyByTaskId: HistoryByTaskId,
+      opts?: { showIndicator?: boolean; minVisibleMs?: number; allowDestructiveReplace?: boolean }
+    ) =>
       saveHistoryAndWait(historyByTaskId, opts),
     saveLiveSession: (session: LiveTaskSession) => saveLiveSession(session),
     clearLiveSession: (taskId: string) => clearLiveSession(taskId),

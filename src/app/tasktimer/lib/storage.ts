@@ -222,7 +222,7 @@ let inFlightTaskQueueSync: Promise<void> | null = null;
 const queuedTaskUpsertsById = new Map<string, Task>();
 const queuedTaskDeletes = new Set<string>();
 let inFlightHistoryQueueSync: Promise<void> | null = null;
-const queuedHistoryReplacementsByTaskId = new Map<string, HistoryEntry[]>();
+const queuedHistoryReplacementsByTaskId = new Map<string, { rows: HistoryEntry[]; allowDestructiveReplace: boolean }>();
 let inFlightLiveSessionQueueSync: Promise<void> | null = null;
 const queuedLiveSessionUpsertsByTaskId = new Map<string, LiveTaskSession>();
 const queuedLiveSessionClears = new Set<string>();
@@ -1238,15 +1238,19 @@ function flushQueuedHistorySync(uid: string): void {
   debugLogCloudQueue("history", "start", { uid });
   const syncPromise = (async () => {
     while (queuedHistoryReplacementsByTaskId.size) {
-      const nextEntry = queuedHistoryReplacementsByTaskId.entries().next().value as [string, HistoryEntry[]] | undefined;
+      const nextEntry = queuedHistoryReplacementsByTaskId.entries().next().value as
+        | [string, { rows: HistoryEntry[]; allowDestructiveReplace: boolean }]
+        | undefined;
       if (!nextEntry) break;
-      const [taskId, rows] = nextEntry;
+      const [taskId, request] = nextEntry;
       queuedHistoryReplacementsByTaskId.delete(taskId);
       try {
-        await replaceTaskHistory(uid, taskId, rows);
+        await replaceTaskHistory(uid, taskId, request.rows, {
+          allowDestructiveReplace: request.allowDestructiveReplace,
+        });
         clearPendingHistorySync(taskId);
       } catch {
-        queuedHistoryReplacementsByTaskId.set(taskId, rows);
+        queuedHistoryReplacementsByTaskId.set(taskId, request);
         debugLogCloudQueue("history", "error", { uid, taskId });
         break;
       }
@@ -1262,9 +1266,17 @@ function flushQueuedHistorySync(uid: string): void {
   inFlightHistoryQueueSync = syncPromise;
 }
 
-function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]): void {
-  queuedHistoryReplacementsByTaskId.set(taskId, rows);
-  debugLogCloudQueue("history", "enqueue", { uid, taskId, rows: rows.length });
+function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[], opts?: { allowDestructiveReplace?: boolean }): void {
+  queuedHistoryReplacementsByTaskId.set(taskId, {
+    rows,
+    allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+  });
+  debugLogCloudQueue("history", "enqueue", {
+    uid,
+    taskId,
+    rows: rows.length,
+    allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+  });
   flushQueuedHistorySync(uid);
 }
 
@@ -1426,6 +1438,7 @@ export function loadLiveSessions(): LiveSessionsByTaskId {
 
 type SaveHistoryOptions = {
   showIndicator?: boolean;
+  allowDestructiveReplace?: boolean;
 };
 
 function getTouchedHistoryTaskIds(
@@ -1458,7 +1471,9 @@ export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistory
   if (!touchedTaskIds.length) return;
   void runHistorySave(async () => {
     touchedTaskIds.forEach((taskId) => {
-      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
+      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [], {
+        allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+      });
     });
     if (inFlightHistoryQueueSync) await inFlightHistoryQueueSync;
   }, opts);
@@ -1533,7 +1548,9 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?
   if (!touchedTaskIds.length) return;
   await runHistorySave(async () => {
     touchedTaskIds.forEach((taskId) => {
-      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
+      enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [], {
+        allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+      });
     });
     while (inFlightHistoryQueueSync || touchedTaskIds.some((taskId) => queuedHistoryReplacementsByTaskId.has(taskId))) {
       if (inFlightHistoryQueueSync) await inFlightHistoryQueueSync;

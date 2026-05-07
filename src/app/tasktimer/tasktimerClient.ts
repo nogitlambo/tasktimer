@@ -1116,7 +1116,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getConfirmDeleteAllChecked: () => !!els.confirmDeleteAll?.checked,
     confirm,
     closeConfirm,
-    saveHistory: (history) => workspaceRepository.saveHistory(history as TaskTimerMutableState["historyByTaskId"]),
+    saveHistory: (history, opts) => workspaceRepository.saveHistory(history as TaskTimerMutableState["historyByTaskId"], opts),
     saveDeletedMeta: workspaceRepository.saveDeletedMeta,
     save: renderBindings.save,
     deleteSharedTaskSummariesForTask,

@@ -1630,7 +1630,19 @@ function stableHistoryEntryDocId(entry: HistoryEntry): string {
   return `${ts}-${ms}-${fnv1a32(historyEntryFingerprint(entry))}`;
 }
 
-export async function replaceTaskHistory(uid: string, taskId: string, entries: HistoryEntry[]): Promise<void> {
+export function isLargeImplicitHistoryDelete(currentCount: number, nextCount: number): boolean {
+  const safeCurrentCount = Math.max(0, Math.floor(Number(currentCount || 0) || 0));
+  const safeNextCount = Math.max(0, Math.floor(Number(nextCount || 0) || 0));
+  const removedCount = Math.max(0, safeCurrentCount - safeNextCount);
+  return removedCount > 5 && safeNextCount < safeCurrentCount * 0.8;
+}
+
+export async function replaceTaskHistory(
+  uid: string,
+  taskId: string,
+  entries: HistoryEntry[],
+  opts?: { allowDestructiveReplace?: boolean }
+): Promise<void> {
   const col = taskHistoryCollection(uid, taskId);
   if (!col) return;
   const deduped: HistoryEntry[] = [];
@@ -1657,6 +1669,11 @@ export async function replaceTaskHistory(uid: string, taskId: string, entries: H
     deduped.push(normalized);
   });
   const current = await getDocs(col);
+  if (isLargeImplicitHistoryDelete(current.docs.length, deduped.length) && !opts?.allowDestructiveReplace) {
+    throw new Error(
+      `Refusing implicit destructive history replacement for task ${taskId}: ${current.docs.length} cloud rows would become ${deduped.length}.`
+    );
+  }
   await Promise.all(current.docs.map((d) => deleteDoc(d.ref)));
   await Promise.all(
     deduped.map((entry) =>

@@ -179,7 +179,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     setFocusSessionDraft: ctx.setFocusSessionDraft,
     resetTaskStateImmediate,
     save: ctx.save,
-    saveHistory: (history) => ctx.saveHistory(history as any),
+    saveHistory: (history, opts) => ctx.saveHistory(history as any, opts),
     saveDeletedMeta: ctx.saveDeletedMeta,
     render: ctx.render,
     renderDashboardWidgets: ctx.renderDashboardWidgets,

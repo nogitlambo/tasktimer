@@ -13,7 +13,7 @@ type CreateTaskDeleteOptions = {
   getConfirmDeleteAllChecked: () => boolean;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;
-  saveHistory: (history: Record<string, unknown[]>) => void;
+  saveHistory: (history: Record<string, unknown[]>, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveDeletedMeta: (meta: DeletedTaskMeta) => void;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
   deleteSharedTaskSummariesForTask: (ownerUid: string, taskId: string) => Promise<unknown>;
@@ -47,7 +47,7 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
 
         if (deleteHistory) {
           if (taskId && historyByTaskId && taskId in historyByTaskId) delete historyByTaskId[taskId];
-          if (hasTaskHistory) options.saveHistory(historyByTaskId);
+          if (hasTaskHistory) options.saveHistory(historyByTaskId, { allowDestructiveReplace: true });
 
           if (hasDeletedTaskMeta) {
             delete deletedTaskMeta[taskId];

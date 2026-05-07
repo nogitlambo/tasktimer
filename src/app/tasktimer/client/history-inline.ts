@@ -523,7 +523,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       [taskId]: allEntries.filter((entry: any) => !entry?.isLiveSession) as any,
     };
     ctx.setHistoryByTaskId(nextHistory);
-    ctx.saveHistory(nextHistory);
+    ctx.saveHistory(nextHistory, { allowDestructiveReplace: true });
 
     const deletionSelection = historyInlineSelection.applyDeletedIndex(state, deleteAbsIndex);
     if (deletionSelection.clearedSelected) {

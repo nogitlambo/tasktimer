@@ -21,7 +21,7 @@ import {
   SCHEDULE_SNAP_MINUTES,
   type TaskTimerScheduleState,
 } from "./schedule-runtime";
-import { SCHEDULE_DAY_ORDER, type ScheduleDay } from "../lib/schedule-placement";
+import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 
 type TaskTimerScheduleRenderContext = {
   els: Pick<TaskTimerElements, "scheduleGrid" | "scheduleTrayList" | "scheduleMobileDayTabs">;
@@ -74,12 +74,15 @@ function resolveScheduleAvailableWidth(ctx: TaskTimerScheduleRenderContext) {
   return window.innerWidth || 0;
 }
 
-function rotateScheduleDaysForWeekStart(days: ScheduleDay[], weekStarting: DashboardWeekStart) {
+export function getScheduleDaysForWeekStart(weekStarting: DashboardWeekStart, dayCount = SCHEDULE_DAY_ORDER.length) {
   const weekStart = normalizeScheduleDay(weekStarting) || "mon";
   const startIndex = SCHEDULE_DAY_ORDER.indexOf(weekStart);
-  if (startIndex <= 0) return days;
-  const weekDays = SCHEDULE_DAY_ORDER.slice(startIndex).concat(SCHEDULE_DAY_ORDER.slice(0, startIndex));
-  return weekDays.slice(0, days.length);
+  const orderedDays =
+    startIndex <= 0
+      ? [...SCHEDULE_DAY_ORDER]
+      : SCHEDULE_DAY_ORDER.slice(startIndex).concat(SCHEDULE_DAY_ORDER.slice(0, startIndex));
+  const visibleDayCount = Math.max(1, Math.min(SCHEDULE_DAY_ORDER.length, Math.floor(Number(dayCount) || SCHEDULE_DAY_ORDER.length)));
+  return orderedDays.slice(0, visibleDayCount);
 }
 
 export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderContext) {
@@ -87,7 +90,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
   const isMobileLayout = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
   const visibleDays = isMobileLayout
     ? ctx.scheduleRuntime.getVisibleDays(visibleDayCount)
-    : rotateScheduleDaysForWeekStart(ctx.scheduleRuntime.getVisibleDays(SCHEDULE_DAY_ORDER.length), ctx.getWeekStarting());
+    : getScheduleDaysForWeekStart(ctx.getWeekStarting());
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);

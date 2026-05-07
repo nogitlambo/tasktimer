@@ -30,7 +30,7 @@ type TaskDestructiveActionEffectsOptions = {
   setFocusSessionDraft: (taskId: string, note: string) => void;
   resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string }) => void;
   save: (opts?: { deletedTaskIds?: string[] }) => void;
-  saveHistory: (history: Record<string, unknown[]>) => void;
+  saveHistory: (history: Record<string, unknown[]>, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveDeletedMeta: (meta: DeletedTaskMeta) => void;
   render: () => void;
   renderDashboardWidgets: () => void;
@@ -121,7 +121,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
           const nextHistory = {} as Record<string, unknown[]>;
           const nextDeletedTaskMeta = {} as DeletedTaskMeta;
           options.setHistoryByTaskId(nextHistory);
-          options.saveHistory(nextHistory);
+          options.saveHistory(nextHistory, { allowDestructiveReplace: true });
           options.setDeletedTaskMeta(nextDeletedTaskMeta);
           options.saveDeletedMeta(nextDeletedTaskMeta);
 

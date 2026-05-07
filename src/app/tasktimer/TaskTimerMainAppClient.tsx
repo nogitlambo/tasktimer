@@ -315,55 +315,52 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   const mobileToolbar: ReactNode = useMemo(() => {
     if (!isMobileViewport) return null;
-    if (initialPage === "tasks" || initialPage === "schedule") {
-      return (
-        <div className="taskLaunchMobileToolbarInner taskLaunchMobileToolbarTasks" aria-label="Tasks controls">
-          <div className="taskPageHeaderActions">
-            <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
-              <button className="iconBtn taskScreenPill taskScreenHeaderBtn isOn" id="closeScheduleBtn" data-screen-pill="tasks" aria-current="page" aria-label="Tasks" title="Tasks" role="tab" type="button">
-                <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-                <span className="taskScreenTabLabel">Tasks</span>
-              </button>
-              <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openScheduleBtn" data-screen-pill="schedule" aria-label="Schedule" title="Schedule" role="tab" type="button">
-                <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-                  <path d="M3.5 9.5h17" />
-                  <path d="M8 3.75v3.5" />
-                  <path d="M16 3.75v3.5" />
-                  <path d="M8 13h3" />
-                  <path d="M13 13h3" />
-                  <path d="M8 17h3" />
-                </svg>
-                <span className="taskScreenTabLabel">Schedule</span>
-              </button>
-            </div>
-            <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="New Task" title="New Task" type="button">
-              <span className="taskScreenHeaderBtnText">+ New Task</span>
+    return (
+      <div className="taskLaunchMobileToolbarInner taskLaunchMobileToolbarTasks" aria-label="Tasks controls">
+        <div className="taskPageHeaderActions">
+          <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
+            <button className="iconBtn taskScreenPill taskScreenHeaderBtn isOn" id="closeScheduleBtn" data-screen-pill="tasks" aria-current="page" aria-label="Tasks" title="Tasks" role="tab" type="button">
+              <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
+              <span className="taskScreenTabLabel">Tasks</span>
             </button>
-            <div className="tasksModeControlGroup" aria-label="Task ordering controls">
-              <details className="tasksModeMenu" id="taskOrderByMenu">
-                <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
-                  <span id="taskOrderByValue" className="sr-only">Custom</span>
-                  <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M4 6.5h16" />
-                    <path d="M7.5 12h9" />
-                    <path d="M10.5 17.5h3" />
-                  </svg>
-                </summary>
-                <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
-                  <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
-                  <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">A-Z</button>
-                  <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">Schedule/Time</button>
-                  <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">Custom</button>
-                </div>
-              </details>
-            </div>
+            <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openScheduleBtn" data-screen-pill="schedule" aria-label="Schedule" title="Schedule" role="tab" type="button">
+              <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                <path d="M3.5 9.5h17" />
+                <path d="M8 3.75v3.5" />
+                <path d="M16 3.75v3.5" />
+                <path d="M8 13h3" />
+                <path d="M13 13h3" />
+                <path d="M8 17h3" />
+              </svg>
+              <span className="taskScreenTabLabel">Schedule</span>
+            </button>
+          </div>
+          <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="New Task" title="New Task" type="button">
+            <span className="taskScreenHeaderBtnText">+ New Task</span>
+          </button>
+          <div className="tasksModeControlGroup" aria-label="Task ordering controls">
+            <details className="tasksModeMenu" id="taskOrderByMenu">
+              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
+                <span id="taskOrderByValue" className="sr-only">Custom</span>
+                <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 6.5h16" />
+                  <path d="M7.5 12h9" />
+                  <path d="M10.5 17.5h3" />
+                </svg>
+              </summary>
+              <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
+                <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
+                <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">A-Z</button>
+                <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">Schedule/Time</button>
+                <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">Custom</button>
+              </div>
+            </details>
           </div>
         </div>
-      );
-    }
-    return null;
-  }, [initialPage, isMobileViewport]);
+      </div>
+    );
+  }, [isMobileViewport]);
 
   return (
     <>

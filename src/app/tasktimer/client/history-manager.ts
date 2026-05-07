@@ -1127,7 +1127,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               }
             });
             ctx.setHistoryByTaskId(historyByTaskId);
-            ctx.saveHistory(historyByTaskId);
+            ctx.saveHistory(historyByTaskId, { allowDestructiveReplace: true });
             void ctx.syncSharedTaskSummariesForTasks(Object.keys(byTask));
             ctx.setHmBulkSelectedRows(new Set<string>());
             renderHistoryManager();
@@ -1228,7 +1228,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
             orig.splice(pos, 1);
             historyByTaskId[taskId] = orig;
             ctx.setHistoryByTaskId(historyByTaskId);
-            await ctx.saveHistoryAndWait(historyByTaskId);
+            await ctx.saveHistoryAndWait(historyByTaskId, { allowDestructiveReplace: true });
             void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
 
             const deletedTaskMeta = ctx.getDeletedTaskMeta();
