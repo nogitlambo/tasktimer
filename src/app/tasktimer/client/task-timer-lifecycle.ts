@@ -104,12 +104,15 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     const taskId = String(task.id || "");
     options.flushPendingFocusSessionNoteSave(taskId);
     const elapsedMs = options.getTaskElapsedMs(task);
+    let finalizeError: unknown = null;
     try {
       options.finalizeLiveSession(task, {
         elapsedMs,
         note: opts?.sessionNote,
         completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
       });
+    } catch (error) {
+      finalizeError = error;
     } finally {
       task.accumulatedMs = 0;
       task.running = false;
@@ -126,6 +129,10 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       options.syncFocusSessionNotesAccordion(taskId);
     }
     if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
+    if (finalizeError) {
+      // Keep local completion/reset durable even if history persistence rejects.
+      console.error("Failed to finalize task session", finalizeError);
+    }
   }
 
   return {

@@ -8,6 +8,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
@@ -1640,6 +1641,68 @@ function stableHistoryEntryDocId(entry: HistoryEntry): string {
   return `${ts}-${ms}-${fnv1a32(historyEntryFingerprint(entry))}`;
 }
 
+type HistoryDocPayload = {
+  ts: number;
+  ms: number;
+  name: string;
+  color?: string;
+  note?: string;
+  sessionId?: string;
+  completionDifficulty?: 1 | 2 | 3 | 4 | 5;
+};
+
+type HistorySyncPlan = {
+  upsertIds: string[];
+  deleteIds: string[];
+};
+
+function buildHistoryDocPayload(entry: HistoryEntry): HistoryDocPayload {
+  return {
+    ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
+    ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
+    name: String(entry?.name || ""),
+    ...(entry?.color != null ? { color: String(entry.color) } : {}),
+    ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+    ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
+    ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
+      ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) as 1 | 2 | 3 | 4 | 5 }
+      : {}),
+  };
+}
+
+function normalizeComparableHistoryPayload(row: Record<string, unknown> | HistoryDocPayload): HistoryDocPayload {
+  return {
+    ts: Number.isFinite(Number(row.ts)) ? Math.floor(Number(row.ts)) : 0,
+    ms: Number.isFinite(Number(row.ms)) ? Math.max(0, Math.floor(Number(row.ms))) : 0,
+    name: String(row.name || ""),
+    ...(row.color != null ? { color: String(row.color) } : {}),
+    ...(typeof row.note === "string" && row.note.trim() ? { note: row.note.trim() } : {}),
+    ...(typeof row.sessionId === "string" && row.sessionId.trim() ? { sessionId: row.sessionId.trim() } : {}),
+    ...(normalizeCompletionDifficulty(row.completionDifficulty)
+      ? { completionDifficulty: normalizeCompletionDifficulty(row.completionDifficulty) as 1 | 2 | 3 | 4 | 5 }
+      : {}),
+  };
+}
+
+function historyPayloadsEqual(a: Record<string, unknown> | HistoryDocPayload, b: HistoryDocPayload): boolean {
+  return JSON.stringify(normalizeComparableHistoryPayload(a)) === JSON.stringify(normalizeComparableHistoryPayload(b));
+}
+
+export function planHistorySyncOperations(
+  currentRowsById: Record<string, Record<string, unknown>>,
+  desiredRowsById: Record<string, HistoryDocPayload>
+): HistorySyncPlan {
+  const currentIds = new Set(Object.keys(currentRowsById || {}));
+  const desiredIds = new Set(Object.keys(desiredRowsById || {}));
+  const upsertIds = Array.from(desiredIds).filter((id) => {
+    const current = currentRowsById[id];
+    const desired = desiredRowsById[id];
+    return !current || !historyPayloadsEqual(current, desired);
+  });
+  const deleteIds = Array.from(currentIds).filter((id) => !desiredIds.has(id));
+  return { upsertIds, deleteIds };
+}
+
 export function isLargeImplicitHistoryDelete(currentCount: number, nextCount: number): boolean {
   const safeCurrentCount = Math.max(0, Math.floor(Number(currentCount || 0) || 0));
   const safeNextCount = Math.max(0, Math.floor(Number(nextCount || 0) || 0));
@@ -1654,7 +1717,8 @@ export async function replaceTaskHistory(
   opts?: { allowDestructiveReplace?: boolean }
 ): Promise<void> {
   const col = taskHistoryCollection(uid, taskId);
-  if (!col) return;
+  const db = dbOrNull();
+  if (!col || !db) return;
   const deduped: HistoryEntry[] = [];
   const seen = new Set<string>();
   (entries || []).forEach((entry) => {
@@ -1679,28 +1743,41 @@ export async function replaceTaskHistory(
     deduped.push(normalized);
   });
   const current = await getDocs(col);
+  const desiredRowsById: Record<string, HistoryDocPayload> = {};
+  deduped.forEach((entry) => {
+    desiredRowsById[stableHistoryEntryDocId(entry)] = buildHistoryDocPayload(entry);
+  });
+  const currentRowsById: Record<string, Record<string, unknown>> = {};
+  current.docs.forEach((row) => {
+    currentRowsById[row.id] = row.data() as Record<string, unknown>;
+  });
+  const plan = planHistorySyncOperations(currentRowsById, desiredRowsById);
   if (isLargeImplicitHistoryDelete(current.docs.length, deduped.length) && !opts?.allowDestructiveReplace) {
     throw new Error(
       `Refusing implicit destructive history replacement for task ${taskId}: ${current.docs.length} cloud rows would become ${deduped.length}.`
     );
   }
-  await Promise.all(current.docs.map((d) => deleteDoc(d.ref)));
-  await Promise.all(
-    deduped.map((entry) =>
-      setDoc(doc(col, stableHistoryEntryDocId(entry)), {
-        ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
-        ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
-        name: String(entry?.name || ""),
-        ...(entry?.color != null ? { color: String(entry.color) } : {}),
-        ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
-        ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
-        ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
-          ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
-          : {}),
-        createdAt: serverTimestamp(),
-      })
-    )
-  );
+  if (!plan.deleteIds.length && !plan.upsertIds.length) return;
+  const maxOpsPerBatch = 400;
+  const operations: Array<{ kind: "delete" | "upsert"; id: string }> = [
+    ...plan.deleteIds.map((id) => ({ kind: "delete" as const, id })),
+    ...plan.upsertIds.map((id) => ({ kind: "upsert" as const, id })),
+  ];
+  for (let index = 0; index < operations.length; index += maxOpsPerBatch) {
+    const batch = writeBatch(db);
+    operations.slice(index, index + maxOpsPerBatch).forEach((op) => {
+      const ref = doc(col, op.id);
+      if (op.kind === "delete") {
+        batch.delete(ref);
+        return;
+      }
+      batch.set(ref, {
+        ...desiredRowsById[op.id],
+        createdAt: currentRowsById[op.id]?.createdAt || serverTimestamp(),
+      });
+    });
+    await batch.commit();
+  }
 }
 
 export async function saveDeletedTaskMeta(uid: string, taskId: string, row: DeletedTaskMeta[string]): Promise<void> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildIdentitySyncResponseError, isLargeImplicitHistoryDelete } from "./cloudStore";
+import { buildIdentitySyncResponseError, isLargeImplicitHistoryDelete, planHistorySyncOperations } from "./cloudStore";
 
 describe("buildIdentitySyncResponseError", () => {
   it("preserves reportable identity sync response fields", async () => {
@@ -32,5 +32,35 @@ describe("isLargeImplicitHistoryDelete", () => {
     expect(isLargeImplicitHistoryDelete(100, 96)).toBe(false);
     expect(isLargeImplicitHistoryDelete(5, 0)).toBe(false);
     expect(isLargeImplicitHistoryDelete(10, 12)).toBe(false);
+  });
+});
+
+describe("planHistorySyncOperations", () => {
+  it("skips unchanged history rows", () => {
+    expect(
+      planHistorySyncOperations(
+        {
+          row1: { ts: 100, ms: 200, name: "Focus", createdAt: {} },
+        },
+        {
+          row1: { ts: 100, ms: 200, name: "Focus" },
+        }
+      )
+    ).toEqual({ upsertIds: [], deleteIds: [] });
+  });
+
+  it("upserts changed or new rows and deletes missing rows", () => {
+    expect(
+      planHistorySyncOperations(
+        {
+          row1: { ts: 100, ms: 200, name: "Focus" },
+          row2: { ts: 300, ms: 400, name: "Old" },
+        },
+        {
+          row1: { ts: 100, ms: 250, name: "Focus" },
+          row3: { ts: 500, ms: 600, name: "New" },
+        }
+      )
+    ).toEqual({ upsertIds: ["row1", "row3"], deleteIds: ["row2"] });
   });
 });

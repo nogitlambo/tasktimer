@@ -1,4 +1,5 @@
 import { getVisibleOverlays as getVisibleOverlaysFromDocument } from "./overlay-visibility";
+import { getTimeGoalConfettiStage, stopTimeGoalConfetti } from "./time-goal-confetti";
 
 type ActiveElementDocument = {
   activeElement?: Element | null;
@@ -29,6 +30,9 @@ export function closeTaskTimerOverlay(overlay: HTMLElement | null, documentRef: 
     // ignore
   }
   if (!overlay) return;
+  if (overlay.id === "timeGoalCompleteOverlay") {
+    stopTimeGoalConfetti(getTimeGoalConfettiStage(overlay));
+  }
   overlay.style.display = "none";
 }
 

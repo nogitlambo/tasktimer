@@ -4164,12 +4164,88 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .modal{
+  position: relative;
+  z-index: 2;
   background: #0d0f13;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   border: 1px solid rgba(53,232,255,.24);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage{
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd84c, transparent 70%);
+  opacity: 0;
+  transform: translate(-50%,-50%) scale(.1);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying{
+  opacity: 1;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying::before{
+  animation: timeGoalConfettiPulse 2.4s ease-out 5 both;
+}
+
+#timeGoalCompleteOverlay .timeGoalConfettiPiece{
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: var(--w);
+  height: var(--h);
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.2) rotate(var(--rot));
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
+  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 5 both;
+  animation-delay: var(--d);
+}
+
+#timeGoalCompleteOverlay .timeGoalConfettiDot{
+  border-radius: 999px;
+}
+
+#timeGoalCompleteOverlay .timeGoalConfettiStar{
+  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+
+@keyframes timeGoalConfettiPulse{
+  0%{ transform: translate(-50%,-50%) scale(.1); opacity:.9; }
+  24%{ opacity:.45; }
+  55%,100%{ transform: translate(-50%,-50%) scale(9); opacity:0; }
+}
+
+@keyframes timeGoalConfettiBurst{
+  0%{ opacity:0; transform: translate(-50%, -50%) scale(.2) rotate(var(--rot)); }
+  8%{ opacity:1; }
+  62%{ opacity:1; }
+  100%{ opacity:0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(calc(var(--rot) + var(--spin))); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage{
+    display: none;
+  }
 }
 
 #timeGoalCompleteOverlay h2{

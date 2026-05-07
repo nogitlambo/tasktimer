@@ -171,9 +171,10 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
-  it("resets task state even when live-session finalization throws", () => {
+  it("resets task state and completes cleanup when live-session finalization throws", () => {
     const calls: string[] = [];
     const entry = task({ running: true, startMs: 1, accumulatedMs: 55, hasStarted: true });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const commands = createTaskTimerLifecycleCommands({
       clearTaskTimeGoalFlow: (taskId) => calls.push(`clear-goal:${taskId}`),
       flushPendingFocusSessionNoteSave: (taskId) => calls.push(`flush-note:${taskId}`),
@@ -212,8 +213,17 @@ describe("task timer lifecycle", () => {
       nowMs: () => 123,
     });
 
-    expect(() => adapter.resetTaskStateImmediate(entry)).toThrow("finalize failed");
+    expect(() => adapter.resetTaskStateImmediate(entry)).not.toThrow();
     expect(entry).toMatchObject({ running: false, accumulatedMs: 0, startMs: null, hasStarted: false });
-    expect(calls).toEqual(["flush-note:task-1"]);
+    expect(calls).toEqual([
+      "flush-note:task-1",
+      "clear-goal:task-1",
+      "clear-reward:task-1",
+      "reset-checkpoint:task-1",
+      "checkpoint-dirty:true",
+      "clear-focus-draft:task-1",
+    ]);
+    expect(consoleError).toHaveBeenCalledWith("Failed to finalize task session", expect.any(Error));
+    consoleError.mockRestore();
   });
 });

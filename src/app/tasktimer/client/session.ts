@@ -10,6 +10,7 @@ import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -263,6 +264,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (value) setTimeGoalCompletionValidation("");
   }
 
+  function startTimeGoalCompleteConfetti() {
+    startTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
+  }
+
+  function stopTimeGoalCompleteConfetti() {
+    stopTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
+  }
+
+  function isOverlayVisible(overlay: HTMLElement | null) {
+    return !!overlay && overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
+  }
+
+  function isVisibleTimeGoalCompleteModalForTask(taskIdRaw?: string | null) {
+    const taskId = String(taskIdRaw || "").trim();
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    return !!taskId && isOverlayVisible(overlay) && String(overlay?.dataset.taskId || "").trim() === taskId;
+  }
+
   function clearPendingTimeGoalFlow() {
     if (typeof window === "undefined") return;
     try {
@@ -285,6 +304,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       normalizedTaskId === activeModalTaskId
     ) {
       clearPendingTimeGoalFlow();
+      stopTimeGoalCompleteConfetti();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
@@ -407,6 +427,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalCompleteLaunchNextButton();
     persistPendingTimeGoalFlow(task, "main", opts);
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+    startTimeGoalCompleteConfetti();
   }
 
   function maybeRestorePendingTimeGoalFlow() {
@@ -414,6 +435,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const tasks = ctx.getTasks();
     if (pending) {
       const task = tasks.find((row) => String(row.id || "") === pending.taskId) || null;
+      if (isVisibleTimeGoalCompleteModalForTask(pending.taskId)) {
+        syncTimeGoalCompleteLaunchNextButton();
+        return;
+      }
       if (!shouldKeepTimeGoalCompletionFlow(task, pending.frozenElapsedMs)) {
         clearPendingTimeGoalFlow();
         if (pending.taskId) clearTaskTimeGoalFlow(pending.taskId);
@@ -444,11 +469,20 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return;
     }
     const task = ctx.getTasks().find((row) => String(row.id || "") === activeTaskId) || null;
+    if (
+      task &&
+      isTaskTimeGoalCompletedToday(task) &&
+      isVisibleTimeGoalCompleteModalForTask(activeTaskId)
+    ) {
+      syncTimeGoalCompleteLaunchNextButton();
+      return;
+    }
     if (shouldKeepTimeGoalCompletionFlow(task, ctx.getTimeGoalModalFrozenElapsedMs())) {
       syncTimeGoalCompleteLaunchNextButton();
       return;
     }
     clearTaskTimeGoalFlow(activeTaskId);
+    stopTimeGoalCompleteConfetti();
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
@@ -458,6 +492,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(task.id || "");
     if (isTaskTimeGoalCompletedToday(task)) {
       clearTaskTimeGoalFlow(taskId);
+      stopTimeGoalCompleteConfetti();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
@@ -480,6 +515,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     markTaskTimeGoalCompletedForResolution(task, nowMs());
     ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote, completionDifficulty });
     clearTaskTimeGoalFlow(taskId);
+    stopTimeGoalCompleteConfetti();
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);

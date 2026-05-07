@@ -195,7 +195,7 @@ export default function AddTaskOverlay() {
             </button>
           </div>
           <div className="editTaskColorPopover" id="addTaskColorPopover" role="dialog" aria-modal="false" aria-label="Choose task color" style={{ display: "none" }}>
-            <div className="editTaskColorPopoverPanel">
+            <div className="editTaskColorPopoverPanel" id="addTaskColorPopoverPanel">
               <TaskColorPickerPopover paletteId="addTaskColorPalette" noneId="addTaskColorNone" />
             </div>
           </div>

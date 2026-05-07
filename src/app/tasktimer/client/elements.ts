@@ -349,6 +349,7 @@ const els = {
   confirmAltBtn: documentRef.getElementById("confirmAltBtn"),
   confirmChkLabel: documentRef.getElementById("confirmChkLabel"),
   timeGoalCompleteOverlay: documentRef.getElementById("timeGoalCompleteOverlay"),
+  timeGoalCompleteConfettiStage: documentRef.getElementById("timeGoalCompleteConfettiStage") as HTMLElement | null,
   timeGoalCompleteTitle: documentRef.getElementById("timeGoalCompleteTitle"),
   timeGoalCompleteText: documentRef.getElementById("timeGoalCompleteText"),
   timeGoalCompleteMeta: documentRef.getElementById("timeGoalCompleteMeta"),

@@ -14,6 +14,18 @@ function overlayStub(id = "overlay", attrs: Record<string, string | null> = {}) 
   } as HTMLElement;
 }
 
+function confettiStageStub() {
+  const classes = new Set<string>(["isPlaying"]);
+  return {
+    dataset: { confettiState: "playing" },
+    classList: {
+      add: (className: string) => classes.add(className),
+      remove: (className: string) => classes.delete(className),
+      contains: (className: string) => classes.has(className),
+    },
+  } as unknown as HTMLElement;
+}
+
 function createLifecycle(visibleOverlays: HTMLElement[] = []) {
   return createTaskTimerOverlayLifecycle({
     documentRef: { activeElement: null },
@@ -43,6 +55,21 @@ describe("overlay lifecycle", () => {
     closeTaskTimerOverlay(overlay, { activeElement: { blur } as unknown as Element });
 
     expect(blur).toHaveBeenCalledTimes(1);
+    expect(overlay.style.display).toBe("none");
+  });
+
+  it("stops time goal confetti when closing the task complete overlay", () => {
+    const stage = confettiStageStub();
+    const overlay = {
+      id: "timeGoalCompleteOverlay",
+      style: { display: "flex" },
+      querySelector: (selector: string) => (selector === "#timeGoalCompleteConfettiStage" ? stage : null),
+    } as unknown as HTMLElement;
+
+    closeTaskTimerOverlay(overlay, { activeElement: null });
+
+    expect(stage.classList.contains("isPlaying")).toBe(false);
+    expect(stage.dataset.confettiState).toBe("stopped");
     expect(overlay.style.display).toBe("none");
   });
 
