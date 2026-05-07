@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { awardCompletedSessionXp, DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, normalizeRewardProgress } from "./rewards";
+import {
+  awardCompletedSessionXp,
+  DEFAULT_REWARD_PROGRESS,
+  getRankForXp,
+  MIN_REWARD_ELIGIBLE_SESSION_MS,
+  RANK_LADDER,
+  normalizeRewardProgress,
+} from "./rewards";
 import type { Task } from "./types";
 
 const MINUTE_MS = 60 * 1000;
@@ -234,5 +241,33 @@ describe("awardCompletedSessionXp", () => {
       multiplier: 1.5,
       xp: 1.5,
     });
+  });
+});
+
+describe("rank ladder", () => {
+  it("uses the configured unlock thresholds", () => {
+    expect(RANK_LADDER.map(({ id, minXp }) => [id, minXp])).toEqual([
+      ["unranked", 0],
+      ["initiate", 10],
+      ["operator", 60],
+      ["technician", 240],
+      ["engineer", 960],
+      ["analyst", 2880],
+      ["specialist", 5760],
+      ["strategist", 8640],
+      ["director", 12000],
+      ["ascendent", 15600],
+      ["commander", 18720],
+      ["architect", 22460],
+      ["overseer", 26900],
+      ["visionary", 32280],
+      ["sovereign", 38740],
+      ["mythic", 50000],
+    ]);
+    expect(getRankForXp(9).id).toBe("unranked");
+    expect(getRankForXp(10).id).toBe("initiate");
+    expect(getRankForXp(59).id).toBe("initiate");
+    expect(getRankForXp(60).id).toBe("operator");
+    expect(getRankForXp(50000).id).toBe("mythic");
   });
 });

@@ -44,6 +44,17 @@ export type TimeGoalCompleteNextTaskOption = {
   scheduleText: string;
 };
 
+export function getTimeGoalCompleteMetaMessage(
+  selectedDifficultyRaw: unknown,
+  nextTaskOptions: TimeGoalCompleteNextTaskOption[]
+): string {
+  const selectedDifficulty = normalizeCompletionDifficulty(selectedDifficultyRaw);
+  if (!selectedDifficulty) return "";
+  return Array.isArray(nextTaskOptions) && nextTaskOptions.length === 0
+    ? "All tasks completed for today!"
+    : "";
+}
+
 export function shouldKeepTimeGoalCompletionFlowForTask(
   task: Task | null | undefined,
   opts: {
@@ -303,21 +314,28 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!host || !grid) return;
     const selectedDifficulty = getSelectedTimeGoalCompletionDifficulty();
     const options = selectedDifficulty ? getTimeGoalCompleteNextTaskOptions() : [];
-    if (!selectedDifficulty || !options.length) {
+    const metaMessage = getTimeGoalCompleteMetaMessage(selectedDifficulty, options);
+    if (!selectedDifficulty) {
       host.hidden = true;
       grid.innerHTML = "";
       return;
     }
+    if (!options.length) {
+      host.hidden = false;
+      grid.innerHTML = `<p class="timeGoalCompleteNextTaskTitle">${ctx.escapeHtmlUI(metaMessage)}</p>`;
+      return;
+    }
     host.hidden = false;
-    grid.innerHTML = options
-      .map(
+    grid.innerHTML = [
+      `<p class="timeGoalCompleteNextTaskTitle">Click a task below to launch immediately</p>`,
+      ...options.map(
         (task) => `<button class="timeGoalCompleteNextTaskTile" type="button" data-time-goal-next-task-id="${ctx.escapeHtmlUI(
           task.id
         )}" style="--task-color:${ctx.escapeHtmlUI(task.color)}"><span class="timeGoalCompleteNextTaskName">${ctx.escapeHtmlUI(
           task.name
         )}</span><span class="timeGoalCompleteNextTaskTime">${ctx.escapeHtmlUI(task.scheduleText)}</span></button>`
-      )
-      .join("");
+      ),
+    ].join("");
   }
 
   function getSelectedTimeGoalCompletionDifficulty(): CompletionDifficulty | undefined {
@@ -507,7 +525,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteText) {
       els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
     }
-    if (els.timeGoalCompleteMeta) els.timeGoalCompleteMeta.textContent = "";
+    if (els.timeGoalCompleteMeta) {
+      els.timeGoalCompleteMeta.textContent = "";
+      els.timeGoalCompleteMeta.hidden = true;
+    }
     setTimeGoalCompletionValidation("");
     if (els.timeGoalCompleteNoteInput) {
       els.timeGoalCompleteNoteInput.value = captureSessionNoteSnapshot(taskId);

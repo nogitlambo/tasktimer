@@ -26,7 +26,7 @@ describe("getLeaderboardResolvedRank", () => {
   it("derives the displayed rank from XP even when the stored rank id is stale", () => {
     const profile = createProfile({
       rewardCurrentRankId: "unranked",
-      rewardTotalXp: 620,
+      rewardTotalXp: 960,
     });
 
     expect(getLeaderboardResolvedRank(profile)).toMatchObject({

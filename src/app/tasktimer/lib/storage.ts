@@ -1482,6 +1482,21 @@ function enqueueHistoryReplace(
   scheduleCloudQueueFlush("history", uid, flushQueuedHistorySync, opts);
 }
 
+function historyEntriesEqual(a: HistoryEntry | null | undefined, b: HistoryEntry | null | undefined): boolean {
+  return historyRowsSignature(a ? [a] : []) === historyRowsSignature(b ? [b] : []);
+}
+
+function mergeDirectAppendIntoQueuedHistoryReplace(taskIdRaw: string, entry: HistoryEntry): void {
+  const taskId = String(taskIdRaw || "").trim();
+  const queued = taskId ? queuedHistoryReplacementsByTaskId.get(taskId) : null;
+  if (!queued) return;
+  if (queued.rows.some((row) => historyEntriesEqual(row, entry))) return;
+  queuedHistoryReplacementsByTaskId.set(taskId, {
+    ...queued,
+    rows: [...queued.rows, entry],
+  });
+}
+
 function flushQueuedLiveSessionSync(uid: string): void {
   if (inFlightLiveSessionQueueSync) return;
   if (!queuedLiveSessionUpsertsByTaskId.size && !queuedLiveSessionClears.size) return;
@@ -1789,6 +1804,7 @@ export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
   const normalizedTaskId = String(taskId || "").trim();
   const normalizedEntry = normalizeHistoryEntry(entry);
   if (!normalizedTaskId || !normalizedEntry) return;
+  mergeDirectAppendIntoQueuedHistoryReplace(normalizedTaskId, normalizedEntry);
   const uid = currentUid();
   if (!uid) return;
   void appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {

@@ -90,7 +90,6 @@ export default function TimeGoalCompleteOverlay() {
         </fieldset>
         <div className="timeGoalCompleteDivider" aria-hidden="true" />
         <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
-          <p className="timeGoalCompleteNextTaskTitle">Click a task below to launch immediately</p>
           <div
             className="timeGoalCompleteNextTaskGrid"
             id="timeGoalCompleteNextTaskGrid"

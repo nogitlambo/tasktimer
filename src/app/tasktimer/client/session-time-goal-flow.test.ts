@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { LiveTaskSession, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
-import { buildTimeGoalCompleteNextTaskOptions, shouldKeepTimeGoalCompletionFlowForTask, shiftValidDeferredTimeGoalModal } from "./session";
+import {
+  buildTimeGoalCompleteNextTaskOptions,
+  getTimeGoalCompleteMetaMessage,
+  shouldKeepTimeGoalCompletionFlowForTask,
+  shiftValidDeferredTimeGoalModal,
+} from "./session";
 
 function timeGoalTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -142,5 +147,11 @@ describe("time goal complete next task launcher", () => {
     ]);
 
     expect(options.map((option) => option.id)).toEqual(["early", "midday", "late", "unscheduled"]);
+  });
+
+  it("shows the all-tasks-complete message only after a sentiment is selected and no next tasks remain", () => {
+    expect(getTimeGoalCompleteMetaMessage(undefined, [])).toBe("");
+    expect(getTimeGoalCompleteMetaMessage(3, [{ id: "next", name: "Next", color: "#35e8ff", scheduleText: "9:00 AM" }])).toBe("");
+    expect(getTimeGoalCompleteMetaMessage(3, [])).toBe("All tasks completed for today!");
   });
 });

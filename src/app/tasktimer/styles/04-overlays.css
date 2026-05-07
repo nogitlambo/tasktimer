@@ -4421,6 +4421,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTitle{
+  flex: 0 0 100%;
   margin: 0 0 9px;
   color: rgba(210,218,228,.76);
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);

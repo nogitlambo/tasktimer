@@ -22,10 +22,13 @@ function task(overrides: Partial<Task> = {}): Task {
   };
 }
 
-function createHarness(overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number }> = {}) {
+function createHarness(
+  overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number; historyByTaskId: HistoryByTaskId }> = {}
+) {
   const calls: string[] = [];
   const tasks = [task()];
-  let historyByTaskId: HistoryByTaskId = {};
+  let historyByTaskId: HistoryByTaskId = overrides.historyByTaskId || {};
+  const savedHistoryArgs: HistoryByTaskId[] = [];
   let liveSessionsByTaskId: LiveSessionsByTaskId = overrides.liveSessionsByTaskId || {};
   let rewardProgress = normalizeRewardProgress(DEFAULT_REWARD_PROGRESS);
   let rewardSessionTrackersByTaskId: ReturnType<TaskTimerRewardsHistoryContext["getRewardSessionTrackersByTaskId"]> = {
@@ -77,6 +80,7 @@ function createHarness(overrides: Partial<{ liveSessionsByTaskId: LiveSessionsBy
     saveLiveSession: () => calls.push("save-live-session"),
     clearLiveSession: (taskId) => calls.push(`clear-live-session:${taskId}`),
     saveHistoryLocally: (history) => {
+      savedHistoryArgs.push(history);
       historyByTaskId = history;
       calls.push("save-history");
     },
@@ -102,6 +106,7 @@ function createHarness(overrides: Partial<{ liveSessionsByTaskId: LiveSessionsBy
     calls,
     tasks,
     getHistoryByTaskId: () => historyByTaskId,
+    savedHistoryArgs,
     getLiveSessionsByTaskId: () => liveSessionsByTaskId,
     setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => {
       liveSessionsByTaskId = value;
@@ -198,6 +203,26 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
     expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
+  });
+
+  it("saves completed history with a new history snapshot so pending sync detects the append", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const initialHistory: HistoryByTaskId = {
+      "task-1": [{ ts: Date.now() - 1_000, name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+    };
+    const initialRows = initialHistory["task-1"]!;
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      historyByTaskId: initialHistory,
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.savedHistoryArgs).toHaveLength(1);
+    expect(harness.savedHistoryArgs[0]).not.toBe(initialHistory);
+    expect(harness.savedHistoryArgs[0]?.["task-1"]).not.toBe(initialRows);
+    expect(harness.savedHistoryArgs[0]?.["task-1"]).toHaveLength(2);
+    expect(initialRows).toHaveLength(1);
   });
 
   it("throttles repeated live-session sync writes until the interval elapses", () => {

@@ -358,13 +358,16 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...(completionDifficulty ? { completionDifficulty } : {}),
       ...(sessionId ? { sessionId } : {}),
     };
-    if (!Array.isArray(historyByTaskId[taskId])) historyByTaskId[taskId] = [];
-    if (normalizedEntry.sessionId && historyByTaskId[taskId]!.some((row) => row?.sessionId === normalizedEntry.sessionId)) {
+    const currentTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+    if (normalizedEntry.sessionId && currentTaskHistory.some((row) => row?.sessionId === normalizedEntry.sessionId)) {
       return false;
     }
-    historyByTaskId[taskId].push(normalizedEntry);
+    const nextHistoryByTaskId = {
+      ...historyByTaskId,
+      [taskId]: [...currentTaskHistory, normalizedEntry],
+    };
     ctx.appendHistoryEntry(taskId, normalizedEntry);
-    ctx.saveHistoryLocally(historyByTaskId);
+    ctx.saveHistoryLocally(nextHistoryByTaskId);
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     return true;
   }

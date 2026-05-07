@@ -74,10 +74,13 @@ import { DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, rebuildRewardP
 import {
   buildDefaultCloudPreferences,
   clearScopedStorageState,
+  ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS,
+  appendHistoryEntry,
   hydrateStorageFromCloud,
   loadCachedPreferences,
   saveCloudDashboard,
   saveCloudTaskUi,
+  saveHistory,
   saveTasks,
 } from "./storage";
 
@@ -300,6 +303,38 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
 
     expect(cloudStoreMocks.saveDashboard).toHaveBeenCalledTimes(1);
     expect(cloudStoreMocks.saveTaskUi).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a direct completed-session append in a delayed queued history replacement", async () => {
+    const row1 = { ts: Date.parse("2026-05-05T09:00:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
+    const row2 = { ts: Date.parse("2026-05-05T09:10:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
+    const completedRow = {
+      ts: Date.parse("2026-05-05T09:20:00.000Z"),
+      name: "Focus",
+      ms: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      sessionId: "session-1",
+    };
+
+    saveHistory({ "task-1": [row1] }, { forceCloudFlush: true });
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledTimes(1);
+    });
+    cloudStoreMocks.replaceTaskHistory.mockClear();
+
+    vi.advanceTimersByTime(1_000);
+    saveHistory({ "task-1": [row1, row2] });
+    appendHistoryEntry("task-1", completedRow);
+    await vi.advanceTimersByTimeAsync(ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS);
+
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledTimes(1);
+    });
+    expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledWith(
+      "uid-1",
+      "task-1",
+      [row1, row2, completedRow],
+      { allowDestructiveReplace: false }
+    );
   });
 
 });
