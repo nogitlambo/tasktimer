@@ -76,6 +76,27 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 .task .actions > .btn.small{
   min-width:84px;
 }
+.task .actions > .btn.btn-done{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  background:linear-gradient(180deg, rgba(118,255,191,.18), rgba(69,132,102,.16));
+  color:#d9ffec;
+  border-color:rgba(118,255,191,.32);
+  box-shadow:0 0 12px rgba(118,255,191,.12);
+  cursor:not-allowed;
+}
+.taskDoneIcon{
+  display:inline-grid;
+  place-items:center;
+  width:16px;
+  height:16px;
+  border:1px solid currentColor;
+  border-radius:999px;
+  font-size:11px;
+  line-height:1;
+}
 .task .actions .iconBtn{
   width:54px;
   height:36px;
@@ -3497,21 +3518,33 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"],
 body[data-theme="cyan"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]{
-  background: linear-gradient(180deg, rgba(94,172,202,.44), rgba(52,109,134,.32)) !important;
-  color: #eaf7ff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 10px rgba(92,170,201,.14) !important;
+  background: linear-gradient(180deg, #35e8ff, #00cfc8) !important;
+  color: #050708 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 0 14px rgba(0,207,200,.24) !important;
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"],
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]{
-  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
-  color: #fff8ff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
+  background: linear-gradient(180deg, #35e8ff, #00cfc8) !important;
+  color: #050708 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 0 14px rgba(0,207,200,.24) !important;
 }
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"],
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]{
-  background: linear-gradient(180deg, rgba(205,240,92,.36), rgba(108,134,32,.24)) !important;
-  color: #fbffe6 !important;
-  box-shadow: inset 0 0 0 1px rgba(244,255,150,.08), 0 0 10px rgba(219,255,79,.12) !important;
+  background: linear-gradient(180deg, #35e8ff, #00cfc8) !important;
+  color: #050708 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 0 14px rgba(0,207,200,.24) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]::after,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-accent[data-action="start"]::after{
+  border-bottom-color: #050708 !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-done[data-action="start"],
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-done[data-action="start"]{
+  padding:0 clamp(10px, 6%, 12px) !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-done[data-action="start"]::after,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-done[data-action="start"]::after{
+  content:none !important;
 }
 
 /* Task back responsive ownership. */

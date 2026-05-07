@@ -1233,6 +1233,8 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     ...args.addTaskStateBindings,
     getAddTaskCustomNames: () => asType<string[]>(args.preferencesState.get("addTaskCustomNames")),
     setAddTaskCustomNamesState: (value) => args.preferencesState.set("addTaskCustomNames", value),
+    getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
+    getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
     getCheckpointAlertSoundEnabled: args.getCheckpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: args.getCheckpointAlertToastEnabled,
     loadCachedTaskUi: args.loadCachedTaskUi,

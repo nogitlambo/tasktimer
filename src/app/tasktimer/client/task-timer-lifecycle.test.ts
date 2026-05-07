@@ -85,6 +85,17 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
+  it("does not start a task completed today", () => {
+    const harness = createHarness({
+      tasks: [task({ timeGoalCompletedDayKey: "1970-01-01", timeGoalCompletedAtMs: 123 })],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({ running: false, startMs: null });
+    expect(harness.calls).toEqual([]);
+  });
+
   it("confirms before switching away from another running task", () => {
     const harness = createHarness({
       tasks: [task({ id: "task-1", name: "Running", running: true, startMs: 1 }), task({ id: "task-2", name: "Next" })],

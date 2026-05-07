@@ -51,6 +51,7 @@ type RenderTaskCardOptions = {
   canUseAdvancedHistory: boolean;
   canUseSocialFeatures: boolean;
   isSharedByOwner: boolean;
+  isTimeGoalCompleted: boolean;
   dynamicColorsEnabled: boolean;
   modeColor: string;
   fillBackgroundForPct: (pct: number) => string;
@@ -273,6 +274,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     canUseAdvancedHistory,
     canUseSocialFeatures,
     isSharedByOwner,
+    isTimeGoalCompleted,
     dynamicColorsEnabled,
     modeColor,
     fillBackgroundForPct,
@@ -285,6 +287,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const className =
     "task" +
     (task.running ? " taskRunning" : "") +
+    (isTimeGoalCompleted ? " taskCompleted" : "") +
     (task.collapsed ? " collapsed" : "") +
     (hasCheckpointRepeatForTask || hasActiveToastForTask ? " taskAlertPulse" : "");
   const taskColor = normalizeTaskColor(task.color);
@@ -311,11 +314,14 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         escapeHtml,
       })
     : "";
-  const startStopHtml = task.running
+  const startStopHtml = isTimeGoalCompleted
+    ? '<button class="btn btn-done small" data-action="start" title="Done until tomorrow" aria-label="Done until tomorrow" disabled><span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span></button>'
+    : task.running
     ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
     : elapsedMs > 0
       ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
       : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>';
+  const resetLabel = isTimeGoalCompleted ? "Done until tomorrow" : task.running ? "Stop task to reset" : "Reset";
   const shareAction = isSharedByOwner ? "unshareTask" : "shareTask";
   const shareLabel = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Share (Pro)";
   const shareTitle = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Pro feature: Sharing";
@@ -338,7 +344,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!task.running)}</div>
               <div class="actions">
                 ${startStopHtml}
-                <button class="iconBtn" data-action="reset" title="${task.running ? "Stop task to reset" : "Reset"}" aria-label="${task.running ? "Stop task to reset" : "Reset"}" ${task.running ? "disabled" : ""}>&#10227;</button>
+                <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || isTimeGoalCompleted ? "disabled" : ""}>&#10227;</button>
                 <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>

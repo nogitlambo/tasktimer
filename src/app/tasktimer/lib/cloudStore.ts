@@ -1009,6 +1009,11 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.timeGoalUnit = normalizeTimeGoalUnit(row.timeGoalUnit);
   row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
   row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
+  row.timeGoalCompletedDayKey = row.timeGoalCompletedDayKey == null ? null : String(row.timeGoalCompletedDayKey).trim() || null;
+  row.timeGoalCompletedAtMs =
+    row.timeGoalCompletedAtMs == null || !Number.isFinite(Number(row.timeGoalCompletedAtMs))
+      ? null
+      : Math.max(0, Math.floor(Number(row.timeGoalCompletedAtMs)));
   row.taskType = row.taskType === "once-off" ? "once-off" : "recurring";
   row.onceOffDay = row.taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null;
   row.onceOffTargetDate = row.taskType === "once-off" ? normalizeLocalDateValue(row.onceOffTargetDate) : null;
@@ -1063,6 +1068,11 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
+    timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+    timeGoalCompletedAtMs:
+      task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs))),
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,

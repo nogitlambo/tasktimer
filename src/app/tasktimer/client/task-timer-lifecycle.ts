@@ -1,5 +1,6 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
+import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 
 type ConfirmOptions = {
@@ -142,6 +143,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
+    if (isTaskTimeGoalCompletedToday(task, options.nowMs())) return;
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

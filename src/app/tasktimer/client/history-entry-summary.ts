@@ -292,7 +292,7 @@ export function buildHistoryEntrySummaryPayload({
   const normalizedTaskId = String(taskId || "").trim();
   const sessions = normalizedEntries
     .map((entry) => buildHistoryEntrySummaryItem(entry, normalizedTaskId, task, rewardProgress, formatDateTime, formatTwo, getEntryNote))
-    .sort((a, b) => b.ts - a.ts);
+    .sort((a, b) => a.ts - b.ts);
   if (!sessions.length) return null;
   const aggregate = buildAggregateSummary(sessions, formatDateTime, formatTwo);
   const titleText = deriveTaskTitle(normalizedEntries);

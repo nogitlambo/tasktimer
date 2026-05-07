@@ -213,11 +213,23 @@ export type NextAvailableScheduleSlotResult = {
   startMinutes: number;
 };
 
+export type ProductivityWindowScheduleSlotResult = NextAvailableScheduleSlotResult & {
+  time: string;
+  source: "productivityWindow" | "outsideProductivityWindow";
+};
+
 const SCHEDULE_SUGGESTION_STEP_MINUTES = 5;
 
 function snapScheduleSuggestionStartMinutes(totalMinutes: number) {
   const safeMinutes = Math.max(0, Math.floor(Number(totalMinutes) || 0));
   return Math.ceil(safeMinutes / SCHEDULE_SUGGESTION_STEP_MINUTES) * SCHEDULE_SUGGESTION_STEP_MINUTES;
+}
+
+function formatScheduleStoredTimeFromMinutes(totalMinutes: number) {
+  const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function getBusyScheduleIntervalsForDay(tasks: Task[], day: ScheduleDay, excludeTaskId: string) {
@@ -252,6 +264,105 @@ function scheduleSlotFits(
     const intervals = busyByDay.get(day) || [];
     return intervals.every((interval) => startMinutes >= interval.endMinutes || endMinutes <= interval.startMinutes);
   });
+}
+
+function getProductivitySearchIntervals(startMinutes: number, endMinutes: number) {
+  const start = Math.max(0, Math.min(1439, Math.floor(startMinutes)));
+  const endExclusive = Math.max(1, Math.min(24 * 60, Math.floor(endMinutes) + 1));
+  if (start < endExclusive) return [{ startMinutes: start, endMinutes: endExclusive }];
+  return [
+    { startMinutes: start, endMinutes: 24 * 60 },
+    { startMinutes: 0, endMinutes: endExclusive },
+  ];
+}
+
+function getOutsideProductivitySearchIntervals(startMinutes: number, endMinutes: number) {
+  const start = Math.max(0, Math.min(1439, Math.floor(startMinutes)));
+  const endExclusive = Math.max(1, Math.min(24 * 60, Math.floor(endMinutes) + 1));
+  if (start < endExclusive) {
+    return [
+      { startMinutes: endExclusive, endMinutes: 24 * 60 },
+      { startMinutes: 0, endMinutes: start },
+    ].filter((interval) => interval.startMinutes < interval.endMinutes);
+  }
+  return [{ startMinutes: endExclusive, endMinutes: start }].filter((interval) => interval.startMinutes < interval.endMinutes);
+}
+
+function findAvailableSlotInIntervals(
+  busyByDay: Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>,
+  days: ScheduleDay[],
+  durationMinutes: number,
+  intervals: Array<{ startMinutes: number; endMinutes: number }>
+) {
+  for (const interval of intervals) {
+    const searchStartMinutes = snapScheduleSuggestionStartMinutes(interval.startMinutes);
+    for (
+      let startMinutes = searchStartMinutes;
+      startMinutes + durationMinutes <= interval.endMinutes;
+      startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
+    ) {
+      if (scheduleSlotFits(busyByDay, days, startMinutes, durationMinutes)) return startMinutes;
+    }
+  }
+  return null;
+}
+
+export function findFirstAvailableScheduleSlotFromProductivityWindow(
+  tasks: Task[],
+  candidate: Task,
+  options: {
+    optimalProductivityStartTime: unknown;
+    optimalProductivityEndTime: unknown;
+    allowOutsideProductivityWindow?: boolean;
+    excludeTaskId?: string | null;
+  }
+): ProductivityWindowScheduleSlotResult | null {
+  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
+  if (!(candidateDurationMinutes > 0)) return null;
+
+  const scheduledEntries = getTaskScheduledDayEntries(candidate)
+    .map((entry) => ({ ...entry, startMinutes: parseScheduleTimeMinutes(entry.time) }))
+    .filter((entry): entry is { day: ScheduleDay; time: string; startMinutes: number } => entry.startMinutes != null);
+  if (scheduledEntries.length === 0) return null;
+
+  const days = scheduledEntries.map((entry) => entry.day);
+  const excludeTaskId = String(options.excludeTaskId || "").trim();
+  const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
+  days.forEach((day) => busyByDay.set(day, getBusyScheduleIntervalsForDay(tasks, day, excludeTaskId)));
+
+  const startMinutes = parseScheduleTimeMinutes(options.optimalProductivityStartTime) ?? 0;
+  const endMinutes = parseScheduleTimeMinutes(options.optimalProductivityEndTime) ?? 1439;
+  const inWindowSlot = findAvailableSlotInIntervals(
+    busyByDay,
+    days,
+    candidateDurationMinutes,
+    getProductivitySearchIntervals(startMinutes, endMinutes)
+  );
+  if (inWindowSlot != null) {
+    return {
+      day: days[0]!,
+      days,
+      startMinutes: inWindowSlot,
+      time: formatScheduleStoredTimeFromMinutes(inWindowSlot),
+      source: "productivityWindow",
+    };
+  }
+
+  if (!options.allowOutsideProductivityWindow) return null;
+  const outsideWindowSlot = findAvailableSlotInIntervals(
+    busyByDay,
+    days,
+    candidateDurationMinutes,
+    getOutsideProductivitySearchIntervals(startMinutes, endMinutes)
+  );
+  if (outsideWindowSlot == null) return null;
+  return {
+    day: days[0]!,
+    days,
+    startMinutes: outsideWindowSlot,
+    time: formatScheduleStoredTimeFromMinutes(outsideWindowSlot),
+    source: "outsideProductivityWindow",
+  };
 }
 
 function getFirstConflictingScheduleDay(tasks: Task[], candidate: Task, options?: { excludeTaskId?: string | null }) {

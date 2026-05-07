@@ -12,9 +12,11 @@ import {
 } from "../lib/taskConfig";
 import { getNextAutoTaskColor, getTaskColorFamilyForColor, normalizeTaskColor, resolveNewTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
 import {
+  findFirstAvailableScheduleSlotFromProductivityWindow,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
+  normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
   type ScheduleDay,
 } from "../lib/schedule-placement";
@@ -28,6 +30,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { sharedTasks } = ctx;
   let selectedColor: string | null = null;
   let selectedColorTouched = false;
+  let addTaskPlannedStartTouched = false;
 
   function canUseAdvancedTaskConfig() {
     return true;
@@ -104,12 +107,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return getAddTaskTimeGoalMinutesState();
   }
 
-  function syncPlannedStartValueFromSelectors() {
+  function syncPlannedStartValueFromSelectors(opts?: { markTouched?: boolean }) {
     const nextValue = readPlannedStartValue({
       hourSelect: els.addTaskPlannedStartHourSelect,
       minuteSelect: els.addTaskPlannedStartMinuteSelect,
       meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
     });
+    if (opts?.markTouched) addTaskPlannedStartTouched = true;
     if (els.addTaskPlannedStartInput) {
       els.addTaskPlannedStartInput.value = nextValue;
     }
@@ -128,6 +132,67 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskPlannedStartInput) {
       els.addTaskPlannedStartInput.value = String(ctx.getAddTaskPlannedStartTime() || "09:00");
     }
+  }
+
+  function setAddTaskPlannedStartTime(nextValue: string) {
+    ctx.setAddTaskPlannedStartTimeState(nextValue);
+    if (els.addTaskPlannedStartInput) {
+      els.addTaskPlannedStartInput.value = nextValue;
+    }
+    syncAddTaskPlannedStartUi();
+  }
+
+  function buildAddTaskScheduleDraft(plannedStartTime: string): Task {
+    const taskType = isOnceOffTaskType() ? "once-off" : "recurring";
+    const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
+    const timeGoalPeriod = taskType === "once-off" ? "day" : ctx.getAddTaskDurationPeriod();
+    const draftTask = {
+      id: "__add-task-schedule-draft__",
+      name: String(els.addTaskName?.value || "").trim() || "Draft task",
+      taskType,
+      onceOffDay: taskType === "once-off" ? onceOffDay : null,
+      onceOffTargetDate: null,
+      order: 0,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0),
+      timeGoalUnit: ctx.getAddTaskDurationUnit(),
+      timeGoalPeriod,
+      timeGoalMinutes: getAddTaskTimeGoalMinutes(),
+      plannedStartOpenEnded: false,
+      plannedStartDay: taskType === "once-off" ? onceOffDay : null,
+      plannedStartTime,
+      plannedStartByDay: taskType === "once-off" ? { [onceOffDay]: plannedStartTime } : null,
+    } satisfies Task;
+    return draftTask;
+  }
+
+  function maybeAutoFillAddTaskPlannedStart() {
+    if (addTaskPlannedStartTouched) return;
+    if (!hasSelectedTaskType()) return;
+    if (!(getAddTaskTimeGoalMinutes() > 0)) return;
+
+    const productivityStartTime = normalizeScheduleStoredTime(ctx.getOptimalProductivityStartTime()) || "09:00";
+    const productivityEndTime = normalizeScheduleStoredTime(ctx.getOptimalProductivityEndTime()) || "23:59";
+    if (!isOnceOffTaskType() && ctx.getAddTaskDurationPeriod() === "week") {
+      setAddTaskPlannedStartTime(productivityStartTime);
+      return;
+    }
+
+    const draftTask = buildAddTaskScheduleDraft(productivityStartTime);
+    const slot = findFirstAvailableScheduleSlotFromProductivityWindow(ctx.getTasks(), draftTask, {
+      optimalProductivityStartTime: productivityStartTime,
+      optimalProductivityEndTime: productivityEndTime,
+      allowOutsideProductivityWindow: true,
+    });
+    if (slot) setAddTaskPlannedStartTime(slot.time);
   }
 
   function saveAddTaskCustomNames() {
@@ -409,22 +474,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskMsArea?.classList.remove("isHidden");
     els.addTaskMsArea?.classList.toggle("on", checkpointsEnabled);
     els.addTaskMsArea?.classList.toggle("isDisabled", !checkpointsEnabled);
-    els.addTaskTimerSettingsGroup?.classList.toggle("isHidden", !hasActiveTimeGoal);
     if (els.addTaskCheckpointSoundModeSelect) {
       els.addTaskCheckpointSoundModeSelect.disabled = !checkpointsEnabled || !ctx.getCheckpointAlertSoundEnabled() || !derivedAlertState.soundEnabled;
     }
     if (els.addTaskCheckpointToastModeSelect) {
       els.addTaskCheckpointToastModeSelect.disabled = !checkpointsEnabled || !ctx.getCheckpointAlertToastEnabled() || !derivedAlertState.toastEnabled;
-    }
-    if (els.addTaskCheckpointAlertsNote) {
-      const notes: string[] = [];
-      if (!ctx.getCheckpointAlertSoundEnabled()) notes.push("sound alerts are disabled globally");
-      if (!ctx.getCheckpointAlertToastEnabled()) notes.push("toast alerts are disabled globally");
-      if (!hasActiveTimeGoal && ctx.getAddTaskMilestonesEnabled()) notes.unshift("set a time goal first");
-      (els.addTaskCheckpointAlertsNote as HTMLElement).style.display = checkpointsEnabled && notes.length ? "block" : "none";
-      els.addTaskCheckpointAlertsNote.textContent = notes.length
-        ? `Checkpoint alerts are currently unavailable because ${notes.join(" and ")}.`
-        : "";
     }
     if (els.addTaskAddMsBtn) {
       const blocked = !hasActiveTimeGoal;
@@ -612,6 +666,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskCheckpointToastModeState("auto5s");
     selectedColor = getNextAutoTaskColor(ctx.getTasks());
     selectedColorTouched = false;
+    addTaskPlannedStartTouched = false;
 
     if (els.addTaskName) els.addTaskName.value = "";
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = "0";
@@ -743,6 +798,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskTypeUi();
       syncAddTaskDurationUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskTypeOnceOffBtn, "click", () => {
       if (ctx.getAddTaskType() === "once-off") return;
@@ -750,10 +806,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskTypeUi();
       syncAddTaskDurationUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskOnceOffDaySelect, "change", () => {
       ctx.setAddTaskOnceOffDayState((els.addTaskOnceOffDaySelect?.value || "mon") as ScheduleDay);
       clearAddTaskValidationState();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskName, "input", () => {
       if ((els.addTaskName?.value || "").trim()) clearAddTaskValidationState();
@@ -785,11 +843,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
       syncAddTaskCheckpointAlertUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationValueInput, "change", () => {
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
       syncAddTaskCheckpointAlertUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationUnitMinute, "click", () => {
       if (!canUseAdvancedTaskConfig()) return;
@@ -798,6 +858,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.setAddTaskMilestoneTimeUnitState("minute");
       syncAddTaskDurationUi();
       syncAddTaskCheckpointAlertUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationUnitHour, "click", () => {
       if (!canUseAdvancedTaskConfig()) return;
@@ -806,25 +867,28 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.setAddTaskMilestoneTimeUnitState("hour");
       syncAddTaskDurationUi();
       syncAddTaskCheckpointAlertUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationPeriodDay, "click", () => {
       if (isOnceOffTaskType()) return;
       clearAddTaskValidationState();
       ctx.setAddTaskDurationPeriodState("day");
       syncAddTaskDurationUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationPeriodWeek, "click", () => {
       if (isOnceOffTaskType()) return;
       clearAddTaskValidationState();
       ctx.setAddTaskDurationPeriodState("week");
       syncAddTaskDurationUi();
+      maybeAutoFillAddTaskPlannedStart();
     });
-    ctx.on(els.addTaskPlannedStartHourSelect, "change", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartHourSelect, "input", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartMinuteSelect, "change", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartMinuteSelect, "input", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", syncPlannedStartValueFromSelectors);
-    ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncPlannedStartValueFromSelectors);
+    ctx.on(els.addTaskPlannedStartHourSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartHourSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartMinuteSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartMinuteSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskColorTrigger, "click", (event: Event) => {
       event.preventDefault?.();
       const isOpen = els.addTaskColorPopover instanceof HTMLElement && els.addTaskColorPopover.style.display === "flex";

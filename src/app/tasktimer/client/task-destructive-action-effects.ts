@@ -1,4 +1,5 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
+import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
 
 type ConfirmOptions = {
   okLabel: string;
@@ -52,6 +53,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
   function resetTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
+    if (isTaskTimeGoalCompletedToday(task)) return;
     const taskId = String(task.id || "");
     const shouldExitFocusModeAfterReset = String(options.getFocusModeTaskId() || "").trim() === taskId.trim();
 

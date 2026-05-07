@@ -16,7 +16,7 @@ export default function AddTaskOverlay() {
               <label htmlFor="addTaskName">Task Name</label>
               <div className="addTaskNameCombo" id="addTaskNameCombo">
                 <div className="taskNameRow">
-                  <input id="addTaskName" type="text" placeholder="Enter a name for this task or select from list" />
+                  <input id="addTaskName" type="text" placeholder="Enter a description for this task" />
                   <button
                     className="editTaskColorTrigger editTaskColorSwatch editTaskColorSwatchNone"
                     id="addTaskColorTrigger"
@@ -75,7 +75,6 @@ export default function AddTaskOverlay() {
                 </div>
               </div>
               <div className="addTaskDurationReadout" id="addTaskDurationReadout" />
-              <div className="checkpointAlertsGroup isHidden" id="addTaskTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }} />
             </div>
 
             <div className="field editPlannedStartField">
@@ -183,9 +182,6 @@ export default function AddTaskOverlay() {
                       </select>
                     </div>
                   </div>
-                </div>
-                <div className="checkpointAlertsGroup isHidden" id="addTaskCheckpointAlertsGroup">
-                  <p className="checkpointAlertsNote" id="addTaskCheckpointAlertsNote" style={{ display: "none" }} />
                 </div>
               </div>
             </details>

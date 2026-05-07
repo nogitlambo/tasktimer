@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import type { DeletedTaskMeta, Task } from "../lib/types";
+import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 
 type ConfirmCall = {
   title: string;
@@ -145,6 +146,17 @@ describe("task destructive action effects", () => {
     expect(harness.confirmCalls[0]?.opts.okLabel).toBe("Reset");
     expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
     expect(harness.calls).toContain("busy:false:false");
+  });
+
+  it("ignores reset for a task completed today", () => {
+    const harness = createHarness({
+      tasks: [createTask({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(), timeGoalCompletedAtMs: Date.now() })],
+    });
+
+    harness.adapter.resetTask(0);
+
+    expect(harness.calls).toEqual([]);
+    expect(harness.confirmCalls).toEqual([]);
   });
 
   it("ignores reset for missing or running tasks", () => {

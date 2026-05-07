@@ -15,7 +15,7 @@ export default function EditTaskOverlay() {
             <div className="field">
               <label htmlFor="editName">Task Name</label>
               <div className="taskNameRow">
-                <input type="text" id="editName" />
+                <input type="text" id="editName" placeholder="Enter a description for this task" />
                 <button
                   className="editTaskColorTrigger editTaskColorSwatch editTaskColorSwatchNone"
                   id="editTaskColorTrigger"

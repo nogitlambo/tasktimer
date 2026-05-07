@@ -35,6 +35,7 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     canUseAdvancedHistory: true,
     canUseSocialFeatures: true,
     isSharedByOwner: false,
+    isTimeGoalCompleted: false,
     dynamicColorsEnabled: false,
     modeColor: "#00ffff",
     fillBackgroundForPct: (pct) => `pct-${pct}`,
@@ -101,6 +102,20 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain('class="taskFaceShell taskFaceShellFront" style="--task-history-tab-border-gap:160px"');
     expect(rendered.html).toContain('class="taskHistoryReveal ');
+  });
+
+  it("renders completed time-goal tasks as done while preserving edit hooks", () => {
+    const rendered = renderCard({
+      isTimeGoalCompleted: true,
+    });
+
+    expect(rendered.className).toBe("task taskCompleted");
+    expect(rendered.html).toContain('data-action="start"');
+    expect(rendered.html).toContain("Done");
+    expect(rendered.html).toContain("taskDoneIcon");
+    expect(rendered.html).toContain('aria-label="Done until tomorrow" disabled');
+    expect(rendered.html).toContain('data-action="reset"');
+    expect(rendered.html).toContain('data-action="edit"');
   });
 
   it("renders checkpoint labels as compact durations instead of raw decimals", () => {

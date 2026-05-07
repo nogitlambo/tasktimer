@@ -2040,12 +2040,6 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
 #editCheckpointAlertsGroup.isHidden{
   display:none;
 }
-#addTaskTimerSettingsGroup.isHidden{
-  display:none;
-}
-#addTaskCheckpointAlertsGroup.isHidden{
-  display:none;
-}
 .checkpointAlertSoundModeField label{
   margin-bottom:4px;
 }

@@ -186,6 +186,20 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.editBtn.style.display).toBe("none");
   });
 
+  it("renders multiple selected sessions from earliest logged time to latest", () => {
+    const h = createHarness();
+
+    h.interaction.openSummary("task-1", [
+      { taskId: "task-1", ts: 3000, ms: 60000, name: "Focus", note: "Latest" },
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Earliest" },
+      { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Middle" },
+    ]);
+
+    const html = h.body.innerHTML;
+    expect(html.indexOf('data-history-summary-ts="1000"')).toBeLessThan(html.indexOf('data-history-summary-ts="2000"'));
+    expect(html.indexOf('data-history-summary-ts="2000"')).toBeLessThan(html.indexOf('data-history-summary-ts="3000"'));
+  });
+
   it("syncs note placeholders for mobile and desktop layouts", () => {
     const desktop = createHarness({ isMobileLayout: () => false });
     desktop.cardInput.dataset.emptyNotePlaceholderDesktop = "Click to add note";

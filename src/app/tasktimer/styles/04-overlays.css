@@ -2649,6 +2649,7 @@ body[data-theme="purple"] .rewardsInfoText{
   pointer-events: auto;
 }
 
+#addTaskOverlay .addTaskDurationPills .unitBtn.small,
 #editOverlay .addTaskDurationPills .unitBtn.small{
   min-width: 0;
   width: auto;
@@ -3057,8 +3058,6 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay #addTaskDurationRow.isHidden,
 #addTaskOverlay #addTaskDurationReadout.isHidden,
-#addTaskOverlay #addTaskTimerSettingsGroup.isHidden,
-#addTaskOverlay #addTaskCheckpointAlertsGroup.isHidden,
 #addTaskOverlay #addTaskMsArea.isHidden{
   display: none !important;
 }
@@ -4581,7 +4580,6 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   min-width:0;
 }
 
-#addTaskOverlay #addTaskTimerSettingsGroup,
 #addTaskOverlay #addTaskFinalCheckpointActionField{
   width:100%;
   max-width:none;

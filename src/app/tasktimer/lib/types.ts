@@ -42,6 +42,8 @@ export type Task = {
   timeGoalUnit?: "minute" | "hour";
   timeGoalPeriod?: "day" | "week";
   timeGoalMinutes?: number;
+  timeGoalCompletedDayKey?: string | null;
+  timeGoalCompletedAtMs?: number | null;
   plannedStartDay?: TaskPlannedStartDay | null;
   plannedStartTime?: string | null;
   plannedStartByDay?: TaskPlannedStartByDay | null;

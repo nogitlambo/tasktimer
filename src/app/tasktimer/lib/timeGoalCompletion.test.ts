@@ -1,0 +1,48 @@
+import { describe, expect, it } from "vitest";
+import type { Task } from "./types";
+import { getTimeGoalCompletionDayKey, isTaskTimeGoalCompletedToday, markTaskTimeGoalCompleted } from "./timeGoalCompletion";
+
+function task(overrides: Partial<Task> = {}): Task {
+  return {
+    id: "task-1",
+    name: "Focus",
+    order: 0,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestones: [],
+    hasStarted: false,
+    ...overrides,
+  };
+}
+
+describe("time goal completion lock", () => {
+  it("locks a task completed on the current local day", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+
+    expect(isTaskTimeGoalCompletedToday(task({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue) }), nowValue)).toBe(true);
+  });
+
+  it("does not lock a task completed on a previous local day", () => {
+    const today = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const yesterday = new Date(2026, 4, 6, 23, 59, 0).getTime();
+
+    expect(isTaskTimeGoalCompletedToday(task({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(yesterday) }), today)).toBe(false);
+  });
+
+  it("does not lock a task without completion fields", () => {
+    expect(isTaskTimeGoalCompletedToday(task(), new Date(2026, 4, 7, 10, 0, 0).getTime())).toBe(false);
+  });
+
+  it("marks completion with the local day key and timestamp", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task();
+
+    markTaskTimeGoalCompleted(entry, nowValue);
+
+    expect(entry.timeGoalCompletedDayKey).toBe(getTimeGoalCompletionDayKey(nowValue));
+    expect(entry.timeGoalCompletedAtMs).toBe(nowValue);
+  });
+});

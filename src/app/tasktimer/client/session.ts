@@ -4,6 +4,7 @@ import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
+import { isTaskTimeGoalCompletedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
 import { findNextScheduledTaskAfterLocalTime } from "../lib/schedule-placement";
 import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
@@ -75,6 +76,11 @@ export function shiftValidDeferredTimeGoalModal(
     }
   }
   return { nextPending: null, remainingQueue: [] };
+}
+
+export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs: number): void {
+  if (isTaskTimeGoalCompletedToday(task, completedAtMs)) return;
+  markTaskTimeGoalCompleted(task, completedAtMs);
 }
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
@@ -369,7 +375,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return Math.max(0, Math.floor(Number(award.amount || 0) || 0));
   }
 
-  function openTimeGoalCompleteModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty }) {
+  function openTimeGoalCompleteModal(
+    task: Task,
+    elapsedMs: number,
+    opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty; awardedXp?: number }
+  ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
     ctx.setTimeGoalModalTaskId(taskId);
@@ -381,7 +391,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteTitle) {
       els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete!`;
     }
-    const awardedXp = getTimeGoalCompletionAwardXp(task, elapsedMs);
+    const awardedXp =
+      opts && Object.prototype.hasOwnProperty.call(opts, "awardedXp")
+        ? Math.max(0, Math.floor(Number(opts.awardedXp || 0) || 0))
+        : getTimeGoalCompletionAwardXp(task, elapsedMs);
     if (els.timeGoalCompleteText) {
       els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
     }
@@ -443,6 +456,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
     const taskId = String(task.id || "");
+    if (isTaskTimeGoalCompletedToday(task)) {
+      clearTaskTimeGoalFlow(taskId);
+      ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+      ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
+      ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
+      ctx.save();
+      ctx.render();
+      openDeferredFocusModeTimeGoalModal();
+      return true;
+    }
     const completionDifficulty = getSelectedTimeGoalCompletionDifficulty();
     if (opts.logHistory && !completionDifficulty) {
       setTimeGoalCompletionValidation("Select a sentiment before closing this session.");
@@ -454,6 +477,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
+    markTaskTimeGoalCompletedForResolution(task, nowMs());
     ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote, completionDifficulty });
     clearTaskTimeGoalFlow(taskId);
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
@@ -468,14 +492,39 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return true;
   }
 
+  function completeTimeGoalTask(task: Task, elapsedMs: number, opts?: { reminder?: boolean; deferModal?: boolean }) {
+    const taskId = String(task?.id || "").trim();
+    if (!taskId || isTaskTimeGoalCompletedToday(task)) return false;
+    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    const awardedXp = getTimeGoalCompletionAwardXp(task, safeElapsedMs);
+    if (taskId && els.timeGoalCompleteNoteInput) {
+      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
+    }
+    const sessionNote = captureResetActionSessionNote(taskId);
+    if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
+    markTaskTimeGoalCompletedForResolution(task, nowMs());
+    ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
+    ctx.save();
+    ctx.render();
+    if (opts?.deferModal) {
+      queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder });
+    } else {
+      openTimeGoalCompleteModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardedXp });
+    }
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    return true;
+  }
+
   function syncFocusRunButtons(task?: Task | null) {
     const running = !!task?.running;
-    const hintText = running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
+    const completed = isTaskTimeGoalCompletedToday(task);
+    const hintText = completed ? "Done" : running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
     if (els.focusDialHint) els.focusDialHint.textContent = hintText;
-    if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running;
+    if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running || completed;
     if (els.focusDial) {
       els.focusDial.classList.toggle("isRunning", running);
-      els.focusDial.classList.toggle("isStopped", !!task && !running);
+      els.focusDial.classList.toggle("isStopped", !!task && !running && !completed);
+      els.focusDial.classList.toggle("isDone", completed);
       els.focusDial.setAttribute("aria-pressed", running ? "true" : "false");
       els.focusDial.setAttribute("aria-label", `Focus dial. ${hintText.toLowerCase()} timer`);
     }
@@ -821,6 +870,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function openDeferredFocusModeTimeGoalModal() {
+    const queuedCompleted = getDeferredQueue().find((entry) => {
+      const task = ctx.getTasks().find((row) => String(row.id || "").trim() === String(entry?.taskId || "").trim()) || null;
+      return isTaskTimeGoalCompletedToday(task);
+    });
+    if (queuedCompleted) {
+      ctx.setDeferredFocusModeTimeGoalModals(getDeferredQueue().filter((entry) => entry !== queuedCompleted));
+      const task = ctx.getTasks().find((row) => String(row.id || "").trim() === queuedCompleted.taskId);
+      if (task) openTimeGoalCompleteModal(task, queuedCompleted.frozenElapsedMs || getTaskElapsedMs(task), { reminder: queuedCompleted.reminder, awardedXp: 0 });
+      return;
+    }
     const { nextPending, remainingQueue } = shiftValidDeferredTimeGoalModal(getDeferredQueue(), {
       tasks: ctx.getTasks(),
       liveSessionsByTaskId: ctx.getLiveSessionsByTaskId(),
@@ -830,6 +889,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!nextPending) return;
     const task = ctx.getTasks().find((row) => String(row.id || "").trim() === nextPending.taskId);
     if (!task) return;
+    if (isTaskTimeGoalCompletedToday(task)) {
+      openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder, awardedXp: 0 });
+      return;
+    }
     openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
   }
 
@@ -1049,6 +1112,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function processCheckpointAlertsForTask(task: Task, elapsedSecNow: number) {
     const taskId = String(task.id || "");
+    if (isTaskTimeGoalCompletedToday(task)) {
+      if (taskId) clearCheckpointBaseline(taskId);
+      return;
+    }
     if (!taskId || !task.running) {
       if (taskId) clearCheckpointBaseline(taskId);
       return;
@@ -1121,10 +1188,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     if (shouldOpenTimeGoalModal) {
       if (shouldDeferTimeGoalModalInFocusMode(taskId)) {
-        queueDeferredFocusModeTimeGoalModal(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder });
+        completeTimeGoalTask(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder, deferModal: true });
         return;
       }
-      openTimeGoalCompleteModal(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder });
+      completeTimeGoalTask(task, getTaskElapsedMs(task), { reminder: openTimeGoalModalAsReminder });
       baselineByTaskId[taskId] = Math.floor(getElapsedMs(task) / 1000);
       return;
     }
@@ -1163,27 +1230,38 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
-          if (task.running) {
+          if (isTaskTimeGoalCompletedToday(task)) {
+            primaryActionBtn.className = "btn btn-done small";
+            primaryActionBtn.dataset.action = "start";
+            primaryActionBtn.title = "Done until tomorrow";
+            primaryActionBtn.setAttribute("aria-label", "Done until tomorrow");
+            primaryActionBtn.disabled = true;
+            primaryActionBtn.innerHTML = '<span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span>';
+          } else if (task.running) {
             primaryActionBtn.className = "btn btn-warn small";
             primaryActionBtn.dataset.action = "stop";
             primaryActionBtn.title = "Stop";
             primaryActionBtn.textContent = "Stop";
+            primaryActionBtn.disabled = false;
           } else if (elapsedMs > 0) {
             primaryActionBtn.className = "btn btn-resume small";
             primaryActionBtn.dataset.action = "start";
             primaryActionBtn.title = "Resume";
             primaryActionBtn.textContent = "Resume";
+            primaryActionBtn.disabled = false;
           } else {
             primaryActionBtn.className = "btn btn-accent small";
             primaryActionBtn.dataset.action = "start";
             primaryActionBtn.title = "Launch";
             primaryActionBtn.textContent = "Launch";
+            primaryActionBtn.disabled = false;
           }
         }
         const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
-          const resetLabel = task.running ? "Stop task to reset" : "Reset";
-          resetBtn.disabled = !!task.running;
+          const completed = isTaskTimeGoalCompletedToday(task);
+          const resetLabel = completed ? "Done until tomorrow" : task.running ? "Stop task to reset" : "Reset";
+          resetBtn.disabled = !!task.running || completed;
           resetBtn.title = resetLabel;
           resetBtn.setAttribute("aria-label", resetLabel);
         }
@@ -1248,6 +1326,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (idx < 0) return;
       const task = ctx.getTasks()[idx];
       if (!task) return;
+      if (isTaskTimeGoalCompletedToday(task)) return;
       if (task.running) ctx.stopTask(idx);
       else ctx.startTask(idx);
     });
