@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, normalizeRewardProgress } from "../lib/rewards";
+import { ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS } from "../lib/storage";
 import type { HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import { createTaskTimerRewardsHistory } from "./rewards-history";
@@ -197,5 +198,21 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
     expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
+  });
+
+  it("throttles repeated live-session sync writes until the interval elapses", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+    harness.tasks[0]!.running = true;
+    harness.tasks[0]!.startMs = Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS;
+
+    harness.api.syncLiveSessionForTask(harness.tasks[0]!, Date.now());
+    harness.api.syncLiveSessionForTask(harness.tasks[0]!, Date.now() + 1_000);
+
+    expect(harness.calls.filter((call) => call === "save-live-session")).toHaveLength(1);
+
+    harness.api.syncLiveSessionForTask(harness.tasks[0]!, Date.now() + ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS);
+
+    expect(harness.calls.filter((call) => call === "save-live-session")).toHaveLength(2);
   });
 });

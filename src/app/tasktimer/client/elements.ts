@@ -356,6 +356,8 @@ const els = {
   timeGoalCompleteDifficultyGroup: documentRef.getElementById("timeGoalCompleteDifficultyGroup"),
   timeGoalCompleteValidation: documentRef.getElementById("timeGoalCompleteValidation"),
   timeGoalCompleteAddNoteBtn: documentRef.getElementById("timeGoalCompleteAddNoteBtn") as HTMLButtonElement | null,
+  timeGoalCompleteNextTasks: documentRef.getElementById("timeGoalCompleteNextTasks") as HTMLElement | null,
+  timeGoalCompleteNextTaskGrid: documentRef.getElementById("timeGoalCompleteNextTaskGrid") as HTMLElement | null,
   timeGoalCompleteCloseBtn: documentRef.getElementById("timeGoalCompleteCloseBtn") as HTMLButtonElement | null,
   timeGoalCompleteLaunchNextBtn: documentRef.getElementById("timeGoalCompleteLaunchNextBtn") as HTMLButtonElement | null,
   timeGoalCompleteSaveNoteOverlay: documentRef.getElementById("timeGoalCompleteSaveNoteOverlay"),

@@ -55,6 +55,7 @@ import {
 export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
 export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
+export const ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS = 45_000;
 const SHADOW_TASKS_KEY = `${STORAGE_KEY}:shadow:tasks`;
 const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
 const SHADOW_LIVE_SESSIONS_KEY = `${STORAGE_KEY}:shadow:liveSessions`;
@@ -226,10 +227,23 @@ const queuedHistoryReplacementsByTaskId = new Map<string, { rows: HistoryEntry[]
 let inFlightLiveSessionQueueSync: Promise<void> | null = null;
 const queuedLiveSessionUpsertsByTaskId = new Map<string, LiveTaskSession>();
 const queuedLiveSessionClears = new Set<string>();
+let queuedTaskCloudFlushTimer: number | null = null;
+let queuedHistoryCloudFlushTimer: number | null = null;
+let queuedLiveSessionCloudFlushTimer: number | null = null;
+let lastTaskCloudFlushAtMs = 0;
+let lastHistoryCloudFlushAtMs = 0;
+let lastLiveSessionCloudFlushAtMs = 0;
+let suppressedTaskCloudWriteCount = 0;
+let suppressedHistoryCloudWriteCount = 0;
+let suppressedLiveSessionCloudWriteCount = 0;
 let inFlightLeaderboardProfileSync: Promise<void> | null = null;
 let queuedLeaderboardProfileSync = false;
 let leaderboardProfileSyncTimer: number | null = null;
 let lastSuccessfulLeaderboardProfileSignature = "";
+let lastQueuedDashboardSyncSignature = "";
+let lastQueuedTaskUiSyncSignature = "";
+let lastSuccessfulDashboardSyncSignature = "";
+let lastSuccessfulTaskUiSyncSignature = "";
 const preferenceListeners = new Set<(prefs: CachedPreferences) => void>();
 const inFlightTaskSyncs = new Set<Promise<void>>();
 const LEADERBOARD_PROFILE_SYNC_DEBOUNCE_MS = 500;
@@ -961,6 +975,25 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDashboard(cachedDashboard);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
+  const pendingTaskDeleteIds = Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).filter(Boolean);
+  const pendingTaskSyncIds = Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).filter(Boolean);
+  if (pendingTaskDeleteIds.length || pendingTaskSyncIds.length) {
+    const cachedTaskById = new Map(cachedTasks.map((task) => [String(task?.id || ""), task] as const));
+    enqueueTaskSync(uid, cachedTaskById, pendingTaskSyncIds, pendingTaskDeleteIds);
+  }
+  const pendingHistorySyncIds = Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).filter(Boolean);
+  pendingHistorySyncIds.forEach((taskId) => {
+    enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
+  });
+  const pendingLiveSessionSyncIds = Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).filter(Boolean);
+  pendingLiveSessionSyncIds.forEach((taskId) => {
+    const session = normalizeLiveTaskSession(cachedLiveSessions?.[taskId]);
+    if (session) {
+      enqueueLiveSessionUpsert(uid, session);
+      return;
+    }
+    enqueueLiveSessionClear(uid, taskId);
+  });
   if (repairedTaskIds.size) {
     const repairedTaskIdList = Array.from(repairedTaskIds).filter(Boolean);
     if (repairedTaskIdList.length) {
@@ -975,6 +1008,18 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
 
 export function clearScopedStorageState(): void {
   hydratedUid = "";
+  inFlightPreferencesSync = null;
+  queuedPreferencesSyncSnapshot = null;
+  lastSuccessfulPreferencesSyncSignature = "";
+  inFlightTaskQueueSync = null;
+  queuedTaskUpsertsById.clear();
+  queuedTaskDeletes.clear();
+  inFlightHistoryQueueSync = null;
+  queuedHistoryReplacementsByTaskId.clear();
+  inFlightLiveSessionQueueSync = null;
+  queuedLiveSessionUpsertsByTaskId.clear();
+  queuedLiveSessionClears.clear();
+  inFlightLeaderboardProfileSync = null;
   cachedTasks = [];
   cachedHistory = {};
   cachedLiveSessions = {};
@@ -982,8 +1027,30 @@ export function clearScopedStorageState(): void {
   cachedPreferences = null;
   cachedDashboard = null;
   cachedTaskUi = null;
+  lastQueuedDashboardSyncSignature = "";
+  lastQueuedTaskUiSyncSignature = "";
+  lastSuccessfulDashboardSyncSignature = "";
+  lastSuccessfulTaskUiSyncSignature = "";
+  lastTaskCloudFlushAtMs = 0;
+  lastHistoryCloudFlushAtMs = 0;
+  lastLiveSessionCloudFlushAtMs = 0;
+  suppressedTaskCloudWriteCount = 0;
+  suppressedHistoryCloudWriteCount = 0;
+  suppressedLiveSessionCloudWriteCount = 0;
   queuedLeaderboardProfileSync = false;
   lastSuccessfulLeaderboardProfileSignature = "";
+  if (queuedTaskCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedTaskCloudFlushTimer);
+    queuedTaskCloudFlushTimer = null;
+  }
+  if (queuedHistoryCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedHistoryCloudFlushTimer);
+    queuedHistoryCloudFlushTimer = null;
+  }
+  if (queuedLiveSessionCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedLiveSessionCloudFlushTimer);
+    queuedLiveSessionCloudFlushTimer = null;
+  }
   if (leaderboardProfileSyncTimer != null && typeof window !== "undefined") {
     window.clearTimeout(leaderboardProfileSyncTimer);
     leaderboardProfileSyncTimer = null;
@@ -1072,6 +1139,112 @@ function preferencesSyncSignature(prefs: UserPreferencesV1): string {
   }
 }
 
+function stableCloudSyncSignature(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function clearQueuedCloudFlushTimer(channel: "tasks" | "history" | "liveSessions"): void {
+  const timer =
+    channel === "tasks"
+      ? queuedTaskCloudFlushTimer
+      : channel === "history"
+        ? queuedHistoryCloudFlushTimer
+        : queuedLiveSessionCloudFlushTimer;
+  if (timer == null || typeof window === "undefined") return;
+  window.clearTimeout(timer);
+  if (channel === "tasks") queuedTaskCloudFlushTimer = null;
+  else if (channel === "history") queuedHistoryCloudFlushTimer = null;
+  else queuedLiveSessionCloudFlushTimer = null;
+}
+
+function getCloudFlushState(channel: "tasks" | "history" | "liveSessions") {
+  if (channel === "tasks") {
+    return {
+      lastFlushAtMs: lastTaskCloudFlushAtMs,
+      setLastFlushAtMs: (value: number) => {
+        lastTaskCloudFlushAtMs = value;
+      },
+      suppressedCount: suppressedTaskCloudWriteCount,
+      setSuppressedCount: (value: number) => {
+        suppressedTaskCloudWriteCount = value;
+      },
+    };
+  }
+  if (channel === "history") {
+    return {
+      lastFlushAtMs: lastHistoryCloudFlushAtMs,
+      setLastFlushAtMs: (value: number) => {
+        lastHistoryCloudFlushAtMs = value;
+      },
+      suppressedCount: suppressedHistoryCloudWriteCount,
+      setSuppressedCount: (value: number) => {
+        suppressedHistoryCloudWriteCount = value;
+      },
+    };
+  }
+  return {
+    lastFlushAtMs: lastLiveSessionCloudFlushAtMs,
+    setLastFlushAtMs: (value: number) => {
+      lastLiveSessionCloudFlushAtMs = value;
+    },
+    suppressedCount: suppressedLiveSessionCloudWriteCount,
+    setSuppressedCount: (value: number) => {
+      suppressedLiveSessionCloudWriteCount = value;
+    },
+  };
+}
+
+function scheduleCloudQueueFlush(
+  channel: "tasks" | "history" | "liveSessions",
+  uid: string,
+  flush: (uid: string) => void,
+  opts?: { force?: boolean; minIntervalMs?: number }
+): void {
+  const minIntervalMs = Math.max(0, Math.floor(Number(opts?.minIntervalMs ?? ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS) || 0));
+  const nowValue = nowMs();
+  const state = getCloudFlushState(channel);
+  if (opts?.force || minIntervalMs <= 0) {
+    clearQueuedCloudFlushTimer(channel);
+    state.setLastFlushAtMs(nowValue);
+    state.setSuppressedCount(0);
+    flush(uid);
+    return;
+  }
+  const elapsedMs = nowValue - state.lastFlushAtMs;
+  if (state.lastFlushAtMs <= 0 || elapsedMs >= minIntervalMs) {
+    clearQueuedCloudFlushTimer(channel);
+    state.setLastFlushAtMs(nowValue);
+    state.setSuppressedCount(0);
+    flush(uid);
+    return;
+  }
+  state.setSuppressedCount(state.suppressedCount + 1);
+  if (typeof window === "undefined") return;
+  const remainingMs = Math.max(0, minIntervalMs - elapsedMs);
+  const existingTimer =
+    channel === "tasks"
+      ? queuedTaskCloudFlushTimer
+      : channel === "history"
+        ? queuedHistoryCloudFlushTimer
+        : queuedLiveSessionCloudFlushTimer;
+  if (existingTimer != null) return;
+  const timer = window.setTimeout(() => {
+    if (channel === "tasks") queuedTaskCloudFlushTimer = null;
+    else if (channel === "history") queuedHistoryCloudFlushTimer = null;
+    else queuedLiveSessionCloudFlushTimer = null;
+    state.setLastFlushAtMs(nowMs());
+    state.setSuppressedCount(0);
+    flush(uid);
+  }, remainingMs);
+  if (channel === "tasks") queuedTaskCloudFlushTimer = timer;
+  else if (channel === "history") queuedHistoryCloudFlushTimer = timer;
+  else queuedLiveSessionCloudFlushTimer = timer;
+}
+
 function debugLogCloudQueue(
   channel: "preferences" | "tasks" | "history",
   phase: "enqueue" | "start" | "drain" | "error" | "skip",
@@ -1092,6 +1265,12 @@ function debugLogCloudQueue(
       taskQueuedDeletes: queuedTaskDeletes.size,
       historyInFlight: !!inFlightHistoryQueueSync,
       historyQueued: queuedHistoryReplacementsByTaskId.size,
+      taskLastFlushAtMs: lastTaskCloudFlushAtMs || null,
+      historyLastFlushAtMs: lastHistoryCloudFlushAtMs || null,
+      liveSessionLastFlushAtMs: lastLiveSessionCloudFlushAtMs || null,
+      taskSuppressed: suppressedTaskCloudWriteCount,
+      historySuppressed: suppressedHistoryCloudWriteCount,
+      liveSessionSuppressed: suppressedLiveSessionCloudWriteCount,
       ...(detail || {}),
     });
   } catch {
@@ -1223,7 +1402,13 @@ function flushQueuedTaskSync(uid: string): void {
   void trackInFlightTaskSync(syncPromise);
 }
 
-function enqueueTaskSync(uid: string, tasksById: Map<string, Task>, changedTaskIds: string[], removedTaskIds: string[]): void {
+function enqueueTaskSync(
+  uid: string,
+  tasksById: Map<string, Task>,
+  changedTaskIds: string[],
+  removedTaskIds: string[],
+  opts?: { force?: boolean; minIntervalMs?: number }
+): void {
   for (const taskId of removedTaskIds) {
     queuedTaskDeletes.add(taskId);
     queuedTaskUpsertsById.delete(taskId);
@@ -1238,8 +1423,9 @@ function enqueueTaskSync(uid: string, tasksById: Map<string, Task>, changedTaskI
     uid,
     changedCount: changedTaskIds.length,
     removedCount: removedTaskIds.length,
+    force: opts?.force === true,
   });
-  flushQueuedTaskSync(uid);
+  scheduleCloudQueueFlush("tasks", uid, flushQueuedTaskSync, opts);
 }
 
 function flushQueuedHistorySync(uid: string): void {
@@ -1276,7 +1462,12 @@ function flushQueuedHistorySync(uid: string): void {
   inFlightHistoryQueueSync = syncPromise;
 }
 
-function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[], opts?: { allowDestructiveReplace?: boolean }): void {
+function enqueueHistoryReplace(
+  uid: string,
+  taskId: string,
+  rows: HistoryEntry[],
+  opts?: { allowDestructiveReplace?: boolean; force?: boolean; minIntervalMs?: number }
+): void {
   queuedHistoryReplacementsByTaskId.set(taskId, {
     rows,
     allowDestructiveReplace: opts?.allowDestructiveReplace === true,
@@ -1286,8 +1477,9 @@ function enqueueHistoryReplace(uid: string, taskId: string, rows: HistoryEntry[]
     taskId,
     rows: rows.length,
     allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+    force: opts?.force === true,
   });
-  flushQueuedHistorySync(uid);
+  scheduleCloudQueueFlush("history", uid, flushQueuedHistorySync, opts);
 }
 
 function flushQueuedLiveSessionSync(uid: string): void {
@@ -1335,20 +1527,42 @@ function flushQueuedLiveSessionSync(uid: string): void {
   inFlightLiveSessionQueueSync = syncPromise;
 }
 
-function enqueueLiveSessionUpsert(uid: string, session: LiveTaskSession): void {
+function enqueueLiveSessionUpsert(
+  uid: string,
+  session: LiveTaskSession,
+  opts?: { force?: boolean; minIntervalMs?: number; reason?: string }
+): void {
   const taskId = String(session.taskId || "").trim();
   if (!taskId) return;
   queuedLiveSessionClears.delete(taskId);
   queuedLiveSessionUpsertsByTaskId.set(taskId, session);
-  flushQueuedLiveSessionSync(uid);
+  debugLogCloudQueue("tasks", "enqueue", {
+    uid,
+    liveSessionUpserts: queuedLiveSessionUpsertsByTaskId.size,
+    liveSessionClears: queuedLiveSessionClears.size,
+    reason: opts?.reason || "upsert",
+    force: opts?.force === true,
+  });
+  scheduleCloudQueueFlush("liveSessions", uid, flushQueuedLiveSessionSync, opts);
 }
 
-function enqueueLiveSessionClear(uid: string, taskIdRaw: string): void {
+function enqueueLiveSessionClear(
+  uid: string,
+  taskIdRaw: string,
+  opts?: { force?: boolean; minIntervalMs?: number; reason?: string }
+): void {
   const taskId = String(taskIdRaw || "").trim();
   if (!taskId) return;
   queuedLiveSessionUpsertsByTaskId.delete(taskId);
   queuedLiveSessionClears.add(taskId);
-  flushQueuedLiveSessionSync(uid);
+  debugLogCloudQueue("tasks", "enqueue", {
+    uid,
+    liveSessionUpserts: queuedLiveSessionUpsertsByTaskId.size,
+    liveSessionClears: queuedLiveSessionClears.size,
+    reason: opts?.reason || "clear",
+    force: opts?.force === true,
+  });
+  scheduleCloudQueueFlush("liveSessions", uid, flushQueuedLiveSessionSync, opts);
 }
 
 export function saveCloudPreferences(prefs: UserPreferencesV1) {
@@ -1381,7 +1595,17 @@ export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard
   saveShadowDashboard(cachedDashboard);
   const uid = currentUid();
   if (!uid) return;
-  void saveDashboard(uid, dashboard).catch(() => {
+  const nextSignature = stableCloudSyncSignature(dashboard);
+  if (nextSignature === lastSuccessfulDashboardSyncSignature || nextSignature === lastQueuedDashboardSyncSignature) {
+    debugLogCloudQueue("tasks", "skip", { uid, reason: "dashboard-duplicate-signature" });
+    return;
+  }
+  lastQueuedDashboardSyncSignature = nextSignature;
+  void saveDashboard(uid, dashboard).then(() => {
+    lastQueuedDashboardSyncSignature = "";
+    lastSuccessfulDashboardSyncSignature = nextSignature;
+  }).catch(() => {
+    if (lastQueuedDashboardSyncSignature === nextSignature) lastQueuedDashboardSyncSignature = "";
     // Keep local cached dashboard config when cloud write is denied/unavailable.
   });
 }
@@ -1395,7 +1619,17 @@ export function saveCloudTaskUi(taskUi: NonNullable<typeof cachedTaskUi>) {
   cachedTaskUi = taskUi;
   const uid = currentUid();
   if (!uid) return;
-  void saveTaskUi(uid, taskUi).catch(() => {
+  const nextSignature = stableCloudSyncSignature(taskUi);
+  if (nextSignature === lastSuccessfulTaskUiSyncSignature || nextSignature === lastQueuedTaskUiSyncSignature) {
+    debugLogCloudQueue("tasks", "skip", { uid, reason: "task-ui-duplicate-signature" });
+    return;
+  }
+  lastQueuedTaskUiSyncSignature = nextSignature;
+  void saveTaskUi(uid, taskUi).then(() => {
+    lastQueuedTaskUiSyncSignature = "";
+    lastSuccessfulTaskUiSyncSignature = nextSignature;
+  }).catch(() => {
+    if (lastQueuedTaskUiSyncSignature === nextSignature) lastQueuedTaskUiSyncSignature = "";
     // Keep local cached task-ui config when cloud write is denied/unavailable.
   });
 }
@@ -1406,6 +1640,7 @@ export function loadTasks(): Task[] | null {
 
 type SaveTasksOptions = {
   deletedTaskIds?: string[];
+  forceCloudFlush?: boolean;
 };
 
 export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
@@ -1430,7 +1665,9 @@ export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
   const uid = currentUid();
   if (!uid) return;
   if (!changedTaskIds.length && !removedTaskIds.length) return;
-  enqueueTaskSync(uid, nextById, changedTaskIds, removedTaskIds);
+  enqueueTaskSync(uid, nextById, changedTaskIds, removedTaskIds, {
+    force: opts?.forceCloudFlush === true,
+  });
 }
 
 export async function waitForPendingTaskSync(): Promise<void> {
@@ -1449,6 +1686,7 @@ export function loadLiveSessions(): LiveSessionsByTaskId {
 type SaveHistoryOptions = {
   showIndicator?: boolean;
   allowDestructiveReplace?: boolean;
+  forceCloudFlush?: boolean;
 };
 
 function getTouchedHistoryTaskIds(
@@ -1483,6 +1721,7 @@ export function saveHistory(historyByTaskId: HistoryByTaskId, opts?: SaveHistory
     touchedTaskIds.forEach((taskId) => {
       enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [], {
         allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+        force: opts?.forceCloudFlush === true,
       });
     });
     if (inFlightHistoryQueueSync) await inFlightHistoryQueueSync;
@@ -1517,16 +1756,19 @@ export function saveLiveSessionLocally(session: LiveTaskSession | null): void {
   if (uid && taskId) scheduleLeaderboardProfileSync(uid);
 }
 
-export function saveLiveSession(session: LiveTaskSession): void {
+export function saveLiveSession(session: LiveTaskSession, opts?: { forceCloudFlush?: boolean; reason?: string }): void {
   const normalized = normalizeLiveTaskSession(session);
   if (!normalized) return;
   saveLiveSessionLocally(normalized);
   const uid = currentUid();
   if (!uid) return;
-  enqueueLiveSessionUpsert(uid, normalized);
+  enqueueLiveSessionUpsert(uid, normalized, {
+    force: opts?.forceCloudFlush === true,
+    reason: opts?.reason,
+  });
 }
 
-export function clearLiveSession(taskIdRaw: string): void {
+export function clearLiveSession(taskIdRaw: string, opts?: { forceCloudFlush?: boolean; reason?: string }): void {
   const taskId = String(taskIdRaw || "").trim();
   if (!taskId) return;
   const next = { ...(cachedLiveSessions || {}) };
@@ -1537,7 +1779,10 @@ export function clearLiveSession(taskIdRaw: string): void {
   const uid = currentUid();
   if (uid) scheduleLeaderboardProfileSync(uid);
   if (!uid) return;
-  enqueueLiveSessionClear(uid, taskId);
+  enqueueLiveSessionClear(uid, taskId, {
+    force: opts?.forceCloudFlush === true,
+    reason: opts?.reason,
+  });
 }
 
 export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
@@ -1560,6 +1805,7 @@ export async function saveHistoryAndWait(historyByTaskId: HistoryByTaskId, opts?
     touchedTaskIds.forEach((taskId) => {
       enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : [], {
         allowDestructiveReplace: opts?.allowDestructiveReplace === true,
+        force: opts?.forceCloudFlush === true,
       });
     });
     while (inFlightHistoryQueueSync || touchedTaskIds.some((taskId) => queuedHistoryReplacementsByTaskId.has(taskId))) {
@@ -1604,6 +1850,25 @@ export function saveDeletedMeta(meta: DeletedTaskMeta): void {
       });
     }
   }
+}
+
+export async function flushPendingCloudWrites(): Promise<void> {
+  const uid = currentUid() || scopedUid();
+  clearQueuedCloudFlushTimer("tasks");
+  clearQueuedCloudFlushTimer("history");
+  clearQueuedCloudFlushTimer("liveSessions");
+  if (uid) {
+    if (queuedTaskDeletes.size || queuedTaskUpsertsById.size) flushQueuedTaskSync(uid);
+    if (queuedHistoryReplacementsByTaskId.size) flushQueuedHistorySync(uid);
+    if (queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) flushQueuedLiveSessionSync(uid);
+    if (queuedPreferencesSyncSnapshot) flushQueuedCloudPreferences(uid);
+  }
+  const pending: Promise<unknown>[] = [];
+  if (inFlightTaskQueueSync) pending.push(inFlightTaskQueueSync);
+  if (inFlightHistoryQueueSync) pending.push(inFlightHistoryQueueSync);
+  if (inFlightLiveSessionQueueSync) pending.push(inFlightLiveSessionQueueSync);
+  if (inFlightPreferencesSync) pending.push(inFlightPreferencesSync);
+  if (pending.length) await Promise.allSettled(pending);
 }
 
 export function cleanupHistory(historyByTaskId: HistoryByTaskId): HistoryByTaskId {

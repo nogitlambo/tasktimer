@@ -55,7 +55,7 @@ export default function FriendsOverlays() {
           <div className="friendProfileHeaderRow">
             <h2>Friend Info</h2>
             <button className="friendProfileDeleteLink" id="friendProfileDeleteBtn" type="button">
-              Delete Friend
+              Remove
             </button>
           </div>
           <div className="chkRow" id="friendProfileIdentityRow">

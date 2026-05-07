@@ -4280,7 +4280,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   width: 100%;
   margin: 0 0 10px;
   color: rgba(226,246,255,.92);
-  font-family: var(--font-geist-sans);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0;
@@ -4290,7 +4290,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 
 #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIcons{
   display:grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   align-items:start;
 }
@@ -4323,7 +4323,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 
 #timeGoalCompleteOverlay .timeGoalCompleteDifficultyLabel{
   display:block;
-  font-family: var(--font-geist-sans);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 12px;
   letter-spacing: 0;
   line-height: 1.2;
@@ -4337,6 +4337,22 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   border-color: rgba(53,232,255,.55);
   box-shadow: 0 0 14px rgba(0,220,255,.3);
   transform: translateY(-1px);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:hover .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"].is-selected .timeGoalCompleteDifficultyIconWrap{
+  background: linear-gradient(180deg, #ff8a8a, #d72d2d);
+  border-color: rgba(255,110,110,.68);
+  box-shadow: 0 0 14px rgba(215,45,45,.32);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:hover .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
+#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"].is-selected .timeGoalCompleteDifficultyIconWrap{
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  border-color: rgba(74,222,128,.68);
+  box-shadow: 0 0 14px rgba(22,163,74,.28);
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyLabel,
@@ -4362,6 +4378,129 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   margin: 0 0 12px;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteDivider{
+  height: 1px;
+  margin: 2px 0 12px;
+  background: linear-gradient(90deg, transparent, rgba(180,188,198,.28), transparent);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTasks[hidden]{
+  display: none !important;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
+  margin: 0 0 32px;
+  overflow: hidden;
+  transform-origin: top center;
+  animation: timeGoalCompleteLauncherRollDown .34s cubic-bezier(.16,.84,.24,1) both;
+  will-change: opacity, transform, clip-path;
+}
+
+@keyframes timeGoalCompleteLauncherRollDown{
+  from{
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-10px) scaleY(.92);
+  }
+  62%{
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(2px) scaleY(1.015);
+  }
+  to{
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
+    animation: none;
+  }
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTitle{
+  margin: 0 0 9px;
+  color: rgba(210,218,228,.76);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-align: center;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskGrid{
+  --time-goal-next-task-gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--time-goal-next-task-gap);
+  justify-content: center;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+  --task-color: var(--accent);
+  flex: 0 1 calc((100% - (3 * var(--time-goal-next-task-gap))) / 4);
+  min-width: 0;
+  min-height: 54px;
+  border: 1px solid color-mix(in srgb, var(--task-color) 72%, rgba(255,255,255,.34));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--task-color) 82%, rgba(255,255,255,.18)), color-mix(in srgb, var(--task-color) 68%, #05070a));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 12px color-mix(in srgb, var(--task-color) 26%, transparent);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.15;
+  padding: 9px 8px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,.62);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:hover,
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:focus-visible{
+  border-color: color-mix(in srgb, var(--task-color) 62%, #fff);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px color-mix(in srgb, var(--task-color) 42%, transparent);
+  filter: saturate(1.12) brightness(1.06);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile span{
+  overflow-wrap: anywhere;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskName{
+  display: block;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTime{
+  display: block;
+  color: rgba(255,255,255,.78);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 1px 2px rgba(0,0,0,.54);
+}
+
+@media (max-width: 560px){
+  #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+    flex-basis: calc((100% - var(--time-goal-next-task-gap)) / 2);
+  }
+}
+
+@media (max-width: 360px){
+  #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+    flex-basis: 100%;
+  }
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteNoteLabel{
   color: rgba(226,246,255,.92);
   font-family: var(--font-geist-sans);
@@ -4372,8 +4511,8 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .focusSessionNotesInput{
-  min-height: 94px;
-  resize: vertical;
+  min-height: 40px;
+  resize: none;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -4479,6 +4618,22 @@ body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .
   color: #fff !important;
   border-color: rgba(233,134,245,.72) !important;
   box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:hover .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"].is-selected .timeGoalCompleteDifficultyIconWrap{
+  background: linear-gradient(180deg, #ff8a8a, #d72d2d) !important;
+  border-color: rgba(255,126,126,.76) !important;
+  box-shadow: 0 0 0 1px rgba(255,185,185,.18) inset, 0 0 14px rgba(215,45,45,.3);
+}
+
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:hover .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
+body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"].is-selected .timeGoalCompleteDifficultyIconWrap{
+  background: linear-gradient(180deg, #86efac, #16a34a) !important;
+  border-color: rgba(110,231,183,.74) !important;
+  box-shadow: 0 0 0 1px rgba(187,247,208,.16) inset, 0 0 14px rgba(22,163,74,.28);
 }
 
 body[data-theme="cyan"] #timeGoalCompleteOverlay .modal{
@@ -5270,14 +5425,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  display: flex;
   gap: 10px;
+  justify-content: center;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn {
   width: auto;
-  min-width: 0;
+  min-width: 132px;
+  flex: 0 0 auto;
   justify-content: center;
   white-space: normal;
 }

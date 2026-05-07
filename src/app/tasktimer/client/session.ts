@@ -5,7 +5,14 @@ import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import { isTaskTimeGoalCompletedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
-import { findNextScheduledTaskAfterLocalTime } from "../lib/schedule-placement";
+import {
+  findNextScheduledTaskAfterLocalTime,
+  formatScheduleSlotTime,
+  getLocalScheduleDay,
+  getTaskScheduledDayEntries,
+  parseScheduleTimeMinutes,
+} from "../lib/schedule-placement";
+import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
@@ -29,6 +36,13 @@ type CheckpointToast = {
 };
 
 type DeferredTimeGoalModalEntry = { taskId: string; frozenElapsedMs: number; reminder: boolean };
+
+export type TimeGoalCompleteNextTaskOption = {
+  id: string;
+  name: string;
+  color: string;
+  scheduleText: string;
+};
 
 export function shouldKeepTimeGoalCompletionFlowForTask(
   task: Task | null | undefined,
@@ -82,6 +96,50 @@ export function shiftValidDeferredTimeGoalModal(
 export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs: number): void {
   if (isTaskTimeGoalCompletedToday(task, completedAtMs)) return;
   markTaskTimeGoalCompleted(task, completedAtMs);
+}
+
+function formatTimeGoalCompleteNextTaskSchedule(task: Task, nowDate = new Date()) {
+  const entries = getTaskScheduledDayEntries(task);
+  if (!entries.length) return "Unscheduled";
+  const today = getLocalScheduleDay(nowDate);
+  const entry = entries.find((row) => row.day === today) || entries[0];
+  const startMinutes = parseScheduleTimeMinutes(entry?.time);
+  return startMinutes == null ? "Unscheduled" : formatScheduleSlotTime(startMinutes);
+}
+
+function getTimeGoalCompleteNextTaskScheduleSortMinutes(task: Task, nowDate = new Date()) {
+  const entries = getTaskScheduledDayEntries(task);
+  if (!entries.length) return Number.POSITIVE_INFINITY;
+  const today = getLocalScheduleDay(nowDate);
+  const entry = entries.find((row) => row.day === today) || entries[0];
+  const startMinutes = parseScheduleTimeMinutes(entry?.time);
+  return startMinutes == null ? Number.POSITIVE_INFINITY : startMinutes;
+}
+
+export function buildTimeGoalCompleteNextTaskOptions(
+  tasks: Task[],
+  opts: { activeTaskId?: string | null; fallbackColor?: string } = {}
+): TimeGoalCompleteNextTaskOption[] {
+  const activeTaskId = String(opts.activeTaskId || "").trim();
+  const fallbackColor = normalizeTaskColor(opts.fallbackColor) || "#35e8ff";
+  return (Array.isArray(tasks) ? tasks : [])
+    .filter((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId || taskId === activeTaskId) return false;
+      if (task.running) return false;
+      if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
+      return !isTaskTimeGoalCompletedToday(task);
+    })
+    .map((task, index) => ({
+      id: String(task.id || "").trim(),
+      name: String(task.name || "Task").trim() || "Task",
+      color: normalizeTaskColor(task.color) || fallbackColor,
+      scheduleText: formatTimeGoalCompleteNextTaskSchedule(task),
+      scheduleSortMinutes: getTimeGoalCompleteNextTaskScheduleSortMinutes(task),
+      sourceIndex: index,
+    }))
+    .sort((a, b) => a.scheduleSortMinutes - b.scheduleSortMinutes || a.sourceIndex - b.sourceIndex)
+    .map(({ scheduleSortMinutes, sourceIndex, ...task }) => task);
 }
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
@@ -233,6 +291,35 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     button.textContent = `Launch ${String(next.task.name || "Task")}`;
   }
 
+  function getTimeGoalCompleteNextTaskOptions() {
+    return buildTimeGoalCompleteNextTaskOptions(ctx.getTasks(), {
+      activeTaskId: getActiveTimeGoalModalTaskId(),
+    });
+  }
+
+  function syncTimeGoalCompleteNextTaskGrid() {
+    const host = els.timeGoalCompleteNextTasks as HTMLElement | null;
+    const grid = els.timeGoalCompleteNextTaskGrid as HTMLElement | null;
+    if (!host || !grid) return;
+    const selectedDifficulty = getSelectedTimeGoalCompletionDifficulty();
+    const options = selectedDifficulty ? getTimeGoalCompleteNextTaskOptions() : [];
+    if (!selectedDifficulty || !options.length) {
+      host.hidden = true;
+      grid.innerHTML = "";
+      return;
+    }
+    host.hidden = false;
+    grid.innerHTML = options
+      .map(
+        (task) => `<button class="timeGoalCompleteNextTaskTile" type="button" data-time-goal-next-task-id="${ctx.escapeHtmlUI(
+          task.id
+        )}" style="--task-color:${ctx.escapeHtmlUI(task.color)}"><span class="timeGoalCompleteNextTaskName">${ctx.escapeHtmlUI(
+          task.name
+        )}</span><span class="timeGoalCompleteNextTaskTime">${ctx.escapeHtmlUI(task.scheduleText)}</span></button>`
+      )
+      .join("");
+  }
+
   function getSelectedTimeGoalCompletionDifficulty(): CompletionDifficulty | undefined {
     const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
     return normalizeCompletionDifficulty(overlay?.dataset.completionDifficulty);
@@ -262,6 +349,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       button.setAttribute("aria-checked", selected ? "true" : "false");
     });
     if (value) setTimeGoalCompletionValidation("");
+    syncTimeGoalCompleteNextTaskGrid();
   }
 
   function startTimeGoalCompleteConfetti() {
@@ -319,6 +407,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     setTimeGoalCompletionValidation("");
     syncTimeGoalCompletionDifficultyUi();
     syncTimeGoalCompleteLaunchNextButton();
+    syncTimeGoalCompleteNextTaskGrid();
     if (normalizedTaskId) delete ctx.getTimeGoalReminderAtMsByTaskId()[normalizedTaskId];
   }
 
@@ -390,7 +479,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
-      momentumEntitled: ctx.hasEntitlement("advancedInsights"),
+      momentumEntitled: true,
     });
     return Math.max(0, Math.floor(Number(award.amount || 0) || 0));
   }
@@ -466,6 +555,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const activeTaskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
     if (!activeTaskId) {
       syncTimeGoalCompleteLaunchNextButton();
+      syncTimeGoalCompleteNextTaskGrid();
       return;
     }
     const task = ctx.getTasks().find((row) => String(row.id || "") === activeTaskId) || null;
@@ -475,10 +565,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       isVisibleTimeGoalCompleteModalForTask(activeTaskId)
     ) {
       syncTimeGoalCompleteLaunchNextButton();
+      syncTimeGoalCompleteNextTaskGrid();
       return;
     }
     if (shouldKeepTimeGoalCompletionFlow(task, ctx.getTimeGoalModalFrozenElapsedMs())) {
       syncTimeGoalCompleteLaunchNextButton();
+      syncTimeGoalCompleteNextTaskGrid();
       return;
     }
     clearTaskTimeGoalFlow(activeTaskId);
@@ -1401,6 +1493,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
       if (nextIndex >= 0) ctx.startTask(nextIndex);
     });
+    ctx.on(els.timeGoalCompleteNextTaskGrid, "click", async (event: Event) => {
+      const tile = (event.target as HTMLElement | null)?.closest?.("[data-time-goal-next-task-id]") as HTMLElement | null;
+      const nextTaskId = String(tile?.dataset.timeGoalNextTaskId || "").trim();
+      if (!nextTaskId) return;
+      const task = getActiveTimeGoalModalTask();
+      if (!task) return;
+      const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
+      if (!completed) return;
+      const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
+      if (nextIndex >= 0) ctx.startTask(nextIndex);
+    });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {
       const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;
       if (!button) return;
@@ -1409,6 +1512,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       syncTimeGoalCompletionDifficultyUi(value);
       const task = getActiveTimeGoalModalTask();
       if (task) persistPendingTimeGoalFlow(task, "main", { completionDifficulty: value });
+      syncTimeGoalCompleteNextTaskGrid();
     });
     ctx.on(els.timeGoalCompleteNoteInput, "input", () => {
       const taskId = String(ctx.getTimeGoalModalTaskId() || "").trim();

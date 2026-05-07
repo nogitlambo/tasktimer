@@ -305,9 +305,12 @@
   background:transparent;
   padding:0;
   color:var(--warn);
-  font:inherit;
-  font-size:13px;
-  font-weight:400;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  line-height:1.1;
   text-decoration:underline;
   text-underline-offset:2px;
   cursor:pointer;

@@ -5,7 +5,7 @@ import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasks } from "./live-session-task-state";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
-type PersistOptions = { deletedTaskIds?: string[] };
+type PersistOptions = { deletedTaskIds?: string[]; forceCloudFlush?: boolean };
 
 type TaskUiCacheShape = {
   historyRangeDaysByTaskId?: Record<string, unknown>;

@@ -1516,6 +1516,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       maybeHandlePendingPushAction,
       rehydrateFromCloudAndRender,
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
+      flushPendingCloudWrites: () => workspaceRepository.flushPendingCloudWrites(),
       registerAppShellEvents,
       registerGroupsEvents,
       registerAddTaskEvents,
@@ -1572,6 +1573,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setDashboardRefreshPending,
     currentUid: () => getCurrentTaskTimerUid(),
     rehydrateFromCloudAndRender,
+    flushPendingCloudWrites: () => workspaceRepository.flushPendingCloudWrites(),
   });
 
   return { destroy };

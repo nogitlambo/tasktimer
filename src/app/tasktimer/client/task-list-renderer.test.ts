@@ -80,7 +80,6 @@ function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "t
     renderDashboardWidgets: () => calls.push("dashboard"),
     syncTimeGoalModalWithTaskState: () => calls.push("sync-goal"),
     maybeRestorePendingTimeGoalFlow: () => calls.push("restore-goal-flow"),
-    save: () => calls.push("save"),
     clearTimeoutRef: (timer) => calls.push(`clear-timeout:${timer}`),
     requestAnimationFrameRef: (handler) => {
       calls.push("raf");
@@ -124,7 +123,7 @@ describe("task list renderer", () => {
 
     expect(harness.taskListEl.innerHTML).toContain("No Tasks found");
     expect(harness.taskListEl.innerHTML).toContain('data-action="openAddTask"');
-    expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "save", "dashboard", "sync-goal", "restore-goal-flow"]);
+    expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "dashboard", "sync-goal", "restore-goal-flow"]);
   });
 
   it("renders task cards into tile columns and preserves source indexes", () => {

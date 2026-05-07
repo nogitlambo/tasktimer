@@ -21,6 +21,7 @@ import {
   saveCloudPreferences,
   saveCloudTaskUi,
   saveDeletedMeta,
+  flushPendingCloudWrites,
   saveHistory,
   saveHistoryAndWait,
   saveHistoryLocally,
@@ -159,6 +160,7 @@ export function createTaskTimerWorkspaceRepository() {
     saveDashboard: (dashboard: DashboardConfig) => saveCloudDashboard(dashboard),
     loadCachedTaskUi: (): TaskUiConfig | null => loadCachedTaskUi(),
     saveTaskUi: (taskUi: TaskUiConfig) => saveCloudTaskUi(taskUi),
+    flushPendingCloudWrites: () => flushPendingCloudWrites(),
     waitForPendingTaskSync: () => waitForPendingTaskSync(),
     clearScopedState: () => clearScopedStorageState(),
   };

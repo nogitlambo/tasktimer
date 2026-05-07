@@ -14,7 +14,7 @@ type CreateTaskTimerRuntimeActionsOptions = {
         load: () => void;
         savePendingTaskJump: (taskId: string | null) => void;
         maybeHandlePendingTaskJump: () => void;
-        save: (opts?: { deletedTaskIds?: string[] }) => void;
+        save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
       }
     | null;
   sessionApi: () =>
@@ -77,7 +77,7 @@ export function createTaskTimerRuntimeActions(options: CreateTaskTimerRuntimeAct
     options.persistenceApi()?.maybeHandlePendingTaskJump();
   }
 
-  function save(opts?: { deletedTaskIds?: string[] }) {
+  function save(opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) {
     options.persistenceApi()?.save(opts);
   }
 

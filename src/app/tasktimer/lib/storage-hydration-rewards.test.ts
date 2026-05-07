@@ -71,7 +71,15 @@ vi.mock("./planFunctions", () => planMocks);
 vi.mock("./entitlements", () => entitlementMocks);
 
 import { DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, rebuildRewardProgressFromHistory } from "./rewards";
-import { buildDefaultCloudPreferences, clearScopedStorageState, hydrateStorageFromCloud, loadCachedPreferences } from "./storage";
+import {
+  buildDefaultCloudPreferences,
+  clearScopedStorageState,
+  hydrateStorageFromCloud,
+  loadCachedPreferences,
+  saveCloudDashboard,
+  saveCloudTaskUi,
+  saveTasks,
+} from "./storage";
 
 class MemoryStorage {
   private map = new Map<string, string>();
@@ -224,4 +232,74 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(loadCachedPreferences()?.rewards.completedSessions).toBe(1);
     expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(1);
   });
+
+  it("replays a pending task delete to cloud after auth returns", async () => {
+    const deletedTask = task("task-1", "Focus");
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [deletedTask],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+    cloudStoreMocks.deleteTask.mockClear();
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
+    saveTasks([deletedTask]);
+    saveTasks([], { deletedTaskIds: ["task-1"] });
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+    await hydrateStorageFromCloud({ force: true });
+
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.deleteTask).toHaveBeenCalledWith("uid-1", "task-1");
+    });
+  });
+
+  it("skips cloud task writes when task signatures are unchanged", async () => {
+    const existingTask = task("task-1", "Focus");
+
+    saveTasks([existingTask], { forceCloudFlush: true });
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.saveTask).toHaveBeenCalledTimes(1);
+    });
+
+    cloudStoreMocks.saveTask.mockClear();
+    saveTasks([existingTask], { forceCloudFlush: true });
+    await vi.runAllTimersAsync();
+
+    expect(cloudStoreMocks.saveTask).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates direct dashboard and task-ui writes by payload signature", async () => {
+    const dashboard = {
+      avgRange: 7,
+      cardPlacements: {},
+      cardSizes: {},
+      cardVisibility: {},
+      editMode: false,
+      timelineDensity: "comfortable",
+    };
+    const taskUi = {
+      historyRangeDaysByTaskId: { "task-1": 7 },
+      historyRangeModeByTaskId: { "task-1": "entries" },
+      pinnedHistoryTaskIds: ["task-1"],
+      customTaskNames: ["Focus"],
+    };
+
+    saveCloudDashboard(dashboard as never);
+    saveCloudDashboard(dashboard as never);
+    saveCloudTaskUi(taskUi as never);
+    saveCloudTaskUi(taskUi as never);
+    await vi.runAllTimersAsync();
+
+    expect(cloudStoreMocks.saveDashboard).toHaveBeenCalledTimes(1);
+    expect(cloudStoreMocks.saveTaskUi).toHaveBeenCalledTimes(1);
+  });
+
 });

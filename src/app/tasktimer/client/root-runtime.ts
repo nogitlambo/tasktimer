@@ -60,6 +60,7 @@ type RegisterRootEventsOptions = {
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
   maybeRestorePendingTimeGoalFlow: () => void;
+  flushPendingCloudWrites: () => Promise<void>;
   registerAppShellEvents: () => void;
   registerGroupsEvents: () => void;
   registerAddTaskEvents: () => void;
@@ -111,6 +112,7 @@ type StartRootLifecycleOptions = {
   setDashboardRefreshPending: (value: boolean) => void;
   currentUid: () => string | null;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
+  flushPendingCloudWrites: () => Promise<void>;
 };
 
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
@@ -177,6 +179,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     maybeHandlePendingPushAction: options.maybeHandlePendingPushAction,
     rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,
     maybeRestorePendingTimeGoalFlow: options.maybeRestorePendingTimeGoalFlow,
+    flushPendingCloudWrites: options.flushPendingCloudWrites,
   });
 
   options.registerGroupsEvents();

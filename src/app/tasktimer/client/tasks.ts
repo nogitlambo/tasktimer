@@ -79,7 +79,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     renderDashboardWidgets: () => ctx.renderDashboardWidgets(),
     syncTimeGoalModalWithTaskState: ctx.syncTimeGoalModalWithTaskState,
     maybeRestorePendingTimeGoalFlow: ctx.maybeRestorePendingTimeGoalFlow,
-    save: () => ctx.save(),
     clearTimeoutRef: (timer) => window.clearTimeout(timer),
     requestAnimationFrameRef: (handler) => window.requestAnimationFrame(handler),
     getElapsedMs: ctx.getElapsedMs,

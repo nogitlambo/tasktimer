@@ -5,6 +5,7 @@ import { localDayKey } from "../lib/history";
 import { nowMs } from "../lib/time";
 import type { HistoryEntry, LiveTaskSession, Task } from "../lib/types";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
+import { ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS } from "../lib/storage";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 
 type RewardSessionTracker = {
@@ -17,7 +18,7 @@ type RewardSessionTracker = {
 
 export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContext) {
   const lastLiveSessionSyncAtByTaskId: Record<string, number> = {};
-  const LIVE_SESSION_SYNC_INTERVAL_MS = 15_000;
+  const LIVE_SESSION_SYNC_INTERVAL_MS = ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS;
 
   function rewardSessionTrackerStorageKey() {
     const uid = ctx.currentUid();
@@ -96,7 +97,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
   }
 
   function getMomentumMultiplierNow(nowValue = nowMs()) {
-    if (!ctx.hasEntitlement("advancedInsights")) return 1;
     try {
       return computeMomentumSnapshot({
         tasks: ctx.getTasks(),
@@ -401,14 +401,17 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     };
   }
 
-  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; note?: string }) {
+  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) {
     const session = buildLiveSession(task, opts?.elapsedMs, opts?.note);
     if (!session) return;
     ctx.setLiveSessionsByTaskId({
       ...(ctx.getLiveSessionsByTaskId() || {}),
       [session.taskId]: session,
     });
-    ctx.saveLiveSession(session);
+    ctx.saveLiveSession(session, {
+      forceCloudFlush: opts?.forceCloudFlush === true,
+      reason: opts?.reason,
+    });
   }
 
   function syncLiveSessionForTask(task: Task | null | undefined, nowValue = nowMs()) {
@@ -417,7 +420,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     if (!taskId) return;
     const lastSyncAt = Math.max(0, Math.floor(Number(lastLiveSessionSyncAtByTaskId[taskId] || 0) || 0));
     if (lastSyncAt > 0 && nowValue - lastSyncAt < LIVE_SESSION_SYNC_INTERVAL_MS) return;
-    upsertLiveSession(task, { elapsedMs: ctx.getTaskElapsedMs(task) });
+    upsertLiveSession(task, { elapsedMs: ctx.getTaskElapsedMs(task), reason: "tick" });
     lastLiveSessionSyncAtByTaskId[taskId] = nowValue;
   }
 
@@ -459,7 +462,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
-      momentumEntitled: ctx.hasEntitlement("advancedInsights"),
+      momentumEntitled: true,
       sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, safeElapsedMs),
     });
     ctx.setRewardProgress(nextAward.next);
@@ -496,7 +499,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const next = { ...(ctx.getLiveSessionsByTaskId() || {}) };
     delete next[taskId];
     ctx.setLiveSessionsByTaskId(next);
-    ctx.clearLiveSession(taskId);
+    ctx.clearLiveSession(taskId, { forceCloudFlush: true, reason: "finalize" });
     return elapsedMs;
   }
 

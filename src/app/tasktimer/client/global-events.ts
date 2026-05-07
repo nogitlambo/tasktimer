@@ -43,6 +43,7 @@ type RegisterWindowRuntimeEventsOptions = {
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
   maybeRestorePendingTimeGoalFlow: () => void;
+  flushPendingCloudWrites: () => Promise<unknown>;
 };
 
 type RegisterDashboardShellEventsOptions = {
@@ -176,6 +177,17 @@ export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRunt
       options.maybeHandlePendingPushAction();
       options.maybeRestorePendingTimeGoalFlow();
     });
+  });
+  options.on(options.windowRef, "pagehide", () => {
+    void options.flushPendingCloudWrites();
+  });
+  options.on(options.windowRef, "beforeunload", () => {
+    void options.flushPendingCloudWrites();
+  });
+  options.on(options.windowRef.document, "visibilitychange", () => {
+    if (options.windowRef.document.visibilityState === "hidden") {
+      void options.flushPendingCloudWrites();
+    }
   });
 }
 

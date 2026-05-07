@@ -23,7 +23,6 @@ type TaskListRendererOptions = {
   renderDashboardWidgets: () => void;
   syncTimeGoalModalWithTaskState: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
-  save: () => void;
   clearTimeoutRef: (timer: number) => void;
   requestAnimationFrameRef: (handler: () => void) => void;
   getElapsedMs: (task: Task) => number;
@@ -152,7 +151,6 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
 
     if (!displayedTasks.length) {
       renderTaskListEmptyState(taskListEl);
-      options.save();
       if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
       options.syncTimeGoalModalWithTaskState();
       options.maybeRestorePendingTimeGoalFlow();
@@ -206,7 +204,6 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       (tileColumnEl || taskListEl).appendChild(taskEl);
     });
 
-    options.save();
     for (const taskId of openHistoryTaskIds) options.renderHistory(taskId);
     if (openHistoryTaskIds.size) {
       options.requestAnimationFrameRef(() => {

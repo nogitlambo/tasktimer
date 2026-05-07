@@ -101,9 +101,8 @@ type RewardMomentumContext = {
 };
 
 export const XP_PER_TASK_LAUNCH = 5;
-export const MIN_REWARD_ELIGIBLE_SESSION_MS = 10 * 60 * 1000;
-export const MAX_REWARD_ELIGIBLE_SESSION_MS = 90 * 60 * 1000;
-export const SESSION_XP_INTERVAL_MS = 10 * 60 * 1000;
+export const MIN_REWARD_ELIGIBLE_SESSION_MS = 1 * 60 * 1000;
+export const SESSION_XP_INTERVAL_MS = 1 * 60 * 1000;
 export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;
 export const QUALIFIED_DAY_MIN_SESSION_COUNT = 2;
 export const QUALIFIED_DAY_MIN_SPAN_MS = 2 * 60 * 60 * 1000;
@@ -148,6 +147,7 @@ export const RANK_LADDER: RankDefinition[] = [
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
+  unranked: "/insignias/badge_unranked.png",
   initiate: "/insignias/initiate.png",
   specialist: "/insignias/specialist.png?v=20260402",
   strategist: "/insignias/strategist.png",
@@ -160,6 +160,7 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
 export const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
 
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
+  unranked: "/insignias/badge_unranked.png",
   initiate: "/insignias/initiate.png",
   specialist: "/insignias/specialist.png?v=20260402",
   strategist: "/insignias/strategist.png",
@@ -275,7 +276,7 @@ function getExistingSourceKeys(progress: RewardProgressV1): Set<string> {
 function getSessionEligibleMs(elapsedMs: number): number {
   const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
   if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
-  return Math.min(safeElapsedMs, MAX_REWARD_ELIGIBLE_SESSION_MS);
+  return safeElapsedMs;
 }
 
 function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], completedSessionsDelta: number): RewardAwardResult {
@@ -496,7 +497,7 @@ export function getRewardWeekProgress(
 }
 
 function resolveRewardMultiplier(context: RewardMomentumContext | null | undefined, awardedAt: number): number {
-  if (!context?.momentumEntitled) return 1;
+  if (!context) return 1;
   if (!context.historyByTaskId || !context.tasks || !context.weekStarting) return 1;
   return computeMomentumSnapshot({
     tasks: context.tasks,

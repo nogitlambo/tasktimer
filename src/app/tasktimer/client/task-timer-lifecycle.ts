@@ -28,7 +28,7 @@ type TaskTimerLifecycleCommandAdapters = {
   openRewardSessionSegment: (task: Task, startMs: number) => void;
   closeRewardSessionSegment: (task: Task, endMs: number) => void;
   clearRewardSessionTracker: (taskId: string) => void;
-  upsertLiveSession: (task: Task, opts: { elapsedMs: number }) => void;
+  upsertLiveSession: (task: Task, opts: { elapsedMs: number; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
     opts: { elapsedMs: number; note?: string; completionDifficulty?: CompletionDifficulty }
@@ -45,7 +45,7 @@ type TaskTimerLifecycleCommandAdapters = {
   getCurrentAppPage: () => string;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   openFocusMode: (index: number) => void;
-  save: () => void;
+  save: (opts?: { forceCloudFlush?: boolean }) => void;
   render: () => void;
   renderDashboardWidgets: () => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<unknown>;
@@ -64,7 +64,7 @@ type TaskTimerLifecycleOptions = {
 
 export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleCommandAdapters): TaskTimerLifecycleCommands {
   function persistTaskTimerCommand(taskId: string) {
-    options.save();
+    options.save({ forceCloudFlush: true });
     void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     options.render();
   }
@@ -77,7 +77,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     task.startMs = startMs;
     task.hasStarted = true;
     options.openRewardSessionSegment(task, startMs);
-    options.upsertLiveSession(task, { elapsedMs: 0 });
+    options.upsertLiveSession(task, { elapsedMs: 0, forceCloudFlush: true, reason: "start" });
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
     if (options.getAutoFocusOnTaskLaunchEnabled() && String(options.getFocusModeTaskId() || "") !== taskId) {

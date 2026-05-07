@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LiveTaskSession, Task } from "../lib/types";
-import { shouldKeepTimeGoalCompletionFlowForTask, shiftValidDeferredTimeGoalModal } from "./session";
+import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
+import { buildTimeGoalCompleteNextTaskOptions, shouldKeepTimeGoalCompletionFlowForTask, shiftValidDeferredTimeGoalModal } from "./session";
 
 function timeGoalTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -16,6 +17,7 @@ function timeGoalTask(overrides: Partial<Task> = {}): Task {
     hasStarted: true,
     timeGoalEnabled: true,
     timeGoalMinutes: 1,
+    timeGoalPeriod: "day",
     ...overrides,
   };
 }
@@ -101,5 +103,44 @@ describe("time goal completion flow guard", () => {
 
     expect(result.nextPending).toEqual({ taskId: "task-2", frozenElapsedMs: 120_000, reminder: false });
     expect(result.remainingQueue).toEqual([]);
+  });
+});
+
+describe("time goal complete next task launcher", () => {
+  it("includes only incomplete daily-goal tasks after excluding the active task", () => {
+    const today = getTimeGoalCompletionDayKey();
+    const options = buildTimeGoalCompleteNextTaskOptions(
+      [
+        timeGoalTask({ id: "active", name: "Active", running: true }),
+        timeGoalTask({ id: "daily", name: "Daily Task", running: false, color: "#ff5252", plannedStartTime: "09:30" }),
+        timeGoalTask({ id: "completed", name: "Completed", running: false, timeGoalCompletedDayKey: today }),
+        timeGoalTask({ id: "weekly", name: "Weekly", running: false, timeGoalPeriod: "week" }),
+        timeGoalTask({ id: "no-goal", name: "No Goal", running: false, timeGoalEnabled: false }),
+        timeGoalTask({ id: "running", name: "Running", running: true }),
+      ],
+      { activeTaskId: "active" }
+    );
+
+    expect(options).toEqual([{ id: "daily", name: "Daily Task", color: "#ff5252", scheduleText: "9:30 AM" }]);
+  });
+
+  it("uses the accent fallback when a task has no valid assigned color", () => {
+    expect(
+      buildTimeGoalCompleteNextTaskOptions(
+        [timeGoalTask({ id: "daily", name: "Daily Task", running: false, color: "not-a-color" })],
+        { fallbackColor: "#00bcd4" }
+      )
+    ).toEqual([{ id: "daily", name: "Daily Task", color: "#00bcd4", scheduleText: "Unscheduled" }]);
+  });
+
+  it("orders scheduled task tiles from earliest to latest and keeps unscheduled tasks last", () => {
+    const options = buildTimeGoalCompleteNextTaskOptions([
+      timeGoalTask({ id: "late", name: "Late", running: false, plannedStartTime: "17:00" }),
+      timeGoalTask({ id: "unscheduled", name: "Unscheduled", running: false }),
+      timeGoalTask({ id: "early", name: "Early", running: false, plannedStartTime: "08:15" }),
+      timeGoalTask({ id: "midday", name: "Midday", running: false, plannedStartTime: "12:00" }),
+    ]);
+
+    expect(options.map((option) => option.id)).toEqual(["early", "midday", "late", "unscheduled"]);
   });
 });
