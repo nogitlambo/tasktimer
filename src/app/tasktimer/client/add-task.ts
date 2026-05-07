@@ -10,7 +10,7 @@ import {
   getAddTaskDurationMaxForPeriod,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
-import { getTaskColorFamilyForColor, normalizeTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
+import { getNextAutoTaskColor, getTaskColorFamilyForColor, normalizeTaskColor, resolveNewTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
 import {
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
@@ -27,6 +27,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
   let selectedColor: string | null = null;
+  let selectedColorTouched = false;
 
   function canUseAdvancedTaskConfig() {
     return true;
@@ -251,6 +252,71 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncAddTaskMilestonesUi();
   }
 
+  function getCheckpointUnitLabels(unit: "hour" | "minute") {
+    return unit === "minute"
+      ? { major: "m", minor: "s", minorStep: 5, minorRange: 60 }
+      : { major: "h", minor: "m", minorStep: 5, minorRange: 60 };
+  }
+
+  function checkpointValueToParts(value: number, unit: "hour" | "minute") {
+    if (unit === "minute") {
+      const totalSeconds = Math.max(0, Math.round((Number(value) || 0) * 60));
+      return {
+        major: Math.floor(totalSeconds / 60),
+        minor: Math.max(0, totalSeconds % 60),
+      };
+    }
+    const totalMinutes = Math.max(0, Math.round((Number(value) || 0) * 60));
+    return {
+      major: Math.floor(totalMinutes / 60),
+      minor: Math.max(0, totalMinutes % 60),
+    };
+  }
+
+  function checkpointPartsToValue(major: number, minor: number, unit: "hour" | "minute") {
+    if (unit === "minute") {
+      return Math.max(0, major) + Math.max(0, minor) / 60;
+    }
+    return Math.max(0, major) + Math.max(0, minor) / 60;
+  }
+
+  function getCheckpointMaxParts(timeGoalMinutes: number, unit: "hour" | "minute") {
+    if (unit === "minute") {
+      const maxTotalSeconds = Math.max(0, Math.ceil(timeGoalMinutes * 60) - 1);
+      return {
+        majorMax: Math.floor(maxTotalSeconds / 60),
+        minorMax: 59,
+      };
+    }
+    const maxTotalMinutes = Math.max(0, Math.ceil(timeGoalMinutes) - 1);
+    return {
+      majorMax: Math.floor(maxTotalMinutes / 60),
+      minorMax: 59,
+    };
+  }
+
+  function clampCheckpointParts(major: number, minor: number, timeGoalMinutes: number, unit: "hour" | "minute") {
+    const nextValue = checkpointPartsToValue(major, minor, unit);
+    const unitSeconds = unit === "minute" ? 60 : 3600;
+    if (!sharedTasks.isCheckpointAtOrAboveTimeGoal(nextValue, unitSeconds, timeGoalMinutes)) {
+      return { major: Math.max(0, major), minor: Math.max(0, minor), value: nextValue };
+    }
+    if (unit === "minute") {
+      const maxTotalSeconds = Math.max(0, Math.ceil(timeGoalMinutes * 60) - 1);
+      return {
+        major: Math.floor(maxTotalSeconds / 60),
+        minor: Math.max(0, maxTotalSeconds % 60),
+        value: maxTotalSeconds / 60,
+      };
+    }
+    const maxTotalMinutes = Math.max(0, Math.ceil(timeGoalMinutes) - 1);
+    return {
+      major: Math.floor(maxTotalMinutes / 60),
+      minor: Math.max(0, maxTotalMinutes % 60),
+      value: maxTotalMinutes / 60,
+    };
+  }
+
   function renderAddTaskMilestoneEditor() {
     if (!els.addTaskMsList) return;
     els.addTaskMsList.innerHTML = "";
@@ -260,24 +326,54 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       milestones: ms,
       timeGoalMinutes: getAddTaskTimeGoalMinutes(),
     } as Task;
+    const unit = tempTask.milestoneTimeUnit === "minute" ? "minute" : "hour";
+    const labels = getCheckpointUnitLabels(unit);
+    const timeGoalMinutes = getAddTaskTimeGoalMinutes();
+    const maxParts = getCheckpointMaxParts(timeGoalMinutes, unit);
 
     ms.forEach((m, idx) => {
+      const currentParts = checkpointValueToParts(Number(m.hours) || 0, unit);
       const row = document.createElement("div");
       row.className = "msRow";
       (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
+      const majorOptions = Array.from({ length: Math.max(1, maxParts.majorMax + 1) }, (_, optionIndex) => {
+        const isSelected = optionIndex === currentParts.major ? ' selected="selected"' : "";
+        return `<option value="${optionIndex}"${isSelected}>${optionIndex}</option>`;
+      }).join("");
+      const minorOptions = Array.from({ length: labels.minorRange / labels.minorStep }, (_, optionIndex) => {
+        const value = optionIndex * labels.minorStep;
+        const isSelected = value === currentParts.minor ? ' selected="selected"' : "";
+        return `<option value="${value}"${isSelected}>${String(value).padStart(2, "0")}</option>`;
+      }).join("");
       row.innerHTML = `
-        <div class="pill msSkewField">${ctx.escapeHtmlUI(String(+m.hours || 0))}${sharedTasks.milestoneUnitSuffix(tempTask)}</div>
+        <div class="msValueCluster" aria-label="Checkpoint time">
+          <select class="msValueSelect" data-field="value-major" aria-label="Checkpoint ${labels.major}">
+            ${majorOptions}
+          </select>
+          <span class="msValueUnit" aria-hidden="true">${labels.major}</span>
+          <select class="msValueSelect" data-field="value-minor" aria-label="Checkpoint ${labels.minor}">
+            ${minorOptions}
+          </select>
+          <span class="msValueUnit" aria-hidden="true">${labels.minor}</span>
+        </div>
         <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
-
-      const pill = row.querySelector(".pill") as HTMLElement | null;
-      ctx.on(pill, "click", () => {
-        ctx.openElapsedPadForMilestone(tempTask, m as { hours: number; description: string }, ms, () => {
-          renderAddTaskMilestoneEditor();
-          syncAddTaskCheckpointAlertUi();
-        });
-      });
+      const majorSelect = row.querySelector('[data-field="value-major"]') as HTMLSelectElement | null;
+      const minorSelect = row.querySelector('[data-field="value-minor"]') as HTMLSelectElement | null;
+      const syncCheckpointValue = () => {
+        const major = Math.max(0, Number(majorSelect?.value || 0) || 0);
+        const minor = Math.max(0, Number(minorSelect?.value || 0) || 0);
+        const next = clampCheckpointParts(major, minor, timeGoalMinutes, unit);
+        if (majorSelect) majorSelect.value = String(next.major);
+        if (minorSelect) minorSelect.value = String(next.minor);
+        m.hours = next.value;
+        ctx.setAddTaskMilestonesState(ms);
+        clearAddTaskValidationState();
+        syncAddTaskCheckpointAlertUi();
+      };
+      ctx.on(majorSelect, "change", syncCheckpointValue);
+      ctx.on(minorSelect, "change", syncCheckpointValue);
 
       const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
       ctx.on(desc, "input", (e: Event) => {
@@ -514,7 +610,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskCheckpointSoundModeState("once");
     ctx.setAddTaskCheckpointToastEnabledState(false);
     ctx.setAddTaskCheckpointToastModeState("auto5s");
-    selectedColor = null;
+    selectedColor = getNextAutoTaskColor(ctx.getTasks());
+    selectedColorTouched = false;
 
     if (els.addTaskName) els.addTaskName.value = "";
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = "0";
@@ -580,7 +677,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       milestones: ctx.getAddTaskMilestones(),
     } as Task);
 
-    newTask.color = normalizeTaskColor(selectedColor);
+    newTask.color = resolveNewTaskColor({
+      tasks,
+      selectedColor,
+      selectedColorTouched,
+    });
     newTask.taskType = ctx.getAddTaskType() === "once-off" ? "once-off" : "recurring";
     newTask.timeGoalEnabled = true;
     newTask.timeGoalValue = Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
@@ -755,6 +856,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       }
       const button = (event.target as HTMLElement | null)?.closest?.("[data-task-color]") as HTMLElement | null;
       if (!button || !els.addTaskColorPalette?.contains(button)) return;
+      selectedColorTouched = true;
       selectedColor = normalizeTaskColor(button.dataset.taskColor);
       syncAddTaskColorPalette();
       setAddTaskColorPopoverOpen(false);

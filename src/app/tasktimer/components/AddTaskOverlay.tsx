@@ -81,19 +81,18 @@ export default function AddTaskOverlay() {
             <div className="field editPlannedStartField">
               <label>Planned Start Time</label>
               <div className="addTaskPlannedStartSection editPlannedStartSection">
-                <div className="field editTaskOnceOffDayField isHidden" id="addTaskOnceOffDayField">
-                  <label htmlFor="addTaskOnceOffDaySelect">Day</label>
-                  <select id="addTaskOnceOffDaySelect" defaultValue="mon">
-                    <option value="mon">Monday</option>
-                    <option value="tue">Tuesday</option>
-                    <option value="wed">Wednesday</option>
-                    <option value="thu">Thursday</option>
-                    <option value="fri">Friday</option>
-                    <option value="sat">Saturday</option>
-                    <option value="sun">Sunday</option>
-                  </select>
-                </div>
                 <div className="addTaskPlannedStartSelectorRow">
+                  <div className="field editTaskOnceOffDayField isHidden" id="addTaskOnceOffDayField">
+                    <select id="addTaskOnceOffDaySelect" defaultValue="mon" aria-label="Once-off day">
+                      <option value="mon">Monday</option>
+                      <option value="tue">Tuesday</option>
+                      <option value="wed">Wednesday</option>
+                      <option value="thu">Thursday</option>
+                      <option value="fri">Friday</option>
+                      <option value="sat">Saturday</option>
+                      <option value="sun">Sunday</option>
+                    </select>
+                  </div>
                   <div className="addTaskPlannedStartTimeCluster">
                     <select id="addTaskPlannedStartHourSelect" aria-label="Start hour" defaultValue="09">
                       <option value="01">01</option>

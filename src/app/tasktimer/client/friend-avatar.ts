@@ -72,6 +72,7 @@ export function getMergedFriendProfile(
     googlePhotoUrl: cachedProfile?.googlePhotoUrl ?? baseProfile?.googlePhotoUrl ?? null,
     rankThumbnailSrc: cachedProfile?.rankThumbnailSrc ?? baseProfile?.rankThumbnailSrc ?? null,
     currentRankId: cachedProfile?.currentRankId ?? baseProfile?.currentRankId ?? null,
+    totalXp: cachedProfile?.totalXp ?? baseProfile?.totalXp ?? null,
   };
 }
 

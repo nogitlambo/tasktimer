@@ -129,13 +129,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const profile = ctx.getMergedFriendProfile(peerUid, row.profileByUid?.[peerUid]);
         const alias = String(profile?.alias || "").trim() || peerUid;
         const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
+        const totalXp = Math.max(0, Math.floor(Number(profile?.totalXp || 0) || 0));
         const avatarSrc = ctx.getFriendAvatarSrc(profile);
         const sharedCount = ctx.getGroupsSharedSummaries().filter((entry) => entry.ownerUid === peerUid).length;
         const createdAtMs =
           row.createdAt && typeof (row.createdAt as any).toMillis === "function"
             ? Number((row.createdAt as any).toMillis())
             : Number.NaN;
-        return { peerUid, alias, avatarSrc, currentRankId, sharedCount, createdAtMs };
+        return { peerUid, alias, avatarSrc, currentRankId, totalXp, sharedCount, createdAtMs };
       })
       .filter(
         (row): row is {
@@ -143,6 +144,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           alias: string;
           avatarSrc: string;
           currentRankId: string;
+          totalXp: number;
           sharedCount: number;
           createdAtMs: number;
         } => !!row
@@ -928,9 +930,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const profile = ctx.getMergedFriendProfile(friendUid, row.profileByUid?.[friendUid]);
         const alias = String(profile?.alias || "").trim() || friendUid;
         const avatarSrc = ctx.getFriendAvatarSrc(profile);
+        const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
+        const totalXp = Math.max(0, Math.floor(Number(profile?.totalXp || 0) || 0));
         const summaries = sharedSummaries.filter((entry) => entry.ownerUid === friendUid);
         const isOpen = openIds.has(friendUid);
-        return { friendUid, alias, avatarSrc, summaries, isOpen };
+        return { friendUid, alias, avatarSrc, currentRankId, totalXp, summaries, isOpen };
       })
       .sort((a, b) => {
         const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
@@ -944,7 +948,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
 
     els.groupsFriendsList.innerHTML = friendRows
-      .map((row) => {
+      .map((row, index) => {
         const summaryHtml = row.summaries
           .map((entry) => {
             const createdDate =
@@ -986,16 +990,29 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           .join("");
         const taskCount = row.summaries.length;
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
+        const rankLabel = getRankLabelById(row.currentRankId);
+        const totalXpLabel = `${row.totalXp.toLocaleString()} XP`;
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
-            <summary class="settingsDetailNote friendIdentityRow">
-              <button class="friendIdentityBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
-                <img class="friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" aria-hidden="true" />
-                <span class="friendIdentityText">
-                  <span class="friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</span>
-                  <span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
+            <summary class="settingsDetailNote friendIdentityRow leaderboardRow">
+              <div class="leaderboardRank friendIdentityRank">${index + 1}</div>
+              <button class="friendIdentityBtn leaderboardAvatarButton" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}" aria-label="Open ${ctx.escapeHtmlUI(row.alias)} profile">
+                <span class="leaderboardAvatar friendIdentityAvatarWrap" aria-hidden="true">
+                  <img class="leaderboardAvatarImg friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" />
                 </span>
               </button>
+              <button class="friendIdentityBtn friendIdentityNameBtn leaderboardIdentity" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
+                <span class="friendIdentityText">
+                  <strong class="leaderboardName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
+                  <span class="leaderboardMeta friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
+                </span>
+              </button>
+              <div class="leaderboardStats friendIdentityStats">
+                <span class="leaderboardStatPrimary">
+                  <span class="leaderboardRankLabel">${ctx.escapeHtmlUI(rankLabel)}</span>
+                  <span class="leaderboardXp friendSharedTasksCountText">${ctx.escapeHtmlUI(totalXpLabel)}</span>
+                </span>
+              </div>
             </summary>
             <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
           </details>

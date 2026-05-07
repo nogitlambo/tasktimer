@@ -99,8 +99,19 @@ describe("task card view model", () => {
   it("renders a history-tab border footprint for shell border alignment", () => {
     const rendered = renderCard();
 
+    expect(rendered.html).toContain('class="taskFaceShell taskFaceShellFront" style="--task-history-tab-border-gap:160px"');
     expect(rendered.html).toContain('class="taskHistoryReveal ');
-    expect(rendered.html).toContain('style="--task-history-tab-border-gap:160px"');
+  });
+
+  it("renders checkpoint labels as compact durations instead of raw decimals", () => {
+    const rendered = renderCard({
+      sortedMilestones: [{ hours: 1.3333333333333333, description: "Break" }],
+      timeGoalSec: 2 * 3600,
+    });
+
+    expect(rendered.html).toContain("1h 20m");
+    expect(rendered.html).not.toContain("1.3333333333333333h");
+    expect(rendered.html).toContain("Break");
   });
 
   it("dispatches allowed task card actions", () => {

@@ -22,6 +22,7 @@ import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClie
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
 import WebSignIn from "../webSign-in";
+import { getEmailLinkActionCodeSettings, getEmailLinkSendErrorMessage } from "./emailLinkAuth";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
@@ -356,14 +357,6 @@ function WebSignInPageContent() {
     return () => window.removeEventListener("focus", onFocus);
   }, [googlePopupPending]);
 
-  const getEmailLinkContinueUrl = () => {
-    if (typeof window !== "undefined") {
-      const origin = window.location.origin;
-      if (/^https?:/i.test(origin)) return `${origin}/web-sign-in`;
-    }
-    return "https://tasktimer-prod.firebaseapp.com/web-sign-in";
-  };
-
   const handleSendEmailLink = async () => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
@@ -381,10 +374,11 @@ function WebSignInPageContent() {
     setAuthError("");
     setAuthStatus("Sending sign-in link...");
     try {
-      await sendSignInLinkToEmail(auth, email, {
-        url: getEmailLinkContinueUrl(),
-        handleCodeInApp: true,
-      });
+      await sendSignInLinkToEmail(
+        auth,
+        email,
+        getEmailLinkActionCodeSettings(typeof window !== "undefined" ? window.location : null)
+      );
       try {
         localStorage.setItem(EMAIL_LINK_STORAGE_KEY, email);
       } catch {
@@ -392,7 +386,7 @@ function WebSignInPageContent() {
       }
       setAuthStatus("Sign-in link sent. Open the link from your email on this device.");
     } catch (err: unknown) {
-      setAuthError(getErrorMessage(err, "Could not send sign-in link."));
+      setAuthError(getEmailLinkSendErrorMessage(err) || getErrorMessage(err, "Could not send sign-in link."));
       setAuthStatus("");
     } finally {
       setAuthBusy(false);

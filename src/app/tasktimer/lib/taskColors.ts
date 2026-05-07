@@ -1,3 +1,5 @@
+import type { Task } from "./types";
+
 const buildTaskColorFamily = <
   TId extends string,
   TLabel extends string,
@@ -119,7 +121,7 @@ export const TASK_COLOR_FAMILIES = [
 ] as const;
 
 export const TASK_COLOR_MAIN_SHADE_INDEX = 4;
-export const TASK_COLOR_MAIN_SWATCHES_PER_ROW = 5;
+export const TASK_COLOR_MAIN_SWATCHES_PER_ROW = 4;
 export const TASK_COLOR_SHADE_SWATCHES_PER_ROW = 5;
 
 export const TASK_COLOR_PALETTE = TASK_COLOR_FAMILIES.map((family) => family.shades[TASK_COLOR_MAIN_SHADE_INDEX]);
@@ -135,4 +137,31 @@ export function getTaskColorFamilyForColor(color: string | null | undefined): (t
   const normalized = normalizeTaskColor(color);
   if (!normalized) return null;
   return TASK_COLOR_FAMILIES.find((family) => family.allColors.includes(normalized)) || null;
+}
+
+export function getNextAutoTaskColor(tasks: Array<Pick<Task, "color">>): string | null {
+  const primaryPalette = TASK_COLOR_PALETTE.map((color) => normalizeTaskColor(color)).filter((color): color is string => !!color);
+  const extendedPalette = TASK_COLOR_FAMILIES.flatMap((family) => family.allColors)
+    .map((color) => normalizeTaskColor(color))
+    .filter((color, index, list): color is string => !!color && list.indexOf(color) === index);
+  const uniqueTaskColors = [...primaryPalette, ...extendedPalette.filter((color) => !primaryPalette.includes(color))];
+  if (!uniqueTaskColors.length) return null;
+
+  const paletteSet = new Set(uniqueTaskColors);
+  const usedColors = new Set(
+    tasks
+      .map((task) => normalizeTaskColor(task.color))
+      .filter((color): color is string => !!color && paletteSet.has(color))
+  );
+
+  return uniqueTaskColors.find((color) => !usedColors.has(color)) || uniqueTaskColors[0];
+}
+
+export function resolveNewTaskColor(options: {
+  tasks: Array<Pick<Task, "color">>;
+  selectedColor: string | null;
+  selectedColorTouched: boolean;
+}): string | null {
+  if (options.selectedColorTouched) return normalizeTaskColor(options.selectedColor);
+  return getNextAutoTaskColor(options.tasks);
 }

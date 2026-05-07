@@ -91,8 +91,8 @@ function createHarness(overrides: Partial<{ liveSessionsByTaskId: LiveSessionsBy
     syncSharedTaskSummariesForTask: vi.fn(async (taskId: string) => {
       calls.push(`sync-shared:${taskId}`);
     }),
-    syncOwnFriendshipProfile: vi.fn(async (_uid: string, partial: { currentRankId?: string | null | undefined }) => {
-      calls.push(`sync-profile:${partial.currentRankId || ""}`);
+    syncOwnFriendshipProfile: vi.fn(async (_uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined }) => {
+      calls.push(`sync-profile:${partial.currentRankId || ""}:${partial.totalXp ?? ""}`);
     }),
   });
 

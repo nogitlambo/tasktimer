@@ -472,7 +472,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     ctx.saveCloudPreferences(nextPrefs);
     const authUid = ctx.currentUid();
     if (authUid) {
-      void ctx.syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId }).catch(() => {});
+      void ctx
+        .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
+        .catch(() => {});
     }
   }
 

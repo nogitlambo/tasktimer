@@ -58,7 +58,7 @@ type PreferencesServiceOptions = {
   getCloudPreferencesCache: () => StoredPreferences | null;
   setCloudPreferencesCache: (prefs: StoredPreferences) => void;
   currentUid: () => string;
-  syncOwnFriendshipProfile: (uid: string, patch: { currentRankId?: string | null }) => Promise<unknown>;
+  syncOwnFriendshipProfile: (uid: string, patch: { currentRankId?: string | null; totalXp?: number | null }) => Promise<unknown>;
 };
 
 function safeReadLocalStorage(key: string): string {
@@ -154,7 +154,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     const uid = options.currentUid();
     if (!uid) return;
     void options
-      .syncOwnFriendshipProfile(uid, { currentRankId: snapshot.rewards?.currentRankId || null })
+      .syncOwnFriendshipProfile(uid, { currentRankId: snapshot.rewards?.currentRankId || null, totalXp: snapshot.rewards?.totalXp ?? null })
       .catch(() => {});
   }
 

@@ -45,6 +45,15 @@ type TaskTimerMainAppClientProps = {
   initialPage: AppPage;
 };
 
+function isMobileTaskToolbarViewport() {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    if (window.matchMedia("(max-width: 980px)").matches) return true;
+    if (window.matchMedia("(pointer: coarse) and (max-device-width: 1024px)").matches) return true;
+  }
+  return window.innerWidth <= 980 || window.screen.width <= 980;
+}
+
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
@@ -116,7 +125,9 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    return isMobileTaskToolbarViewport();
+  });
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [dismissedHighlightParam, setDismissedHighlightParam] = useState<string | null>(null);
   const [leaderboardState, setLeaderboardState] = useState<LeaderboardLoadState>(() =>
@@ -132,16 +143,29 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(max-width: 980px)");
-    const sync = () => setIsMobileViewport(media.matches);
+    if (typeof window === "undefined") return;
+    const media =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(max-width: 980px), (pointer: coarse) and (max-device-width: 1024px)")
+        : null;
+    const sync = () => setIsMobileViewport(isMobileTaskToolbarViewport());
     sync();
-    if (typeof media.addEventListener === "function") {
+    window.addEventListener("resize", sync);
+    window.screen.orientation?.addEventListener?.("change", sync);
+    if (media && typeof media.addEventListener === "function") {
       media.addEventListener("change", sync);
-      return () => media.removeEventListener("change", sync);
+      return () => {
+        window.removeEventListener("resize", sync);
+        window.screen.orientation?.removeEventListener?.("change", sync);
+        media.removeEventListener("change", sync);
+      };
     }
-    media.addListener(sync);
-    return () => media.removeListener(sync);
+    media?.addListener(sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.screen.orientation?.removeEventListener?.("change", sync);
+      media?.removeListener(sync);
+    };
   }, []);
 
   useEffect(() => {

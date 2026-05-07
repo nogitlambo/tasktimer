@@ -73,17 +73,30 @@ type DispatchTaskCardActionOptions = {
   handlers: Partial<TaskCardActionHandlers>;
 };
 
+function formatCompactCheckpointDuration(totalSecondsRaw: number): string {
+  const totalSeconds = Math.max(0, Math.round(Number(totalSecondsRaw) || 0));
+  if (totalSeconds <= 0) return "0m";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+  if (minutes > 0) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
 export function buildTaskProgressModel({
   milestones,
   elapsedSec,
   milestoneUnitSec,
-  unitSuffix,
   timeGoalSec,
 }: {
   milestones: Milestone[];
   elapsedSec: number;
   milestoneUnitSec: number;
-  unitSuffix: string;
   timeGoalSec: number;
 }): TaskProgressModel | null {
   const safeMilestones = Array.isArray(milestones) ? milestones : [];
@@ -100,7 +113,7 @@ export function buildTaskProgressModel({
       kind: "baseline",
       leftPos: 0,
       edgeClass: "mkEdgeL",
-      label: `0${unitSuffix}`,
+      label: formatCompactCheckpointDuration(0),
     },
   ];
 
@@ -114,7 +127,7 @@ export function buildTaskProgressModel({
     const reached = safeElapsedSec >= secTarget;
     const edgeClass = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
     const leftPos = edgeClass === "mkEdgeL" ? 0 : edgeClass === "mkEdgeR" ? 100 : left;
-    const label = `${value}${unitSuffix}`;
+    const label = formatCompactCheckpointDuration(secTarget);
     markers.push({
       kind: "milestone",
       leftPos,
@@ -132,9 +145,7 @@ export function buildTaskProgressModel({
     const goalLeft = Math.max(0, Math.min((Math.max(0, Number(timeGoalSec || 0)) / maxSec) * 100, 100));
     const edgeClass = goalLeft <= 1 ? "mkEdgeL" : goalLeft >= 99 ? "mkEdgeR" : "";
     const leftPos = edgeClass === "mkEdgeL" ? 0 : edgeClass === "mkEdgeR" ? 100 : goalLeft;
-    const goalMinutes = Math.round(goalSec / 60);
-    const label =
-      goalMinutes > 0 && goalMinutes % 60 === 0 ? `${goalMinutes / 60}h` : goalMinutes >= 60 ? `${Math.floor(goalMinutes / 60)}h ${goalMinutes % 60}m` : `${goalMinutes}m`;
+    const label = formatCompactCheckpointDuration(goalSec);
     markers.push({
       kind: "goal",
       leftPos,
@@ -253,7 +264,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     elapsedMs,
     sortedMilestones,
     milestoneUnitSec,
-    milestoneUnitSuffix,
     timeGoalSec,
     checkpointRepeatActiveTaskId,
     activeCheckpointToastTaskId,
@@ -286,7 +296,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     milestones: sortedMilestones,
     elapsedSec,
     milestoneUnitSec,
-    unitSuffix: milestoneUnitSuffix,
     timeGoalSec,
   });
   const progressHTML = renderTaskProgressHtml(progressModel, {
@@ -317,7 +326,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     html: `
         <div class="taskFlipScene">
           <div class="taskFace taskFaceFront">
-            <div class="taskFaceShell taskFaceShellFront">
+            <div class="taskFaceShell taskFaceShellFront" style="--task-history-tab-border-gap:${TASK_HISTORY_TAB_BORDER_GAP_PX}px">
             ${
               hasCheckpointRepeatForTask
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'
@@ -335,7 +344,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
             </div>
             ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" style="--task-history-tab-border-gap:${TASK_HISTORY_TAB_BORDER_GAP_PX}px" ${isHistoryPinned ? "disabled" : ""}>
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
               <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
             ${historyHTML}

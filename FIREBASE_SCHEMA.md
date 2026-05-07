@@ -421,10 +421,12 @@ Allowed fields (`isFriendRequestDocShape`):
 - `senderAvatarId: string | null`
 - `senderRankThumbnailSrc: string | null`
 - `senderCurrentRankId: string | null`
+- `senderTotalXp: int | null`
 - `receiverAlias: string | null`
 - `receiverAvatarId: string | null`
 - `receiverRankThumbnailSrc: string | null`
 - `receiverCurrentRankId: string | null`
+- `receiverTotalXp: int | null`
 - `status: "pending" | "approved" | "declined"`
 - `createdAt: timestamp-like (rules check non-null)`
 - `updatedAt: timestamp-like (rules check non-null)`
@@ -456,7 +458,7 @@ Allowed fields (`isFriendshipDocCreate`):
 
 - `pairId: string`
 - `users: [uidA, uidB]` (2-element list, distinct strings)
-- `profileByUid: map` (contains both users as keys, each value map with `alias`, `avatarId`, `avatarCustomSrc`, `googlePhotoUrl`, `rankThumbnailSrc`, `currentRankId`)
+- `profileByUid: map` (contains both users as keys, each value map with `alias`, `avatarId`, `avatarCustomSrc`, `googlePhotoUrl`, `rankThumbnailSrc`, `currentRankId`, `totalXp`)
 - `createdAt: timestamp`
 - `createdBy: string`
 

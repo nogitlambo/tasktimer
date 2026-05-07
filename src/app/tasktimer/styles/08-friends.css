@@ -701,6 +701,127 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   filter: none !important;
   border-color: transparent !important;
 }
+/* Friends list ladder rows: mirror the global ladder row treatment while preserving details disclosure. */
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
+  display: grid;
+  gap: 10px;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendEntryWrap{
+  padding: 0;
+  background: transparent !important;
+  border: 0;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary.friendIdentityRow{
+  display: grid;
+  grid-template-columns: 34px 54px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 2px 15px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  clip-path: none;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityRank{
+  font-family: var(--font-tight);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 800;
+  color: rgba(233, 252, 255, 0.94);
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityBtn{
+  display: block;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardAvatarButton,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatarWrap{
+  width: 54px;
+  height: 54px;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatarWrap{
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatar{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityNameBtn{
+  display: grid;
+  justify-items: stretch;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityText{
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAlias{
+  display: block;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityMeta{
+  font-size: 12px;
+  line-height: 1.3;
+  color: rgba(188, 214, 230, 0.82);
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityStats{
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardStatPrimary{
+  display: grid;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  min-width: 0;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankLabel{
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: rgba(233, 252, 255, 0.94);
+  white-space: nowrap;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksCountText{
+  display: inline;
+  min-width: 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksCountText::after{
+  content: none;
+}
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksList{
+  margin-top: 8px;
+}
 /* Final Friends shared-task tile layout:
    render each shared task as a 2-column tile and pack multiple tiles per row when space allows. */
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTasksGrid{
@@ -1167,6 +1288,48 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
 }
 
 @media (max-width: 640px){
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
+    gap: 8px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary.friendIdentityRow{
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 2px 12px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityRank,
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityMeta{
+    display: none !important;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardAvatarButton,
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatarWrap{
+    width: 42px;
+    height: 42px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityText{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAlias{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityStats{
+    display: grid;
+    align-items: center;
+    justify-content: flex-end;
+    justify-items: end;
+    text-align: right;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRows,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideList{
     gap:8px;

@@ -673,18 +673,16 @@ body[data-theme="purple"] .rankLadderItemFlag{
 #editOverlay #editTaskDurationPeriodPills .unitBtn{
   border-color: rgba(255,255,255,.08) !important;
   background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
+  font-family: var(--font-orbitron) !important;
   box-shadow: none !important;
 }
 
 #editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
 #editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
-  border-color: rgba(201,255,36,.56) !important;
-  background:
-    linear-gradient(180deg, rgba(201,255,36,.18), rgba(167,219,29,.08) 56%, rgba(201,255,36,.02)) !important;
-  color: #f5f8f4 !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(201,255,36,.12),
-    0 0 12px rgba(201,255,36,.12) !important;
+  border-color: rgba(255,255,255,.86) !important;
+  background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
 }
 
 #editOverlay .row3{
@@ -888,13 +886,6 @@ body[data-theme="purple"] .rankLadderItemFlag{
   opacity: 1;
 }
 
-#editOverlay .taskColorPickerMainRow{
-  display: flex;
-  gap: 6px;
-  align-items: start;
-  width: 100%;
-}
-
 #editOverlay .taskColorPickerMainSwatch{
   width: 54px;
   height: 38px;
@@ -905,7 +896,10 @@ body[data-theme="purple"] .rankLadderItemFlag{
   display: grid;
   grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
   gap: 6px;
-  flex: 1 1 auto;
+}
+
+#editOverlay .taskColorPickerFamiliesMain{
+  width: 100%;
 }
 
 #editOverlay .taskColorPickerFamily{
@@ -922,6 +916,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
 
 #editOverlay .taskColorPickerShadePanels{
   min-width: 0;
+  width: 100%;
 }
 
 #editOverlay .taskColorPickerShadeHeader{
@@ -931,19 +926,44 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 #editOverlay .taskColorPickerBackBtn{
-  min-width: 68px;
+  min-width: 38px;
+  width: 38px;
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+#editOverlay .taskColorPickerBackIcon{
+  width: 18px;
+  height: 18px;
+  display: block;
+  margin: 0 auto;
+  fill: none;
+  stroke: rgba(255,255,255,.92);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.16));
+}
+
+#editOverlay .taskColorPickerBackBtn,
+#editOverlay .taskColorPickerBackBtn:hover,
+#editOverlay .taskColorPickerBackBtn:focus-visible{
+  border-color: rgba(180,190,194,.34) !important;
 }
 
 #editOverlay .taskColorPickerShades{
   display: grid;
   grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
 }
 
 #editOverlay .taskColorPickerShade{
-  width: 54px;
+  width: 100%;
   height: 38px;
-  min-width: 54px;
+  min-width: 0;
 }
 
 #editOverlay .editTaskColorSwatch{
@@ -1504,14 +1524,15 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   #editOverlay .addTaskPlannedStartSelectorRow,
   #addTaskOverlay .addTaskPlannedStartSelectorRow{
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    row-gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
 
   #editOverlay .addTaskPlannedStartTimeCluster,
   #addTaskOverlay .addTaskPlannedStartTimeCluster{
-    width: 100%;
+    width: auto;
     justify-content: flex-start;
   }
 
@@ -1547,12 +1568,36 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (max-width: 640px){
+  #editOverlay #editTaskOnceOffDaySelect,
+  #addTaskOverlay #addTaskOnceOffDaySelect{
+    width: 96px;
+    padding-right: 18px;
+  }
+
+  #editOverlay #editPlannedStartHourSelect,
+  #editOverlay #editPlannedStartMinuteSelect,
+  #addTaskOverlay #addTaskPlannedStartHourSelect,
+  #addTaskOverlay #addTaskPlannedStartMinuteSelect{
+    width: 54px;
+    padding-left: 8px;
+    padding-right: 18px;
+  }
+
+  #editOverlay #editPlannedStartMeridiemSelect,
+  #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
+    width: 60px;
+    padding-left: 8px;
+    padding-right: 18px;
+  }
+
   #editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect,
   #editOverlay #editPlannedStartMeridiemSelect,
+  #editOverlay #editTaskOnceOffDaySelect,
   #addTaskOverlay #addTaskPlannedStartHourSelect,
   #addTaskOverlay #addTaskPlannedStartMinuteSelect,
-  #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
+  #addTaskOverlay #addTaskPlannedStartMeridiemSelect,
+  #addTaskOverlay #addTaskOnceOffDaySelect{
     font-size: 14px;
     line-height: 1.2;
     color: rgba(245,248,244,.94) !important;
@@ -1649,15 +1694,55 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 #editOverlay .msRow{
+  display:flex;
   margin-top:6px;
   padding:5px 6px;
   gap:6px;
   align-items:center;
+  position:relative;
 }
 
 #editOverlay .msRow button{
   width:28px;
   height:28px;
+}
+
+#editOverlay .msRow .msValueCluster,
+#addTaskOverlay .msRow .msValueCluster{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;
+  min-width:0;
+  padding:4px 6px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  border-radius:0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+#editOverlay .msRow .msValueSelect,
+#addTaskOverlay .msRow .msValueSelect{
+  width:auto;
+  min-width:56px;
+  height:30px;
+  padding:4px 22px 4px 8px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(13,15,19,.9);
+  color:rgba(245,248,244,.92);
+  font:inherit;
+  border-radius:0;
+  clip-path:none;
+}
+
+#editOverlay .msRow .msValueUnit,
+#addTaskOverlay .msRow .msValueUnit{
+  color:rgba(190,240,255,.92);
+  font-family: var(--font-orbitron);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
 }
 
 #editOverlay .msRow .checkpointDeleteBtn{
@@ -1730,9 +1815,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 #editOverlay .msRow input[type="text"]{
+  flex:1 1 auto;
+  min-width:0;
   padding:7px 9px;
   min-height:30px;
   font-size: 13px;
+  position:relative;
+  z-index:1;
 }
 
 #editOverlay .msRow{
@@ -1925,11 +2014,21 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #addTaskOverlay .msRow{
+  display:flex;
+  align-items:center;
+  gap:6px;
   padding:8px;
   border:1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+}
+
+#addTaskOverlay .msRow input[type="text"]{
+  flex:1 1 auto;
+  min-width:0;
+  position:relative;
+  z-index:1;
 }
 
 #editOverlay .timerTypePill,
@@ -1943,6 +2042,13 @@ body[data-theme="purple"] .rewardsInfoText{
 #editOverlay .editTaskOnceOffDayField.isHidden,
 #addTaskOverlay .editTaskOnceOffDayField.isHidden{
   display:none;
+}
+
+#editOverlay .editTaskOnceOffDayField,
+#addTaskOverlay .editTaskOnceOffDayField{
+  flex: 0 0 auto;
+  margin: 0;
+  min-width: 0;
 }
 
 #editOverlay .checkpointAlertsGroup{
@@ -1969,7 +2075,8 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #editOverlay #editPlannedStartHourSelect,
 #editOverlay #editPlannedStartMinuteSelect,
-#editOverlay #editPlannedStartMeridiemSelect{
+#editOverlay #editPlannedStartMeridiemSelect,
+#editOverlay #editTaskOnceOffDaySelect{
   min-width: 0;
   appearance: none;
   border-radius: 0;
@@ -1997,9 +2104,14 @@ body[data-theme="purple"] .rewardsInfoText{
   width: 62px;
 }
 
+#editOverlay #editTaskOnceOffDaySelect{
+  width: 112px;
+}
+
 #editOverlay #editPlannedStartHourSelect:focus-visible,
 #editOverlay #editPlannedStartMinuteSelect:focus-visible,
-#editOverlay #editPlannedStartMeridiemSelect:focus-visible{
+#editOverlay #editPlannedStartMeridiemSelect:focus-visible,
+#editOverlay #editTaskOnceOffDaySelect:focus-visible{
   outline: none;
   border-color: rgba(117,231,255,.42);
   box-shadow: inset 0 0 0 1px rgba(117,231,255,.12), 0 0 0 1px rgba(117,231,255,.18);
@@ -2008,9 +2120,11 @@ body[data-theme="purple"] .rewardsInfoText{
 #editOverlay #editPlannedStartHourSelect.isDisabled,
 #editOverlay #editPlannedStartMinuteSelect.isDisabled,
 #editOverlay #editPlannedStartMeridiemSelect.isDisabled,
+#editOverlay #editTaskOnceOffDaySelect.isDisabled,
 #editOverlay #editPlannedStartHourSelect:disabled,
 #editOverlay #editPlannedStartMinuteSelect:disabled,
-#editOverlay #editPlannedStartMeridiemSelect:disabled{
+#editOverlay #editPlannedStartMeridiemSelect:disabled,
+#editOverlay #editTaskOnceOffDaySelect:disabled{
   opacity: .48;
   color: rgba(168,184,196,.72);
   background: rgba(36,44,54,.58);
@@ -2323,7 +2437,8 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay #addTaskPlannedStartHourSelect,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect,
-#addTaskOverlay #addTaskPlannedStartMeridiemSelect{
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect,
+#addTaskOverlay #addTaskOnceOffDaySelect{
   min-width: 0;
   appearance: none;
   border-radius: 0;
@@ -2350,9 +2465,14 @@ body[data-theme="purple"] .rewardsInfoText{
   width: 72px;
 }
 
+#addTaskOverlay #addTaskOnceOffDaySelect{
+  width: 112px;
+}
+
 #addTaskOverlay #addTaskPlannedStartHourSelect:focus-visible,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect:focus-visible,
-#addTaskOverlay #addTaskPlannedStartMeridiemSelect:focus-visible{
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect:focus-visible,
+#addTaskOverlay #addTaskOnceOffDaySelect:focus-visible{
   outline: none;
   border-color: rgba(117,231,255,.42);
   box-shadow: inset 0 0 0 1px rgba(117,231,255,.12), 0 0 0 1px rgba(117,231,255,.18);
@@ -2367,9 +2487,11 @@ body[data-theme="purple"] .rewardsInfoText{
 #addTaskOverlay #addTaskPlannedStartHourSelect.isDisabled,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect.isDisabled,
 #addTaskOverlay #addTaskPlannedStartMeridiemSelect.isDisabled,
+#addTaskOverlay #addTaskOnceOffDaySelect.isDisabled,
 #addTaskOverlay #addTaskPlannedStartHourSelect:disabled,
 #addTaskOverlay #addTaskPlannedStartMinuteSelect:disabled,
-#addTaskOverlay #addTaskPlannedStartMeridiemSelect:disabled{
+#addTaskOverlay #addTaskPlannedStartMeridiemSelect:disabled,
+#addTaskOverlay #addTaskOnceOffDaySelect:disabled{
   opacity: .48;
   color: rgba(168,184,196,.72);
   background: rgba(36,44,54,.58);
@@ -2528,10 +2650,12 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #editOverlay .addTaskDurationPills .unitBtn.small{
-  min-width: 34px;
-  width: 34px;
-  height: 34px;
-  padding: 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  min-height: 28px;
+  padding: 4px 10px !important;
+  aspect-ratio: auto;
   text-align:center;
   position: relative;
   z-index: 5;
@@ -2554,7 +2678,9 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #addTaskOverlay #addTaskDurationPerLabel.isHidden,
-#addTaskOverlay #addTaskDurationPeriodPills.isHidden{
+#addTaskOverlay #addTaskDurationPeriodPills.isHidden,
+#editOverlay .addTaskDurationPerLabel.isHidden,
+#editOverlay #editTaskDurationPeriodPills.isHidden{
   display: none !important;
 }
 
@@ -3024,13 +3150,6 @@ body[data-theme="purple"] .rewardsInfoText{
   opacity: 1;
 }
 
-#addTaskOverlay .taskColorPickerMainRow{
-  display: flex;
-  gap: 6px;
-  align-items: start;
-  width: 100%;
-}
-
 #addTaskOverlay .taskColorPickerMainSwatch{
   width: 54px;
   height: 38px;
@@ -3041,7 +3160,10 @@ body[data-theme="purple"] .rewardsInfoText{
   display: grid;
   grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
   gap: 6px;
-  flex: 1 1 auto;
+}
+
+#addTaskOverlay .taskColorPickerFamiliesMain{
+  width: 100%;
 }
 
 #addTaskOverlay .taskColorPickerFamily{
@@ -3058,6 +3180,7 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #addTaskOverlay .taskColorPickerShadePanels{
   min-width: 0;
+  width: 100%;
 }
 
 #addTaskOverlay .taskColorPickerShadeHeader{
@@ -3067,19 +3190,44 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 #addTaskOverlay .taskColorPickerBackBtn{
-  min-width: 68px;
+  min-width: 38px;
+  width: 38px;
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+#addTaskOverlay .taskColorPickerBackIcon{
+  width: 18px;
+  height: 18px;
+  display: block;
+  margin: 0 auto;
+  fill: none;
+  stroke: rgba(255,255,255,.92);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.16));
+}
+
+#addTaskOverlay .taskColorPickerBackBtn,
+#addTaskOverlay .taskColorPickerBackBtn:hover,
+#addTaskOverlay .taskColorPickerBackBtn:focus-visible{
+  border-color: rgba(180,190,194,.34) !important;
 }
 
 #addTaskOverlay .taskColorPickerShades{
   display: grid;
   grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
 }
 
 #addTaskOverlay .taskColorPickerShade{
-  width: 54px;
+  width: 100%;
   height: 38px;
-  min-width: 54px;
+  min-width: 0;
 }
 
 #addTaskOverlay .editTaskColorSwatch{
@@ -4532,10 +4680,10 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
 
 body[data-theme="purple"] #editOverlay .unitBtn.isOn,
 body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
-  border-color: rgba(138,144,152,.78) !important;
+  border-color: rgba(255,255,255,.86) !important;
   background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
   color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 1px rgba(120,126,134,.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
 }
 
 body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill,
@@ -4544,7 +4692,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
-  border-color: rgba(138,144,152,.78) !important;
+  border-color: rgba(255,255,255,.86) !important;
 }
 
 body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn{
@@ -4589,10 +4737,10 @@ body[data-theme="purple"] #addTaskOverlay #addTaskAdvancedMenu > summary::before
 #addTaskOverlay .editTaskTypePills .timerTypePill.isOn,
 #editOverlay .addTaskDurationPills .unitBtn.small.isOn,
 #addTaskOverlay .addTaskDurationPills .unitBtn.small.isOn{
-  border-color: rgba(138,144,152,.78) !important;
+  border-color: rgba(255,255,255,.86) !important;
   color: #fff !important;
   background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 1px rgba(120,126,134,.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
 }
 
 #editOverlay .editTaskTypePills .timerTypePill:not(.isOn):hover,
@@ -4691,14 +4839,14 @@ body[data-theme="lime"] #addTaskOverlay option:checked:focus{
 }
 body[data-theme="lime"] #editOverlay .unitBtn.isOn,
 body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
-  border-color: rgba(138,144,152,.78) !important;
+  border-color: rgba(255,255,255,.86) !important;
   background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
   color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 1px rgba(120,126,134,.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
 }
 
 body[data-theme="lime"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
-  border-color: rgba(138,144,152,.78) !important;
+  border-color: rgba(255,255,255,.86) !important;
 }
 body[data-theme="lime"] #editOverlay .switch.on{
   background: rgba(219,255,79,.2) !important;
@@ -5070,6 +5218,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 @media (max-width: 640px){
   #editOverlay .editCheckpointAlertBehaviourGrid{
     grid-template-columns: 1fr;
+  }
+
+  #editOverlay .msRow,
+  #editOverlay .msRow .msValueCluster,
+  #editOverlay .msRow .msSkewInput,
+  #addTaskOverlay .msRow,
+  #addTaskOverlay .msRow .msValueCluster,
+  #addTaskOverlay .msRow .msSkewInput{
+    clip-path:none;
   }
 }
 

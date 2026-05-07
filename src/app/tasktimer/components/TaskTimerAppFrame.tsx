@@ -61,6 +61,10 @@ export default function TaskTimerAppFrame({
   }, [pathname, searchParamsKey]);
 
   useEffect(() => {
+    document.body.setAttribute("data-app-page", activePage);
+  }, [activePage]);
+
+  useEffect(() => {
     if (!mobileMenuOpen || typeof window === "undefined") return;
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;

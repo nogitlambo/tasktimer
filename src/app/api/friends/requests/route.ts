@@ -36,12 +36,18 @@ function normalizeField(value: unknown, maxLength: number) {
   return normalized || null;
 }
 
+function normalizeTotalXp(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
+}
+
 function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) {
   return {
     alias: normalizeField(data?.username, 40),
     avatarId: normalizeField(data?.avatarId, 120),
     rankThumbnailSrc: normalizeField(data?.rankThumbnailSrc, 900000),
     currentRankId: normalizeField(data?.rewardCurrentRankId, 120),
+    totalXp: normalizeTotalXp(data?.rewardTotalXp),
   };
 }
 
@@ -111,10 +117,12 @@ export async function POST(req: Request) {
         senderAvatarId: senderProfile.avatarId,
         senderRankThumbnailSrc: senderProfile.rankThumbnailSrc,
         senderCurrentRankId: senderProfile.currentRankId,
+        senderTotalXp: senderProfile.totalXp,
         receiverAlias: receiverProfile.alias,
         receiverAvatarId: receiverProfile.avatarId,
         receiverRankThumbnailSrc: receiverProfile.rankThumbnailSrc,
         receiverCurrentRankId: receiverProfile.currentRankId,
+        receiverTotalXp: receiverProfile.totalXp,
         status: "pending",
         updatedAt: FieldValue.serverTimestamp(),
         respondedAt: null,

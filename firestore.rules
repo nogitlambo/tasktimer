@@ -108,13 +108,14 @@ service cloud.firestore {
 
     function isFriendshipProfileValue(value) {
       return value is map
-      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "googlePhotoUrl", "rankThumbnailSrc", "currentRankId"])
+      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "googlePhotoUrl", "rankThumbnailSrc", "currentRankId", "totalXp"])
       && (!("alias" in value) || value.alias == null || value.alias is string)
       && (!("avatarId" in value) || value.avatarId == null || value.avatarId is string)
       && (!("avatarCustomSrc" in value) || value.avatarCustomSrc == null || value.avatarCustomSrc is string)
       && (!("googlePhotoUrl" in value) || value.googlePhotoUrl == null || value.googlePhotoUrl is string)
       && (!("rankThumbnailSrc" in value) || value.rankThumbnailSrc == null || value.rankThumbnailSrc is string)
-      && (!("currentRankId" in value) || value.currentRankId == null || value.currentRankId is string);
+      && (!("currentRankId" in value) || value.currentRankId == null || value.currentRankId is string)
+      && (!("totalXp" in value) || value.totalXp == null || value.totalXp is int);
     }
 
     function isLeaderboardProfileDoc(userId) {
@@ -453,10 +454,12 @@ service cloud.firestore {
         "senderAvatarId",
         "senderRankThumbnailSrc",
         "senderCurrentRankId",
+        "senderTotalXp",
         "receiverAlias",
         "receiverAvatarId",
         "receiverRankThumbnailSrc",
         "receiverCurrentRankId",
+        "receiverTotalXp",
         "status",
         "createdAt",
         "updatedAt",
@@ -472,10 +475,12 @@ service cloud.firestore {
       && (!("senderAvatarId" in request.resource.data) || request.resource.data.senderAvatarId == null || request.resource.data.senderAvatarId is string)
       && (!("senderRankThumbnailSrc" in request.resource.data) || request.resource.data.senderRankThumbnailSrc == null || request.resource.data.senderRankThumbnailSrc is string)
       && (!("senderCurrentRankId" in request.resource.data) || request.resource.data.senderCurrentRankId == null || request.resource.data.senderCurrentRankId is string)
+      && (!("senderTotalXp" in request.resource.data) || request.resource.data.senderTotalXp == null || request.resource.data.senderTotalXp is int)
       && (!("receiverAlias" in request.resource.data) || request.resource.data.receiverAlias == null || request.resource.data.receiverAlias is string)
       && (!("receiverAvatarId" in request.resource.data) || request.resource.data.receiverAvatarId == null || request.resource.data.receiverAvatarId is string)
       && (!("receiverRankThumbnailSrc" in request.resource.data) || request.resource.data.receiverRankThumbnailSrc == null || request.resource.data.receiverRankThumbnailSrc is string)
       && (!("receiverCurrentRankId" in request.resource.data) || request.resource.data.receiverCurrentRankId == null || request.resource.data.receiverCurrentRankId is string)
+      && (!("receiverTotalXp" in request.resource.data) || request.resource.data.receiverTotalXp == null || request.resource.data.receiverTotalXp is int)
       && (!("status" in request.resource.data) || request.resource.data.status in ["pending", "approved", "declined"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
@@ -498,10 +503,12 @@ service cloud.firestore {
       && request.resource.data.senderAvatarId == resource.data.senderAvatarId
       && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
       && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.senderTotalXp == resource.data.senderTotalXp
       && request.resource.data.receiverAlias == resource.data.receiverAlias
       && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
+      && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;
@@ -522,10 +529,12 @@ service cloud.firestore {
       && request.resource.data.senderAvatarId == resource.data.senderAvatarId
       && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
       && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.senderTotalXp == resource.data.senderTotalXp
       && request.resource.data.receiverAlias == resource.data.receiverAlias
       && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
+      && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == null
       && request.resource.data.respondedAt == null;
@@ -546,10 +555,12 @@ service cloud.firestore {
       && request.resource.data.senderAvatarId == resource.data.senderAvatarId
       && request.resource.data.senderRankThumbnailSrc == resource.data.senderRankThumbnailSrc
       && request.resource.data.senderCurrentRankId == resource.data.senderCurrentRankId
+      && request.resource.data.senderTotalXp == resource.data.senderTotalXp
       && request.resource.data.receiverAlias == resource.data.receiverAlias
       && request.resource.data.receiverAvatarId == resource.data.receiverAvatarId
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
+      && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;

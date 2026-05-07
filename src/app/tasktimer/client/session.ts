@@ -1140,7 +1140,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       milestones: hasMilestones ? ctx.sortMilestones(task.milestones) : [],
       elapsedSec: Math.max(0, elapsedMs) / 1000,
       milestoneUnitSec: sharedTasks.milestoneUnitSec(task),
-      unitSuffix: sharedTasks.milestoneUnitSuffix(task),
       timeGoalSec: hasTimeGoal ? Number(task.timeGoalMinutes || 0) * 60 : 0,
     });
     if (!progressModel) return;
