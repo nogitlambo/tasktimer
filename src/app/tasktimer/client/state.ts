@@ -105,7 +105,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     timeGoalModalFrozenElapsedMs: 0,
     timeGoalReminderAtMsByTaskId: {},
     addTaskWizardStep: 1,
-    addTaskType: null,
+    addTaskType: "recurring",
     addTaskOnceOffDay: "mon",
     addTaskPlannedStartTime: "09:00",
     addTaskDurationValue: 5,

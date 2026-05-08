@@ -29,6 +29,10 @@ type TaskTimerAppFrameProps = {
   };
 };
 
+function formatXpNumber(value: number) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+}
+
 export default function TaskTimerAppFrame({
   activePage,
   children,
@@ -254,7 +258,7 @@ export default function TaskTimerAppFrame({
                     <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                   </div>
                   <strong className="appShellHeaderXpValue">
-                    {rewardsHeader.totalXp} XP
+                    {formatXpNumber(rewardsHeader.totalXp)} XP
                     {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
                   </strong>
                 </button>

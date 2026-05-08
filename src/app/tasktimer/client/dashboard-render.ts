@@ -58,9 +58,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_SEGMENT_GAP_PCT = 1.2;
   const DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT = 1.4;
 
+  function formatXpNumber(value: number) {
+    return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+  }
+
   function syncXpValueAlert(valueEl: HTMLElement | null, totalXp: number, showAlert: boolean, alertClassName: string) {
     if (!valueEl) return;
-    valueEl.textContent = `${totalXp} XP`;
+    valueEl.textContent = `${formatXpNumber(totalXp)} XP`;
     const existingAlert = valueEl.querySelector(`.${alertClassName}`);
     if (showAlert) {
       if (existingAlert) return;

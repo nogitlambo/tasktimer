@@ -650,7 +650,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function resetAddTaskState() {
-    ctx.setAddTaskTypeState(null);
+    ctx.setAddTaskTypeState("recurring");
     ctx.setAddTaskOnceOffDayState("mon");
     ctx.setAddTaskPlannedStartTimeState("09:00");
     ctx.setAddTaskDurationValueState(0);

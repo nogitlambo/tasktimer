@@ -692,7 +692,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsOutgoingRequestsDetails > summary,
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendEntryWrap,
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCard{
-  background: #0d0f13 !important;
+  background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
   border-color: rgba(255,255,255,.08) !important;

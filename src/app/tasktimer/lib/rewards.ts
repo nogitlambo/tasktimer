@@ -156,7 +156,7 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   specialist: "/insignias/006_specialist.png",
   strategist: "/insignias/007_strategist.png",
   director: "/insignias/008_director.png",
-  ascendent: "/insignias/ascendent.png",
+  ascendent: "/insignias/009_ascendent.png",
   commander: "/insignias/commander.png",
   architect: "/insignias/architect.png",
 };
@@ -173,7 +173,7 @@ const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
   specialist: "/insignias/006_specialist.png",
   strategist: "/insignias/007_strategist.png",
   director: "/insignias/008_director.png",
-  ascendent: "/insignias/ascendent.png",
+  ascendent: "/insignias/009_ascendent.png",
   commander: "/insignias/commander.png",
   architect: "/insignias/architect.png",
 };

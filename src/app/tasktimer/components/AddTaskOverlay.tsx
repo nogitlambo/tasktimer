@@ -42,7 +42,7 @@ export default function AddTaskOverlay() {
             </div>
 
             <div className="unitButtons timerTypePills editTaskTypePills" id="addTaskTypePills" role="group" aria-label="Task type">
-              <button className="btn btn-ghost small unitBtn timerTypePill" id="addTaskTypeRecurringBtn" type="button" aria-pressed="false">
+              <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="addTaskTypeRecurringBtn" type="button" aria-pressed="true">
                 Recurring
               </button>
               <button className="btn btn-ghost small unitBtn timerTypePill" id="addTaskTypeOnceOffBtn" type="button" aria-pressed="false">

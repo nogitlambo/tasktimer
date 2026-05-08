@@ -517,7 +517,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   margin-left:auto;
   padding:5px 10px;
   overflow:hidden;
-  border:1px solid rgba(255,255,255,.07);
+  border:0;
   border-radius:0;
   background:transparent;
   box-shadow:none;
@@ -557,7 +557,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width:clamp(64px, 12vw, 112px);
   height:9px;
   overflow:hidden;
-  border-radius:999px;
+  border-radius:0;
   border:1px solid rgba(255,255,255,.18);
   background:#0d1118;
   box-shadow:none;
@@ -593,8 +593,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   outline-offset:4px;
 }
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaShell{
-  width:24px;
-  height:24px;
+  width:36px;
+  height:36px;
   display:block;
   flex:0 0 auto;
 }
@@ -610,6 +610,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   text-overflow:ellipsis;
   white-space:nowrap;
   font-family:var(--font-orbitron);
+  text-transform:uppercase;
   font-size:10px;
   line-height:1;
   letter-spacing:.08em;
