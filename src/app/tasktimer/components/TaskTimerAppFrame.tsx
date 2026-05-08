@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
@@ -8,6 +8,7 @@ import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import { RANK_LADDER, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
+import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
@@ -42,6 +43,8 @@ export default function TaskTimerAppFrame({
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const railPage = activePage === "schedule" ? "tasks" : activePage;
@@ -94,6 +97,19 @@ export default function TaskTimerAppFrame({
     };
   }, [mobileMenuOpen]);
 
+  const handleMobileSignOut = useCallback(async () => {
+    if (signOutBusy) return;
+    setMobileMenuOpen(false);
+    setSignOutBusy(true);
+    setSignOutError("");
+    try {
+      await handleSignOutFlow();
+    } catch (error: unknown) {
+      setSignOutError(getErrorMessage(error, "Could not sign out."));
+      setSignOutBusy(false);
+    }
+  }, [signOutBusy]);
+
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch App">
       <div className="topbar topbarBrandOnly taskLaunchAppTopbar">
@@ -145,7 +161,7 @@ export default function TaskTimerAppFrame({
           className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isOn" : ""}`}
           id="menuIcon"
           type="button"
-          aria-label={mobileMenuOpen ? "Close settings menu" : "Open settings menu"}
+          aria-label={mobileMenuOpen ? "Close app menu" : "Open app menu"}
           aria-expanded={mobileMenuOpen}
           aria-controls="mobileSettingsMenu"
           onClick={() => setMobileMenuOpen((current) => !current)}
@@ -162,7 +178,7 @@ export default function TaskTimerAppFrame({
           id="mobileSettingsMenu"
           aria-hidden={mobileMenuOpen ? "false" : "true"}
         >
-          <div className="taskLaunchMobileMenuList" role="menu" aria-label="Settings menu">
+          <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
             <a
               className="menuItem taskLaunchMobileMenuItem"
               href={resolveTaskTimerRouteHref("/settings")}
@@ -177,6 +193,27 @@ export default function TaskTimerAppFrame({
               />
               <span className="taskLaunchMobileMenuItemText">Settings</span>
             </a>
+            <button
+              className="menuItem taskLaunchMobileMenuItem"
+              type="button"
+              role="menuitem"
+              aria-label="Sign Out"
+              onClick={handleMobileSignOut}
+              disabled={signOutBusy}
+            >
+              <AppImg
+                className="taskLaunchMobileMenuItemIcon"
+                src="/icons/icons_default/signout.png"
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="taskLaunchMobileMenuItemText">{signOutBusy ? "Signing Out" : "Sign Out"}</span>
+            </button>
+            {signOutError ? (
+              <div className="settingsDetailNote taskLaunchMobileMenuError" role="alert" aria-live="polite">
+                {signOutError}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -201,7 +238,7 @@ export default function TaskTimerAppFrame({
                       imageClassName="appShellHeaderXpInsigniaImg"
                       placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
                       alt=""
-                      size={16}
+                      size={24}
                       aria-hidden
                     />
                     <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>

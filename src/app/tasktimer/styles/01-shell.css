@@ -519,7 +519,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   overflow:hidden;
   border:1px solid rgba(255,255,255,.07);
   border-radius:0;
-  background:#151922;
+  background:transparent;
   box-shadow:none;
   box-sizing:border-box;
 }
@@ -593,8 +593,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   outline-offset:4px;
 }
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaShell{
-  width:16px;
-  height:16px;
+  width:24px;
+  height:24px;
   display:block;
   flex:0 0 auto;
 }
@@ -710,9 +710,9 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   pointer-events:none;
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarWrap{
-  width:22px;
-  height:22px;
-  flex:0 0 22px;
+  width:49.5px;
+  height:49.5px;
+  flex:0 0 49.5px;
   display:grid;
   place-items:center;
   overflow:hidden;
@@ -733,7 +733,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   display:grid;
   place-items:center;
   font-family:var(--font-orbitron);
-  font-size:9px;
+  font-size:19.5px;
   font-weight:700;
   letter-spacing:.06em;
   color:rgba(247,251,255,.9);
@@ -991,6 +991,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
 
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar{
     gap:12px;
+    padding-bottom:0;
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar{
@@ -1172,6 +1173,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     clip-path: none !important;
   }
 
+  .taskLaunchMobileMenuItem:disabled{
+    cursor: wait;
+    opacity: .72;
+  }
+
   .taskLaunchMobileMenuItemIcon{
     display: block;
     width: 20px;
@@ -1187,6 +1193,11 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     letter-spacing: .06em;
     text-transform: uppercase;
     color: inherit;
+    text-align: center;
+  }
+
+  .taskLaunchMobileMenuError{
+    margin: 0;
     text-align: center;
   }
 

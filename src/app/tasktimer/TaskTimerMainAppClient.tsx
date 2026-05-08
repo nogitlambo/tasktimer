@@ -100,7 +100,7 @@ function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
 }
 
 function LeaderboardRankInsignia({ profile }: { profile: LeaderboardProfile }) {
-  const descriptor = getRankThumbnailDescriptor(profile.rewardCurrentRankId || "unranked");
+  const descriptor = getRankThumbnailDescriptor(getLeaderboardResolvedRank(profile).id);
   return (
     <span className={`leaderboardRankInsignia${descriptor.kind === "placeholder" ? " leaderboardRankInsigniaPlaceholder" : ""}`} aria-hidden="true">
       {descriptor.kind === "image" ? <AppImg className="leaderboardRankInsigniaImg" src={descriptor.src} alt="" /> : descriptor.label}

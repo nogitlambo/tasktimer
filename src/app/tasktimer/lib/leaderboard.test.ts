@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getLeaderboardResolvedRank, type LeaderboardProfile } from "./leaderboard";
+import { getRankThumbnailDescriptor } from "./rewards";
 
 function createProfile(overrides: Partial<LeaderboardProfile> = {}): LeaderboardProfile {
   return {
@@ -32,6 +33,20 @@ describe("getLeaderboardResolvedRank", () => {
     expect(getLeaderboardResolvedRank(profile)).toMatchObject({
       id: "engineer",
       label: "Engineer",
+    });
+  });
+
+  it("resolves the rank insignia from XP instead of a stale stored rank id", () => {
+    const profile = createProfile({
+      rewardCurrentRankId: "unranked",
+      rewardTotalXp: 12000,
+    });
+    const resolvedRank = getLeaderboardResolvedRank(profile);
+
+    expect(resolvedRank.id).toBe("director");
+    expect(getRankThumbnailDescriptor(resolvedRank.id)).toMatchObject({
+      kind: "image",
+      src: "/insignias/008_director.png",
     });
   });
 });

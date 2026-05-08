@@ -17,7 +17,7 @@ import {
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
 import { getCalendarWeekStartMs } from "../lib/history";
-import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
+import { getRankForXp, getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
 
@@ -1002,9 +1002,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           .join("");
         const taskCount = row.summaries.length;
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
-        const rankLabel = getRankLabelById(row.currentRankId);
+        const resolvedRank = getRankForXp(row.totalXp);
+        const rankLabel = getRankLabelById(resolvedRank.id);
         const totalXpLabel = `${row.totalXp.toLocaleString()} XP`;
-        const rankInsigniaHtml = renderRankInsigniaMarkup(row.currentRankId);
+        const rankInsigniaHtml = renderRankInsigniaMarkup(resolvedRank.id);
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow leaderboardRow">

@@ -715,6 +715,8 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
 }
 #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard{
   border: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 /* Friends list ladder rows: mirror the global ladder row treatment while preserving details disclosure. */
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
