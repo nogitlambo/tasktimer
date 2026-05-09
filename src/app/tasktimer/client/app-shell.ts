@@ -600,8 +600,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (e?.defaultPrevented) return;
       applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
     });
-    ctx.on(ctx.els.openScheduleBtn, "click", () => applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" }));
-    ctx.on(ctx.els.closeScheduleBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
       if (e?.defaultPrevented) return;
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" });
@@ -628,6 +626,19 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     });
 
     ctx.on(document as any, "click", (e: any) => {
+      if (e?.defaultPrevented) return;
+      const openScheduleBtn = e?.target?.closest?.("#openScheduleBtn");
+      if (openScheduleBtn) {
+        e?.preventDefault?.();
+        applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" });
+        return;
+      }
+      const closeScheduleBtn = e?.target?.closest?.("#closeScheduleBtn");
+      if (closeScheduleBtn) {
+        e?.preventDefault?.();
+        applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
+        return;
+      }
       const badge = e?.target?.closest?.("#signedInHeaderBadge");
       if (!badge) return;
       e?.preventDefault?.();

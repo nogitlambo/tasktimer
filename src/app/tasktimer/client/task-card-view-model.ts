@@ -367,6 +367,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${manualEntryLabel}</button>
                 <button class="taskMenuItem" data-action="collapse" title="${escapeHtml(collapseLabel)}" type="button">${escapeHtml(collapseLabel)}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
+                <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>Archive</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
               </div>

@@ -1,4 +1,4 @@
-import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
+import { normalizeTaskStatusState, type DeletedTaskMeta, type HistoryByTaskId, type HistoryEntry, type LiveSessionsByTaskId, type LiveTaskSession, type Task } from "./types";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
@@ -440,7 +440,20 @@ function loadShadowLiveSessions(uid = scopedUid()): LiveSessionsByTaskId {
 
 function loadShadowDeletedMeta(uid = scopedUid()): DeletedTaskMeta {
   const parsed = loadScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, uid, {});
-  return parsed && typeof parsed === "object" ? parsed : {};
+  if (!parsed || typeof parsed !== "object") return {};
+  const next: DeletedTaskMeta = {};
+  Object.entries(parsed).forEach(([taskId, row]) => {
+    if (!row || typeof row !== "object") return;
+    const normalizedSnapshot = normalizeTaskShape((row as { taskSnapshot?: Task | null }).taskSnapshot);
+    next[taskId] = {
+      name: String((row as { name?: unknown }).name || "").trim() || "Task",
+      color: typeof (row as { color?: unknown }).color === "string" ? String((row as { color?: unknown }).color) : null,
+      deletedAt: Math.max(0, Math.floor(Number((row as { deletedAt?: unknown }).deletedAt) || 0)),
+      state: normalizeTaskStatusState((row as { state?: unknown }).state),
+      ...(normalizedSnapshot ? { taskSnapshot: normalizedSnapshot } : {}),
+    };
+  });
+  return next;
 }
 
 function loadShadowPreferences(uid?: string): CachedPreferences {
@@ -505,7 +518,19 @@ function saveShadowLiveSessions(liveSessionsByTaskId: LiveSessionsByTaskId): voi
 }
 
 function saveShadowDeletedMeta(meta: DeletedTaskMeta): void {
-  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, scopedUid(), meta || {});
+  const next: DeletedTaskMeta = {};
+  Object.entries(meta || {}).forEach(([taskId, row]) => {
+    if (!row) return;
+    const normalizedSnapshot = normalizeTaskShape(row.taskSnapshot);
+    next[taskId] = {
+      name: String(row.name || "").trim() || "Task",
+      color: row.color == null ? null : String(row.color),
+      deletedAt: Math.max(0, Math.floor(Number(row.deletedAt) || 0)),
+      state: normalizeTaskStatusState(row.state),
+      ...(normalizedSnapshot ? { taskSnapshot: normalizedSnapshot } : {}),
+    };
+  });
+  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, scopedUid(), next);
 }
 
 function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
@@ -1781,6 +1806,11 @@ export function saveTasks(tasks: Task[], opts?: SaveTasksOptions): void {
   const next = cloneTasks(tasks);
   const prevById = new Map(cloneTasks(cachedTasks || []).map((t) => [String(t.id || ""), t]));
   const nextById = new Map(next.map((t) => [String(t.id || ""), t]));
+  nextById.forEach((_task, taskId) => {
+    if (!taskId) return;
+    queuedTaskDeletes.delete(taskId);
+    clearPendingTaskDelete(taskId);
+  });
   cachedTasks = next;
   saveShadowTasks(cachedTasks);
   const removedTaskIds = Array.from(
@@ -1966,7 +1996,7 @@ export function subscribeCloudTaskLiveSessions(uid: string, taskIds: string[], l
 
 export function saveDeletedMeta(meta: DeletedTaskMeta): void {
   const prev = cachedDeletedMeta || {};
-  const next = meta || {};
+  const next = loadShadowDeletedMetaFromInput(meta);
   cachedDeletedMeta = next;
   saveShadowDeletedMeta(cachedDeletedMeta);
   const uid = currentUid();
@@ -1985,6 +2015,22 @@ export function saveDeletedMeta(meta: DeletedTaskMeta): void {
       });
     }
   }
+}
+
+function loadShadowDeletedMetaFromInput(meta: DeletedTaskMeta | null | undefined): DeletedTaskMeta {
+  const next: DeletedTaskMeta = {};
+  Object.entries(meta || {}).forEach(([taskId, row]) => {
+    if (!row) return;
+    const normalizedSnapshot = normalizeTaskShape(row.taskSnapshot);
+    next[taskId] = {
+      name: String(row.name || "").trim() || "Task",
+      color: row.color == null ? null : String(row.color),
+      deletedAt: Math.max(0, Math.floor(Number(row.deletedAt) || 0)),
+      state: normalizeTaskStatusState(row.state),
+      ...(normalizedSnapshot ? { taskSnapshot: normalizedSnapshot } : {}),
+    };
+  });
+  return next;
 }
 
 export async function flushPendingCloudWrites(): Promise<void> {

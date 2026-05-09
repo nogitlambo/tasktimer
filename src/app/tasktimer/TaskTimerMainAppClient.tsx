@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
@@ -18,6 +18,7 @@ import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
+import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
@@ -26,10 +27,12 @@ import { ACCOUNT_AVATAR_UPDATED_EVENT } from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
+  isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
   type LeaderboardProfile,
@@ -38,7 +41,6 @@ import {
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
-  getRankThumbnailDescriptor,
   normalizeRewardProgress,
 } from "./lib/rewards";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
@@ -65,12 +67,16 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
   topEntries: [],
   risingEntries: [],
   rivalEntries: [],
+  weeklyEntries: [],
   currentUserEntry: null,
   currentUserRank: null,
   currentUserGapToNextXp: null,
+  currentUserWeeklyEntry: null,
+  currentUserWeeklyRank: null,
 };
 
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
+type LeaderboardView = "global" | "weekly";
 
 function formatLeaderboardXp(xpRaw: number): string {
   return `${new Intl.NumberFormat().format(Math.max(0, Math.floor(xpRaw || 0)))} XP`;
@@ -100,11 +106,18 @@ function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
 }
 
 function LeaderboardRankInsignia({ profile }: { profile: LeaderboardProfile }) {
-  const descriptor = getRankThumbnailDescriptor(getLeaderboardResolvedRank(profile).id);
+  const resolvedRank = getLeaderboardResolvedRank(profile);
   return (
-    <span className={`leaderboardRankInsignia${descriptor.kind === "placeholder" ? " leaderboardRankInsigniaPlaceholder" : ""}`} aria-hidden="true">
-      {descriptor.kind === "image" ? <AppImg className="leaderboardRankInsigniaImg" src={descriptor.src} alt="" /> : descriptor.label}
-    </span>
+    <RankThumbnail
+      rankId={resolvedRank.id}
+      storedThumbnailSrc=""
+      className="leaderboardRankInsignia"
+      imageClassName="leaderboardRankInsigniaImg"
+      placeholderClassName="leaderboardRankInsigniaPlaceholder"
+      alt=""
+      size={30}
+      aria-hidden
+    />
   );
 }
 
@@ -147,9 +160,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
+  const leaderboardStateRef = useRef<LeaderboardLoadState>("error");
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
+
+  useEffect(() => {
+    leaderboardStateRef.current = leaderboardState;
+  }, [leaderboardState]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -226,8 +245,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     let activeUid = String(auth.currentUser?.uid || "").trim();
     let refreshTimer: number | null = null;
 
-    const loadForUid = async (uid: string) => {
-      setLeaderboardState("loading");
+    const loadForUid = async (uid: string, options?: { preserveReadyState?: boolean }) => {
+      const preserveReadyState = options?.preserveReadyState === true;
+      if (!preserveReadyState || leaderboardStateRef.current !== "ready") {
+        setLeaderboardState("loading");
+      }
       setLeaderboardError(null);
       try {
         const cachedPreferences = workspaceRepository.loadCachedPreferences();
@@ -237,7 +259,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             historyByTaskId: workspaceRepository.loadHistory(),
             liveSessionsByTaskId: workspaceRepository.loadLiveSessions(),
             rewards: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
-          })
+          }),
+          { dispatchUpdatedEvent: false }
         ).catch(() => {});
         const nextData = await loadLeaderboardScreenData(uid);
         if (cancelled || activeUid !== uid) return;
@@ -255,7 +278,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (refreshTimer != null) window.clearInterval(refreshTimer);
       refreshTimer = window.setInterval(() => {
         if (!activeUid || document.visibilityState !== "visible") return;
-        void loadForUid(activeUid);
+        void loadForUid(activeUid, { preserveReadyState: true });
       }, 60_000);
     };
 
@@ -274,9 +297,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     const handleProfileUpdated = (event: Event) => {
       if (!activeUid) return;
+      if (event.type === "visibilitychange" && document.visibilityState !== "visible") return;
       const detailUid = String((event as CustomEvent<{ uid?: string }>).detail?.uid || "").trim();
       if (detailUid && detailUid !== activeUid) return;
-      void loadForUid(activeUid);
+      void loadForUid(activeUid, { preserveReadyState: true });
     };
 
     if (typeof window !== "undefined") {
@@ -304,6 +328,18 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     };
   }, []);
 
+  const weeklyRows = useMemo(
+    () =>
+      buildWeeklyLeaderboardRows({
+        weeklyEntries: leaderboardData.weeklyEntries,
+        currentUserEntry: leaderboardData.currentUserWeeklyEntry,
+        currentUserWeeklyRank: leaderboardData.currentUserWeeklyRank,
+      }),
+    [leaderboardData.currentUserWeeklyEntry, leaderboardData.currentUserWeeklyRank, leaderboardData.weeklyEntries]
+  );
+  const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
+  const weeklyTableRows = weeklyRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
+  const selectedWeeklyRow = selectedLeaderboardProfile ? weeklyRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
   const selectedLeaderboardRank =
     selectedLeaderboardProfile && leaderboardData.currentUserEntry?.uid === selectedLeaderboardProfile.uid
@@ -312,7 +348,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         ? leaderboardData.topEntries.findIndex((entry) => entry.uid === selectedLeaderboardProfile.uid) + 1
         : null;
   const selectedLeaderboardRankLabel =
-    selectedLeaderboardRank && selectedLeaderboardRank > 0 ? `#${selectedLeaderboardRank}` : "--";
+    leaderboardView === "weekly" && selectedWeeklyRow
+      ? selectedWeeklyRow.rankLabel
+      : selectedLeaderboardRank && selectedLeaderboardRank > 0
+        ? `#${selectedLeaderboardRank}`
+        : "--";
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile
     ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
     : "";
@@ -321,6 +361,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
+  };
+
+  const openWeeklyLeaderboardProfile = (profile: LeaderboardProfile) => {
+    if (isWeeklyLeaderboardPlaceholderProfile(profile)) return;
+    setSelectedLeaderboardProfile(profile);
   };
 
   const mobileToolbar: ReactNode = useMemo(() => {
@@ -347,7 +392,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </button>
           </div>
           <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="New Task" title="New Task" type="button">
-            <span className="taskScreenHeaderBtnText">+ New Task</span>
+            <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
           </button>
           <div className="tasksModeControlGroup" aria-label="Task ordering controls">
             <details className="tasksModeMenu" id="taskOrderByMenu">
@@ -429,7 +474,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   title="New Task"
                   type="button"
                 >
-                  <span className="taskScreenHeaderBtnText">+ New Task</span>
+                  <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
@@ -474,6 +519,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="dashboardTopRow">
                   <div className="dashboardEditActions">
                     <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
+                      <AppImg
+                        className="friendRequestBtnIcon"
+                        src="/icons/icons_default/add-friend.png"
+                        alt=""
+                        aria-hidden="true"
+                      />
                       Add Friend
                     </button>
                   </div>
@@ -531,111 +582,186 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboard page">
             <div className="dashboardShell leaderboardShell">
-              <div className="dashboardGrid leaderboardGrid">
-                <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
-                  <div className="leaderboardHeroHead">
-                    <div>
-                      <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
-                      <h3 className="dashboardCardTitle">Top focus performers</h3>
+              <div className="leaderboardViewHeader">
+                <div>
+                  <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Leaderboard</p>
+                  <h3 className="dashboardCardTitle">{leaderboardView === "weekly" ? "Weekly focus board" : "Top focus performers"}</h3>
+                </div>
+                <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
+                  <button
+                    className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "global" ? " isOn" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={leaderboardView === "global"}
+                    onClick={() => setLeaderboardView("global")}
+                  >
+                    Global
+                  </button>
+                  <button
+                    className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "weekly" ? " isOn" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={leaderboardView === "weekly"}
+                    onClick={() => setLeaderboardView("weekly")}
+                  >
+                    Weekly
+                  </button>
+                </div>
+              </div>
+
+              {leaderboardView === "weekly" ? (
+                <section className="dashboardCard leaderboardCard leaderboardWeeklyBoard" aria-label="Weekly leaderboard rankings">
+                  <div className="leaderboardWeeklyIntro">
+                    <p className="dashboardCardEyebrow">Weekly ladder</p>
+                    <p className="leaderboardHeroMeta">Ranked by XP earned this week from focused task sessions.</p>
+                  </div>
+                  {leaderboardState === "ready" ? (
+                    <>
+                      <div className="leaderboardWeeklyPodium" aria-label="Weekly top three">
+                        {weeklyPodiumRows.map((row) => (
+                          <button
+                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}`}
+                            type="button"
+                            key={row.profile.uid}
+                            disabled={row.isPlaceholder}
+                            aria-disabled={row.isPlaceholder}
+                            onClick={() => openWeeklyLeaderboardProfile(row.profile)}
+                          >
+                            <span className="leaderboardWeeklyPodiumAvatar">
+                              <LeaderboardAvatar profile={row.profile} />
+                              <LeaderboardRankInsignia profile={row.profile} />
+                            </span>
+                            <span className="leaderboardWeeklyPodiumIdentity">
+                              <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
+                              <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                            </span>
+                            <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="leaderboardWeeklyTableWrap">
+                        <div className="leaderboardWeeklyTable" role="table" aria-label="Weekly leaderboard table">
+                          <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
+                            <span role="columnheader">Rank</span>
+                            <span role="columnheader">Player</span>
+                            <span role="columnheader">Weekly XP</span>
+                            <span role="columnheader">Total XP</span>
+                            <span role="columnheader">Time</span>
+                            <span role="columnheader">Streak</span>
+                          </div>
+                          {weeklyTableRows.map((row) => (
+                            <button
+                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}`}
+                              role="row"
+                              type="button"
+                              key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
+                              disabled={row.isPlaceholder}
+                              aria-disabled={row.isPlaceholder}
+                              onClick={() => openWeeklyLeaderboardProfile(row.profile)}
+                            >
+                              <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
+                              <span className="leaderboardWeeklyPlayerCell" role="cell">
+                                <LeaderboardAvatar profile={row.profile} small />
+                                <span className="leaderboardWeeklyPlayerText">
+                                  <strong>{row.playerLabel}</strong>
+                                  <span>{getLeaderboardRankLabel(row.profile)}</span>
+                                </span>
+                              </span>
+                              <span role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                              <span role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                              <span role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
+                              <span role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="leaderboardPanelText">
+                      {leaderboardState === "loading"
+                        ? "Loading weekly leaderboard."
+                        : leaderboardState === "signedOut"
+                          ? "Sign in to view the weekly leaderboard."
+                          : leaderboardState === "error"
+                            ? leaderboardError || "Could not load the leaderboard."
+                            : "No weekly XP has been published yet. Launch a task to climb this board."}
                     </div>
-                  </div>
-                  <div className="leaderboardRows">
-                    {leaderboardData.topEntries.length ? (
-                      leaderboardData.topEntries.map((entry, index) => (
-                        <article
-                          className="leaderboardRow"
-                          key={entry.uid}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`View ${getLeaderboardLabel(entry)} leaderboard position`}
-                          onClick={() => setSelectedLeaderboardProfile(entry)}
-                          onKeyDown={(event) => {
-                            if (event.key !== "Enter" && event.key !== " ") return;
-                            event.preventDefault();
-                            setSelectedLeaderboardProfile(entry);
-                          }}
-                        >
-                          <div className="leaderboardRank">{index + 1}</div>
-                          <span className="leaderboardAvatarButton">
-                            <LeaderboardAvatar profile={entry} />
-                          </span>
-                          <div className="leaderboardIdentity">
-                            <span className="leaderboardNameButton">
-                              <strong className="leaderboardName">{getLeaderboardLabel(entry)}</strong>
-                            </span>
-                            <span className="leaderboardMeta">
-                              {formatDashboardDurationShort(entry.totalFocusMs)} focused - {formatLeaderboardStreak(entry.streakDays)}
-                            </span>
-                          </div>
-                          <div className="leaderboardStats">
-                            <span className="leaderboardStatPrimary">
-                              <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
-                              <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
-                            </span>
-                          </div>
-                          <LeaderboardRankInsignia profile={entry} />
-                        </article>
-                      ))
-                    ) : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading"
-                          ? "Loading leaderboard standings."
-                          : leaderboardState === "signedOut"
-                            ? "Sign in to view the global leaderboard."
-                            : leaderboardState === "error"
-                              ? leaderboardError || "Could not load the leaderboard."
-                              : "No leaderboard data yet. Launch a task to publish the first public snapshot."}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </section>
-
-                <section className="dashboardCard leaderboardCard" aria-label="Rising this week">
-                  <p className="dashboardCardEyebrow">Rising this week</p>
-                  <h3 className="dashboardCardTitle">Fastest climbers</h3>
-                  <div className="leaderboardSideList">
-                    {leaderboardData.risingEntries.length ? (
-                      leaderboardData.risingEntries.map((entry) => (
-                        <article className="leaderboardSideItem" key={entry.uid}>
-                          <LeaderboardAvatar profile={entry} small />
-                          <div className="leaderboardSideText">
-                            <strong>{getLeaderboardLabel(entry)}</strong>
-                            <span>{formatLeaderboardStreak(entry.streakDays)}</span>
-                          </div>
-                          <span className="leaderboardSideMetricWrap">
-                            <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
-                            <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
-                          </span>
-                          <LeaderboardRankInsignia profile={entry} />
-                        </article>
-                      ))
-                    ) : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading"
-                          ? "Loading this week's movers."
-                          : "Too few public profiles to show rising users yet."}
+              ) : (
+                <div className="dashboardGrid leaderboardGrid">
+                  <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
+                    <div className="leaderboardHeroHead">
+                      <div>
+                        <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
+                        <h3 className="dashboardCardTitle">Top focus performers</h3>
                       </div>
-                    )}
-                  </div>
-                </section>
+                    </div>
+                    <div className="leaderboardRows">
+                      {leaderboardData.topEntries.length ? (
+                        leaderboardData.topEntries.map((entry, index) => (
+                          <article
+                            className="leaderboardRow"
+                            key={entry.uid}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View ${getLeaderboardLabel(entry)} leaderboard position`}
+                            onClick={() => setSelectedLeaderboardProfile(entry)}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ") return;
+                              event.preventDefault();
+                              setSelectedLeaderboardProfile(entry);
+                            }}
+                          >
+                            <div className={`leaderboardRank${index === 0 ? " leaderboardRankRibbon" : ""}`}>
+                              {index === 0 ? <AppImg className="leaderboardRankRibbonImg" src="/icons/achievement/ribbon1.png" alt="" /> : index + 1}
+                            </div>
+                            <span className="leaderboardAvatarButton">
+                              <LeaderboardAvatar profile={entry} />
+                            </span>
+                            <div className="leaderboardIdentity">
+                              <span className="leaderboardNameButton">
+                                <strong className="leaderboardName">{getLeaderboardLabel(entry)}</strong>
+                              </span>
+                              <span className="leaderboardMeta">
+                                {formatDashboardDurationShort(entry.totalFocusMs)} focused - {formatLeaderboardStreak(entry.streakDays)}
+                              </span>
+                            </div>
+                            <div className="leaderboardStats">
+                              <span className="leaderboardStatPrimary">
+                                <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
+                                <span className="leaderboardXp">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
+                              </span>
+                            </div>
+                            <LeaderboardRankInsignia profile={entry} />
+                          </article>
+                        ))
+                      ) : (
+                        <div className="leaderboardPanelText">
+                          {leaderboardState === "loading"
+                            ? "Loading leaderboard standings."
+                            : leaderboardState === "signedOut"
+                              ? "Sign in to view the global leaderboard."
+                              : leaderboardState === "error"
+                                ? leaderboardError || "Could not load the leaderboard."
+                                : "No leaderboard data yet. Launch a task to publish the first public snapshot."}
+                        </div>
+                      )}
+                    </div>
+                  </section>
 
-                <section className="dashboardCard leaderboardCard" aria-label="Closest rivals">
-                  <p className="dashboardCardEyebrow">Closest rivals</p>
-                  <h3 className="dashboardCardTitle">Nearby on the ladder</h3>
-                  <div className="leaderboardSideList">
-                    {leaderboardData.rivalEntries.length && leaderboardData.currentUserEntry ? (
-                      leaderboardData.rivalEntries.map((entry) => {
-                        const gap = Math.abs(entry.rewardTotalXp - leaderboardData.currentUserEntry!.rewardTotalXp);
-                        const gapLabel =
-                          entry.rewardTotalXp >= leaderboardData.currentUserEntry!.rewardTotalXp
-                            ? `${new Intl.NumberFormat().format(gap)} XP ahead`
-                            : `${new Intl.NumberFormat().format(gap)} XP behind`;
-                        return (
+                  <section className="dashboardCard leaderboardCard" aria-label="Rising this week">
+                    <p className="dashboardCardEyebrow">Rising this week</p>
+                    <h3 className="dashboardCardTitle">Fastest climbers</h3>
+                    <div className="leaderboardSideList">
+                      {leaderboardData.risingEntries.length ? (
+                        leaderboardData.risingEntries.map((entry) => (
                           <article className="leaderboardSideItem" key={entry.uid}>
                             <LeaderboardAvatar profile={entry} small />
                             <div className="leaderboardSideText">
                               <strong>{getLeaderboardLabel(entry)}</strong>
-                              <span>{gapLabel}</span>
+                              <span>{formatLeaderboardStreak(entry.streakDays)}</span>
                             </div>
                             <span className="leaderboardSideMetricWrap">
                               <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
@@ -643,20 +769,56 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                             <LeaderboardRankInsignia profile={entry} />
                           </article>
-                        );
-                      })
-                    ) : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading"
-                          ? "Loading nearby rivals."
-                          : leaderboardData.currentUserEntry
-                            ? "Too few ranked users to calculate nearby rivals yet."
-                            : "Your public profile needs to sync before rivals can be calculated."}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              </div>
+                        ))
+                      ) : (
+                        <div className="leaderboardPanelText">
+                          {leaderboardState === "loading"
+                            ? "Loading this week's movers."
+                            : "Too few public profiles to show rising users yet."}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="dashboardCard leaderboardCard" aria-label="Closest rivals">
+                    <p className="dashboardCardEyebrow">Closest rivals</p>
+                    <h3 className="dashboardCardTitle">Nearby on the ladder</h3>
+                    <div className="leaderboardSideList">
+                      {leaderboardData.rivalEntries.length && leaderboardData.currentUserEntry ? (
+                        leaderboardData.rivalEntries.map((entry) => {
+                          const gap = Math.abs(entry.rewardTotalXp - leaderboardData.currentUserEntry!.rewardTotalXp);
+                          const gapLabel =
+                            entry.rewardTotalXp >= leaderboardData.currentUserEntry!.rewardTotalXp
+                              ? `${new Intl.NumberFormat().format(gap)} XP ahead`
+                              : `${new Intl.NumberFormat().format(gap)} XP behind`;
+                          return (
+                            <article className="leaderboardSideItem" key={entry.uid}>
+                              <LeaderboardAvatar profile={entry} small />
+                              <div className="leaderboardSideText">
+                                <strong>{getLeaderboardLabel(entry)}</strong>
+                                <span>{gapLabel}</span>
+                              </div>
+                              <span className="leaderboardSideMetricWrap">
+                                <span className="leaderboardRankLabel">{getLeaderboardRankLabel(entry)}</span>
+                                <span className="leaderboardSideMetric">{formatLeaderboardXp(entry.rewardTotalXp)}</span>
+                              </span>
+                              <LeaderboardRankInsignia profile={entry} />
+                            </article>
+                          );
+                        })
+                      ) : (
+                        <div className="leaderboardPanelText">
+                          {leaderboardState === "loading"
+                            ? "Loading nearby rivals."
+                            : leaderboardData.currentUserEntry
+                              ? "Too few ranked users to calculate nearby rivals yet."
+                              : "Your public profile needs to sync before rivals can be calculated."}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              )}
             </div>
           </section>
 

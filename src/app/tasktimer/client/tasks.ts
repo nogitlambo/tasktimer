@@ -1,4 +1,5 @@
-import type { Task } from "../lib/types";
+import { buildTaskStatusMeta, type Task } from "../lib/types";
+import { nowMs } from "../lib/time";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { createTaskCardActionEffects } from "./task-card-action-effects";
@@ -156,6 +157,34 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.openHistoryInline(i);
   }
 
+  function archiveTask(index: number) {
+    const tasks = ctx.getTasks();
+    const task = tasks[index];
+    if (!task || task.running) return;
+    const taskId = String(task.id || "").trim();
+    const shouldCloseFocusMode = String(ctx.getFocusModeTaskId() || "").trim() === taskId;
+    ctx.confirm("Archive Task", `Archive "${getTaskDisplayName(task)}"?`, {
+      okLabel: "Archive",
+      cancelLabel: "Cancel",
+      onOk: () => {
+        tasks.splice(index, 1);
+        const nextDeletedTaskMeta = {
+          ...(ctx.getDeletedTaskMeta() || {}),
+          [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
+        };
+        ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
+        ctx.saveDeletedMeta(nextDeletedTaskMeta);
+        ctx.save({ deletedTaskIds: taskId ? [taskId] : [] });
+        void ctx.deleteSharedTaskSummariesForTask(String(ctx.getCurrentUid() || ""), taskId).catch(() => {});
+        void ctx.refreshOwnSharedSummaries().catch(() => {});
+        if (shouldCloseFocusMode) ctx.closeFocusMode();
+        ctx.render();
+        ctx.closeConfirm();
+      },
+      onCancel: () => ctx.closeConfirm(),
+    });
+  }
+
   const taskDestructiveActionEffects = createTaskDestructiveActionEffects({
     getTasks: ctx.getTasks,
     setTasks: ctx.setTasks,
@@ -196,6 +225,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     startTask,
     stopTask,
     resetTask: taskDestructiveActionEffects.resetTask,
+    archiveTask,
     deleteTask: ctx.deleteTask,
     openEdit: ctx.openEdit,
     openHistory,

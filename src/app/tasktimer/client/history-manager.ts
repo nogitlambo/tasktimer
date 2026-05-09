@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { HistoryByTaskId, Task } from "../lib/types";
+import { normalizeTaskStatusState, type HistoryByTaskId, type Task } from "../lib/types";
 import type { TaskTimerHistoryManagerContext } from "./context";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
@@ -86,7 +86,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
 
   function openManualEntryOverlay(taskId: string, options?: { forceTaskName?: string | null; allowDeleted?: boolean }) {
     const meta = getTaskMetaForHistoryId(taskId);
-    if (meta.deleted && !options?.allowDeleted) return;
+    if (meta.state !== "active" && !options?.allowDeleted) return;
     if (!manualEntryDraftsByTaskId[taskId]) {
       manualEntryDraftsByTaskId = {
         ...manualEntryDraftsByTaskId,
@@ -200,24 +200,105 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     return ctx.hasEntitlement("advancedBackup");
   }
 
-  function getTaskMetaForHistoryId(taskId: string) {
+  function getTaskMetaForHistoryId(taskId: string): {
+    name: string;
+    color: string | null;
+    deleted: boolean;
+    state: "active" | "archived" | "deleted";
+  } {
     const normalizedTaskId = String(taskId || "").trim();
     const tasks = ctx.getTasks();
     const historyByTaskId = getFinalizedHistoryByTaskId();
     const deletedTaskMeta = ctx.getDeletedTaskMeta();
     const t = tasks.find((x) => String(x?.id || "").trim() === normalizedTaskId);
-    if (t) return { name: t.name, color: (t as any).color, deleted: false };
+    if (t) return { name: t.name, color: t.color || null, deleted: false, state: "active" as const };
 
-    const dm = deletedTaskMeta && (deletedTaskMeta as any)[normalizedTaskId];
-    if (dm) return { name: dm.name || "Deleted Task", color: dm.color || null, deleted: true };
+    const dm = deletedTaskMeta?.[normalizedTaskId];
+    if (dm) {
+      const state = normalizeTaskStatusState(dm.state);
+      return {
+        name: dm.name || (state === "archived" ? "Archived Task" : "Deleted Task"),
+        color: dm.color || null,
+        deleted: true,
+        state: state === "archived" ? ("archived" as const) : ("deleted" as const),
+      };
+    }
 
     const arr = historyByTaskId && historyByTaskId[normalizedTaskId];
     if (arr && arr.length) {
       const e = arr[arr.length - 1] as any;
-      return { name: e.name || "Deleted Task", color: e.color || null, deleted: true };
+      return { name: e.name || "Deleted Task", color: e.color || null, deleted: true, state: "deleted" as const };
     }
 
-    return { name: "Deleted Task", color: null, deleted: true };
+    return { name: "Deleted Task", color: null, deleted: true, state: "deleted" as const };
+  }
+
+  function buildRestoredTask(taskId: string): Task {
+    const deletedTaskMeta = ctx.getDeletedTaskMeta();
+    const row = deletedTaskMeta?.[taskId];
+    const snapshot = row?.taskSnapshot && typeof row.taskSnapshot === "object" ? ({ ...row.taskSnapshot } as Task) : null;
+    if (snapshot) {
+      snapshot.id = taskId;
+      snapshot.name = String(snapshot.name || row?.name || "Task").trim() || "Task";
+      snapshot.color = snapshot.color || row?.color || null;
+      snapshot.running = false;
+      snapshot.startMs = null;
+      snapshot.hasStarted = !!snapshot.hasStarted || Math.max(0, Number(snapshot.accumulatedMs || 0)) > 0;
+      return snapshot;
+    }
+    return {
+      id: taskId,
+      name: String(row?.name || "Task").trim() || "Task",
+      taskType: "recurring",
+      onceOffDay: null,
+      onceOffTargetDate: null,
+      order: ctx.getTasks().length + 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      color: row?.color || null,
+      checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
+      checkpointToastEnabled: true,
+      checkpointToastMode: "auto5s",
+      timeGoalAction: "confirmModal",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: 0,
+      presetIntervalLastMilestoneId: null,
+      presetIntervalNextSeq: 1,
+      timeGoalEnabled: false,
+      timeGoalValue: 0,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 0,
+      plannedStartDay: null,
+      plannedStartByDay: null,
+      plannedStartPushRemindersEnabled: true,
+    };
+  }
+
+  function unarchiveTask(taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    const deletedTaskMeta = { ...(ctx.getDeletedTaskMeta() || {}) };
+    const row = deletedTaskMeta[taskId];
+    if (!row || normalizeTaskStatusState(row.state) !== "archived") return;
+    const tasks = ctx.getTasks().slice();
+    const existingIndex = tasks.findIndex((task) => String(task?.id || "").trim() === taskId);
+    const restoredTask = buildRestoredTask(taskId);
+    if (existingIndex >= 0) tasks[existingIndex] = restoredTask;
+    else tasks.push(restoredTask);
+    delete deletedTaskMeta[taskId];
+    ctx.setTasks(tasks);
+    ctx.setDeletedTaskMeta(deletedTaskMeta);
+    ctx.saveDeletedMeta(deletedTaskMeta);
+    ctx.save();
+    renderHistoryManager();
   }
 
   function exportHistoryManagerCsv() {
@@ -1204,6 +1285,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         const taskId = String(addBtn.getAttribute("data-task") || "").trim();
         if (!taskId) return;
         openManualEntryDraft(taskId);
+        return;
+      }
+
+      const unarchiveBtn = ev.target?.closest?.(".hmUnarchiveBtn");
+      if (unarchiveBtn) {
+        const taskId = String(unarchiveBtn.getAttribute("data-task") || "").trim();
+        if (!taskId) return;
+        ctx.confirm("Unarchive Task", "Restore this task to the Tasks page?", {
+          okLabel: "Unarchive",
+          cancelLabel: "Cancel",
+          onOk: () => {
+            unarchiveTask(taskId);
+            ctx.closeConfirm();
+          },
+          onCancel: () => ctx.closeConfirm(),
+        });
         return;
       }
 

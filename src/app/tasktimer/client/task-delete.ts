@@ -1,4 +1,4 @@
-import type { DeletedTaskMeta, Task } from "../lib/types";
+import { buildTaskStatusMeta, type DeletedTaskMeta, type Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { buildDeleteTaskConfirmOptions } from "./confirm-actions";
 import type { TaskTimerConfirmOptions } from "./context";
@@ -55,7 +55,7 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
           }
         } else {
           const nextDeletedTaskMeta = deletedTaskMeta || ({} as DeletedTaskMeta);
-          nextDeletedTaskMeta[taskId] = { name: task.name, color: task.color || null, deletedAt: nowMs() };
+          nextDeletedTaskMeta[taskId] = buildTaskStatusMeta(task, "deleted", nowMs());
           options.setDeletedTaskMeta(nextDeletedTaskMeta);
           options.saveDeletedMeta(nextDeletedTaskMeta);
         }

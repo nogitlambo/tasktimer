@@ -412,11 +412,15 @@ service cloud.firestore {
         "name",
         "color",
         "deletedAt",
+        "state",
+        "taskSnapshot",
         "updatedAt"
       ])
       && (!("name" in request.resource.data) || request.resource.data.name is string)
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
       && (!("deletedAt" in request.resource.data) || request.resource.data.deletedAt is int)
+      && (!("state" in request.resource.data) || request.resource.data.state in ["archived", "deleted"])
+      && (!("taskSnapshot" in request.resource.data) || request.resource.data.taskSnapshot is map)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 

@@ -4,7 +4,7 @@ import AppImg from "@/components/AppImg";
 const dashboardPanelOptions = [
   { id: "week-hours", label: "Today" },
   { id: "weekly-time-goals", label: "This Week" },
-  { id: "tasks-completed", label: "Completed" },
+  { id: "tasks-completed", label: "Task Overview" },
   { id: "momentum", label: "Momentum" },
   { id: "avg-session-by-task", label: "Avg Session by Task" },
   { id: "heatmap", label: "Focus Heatmap" },
@@ -117,7 +117,7 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                   </section>
 
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
-                    <div className="dashboardCardTitle">Completed</div>
+                    <div className="dashboardCardTitle">Task Overview</div>
                     <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
                       <svg
                         className="dashboardTasksCompletedSvg"

@@ -29,6 +29,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     startTask: (index) => calls.push(`start:${index}`),
     stopTask: (index) => calls.push(`stop:${index}`),
     resetTask: (index) => calls.push(`reset:${index}`),
+    archiveTask: (index) => calls.push(`archive:${index}`),
     deleteTask: (index) => calls.push(`delete:${index}`),
     openEdit: (index) => calls.push(`edit:${index}`),
     openHistory: (index) => calls.push(`history:${index}`),
@@ -74,8 +75,9 @@ describe("task card action effects", () => {
     expect(harness.effects.handleAction({ action: "start", taskIndex: 2, taskId: "task-1" })).toBe(true);
     expect(harness.effects.handleAction({ action: "history", taskIndex: 2, taskId: "task-1" })).toBe(true);
     expect(harness.effects.handleAction({ action: "collapse", taskIndex: 2, taskId: "task-1" })).toBe(true);
+    expect(harness.effects.handleAction({ action: "archive", taskIndex: 2, taskId: "task-1" })).toBe(true);
 
-    expect(harness.calls).toEqual(["start:2", "history:2", "collapse:2"]);
+    expect(harness.calls).toEqual(["start:2", "history:2", "collapse:2", "archive:2"]);
   });
 
   it("gates locked actions before side effects run", () => {

@@ -24,7 +24,12 @@ type RenderArgs = {
   hmExpandedDateGroups: Set<string>;
   formatTwo: (value: number) => string;
   formatDateTime: (value: number) => string;
-  getTaskMetaForHistoryId: (taskId: string) => { name: string; color?: string | null; deleted?: boolean };
+  getTaskMetaForHistoryId: (taskId: string) => {
+    name: string;
+    color?: string | null;
+    deleted?: boolean;
+    state: "active" | "archived" | "deleted";
+  };
   getHistoryEntryNote: (entry: unknown) => string;
   canUseManualEntry: boolean;
   flashedRowId?: string | null;
@@ -149,8 +154,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     return rightRecent - leftRecent;
   });
 
-  const html = filteredIds
-    .map((taskId) => {
+  const renderTaskGroupHtml = (taskId: string) => {
       const meta = getTaskMetaForHistoryId(taskId);
       const entriesByTask = (historyByTaskId[taskId] || []).slice().sort((left: any, right: any) => (right.ts || 0) - (left.ts || 0));
       const rowsByDate: Record<string, any[]> = {};
@@ -238,8 +242,17 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
       const taskCheckbox = hmBulkEditMode
         ? `<input class="hmBulkCheckbox hmBulkTaskChk" type="checkbox" data-task="${taskId}" ${taskChecked ? "checked" : ""} />`
         : "";
-      const badge = meta.deleted ? '<span class="hmBadge deleted">Deleted</span>' : "";
-      const taskActions = !meta.deleted && canUseManualEntry
+      const badge =
+        meta.state === "archived"
+          ? '<span class="hmBadge deleted">Archived</span>'
+          : meta.deleted
+            ? '<span class="hmBadge deleted">Deleted</span>'
+            : "";
+      const taskActions = meta.state === "archived"
+        ? `
+            <button class="btn btn-ghost small hmUnarchiveBtn" type="button" data-task="${taskId}" aria-label="Unarchive task" title="Unarchive task">Unarchive</button>
+          `
+        : !meta.deleted && canUseManualEntry
         ? `
             <button class="iconBtn hmAddBtn" type="button" data-task="${taskId}" aria-label="Add manual history entry" title="Add manual history entry">+</button>
           `
@@ -262,8 +275,37 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
           ${dateGroupsHtml}
         </details>
       `;
-    })
-    .join("");
+    };
+
+  const activeTaskIds: string[] = [];
+  const archivedTaskIds: string[] = [];
+  const deletedTaskIds: string[] = [];
+  filteredIds.forEach((taskId) => {
+    const state = getTaskMetaForHistoryId(taskId).state;
+    if (state === "archived") archivedTaskIds.push(taskId);
+    else if (state === "deleted") deletedTaskIds.push(taskId);
+    else activeTaskIds.push(taskId);
+  });
+
+  const renderSection = (title: string, taskIds: string[]) => {
+    if (!taskIds.length) return "";
+    return `
+      <section class="hmSection" aria-label="${escapeHtmlHM(title)}">
+        <div class="hmSectionTitle">${escapeHtmlHM(title)}</div>
+        ${taskIds.map((taskId) => renderTaskGroupHtml(taskId)).join("")}
+      </section>
+    `;
+  };
+
+  const html = taskIdFilter
+    ? filteredIds.map((taskId) => renderTaskGroupHtml(taskId)).join("")
+    : [
+        activeTaskIds.map((taskId) => renderTaskGroupHtml(taskId)).join(""),
+        renderSection("Archived Tasks", archivedTaskIds),
+        renderSection("Deleted Tasks", deletedTaskIds),
+      ]
+        .filter(Boolean)
+        .join("");
 
   return {
     html,

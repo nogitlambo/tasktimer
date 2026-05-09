@@ -1982,7 +1982,7 @@ body[data-theme="purple"] .historyMeta{
   justify-content:flex-start;
   gap:12px;
   min-height:190px;
-  padding:16px 8px 14px;
+  padding:16px 8px 0;
   border:1px solid rgba(255,255,255,.12);
   border-radius:0;
   background:#17191d;

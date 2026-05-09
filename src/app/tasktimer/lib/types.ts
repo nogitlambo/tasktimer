@@ -51,6 +51,8 @@ export type Task = {
   plannedStartPushRemindersEnabled?: boolean;
 };
 
+export type TaskStatusState = "archived" | "deleted";
+
 export type HistoryEntry = {
   ts: number;
   name: string;
@@ -85,7 +87,35 @@ export type ProjectedHistoryEntry = HistoryEntry & {
 
 export type ProjectedHistoryByTaskId = Record<string, ProjectedHistoryEntry[]>;
 
-export type DeletedTaskMeta = Record<
-  string,
-  { name: string; color: string | null; deletedAt: number }
->;
+export type TaskStatusMeta = {
+  name: string;
+  color: string | null;
+  deletedAt: number;
+  state?: TaskStatusState;
+  taskSnapshot?: Task | null;
+};
+
+export type DeletedTaskMeta = Record<string, TaskStatusMeta>;
+
+export function normalizeTaskStatusState(value: unknown): TaskStatusState {
+  return value === "archived" ? "archived" : "deleted";
+}
+
+export function cloneTaskSnapshot(task: Task | null | undefined): Task | null {
+  if (!task) return null;
+  try {
+    return JSON.parse(JSON.stringify(task)) as Task;
+  } catch {
+    return { ...task, milestones: Array.isArray(task.milestones) ? task.milestones.map((milestone) => ({ ...milestone })) : [] };
+  }
+}
+
+export function buildTaskStatusMeta(task: Task, state: TaskStatusState, deletedAt: number): TaskStatusMeta {
+  return {
+    name: String(task.name || "").trim() || "Task",
+    color: task.color || null,
+    deletedAt: Math.max(0, Math.floor(Number(deletedAt) || 0)),
+    state,
+    taskSnapshot: cloneTaskSnapshot(task),
+  };
+}

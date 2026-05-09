@@ -28,7 +28,7 @@ function isFixedFullWidthDashboardCard() {
 }
 
 function isFixedHalfWidthDashboardCard(cardId: string) {
-  return cardId === "momentum";
+  return cardId === "tasks-completed" || cardId === "momentum";
 }
 
 function isFixedDashboardCard(cardId: string) {
@@ -52,7 +52,7 @@ export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null
 }
 
 export function isDashboardCardSizeOptionAllowed(size: string, cardId: string) {
-  if (String(cardId || "").trim() === "tasks-completed") return size === "full" || size === "half";
+  if (String(cardId || "").trim() === "tasks-completed") return size === "half";
   return size === "full" || size === "half" || size === "quarter";
 }
 
@@ -85,7 +85,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const DASHBOARD_PANEL_REGISTRY = [
     { panelId: "week-hours", label: "Today" },
     { panelId: "weekly-time-goals", label: "This Week" },
-    { panelId: "tasks-completed", label: "Tasks Completed" },
+    { panelId: "tasks-completed", label: "Task Overview" },
     { panelId: "momentum", label: "Momentum" },
     { panelId: "avg-session-by-task", label: "Avg Session by Task" },
     { panelId: "heatmap", label: "Focus Heatmap" },

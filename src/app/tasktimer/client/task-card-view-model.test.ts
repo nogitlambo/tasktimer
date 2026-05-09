@@ -57,6 +57,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="manualEntry"');
     expect(rendered.html).toContain('data-action="collapse"');
     expect(rendered.html).toContain('data-action="shareTask"');
+    expect(rendered.html).toContain('data-action="archive"');
     expect(rendered.html).toContain('data-action="exportTask"');
     expect(rendered.html).toContain('data-action="delete"');
     expect(rendered.html).toContain("Write &lt;docs&gt;");
@@ -78,6 +79,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
     expect(rendered.html).toContain("historyInlineMotion isOpening");
     expect(rendered.html).toContain('data-action="unshareTask"');
+    expect(rendered.html).toContain('data-action="archive" title="Stop task to archive" type="button" disabled');
     expect(rendered.html).toContain('data-history-action="pin"');
     expect(rendered.html).toContain('data-action="history" title="Hide history chart"');
     expect(rendered.html).toContain("disabled");

@@ -28,7 +28,15 @@ import {
   type ScheduleDay,
 } from "./schedule-placement";
 
-import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
+import {
+  normalizeTaskStatusState,
+  type DeletedTaskMeta,
+  type HistoryByTaskId,
+  type HistoryEntry,
+  type LiveSessionsByTaskId,
+  type LiveTaskSession,
+  type Task,
+} from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
@@ -1299,10 +1307,16 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   const deletedTaskMeta: DeletedTaskMeta = {};
   for (const d of deletedSnap) {
     const row = d.data() as Record<string, unknown>;
+    const taskSnapshotRaw =
+      row.taskSnapshot && typeof row.taskSnapshot === "object"
+        ? mapTaskFromFirestore(d.id, row.taskSnapshot as Record<string, unknown>)
+        : null;
     deletedTaskMeta[d.id] = {
       name: asString(row.name),
       color: typeof row.color === "string" ? row.color : null,
       deletedAt: Number(row.deletedAt || 0),
+      state: normalizeTaskStatusState(row.state),
+      ...(taskSnapshotRaw ? { taskSnapshot: taskSnapshotRaw } : {}),
     };
   }
 

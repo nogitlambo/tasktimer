@@ -816,7 +816,7 @@ export type TaskTimerDashboardRenderContext = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
-  openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
+  openHistoryEntryNoteOverlay: (taskId: string, entries: unknown[]) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
 };

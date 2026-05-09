@@ -19,7 +19,7 @@ import {
   type ScheduleDay,
 } from "../lib/schedule-placement";
 import { formatTime, formatTwo, nowMs } from "../lib/time";
-import type { Task } from "../lib/types";
+import { normalizeTaskStatusState, type Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerDashboardRenderContext } from "./context";
 import { getHistorySpectrumColor } from "./history-chart-fill";
@@ -227,6 +227,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const taskId = String(task.id || "").trim();
       if (taskId) taskIds.add(taskId);
     });
+    Object.entries(ctx.getDeletedTaskMeta() || {}).forEach(([taskId, row]) => {
+      if (!taskId || !row) return;
+      if (normalizeTaskStatusState(row.state) === "archived") taskIds.add(taskId);
+    });
     return taskIds;
   }
 
@@ -239,6 +243,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function getDashboardFilteredTasks() {
     return (ctx.getTasks() || []).filter((task) => !!task);
+  }
+
+  function addArchivedTaskNames(taskNameById: Map<string, string>) {
+    Object.entries(ctx.getDeletedTaskMeta() || {}).forEach(([taskId, row]) => {
+      if (!taskId || !row) return;
+      if (normalizeTaskStatusState(row.state) !== "archived") return;
+      const name = String(row.name || "").trim();
+      if (name) taskNameById.set(taskId, name);
+    });
   }
 
   function getScheduleDayForDate(value: number): ScheduleDay {
@@ -1804,6 +1817,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       taskNameById.set(taskId, String(task?.name || "").trim() || "Task");
       taskById.set(taskId, task);
     });
+    addArchivedTaskNames(taskNameById);
 
     const rows: DashboardHeatTaskSummaryRow[] = [];
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
@@ -2126,6 +2140,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (!id) return;
       includedTaskIds.add(id);
       taskNameById.set(id, String(task.name || "").trim() || "Task");
+    });
+    addArchivedTaskNames(taskNameById);
+    Object.entries(deletedTaskMeta || {}).forEach(([taskId, row]) => {
+      if (normalizeTaskStatusState(row?.state) === "archived") includedTaskIds.add(taskId);
     });
 
     const rows: Array<{ taskId: string; taskName: string; avgMs: number; count: number }> = [];

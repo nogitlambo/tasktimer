@@ -40,7 +40,7 @@ describe("dashboard drag interaction guards", () => {
     expect(shouldOpenDashboardLockedUpgradePrompt(true)).toBe(false);
   });
 
-  it("keeps chart-heavy cards flexible while forcing completed to half-or-full", () => {
+  it("keeps chart-heavy cards flexible while forcing task overview to fixed half width", () => {
     expect(sanitizeDashboardCardSize("quarter", "avg-session-by-task")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "heatmap")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "tasks-completed")).toBe("half");
@@ -49,7 +49,7 @@ describe("dashboard drag interaction guards", () => {
     expect(isDashboardCardSizeOptionAllowed("quarter", "heatmap")).toBe(true);
     expect(isDashboardCardSizeOptionAllowed("quarter", "tasks-completed")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("half", "tasks-completed")).toBe(true);
-    expect(isDashboardCardSizeOptionAllowed("full", "tasks-completed")).toBe(true);
+    expect(isDashboardCardSizeOptionAllowed("full", "tasks-completed")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("half", "heatmap")).toBe(true);
     expect(isDashboardCardSizeOptionAllowed("full", "avg-session-by-task")).toBe(true);
   });

@@ -588,7 +588,7 @@ type CreateDashboardRenderOptionsArgs = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
-  openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
+  openHistoryEntryNoteOverlay: (taskId: string, entries: unknown[]) => void;
   hasEntitlement: Parameters<typeof createTaskTimerDashboardRender>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerDashboardRender>[0]["getCurrentPlan"];
 };

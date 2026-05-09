@@ -58,9 +58,21 @@ export type LeaderboardScreenData = {
   topEntries: LeaderboardProfile[];
   risingEntries: LeaderboardProfile[];
   rivalEntries: LeaderboardProfile[];
+  weeklyEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
   currentUserRank: number | null;
   currentUserGapToNextXp: number | null;
+  currentUserWeeklyEntry: LeaderboardProfile | null;
+  currentUserWeeklyRank: number | null;
+};
+
+export type WeeklyLeaderboardRow = {
+  profile: LeaderboardProfile;
+  rank: number | null;
+  rankLabel: string;
+  playerLabel: string;
+  isCurrentUser: boolean;
+  isPlaceholder: boolean;
 };
 
 type LeaderboardIdentityFields = Pick<
@@ -70,6 +82,7 @@ type LeaderboardIdentityFields = Pick<
 
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
+const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
   const id = String(avatar?.id || "").trim();
   const src = String(avatar?.src || "").trim();
@@ -298,7 +311,11 @@ export function buildLeaderboardMetricsSnapshot(input: {
   };
 }
 
-export async function saveLeaderboardProfile(uid: string, metrics: LeaderboardMetricsSnapshot): Promise<void> {
+export async function saveLeaderboardProfile(
+  uid: string,
+  metrics: LeaderboardMetricsSnapshot,
+  options?: { dispatchUpdatedEvent?: boolean }
+): Promise<void> {
   const ref = leaderboardDoc(uid);
   if (!ref || !uid) return;
   const identity = await loadOwnLeaderboardIdentity(uid);
@@ -323,7 +340,9 @@ export async function saveLeaderboardProfile(uid: string, metrics: LeaderboardMe
     },
     { merge: true }
   );
-  dispatchLeaderboardProfileUpdated(uid);
+  if (options?.dispatchUpdatedEvent !== false) {
+    dispatchLeaderboardProfileUpdated(uid);
+  }
 }
 
 export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Record<string, unknown>): Promise<void> {
@@ -401,6 +420,98 @@ function filterCurrentUid(entries: LeaderboardProfile[], currentUid: string) {
   return entries.filter((entry) => entry.uid !== currentUid);
 }
 
+function sortWeeklyEntries(entries: LeaderboardProfile[]): LeaderboardProfile[] {
+  return entries.slice().sort((left, right) => {
+    const weeklyDelta = normalizeInt(right.weeklyXpGain) - normalizeInt(left.weeklyXpGain);
+    if (weeklyDelta !== 0) return weeklyDelta;
+    const totalDelta = normalizeInt(right.rewardTotalXp) - normalizeInt(left.rewardTotalXp);
+    if (totalDelta !== 0) return totalDelta;
+    return String(left.username || left.displayLabel || left.uid).localeCompare(String(right.username || right.displayLabel || right.uid));
+  });
+}
+
+function formatWeeklyRankLabel(rank: number | null, profile: LeaderboardProfile): string {
+  if (!rank || rank < 1 || normalizeInt(profile.weeklyXpGain) <= 0) return "Unranked";
+  return `#${rank}`;
+}
+
+function buildWeeklyPlaceholderProfile(rank: number): LeaderboardProfile {
+  const safeRank = Math.max(1, Math.floor(rank || 1));
+  const weeklyXpGain = Math.max(24, 320 - (safeRank - 1) * 26);
+  const rewardTotalXp = Math.max(weeklyXpGain, 4_800 - (safeRank - 1) * 320);
+  const totalFocusMs = Math.max(30 * 60 * 1000, (14 - safeRank) * 42 * 60 * 1000);
+  const streakDays = Math.max(1, 12 - safeRank);
+  const label = `Focus Pilot ${safeRank}`;
+  return {
+    uid: `weekly-placeholder-${safeRank}`,
+    username: label,
+    displayLabel: label,
+    avatarId: null,
+    avatarCustomSrc: null,
+    googlePhotoUrl: null,
+    rankThumbnailSrc: null,
+    rewardCurrentRankId: getRankForXp(rewardTotalXp).id,
+    rewardTotalXp,
+    streakDays,
+    totalFocusMs,
+    weeklyXpGain,
+    memberSinceMs: null,
+    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+  };
+}
+
+export function isWeeklyLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
+  return /^weekly-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
+}
+
+export function buildWeeklyLeaderboardRows(input: {
+  weeklyEntries: LeaderboardProfile[];
+  currentUserEntry: LeaderboardProfile | null;
+  currentUserWeeklyRank: number | null;
+}): WeeklyLeaderboardRow[] {
+  const currentUid = String(input.currentUserEntry?.uid || "").trim();
+  const sortedEntries = sortWeeklyEntries(input.weeklyEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+  const rows = sortedEntries.map((profile, index): WeeklyLeaderboardRow => {
+    const isCurrentUser = !!currentUid && profile.uid === currentUid;
+    const rank = index + 1;
+    return {
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank, profile),
+      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser,
+      isPlaceholder: false,
+    };
+  });
+
+  while (rows.length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+    const rank = rows.length + 1;
+    const profile = buildWeeklyPlaceholderProfile(rank);
+    rows.push({
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank, profile),
+      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser: false,
+      isPlaceholder: true,
+    });
+  }
+
+  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
+
+  return [
+    {
+      profile: input.currentUserEntry,
+      rank: input.currentUserWeeklyRank,
+      rankLabel: formatWeeklyRankLabel(input.currentUserWeeklyRank, input.currentUserEntry),
+      playerLabel: "You",
+      isCurrentUser: true,
+      isPlaceholder: false,
+    },
+    ...rows,
+  ];
+}
+
 function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, identity: LeaderboardIdentityFields | null): LeaderboardProfile {
   if (!identity || profile.uid !== currentUid) return profile;
   return {
@@ -423,21 +534,29 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
       topEntries: [],
       risingEntries: [],
       rivalEntries: [],
+      weeklyEntries: [],
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
+      currentUserWeeklyEntry: null,
+      currentUserWeeklyRank: null,
     };
   }
 
   const ownIdentity = await loadOwnLeaderboardIdentity(currentUid).catch(() => null);
   const profiles = collection(db, "leaderboardProfiles");
-  const [topSnap, risingSnap, currentUserSnap] = await Promise.all([
+  const [topSnap, risingSnap, weeklySnap, currentUserSnap] = await Promise.all([
     getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(6))),
     getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(3))),
+    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(10))),
     getDoc(doc(db, "leaderboardProfiles", currentUid)),
   ]);
 
   const topEntries = topSnap.docs
+    .map((row) => asLeaderboardProfile(row))
+    .filter((row): row is LeaderboardProfile => !!row)
+    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
+  const weeklyEntries = weeklySnap.docs
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
     .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
@@ -457,16 +576,20 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
         currentUid
       ),
       rivalEntries: [],
+      weeklyEntries,
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
+      currentUserWeeklyEntry: null,
+      currentUserWeeklyRank: null,
     };
   }
 
-  const [higherXpSnap, aboveSnap, belowSnap] = await Promise.all([
+  const [higherXpSnap, aboveSnap, belowSnap, higherWeeklySnap] = await Promise.all([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(2))),
     getDocs(query(profiles, where("rewardTotalXp", "<", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "desc"), limit(2))),
+    getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
 
   const risingEntries = filterCurrentUid(
@@ -494,9 +617,12 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     topEntries,
     risingEntries,
     rivalEntries,
+    weeklyEntries,
     currentUserEntry: currentUserEntryWithIdentity,
     currentUserRank: higherXpSnap.size + 1,
     currentUserGapToNextXp,
+    currentUserWeeklyEntry: currentUserEntryWithIdentity,
+    currentUserWeeklyRank: higherWeeklySnap.size + 1,
   };
 }
 

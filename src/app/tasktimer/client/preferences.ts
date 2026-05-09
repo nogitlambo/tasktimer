@@ -154,14 +154,29 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return "Custom";
   }
 
+  function getLiveTaskOrderByMenu() {
+    return document.getElementById("taskOrderByMenu") as HTMLDetailsElement | null;
+  }
+
+  function getLiveTaskOrderByMenuButton() {
+    return document.getElementById("taskOrderByMenuBtn") as HTMLElement | null;
+  }
+
+  function getLiveTaskOrderByValue() {
+    return document.getElementById("taskOrderByValue");
+  }
+
   function syncTaskOrderByMenuUi() {
     const taskOrderBy = ctx.getTaskOrderBy();
-    if (els.taskOrderByValue) els.taskOrderByValue.textContent = getTaskOrderByLabel(taskOrderBy);
-    if (els.taskOrderByMenuBtn) {
-      els.taskOrderByMenuBtn.setAttribute("aria-label", `Order By: ${getTaskOrderByLabel(taskOrderBy)}`);
+    const taskOrderByValueEl = getLiveTaskOrderByValue();
+    const taskOrderByMenuBtnEl = getLiveTaskOrderByMenuButton();
+    const taskOrderByMenuEl = getLiveTaskOrderByMenu();
+    if (taskOrderByValueEl) taskOrderByValueEl.textContent = getTaskOrderByLabel(taskOrderBy);
+    if (taskOrderByMenuBtnEl) {
+      taskOrderByMenuBtnEl.setAttribute("aria-label", `Order By: ${getTaskOrderByLabel(taskOrderBy)}`);
     }
-    if (els.taskOrderByMenu) {
-      Array.from(els.taskOrderByMenu.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
+    if (taskOrderByMenuEl) {
+      Array.from(taskOrderByMenuEl.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
         const itemValue = item.dataset.taskOrderBy === "alpha" ? "alpha" : item.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
         const isOn = itemValue === taskOrderBy;
         item.classList.toggle("isOn", isOn);
@@ -534,9 +549,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
     });
-    ctx.on(els.taskOrderByMenu, "click", (event) => {
+    ctx.on(document, "click", (event) => {
       const target = event.target as HTMLElement | null;
-      const button = target?.closest?.(".tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
+      const menu = getLiveTaskOrderByMenu();
+      const button = target?.closest?.("#taskOrderByMenu .tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
+      if (button && menu && !menu.contains(button)) return;
       if (!button) return;
       const nextValue = button.dataset.taskOrderBy === "alpha" ? "alpha" : button.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
       applyTaskOrderByPreference(nextValue);
@@ -544,10 +561,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.render();
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
-      if (els.taskOrderByMenu) els.taskOrderByMenu.open = false;
+      if (menu) menu.open = false;
     });
     ctx.on(document, "pointerdown", (event: Event) => {
-      const menu = els.taskOrderByMenu;
+      const menu = getLiveTaskOrderByMenu();
       if (!menu?.open) return;
       const target = event.target as Node | null;
       if (target && menu.contains(target)) return;

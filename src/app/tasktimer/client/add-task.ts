@@ -784,9 +784,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function registerAddTaskEvents() {
-    ctx.on(els.openAddTaskBtn, "click", () => {
-      openAddTaskModal();
-    });
     ctx.on(els.addTaskCancelBtn, "click", closeAddTaskModal);
     ctx.on(els.addTaskForm, "submit", (e: Event) => {
       e.preventDefault();
@@ -948,6 +945,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskCheckpointAlertUi();
     });
     ctx.on(document, "click", (event: Event) => {
+      if (eventTargetClosest(event.target, "#openAddTaskBtn")) {
+        event.preventDefault?.();
+        openAddTaskModal();
+        return;
+      }
       if (eventTargetClosest(event.target, "#addTaskNameCombo")) return;
       if (eventTargetClosest(event.target, "#addTaskColorTrigger")) return;
       if (eventTargetClosest(event.target, "#addTaskColorPopoverPanel")) return;
