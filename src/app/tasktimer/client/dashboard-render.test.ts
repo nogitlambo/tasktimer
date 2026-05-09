@@ -162,6 +162,7 @@ function createRenderHarness(tasks: Task[]) {
     normalizeHistoryTimestampMs: (value) => Number(value) || 0,
     getModeColor: () => "#00ffff",
     addRangeMsToLocalDayMap: () => {},
+    openHistoryEntryNoteOverlay: () => {},
     hasEntitlement: () => true,
     getCurrentPlan: () => "pro",
   });

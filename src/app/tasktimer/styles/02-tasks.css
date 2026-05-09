@@ -353,6 +353,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   line-height: 1;
   text-transform: uppercase;
   position: relative;
+  top: 1px;
   z-index: 2;
   transition: color .16s ease;
 }

@@ -33,26 +33,26 @@ export default function InfoOverlays() {
       <InfoOverlayFrame overlayId="howtoOverlay" ariaLabel="How To" title="How To">
         <div className="modalSubtext howtoBody">
           <p>
-            <b>Tracking:</b> Use Start to start, Stop to stop, and Reset to reset. Reset can optionally log a history
+            <b>Tracking: </b>Use Start to start, Stop to stop, and Reset to reset. Reset can optionally log a history
             entry.
           </p>
           <p>
-            <b>History:</b> Use Chart on a task to view the last 7 days. Use the arrows to page older entries.
+            <b>History: </b>Use Chart on a task to view the last 7 days. Use the arrows to page older entries.
           </p>
           <p>
-            <b>Backup:</b> Use Export Backup to save your data. Use Import Backup to merge a saved backup back into the
+            <b>Backup: </b>Use Export Backup to save your data. Use Import Backup to merge a saved backup back into the
             app.
           </p>
           <p>
-            <b>Editing:</b> Use Edit to edit a task&apos;s name, total time, milestones, and appearance options. Manual
+            <b>Editing: </b>Use Edit to edit a task&apos;s name, total time, milestones, and appearance options. Manual
             time changes do not create a history entry until you reset.
           </p>
           <p>
-            <b>Deleting:</b> Use Delete to delete a task. You can optionally clear that task&apos;s history during
+            <b>Deleting: </b>Use Delete to delete a task. You can optionally clear that task&apos;s history during
             deletion.
           </p>
           <p>
-            <b>Milestones:</b> Enable milestones in Edit to show progress markers for hours and descriptions.
+            <b>Milestones: </b>Enable milestones in Edit to show progress markers for hours and descriptions.
             Milestones can be sorted and edited.
           </p>
         </div>

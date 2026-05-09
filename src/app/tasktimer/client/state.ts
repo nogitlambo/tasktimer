@@ -75,6 +75,8 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
+    checkpointAlertSoundMode: "once",
+    checkpointAlertToastMode: "auto5s",
     optimalProductivityStartTime: "00:00",
     optimalProductivityEndTime: "23:59",
     rewardProgress: DEFAULT_REWARD_PROGRESS,

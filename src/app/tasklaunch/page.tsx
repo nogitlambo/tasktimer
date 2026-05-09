@@ -1,5 +1,5 @@
-import TaskTimerMainAppClient from "../tasktimer/TaskTimerMainAppClient";
+import TaskTimerMainAppPage from "../tasktimer/TaskTimerMainAppPage";
 
 export default function TaskLaunchPage() {
-  return <TaskTimerMainAppClient initialPage="tasks" />;
+  return <TaskTimerMainAppPage initialPage="tasks" />;
 }

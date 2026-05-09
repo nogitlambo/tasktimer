@@ -703,6 +703,8 @@ export type TaskTimerSessionContext = {
   getDynamicColorsEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
+  getCheckpointAlertSoundMode: () => "once" | "repeat";
+  getCheckpointAlertToastMode: () => "auto5s" | "manual";
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
   broadcastCheckpointAlertMute: (taskId: string) => void;
@@ -781,6 +783,9 @@ export type TaskTimerDashboardContext = {
   hasSelectedDashboardMomentumDriver: () => boolean;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
+  renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
+  renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
+  openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
 };
 
 export type TaskTimerDashboardRenderContext = {
@@ -811,6 +816,7 @@ export type TaskTimerDashboardRenderContext = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
+  openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
 };
@@ -855,6 +861,10 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;
   setCheckpointAlertToastEnabledState: (value: boolean) => void;
+  getCheckpointAlertSoundMode: () => "once" | "repeat";
+  setCheckpointAlertSoundModeState: (value: "once" | "repeat") => void;
+  getCheckpointAlertToastMode: () => "auto5s" | "manual";
+  setCheckpointAlertToastModeState: (value: "auto5s" | "manual") => void;
   getOptimalProductivityStartTime: () => string;
   setOptimalProductivityStartTimeState: (value: string) => void;
   getOptimalProductivityEndTime: () => string;

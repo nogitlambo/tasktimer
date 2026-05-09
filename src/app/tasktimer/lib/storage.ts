@@ -56,6 +56,7 @@ export const STORAGE_KEY = "taskticker_tasks_v1";
 export const HISTORY_KEY = "taskticker_history_v1";
 export const DELETED_META_KEY = "tasktimer_deleted_meta_v1";
 export const ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS = 45_000;
+const GUEST_UID = "__guest__";
 const SHADOW_TASKS_KEY = `${STORAGE_KEY}:shadow:tasks`;
 const SHADOW_HISTORY_KEY = `${STORAGE_KEY}:shadow:history`;
 const SHADOW_LIVE_SESSIONS_KEY = `${STORAGE_KEY}:shadow:liveSessions`;
@@ -203,7 +204,7 @@ function scopedUid(): string {
   }
   const hydrated = String(hydratedUid || "").trim();
   if (hydrated) return hydrated;
-  return readStoredActiveUid();
+  return readStoredActiveUid() || GUEST_UID;
 }
 
 let cachedTasks: Task[] = [];
@@ -831,10 +832,62 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   });
   const snapshot = await loadUserWorkspace(uid);
   writeTaskTimerPlanToStorage(snapshot.plan, { uid });
-  const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
-  const nextHistory = snapshot.historyByTaskId || {};
-  const nextLiveSessions = snapshot.liveSessionsByTaskId || {};
-  const nextDeletedMeta = snapshot.deletedTaskMeta || {};
+  let nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
+  let nextHistory = snapshot.historyByTaskId || {};
+  let nextLiveSessions = snapshot.liveSessionsByTaskId || {};
+  let nextDeletedMeta = snapshot.deletedTaskMeta || {};
+  const guestTasks = loadShadowTasks(GUEST_UID);
+  const guestHistory = loadShadowHistory(GUEST_UID);
+  const guestLiveSessions = loadShadowLiveSessions(GUEST_UID);
+  const guestDeletedMeta = loadShadowDeletedMeta(GUEST_UID);
+  const guestHasWorkspace = hasMeaningfulWorkspace({
+    tasks: guestTasks,
+    historyByTaskId: guestHistory,
+    liveSessionsByTaskId: guestLiveSessions,
+    deletedTaskMeta: guestDeletedMeta,
+  });
+  const cloudHasWorkspace = hasMeaningfulWorkspace({
+    tasks: nextTasks,
+    historyByTaskId: nextHistory,
+    liveSessionsByTaskId: nextLiveSessions,
+    deletedTaskMeta: nextDeletedMeta,
+  });
+  const migratedGuestTaskIds: string[] = [];
+  const migratedGuestHistoryTaskIds: string[] = [];
+  let migratedGuestLiveSessionTaskIds: string[] = [];
+  if (guestHasWorkspace) {
+    const choice = chooseGuestWorkspaceMigration(uid, cloudHasWorkspace);
+    if (choice === "guest") {
+      const signOutPromise = (getFirebaseAuthClient() as unknown as { signOut?: () => Promise<void> } | null)?.signOut?.();
+      void signOutPromise?.catch(() => {});
+      cachedTasks = guestTasks;
+      cachedHistory = guestHistory;
+      cachedLiveSessions = guestLiveSessions;
+      cachedDeletedMeta = guestDeletedMeta;
+      hydratedUid = "";
+      emitPreferenceChange();
+      return;
+    }
+    if (choice === "upload") {
+      const taskById = new Map(nextTasks.map((task) => [String(task?.id || ""), task] as const));
+      guestTasks.forEach((task) => {
+        const taskId = String(task?.id || "").trim();
+        if (!taskId) return;
+        taskById.set(taskId, task);
+        migratedGuestTaskIds.push(taskId);
+      });
+      nextTasks = Array.from(taskById.values());
+      nextHistory = { ...nextHistory };
+      Object.keys(guestHistory).forEach((taskId) => {
+        nextHistory[taskId] = mergeHistoryRows(nextHistory[taskId], guestHistory[taskId]);
+        migratedGuestHistoryTaskIds.push(taskId);
+      });
+      nextLiveSessions = { ...nextLiveSessions, ...guestLiveSessions };
+      migratedGuestLiveSessionTaskIds = Object.keys(guestLiveSessions).filter(Boolean);
+      nextDeletedMeta = { ...nextDeletedMeta, ...guestDeletedMeta };
+      clearGuestWorkspaceShadow();
+    }
+  }
   const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
   const pendingTaskSync = loadPendingMap(PENDING_TASK_SYNC_KEY);
   const pendingHistorySync = loadPendingMap(PENDING_HISTORY_SYNC_KEY);
@@ -977,16 +1030,19 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   hydratedUid = uid;
   const pendingTaskDeleteIds = Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).filter(Boolean);
   const pendingTaskSyncIds = Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).filter(Boolean);
-  if (pendingTaskDeleteIds.length || pendingTaskSyncIds.length) {
+  if (migratedGuestTaskIds.length) markPendingTaskSync(migratedGuestTaskIds);
+  if (pendingTaskDeleteIds.length || pendingTaskSyncIds.length || migratedGuestTaskIds.length) {
     const cachedTaskById = new Map(cachedTasks.map((task) => [String(task?.id || ""), task] as const));
-    enqueueTaskSync(uid, cachedTaskById, pendingTaskSyncIds, pendingTaskDeleteIds);
+    enqueueTaskSync(uid, cachedTaskById, Array.from(new Set([...pendingTaskSyncIds, ...migratedGuestTaskIds])), pendingTaskDeleteIds);
   }
   const pendingHistorySyncIds = Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).filter(Boolean);
-  pendingHistorySyncIds.forEach((taskId) => {
+  if (migratedGuestHistoryTaskIds.length) markPendingHistorySync(migratedGuestHistoryTaskIds);
+  Array.from(new Set([...pendingHistorySyncIds, ...migratedGuestHistoryTaskIds])).forEach((taskId) => {
     enqueueHistoryReplace(uid, taskId, Array.isArray(cachedHistory?.[taskId]) ? cachedHistory[taskId] : []);
   });
   const pendingLiveSessionSyncIds = Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).filter(Boolean);
-  pendingLiveSessionSyncIds.forEach((taskId) => {
+  if (migratedGuestLiveSessionTaskIds.length) markPendingLiveSessionSync(migratedGuestLiveSessionTaskIds);
+  Array.from(new Set([...pendingLiveSessionSyncIds, ...migratedGuestLiveSessionTaskIds])).forEach((taskId) => {
     const session = normalizeLiveTaskSession(cachedLiveSessions?.[taskId]);
     if (session) {
       enqueueLiveSessionUpsert(uid, session);
@@ -1114,6 +1170,8 @@ export function buildDefaultCloudPreferences() {
     webPushAlertsEnabled: false,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
+    checkpointAlertSoundMode: "once" as const,
+    checkpointAlertToastMode: "auto5s" as const,
     optimalProductivityStartTime: DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
     optimalProductivityEndTime: DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
@@ -1395,11 +1453,72 @@ function flushQueuedTaskSync(uid: string): void {
     inFlightTaskQueueSync = null;
     if (queuedTaskDeletes.size || queuedTaskUpsertsById.size) {
       const activeUid = currentUid();
-      if (activeUid) flushQueuedTaskSync(activeUid);
+      if (activeUid) scheduleCloudQueueFlush("tasks", activeUid, flushQueuedTaskSync);
     }
   });
   inFlightTaskQueueSync = syncPromise;
   void trackInFlightTaskSync(syncPromise);
+}
+
+function hasMeaningfulWorkspace(input: {
+  tasks?: Task[] | null;
+  historyByTaskId?: HistoryByTaskId | null;
+  liveSessionsByTaskId?: LiveSessionsByTaskId | null;
+  deletedTaskMeta?: DeletedTaskMeta | null;
+}) {
+  return (
+    (Array.isArray(input.tasks) && input.tasks.length > 0) ||
+    Object.values(input.historyByTaskId || {}).some((rows) => Array.isArray(rows) && rows.length > 0) ||
+    Object.keys(input.liveSessionsByTaskId || {}).length > 0 ||
+    Object.keys(input.deletedTaskMeta || {}).length > 0
+  );
+}
+
+function chooseGuestWorkspaceMigration(uid: string, cloudHasWorkspace: boolean): "upload" | "cloud" | "guest" {
+  if (!cloudHasWorkspace) return "upload";
+  if (typeof window === "undefined") return "cloud";
+  try {
+    const key = `${STORAGE_KEY}:guestMigrationChoice:${uid}`;
+    const stored = String(window.sessionStorage.getItem(key) || "").trim();
+    if (stored === "upload" || stored === "cloud" || stored === "guest") return stored;
+    const answer = window.prompt(
+      [
+        "You have local guest TaskLaunch data and this account already has cloud data.",
+        "Choose what to do before loading the account:",
+        "1 = upload guest data into this account",
+        "2 = use cloud data on this device",
+        "3 = stay in guest mode for now",
+      ].join("\n"),
+      "2"
+    );
+    const normalized = String(answer || "").trim();
+    const choice = normalized === "1" ? "upload" : normalized === "3" ? "guest" : "cloud";
+    window.sessionStorage.setItem(key, choice);
+    return choice;
+  } catch {
+    return "cloud";
+  }
+}
+
+function clearGuestWorkspaceShadow(): void {
+  saveScopedShadowData<Task[]>(SHADOW_TASKS_KEY, GUEST_UID, []);
+  saveScopedShadowData<HistoryByTaskId>(SHADOW_HISTORY_KEY, GUEST_UID, {});
+  saveScopedShadowData<LiveSessionsByTaskId>(SHADOW_LIVE_SESSIONS_KEY, GUEST_UID, {});
+  saveScopedShadowData<DeletedTaskMeta>(SHADOW_DELETED_META_KEY, GUEST_UID, {});
+}
+
+function mergeHistoryRows(cloudRows: HistoryEntry[] | null | undefined, guestRows: HistoryEntry[] | null | undefined) {
+  const next: HistoryEntry[] = [];
+  const seen = new Set<string>();
+  [...(Array.isArray(cloudRows) ? cloudRows : []), ...(Array.isArray(guestRows) ? guestRows : [])].forEach((row) => {
+    const normalized = normalizeHistoryEntry(row);
+    if (!normalized) return;
+    const signature = historyRowsSignature([normalized]);
+    if (seen.has(signature)) return;
+    seen.add(signature);
+    next.push(normalized);
+  });
+  return next;
 }
 
 function enqueueTaskSync(
@@ -1456,7 +1575,7 @@ function flushQueuedHistorySync(uid: string): void {
     inFlightHistoryQueueSync = null;
     if (queuedHistoryReplacementsByTaskId.size) {
       const activeUid = currentUid();
-      if (activeUid) flushQueuedHistorySync(activeUid);
+      if (activeUid) scheduleCloudQueueFlush("history", activeUid, flushQueuedHistorySync);
     }
   });
   inFlightHistoryQueueSync = syncPromise;
@@ -1536,7 +1655,7 @@ function flushQueuedLiveSessionSync(uid: string): void {
     inFlightLiveSessionQueueSync = null;
     if (queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) {
       const activeUid = currentUid();
-      if (activeUid) flushQueuedLiveSessionSync(activeUid);
+      if (activeUid) scheduleCloudQueueFlush("liveSessions", activeUid, flushQueuedLiveSessionSync);
     }
   });
   inFlightLiveSessionQueueSync = syncPromise;

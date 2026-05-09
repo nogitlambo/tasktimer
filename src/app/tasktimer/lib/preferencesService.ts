@@ -37,6 +37,8 @@ type PreferencesStateSnapshot = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  checkpointAlertSoundMode: "once" | "repeat";
+  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   rewards: RewardProgressV1;
@@ -111,6 +113,8 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       webPushAlertsEnabled: state.webPushAlertsEnabled,
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
+      checkpointAlertSoundMode: state.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
+      checkpointAlertToastMode: state.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
       optimalProductivityStartTime: normalizeTimeOfDay(
         state.optimalProductivityStartTime,
         DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
@@ -226,11 +230,13 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return loadMobilePushAlertsEnabled();
   }
 
-  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled"> {
+  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled" | "checkpointAlertSoundMode" | "checkpointAlertToastMode"> {
     const prefs = getStoredOrCachedPreferences();
     return {
       checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled !== false,
       checkpointAlertToastEnabled: prefs.checkpointAlertToastEnabled !== false,
+      checkpointAlertSoundMode: prefs.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
+      checkpointAlertToastMode: prefs.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
     };
   }
 

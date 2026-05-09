@@ -129,8 +129,9 @@ export async function POST(req: Request) {
     const details = asString(body.details, 8000);
     const type = normalizeFeedbackType(body.type);
     const isAnonymous = normalizeBoolean(body.isAnonymous);
+    const isGuest = uid.startsWith("guest:");
     const authorProfile = isAnonymous ? null : await loadFeedbackAuthorProfile(uid);
-    const authorEmail = isAnonymous ? null : email || null;
+    const authorEmail = isAnonymous ? null : email || (isGuest ? asString(body.authorEmail, 320) || null : null);
     const authorDisplayName = isAnonymous ? null : authorProfile?.displayName || null;
     const authorRankThumbnailSrc = isAnonymous ? null : authorProfile?.rankThumbnailSrc || null;
     const authorCurrentRankId = isAnonymous ? null : authorProfile?.currentRankId || null;

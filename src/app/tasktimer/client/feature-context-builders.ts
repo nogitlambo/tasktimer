@@ -588,6 +588,7 @@ type CreateDashboardRenderOptionsArgs = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
+  openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
   hasEntitlement: Parameters<typeof createTaskTimerDashboardRender>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerDashboardRender>[0]["getCurrentPlan"];
 };
@@ -662,6 +663,9 @@ type CreateDashboardOptionsArgs = {
   hasSelectedDashboardMomentumDriver: () => boolean;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
+  renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
+  renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
+  openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
 };
 
 type CreateDashboardFeatureOptionsArgs = {
@@ -683,6 +687,9 @@ type CreateDashboardFeatureOptionsArgs = {
     | "hasSelectedDashboardMomentumDriver"
     | "openDashboardHeatSummaryCard"
     | "closeDashboardHeatSummaryCard"
+    | "renderDashboardHeatSessionList"
+    | "renderDashboardHeatTaskList"
+    | "openDashboardHeatSessionSummary"
   >;
 };
 
@@ -859,6 +866,16 @@ export function createTaskTimerPreferencesContext(
     getCheckpointAlertToastEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertToastEnabled")),
     setCheckpointAlertToastEnabledState: (value) => {
       args.preferencesState.set("checkpointAlertToastEnabled", value);
+    },
+    getCheckpointAlertSoundMode: () =>
+      args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
+    setCheckpointAlertSoundModeState: (value) => {
+      args.preferencesState.set("checkpointAlertSoundMode", value === "repeat" ? "repeat" : "once");
+    },
+    getCheckpointAlertToastMode: () =>
+      args.preferencesState.get("checkpointAlertToastMode") === "manual" ? "manual" : "auto5s",
+    setCheckpointAlertToastModeState: (value) => {
+      args.preferencesState.set("checkpointAlertToastMode", value === "manual" ? "manual" : "auto5s");
     },
     getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
     setOptimalProductivityStartTimeState: (value) => {
@@ -1304,6 +1321,10 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     getCheckpointAlertToastEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertToastEnabled")),
+    getCheckpointAlertSoundMode: () =>
+      args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
+    getCheckpointAlertToastMode: () =>
+      args.preferencesState.get("checkpointAlertToastMode") === "manual" ? "manual" : "auto5s",
     getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
     getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
     render: args.render,
@@ -1406,6 +1427,7 @@ export function createTaskTimerDashboardRenderContext(
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
     getModeColor: args.getModeColor,
     addRangeMsToLocalDayMap: args.addRangeMsToLocalDayMap,
+    openHistoryEntryNoteOverlay: args.openHistoryEntryNoteOverlay,
     hasEntitlement: args.hasEntitlement,
     getCurrentPlan: args.getCurrentPlan,
   };
@@ -1468,6 +1490,9 @@ export function createTaskTimerDashboardContext(
     hasSelectedDashboardMomentumDriver: args.hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard: args.openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard: args.closeDashboardHeatSummaryCard,
+    renderDashboardHeatSessionList: args.renderDashboardHeatSessionList,
+    renderDashboardHeatTaskList: args.renderDashboardHeatTaskList,
+    openDashboardHeatSessionSummary: args.openDashboardHeatSessionSummary,
   };
 }
 
@@ -1485,6 +1510,9 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
+    renderDashboardHeatSessionList,
+    renderDashboardHeatTaskList,
+    openDashboardHeatSessionSummary,
   } = dashboardRenderApi;
 
   let dashboardBusyApi: { isBusy: () => boolean } = { isBusy: () => false };
@@ -1518,6 +1546,10 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       openDashboardHeatSummaryCard: (dayKey, dateLabel) =>
         openDashboardHeatSummaryCard(dayKey, dateLabel),
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
+      renderDashboardHeatSessionList: (dayKey, dateLabel, taskId) =>
+        renderDashboardHeatSessionList(dayKey, dateLabel, taskId),
+      renderDashboardHeatTaskList: (dayKey, dateLabel) => renderDashboardHeatTaskList(dayKey, dateLabel),
+      openDashboardHeatSessionSummary: (taskId, identity) => openDashboardHeatSessionSummary(taskId, identity),
     })
   );
 

@@ -131,6 +131,9 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
                 Get Started
               </Link>
+              <Link href="/tasklaunch" className="landingV2SecondaryBtn displayFont">
+                Continue without account
+              </Link>
               <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
                 Watch Demo
               </Link>

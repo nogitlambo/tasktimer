@@ -22,7 +22,7 @@ import { formatTime, formatTwo, nowMs } from "../lib/time";
 import type { Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerDashboardRenderContext } from "./context";
-import { createHistorySpectrumFill } from "./history-chart-fill";
+import { getHistorySpectrumColor } from "./history-chart-fill";
 import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
@@ -57,9 +57,36 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_FALLBACK_COLOR = "#6f7785";
   const DASHBOARD_COMPLETED_SEGMENT_GAP_PCT = 1.2;
   const DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT = 1.4;
+  type DashboardHeatHistoryEntry = {
+    ts: number;
+    ms: number;
+    name: string;
+    note?: string;
+  };
+  type DashboardHeatTaskSummaryRow = {
+    taskId: string;
+    taskName: string;
+    totalMs: number;
+    color: string;
+    entries: DashboardHeatHistoryEntry[];
+  };
 
   function formatXpNumber(value: number) {
     return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+  }
+
+  function formatDashboardHeatSessionDateTime(ts: number) {
+    const date = new Date(ts);
+    if (!Number.isFinite(date.getTime())) return "";
+    const month = formatTwo(date.getMonth() + 1);
+    const day = formatTwo(date.getDate());
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = formatTwo(date.getMinutes());
+    const suffix = hours >= 12 ? "PM" : "AM";
+    hours %= 12;
+    if (hours === 0) hours = 12;
+    return `${month}/${day}/${year} ${hours}:${minutes} ${suffix}`;
   }
 
   function syncXpValueAlert(valueEl: HTMLElement | null, totalXp: number, showAlert: boolean, alertClassName: string) {
@@ -1778,24 +1805,37 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       taskById.set(taskId, task);
     });
 
-    const rows: Array<{ taskId: string; taskName: string; totalMs: number; color: string }> = [];
+    const rows: DashboardHeatTaskSummaryRow[] = [];
     Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
       const taskId = String(taskIdRaw || "").trim();
       if (!taskId || !includedTaskIds.has(taskId)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
       if (!entries.length) return;
-      const totalMs = entries.reduce((sum, entry: any) => {
+      const matchingEntries = entries.reduce((list, entry: any) => {
         const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
         const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ms <= 0) return sum;
-        return localDayKey(ts) === dayKey ? sum + ms : sum;
-      }, 0);
+        if (!Number.isFinite(ts) || ms <= 0 || localDayKey(ts) !== dayKey) return list;
+        list.push({
+          ts,
+          ms,
+          name: String(entry?.name || "").trim() || taskNameById.get(taskId) || "Task",
+          note: typeof entry?.note === "string" ? entry.note : undefined,
+        });
+        return list;
+      }, [] as DashboardHeatHistoryEntry[]);
+      const totalMs = matchingEntries.reduce((sum, entry) => sum + entry.ms, 0);
       if (totalMs <= 0) return;
+      matchingEntries.sort((a, b) => {
+        if (b.ts !== a.ts) return b.ts - a.ts;
+        if (b.ms !== a.ms) return b.ms - a.ms;
+        return a.name.localeCompare(b.name);
+      });
       rows.push({
         taskId,
         taskName: taskNameById.get(taskId) || "Task",
         totalMs,
         color: taskById.has(taskId) ? sessionColorForTaskMs(taskById.get(taskId) as Task, totalMs) : "",
+        entries: matchingEntries,
       });
     });
 
@@ -1804,6 +1844,94 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       return a.taskName.localeCompare(b.taskName);
     });
     return rows;
+  }
+
+  function renderDashboardHeatTaskList(dayKey: string, dateLabel: string) {
+    const rows = getDashboardHeatDaySummaryRows(dayKey);
+    if (!els.dashboardHeatSummaryBody) return false;
+    if (!rows.length) return false;
+    els.dashboardHeatSummaryBody.innerHTML = `
+      <div class="dashboardHeatSummaryList" role="list" aria-label="Logged task time for ${ctx.escapeHtmlUI(dateLabel)}">
+        ${rows
+          .map((row) => {
+            const buttonLabel =
+              row.entries.length === 1
+                ? `Open session summary for ${row.taskName}`
+                : `View ${row.entries.length} sessions for ${row.taskName}`;
+            return `<button class="dashboardHeatSummaryRow dashboardHeatSummaryRowBtn" type="button" role="listitem" data-heat-summary-mode="task" data-heat-date="${ctx.escapeHtmlUI(
+              dayKey
+            )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" data-heat-task-id="${ctx.escapeHtmlUI(
+              row.taskId
+            )}" data-heat-task-name="${ctx.escapeHtmlUI(row.taskName)}" aria-label="${ctx.escapeHtmlUI(buttonLabel)}">
+                <span class="dashboardHeatSummaryTask">${ctx.escapeHtmlUI(row.taskName)}</span>
+                <span class="dashboardHeatSummaryTime"${row.color ? ` style="color:${ctx.escapeHtmlUI(row.color)}"` : ""}>${ctx.escapeHtmlUI(formatTime(row.totalMs))}</span>
+              </button>`;
+          })
+          .join("")}
+      </div>
+    `;
+    return true;
+  }
+
+  function renderDashboardHeatSessionList(dayKey: string, dateLabel: string, taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "").trim();
+    const taskRow = getDashboardHeatDaySummaryRows(dayKey).find((row) => row.taskId === taskId) || null;
+    if (!taskRow || !els.dashboardHeatSummaryBody) return false;
+    if (taskRow.entries.length === 1) {
+      const entry = taskRow.entries[0];
+      return !!entry && openDashboardHeatSessionSummary(taskRow.taskId, { ts: entry.ts, ms: entry.ms, name: entry.name });
+    }
+    els.dashboardHeatSummaryBody.innerHTML = `
+      <div class="dashboardHeatSummaryDrilldownHead">
+        <button class="btn btn-ghost small dashboardHeatSummaryBackBtn" type="button" data-heat-summary-back="tasks" data-heat-date="${ctx.escapeHtmlUI(
+          dayKey
+        )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" aria-label="Back to task totals">
+          Back
+        </button>
+        <div class="dashboardHeatSummaryDrilldownTitle">${ctx.escapeHtmlUI(taskRow.taskName)}</div>
+      </div>
+      <div class="dashboardHeatSummaryList" role="list" aria-label="Sessions for ${ctx.escapeHtmlUI(taskRow.taskName)} on ${ctx.escapeHtmlUI(dateLabel)}">
+        ${taskRow.entries
+          .map((entry) => {
+            const metaText = formatDashboardHeatSessionDateTime(entry.ts);
+            const meta = ctx.escapeHtmlUI(metaText);
+            const buttonLabel = `${entry.name} ${formatTime(entry.ms)} ${metaText}`;
+            return `<button class="dashboardHeatSummaryRow dashboardHeatSummaryRowBtn dashboardHeatSummarySessionRow" type="button" role="listitem" data-heat-summary-mode="session" data-heat-date="${ctx.escapeHtmlUI(
+              dayKey
+            )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" data-heat-task-id="${ctx.escapeHtmlUI(
+              taskRow.taskId
+            )}" data-heat-task-name="${ctx.escapeHtmlUI(taskRow.taskName)}" data-heat-entry-ts="${ctx.escapeHtmlUI(
+              String(entry.ts)
+            )}" data-heat-entry-ms="${ctx.escapeHtmlUI(String(entry.ms))}" data-heat-entry-name="${ctx.escapeHtmlUI(
+              entry.name
+            )}" aria-label="${ctx.escapeHtmlUI(buttonLabel)}">
+              <span class="dashboardHeatSummaryTaskWrap">
+                <span class="dashboardHeatSummaryTask">${ctx.escapeHtmlUI(entry.name)}</span>
+                <span class="dashboardHeatSummaryMeta">${meta}</span>
+              </span>
+              <span class="dashboardHeatSummaryTime">${ctx.escapeHtmlUI(formatTime(entry.ms))}</span>
+            </button>`;
+          })
+          .join("")}
+      </div>
+    `;
+    return true;
+  }
+
+  function openDashboardHeatSessionSummary(taskIdRaw: string, identity: { ts: number; ms: number; name: string }) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return false;
+    const entries = Array.isArray(ctx.getHistoryByTaskId()?.[taskId]) ? ctx.getHistoryByTaskId()[taskId] : [];
+    const match =
+      entries.find(
+        (entry: any) =>
+          ctx.normalizeHistoryTimestampMs(entry?.ts) === identity.ts &&
+          Math.max(0, Number(entry?.ms) || 0) === identity.ms &&
+          String(entry?.name || "").trim() === identity.name
+      ) || null;
+    if (!match) return false;
+    ctx.openHistoryEntryNoteOverlay(taskId, [match]);
+    return true;
   }
 
   function findDashboardHeatDayButton(dayKeyRaw: string): HTMLElement | null {
@@ -1855,25 +1983,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const dayKey = String(dayKeyRaw || "").trim();
     if (!dayKey) return;
     const dateLabel = String(dateLabelRaw || "").trim() || dayKey;
-    const rows = getDashboardHeatDaySummaryRows(dayKey);
-    if (!rows.length) return;
+    if (!renderDashboardHeatTaskList(dayKey, dateLabel)) return;
     dashboardHeatSelectedDayKey = dayKey;
     if (els.dashboardHeatSummaryDate) {
       els.dashboardHeatSummaryDate.textContent = dateLabel;
-    }
-    if (els.dashboardHeatSummaryBody) {
-      els.dashboardHeatSummaryBody.innerHTML = `
-        <div class="dashboardHeatSummaryList" role="list" aria-label="Logged task time for ${ctx.escapeHtmlUI(dateLabel)}">
-          ${rows
-            .map(
-              (row) => `<div class="dashboardHeatSummaryRow" role="listitem">
-                <span class="dashboardHeatSummaryTask">${ctx.escapeHtmlUI(row.taskName)}</span>
-                <span class="dashboardHeatSummaryTime"${row.color ? ` style="color:${ctx.escapeHtmlUI(row.color)}"` : ""}>${ctx.escapeHtmlUI(formatTime(row.totalMs))}</span>
-              </div>`
-            )
-            .join("")}
-        </div>
-      `;
     }
     setDashboardHeatFlipState(true);
     window.setTimeout(() => {
@@ -2163,7 +2276,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const x = startX + idx * (barWidth + gap);
       const barHeight = Math.max(2, Math.round(chartHeight * ratio));
       const y = chartBottom - barHeight;
-      context.fillStyle = createHistorySpectrumFill(context, y, chartBottom);
+      context.fillStyle = getHistorySpectrumColor(ratio);
       context.globalAlpha = 0.92;
       context.fillRect(x, y, barWidth, barHeight);
       context.globalAlpha = 1;
@@ -2224,5 +2337,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
+    renderDashboardHeatSessionList,
+    renderDashboardHeatTaskList,
+    openDashboardHeatSessionSummary,
   };
 }

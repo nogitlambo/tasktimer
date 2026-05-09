@@ -158,33 +158,6 @@ export default function AddTaskOverlay() {
                 </button>
               </div>
             </div>
-
-            <details className="editTaskAdvancedMenu checkpointAlertsGroup" id="addTaskAdvancedMenu">
-              <summary className="editTaskAdvancedSummary">
-                <span>Advanced</span>
-              </summary>
-              <div className="editTaskAdvancedBody">
-                <div className="field checkpointAlertBehaviourField" id="addTaskCheckpointAlertBehaviourField">
-                  <label htmlFor="addTaskCheckpointSoundModeSelect">Checkpoint alert behaviour</label>
-                  <div className="editCheckpointAlertBehaviourGrid">
-                    <div className="field checkpointAlertSoundModeField" id="addTaskCheckpointSoundModeField">
-                      <label htmlFor="addTaskCheckpointSoundModeSelect">Sound</label>
-                      <select id="addTaskCheckpointSoundModeSelect" defaultValue="once">
-                        <option value="once">Once</option>
-                        <option value="repeat">Repeat until dismissed</option>
-                      </select>
-                    </div>
-                    <div className="field checkpointAlertSoundModeField" id="addTaskCheckpointToastModeField">
-                      <label htmlFor="addTaskCheckpointToastModeSelect">Toast</label>
-                      <select id="addTaskCheckpointToastModeSelect" defaultValue="auto5s">
-                        <option value="auto5s">Auto dismiss after 5 seconds</option>
-                        <option value="manual">Dismiss manually</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
           </form>
           <div className="footerBtns addTaskFooterBtns">
             <button className="btn btn-ghost" id="addTaskCancelBtn" type="button">

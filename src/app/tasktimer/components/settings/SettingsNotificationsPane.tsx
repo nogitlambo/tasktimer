@@ -35,6 +35,20 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               <span>Checkpoint Toast</span>
               <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
             </div>
+            <div className="field checkpointAlertSoundModeField" id="taskCheckpointSoundModeField">
+              <label htmlFor="taskCheckpointSoundModeSelect">Sound Behaviour</label>
+              <select id="taskCheckpointSoundModeSelect" defaultValue="once">
+                <option value="once">Once</option>
+                <option value="repeat">Repeat until dismissed</option>
+              </select>
+            </div>
+            <div className="field checkpointAlertSoundModeField" id="taskCheckpointToastModeField">
+              <label htmlFor="taskCheckpointToastModeSelect">Toast Behaviour</label>
+              <select id="taskCheckpointToastModeSelect" defaultValue="auto5s">
+                <option value="auto5s">Auto dismiss after 5 seconds</option>
+                <option value="manual">Dismiss manually</option>
+              </select>
+            </div>
           </div>
         </section>
       </div>

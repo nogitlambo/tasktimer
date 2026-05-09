@@ -574,6 +574,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       normalizeHistoryTimestampMs,
       getModeColor: (mode) => getModeColor(mode),
       addRangeMsToLocalDayMap: (dayMap, startMs, endMs) => addRangeMsToLocalDayMap(dayMap, startMs, endMs, localDayKey),
+      openHistoryEntryNoteOverlay: (taskId, entries) => historyInlineApi?.openHistoryEntryNoteOverlay(taskId, entries),
       hasEntitlement,
       getCurrentPlan,
     },

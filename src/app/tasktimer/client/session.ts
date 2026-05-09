@@ -1296,7 +1296,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const checkpointTimeText = ctx.formatTime(targetSec * 1000);
       const checkpointDescText = String(m.description || "").trim();
       if (ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled) {
-        const toastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
+        const toastMode = ctx.getCheckpointAlertToastMode();
         enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
           autoCloseMs: toastMode === "manual" ? null : 5000,
           taskId,
@@ -1305,7 +1305,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           checkpointTimeText,
           checkpointDescText,
           muteRepeatOnManualDismiss:
-            ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && (task.checkpointSoundMode || "once") === "repeat",
+            ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && ctx.getCheckpointAlertSoundMode() === "repeat",
         });
       }
       if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
@@ -1332,7 +1332,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     baselineByTaskId[taskId] = elapsedWholeSec;
     if (beepCount > 0) {
-      if ((task.checkpointSoundMode || "once") === "repeat") startCheckpointRepeatAlert(taskId);
+      if (ctx.getCheckpointAlertSoundMode() === "repeat") startCheckpointRepeatAlert(taskId);
       else enqueueCheckpointBeeps(beepCount);
     }
     if (shouldOpenTimeGoalModal) {

@@ -437,6 +437,7 @@
   display:grid;
   gap:12px;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  padding: 0 8px;
   background:transparent;
 }
 .dashboardGrid.isEditMode .dashboardCard{
@@ -1858,7 +1859,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 28%, rgba(255,255,255,0) 100%),
     radial-gradient(140% 120% at 0% 0%, rgba(255,255,255,.05), rgba(255,255,255,0) 36%),
-    linear-gradient(180deg, #06080d 0%, #04060b 100%);
+    linear-gradient(180deg, #1a1b20 0%, #1a1b20 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.06),
     inset 0 0 0 1px rgba(255,255,255,.02),
@@ -1891,7 +1892,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   gap: 22px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  padding: 20px 20px 18px;
+  padding: 20px 8px 18px;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCardTitle,
@@ -5909,7 +5910,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  background: #14161a !important;
+  background: #1a1b20 !important;
   border: 0 !important;
   box-shadow: none !important;
 }
@@ -5920,7 +5921,7 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
 body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-  background: #14161a !important;
+  background: #1a1b20 !important;
   border: 0 !important;
 }
 
@@ -7040,7 +7041,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     gap: 18px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-    padding: 18px 18px 16px;
+    padding: 18px 8px 16px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChartWrap,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroChartWrap,
@@ -7053,6 +7054,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid{
+    padding: 0;
+  }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
     border-radius: 0;
@@ -7062,7 +7066,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     gap: 14px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
-    padding: 16px 16px 14px;
+    padding: 16px 8px 14px;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
     font-size: 30px;

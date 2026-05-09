@@ -160,16 +160,13 @@ export default function FeedbackScreen() {
 
   const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const getFeedbackValidationMessage = useCallback(() => {
-    const effectiveViewerUid = String(getFirebaseAuthClient()?.currentUser?.uid || viewerUid).trim();
-    if (!effectiveViewerUid) return "You must be signed in to submit feedback.";
     if (feedbackAttachmentBusy) return "Please wait for pasted screenshots to finish processing.";
-    if (!feedbackAnonymous && !feedbackEmail.trim()) return "Email address is required unless you log feedback as anonymous.";
-    if (!feedbackAnonymous && !isValidFeedbackEmail) return "Enter a valid email address or log feedback as anonymous.";
+    if (feedbackEmail.trim() && !isValidFeedbackEmail) return "Enter a valid email address or leave it blank.";
     if (!feedbackType) return "Select a feedback type before submitting.";
     if (!feedbackTitle.trim()) return "Enter a feedback title before submitting.";
     if (!feedbackDetails.trim()) return "Enter feedback details before submitting.";
     return "";
-  }, [feedbackAnonymous, feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail, viewerUid]);
+  }, [feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail]);
 
   const handleSubmitFeedback = useCallback(async () => {
     const validationMessage = getFeedbackValidationMessage();
@@ -192,19 +189,15 @@ export default function FeedbackScreen() {
     const effectiveViewerUid = String(currentUser?.uid || viewerUid).trim();
     const effectiveViewerDisplayName = String(currentUser?.displayName || viewerDisplayName).trim();
     const effectiveViewerEmail = feedbackAnonymous ? null : String(currentUser?.email || feedbackEmail).trim() || null;
-    if (!currentUser || !session?.idToken || !effectiveViewerUid) {
-      setFeedbackSubmitting(false);
-      setFeedbackError("You must be signed in to submit feedback.");
-      return;
-    }
     const saved = await createFeedbackItem({
-      authToken: session.idToken,
+      authToken: session?.idToken || "",
       ownerUid: effectiveViewerUid,
       authorDisplayName: effectiveViewerDisplayName || null,
       authorEmail: effectiveViewerEmail,
       authorRankThumbnailSrc: viewerRankThumbnailSrc,
       authorCurrentRankId: viewerCurrentRankId,
-      isAnonymous: feedbackAnonymous,
+      isAnonymous: feedbackAnonymous || (!currentUser && !feedbackEmail.trim()),
+      guest: !currentUser,
       type: feedbackType as FeedbackType,
       title: feedbackTitle,
       details: feedbackDetails,

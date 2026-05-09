@@ -1,6 +1,6 @@
 
 import AppImg from "../../../components/AppImg";
-import { COMPLETION_DIFFICULTY_OPTIONS } from "../lib/completionDifficulty";
+import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
 
 export default function HistoryManagerScreen({ showHeader = true }: { showHeader?: boolean }) {
   return (
@@ -105,7 +105,7 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
                 role="radiogroup"
                 aria-labelledby="historyManagerManualEntrySentimentQuestion"
               >
-                {COMPLETION_DIFFICULTY_OPTIONS.map((option) => (
+                {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
                   <button
                     aria-checked="false"
                     className="hmManualEntrySentimentBtn"

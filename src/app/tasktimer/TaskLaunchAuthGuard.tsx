@@ -8,14 +8,20 @@ import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushN
 import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
 
-type GuardStatus = "checking" | "authed";
+type GuardStatus = "checking" | "ready";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
-export default function TaskLaunchAuthGuard({ children }: { children: ReactNode }) {
+export default function TaskLaunchAuthGuard({
+  children,
+  requireAuth = false,
+}: {
+  children: ReactNode;
+  requireAuth?: boolean;
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>(() => {
     const auth = getFirebaseAuthClient();
-    return auth?.currentUser ? "authed" : "checking";
+    return auth?.currentUser || !requireAuth ? "ready" : "checking";
   });
 
   function readStoredMobilePushAlertsEnabled() {
@@ -42,21 +48,22 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
-      router.replace("/");
+      if (requireAuth) router.replace("/");
       return;
     }
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setStatus("authed");
+      if (user || !requireAuth) {
+        setStatus("ready");
         return;
       }
       router.replace("/");
     });
     return () => unsub();
-  }, [router]);
+  }, [requireAuth, router]);
 
   useEffect(() => {
     const syncPreference = (mobileEnabled: boolean, webEnabled: boolean) => {
+      if (!getFirebaseAuthClient()?.currentUser) return;
       void syncTaskTimerPushNotificationsEnabled({ mobileEnabled, webEnabled }).catch(() => {});
     };
     const cachedPreferences = workspaceRepository.loadCachedPreferences();
@@ -80,6 +87,6 @@ export default function TaskLaunchAuthGuard({ children }: { children: ReactNode 
     };
   }, []);
 
-  if (status !== "authed") return null;
+  if (status !== "ready") return null;
   return <>{children}</>;
 }

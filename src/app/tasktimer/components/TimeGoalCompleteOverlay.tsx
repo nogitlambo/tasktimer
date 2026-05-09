@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import AppImg from "../../../components/AppImg";
-import type { CompletionDifficulty } from "../lib/completionDifficulty";
+import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
 
 type ConfettiPiece = {
   className: string;
@@ -40,16 +40,6 @@ function buildConfettiPieces(): ConfettiPiece[] {
 
 const CONFETTI_PIECES = buildConfettiPieces();
 
-const TIME_GOAL_COMPLETE_EFFORT_OPTIONS: Array<{
-  value: CompletionDifficulty;
-  label: string;
-  iconSrc: string;
-}> = [
-  { value: 5, label: "Low", iconSrc: "/sentiment/very_easy.svg" },
-  { value: 3, label: "Moderate", iconSrc: "/sentiment/neutral.svg" },
-  { value: 1, label: "High", iconSrc: "/sentiment/very_difficult.svg" },
-];
-
 export default function TimeGoalCompleteOverlay() {
   return (
     <div className="overlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
@@ -63,7 +53,7 @@ export default function TimeGoalCompleteOverlay() {
         <fieldset className="timeGoalCompleteDifficulty" aria-describedby="timeGoalCompleteDifficultyHint">
           <legend id="timeGoalCompleteDifficultyQuestion">Effort required to complete this task today?</legend>
           <div className="timeGoalCompleteDifficultyIcons" id="timeGoalCompleteDifficultyGroup" role="radiogroup" aria-labelledby="timeGoalCompleteDifficultyQuestion">
-            {TIME_GOAL_COMPLETE_EFFORT_OPTIONS.map((option) => (
+            {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
               <button
                 aria-checked="false"
                 className="timeGoalCompleteDifficultyIconBtn"

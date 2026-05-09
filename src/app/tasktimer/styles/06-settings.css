@@ -1982,7 +1982,7 @@ body[data-theme="purple"] .historyMeta{
   justify-content:flex-start;
   gap:12px;
   min-height:190px;
-  padding:16px 12px 14px;
+  padding:16px 8px 14px;
   border:1px solid rgba(255,255,255,.12);
   border-radius:0;
   background:#17191d;
@@ -2119,6 +2119,7 @@ body[data-theme="purple"] .historyMeta{
   align-items:center;
   justify-content:flex-start;
   gap:0;
+  padding-bottom:0;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemTitleRow,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemTitleRow{

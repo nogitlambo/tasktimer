@@ -13,7 +13,6 @@ import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
-const NATIVE_WEB_SIGN_IN_ROUTE = "/web-sign-in";
 
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
@@ -71,13 +70,10 @@ function logFirebaseAuthError(stage: string, err: unknown) {
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isNativeRuntime = isNativeOrFileRuntime();
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
-  const [allowSignedOutLanding, setAllowSignedOutLanding] = useState(false);
-  const [checkedSignedOutBypass, setCheckedSignedOutBypass] = useState(false);
   const [resolvedLanding, setResolvedLanding] = useState<"classic" | "v2" | null>(null);
 
   const landingParam = String(searchParams.get("landing") || "").trim().toLowerCase();
@@ -131,7 +127,6 @@ function HomeContent() {
     }
     const timer = window.setTimeout(() => {
       if (shouldBypass) {
-        setAllowSignedOutLanding(true);
         setBypassAutoRedirect(true);
         const auth = getFirebaseAuthClient();
         if (auth) {
@@ -140,21 +135,9 @@ function HomeContent() {
           });
         }
       }
-      setCheckedSignedOutBypass(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!checkedSignedOutBypass || !isNativeRuntime || hasRedirected || allowSignedOutLanding || typeof window === "undefined") return;
-    const qs = window.location.search || "";
-    const hash = window.location.hash || "";
-    const timer = window.setTimeout(() => {
-      setHasRedirected(true);
-      router.replace(`${NATIVE_WEB_SIGN_IN_ROUTE}${qs}${hash}`);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [allowSignedOutLanding, checkedSignedOutBypass, hasRedirected, isNativeRuntime, router]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -226,7 +209,6 @@ function HomeContent() {
     showActions,
   };
 
-  if (isNativeRuntime && !allowSignedOutLanding) return null;
   if (!effectiveLanding) return null;
 
   return isExperimentalLanding ? (

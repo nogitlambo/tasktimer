@@ -128,6 +128,11 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
               {submitError ? <p className="landingV2SubscribeMessage isError">{submitError}</p> : null}
               {submitSuccess ? <p className="landingV2SubscribeMessage isSuccess">{submitSuccess}</p> : null}
             </form>
+            <div className="landingV2Actions isVisible">
+              <Link href="/tasklaunch" className="landingV2SecondaryBtn displayFont">
+                Continue without account
+              </Link>
+            </div>
           </div>
         </section>
       </div>

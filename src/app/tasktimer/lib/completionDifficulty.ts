@@ -20,6 +20,16 @@ export const COMPLETION_DIFFICULTY_OPTIONS: Array<{
   { value: 5, label: COMPLETION_DIFFICULTY_LABELS[5], iconSrc: "/sentiment/very_easy.svg" },
 ];
 
+export const COMPLETION_DIFFICULTY_COMPACT_OPTIONS: Array<{
+  value: CompletionDifficulty;
+  label: string;
+  iconSrc: string;
+}> = [
+  { value: 5, label: "Low", iconSrc: "/sentiment/very_easy.svg" },
+  { value: 3, label: "Moderate", iconSrc: "/sentiment/neutral.svg" },
+  { value: 1, label: "High", iconSrc: "/sentiment/very_difficult.svg" },
+];
+
 export function normalizeCompletionDifficulty(value: unknown): CompletionDifficulty | undefined {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 5) return undefined;

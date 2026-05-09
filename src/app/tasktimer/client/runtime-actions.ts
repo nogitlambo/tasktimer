@@ -30,6 +30,7 @@ type CreateTaskTimerRuntimeActionsOptions = {
   historyInlineApi: () =>
     | {
         getHistoryEntryNote: (entry: any) => string;
+        openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
         clearHistoryEntryNoteOverlayPosition: () => void;
       }
     | null;
@@ -105,6 +106,10 @@ export function createTaskTimerRuntimeActions(options: CreateTaskTimerRuntimeAct
     return options.historyInlineApi()?.getHistoryEntryNote(entry) || "";
   }
 
+  function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
+    options.historyInlineApi()?.openHistoryEntryNoteOverlay(taskId, entries);
+  }
+
   function clearHistoryEntryNoteOverlayPosition() {
     options.historyInlineApi()?.clearHistoryEntryNoteOverlayPosition();
   }
@@ -121,6 +126,7 @@ export function createTaskTimerRuntimeActions(options: CreateTaskTimerRuntimeAct
     syncFocusSessionNotesAccordion,
     captureSessionNoteSnapshot,
     getHistoryEntryNote,
+    openHistoryEntryNoteOverlay,
     clearHistoryEntryNoteOverlayPosition,
   };
 }

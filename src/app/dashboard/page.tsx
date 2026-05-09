@@ -1,5 +1,5 @@
-import TaskTimerMainAppClient from "../tasktimer/TaskTimerMainAppClient";
+import TaskTimerMainAppPage from "../tasktimer/TaskTimerMainAppPage";
 
 export default function DashboardPage() {
-  return <TaskTimerMainAppClient initialPage="dashboard" />;
+  return <TaskTimerMainAppPage initialPage="dashboard" />;
 }

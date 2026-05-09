@@ -157,9 +157,31 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
   strategist: "/insignias/007_strategist.png",
   director: "/insignias/008_director.png",
   ascendent: "/insignias/009_ascendent.png",
-  commander: "/insignias/commander.png",
-  architect: "/insignias/architect.png",
+  commander: "/insignias/010_commander.png",
+  architect: "/insignias/011_architect.png",
+  overseer: "/insignias/012_overseer.png",
+  visionary: "/insignias/013_visionary.png",
+  sovereign: "/insignias/014_soveriegn.png",
+  mythic: "/insignias/015_mythic.png",
 };
+
+const AVAILABLE_RANK_MODAL_THUMBNAIL_SRCS = new Set([
+  "/insignias/001_initiate.png",
+  "/insignias/002_operator.png",
+  "/insignias/003_technician.png",
+  "/insignias/004_engineer.png",
+  "/insignias/005_analyst.png",
+  "/insignias/006_specialist.png",
+  "/insignias/007_strategist.png",
+  "/insignias/008_director.png",
+  "/insignias/009_ascendent.png",
+  "/insignias/010_commander.png",
+  "/insignias/011_architect.png",
+  "/insignias/012_overseer.png",
+  "/insignias/013_visionary.png",
+  "/insignias/014_soveriegn.png",
+  "/insignias/015_mythic.png",
+]);
 
 export const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
 
@@ -174,8 +196,12 @@ const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
   strategist: "/insignias/007_strategist.png",
   director: "/insignias/008_director.png",
   ascendent: "/insignias/009_ascendent.png",
-  commander: "/insignias/commander.png",
-  architect: "/insignias/architect.png",
+  commander: "/insignias/010_commander.png",
+  architect: "/insignias/011_architect.png",
+  overseer: "/insignias/012_overseer.png",
+  visionary: "/insignias/013_visionary.png",
+  sovereign: "/insignias/014_soveriegn.png",
+  mythic: "/insignias/015_mythic.png",
 };
 
 const RANK_BY_ID = new Map(RANK_LADDER.map((rank) => [rank.id, rank] as const));
@@ -718,7 +744,8 @@ export function getRankLabelById(rankId: string): string {
 
 export function getRankThumbnailById(rankId: string): string {
   const normalizedRankId = String(rankId || "").trim().toLowerCase();
-  return String(RANK_MODAL_THUMBNAIL_BY_ID[normalizedRankId] || RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID[normalizedRankId] || "").trim();
+  const candidate = String(RANK_MODAL_THUMBNAIL_BY_ID[normalizedRankId] || RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID[normalizedRankId] || "").trim();
+  return AVAILABLE_RANK_MODAL_THUMBNAIL_SRCS.has(candidate) ? candidate : "";
 }
 
 export function getRankPlaceholderLabel(rankId: string): string {

@@ -50,6 +50,8 @@ export type UserPreferencesV1 = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  checkpointAlertSoundMode: "once" | "repeat";
+  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   rewards: RewardProgressV1;
@@ -1326,6 +1328,8 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
+        checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
+        checkpointAlertToastMode: prefSnap.get("checkpointAlertToastMode") === "manual" ? "manual" : "auto5s",
         optimalProductivityStartTime: normalizeTimeOfDay(
           prefSnap.get("optimalProductivityStartTime"),
           DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
@@ -1872,6 +1876,8 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         : asBool(data.mobilePushAlertsEnabled, false),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
+    checkpointAlertSoundMode: data.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
+    checkpointAlertToastMode: data.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
     optimalProductivityStartTime: normalizeTimeOfDay(
       data.optimalProductivityStartTime,
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME

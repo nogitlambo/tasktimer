@@ -81,6 +81,7 @@ import {
   saveCloudDashboard,
   saveCloudTaskUi,
   saveHistory,
+  saveLiveSession,
   saveTasks,
 } from "./storage";
 
@@ -264,6 +265,46 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     });
   });
 
+  it("stores signed-out task changes under the guest shadow scope", () => {
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
+    const guestTask = task("guest-task-1", "Guest Focus");
+
+    saveTasks([guestTask]);
+
+    const raw = localStorage.getItem("taskticker_tasks_v1:shadow:tasks");
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(String(raw))).toMatchObject({
+      uid: "__guest__",
+      data: [expect.objectContaining({ id: "guest-task-1", name: "Guest Focus" })],
+    });
+    expect(cloudStoreMocks.saveTask).not.toHaveBeenCalled();
+  });
+
+  it("uploads guest tasks when a new empty cloud account hydrates", async () => {
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
+    const guestTask = task("guest-task-1", "Guest Focus");
+    saveTasks([guestTask]);
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    });
+    cloudStoreMocks.saveTask.mockClear();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.saveTask).toHaveBeenCalledWith("uid-1", expect.objectContaining({ id: "guest-task-1" }));
+    });
+  });
+
   it("skips cloud task writes when task signatures are unchanged", async () => {
     const existingTask = task("task-1", "Focus");
 
@@ -335,6 +376,70 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       [row1, row2, completedRow],
       { allowDestructiveReplace: false }
     );
+  });
+
+  it("throttles queued task retries after a failed cloud write", async () => {
+    cloudStoreMocks.saveTask.mockRejectedValueOnce(new Error("resource exhausted"));
+    const nextTask = { ...task("task-1", "Focus"), name: "Deep Focus" };
+
+    saveTasks([nextTask], { forceCloudFlush: true });
+
+    expect(cloudStoreMocks.saveTask).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(cloudStoreMocks.saveTask).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS - 1_000);
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.saveTask).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("throttles queued history retries after a failed cloud write", async () => {
+    const row = { ts: Date.parse("2026-05-05T09:00:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
+    cloudStoreMocks.replaceTaskHistory.mockRejectedValueOnce(new Error("resource exhausted"));
+
+    saveHistory({ "task-1": [row] }, { forceCloudFlush: true });
+
+    expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS - 1_000);
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.replaceTaskHistory).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("throttles queued live-session retries after a failed cloud write", async () => {
+    cloudStoreMocks.saveLiveSession.mockRejectedValueOnce(new Error("resource exhausted"));
+
+    saveLiveSession(
+      {
+        sessionId: "session-1",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: Date.parse("2026-05-05T09:00:00.000Z"),
+        elapsedMs: 1_000,
+        updatedAtMs: Date.parse("2026-05-05T09:00:01.000Z"),
+        status: "running",
+      },
+      { forceCloudFlush: true }
+    );
+
+    expect(cloudStoreMocks.saveLiveSession).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(cloudStoreMocks.saveLiveSession).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS - 1_000);
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.saveLiveSession).toHaveBeenCalledTimes(2);
+    });
   });
 
 });

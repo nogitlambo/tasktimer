@@ -49,4 +49,12 @@ describe("getLeaderboardResolvedRank", () => {
       src: "/insignias/008_director.png",
     });
   });
+
+  it("falls back to a placeholder when the configured insignia asset is missing", () => {
+    expect(getRankThumbnailDescriptor("unranked")).toMatchObject({
+      kind: "placeholder",
+      label: "U",
+      rankId: "unranked",
+    });
+  });
 });

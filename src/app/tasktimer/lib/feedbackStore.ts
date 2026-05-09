@@ -49,7 +49,7 @@ export type ToggleFeedbackUpvoteResult =
   | { ok: false; message: string };
 
 export type CreateFeedbackItemInput = {
-  ownerUid: string;
+  ownerUid?: string;
   authorDisplayName?: string | null;
   authorEmail?: string | null;
   authorRankThumbnailSrc?: string | null;
@@ -59,7 +59,8 @@ export type CreateFeedbackItemInput = {
   title: string;
   details: string;
   jiraIssueBrowseUrl?: string | null;
-  authToken: string;
+  authToken?: string;
+  guest?: boolean;
   attachments?: FeedbackAttachmentUploadInput[];
 };
 
@@ -138,18 +139,21 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     const ownerUid = normalizeString(input.ownerUid, 120);
     const title = normalizeString(input.title, 160);
     const details = normalizeString(input.details, 8000);
-    if (!ownerUid) return { ok: false, message: "You must be signed in to submit feedback." };
+    const isGuest = input.guest === true;
+    if (!ownerUid && !isGuest) return { ok: false, message: "You must be signed in to submit feedback." };
     if (!title) return { ok: false, message: "A feedback title is required." };
     if (!details) return { ok: false, message: "Feedback details are required." };
     const attachments = Array.isArray(input.attachments) ? input.attachments : [];
     const hasAttachments = attachments.length > 0;
     const headers: Record<string, string> = {
-      "x-firebase-auth": normalizeString(input.authToken, 8192),
     };
+    const authToken = normalizeString(input.authToken, 8192);
+    if (authToken) headers["x-firebase-auth"] = authToken;
     let body: BodyInit;
     if (hasAttachments) {
       const formData = new FormData();
-      formData.append("authToken", normalizeString(input.authToken, 8192));
+      if (authToken) formData.append("authToken", authToken);
+      if (isGuest) formData.append("guest", "true");
       formData.append("authorCurrentRankId", normalizeNullableString(input.authorCurrentRankId, 120) || "");
       formData.append("authorDisplayName", normalizeNullableString(input.authorDisplayName, 120) || "");
       formData.append("authorEmail", normalizeNullableString(input.authorEmail, 320) || "");
@@ -175,7 +179,8 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     } else {
       headers["Content-Type"] = "application/json";
       body = JSON.stringify({
-        authToken: normalizeString(input.authToken, 8192),
+        authToken,
+        guest: isGuest,
         authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
@@ -202,7 +207,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       ok: true,
       item: {
         feedbackId: "",
-        ownerUid,
+        ownerUid: ownerUid || "guest",
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
         authorRankThumbnailSrc: normalizeNullableString(input.authorRankThumbnailSrc, 1024),

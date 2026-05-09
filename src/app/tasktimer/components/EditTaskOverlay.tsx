@@ -146,33 +146,6 @@ export default function EditTaskOverlay() {
                 </button>
               </div>
             </div>
-
-            <details className="editTaskAdvancedMenu checkpointAlertsGroup" id="editTaskAdvancedMenu">
-              <summary className="editTaskAdvancedSummary">
-                <span>Advanced</span>
-              </summary>
-              <div className="editTaskAdvancedBody">
-                <div className="field checkpointAlertBehaviourField" id="editCheckpointAlertBehaviourField">
-                  <label htmlFor="editCheckpointSoundModeSelect">Checkpoint alert behaviour</label>
-                  <div className="editCheckpointAlertBehaviourGrid">
-                    <div className="field checkpointAlertSoundModeField" id="editCheckpointSoundModeField">
-                      <label htmlFor="editCheckpointSoundModeSelect">Sound</label>
-                      <select id="editCheckpointSoundModeSelect" defaultValue="once">
-                        <option value="once">Once</option>
-                        <option value="repeat">Repeat until dismissed</option>
-                      </select>
-                    </div>
-                    <div className="field checkpointAlertSoundModeField" id="editCheckpointToastModeField">
-                      <label htmlFor="editCheckpointToastModeSelect">Toast</label>
-                      <select id="editCheckpointToastModeSelect" defaultValue="auto5s">
-                        <option value="auto5s">Auto dismiss after 5 seconds</option>
-                        <option value="manual">Dismiss manually</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
           </div>
           <div className="footerBtns">
             <button className="btn btn-ghost" id="cancelEditBtn" type="button">

@@ -93,6 +93,8 @@ export type TaskTimerMutableState = {
   webPushAlertsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
+  checkpointAlertSoundMode: "once" | "repeat";
+  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   rewardProgress: unknown;

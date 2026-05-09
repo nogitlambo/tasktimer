@@ -424,6 +424,28 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background: transparent;
 }
 
+.dashboardHeatSummaryRowBtn {
+  width: 100%;
+  border: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboardHeatSummaryRowBtn:not(.dashboardHeatSummarySessionRow):hover {
+  background: rgba(148, 153, 161, 0.12);
+}
+
+.dashboardHeatSummaryRowBtn.dashboardHeatSummarySessionRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboardHeatSummaryRowBtn:focus-visible {
+  outline: 1px solid rgba(117, 231, 255, 0.48);
+  outline-offset: 3px;
+  background: rgba(117, 231, 255, 0.06);
+}
+
 .dashboardHeatSummaryRow + .dashboardHeatSummaryRow {
   margin-top: 12px;
 }
@@ -442,6 +464,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   overflow-wrap: anywhere;
 }
 
+.dashboardHeatSummaryTaskWrap {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.dashboardHeatSummaryMeta {
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: rgba(211, 229, 240, 0.7);
+}
+
 .dashboardHeatSummaryTime {
   font-family: var(--font-tight);
   font-size: 13px;
@@ -454,6 +489,28 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 .dashboardHeatSummaryEmpty {
   padding: 10px 0 2px;
   color: rgba(211, 229, 240, 0.78);
+}
+
+.dashboardHeatSummaryDrilldownHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 14px;
+}
+
+.dashboardHeatSummaryDrilldownTitle {
+  min-width: 0;
+  font-family: var(--font-tight);
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(230, 245, 255, 0.94);
+  overflow-wrap: anywhere;
+}
+
+.dashboardHeatSummaryBackBtn {
+  min-height: 28px;
+  padding: 6px 10px;
 }
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardSectionHead{
   display:flex;

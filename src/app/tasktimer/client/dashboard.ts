@@ -757,6 +757,37 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       e.preventDefault();
       return;
     }
+    const heatSummaryBackBtn = e.target?.closest?.("[data-heat-summary-back='tasks']") as HTMLElement | null;
+    if (heatSummaryBackBtn) {
+      const dayKey = String(heatSummaryBackBtn.getAttribute("data-heat-date") || "").trim();
+      const dateLabel = String(heatSummaryBackBtn.getAttribute("data-heat-date-label") || "").trim() || dayKey;
+      if (dayKey) ctx.renderDashboardHeatTaskList(dayKey, dateLabel || dayKey);
+      e.preventDefault();
+      return;
+    }
+    const heatSummaryTaskBtn = e.target?.closest?.("[data-heat-summary-mode='task'][data-heat-task-id][data-heat-date]") as HTMLElement | null;
+    if (heatSummaryTaskBtn) {
+      const taskId = String(heatSummaryTaskBtn.getAttribute("data-heat-task-id") || "").trim();
+      const dayKey = String(heatSummaryTaskBtn.getAttribute("data-heat-date") || "").trim();
+      const dateLabel = String(heatSummaryTaskBtn.getAttribute("data-heat-date-label") || "").trim() || dayKey;
+      if (taskId && dayKey) ctx.renderDashboardHeatSessionList(dayKey, dateLabel, taskId);
+      e.preventDefault();
+      return;
+    }
+    const heatSummarySessionBtn = e.target?.closest?.(
+      "[data-heat-summary-mode='session'][data-heat-task-id][data-heat-entry-ts][data-heat-entry-ms][data-heat-entry-name]"
+    ) as HTMLElement | null;
+    if (heatSummarySessionBtn) {
+      const taskId = String(heatSummarySessionBtn.getAttribute("data-heat-task-id") || "").trim();
+      const ts = Math.floor(Number(heatSummarySessionBtn.getAttribute("data-heat-entry-ts") || 0));
+      const ms = Math.max(0, Math.floor(Number(heatSummarySessionBtn.getAttribute("data-heat-entry-ms") || 0)));
+      const name = String(heatSummarySessionBtn.getAttribute("data-heat-entry-name") || "").trim();
+      if (taskId && ts > 0 && ms > 0 && name) {
+        ctx.openDashboardHeatSessionSummary(taskId, { ts, ms, name });
+      }
+      e.preventDefault();
+      return;
+    }
     const sizeToggle = e.target?.closest?.("[data-dashboard-size-toggle]") as HTMLElement | null;
     if (sizeToggle) {
       if (!ctx.getDashboardEditMode()) return;

@@ -124,6 +124,8 @@ describe("createTaskTimerRuntimeComposition", () => {
       webPushAlertsEnabled: false,
       checkpointAlertSoundEnabled: true,
       checkpointAlertToastEnabled: true,
+      checkpointAlertSoundMode: "once",
+      checkpointAlertToastMode: "auto5s",
       optimalProductivityStartTime: "00:00",
       optimalProductivityEndTime: "23:59",
       rewards: { ...DEFAULT_REWARD_PROGRESS, totalXp: 42, totalXpPrecise: 42 },

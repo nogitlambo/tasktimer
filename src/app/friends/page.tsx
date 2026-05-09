@@ -1,5 +1,5 @@
-import TaskTimerMainAppClient from "../tasktimer/TaskTimerMainAppClient";
+import TaskTimerMainAppPage from "../tasktimer/TaskTimerMainAppPage";
 
 export default function FriendsPage() {
-  return <TaskTimerMainAppClient initialPage="friends" />;
+  return <TaskTimerMainAppPage initialPage="friends" />;
 }

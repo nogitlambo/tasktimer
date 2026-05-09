@@ -16,6 +16,9 @@ type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
 };
 
+const CHECKPOINT_ALERT_SOUND_MODE_KEY = "taskticker_tasks_v1:checkpointAlertSoundMode";
+const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToastMode";
+
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
   const preferenceService = createTaskTimerPreferencesService({
@@ -108,6 +111,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
+      checkpointAlertSoundMode: ctx.getCheckpointAlertSoundMode(),
+      checkpointAlertToastMode: ctx.getCheckpointAlertToastMode(),
       optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
       optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
@@ -289,6 +294,16 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
+    if (els.taskCheckpointSoundModeSelect) {
+      els.taskCheckpointSoundModeSelect.value = ctx.getCheckpointAlertSoundMode();
+      els.taskCheckpointSoundModeSelect.disabled = !ctx.getCheckpointAlertSoundEnabled();
+    }
+    if (els.taskCheckpointToastModeSelect) {
+      els.taskCheckpointToastModeSelect.value = ctx.getCheckpointAlertToastMode();
+      els.taskCheckpointToastModeSelect.disabled = !ctx.getCheckpointAlertToastEnabled();
+    }
+    els.taskCheckpointSoundModeField?.classList.toggle("isDisabled", !ctx.getCheckpointAlertSoundEnabled());
+    els.taskCheckpointToastModeField?.classList.toggle("isDisabled", !ctx.getCheckpointAlertToastEnabled());
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
@@ -340,6 +355,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   async function applyMobilePushAlertsPreference(nextEnabled: boolean) {
+    if (!ctx.currentUid()) {
+      window.location.assign("/web-sign-in");
+      return;
+    }
     ctx.setMobilePushAlertsEnabledState(nextEnabled);
     syncTaskSettingsUi();
     saveMobilePushAlertsSetting();
@@ -354,6 +373,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   async function applyWebPushAlertsPreference(nextEnabled: boolean) {
+    if (!ctx.currentUid()) {
+      window.location.assign("/web-sign-in");
+      return;
+    }
     ctx.setWebPushAlertsEnabledState(nextEnabled);
     syncTaskSettingsUi();
     saveMobilePushAlertsSetting();
@@ -373,9 +396,29 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setWebPushAlertsEnabledState(preferenceService.loadWebPushAlertsEnabled());
     ctx.setCheckpointAlertSoundEnabledState(prefs.checkpointAlertSoundEnabled !== false);
     ctx.setCheckpointAlertToastEnabledState(prefs.checkpointAlertToastEnabled !== false);
+    ctx.setCheckpointAlertSoundModeState(prefs.checkpointAlertSoundMode === "repeat" ? "repeat" : "once");
+    ctx.setCheckpointAlertToastModeState(prefs.checkpointAlertToastMode === "manual" ? "manual" : "auto5s");
+  }
+
+  function saveCheckpointAlertBehaviourSettings() {
+    ctx.setCheckpointAlertSoundModeState(els.taskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once");
+    ctx.setCheckpointAlertToastModeState(els.taskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s");
+    try {
+      localStorage.setItem(
+        CHECKPOINT_ALERT_SOUND_MODE_KEY,
+        ctx.getCheckpointAlertSoundMode()
+      );
+      localStorage.setItem(
+        CHECKPOINT_ALERT_TOAST_MODE_KEY,
+        ctx.getCheckpointAlertToastMode()
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
   }
 
   function saveCheckpointAlertSettings() {
+    saveCheckpointAlertBehaviourSettings();
     persistPreferencesToCloud();
   }
 
@@ -574,6 +617,16 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
       },
+    });
+    ctx.on(els.taskCheckpointSoundModeSelect, "change", () => {
+      saveCheckpointAlertBehaviourSettings();
+      persistPreferencesToCloud();
+      syncTaskSettingsUi();
+    });
+    ctx.on(els.taskCheckpointToastModeSelect, "change", () => {
+      saveCheckpointAlertBehaviourSettings();
+      persistPreferencesToCloud();
+      syncTaskSettingsUi();
     });
     ctx.on(els.optimalProductivityStartTimeInput, "change", () => {
       applyOptimalProductivityPeriodPreference(
