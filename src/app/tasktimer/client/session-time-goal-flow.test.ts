@@ -59,6 +59,22 @@ describe("time goal completion flow guard", () => {
     ).toBe(false);
   });
 
+  it("does not keep completion for a task already completed today", () => {
+    const completedToday = getTimeGoalCompletionDayKey();
+    expect(
+      shouldKeepTimeGoalCompletionFlowForTask(
+        timeGoalTask({
+          timeGoalCompletedDayKey: completedToday,
+          timeGoalCompletedAtMs: Date.now(),
+        }),
+        {
+          elapsedMs: 60_000,
+          liveSession: liveSession(),
+        }
+      )
+    ).toBe(false);
+  });
+
   it("ignores live sessions for a different task", () => {
     expect(
       shouldKeepTimeGoalCompletionFlowForTask(timeGoalTask(), {

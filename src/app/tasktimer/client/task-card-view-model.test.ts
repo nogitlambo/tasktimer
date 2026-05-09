@@ -128,7 +128,7 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain("1h 20m");
     expect(rendered.html).not.toContain("1.3333333333333333h");
-    expect(rendered.html).toContain("Break");
+    expect(rendered.html).not.toContain("Break");
   });
 
   it("dispatches allowed task card actions", () => {

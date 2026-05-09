@@ -168,6 +168,10 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
   function refreshCloudStateIfStale(minIntervalMs = 3000) {
     const currentMs = options.nowMs();
     if (currentMs - options.lastCloudRefreshAtMs.get() < minIntervalMs) return;
+    if (options.workspaceRepository.hasPendingTaskOrHistorySync()) {
+      scheduleDeferredCloudRefresh(Math.max(minIntervalMs, 1500));
+      return;
+    }
     if (isDashboardPageActive() && options.isInitialAuthHydrating?.() !== true) {
       options.setDashboardRefreshPending?.(true);
       return;

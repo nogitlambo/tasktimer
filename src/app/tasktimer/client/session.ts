@@ -64,6 +64,7 @@ export function shouldKeepTimeGoalCompletionFlowForTask(
   }
 ) {
   if (!task || !task.running) return false;
+  if (isTaskTimeGoalCompletedToday(task)) return false;
   const taskId = String(task.id || "").trim();
   const liveSessionTaskId = String(opts.liveSession?.taskId || "").trim();
   if (!taskId || liveSessionTaskId !== taskId) return false;
@@ -758,8 +759,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function checkpointKeyForTask(m: { hours: number; description: string }, task: Task) {
     const unitSeconds = sharedTasks.milestoneUnitSec(task);
     const targetSec = Math.max(0, Math.round((+m.hours || 0) * unitSeconds));
-    const label = String(m.description || "").trim();
-    return `${targetSec}|${label}`;
+    return String(targetSec);
   }
 
   function resetCheckpointAlertTracking(taskId: string | null | undefined, opts?: { clearBaseline?: boolean }) {
@@ -800,7 +800,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const allMilestones = ctx.sortMilestones((task.milestones || []).slice()).filter((m) => (+m.hours || 0) > 0);
     const byKey = new Map<string, { hours: number; description: string }>();
     allMilestones.forEach((m) => {
-      byKey.set(checkpointKeyForTask(m, task), { hours: +m.hours || 0, description: String(m.description || "") });
+      byKey.set(checkpointKeyForTask(m, task), { hours: +m.hours || 0, description: "" });
     });
     const completedRows = Array.from(fired)
       .map((key) => ({ key, item: byKey.get(key) }))
@@ -814,11 +814,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     listEl.innerHTML = completedRows
       .map((row, idx) => {
         const timeText = `${row.item.hours}${sharedTasks.milestoneUnitSuffix(task)}`;
-        const desc = String(row.item.description || "").trim();
         return `
           <div class="focusCheckpointLogItem${idx === 0 ? " isLatest" : ""}">
             <div class="focusCheckpointLogItemLine">
-              <span class="focusCheckpointLogItemTime">${ctx.escapeHtmlUI(timeText)}</span>${desc ? `<span class="focusCheckpointLogItemSep"> - </span><span class="focusCheckpointLogItemDesc">${ctx.escapeHtmlUI(desc)}</span>` : ""}
+              <span class="focusCheckpointLogItemTime">${ctx.escapeHtmlUI(timeText)}</span>
             </div>
           </div>
         `;
@@ -863,7 +862,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       ...sortedMilestones.map((m, idx) => {
         const targetSec = milestoneTargetsSec[idx] || 0;
         const reached = elapsedSec >= targetSec;
-        return `${targetSec}:${reached ? 1 : 0}:${String(m.description || "").trim()}`;
+        return `${targetSec}:${reached ? 1 : 0}`;
       }),
     ].join("|");
     if (ctx.getFocusCheckpointSig() === signature) return;
@@ -886,8 +885,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const ly = Math.sin(angleRad) * labelRadiusPx;
         const reached = elapsedSec >= targetSec;
         const title = formatCheckpointAlertText(task, m);
-        const description = String(m.description || "").trim();
-        const labelText = description || title;
         return `
           <span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
             1
@@ -897,7 +894,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
             style="--lxpx:${lx.toFixed(1)}px;--lypx:${ly.toFixed(1)}px;"
             aria-hidden="true"
           >
-            <span class="focusCheckpointLabelTitle">${ctx.escapeHtmlUI(labelText)}</span>
+            <span class="focusCheckpointLabelTitle">${ctx.escapeHtmlUI(title)}</span>
           </span>
         `;
       })
@@ -1255,8 +1252,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function formatCheckpointAlertText(task: Task, milestone: { hours: number; description: string }) {
     const targetMs = Math.max(0, (+milestone.hours || 0) * sharedTasks.milestoneUnitSec(task) * 1000);
-    const label = String(milestone.description || "").trim();
-    return label ? `${ctx.formatTime(targetMs)} - ${label}` : ctx.formatTime(targetMs);
+    return ctx.formatTime(targetMs);
   }
 
   function processCheckpointAlertsForTask(task: Task, elapsedSecNow: number) {
@@ -1294,7 +1290,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const text = formatCheckpointAlertText(task, m);
       const checkpointIndex = Math.max(1, validMilestones.findIndex((vm) => checkpointKeyForTask(vm, task) === key) + 1);
       const checkpointTimeText = ctx.formatTime(targetSec * 1000);
-      const checkpointDescText = String(m.description || "").trim();
       if (ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled) {
         const toastMode = ctx.getCheckpointAlertToastMode();
         enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
@@ -1303,7 +1298,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           taskName: task.name || "",
           counterText: ctx.formatMainTaskElapsed(getElapsedMs(task)),
           checkpointTimeText,
-          checkpointDescText,
+          checkpointDescText: String(m.description || "").trim() || null,
           muteRepeatOnManualDismiss:
             ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && ctx.getCheckpointAlertSoundMode() === "repeat",
         });

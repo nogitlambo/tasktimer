@@ -997,7 +997,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
 
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar{
     min-width: 0;
-    padding: 0 12px 12px;
+    padding: 8px 12px 8px;
     background: #0d0f13;
   }
 

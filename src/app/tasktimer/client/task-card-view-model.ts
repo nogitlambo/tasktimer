@@ -137,7 +137,7 @@ export function buildTaskProgressModel({
       showLabel: milestoneIndex === labelTargetIndex,
       wrapClass: edgeClass && label.length > 8 ? "mkWrap8" : "",
       label,
-      description: String(milestone.description || "").trim(),
+      description: "",
     });
   });
 
@@ -190,11 +190,7 @@ export function renderTaskProgressHtml(
                 ? `<div class="mkTime ${markerClass} ${marker.edgeClass} ${marker.wrapClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>`
                 : ``
             }
-            ${
-              marker.showLabel && marker.description
-                ? `<div class="mkDesc ${markerClass} ${marker.edgeClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.description)}</div>`
-                : ``
-            }`;
+            `;
     })
     .join("");
 
@@ -294,7 +290,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const taskColorPillHtml = taskColor
     ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${escapeHtml(taskColor)}"></span>`
     : "";
-  const collapseLabel = task.collapsed ? "Show progress bar" : "Hide progress bar";
   const progressModel = buildTaskProgressModel({
     milestones: sortedMilestones,
     elapsedSec,
@@ -365,7 +360,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${manualEntryLabel}</button>
-                <button class="taskMenuItem" data-action="collapse" title="${escapeHtml(collapseLabel)}" type="button">${escapeHtml(collapseLabel)}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
                 <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>Archive</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>

@@ -319,8 +319,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function getCheckpointUnitLabels(unit: "hour" | "minute") {
     return unit === "minute"
-      ? { major: "m", minor: "s", minorStep: 5, minorRange: 60 }
-      : { major: "h", minor: "m", minorStep: 5, minorRange: 60 };
+      ? { major: "m", minor: "Min", minorStep: 5, minorRange: 60 }
+      : { major: "Hr", minor: "m", minorStep: 5, minorRange: 60 };
   }
 
   function checkpointValueToParts(value: number, unit: "hour" | "minute") {
@@ -421,7 +421,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
           </select>
           <span class="msValueUnit" aria-hidden="true">${labels.minor}</span>
         </div>
-        <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
       const majorSelect = row.querySelector('[data-field="value-major"]') as HTMLSelectElement | null;
@@ -439,12 +438,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       };
       ctx.on(majorSelect, "change", syncCheckpointValue);
       ctx.on(minorSelect, "change", syncCheckpointValue);
-
-      const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
-      ctx.on(desc, "input", (e: Event) => {
-        m.description = (e.target as HTMLInputElement | null)?.value || "";
-        ctx.setAddTaskMilestonesState(ms);
-      });
 
       const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
       ctx.on(rm, "click", () => {
@@ -745,7 +738,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
     newTask.milestonesEnabled = checkpointingEnabled;
     newTask.milestoneTimeUnit = ctx.getAddTaskMilestoneTimeUnit();
-    newTask.milestones = ctx.sortMilestones(ctx.getAddTaskMilestones().slice());
+    newTask.milestones = ctx.sortMilestones(ctx.getAddTaskMilestones().slice()).map((milestone) => ({
+      ...milestone,
+      description: "",
+    }));
     newTask.checkpointSoundEnabled = checkpointingEnabled && derivedAlertState.soundEnabled;
     newTask.checkpointSoundMode = els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
     newTask.checkpointToastEnabled = checkpointingEnabled && derivedAlertState.toastEnabled;

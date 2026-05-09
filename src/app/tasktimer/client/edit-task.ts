@@ -571,8 +571,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function getCheckpointUnitLabels(unit: "hour" | "minute") {
     return unit === "minute"
-      ? { major: "m", minor: "s", minorStep: 5, minorRange: 60 }
-      : { major: "h", minor: "m", minorStep: 5, minorRange: 60 };
+      ? { major: "m", minor: "Min", minorStep: 5, minorRange: 60 }
+      : { major: "Hr", minor: "m", minorStep: 5, minorRange: 60 };
   }
 
   function checkpointValueToParts(value: number, unit: "hour" | "minute") {
@@ -787,7 +787,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
           </select>
           <span class="msValueUnit" aria-hidden="true">${labels.minor}</span>
         </div>
-        <input class="msSkewInput" type="text" value="${ctx.escapeHtmlUI(m.description || "")}" data-field="desc" placeholder="Description">
         <button type="button" class="iconBtn checkpointDeleteBtn" title="Remove checkpoint" aria-label="Remove checkpoint" data-action="rmMs">&times;</button>
       `;
 
@@ -815,13 +814,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       };
       ctx.on(majorSelect, "change", syncCheckpointValue);
       ctx.on(minorSelect, "change", syncCheckpointValue);
-
-      const desc = row.querySelector('[data-field="desc"]') as HTMLInputElement | null;
-      ctx.on(desc, "input", (e: Event) => {
-        m.description = (e.target as HTMLInputElement | null)?.value || "";
-        t.milestones = ms;
-        syncEditSaveAvailability(t);
-      });
 
       const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
       ctx.on(rm, "click", () => {
@@ -860,6 +852,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     );
     t.timeGoalPeriod = timeGoalSaveFields.timeGoalPeriod;
     t.timeGoalMinutes = timeGoalSaveFields.timeGoalMinutes;
+    t.milestones = (Array.isArray(t.milestones) ? t.milestones : []).map((milestone) => ({
+      ...milestone,
+      description: "",
+    }));
     t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
     if (t.taskType === "once-off") {
       const onceOffDay = String(els.editTaskOnceOffDaySelect?.value || t.onceOffDay || t.plannedStartDay || "mon").trim().toLowerCase() as ScheduleDay;
