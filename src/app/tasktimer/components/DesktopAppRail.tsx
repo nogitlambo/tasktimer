@@ -6,6 +6,7 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
 import {
   readTaskTimerPlanFromStorage,
@@ -557,6 +558,10 @@ export default function DesktopAppRail({
       }
       window.location.assign(data.url);
     } catch (error: unknown) {
+      void recordNonFatal(error, {
+        flow: "billing_portal",
+        source_page: "desktop_rail",
+      });
       setBillingError(error instanceof Error && error.message ? error.message : "Could not open billing management.");
       setBillingBusy(false);
     }

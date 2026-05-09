@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { trackScreen } from "@/lib/firebaseTelemetry";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
@@ -198,6 +199,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   useEffect(() => {
     void bootstrapFirebaseWebAppCheck();
+    void trackScreen(initialPage === "history" ? "history_manager" : initialPage);
     const { destroy } = initTaskTimerClient(initialPage);
     return () => {
       destroy();
@@ -636,6 +638,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                             </span>
                             <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                            <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
+                              <LeaderboardRankInsignia profile={row.profile} />
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -668,10 +673,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                   <span>{getLeaderboardRankLabel(row.profile)}</span>
                                 </span>
                               </span>
-                              <span role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
-                              <span role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                              <span role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
-                              <span role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
+                              <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                              <span className="leaderboardWeeklyTotalXpCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
+                              <span className="leaderboardWeeklyStreakCell" role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
+                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-hidden="true">
+                                <LeaderboardRankInsignia profile={row.profile} />
+                              </span>
                             </button>
                           ))}
                         </div>

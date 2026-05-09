@@ -386,6 +386,7 @@ type CreateAddTaskOptionsArgs = {
   on: Parameters<typeof createTaskTimerAddTask>[0]["on"];
   sharedTasks: Parameters<typeof createTaskTimerAddTask>[0]["sharedTasks"];
   taskCollectionBindings: { getTasks: () => Task[]; setTasks: (value: Task[]) => void };
+  currentAppPageBinding: { getCurrentAppPage: () => AppPage };
   addTaskStateBindings: Pick<
     Parameters<typeof createTaskTimerAddTask>[0],
     | "getAddTaskWizardStep"
@@ -1247,6 +1248,7 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     sharedTasks: args.sharedTasks,
     getTasks: args.taskCollectionBindings.getTasks,
     setTasks: args.taskCollectionBindings.setTasks,
+    getCurrentAppPage: args.currentAppPageBinding.getCurrentAppPage,
     ...args.addTaskStateBindings,
     getAddTaskCustomNames: () => asType<string[]>(args.preferencesState.get("addTaskCustomNames")),
     setAddTaskCustomNamesState: (value) => args.preferencesState.set("addTaskCustomNames", value),

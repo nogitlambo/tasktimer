@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
 import { notifyAccountProfileUpdated } from "@/app/tasktimer/lib/accountProfileStorage";
@@ -313,6 +314,10 @@ export function useSettingsAccountState(): {
         window.location.assign(data.url);
         return;
       } catch (err: unknown) {
+        void recordNonFatal(err, {
+          flow: "billing_portal",
+          source_page: "settings",
+        });
         setAuthError(getErrorMessage(err, "Could not open billing management."));
         setAuthStatus("");
         return;

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { readStartupAppPagePreference } from "../lib/startupModule";
+import { trackScreen } from "@/lib/firebaseTelemetry";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
 
@@ -385,6 +386,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       ctx.syncDashboardMenuFlipUi();
     }
     ctx.setCurrentAppPage(nextPage);
+    void trackScreen(nextPage === "history" ? "history_manager" : nextPage);
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(nextPage);
     document.body.setAttribute("data-app-page", nextPage);
     ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks" || nextPage === "schedule");

@@ -579,6 +579,7 @@ export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
+  getCurrentAppPage: () => AppPage;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
   getOptimalProductivityStartTime: () => string;

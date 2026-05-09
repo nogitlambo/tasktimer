@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import type { Task } from "../lib/types";
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import type { TaskTimerRuntime } from "./runtime";
@@ -127,8 +128,13 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         options.lastCloudRefreshAtMs.set(options.nowMs());
         syncCloudTaskCollectionListener();
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         // Keep current in-memory state when cloud refresh is unavailable.
+        void recordNonFatal(error, {
+          flow: "cloud_sync_refresh",
+          timed_out: refreshTimedOut,
+          current_page: isDashboardPageActive() ? "dashboard" : "app",
+        });
         if (refreshTimedOut && activeDashboardPage && activeRefreshRequestId === requestId) {
           options.setDashboardRefreshPending?.(true);
         }
@@ -244,12 +250,19 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
             .then((handle) => {
               if (handle?.remove) options.runtime.removeCapAppStateListener = () => void handle.remove?.();
             })
-            .catch(() => {});
+            .catch((error: unknown) => {
+              void recordNonFatal(error, {
+                flow: "cloud_sync_app_state_listener",
+              });
+            });
         } else if (hasRemoveHandle(maybePromise)) {
           options.runtime.removeCapAppStateListener = () => void maybePromise.remove?.();
         }
       }
-    } catch {
+    } catch (error) {
+      void recordNonFatal(error, {
+        flow: "cloud_sync_app_state_listener",
+      });
       // ignore native app-state listener failures
     }
 

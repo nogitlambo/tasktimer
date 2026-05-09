@@ -19,6 +19,7 @@ import { Capacitor } from "@capacitor/core";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
 import WebSignIn from "../webSign-in";
@@ -260,6 +261,10 @@ function WebSignInPageContent() {
         window.location.assign(data.url);
       } catch (err: unknown) {
         if (cancelled) return;
+        void recordNonFatal(err, {
+          flow: "billing_checkout",
+          source_page: "web_sign_in",
+        });
         setAuthError(getErrorMessage(err, "Could not start checkout."));
         setAuthStatus("");
         setCheckoutBusy(false);
@@ -314,6 +319,10 @@ function WebSignInPageContent() {
         }
         setIsEmailLinkFlow(false);
       } catch (err: unknown) {
+        void recordNonFatal(err, {
+          flow: "auth_email_link_sign_in",
+          source_page: "web_sign_in",
+        });
         setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
         setAuthStatus("");
       } finally {
@@ -336,6 +345,10 @@ function WebSignInPageContent() {
         setAuthError("");
       } catch (err: unknown) {
         if (cancelled) return;
+        void recordNonFatal(err, {
+          flow: "auth_google_sign_in",
+          source_page: "web_sign_in",
+        });
         setAuthError(getErrorMessage(err, "Could not complete Google sign-in."));
         setAuthStatus("");
       }
@@ -386,6 +399,10 @@ function WebSignInPageContent() {
       }
       setAuthStatus("Sign-in link sent. Open the link from your email on this device.");
     } catch (err: unknown) {
+      void recordNonFatal(err, {
+        flow: "auth_email_link_send",
+        source_page: "web_sign_in",
+      });
       setAuthError(getEmailLinkSendErrorMessage(err) || getErrorMessage(err, "Could not send sign-in link."));
       setAuthStatus("");
     } finally {
@@ -426,6 +443,10 @@ function WebSignInPageContent() {
       setAuthStatus("Signed in successfully.");
       setIsEmailLinkFlow(false);
     } catch (err: unknown) {
+      void recordNonFatal(err, {
+        flow: "auth_email_link_sign_in",
+        source_page: "web_sign_in",
+      });
       setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
       setAuthStatus("");
     } finally {
@@ -491,6 +512,10 @@ function WebSignInPageContent() {
         return;
       }
       setGooglePopupPending(false);
+      void recordNonFatal(err, {
+        flow: "auth_google_sign_in",
+        source_page: "web_sign_in",
+      });
       setAuthError(getErrorMessage(err, "Could not sign in with Google."));
       setAuthStatus("");
     } finally {

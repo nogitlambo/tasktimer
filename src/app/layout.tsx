@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import TelemetryBootstrap from "./TelemetryBootstrap";
 import ThemeBootstrap from "./ThemeBootstrap";
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
         className="antialiased"
       >
         <ThemeBootstrap />
+        <TelemetryBootstrap />
         {children}
       </body>
     </html>

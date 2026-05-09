@@ -2,6 +2,7 @@ import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
+import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 
 type ConfirmOptions = {
   okLabel: string;
@@ -71,6 +72,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
 
   function startTaskTimer(task: Task, index: number, startMs: number) {
     const taskId = String(task.id || "");
+    const hadElapsedBeforeStart = options.getTaskElapsedMs(task) > 0;
     options.clearTaskTimeGoalFlow(taskId);
     options.flushPendingFocusSessionNoteSave(taskId);
     task.running = true;
@@ -80,6 +82,12 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.upsertLiveSession(task, { elapsedMs: 0, forceCloudFlush: true, reason: "start" });
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
+    void trackEvent("task_started", {
+      source_page: options.getCurrentAppPage(),
+      has_time_goal: !!task.timeGoalEnabled && (Number(task.timeGoalMinutes) || 0) > 0,
+      task_has_elapsed: hadElapsedBeforeStart,
+      plan_tier: getTelemetryPlanTier(),
+    });
     if (options.getAutoFocusOnTaskLaunchEnabled() && String(options.getFocusModeTaskId() || "") !== taskId) {
       options.openFocusMode(index);
     }
@@ -96,6 +104,17 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     task.startMs = null;
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
+    const completedToday = isTaskTimeGoalCompletedToday(task, stopMs);
+    const telemetryParams = {
+      source_page: options.getCurrentAppPage(),
+      has_time_goal: !!task.timeGoalEnabled && (Number(task.timeGoalMinutes) || 0) > 0,
+      task_has_elapsed: task.accumulatedMs > 0,
+      plan_tier: getTelemetryPlanTier(),
+    } as const;
+    void trackEvent("task_stopped", telemetryParams);
+    if (completedToday) {
+      void trackEvent("task_completed", telemetryParams);
+    }
     if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
   }
 

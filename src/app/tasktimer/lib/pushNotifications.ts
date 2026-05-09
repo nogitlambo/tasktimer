@@ -23,6 +23,7 @@ import {
 
 import { getFirebaseAppClient, getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { STORAGE_KEY } from "./storage";
 import { normalizePendingPushActionId } from "./pushNotificationAction";
 
@@ -503,6 +504,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       latestPushToken = String(token.value || "").trim();
       if (!latestPushToken) return;
       void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
+        void recordNonFatal(error, {
+          flow: "push_registration",
+          runtime: "android",
+        });
         if (process.env.NODE_ENV !== "production") {
           console.error("[push] Failed to save registration token", error);
         }
@@ -510,6 +515,11 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     });
 
     registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
+      void recordNonFatal(new Error("Native push registration error"), {
+        flow: "push_registration",
+        runtime: "android",
+        has_message: !!String((event as { error?: string })?.error || "").trim(),
+      });
       if (process.env.NODE_ENV !== "production") {
         console.error("[push] Registration error", event);
       }
@@ -541,6 +551,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       lastSyncedUid = user.uid;
       if (latestPushToken) {
         void savePushTokenForUser(user, latestPushToken).catch((error) => {
+          void recordNonFatal(error, {
+            flow: "push_registration",
+            runtime: "android",
+          });
           if (process.env.NODE_ENV !== "production") {
             console.error("[push] Failed to sync token after auth change", error);
           }
@@ -548,6 +562,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       }
       if (latestWebPushToken) {
         void saveWebPushTokenForUser(user, latestWebPushToken).catch((error) => {
+          void recordNonFatal(error, {
+            flow: "push_registration",
+            runtime: "web",
+          });
           if (process.env.NODE_ENV !== "production") {
             console.error("[push] Failed to sync web token after auth change", error);
           }
@@ -616,6 +634,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   let granted = true;
   if (nativeRuntime) {
     granted = await registerForPush().catch((error) => {
+      void recordNonFatal(error, {
+        flow: "push_registration",
+        runtime: "android",
+      });
       if (process.env.NODE_ENV !== "production") {
         console.error("[push] Failed to register for push notifications", error);
       }
@@ -746,6 +768,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
         }
       }
     } catch (error) {
+      void recordNonFatal(error, {
+        flow: "push_registration",
+        runtime: "web",
+      });
       if (process.env.NODE_ENV !== "production") {
         console.error("[push] Failed to register for web push notifications", error);
       }

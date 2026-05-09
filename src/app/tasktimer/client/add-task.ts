@@ -21,6 +21,7 @@ import {
   type ScheduleDay,
 } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
+import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { eventTargetClosest } from "./control-helpers";
 import type { TaskTimerAddTaskContext } from "./context";
 import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlannedStartSelectors } from "./planned-start";
@@ -776,6 +777,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     closeAddTaskModal();
     ctx.save();
     ctx.render();
+    void trackEvent("task_created", {
+      source_page: ctx.getCurrentAppPage(),
+      has_time_goal: newTask.timeGoalEnabled && newTask.timeGoalMinutes > 0,
+      task_has_elapsed: false,
+      plan_tier: getTelemetryPlanTier(),
+    });
     ctx.jumpToTaskAndHighlight(String(newTask.id || ""));
   }
 

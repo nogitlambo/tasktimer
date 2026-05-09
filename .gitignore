@@ -26,6 +26,8 @@ android/keystore.properties
 android/app/*.jks
 android/app/*.keystore
 android/app/google-services.json
+android/app/google-services.debug.json
+android/app/google-services.release.json
 
 # misc
 .DS_Store

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTaskTimerCloudSync } from "./cloud-sync";
+import type { TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
+import type { TaskTimerRuntime } from "./runtime";
 
 type StateAccessor<T> = {
   get: () => T;
@@ -52,7 +54,19 @@ function createHarness(overrides?: {
   const pendingDeferredCloudRefresh = createStateAccessor(false);
   const deferredCloudRefreshTimer = createStateAccessor<number | null>(null);
   const lastUiInteractionAtMs = createStateAccessor(0);
-  const hydrateFromCloud = vi.fn(async () => {});
+  const hydrateFromCloud = vi.fn(
+    async (): Promise<TaskTimerWorkspaceSnapshot> => ({
+      tasks: [],
+      historyByTaskId: {},
+      cleanedHistoryByTaskId: {},
+      historyWasCleaned: false,
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    })
+  );
   const on = vi.fn();
   const nowMs = vi.fn(() => 10_000);
   const workspaceRepository = {
@@ -73,7 +87,7 @@ function createHarness(overrides?: {
       removeCloudTaskCollectionListener: null,
       removeCapAppStateListener: null,
       removeAuthStateListener: null,
-    },
+    } as unknown as TaskTimerRuntime,
     on,
     nowMs,
     getCapAppPlugin: () => null,

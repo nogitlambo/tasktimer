@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 
 const pricingTiers = [
   {
@@ -87,6 +88,10 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
       }
       window.location.assign(data.url);
     } catch (error: unknown) {
+      void recordNonFatal(error, {
+        flow: "billing_checkout",
+        source_page: "pricing",
+      });
       setCheckoutError(error instanceof Error && error.message ? error.message : "Could not start checkout.");
       setCheckoutBusy(false);
     }

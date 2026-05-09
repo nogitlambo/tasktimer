@@ -827,6 +827,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       on,
       sharedTasks: sharedTaskApi,
       taskCollectionBindings,
+      currentAppPageBinding: {
+        getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+      },
       addTaskStateBindings,
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
