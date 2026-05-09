@@ -103,7 +103,12 @@ export function createTaskTimerRuntimeComposition(
     optimalProductivityEndTime: initialState.optimalProductivityEndTime,
   });
   const sessionRuntimeState = createTaskTimerMutableStore({
-    deferredFocusModeTimeGoalModals: [] as Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>,
+    deferredFocusModeTimeGoalModals: [] as Array<{
+      taskId: string;
+      frozenElapsedMs: number;
+      reminder: boolean;
+      awardPreview?: { fromXp: number; toXp: number; awardedXp: number };
+    }>,
     timeGoalCompleteDurationUnit: "hour" as "minute" | "hour",
     timeGoalCompleteDurationPeriod: "day" as "day" | "week",
     activeCheckpointToast: initialState.activeCheckpointToast,

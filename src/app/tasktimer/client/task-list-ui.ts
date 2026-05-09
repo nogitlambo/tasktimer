@@ -5,11 +5,9 @@ import type { TaskTimerTaskListUiContext } from "./context";
 export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
   const { els, runtime } = ctx;
   const TASK_DRAGGING_LIST_CLASS = "isTaskDragging";
-  const TASK_DRAG_PLACEHOLDER_CLASS = "taskDragPlaceholder";
   const TASK_DRAG_HIDDEN_CLASS = "isDragGhostHidden";
   let dragPointerOffsetY = 0;
   let dragCardHeight = 0;
-  let dragPlaceholderEl: HTMLElement | null = null;
 
   function shouldIgnoreTaskDragStart(target: EventTarget | null) {
     const targetEl = target as HTMLElement | null;
@@ -190,11 +188,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     dragPointerOffsetY = Number.isFinite(event?.clientY) ? Math.max(0, event.clientY - cardRect.top) : cardRect.height / 2;
     dragCardHeight = cardRect.height;
     clearTaskDragState();
-    dragPlaceholderEl = document.createElement("div");
-    dragPlaceholderEl.className = TASK_DRAG_PLACEHOLDER_CLASS;
-    dragPlaceholderEl.setAttribute("aria-hidden", "true");
-    dragPlaceholderEl.style.height = `${cardRect.height}px`;
-    card.insertAdjacentElement("afterend", dragPlaceholderEl);
     ctx.setTaskDragEl(card);
     els.taskList.classList.add(TASK_DRAGGING_LIST_CLASS);
     card.classList.add("isDragging");
@@ -215,8 +208,6 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const list = els.taskList;
     if (!list) return;
     list.classList.remove(TASK_DRAGGING_LIST_CLASS);
-    dragPlaceholderEl?.remove();
-    dragPlaceholderEl = null;
   }
 
   function getDragCenterY(clientYRaw: unknown) {
@@ -262,53 +253,79 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     return rects;
   }
 
-  function moveDragPlaceholder(nextTask: HTMLElement | null) {
+  function moveDraggedTaskToSlot(nextTask: HTMLElement | null) {
     const list = els.taskList;
-    const placeholder = dragPlaceholderEl;
-    if (!list || !placeholder) return;
+    const dragging = ctx.getTaskDragEl();
+    if (!list || !dragging) return;
     const targetParent =
       nextTask?.parentElement ||
       (list.querySelector(".taskTileColumn:last-child") as HTMLElement | null) ||
       list;
-    const currentParent = placeholder.parentElement;
+    const currentParent = dragging.parentElement;
     const samePosition =
       currentParent === targetParent &&
-      (nextTask ? placeholder.nextElementSibling === nextTask : placeholder === targetParent.lastElementChild);
+      (nextTask ? dragging.nextElementSibling === nextTask : dragging === targetParent.lastElementChild);
     if (samePosition) return;
     const beforeRects = captureTaskRects();
-    if (nextTask) targetParent.insertBefore(placeholder, nextTask);
-    else targetParent.appendChild(placeholder);
+    if (nextTask) targetParent.insertBefore(dragging, nextTask);
+    else targetParent.appendChild(dragging);
     animateTaskListReflow(beforeRects);
+  }
+
+  function findHoveredTask(target: EventTarget | null) {
+    const targetEl = target as HTMLElement | null;
+    const taskEl = targetEl?.closest?.(".task") as HTMLElement | null;
+    if (!taskEl || taskEl === ctx.getTaskDragEl() || !els.taskList?.contains(taskEl)) return null;
+    return taskEl;
+  }
+
+  function isTaskBefore(first: HTMLElement, second: HTMLElement) {
+    const list = els.taskList;
+    if (!list) return false;
+    const taskEls = Array.from(list.querySelectorAll(".task")).filter(
+      (taskEl): taskEl is HTMLElement => taskEl instanceof HTMLElement
+    );
+    return taskEls.indexOf(first) < taskEls.indexOf(second);
+  }
+
+  function moveDraggedTaskIntoHoveredSlot(hoveredTask: HTMLElement) {
+    const dragging = ctx.getTaskDragEl();
+    if (!dragging || hoveredTask === dragging) return;
+    if (isTaskBefore(hoveredTask, dragging)) {
+      moveDraggedTaskToSlot(hoveredTask);
+      return;
+    }
+    moveDraggedTaskToSlot((hoveredTask.nextElementSibling as HTMLElement | null) || null);
   }
 
   function handleTaskListDragOver(event: any) {
     if (ctx.getTaskOrderBy() !== "custom") return;
     const list = els.taskList;
     const dragging = ctx.getTaskDragEl();
-    const placeholder = dragPlaceholderEl;
-    if (!list || !dragging || !placeholder) return;
+    if (!list || !dragging) return;
     const dragCenterY = getDragCenterY(event?.clientY);
     event.preventDefault();
+    const hoveredTask = findHoveredTask(event?.target || null);
+    if (hoveredTask) {
+      moveDraggedTaskIntoHoveredSlot(hoveredTask);
+      return;
+    }
     const candidateTasks = Array.from(list.querySelectorAll(".task")).filter(
-      (child): child is HTMLElement => child instanceof HTMLElement && child !== dragging && child !== placeholder && child.classList.contains("task")
+      (child): child is HTMLElement => child instanceof HTMLElement && child !== dragging && child.classList.contains("task")
     );
     const nextTask =
       candidateTasks.find((child) => {
         const rect = child.getBoundingClientRect();
         return dragCenterY < rect.top + rect.height / 2;
       }) || null;
-    moveDragPlaceholder(nextTask);
+    moveDraggedTaskToSlot(nextTask);
   }
 
   function finishTaskListDrag() {
     const dragging = ctx.getTaskDragEl();
     const list = els.taskList;
-    const placeholder = dragPlaceholderEl;
     if (!dragging || !list) return;
     dragging.classList.remove(TASK_DRAG_HIDDEN_CLASS);
-    if (placeholder?.parentElement) {
-      placeholder.parentElement.insertBefore(dragging, placeholder);
-    }
     clearTaskDragState();
     dragPointerOffsetY = 0;
     dragCardHeight = 0;

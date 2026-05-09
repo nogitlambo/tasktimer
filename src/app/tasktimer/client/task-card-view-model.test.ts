@@ -131,6 +131,21 @@ describe("task card view model", () => {
     expect(rendered.html).not.toContain("Break");
   });
 
+  it("renders all checkpoint time markers on the progress bar", () => {
+    const rendered = renderCard({
+      sortedMilestones: [
+        { hours: 0.5, description: "" },
+        { hours: 1.3333333333333333, description: "" },
+        { hours: 1.75, description: "" },
+      ],
+      timeGoalSec: 2 * 3600,
+    });
+
+    expect(rendered.html).toContain(">30m<");
+    expect(rendered.html).toContain(">1h 20m<");
+    expect(rendered.html).toContain(">1h 45m<");
+  });
+
   it("dispatches allowed task card actions", () => {
     const calls: string[] = [];
 

@@ -1,6 +1,6 @@
 /* Generated from tasktimer.css split. */
 .modalSubtext{
-  color: var(--muted);
+  color: #ffffff;
 }
 
 /* Overlays */
@@ -156,28 +156,49 @@
 #rankLadderOverlay .modal{
   width: min(860px, 100%);
   max-height: min(92dvh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)));
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   background: #0d0f13;
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
-  border: 1px solid rgba(53,232,255,.24);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
+  border: 1px solid rgba(214,214,214,.34);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
+}
+
+.rankLadderModalScroll{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rankLadderModalScroll::-webkit-scrollbar{
+  display: none;
 }
 
 .rankLadderModal h2{
   margin: 0 0 8px;
+  color: #c9ff24;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
 
-.rankLadderModal .modalSubtext{
+.rankLadderModal p.modalSubtext{
   margin: 0 0 8px;
-  color: rgba(226,246,255,.9);
+  color: #ffffff !important;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 11px;
+  font-weight: 400;
   line-height: 1.45;
 }
 
@@ -355,17 +376,37 @@
 }
 
 .rankLadderModal .confirmBtns{
+  flex: 0 0 auto;
   margin-top: 12px;
+  margin-bottom: 0;
+  padding: 12px 0 calc(12px + var(--safe-bottom));
   justify-content: center;
+  border-top: 1px solid rgba(158,158,158,.42);
+}
+
+.rankLadderModal .confirmBtns .btn{
+  min-width: 132px;
+  justify-content: center;
+  font-size: 11px;
+  border-color: rgba(158,158,158,.58);
+  color: #f5f5f5;
+  box-shadow: none;
+}
+
+.rankLadderModal .confirmBtns .btn:hover,
+.rankLadderModal .confirmBtns .btn:focus-visible{
+  border-color: #ffffff;
+  color: #ffffff;
+  box-shadow: none;
 }
 
 body[data-theme="purple"] #rankLadderOverlay .modal{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
+  border-color: rgba(214,214,214,.34);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
 }
 
-body[data-theme="purple"] .rankLadderModal .modalSubtext{
-  color: rgba(247,232,255,.92);
+body[data-theme="purple"] .rankLadderModal p.modalSubtext{
+  color: #ffffff !important;
 }
 
 body[data-theme="purple"] .rankLadderItem{
@@ -1708,42 +1749,103 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   height:28px;
 }
 
-#editOverlay .msRow .msValueCluster,
-#addTaskOverlay .msRow .msValueCluster{
+#editOverlay .msRow .msSliderCluster,
+#addTaskOverlay .msRow .msSliderCluster{
   display:flex;
-  align-items:center;
-  gap:6px;
-  flex:0 0 auto;
+  flex-direction:column;
+  justify-content:center;
+  gap:8px;
+  flex:1 1 auto;
   min-width:0;
-  padding:4px 6px;
+  padding:6px 8px;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.06);
   border-radius:0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
-#editOverlay .msRow .msValueSelect,
-#addTaskOverlay .msRow .msValueSelect{
-  width:auto;
-  min-width:56px;
-  height:30px;
-  padding:4px 22px 4px 8px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(13,15,19,.9);
-  color:rgba(245,248,244,.92);
-  font:inherit;
-  border-radius:0;
-  clip-path:none;
+#editOverlay .msRow .msSliderReadout,
+#addTaskOverlay .msRow .msSliderReadout{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
 }
 
-#editOverlay .msRow .msValueUnit,
-#addTaskOverlay .msRow .msValueUnit{
-  color:rgba(190,240,255,.92);
+#editOverlay .msRow .msSliderValue,
+#addTaskOverlay .msRow .msSliderValue{
+  color:rgba(245,248,244,.96);
   font-family: var(--font-orbitron);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+#editOverlay .msRow .msSliderMeta,
+#addTaskOverlay .msRow .msSliderMeta,
+#editOverlay .msRow .msSliderBound,
+#addTaskOverlay .msRow .msSliderBound{
+  color:rgba(190,240,255,.92);
   font-size:10px;
   font-weight:700;
   letter-spacing:.08em;
   text-transform:uppercase;
+}
+
+#editOverlay .msRow .msSliderTrackRow,
+#addTaskOverlay .msRow .msSliderTrackRow{
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr) auto;
+  align-items:center;
+  gap:8px;
+}
+
+#editOverlay .msRow .msSliderInput,
+#addTaskOverlay .msRow .msSliderInput{
+  width:100%;
+  margin:0;
+  accent-color:#58e1ff;
+  background:transparent;
+}
+
+#editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
+#addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track{
+  height:6px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(88,225,255,.55), rgba(255,255,255,.12));
+}
+
+#editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
+#addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:18px;
+  height:18px;
+  margin-top:-6px;
+  border:1px solid rgba(255,255,255,.18);
+  background:#58e1ff;
+  box-shadow:0 0 0 2px rgba(13,15,19,.72);
+  clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
+}
+
+#editOverlay .msRow .msSliderInput::-moz-range-track,
+#addTaskOverlay .msRow .msSliderInput::-moz-range-track{
+  height:6px;
+  border:none;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(88,225,255,.55), rgba(255,255,255,.12));
+}
+
+#editOverlay .msRow .msSliderInput::-moz-range-thumb,
+#addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
+  width:18px;
+  height:18px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:0;
+  background:#58e1ff;
+  box-shadow:0 0 0 2px rgba(13,15,19,.72);
 }
 
 #editOverlay .msRow .checkpointDeleteBtn{
@@ -3514,6 +3616,21 @@ body[data-theme="purple"] .rewardsInfoText{
     font-size: 18px;
   }
 
+#historyEntryNoteOverlay .historyEntrySummaryValueWrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+#historyEntryNoteOverlay .historyEntrySummaryXpReplayBtn{
+    min-height:24px;
+    padding:4px 8px;
+    font-size:10px;
+    letter-spacing:.08em;
+    line-height:1;
+  }
+
 #historyEntryNoteOverlay .historyEntrySummarySessions{
     display:grid;
     gap:0;
@@ -4031,6 +4148,25 @@ body[data-theme="cyan"] #addTaskOverlay option,
 body[data-theme="cyan"] #addTaskOverlay optgroup{
   background: #0c131a;
   color: #eafcff;
+}
+
+body[data-theme="cyan"] #editOverlay .msRow .msSliderInput,
+body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput{
+  accent-color:#58e1ff;
+}
+
+body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
+body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
+body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-track,
+body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
+  background:linear-gradient(90deg, rgba(88,225,255,.7), rgba(172,246,255,.18));
+}
+
+body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
+body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
+body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
+body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
+  background:#58e1ff;
 }
 
 body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:hover,
@@ -4938,6 +5074,25 @@ body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn.isOn{
   background: transparent;
 }
 
+body[data-theme="purple"] #editOverlay .msRow .msSliderInput,
+body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput{
+  accent-color:#7fe7ff;
+}
+
+body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
+body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
+body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-track,
+body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
+  background:linear-gradient(90deg, rgba(127,231,255,.6), rgba(255,255,255,.12));
+}
+
+body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
+body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
+body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
+body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
+  background:#7fe7ff;
+}
+
 body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary,
 body[data-theme="purple"] #addTaskOverlay #addTaskAdvancedMenu > summary{
   color: #f5eaff;
@@ -5001,7 +5156,7 @@ body[data-theme="lime"] #rewardsInfoOverlay .modal,
 body[data-theme="lime"] #timeGoalCompleteOverlay .modal,
 body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modal,
 body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modal{
-  border-color: rgba(219,255,79,.24);
+  border-color: rgba(214,214,214,.34);
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
     rgba(18,20,24,.96);
@@ -5033,6 +5188,9 @@ body[data-theme="lime"] #timeGoalCompleteOverlay .modalSubtext,
 body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modalSubtext,
 body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modalSubtext{
   color: rgba(226,239,170,.82);
+}
+body[data-theme="lime"] .rankLadderModal p.modalSubtext{
+  color: #ffffff !important;
 }
 body[data-theme="lime"] #editOverlay input[type="text"],
 body[data-theme="lime"] #editOverlay input[type="number"],
@@ -5453,12 +5611,124 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
   #editOverlay .msRow,
-  #editOverlay .msRow .msValueCluster,
+  #editOverlay .msRow .msSliderCluster,
   #editOverlay .msRow .msSkewInput,
   #addTaskOverlay .msRow,
-  #addTaskOverlay .msRow .msValueCluster,
+  #addTaskOverlay .msRow .msSliderCluster,
   #addTaskOverlay .msRow .msSkewInput{
     clip-path:none;
+  }
+}
+
+.confirmAwardText {
+  display: inline-block;
+  margin-top: 8px;
+  color: #8ff6ff;
+  font-weight: 700;
+}
+
+body[data-theme="purple"] .confirmAwardText {
+  color: #f4a7ff;
+}
+
+.xpAwardFxLayer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.xpAwardFxBeam {
+  --xp-beam-color: rgba(53, 232, 255, 0.92);
+  --xp-beam-glow: rgba(53, 232, 255, 0.38);
+  position: fixed;
+  height: 4px;
+  margin-top: -2px;
+  transform-origin: 0 50%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), var(--xp-beam-color) 30%, rgba(255, 255, 255, 0.9) 100%);
+  box-shadow: 0 0 12px var(--xp-beam-glow);
+  animation: xpAwardBeamPulse 1400ms cubic-bezier(.18,.72,.18,1) forwards;
+}
+
+body[data-theme="purple"] .xpAwardFxBeam {
+  --xp-beam-color: rgba(240, 110, 224, 0.95);
+  --xp-beam-glow: rgba(240, 110, 224, 0.34);
+}
+
+.xpAwardFxDelta {
+  --xp-delta-color: #c9ff24;
+  position: fixed;
+  transform: translate3d(-50%, -50%, 0) scale(0.94);
+  padding: 4px 10px;
+  border: 1px solid #c9ff24;
+  border-radius: 0;
+  background: rgba(6, 18, 24, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  color: var(--xp-delta-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  animation: xpAwardDeltaStamp 1600ms cubic-bezier(.2,.7,.2,1) forwards;
+}
+
+body[data-theme="purple"] .xpAwardFxDelta {
+  --xp-delta-color: #c9ff24;
+  border-color: #c9ff24;
+  background: rgba(20, 11, 30, 0.92);
+}
+
+@keyframes xpAwardBeamPulse {
+  0% {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  14% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  62% {
+    opacity: 0.94;
+    filter: blur(.2px);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+@keyframes xpAwardDeltaStamp {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.94);
+  }
+  18% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.94);
+  }
+  34% {
+    opacity: 0.9;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  42% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1.04);
+  }
+  58% {
+    opacity: 0.96;
+    transform: translate3d(-50%, -50%, 0) scale(1.01);
+  }
+  76% {
+    opacity: 0.72;
+    transform: translate3d(-50%, -50%, 0) scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.82);
   }
 }
 

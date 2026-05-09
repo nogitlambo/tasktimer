@@ -13,7 +13,6 @@ type TaskProgressMarkerModel =
       leftPos: number;
       edgeClass: string;
       reached: boolean;
-      showLabel: boolean;
       wrapClass: string;
       label: string;
       description: string;
@@ -118,10 +117,7 @@ export function buildTaskProgressModel({
     },
   ];
 
-  const nextPendingIndex = safeMilestones.findIndex((m) => safeElapsedSec < (+m.hours || 0) * milestoneUnitSec);
-  const labelTargetIndex = nextPendingIndex >= 0 ? nextPendingIndex : Math.max(0, safeMilestones.length - 1);
-
-  safeMilestones.forEach((milestone, milestoneIndex) => {
+  safeMilestones.forEach((milestone) => {
     const value = +milestone.hours || 0;
     const secTarget = value * milestoneUnitSec;
     const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
@@ -134,7 +130,6 @@ export function buildTaskProgressModel({
       leftPos,
       edgeClass,
       reached,
-      showLabel: milestoneIndex === labelTargetIndex,
       wrapClass: edgeClass && label.length > 8 ? "mkWrap8" : "",
       label,
       description: "",
@@ -185,11 +180,7 @@ export function renderTaskProgressHtml(
       const markerClass = marker.reached ? "mkAch" : "mkPend";
       return `
             <div class="mkFlag ${markerClass}" style="left:${marker.leftPos}%"></div>
-            ${
-              marker.showLabel
-                ? `<div class="mkTime ${markerClass} ${marker.edgeClass} ${marker.wrapClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>`
-                : ``
-            }
+            <div class="mkTime ${markerClass} ${marker.edgeClass} ${marker.wrapClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>
             `;
     })
     .join("");

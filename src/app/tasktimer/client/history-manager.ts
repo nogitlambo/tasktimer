@@ -1434,6 +1434,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       syncManualEntryOverlayFromDraft(taskId);
     });
     ctx.on(document, "click", (event: Event) => {
+      const xpReplayTarget = (event.target as HTMLElement | null)?.closest?.(
+        '[data-history-summary-action="trigger-xp-award"]'
+      ) as HTMLElement | null;
+      if (xpReplayTarget) {
+        historyEntrySummaryInteraction.triggerDevXpAward(xpReplayTarget);
+        return;
+      }
+
       const editNoteTarget = (event.target as HTMLElement | null)?.closest?.(
         '[data-history-summary-action="edit-note"]'
       ) as HTMLElement | null;

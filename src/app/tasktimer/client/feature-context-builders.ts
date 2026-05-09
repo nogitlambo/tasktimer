@@ -467,8 +467,20 @@ type CreateSessionOptionsArgs = {
     | "getFocusSessionNoteSaveTimer"
     | "setFocusSessionNoteSaveTimer"
   >;
-  deferredFocusModeTimeGoalModals: () => Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>;
-  setDeferredFocusModeTimeGoalModals: (value: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>) => void;
+  deferredFocusModeTimeGoalModals: () => Array<{
+    taskId: string;
+    frozenElapsedMs: number;
+    reminder: boolean;
+    awardPreview?: { fromXp: number; toXp: number; awardedXp: number };
+  }>;
+  setDeferredFocusModeTimeGoalModals: (
+    value: Array<{
+      taskId: string;
+      frozenElapsedMs: number;
+      reminder: boolean;
+      awardPreview?: { fromXp: number; toXp: number; awardedXp: number };
+    }>
+  ) => void;
   modalState: MutableStore;
   getTimeGoalReminderAtMsByTaskId: () => Record<string, number>;
   getTimeGoalCompleteDurationUnit: () => "minute" | "hour";
@@ -1134,6 +1146,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getTaskView: () => asType<"list" | "tile">(args.preferencesState.get("taskView")),
     getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),
+    getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getCurrentTileColumnCount: () => asType<number>(args.appRuntimeState.get("currentTileColumnCount")),
     setCurrentTileColumnCount: (value) => args.appRuntimeState.set("currentTileColumnCount", value),
     getFocusModeTaskId: args.focusModeTaskId,

@@ -7,6 +7,7 @@ const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
 const DESKTOP_EMPTY_NOTE_PLACEHOLDER = "Click to add note";
 const MOBILE_EMPTY_NOTE_PLACEHOLDER = "Tap to add note";
+const SHOW_DEV_XP_REPLAY_BUTTON = process.env.NODE_ENV !== "production";
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
@@ -41,6 +42,7 @@ type HistoryEntrySummaryAggregate = {
   sessionCountText: string;
   totalElapsedText: string;
   timeGoalText: string;
+  xpEarned: number | null;
   xpText: string;
 };
 
@@ -275,6 +277,7 @@ function buildAggregateSummary(
     sessionCountText: `${sortedByTime.length} sessions`,
     totalElapsedText: formatHistoryEntrySummaryElapsed(totalElapsedMs, formatTwo),
     timeGoalText,
+    xpEarned: totalXp,
     xpText: formatXpText(totalXp),
   };
 }
@@ -313,6 +316,19 @@ export function renderHistoryEntrySummaryHtml(
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
     </div>`;
+  const renderXpField = (label: string, value: string, xpEarned: number | null, taskId?: string) => {
+    const showReplayButton = SHOW_DEV_XP_REPLAY_BUTTON && typeof xpEarned === "number" && xpEarned > 0;
+    const replayButtonHtml = showReplayButton
+      ? `<button class="btn btn-ghost small historyEntrySummaryXpReplayBtn" type="button" aria-label="Replay XP animation" title="Replay XP animation" data-history-summary-action="trigger-xp-award" data-history-summary-xp="${escapeHtml(xpEarned)}"${taskId ? ` data-history-summary-task-id="${escapeHtml(taskId)}"` : ""}>Test</button>`
+      : "";
+    return `<div class="historyEntrySummaryField">
+      <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
+      <div class="historyEntrySummaryValueWrap">
+        <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
+        ${replayButtonHtml}
+      </div>
+    </div>`;
+  };
   const heroHtml = payload.aggregate
     ? `<section class="historyEntrySummaryHero" aria-label="${escapeHtml(payload.titleText)} activity summary">
         <div class="historyEntrySummaryHeroTop">
@@ -324,7 +340,7 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryHeroLabel">Total Time Logged</div>
         <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
         <div class="historyEntrySummaryHeroStats">
-          ${[renderField("Total XP Earned", payload.aggregate.xpText)].join("")}
+          ${[renderXpField("Total XP Earned", payload.aggregate.xpText, payload.aggregate.xpEarned)].join("")}
         </div>
       </section>`
     : "";
@@ -348,7 +364,7 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryGrid">
           ${renderField("Time goal", session.timeGoalText)}
           ${renderField("Sentiment", session.sentimentText)}
-          ${renderField("XP earned", session.xpText)}
+          ${renderXpField("XP earned", session.xpText, session.xpEarned, session.taskId)}
         </div>
         <div class="historyEntrySummaryNoteRow">
           <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">

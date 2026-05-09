@@ -49,6 +49,10 @@ export default function TimeGoalCompleteOverlay() {
         ))}
       </div>
       <div className="modal" role="dialog" aria-modal="true" aria-label="Task Complete">
+        <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
+        <p className="modalSubtext confirmText" id="timeGoalCompleteText">
+          You have been awarded 0 XP
+        </p>
         <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
         <fieldset className="timeGoalCompleteDifficulty" aria-describedby="timeGoalCompleteDifficultyHint">
           <legend id="timeGoalCompleteDifficultyQuestion">Effort required to complete this task today?</legend>

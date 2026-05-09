@@ -1,9 +1,12 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
+import { awardCompletedSessionXp } from "../lib/rewards";
+import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 type ConfirmOptions = {
   okLabel: string;
   cancelLabel?: string;
+  textHtml?: string;
   checkboxLabel?: string;
   checkboxChecked?: boolean;
   dangerInputLabel?: string;
@@ -17,6 +20,9 @@ type TaskDestructiveActionEffectsOptions = {
   getTasks: () => Task[];
   setTasks: (tasks: Task[]) => void;
   getHistoryByTaskId: () => Record<string, unknown[]>;
+  getRewardProgress: () => ReturnType<typeof awardCompletedSessionXp>["previous"];
+  getWeekStarting: () => Parameters<typeof awardCompletedSessionXp>[1]["weekStarting"];
+  getTaskElapsedMs: (task: Task) => number;
   setHistoryByTaskId: (history: Record<string, unknown[]>) => void;
   setDeletedTaskMeta: (meta: DeletedTaskMeta) => void;
   currentUid: () => string | null;
@@ -45,6 +51,24 @@ const RESET_TASK_CONFIRM_CLASS = "isResetTaskConfirm";
 const RESET_ALL_DELETE_CONFIRM_CLASS = "isResetAllDeleteConfirm";
 
 export function createTaskDestructiveActionEffects(options: TaskDestructiveActionEffectsOptions) {
+  function getResetAwardPreview(task: Task) {
+    const elapsedMs = Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0));
+    const award = awardCompletedSessionXp(options.getRewardProgress(), {
+      taskId: String(task.id || "").trim() || null,
+      awardedAt: Date.now(),
+      elapsedMs,
+      historyByTaskId: options.getHistoryByTaskId() as Parameters<typeof awardCompletedSessionXp>[1]["historyByTaskId"],
+      tasks: options.getTasks(),
+      weekStarting: options.getWeekStarting(),
+      momentumEntitled: true,
+    });
+    return {
+      fromXp: award.previous.totalXp,
+      toXp: award.next.totalXp,
+      awardedXp: Math.max(0, Math.floor(Number(award.amount || 0) || 0)),
+    };
+  }
+
   function clearResetTaskConfirmState() {
     options.setResetTaskConfirmBusy(false, false);
     options.removeConfirmOverlayClass(RESET_TASK_CONFIRM_CLASS);
@@ -55,16 +79,31 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     if (!task || task.running) return;
     if (isTaskTimeGoalCompletedToday(task)) return;
     const taskId = String(task.id || "");
+    const rewardPreview = getResetAwardPreview(task);
     const shouldExitFocusModeAfterReset = String(options.getFocusModeTaskId() || "").trim() === taskId.trim();
 
     options.confirm("Reset Task", "Reset timer to zero?", {
       okLabel: "Reset",
       cancelLabel: "Cancel",
+      textHtml:
+        rewardPreview.awardedXp > 0
+          ? `Reset timer to zero?<br /><span class="confirmAwardText" id="confirmResetTaskAwardText">This reset will bank +${rewardPreview.awardedXp} XP.</span>`
+          : undefined,
       onOk: async () => {
         options.setResetTaskConfirmBusy(true, false);
         const sessionNote = options.captureResetActionSessionNote(taskId);
         if (sessionNote) options.setFocusSessionDraft(taskId, sessionNote);
         try {
+          if (rewardPreview.awardedXp > 0 && typeof window !== "undefined") {
+            dispatchPendingXpAwardEvent(window, {
+              ...rewardPreview,
+              sourceModal: "resetConfirm",
+              sourceTaskId: taskId || null,
+              sourceOverlayId: "confirmOverlay",
+              sourceElementKey: "confirmResetTaskAwardText",
+              sourceRect: captureXpAwardRectSnapshot(document.getElementById("confirmResetTaskAwardText")),
+            });
+          }
           options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
           options.save();
           options.closeConfirm();

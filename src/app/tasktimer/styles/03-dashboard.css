@@ -1397,6 +1397,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 0;
   padding: 0;
 }
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+  line-height: normal !important;
+  text-transform: uppercase !important;
+}
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
   border: 0;
   background: transparent;

@@ -4,8 +4,10 @@ import {
   buildHistoryEntrySummaryPayload,
   renderHistoryEntrySummaryHtml,
 } from "./history-entry-summary";
+import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 type HistoryEntrySummaryOwner = "inline" | "manager";
+const CAN_TRIGGER_DEV_XP_REPLAY = process.env.NODE_ENV !== "production";
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
@@ -254,6 +256,34 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     syncCloseLabel();
   }
 
+  function triggerDevXpAward(trigger: HTMLElement | null) {
+    const overlay = elements.overlay;
+    if (!CAN_TRIGGER_DEV_XP_REPLAY || typeof window === "undefined") return false;
+    if (!overlay || overlay.dataset.historyEntryOwner !== options.owner) return false;
+    if (overlay.dataset.historyEntryEditing === "true") return false;
+    if (!trigger) return false;
+
+    const awardedXp = Math.max(0, Math.floor(Number(trigger.getAttribute("data-history-summary-xp") || 0)));
+    if (!(awardedXp > 0)) return false;
+
+    const rewardProgress = options.getRewardProgress();
+    const currentTotalXp = Math.max(0, Math.floor(Number(rewardProgress?.totalXp || 0)));
+    const taskId = String(trigger.getAttribute("data-history-summary-task-id") || overlay.dataset.historyEntryTaskId || "").trim();
+
+    dispatchPendingXpAwardEvent(window, {
+      fromXp: Math.max(0, currentTotalXp - awardedXp),
+      toXp: currentTotalXp,
+      awardedXp,
+      sourceModal: "historyEntrySummaryTest",
+      sourceTaskId: taskId || null,
+      sourceOverlayId: "historyEntryNoteOverlay",
+      sourceElementKey: "historyEntrySummaryXpReplayBtn",
+      sourceRect: captureXpAwardRectSnapshot(trigger),
+    });
+    options.closeOverlay(overlay);
+    return true;
+  }
+
   return {
     openSummary,
     clearTarget,
@@ -264,5 +294,6 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     syncInputMirror,
     syncCloseLabel,
     syncEditorUi,
+    triggerDevXpAward,
   };
 }

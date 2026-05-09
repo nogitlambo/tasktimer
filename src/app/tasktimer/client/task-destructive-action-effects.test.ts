@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
+import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 
 type ConfirmCall = {
   title: string;
@@ -9,6 +10,7 @@ type ConfirmCall = {
   opts: {
     okLabel: string;
     cancelLabel?: string;
+    textHtml?: string;
     checkboxLabel?: string;
     checkboxChecked?: boolean;
     dangerInputMatch?: string;
@@ -57,6 +59,9 @@ function createHarness(overrides: {
       calls.push("setTasks");
     },
     getHistoryByTaskId: () => history,
+    getRewardProgress: () => DEFAULT_REWARD_PROGRESS,
+    getWeekStarting: () => "mon",
+    getTaskElapsedMs: (task) => Number(task.accumulatedMs || 0),
     setHistoryByTaskId: (next) => {
       history = next;
       calls.push("setHistory");
@@ -146,6 +151,14 @@ describe("task destructive action effects", () => {
     expect(harness.confirmCalls[0]?.opts.okLabel).toBe("Reset");
     expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
     expect(harness.calls).toContain("busy:false:false");
+  });
+
+  it("shows the reset XP summary when the task would bank XP", () => {
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 60_000 })] });
+
+    harness.adapter.resetTask(0);
+
+    expect(harness.confirmCalls[0]?.opts.textHtml).toContain("This reset will bank +1 XP.");
   });
 
   it("ignores reset for a task completed today", () => {

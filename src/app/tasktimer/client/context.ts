@@ -348,6 +348,7 @@ export type TaskTimerTasksContext = {
   on: TaskTimerRuntime["on"];
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
+  getWeekStarting: () => DashboardWeekStart;
   setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
@@ -661,9 +662,19 @@ export type TaskTimerSessionContext = {
   setFocusShowCheckpoints: (value: boolean) => void;
   getFocusCheckpointSig: () => string;
   setFocusCheckpointSig: (value: string) => void;
-  getDeferredFocusModeTimeGoalModals: () => Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>;
+  getDeferredFocusModeTimeGoalModals: () => Array<{
+    taskId: string;
+    frozenElapsedMs: number;
+    reminder: boolean;
+    awardPreview?: { fromXp: number; toXp: number; awardedXp: number };
+  }>;
   setDeferredFocusModeTimeGoalModals: (
-    value: Array<{ taskId: string; frozenElapsedMs: number; reminder: boolean }>
+    value: Array<{
+      taskId: string;
+      frozenElapsedMs: number;
+      reminder: boolean;
+      awardPreview?: { fromXp: number; toXp: number; awardedXp: number };
+    }>
   ) => void;
   getTimeGoalModalTaskId: () => string | null;
   setTimeGoalModalTaskId: (value: string | null) => void;

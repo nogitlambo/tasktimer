@@ -23,6 +23,14 @@ import {
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { eventTargetClosest } from "./control-helpers";
+import {
+  clampCheckpointValueToTimeGoal,
+  formatCheckpointSliderLabel,
+  formatCheckpointSliderProgress,
+  getCheckpointSliderMaxMinutes,
+  sliderMinutesToCheckpointValue,
+  type CheckpointSliderUnit,
+} from "./checkpoint-slider";
 import type { TaskTimerAddTaskContext } from "./context";
 import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlannedStartSelectors } from "./planned-start";
 
@@ -324,71 +332,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncAddTaskMilestonesUi();
   }
 
-  function getCheckpointUnitLabels(unit: "hour" | "minute") {
-    return unit === "minute"
-      ? { major: "m", minor: "Min", minorStep: 5, minorRange: 60 }
-      : { major: "Hr", minor: "m", minorStep: 5, minorRange: 60 };
-  }
-
-  function checkpointValueToParts(value: number, unit: "hour" | "minute") {
-    if (unit === "minute") {
-      const totalSeconds = Math.max(0, Math.round((Number(value) || 0) * 60));
-      return {
-        major: Math.floor(totalSeconds / 60),
-        minor: Math.max(0, totalSeconds % 60),
-      };
-    }
-    const totalMinutes = Math.max(0, Math.round((Number(value) || 0) * 60));
-    return {
-      major: Math.floor(totalMinutes / 60),
-      minor: Math.max(0, totalMinutes % 60),
-    };
-  }
-
-  function checkpointPartsToValue(major: number, minor: number, unit: "hour" | "minute") {
-    if (unit === "minute") {
-      return Math.max(0, major) + Math.max(0, minor) / 60;
-    }
-    return Math.max(0, major) + Math.max(0, minor) / 60;
-  }
-
-  function getCheckpointMaxParts(timeGoalMinutes: number, unit: "hour" | "minute") {
-    if (unit === "minute") {
-      const maxTotalSeconds = Math.max(0, Math.ceil(timeGoalMinutes * 60) - 1);
-      return {
-        majorMax: Math.floor(maxTotalSeconds / 60),
-        minorMax: 59,
-      };
-    }
-    const maxTotalMinutes = Math.max(0, Math.ceil(timeGoalMinutes) - 1);
-    return {
-      majorMax: Math.floor(maxTotalMinutes / 60),
-      minorMax: 59,
-    };
-  }
-
-  function clampCheckpointParts(major: number, minor: number, timeGoalMinutes: number, unit: "hour" | "minute") {
-    const nextValue = checkpointPartsToValue(major, minor, unit);
-    const unitSeconds = unit === "minute" ? 60 : 3600;
-    if (!sharedTasks.isCheckpointAtOrAboveTimeGoal(nextValue, unitSeconds, timeGoalMinutes)) {
-      return { major: Math.max(0, major), minor: Math.max(0, minor), value: nextValue };
-    }
-    if (unit === "minute") {
-      const maxTotalSeconds = Math.max(0, Math.ceil(timeGoalMinutes * 60) - 1);
-      return {
-        major: Math.floor(maxTotalSeconds / 60),
-        minor: Math.max(0, maxTotalSeconds % 60),
-        value: maxTotalSeconds / 60,
-      };
-    }
-    const maxTotalMinutes = Math.max(0, Math.ceil(timeGoalMinutes) - 1);
-    return {
-      major: Math.floor(maxTotalMinutes / 60),
-      minor: Math.max(0, maxTotalMinutes % 60),
-      value: maxTotalMinutes / 60,
-    };
-  }
-
   function renderAddTaskMilestoneEditor() {
     if (!els.addTaskMsList) return;
     els.addTaskMsList.innerHTML = "";
@@ -398,53 +341,55 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       milestones: ms,
       timeGoalMinutes: getAddTaskTimeGoalMinutes(),
     } as Task;
-    const unit = tempTask.milestoneTimeUnit === "minute" ? "minute" : "hour";
-    const labels = getCheckpointUnitLabels(unit);
+    const unit = (tempTask.milestoneTimeUnit === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
     const timeGoalMinutes = getAddTaskTimeGoalMinutes();
-    const maxParts = getCheckpointMaxParts(timeGoalMinutes, unit);
+    const sliderMax = getCheckpointSliderMaxMinutes(timeGoalMinutes);
 
     ms.forEach((m, idx) => {
-      const currentParts = checkpointValueToParts(Number(m.hours) || 0, unit);
+      const clamped = clampCheckpointValueToTimeGoal(Number(m.hours) || 0, unit, timeGoalMinutes);
+      m.hours = clamped.value;
       const row = document.createElement("div");
       row.className = "msRow";
       (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
-      const majorOptions = Array.from({ length: Math.max(1, maxParts.majorMax + 1) }, (_, optionIndex) => {
-        const isSelected = optionIndex === currentParts.major ? ' selected="selected"' : "";
-        return `<option value="${optionIndex}"${isSelected}>${optionIndex}</option>`;
-      }).join("");
-      const minorOptions = Array.from({ length: labels.minorRange / labels.minorStep }, (_, optionIndex) => {
-        const value = optionIndex * labels.minorStep;
-        const isSelected = value === currentParts.minor ? ' selected="selected"' : "";
-        return `<option value="${value}"${isSelected}>${String(value).padStart(2, "0")}</option>`;
-      }).join("");
       row.innerHTML = `
-        <div class="msValueCluster" aria-label="Checkpoint time">
-          <select class="msValueSelect" data-field="value-major" aria-label="Checkpoint ${labels.major}">
-            ${majorOptions}
-          </select>
-          <span class="msValueUnit" aria-hidden="true">${labels.major}</span>
-          <select class="msValueSelect" data-field="value-minor" aria-label="Checkpoint ${labels.minor}">
-            ${minorOptions}
-          </select>
-          <span class="msValueUnit" aria-hidden="true">${labels.minor}</span>
+        <div class="msSliderCluster">
+          <div class="msSliderReadout" aria-live="polite">
+            <span class="msSliderValue" data-field="value-label">${formatCheckpointSliderLabel(clamped.sliderMinutes)}</span>
+            <span class="msSliderMeta" data-field="value-progress">${formatCheckpointSliderProgress(clamped.sliderMinutes, timeGoalMinutes)}</span>
+          </div>
+          <div class="msSliderTrackRow">
+            <span class="msSliderBound" aria-hidden="true">Start</span>
+            <input
+              class="msSliderInput"
+              data-field="value-slider"
+              type="range"
+              min="1"
+              max="${sliderMax}"
+              step="1"
+              value="${clamped.sliderMinutes}"
+              aria-label="Checkpoint time"
+            />
+            <span class="msSliderBound" aria-hidden="true">Goal</span>
+          </div>
         </div>
         <button type="button" title="Remove" data-action="rmMs">&times;</button>
       `;
-      const majorSelect = row.querySelector('[data-field="value-major"]') as HTMLSelectElement | null;
-      const minorSelect = row.querySelector('[data-field="value-minor"]') as HTMLSelectElement | null;
+      const sliderInput = row.querySelector('[data-field="value-slider"]') as HTMLInputElement | null;
+      const valueLabel = row.querySelector('[data-field="value-label"]') as HTMLElement | null;
+      const valueProgress = row.querySelector('[data-field="value-progress"]') as HTMLElement | null;
       const syncCheckpointValue = () => {
-        const major = Math.max(0, Number(majorSelect?.value || 0) || 0);
-        const minor = Math.max(0, Number(minorSelect?.value || 0) || 0);
-        const next = clampCheckpointParts(major, minor, timeGoalMinutes, unit);
-        if (majorSelect) majorSelect.value = String(next.major);
-        if (minorSelect) minorSelect.value = String(next.minor);
+        const nextSliderMinutes = Number(sliderInput?.value || clamped.sliderMinutes) || clamped.sliderMinutes;
+        const next = clampCheckpointValueToTimeGoal(sliderMinutesToCheckpointValue(nextSliderMinutes, unit), unit, timeGoalMinutes);
+        if (sliderInput) sliderInput.value = String(next.sliderMinutes);
+        if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(next.sliderMinutes);
+        if (valueProgress) valueProgress.textContent = formatCheckpointSliderProgress(next.sliderMinutes, timeGoalMinutes);
         m.hours = next.value;
         ctx.setAddTaskMilestonesState(ms);
         clearAddTaskValidationState();
         syncAddTaskCheckpointAlertUi();
       };
-      ctx.on(majorSelect, "change", syncCheckpointValue);
-      ctx.on(minorSelect, "change", syncCheckpointValue);
+      ctx.on(sliderInput, "input", syncCheckpointValue);
+      ctx.on(sliderInput, "change", syncCheckpointValue);
 
       const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
       ctx.on(rm, "click", () => {
@@ -488,6 +433,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function syncAddTaskMilestonesUi() {
+    if ((ctx.getAddTaskMilestones() || []).length > 0) {
+      renderAddTaskMilestoneEditor();
+    }
     syncAddTaskCheckpointAlertUi();
   }
 

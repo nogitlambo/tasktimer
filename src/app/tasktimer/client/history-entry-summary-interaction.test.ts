@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 import type { Task } from "../lib/types";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
+import { TASKTIMER_PENDING_XP_AWARD_EVENT } from "./xp-award-events";
 
 function classListStub() {
   const values = new Set<string>();
@@ -54,6 +55,7 @@ function createHarness(overrides?: {
   owner?: "inline" | "manager";
   entries?: Array<Record<string, unknown>>;
   isMobileLayout?: () => boolean;
+  rewardProgress?: typeof DEFAULT_REWARD_PROGRESS;
 }) {
   const overlay = elementStub("historyEntryNoteOverlay");
   const closeBtn = elementStub();
@@ -109,7 +111,7 @@ function createHarness(overrides?: {
         timeGoalValue: 1,
       }) as Task,
     getEntriesForTask: () => entries,
-    getRewardProgress: () => DEFAULT_REWARD_PROGRESS,
+    getRewardProgress: () => overrides?.rewardProgress ?? DEFAULT_REWARD_PROGRESS,
     openOverlay: (node) => opened.push(node),
     closeOverlay: (node) => closed.push(node),
     isMobileLayout: overrides?.isMobileLayout ?? (() => false),
@@ -159,6 +161,34 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.meta.textContent).toBe("Session Summary");
     expect(h.body.innerHTML).toContain("Session note");
     expect(h.opened).toEqual([h.overlay]);
+  });
+
+  it("renders dev XP replay buttons for aggregate and session XP values when XP is tracked", () => {
+    const rewardProgress = {
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 120,
+      awardLedger: [
+        { ts: 1000, xp: 12, reason: "session", taskId: "task-1" },
+        { ts: 2000, xp: 8, reason: "session", taskId: "task-1" },
+      ],
+    };
+    const h = createHarness({
+      rewardProgress,
+      entries: [
+        { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "A" },
+        { taskId: "task-1", ts: 2000, ms: 30000, name: "Focus", note: "B" },
+      ],
+    });
+
+    h.interaction.openSummary("task-1", [
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "A" },
+      { taskId: "task-1", ts: 2000, ms: 30000, name: "Focus", note: "B" },
+    ]);
+
+    expect(h.body.innerHTML.match(/data-history-summary-action="trigger-xp-award"/g)).toHaveLength(3);
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="20"');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="12"');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="8"');
   });
 
   it("sets editable target dataset for a single entry", () => {
@@ -278,5 +308,53 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.overlay.dataset.historyEntryEditable).toBe("false");
     expect(h.overlay.dataset.historyEntryNote).toBe("");
     expect(h.editorInput.value).toBe("");
+  });
+
+  it("dispatches a dev XP replay award and closes the overlay", () => {
+    const dispatchEvent = vi.fn();
+    class CustomEventStub<T = unknown> {
+      type: string;
+      detail: T;
+
+      constructor(type: string, init?: { detail?: T }) {
+        this.type = type;
+        this.detail = init?.detail as T;
+      }
+    }
+    vi.stubGlobal("window", { dispatchEvent });
+    vi.stubGlobal("CustomEvent", CustomEventStub);
+    const rewardProgress = {
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 120,
+      awardLedger: [{ ts: 1000, xp: 12, reason: "session", taskId: "task-1" }],
+    };
+    const h = createHarness({ rewardProgress });
+    const trigger = {
+      getAttribute: vi.fn((name: string) => {
+        if (name === "data-history-summary-xp") return "12";
+        if (name === "data-history-summary-task-id") return "task-1";
+        return null;
+      }),
+      getBoundingClientRect: vi.fn(() => ({ left: 10, top: 20, width: 30, height: 12 })),
+    } as unknown as HTMLElement;
+
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+
+    expect(h.interaction.triggerDevXpAward(trigger)).toBe(true);
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+    const queuedEvent = dispatchEvent.mock.calls[0]?.[0] as CustomEventStub | undefined;
+    expect(queuedEvent?.type).toBe(TASKTIMER_PENDING_XP_AWARD_EVENT);
+    expect(queuedEvent?.detail).toMatchObject({
+      fromXp: 108,
+      toXp: 120,
+      awardedXp: 12,
+      sourceModal: "historyEntrySummaryTest",
+      sourceTaskId: "task-1",
+      sourceOverlayId: "historyEntryNoteOverlay",
+      sourceElementKey: "historyEntrySummaryXpReplayBtn",
+      sourceRect: { left: 10, top: 20, width: 30, height: 12 },
+    });
+    expect(h.closed).toEqual([h.overlay]);
+    vi.unstubAllGlobals();
   });
 });

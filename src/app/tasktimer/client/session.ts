@@ -18,6 +18,7 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -35,7 +36,14 @@ type CheckpointToast = {
   muteRepeatOnManualDismiss: boolean;
 };
 
-type DeferredTimeGoalModalEntry = { taskId: string; frozenElapsedMs: number; reminder: boolean };
+type TimeGoalAwardPreview = { fromXp: number; toXp: number; awardedXp: number };
+
+type DeferredTimeGoalModalEntry = {
+  taskId: string;
+  frozenElapsedMs: number;
+  reminder: boolean;
+  awardPreview?: TimeGoalAwardPreview;
+};
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -488,9 +496,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
   }
 
-  function getTimeGoalCompletionAwardXp(task: Task, elapsedMs: number) {
+  function getTimeGoalCompletionAwardPreview(task: Task, elapsedMs: number): TimeGoalAwardPreview {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
-    if (safeElapsedMs <= 0) return 0;
+    if (safeElapsedMs <= 0) {
+      const currentXp = Math.max(0, Math.floor(Number(ctx.getRewardProgress().totalXp || 0) || 0));
+      return { fromXp: currentXp, toXp: currentXp, awardedXp: 0 };
+    }
     const award = awardCompletedSessionXp(ctx.getRewardProgress(), {
       taskId: String(task.id || "").trim() || null,
       awardedAt: nowMs(),
@@ -500,13 +511,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       weekStarting: ctx.getWeekStarting(),
       momentumEntitled: true,
     });
-    return Math.max(0, Math.floor(Number(award.amount || 0) || 0));
+    return {
+      fromXp: award.previous.totalXp,
+      toXp: award.next.totalXp,
+      awardedXp: Math.max(0, Math.floor(Number(award.amount || 0) || 0)),
+    };
   }
 
   function openTimeGoalCompleteModal(
     task: Task,
     elapsedMs: number,
-    opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty; awardedXp?: number }
+    opts?: { reminder?: boolean; completionDifficulty?: CompletionDifficulty; awardPreview?: TimeGoalAwardPreview }
   ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
@@ -519,10 +534,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteTitle) {
       els.timeGoalCompleteTitle.textContent = `${String(task.name || "Task")} Complete!`;
     }
-    const awardedXp =
-      opts && Object.prototype.hasOwnProperty.call(opts, "awardedXp")
-        ? Math.max(0, Math.floor(Number(opts.awardedXp || 0) || 0))
-        : getTimeGoalCompletionAwardXp(task, elapsedMs);
+    const awardPreview = opts?.awardPreview || getTimeGoalCompletionAwardPreview(task, elapsedMs);
+    const awardedXp = awardPreview.awardedXp;
     if (els.timeGoalCompleteText) {
       els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
     }
@@ -539,6 +552,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     persistPendingTimeGoalFlow(task, "main", opts);
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     startTimeGoalCompleteConfetti();
+    if (awardedXp > 0 && typeof window !== "undefined") {
+      dispatchPendingXpAwardEvent(window, {
+        ...awardPreview,
+        sourceModal: "timeGoalComplete",
+        sourceTaskId: taskId,
+        sourceOverlayId: "timeGoalCompleteOverlay",
+        sourceElementKey: "timeGoalCompleteText",
+        sourceRect: captureXpAwardRectSnapshot(els.timeGoalCompleteText),
+      });
+    }
   }
 
   function maybeRestorePendingTimeGoalFlow() {
@@ -646,7 +669,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(task?.id || "").trim();
     if (!taskId || isTaskTimeGoalCompletedToday(task)) return false;
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
-    const awardedXp = getTimeGoalCompletionAwardXp(task, safeElapsedMs);
+    const awardPreview = getTimeGoalCompletionAwardPreview(task, safeElapsedMs);
     if (taskId && els.timeGoalCompleteNoteInput) {
       setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
     }
@@ -657,9 +680,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.save();
     ctx.render();
     if (opts?.deferModal) {
-      queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder });
+      queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
     } else {
-      openTimeGoalCompleteModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardedXp });
+      openTimeGoalCompleteModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
     }
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     return true;
@@ -1004,14 +1027,23 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
   }
 
-  function queueDeferredFocusModeTimeGoalModal(task: Task, elapsedMs: number, opts?: { reminder?: boolean }) {
+  function queueDeferredFocusModeTimeGoalModal(
+    task: Task,
+    elapsedMs: number,
+    opts?: { reminder?: boolean; awardPreview?: TimeGoalAwardPreview }
+  ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
     const queue = getDeferredQueue();
     if (queue.some((entry) => entry.taskId === taskId)) return;
     ctx.setDeferredFocusModeTimeGoalModals([
       ...queue,
-      { taskId, frozenElapsedMs: Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)), reminder: !!opts?.reminder },
+      {
+        taskId,
+        frozenElapsedMs: Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)),
+        reminder: !!opts?.reminder,
+        ...(opts?.awardPreview ? { awardPreview: opts.awardPreview } : {}),
+      },
     ]);
   }
 
@@ -1023,7 +1055,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (queuedCompleted) {
       ctx.setDeferredFocusModeTimeGoalModals(getDeferredQueue().filter((entry) => entry !== queuedCompleted));
       const task = ctx.getTasks().find((row) => String(row.id || "").trim() === queuedCompleted.taskId);
-      if (task) openTimeGoalCompleteModal(task, queuedCompleted.frozenElapsedMs || getTaskElapsedMs(task), { reminder: queuedCompleted.reminder, awardedXp: 0 });
+      if (task) {
+        openTimeGoalCompleteModal(task, queuedCompleted.frozenElapsedMs || getTaskElapsedMs(task), {
+          reminder: queuedCompleted.reminder,
+          awardPreview: queuedCompleted.awardPreview,
+        });
+      }
       return;
     }
     const { nextPending, remainingQueue } = shiftValidDeferredTimeGoalModal(getDeferredQueue(), {
@@ -1036,10 +1073,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const task = ctx.getTasks().find((row) => String(row.id || "").trim() === nextPending.taskId);
     if (!task) return;
     if (isTaskTimeGoalCompletedToday(task)) {
-      openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder, awardedXp: 0 });
+      openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), {
+        reminder: nextPending.reminder,
+        awardPreview: nextPending.awardPreview,
+      });
       return;
     }
-    openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), { reminder: nextPending.reminder });
+    openTimeGoalCompleteModal(task, nextPending.frozenElapsedMs || getTaskElapsedMs(task), {
+      reminder: nextPending.reminder,
+      awardPreview: nextPending.awardPreview,
+    });
   }
 
   function dismissNonFocusTaskAlertsForFocusTask(focusTaskIdRaw: string | null | undefined) {

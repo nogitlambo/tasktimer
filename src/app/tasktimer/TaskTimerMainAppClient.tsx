@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
@@ -42,11 +42,22 @@ import {
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
+  getRankForXp,
   normalizeRewardProgress,
 } from "./lib/rewards";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
+import {
+  clearActiveXpAward,
+  createXpAwardAnimationState,
+  enqueuePendingXpAward,
+  notifyXpAwardOverlayClosed,
+  type PendingXpAward,
+  XP_AWARD_COUNT_DURATION_MS,
+  XP_AWARD_FX_DURATION_MS,
+} from "./client/xp-award-animation";
+import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import "./tasktimer.css";
 
 type TaskTimerMainAppClientProps = {
@@ -137,6 +148,45 @@ function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {
   return avatarSrc.includes("?") ? `${avatarSrc}&lbav=${version}` : `${avatarSrc}?lbav=${version}`;
 }
 
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getVisibleXpTargetRect() {
+  if (typeof document === "undefined") return null;
+  const candidates = ["appShellHeaderXpValue", "taskLaunchTopbarXpValue"]
+    .map((id) => document.getElementById(id))
+    .filter((element): element is HTMLElement => !!element);
+  for (const element of candidates) {
+    const rect = element.getBoundingClientRect();
+    if (!(rect.width > 0) || !(rect.height > 0)) continue;
+    const style = window.getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) continue;
+    return rect;
+  }
+  return null;
+}
+
+function buildBeamStyle(sourceRect: PendingXpAward["sourceRect"], targetRect: DOMRect): CSSProperties | null {
+  if (!sourceRect) return null;
+  const sourceX = sourceRect.left + sourceRect.width / 2;
+  const sourceY = sourceRect.top + sourceRect.height / 2;
+  const targetX = targetRect.left + targetRect.width / 2;
+  const targetY = targetRect.top + targetRect.height / 2;
+  const deltaX = targetX - sourceX;
+  const deltaY = targetY - sourceY;
+  const length = Math.hypot(deltaX, deltaY);
+  if (!(length > 0)) return null;
+  const angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+  return {
+    left: `${sourceX}px`,
+    top: `${sourceY}px`,
+    width: `${length}px`,
+    transform: `rotate(${angle}deg)`,
+  };
+}
+
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
   const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
   const initials = getLeaderboardInitials(getLeaderboardLabel(profile));
@@ -156,6 +206,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!getFirebaseAuthClient()?.currentUser);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
+  const [xpAwardFx, setXpAwardFx] = useState<{
+    visible: boolean;
+    beamStyle: CSSProperties | null;
+    deltaStyle: CSSProperties | null;
+    deltaText: string | null;
+  }>({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+  const [xpAnimationState, setXpAnimationState] = useState(() => createXpAwardAnimationState());
+  const [isXpCountAnimating, setIsXpCountAnimating] = useState(false);
+  const [isXpAwardSpotlightActive, setIsXpAwardSpotlightActive] = useState(false);
   const [dismissedHighlightParam, setDismissedHighlightParam] = useState<string | null>(null);
   const [leaderboardState, setLeaderboardState] = useState<LeaderboardLoadState>("error");
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
@@ -163,9 +223,28 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
   const leaderboardStateRef = useRef<LeaderboardLoadState>("error");
-  const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(rewardProgress), [rewardProgress]);
+  const displayedXpRef = useRef(displayedXp);
+  const previousActiveAwardRef = useRef<PendingXpAward | null>(null);
+  const xpAnimationFrameRef = useRef<number | null>(null);
+  const xpAnimationStartTimerRef = useRef<number | null>(null);
+  const xpAnimationCleanupTimerRef = useRef<number | null>(null);
+  const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
+  const displayedRewardProgress = useMemo(() => {
+    const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
+    return {
+      ...rewardProgress,
+      totalXp,
+      totalXpPrecise: totalXp,
+      currentRankId: getRankForXp(totalXp).id,
+    };
+  }, [effectiveDisplayedXp, rewardProgress]);
+  const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(displayedRewardProgress), [displayedRewardProgress]);
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
+
+  useEffect(() => {
+    displayedXpRef.current = displayedXp;
+  }, [displayedXp]);
 
   useEffect(() => {
     leaderboardStateRef.current = leaderboardState;
@@ -212,6 +291,135 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePendingAward = (event: Event) => {
+      const detail = (event as CustomEvent<PendingXpAward>).detail;
+      if (!detail) return;
+      setXpAnimationState((current) => enqueuePendingXpAward(current, detail));
+    };
+    const handleOverlayClosed = (event: Event) => {
+      const overlayId = String((event as CustomEvent<{ overlayId?: string }>).detail?.overlayId || "").trim();
+      if (!overlayId) return;
+      setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, overlayId));
+    };
+    window.addEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
+    window.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
+    return () => {
+      window.removeEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
+      window.removeEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const activeAward = xpAnimationState.active;
+    const wasIdle = previousActiveAwardRef.current == null;
+    previousActiveAwardRef.current = activeAward;
+    if (!activeAward) {
+      if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
+      if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+      if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+      return;
+    }
+
+    if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
+    if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+    if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+
+    const reducedMotion = prefersReducedMotion();
+    const targetRect = typeof window !== "undefined" ? getVisibleXpTargetRect() : null;
+    const beamStyle = !reducedMotion && targetRect ? buildBeamStyle(activeAward.sourceRect, targetRect) : null;
+    const deltaStyle = targetRect
+      ? {
+          left: `${targetRect.left + targetRect.width / 2}px`,
+          top: `${targetRect.top + targetRect.height / 2}px`,
+        }
+      : null;
+    window.requestAnimationFrame(() => {
+      setIsXpCountAnimating(false);
+      setIsXpAwardSpotlightActive(true);
+      setXpAwardFx({
+        visible: true,
+        beamStyle,
+        deltaStyle,
+        deltaText: activeAward.awardedXp > 0 ? `+${activeAward.awardedXp} XP` : null,
+      });
+    });
+
+    const startXp = wasIdle ? activeAward.fromXp : displayedXpRef.current;
+    const endXp = activeAward.toXp;
+    displayedXpRef.current = startXp;
+
+    if (startXp === endXp) {
+      window.requestAnimationFrame(() => {
+        setDisplayedXp(endXp);
+        xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
+          setIsXpCountAnimating(false);
+          setIsXpAwardSpotlightActive(false);
+          setXpAwardFx({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+          setXpAnimationState((current) => clearActiveXpAward(current));
+        }, reducedMotion ? 160 : 360);
+      });
+      return;
+    }
+
+    const startCountAnimation = () => {
+      setIsXpCountAnimating(true);
+      const durationMs = XP_AWARD_COUNT_DURATION_MS;
+      const startedAt = performance.now();
+
+      const tick = (nowValue: number) => {
+        const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / durationMs));
+        const eased = 1 - (1 - progress) * (1 - progress);
+        const nextXp = Math.round(startXp + (endXp - startXp) * eased);
+        displayedXpRef.current = nextXp;
+        setDisplayedXp(nextXp);
+        if (progress >= 1) {
+          displayedXpRef.current = endXp;
+          setDisplayedXp(endXp);
+          setIsXpCountAnimating(false);
+          xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
+            setIsXpAwardSpotlightActive(false);
+            setXpAwardFx({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+            setXpAnimationState((current) => clearActiveXpAward(current));
+          }, reducedMotion ? 180 : 420);
+          return;
+        }
+        xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+      };
+
+      xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+    };
+
+    xpAnimationStartTimerRef.current = window.setTimeout(() => {
+      xpAnimationStartTimerRef.current = null;
+      startCountAnimation();
+    }, XP_AWARD_FX_DURATION_MS);
+
+    return () => {
+      if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
+      if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+    };
+  }, [xpAnimationState.active]);
+
+  useEffect(() => {
+    if (!isXpAwardSpotlightActive || typeof window === "undefined") return;
+
+    const clearSpotlight = () => {
+      setIsXpAwardSpotlightActive(false);
+    };
+
+    window.addEventListener("pointerdown", clearSpotlight, true);
+    window.addEventListener("keydown", clearSpotlight, true);
+    window.addEventListener("touchstart", clearSpotlight, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", clearSpotlight, true);
+      window.removeEventListener("keydown", clearSpotlight, true);
+      window.removeEventListener("touchstart", clearSpotlight, true);
+    };
+  }, [isXpAwardSpotlightActive]);
 
   useEffect(() => {
     if (isHighlighting && highlightParam === "addTask") {
@@ -360,6 +568,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     : "";
   const currentUserAvatarSrc = leaderboardData.currentUserEntry ? getLeaderboardAvatarRenderSrc(leaderboardData.currentUserEntry) : "";
   const currentUserAvatarInitials = leaderboardData.currentUserEntry ? getLeaderboardInitials(getLeaderboardLabel(leaderboardData.currentUserEntry)) : "U";
+  const currentUserLabel = leaderboardData.currentUserEntry ? getLeaderboardLabel(leaderboardData.currentUserEntry) : "User";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -370,12 +579,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
-  const handleTaskOrderMenuSummaryClick = (event: MouseEvent<HTMLElement>) => {
+  const handleTaskOrderMenuSummaryClick = useCallback((event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
     const menu = event.currentTarget.closest("#taskOrderByMenu") as HTMLDetailsElement | null;
     if (!menu) return;
     menu.open = !menu.open;
-  };
+  }, []);
 
   const mobileToolbar: ReactNode = useMemo(() => {
     if (!isMobileViewport) return null;
@@ -431,10 +640,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       <TaskTimerAppFrame
         activePage={initialPage}
         mobileToolbar={mobileToolbar}
-        currentRankId={rewardProgress.currentRankId}
+        currentRankId={displayedRewardProgress.currentRankId}
         currentUserAvatarSrc={currentUserAvatarSrc}
         currentUserAvatarInitials={currentUserAvatarInitials}
+        currentUserLabel={currentUserLabel}
         rewardsHeader={rewardsHeader}
+        isXpCountAnimating={isXpCountAnimating}
+        isXpAwardSpotlightActive={isXpAwardSpotlightActive}
+        xpAwardFx={xpAwardFx}
       >
         <div className="appPages">
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
@@ -544,7 +757,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
                   <section className="dashboardCard" aria-label="Friends list">
                     <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
-                      You haven't added any friends yet
+                      You have not added any friends yet
                     </div>
                   </section>
 
@@ -595,8 +808,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
                   <button
                     className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "global" ? " isOn" : ""}`}
+                    id="leaderboardGlobalTab"
                     type="button"
                     role="tab"
+                    aria-controls="leaderboardGlobalPanel"
                     aria-selected={leaderboardView === "global"}
                     onClick={() => setLeaderboardView("global")}
                   >
@@ -604,8 +819,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   </button>
                   <button
                     className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "weekly" ? " isOn" : ""}`}
+                    id="leaderboardWeeklyTab"
                     type="button"
                     role="tab"
+                    aria-controls="leaderboardWeeklyPanel"
                     aria-selected={leaderboardView === "weekly"}
                     onClick={() => setLeaderboardView("weekly")}
                   >
@@ -615,10 +832,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               </div>
 
               {leaderboardView === "weekly" ? (
-                <section className="dashboardCard leaderboardCard leaderboardWeeklyBoard" aria-label="Weekly leaderboard rankings">
+                <section
+                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard"
+                  id="leaderboardWeeklyPanel"
+                  role="tabpanel"
+                  aria-labelledby="leaderboardWeeklyTab"
+                  aria-label="Weekly leaderboard rankings"
+                >
                   <div className="leaderboardWeeklyIntro">
                     <p className="dashboardCardEyebrow">Weekly ladder</p>
-                    <p className="leaderboardHeroMeta">Ranked by XP earned this week from focused task sessions.</p>
+                    <p className="leaderboardHeroMeta">Top XP earners this week</p>
                   </div>
                   {leaderboardState === "ready" ? (
                     <>
@@ -652,9 +875,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         <div className="leaderboardWeeklyTable" role="table" aria-label="Weekly leaderboard table">
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Rank</span>
-                            <span role="columnheader">Player</span>
+                            <span role="columnheader">User</span>
                             <span role="columnheader">Weekly XP</span>
-                            <span role="columnheader">Total XP</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Streak</span>
                           </div>
@@ -677,7 +899,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 </span>
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
-                              <span className="leaderboardWeeklyTotalXpCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
                               <span className="leaderboardWeeklyStreakCell" role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-hidden="true">
@@ -701,7 +922,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   )}
                 </section>
               ) : (
-                <div className="dashboardGrid leaderboardGrid">
+                <div
+                  className="dashboardGrid leaderboardGrid"
+                  id="leaderboardGlobalPanel"
+                  role="tabpanel"
+                  aria-labelledby="leaderboardGlobalTab"
+                >
                   <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
                     <div className="leaderboardHeroHead">
                       <div className="leaderboardHeroTitle">

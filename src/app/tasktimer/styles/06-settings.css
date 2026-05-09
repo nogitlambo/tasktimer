@@ -2013,7 +2013,7 @@ body[data-theme="purple"] .historyMeta{
   background:#17191d;
   border-color:rgba(255,255,255,.08);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
-  opacity:.62;
+  opacity:1;
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectedThumbnail,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isSelectedThumbnail{
@@ -2042,6 +2042,20 @@ body[data-theme="purple"] .historyMeta{
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder{
   opacity:.7;
+}
+#app[aria-label="TaskLaunch App"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgeShell,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgeShell,
+#app[aria-label="TaskLaunch App"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgeImage,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgeImage,
+#app[aria-label="TaskLaunch App"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgePlaceholder,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemBadgePlaceholder{
+  opacity:.48;
+}
+#app[aria-label="TaskLaunch App"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch App"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemMeta,
+#app[aria-label="TaskLaunch Settings"] .rankLadderItem:not(.isUnlocked):not(.isCurrent) .rankLadderItemMeta{
+  color: rgba(160,170,186,.8);
 }
 #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
 #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
@@ -2154,7 +2168,8 @@ body[data-theme="purple"] .historyMeta{
   margin-top:0;
   color:rgba(226,232,240,0.82);
   font-size:11px;
-  white-space:nowrap;
+  white-space:normal;
+  overflow-wrap:anywhere;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .rankLadderItemBadge,
 body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .rankLadderItemBadge{
@@ -2175,6 +2190,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Settings"] .rankLadderItem
     flex-direction:row;
     align-items:center;
     text-align:left;
+    padding:0 8px 0;
   }
   #app[aria-label="TaskLaunch App"] button.rankLadderItem,
   #app[aria-label="TaskLaunch Settings"] button.rankLadderItem{

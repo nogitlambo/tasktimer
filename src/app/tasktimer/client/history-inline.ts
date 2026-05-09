@@ -1169,6 +1169,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       { capture: true }
     );
     ctx.on(document, "click", (e: any) => {
+      const xpReplayTarget = findDelegatedElement(
+        e.target,
+        '[data-history-summary-action="trigger-xp-award"]'
+      ) as HTMLElement | null;
+      if (xpReplayTarget) {
+        historyEntrySummaryInteraction.triggerDevXpAward(xpReplayTarget);
+        return;
+      }
+
       const editNoteTarget = findDelegatedElement(
         e.target,
         '[data-history-summary-action="edit-note"]'

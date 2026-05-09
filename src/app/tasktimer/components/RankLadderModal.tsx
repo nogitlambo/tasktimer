@@ -15,6 +15,10 @@ type RankLadderModalProps = {
   onSelectRankThumbnail: (rankId: string) => void | Promise<void>;
 };
 
+function formatXpValue(value: number) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+}
+
 export default function RankLadderModal(props: RankLadderModalProps) {
   const {
     open,
@@ -53,64 +57,70 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   return (
     <div className="overlay" id="rankLadderOverlay" onClick={onClose}>
       <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
-        <h2>Rank Ladder</h2>
-        <p className="modalSubtext">
-          {rankLabel} is your current rank at {totalXp} XP. {rankSummary}
-        </p>
-        <div className="rankLadderList" role="list" aria-label="Available ranks">
-          {displayRanks.map(({ rank, index }) => {
-            const isCurrent = rank.id === currentRankId;
-            const isUnlocked = index <= currentRankIndex;
-            const thresholdLabel = Number.isFinite(rank.minXp) ? `${rank.minXp} XP` : "Threshold pending";
-            const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
-            const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
-            const content = (
-              <>
-                <div className="rankLadderItemBadge" aria-hidden="true">
-                  <RankThumbnail
-                    rankId={rank.id}
-                    storedThumbnailSrc=""
-                    className="rankLadderItemBadgeShell"
-                    imageClassName="rankLadderItemBadgeImage"
-                    placeholderClassName="rankLadderItemBadgePlaceholder"
-                    alt=""
-                    size={34}
-                    aria-hidden
-                  />
-                </div>
-                <div className="rankLadderItemBody">
-                  <div className="rankLadderItemTitleRow">
-                    <span className="rankLadderItemTitle">{rank.label}</span>
+        <div className="rankLadderModalScroll">
+          <h2>Rank Ladder</h2>
+          <p className="modalSubtext">
+            {rankLabel} is your current rank at {totalXp} XP. {rankSummary}
+          </p>
+          <div className="rankLadderList" role="list" aria-label="Available ranks">
+            {displayRanks.map(({ rank, index }) => {
+              const isCurrent = rank.id === currentRankId;
+              const isUnlocked = index <= currentRankIndex;
+              const thresholdLabel = Number.isFinite(rank.minXp) ? `${formatXpValue(rank.minXp)} XP` : "Threshold pending";
+              const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
+              const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
+              const content = (
+                <>
+                  <div className="rankLadderItemBadge" aria-hidden="true">
+                    <RankThumbnail
+                      rankId={rank.id}
+                      storedThumbnailSrc=""
+                      className="rankLadderItemBadgeShell"
+                      imageClassName="rankLadderItemBadgeImage"
+                      placeholderClassName="rankLadderItemBadgePlaceholder"
+                      alt=""
+                      size={34}
+                      aria-hidden
+                    />
                   </div>
-                  {rank.id === "unranked" ? null : <div className="rankLadderItemMeta">Unlocks at {thresholdLabel}</div>}
-                </div>
-              </>
-            );
+                  <div className="rankLadderItemBody">
+                    <div className="rankLadderItemTitleRow">
+                      <span className="rankLadderItemTitle">{rank.label}</span>
+                    </div>
+                    {rank.id === "unranked" ? null : (
+                      <div className="rankLadderItemMeta">
+                        {isUnlocked ? `Promoted at ${thresholdLabel}` : `You need ${thresholdLabel} to be promoted to this rank`}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
 
-            if (canSelectRankInsignia) {
+              if (canSelectRankInsignia) {
+                return (
+                  <button
+                    key={rank.id}
+                    type="button"
+                    className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                    role="listitem"
+                    onClick={() => void onSelectRankThumbnail(rank.id)}
+                  >
+                    {content}
+                  </button>
+                );
+              }
+
               return (
-                <button
+                <div
                   key={rank.id}
-                  type="button"
-                  className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                  className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                   role="listitem"
-                  onClick={() => void onSelectRankThumbnail(rank.id)}
                 >
                   {content}
-                </button>
+                </div>
               );
-            }
-
-            return (
-              <div
-                key={rank.id}
-                className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
-                role="listitem"
-              >
-                {content}
-              </div>
-            );
-          })}
+            })}
+          </div>
         </div>
         <div className="confirmBtns">
           <button className="btn btn-ghost" type="button" onClick={onClose}>

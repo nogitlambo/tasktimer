@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
@@ -20,12 +20,21 @@ type TaskTimerAppFrameProps = {
   currentRankId: string;
   currentUserAvatarSrc?: string;
   currentUserAvatarInitials?: string;
+  currentUserLabel?: string;
   rewardsHeader: {
     rankLabel: string;
     totalXp: number;
     progressPct: number;
     progressLabel: string;
     xpToNext: number | null;
+  };
+  isXpCountAnimating?: boolean;
+  isXpAwardSpotlightActive?: boolean;
+  xpAwardFx?: {
+    visible: boolean;
+    beamStyle: CSSProperties | null;
+    deltaStyle: CSSProperties | null;
+    deltaText: string | null;
   };
 };
 
@@ -41,7 +50,11 @@ export default function TaskTimerAppFrame({
   currentRankId,
   currentUserAvatarSrc = "",
   currentUserAvatarInitials = "U",
+  currentUserLabel = "User",
   rewardsHeader,
+  isXpCountAnimating = false,
+  isXpAwardSpotlightActive = false,
+  xpAwardFx,
 }: TaskTimerAppFrameProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -115,7 +128,7 @@ export default function TaskTimerAppFrame({
   }, [signOutBusy]);
 
   return (
-    <div className="wrap" id="app" aria-label="TaskLaunch App">
+    <div className={`wrap${isXpAwardSpotlightActive ? " isXpAwardSpotlightActive" : ""}`} id="app" aria-label="TaskLaunch App">
       <div className="topbar topbarBrandOnly taskLaunchAppTopbar">
         <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
           <AppImg
@@ -124,7 +137,7 @@ export default function TaskTimerAppFrame({
             alt=""
           />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
-          <section className="taskLaunchTopbarXp" aria-label="XP progress">
+          <section className={`taskLaunchTopbarXp${isXpAwardSpotlightActive ? " isXpAwardSpotlightTarget" : ""}`} aria-label="XP progress">
               <div className="taskLaunchTopbarXpBody">
                 <button
                   className="taskLaunchTopbarXpBottomRow taskLaunchTopbarXpTrigger"
@@ -139,23 +152,33 @@ export default function TaskTimerAppFrame({
                       <span className="taskLaunchTopbarXpAvatarFallback">{currentUserAvatarInitials}</span>
                     )}
                   </span>
-                  <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
-                  <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
-                </span>
-                <div
-                  className="taskLaunchTopbarXpTrack"
-                  role="progressbar"
-                  aria-label="XP progress toward the next rank"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                  >
-                    <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                  </div>
-                  <strong className="taskLaunchTopbarXpValue">
-                    {rewardsHeader.totalXp} XP
-                    {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
-                  </strong>
+                  <span className="taskLaunchTopbarXpMeta">
+                    <span className="taskLaunchTopbarXpUserName" title={currentUserLabel}>
+                      {currentUserLabel}
+                    </span>
+                    <span className="taskLaunchTopbarXpStatsRow">
+                      <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
+                        <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
+                      </span>
+                      <div
+                        className="taskLaunchTopbarXpTrack"
+                        role="progressbar"
+                        aria-label="XP progress toward the next rank"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                      >
+                        <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                      </div>
+                      <strong
+                        className={`taskLaunchTopbarXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
+                        id="taskLaunchTopbarXpValue"
+                      >
+                        {formatXpNumber(rewardsHeader.totalXp)} XP
+                        {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
+                      </strong>
+                    </span>
+                  </span>
                 </button>
               </div>
             </section>
@@ -227,7 +250,7 @@ export default function TaskTimerAppFrame({
         <div className="desktopAppMain">
           <div className="appShellHeader">
             <div className="appShellHeaderSpacer" aria-hidden="true" />
-            <section className="appShellHeaderXp" aria-label="XP progress">
+            <section className={`appShellHeaderXp${isXpAwardSpotlightActive ? " isXpAwardSpotlightTarget" : ""}`} aria-label="XP progress">
               <div className="appShellHeaderXpBody">
                 <button
                   className="appShellHeaderXpBottomRow appShellHeaderXpTrigger"
@@ -257,7 +280,10 @@ export default function TaskTimerAppFrame({
                   >
                     <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                   </div>
-                  <strong className="appShellHeaderXpValue">
+                  <strong
+                    className={`appShellHeaderXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
+                    id="appShellHeaderXpValue"
+                  >
                     {formatXpNumber(rewardsHeader.totalXp)} XP
                     {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
                   </strong>
@@ -292,6 +318,17 @@ export default function TaskTimerAppFrame({
       </div>
       <div className="cloudSyncNoticeHost" id="cloudSyncNoticeHost" aria-live="polite" aria-atomic="true" />
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
+      {isXpAwardSpotlightActive ? <div className="xpAwardSpotlightLayer" aria-hidden="true" /> : null}
+      {xpAwardFx?.visible ? (
+        <div className="xpAwardFxLayer" aria-hidden="true">
+          {xpAwardFx.beamStyle ? <span className="xpAwardFxBeam" style={xpAwardFx.beamStyle} /> : null}
+          {xpAwardFx.deltaStyle && xpAwardFx.deltaText ? (
+            <span className="xpAwardFxDelta" style={xpAwardFx.deltaStyle}>
+              {xpAwardFx.deltaText}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
