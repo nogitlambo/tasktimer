@@ -2732,7 +2732,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   max-width:100%;
   gap:8px;
   overflow-x:auto;
-  overflow-y:hidden;
+  overflow-y:visible;
   padding-bottom:2px;
   -ms-overflow-style:none;
   scrollbar-width:none;
@@ -2908,6 +2908,54 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   border:none;
   background:#0d0f13;
   box-shadow:0 18px 34px rgba(0,0,0,.34);
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuLabel{
+  min-width:148px;
+  padding:7px 12px;
+  background:rgba(180,190,194,.08);
+  color:rgba(199,211,218,.72);
+  font-family:var(--font-orbitron);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.1em;
+  line-height:1.1;
+  text-align:right;
+  text-transform:uppercase;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuItem{
+  width:100%;
+  min-width:148px;
+  min-height:34px;
+  padding:8px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  border:none;
+  background:transparent;
+  color:rgba(160,171,179,.62);
+  text-align:right;
+  font-family:var(--font-orbitron);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuItem:hover,
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuItem:focus-visible{
+  border:none;
+  background:rgba(214,224,231,.14);
+  color:rgba(214,224,231,.82);
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuItem:disabled{
+  opacity:.42;
+  cursor:not-allowed;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenuItem.isOn{
+  border:none;
+  background:transparent;
+  color:#f7fdff;
+  box-shadow:none;
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .tasksModeMenu:not([open]) .tasksModeMenuList{
   display:none;

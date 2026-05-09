@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
@@ -370,6 +370,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
+  const handleTaskOrderMenuSummaryClick = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    const menu = event.currentTarget.closest("#taskOrderByMenu") as HTMLDetailsElement | null;
+    if (!menu) return;
+    menu.open = !menu.open;
+  };
+
   const mobileToolbar: ReactNode = useMemo(() => {
     if (!isMobileViewport) return null;
     return (
@@ -398,7 +405,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           </button>
           <div className="tasksModeControlGroup" aria-label="Task ordering controls">
             <details className="tasksModeMenu" id="taskOrderByMenu">
-              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
+              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks" onClick={handleTaskOrderMenuSummaryClick}>
                 <span id="taskOrderByValue" className="sr-only">Custom</span>
                 <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M4 6.5h16" />
@@ -417,7 +424,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         </div>
       </div>
     );
-  }, [isMobileViewport]);
+  }, [handleTaskOrderMenuSummaryClick, isMobileViewport]);
 
   return (
     <>
@@ -480,7 +487,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
-                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
+                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks" onClick={handleTaskOrderMenuSummaryClick}>
                       <span id="taskOrderByValue" className="sr-only">Custom</span>
                       <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M4 6.5h16" />
@@ -536,8 +543,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
 
                   <section className="dashboardCard" aria-label="Friends list">
-                    <div id="groupsFriendsList" className="settingsDetailNote">
-                      No friends yet.
+                    <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
+                      You haven't added any friends yet
                     </div>
                   </section>
 
@@ -585,10 +592,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboard page">
             <div className="dashboardShell leaderboardShell">
               <div className="leaderboardViewHeader">
-                <div>
-                  <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Leaderboard</p>
-                  <h3 className="dashboardCardTitle">{leaderboardView === "weekly" ? "Weekly focus board" : "Top focus performers"}</h3>
-                </div>
                 <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
                   <button
                     className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "global" ? " isOn" : ""}`}
@@ -701,7 +704,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="dashboardGrid leaderboardGrid">
                   <section className="dashboardCard leaderboardCard leaderboardHeroCard" aria-label="Top leaderboard rankings">
                     <div className="leaderboardHeroHead">
-                      <div>
+                      <div className="leaderboardHeroTitle">
                         <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
                         <h3 className="dashboardCardTitle">Top focus performers</h3>
                       </div>

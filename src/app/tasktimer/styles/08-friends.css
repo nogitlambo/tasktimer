@@ -76,6 +76,11 @@
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;
 }
+.groupsFriendsEmptyState{
+  color: rgba(170, 178, 190, 0.82);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+}
 #appPageFriends .sharedTasksEmpty{
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;
@@ -1016,6 +1021,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   justify-content:space-between;
   gap:12px;
   margin-bottom:16px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardHeroTitle{
+  width: 100%;
+  text-align: center;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardCardEyebrow{
   margin:0 0 6px;

@@ -922,6 +922,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function renderGroupsFriendsList() {
     if (!els.groupsFriendsList) return;
     syncOpenFriendSharedTaskUidsFromDom();
+    els.groupsFriendsList.className = "settingsDetailNote";
     const uid = ctx.getCurrentUid();
     const openIds = ctx.getOpenFriendSharedTaskUids();
     if (!uid) {
@@ -931,7 +932,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     if (!ctx.getGroupsFriendships().length) {
       openIds.clear();
-      els.groupsFriendsList.textContent = "No friends yet.";
+      els.groupsFriendsList.className = "settingsDetailNote groupsFriendsEmptyState";
+      els.groupsFriendsList.textContent = "You haven't added any friends yet";
       return;
     }
     const sharedSummaries = ctx.getGroupsSharedSummaries();

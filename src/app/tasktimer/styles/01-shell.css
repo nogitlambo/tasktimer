@@ -999,10 +999,14 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     min-width: 0;
     padding: 8px 12px 8px;
     background: #0d0f13;
+    position: relative;
+    z-index: 8;
+    overflow: visible;
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarInner{
     min-width: 0;
+    overflow: visible;
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .dashboardEditActions,

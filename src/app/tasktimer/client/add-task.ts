@@ -29,6 +29,7 @@ import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlanne
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+  const addTaskNamePlaceholder = "Enter a description for this task";
   let selectedColor: string | null = null;
   let selectedColorTouched = false;
   let addTaskPlannedStartTouched = false;
@@ -58,6 +59,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskDurationValueInput?.classList.remove("isInvalid");
     els.addTaskMsArea?.classList.remove("isInvalid");
     els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
+  }
+
+  function syncAddTaskNamePlaceholder(showHelperText: boolean) {
+    if (!els.addTaskName) return;
+    els.addTaskName.placeholder = showHelperText ? addTaskNamePlaceholder : "";
   }
 
   function applyAddTaskCheckpointValidationHighlights(opts?: {
@@ -663,6 +669,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     addTaskPlannedStartTouched = false;
 
     if (els.addTaskName) els.addTaskName.value = "";
+    syncAddTaskNamePlaceholder(true);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = "0";
     if (els.addTaskOnceOffDaySelect) els.addTaskOnceOffDaySelect.value = "mon";
     if (els.addTaskPlannedStartPushReminders) els.addTaskPlannedStartPushReminders.checked = false;
@@ -819,7 +826,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       setAddTaskNameMenuOpen(true);
     });
     ctx.on(els.addTaskName, "focus", () => {
+      syncAddTaskNamePlaceholder(false);
       if (ctx.getSuppressAddTaskNameFocusOpen()) return;
+    });
+    ctx.on(els.addTaskName, "blur", () => {
+      syncAddTaskNamePlaceholder(!String(els.addTaskName?.value || "").trim());
     });
     ctx.on(els.addTaskName, "dblclick", () => {
       const isOpen = (els.addTaskNameMenu as HTMLElement | null)?.style.display === "block";
