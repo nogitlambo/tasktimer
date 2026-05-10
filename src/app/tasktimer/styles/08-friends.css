@@ -1219,12 +1219,12 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: rgba(188,214,230,.82) !important;
+  color: #8f969d !important;
   clip-path:none !important;
   border-radius:0 !important;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
-  color:#08110f !important;
+  color:#ffffff !important;
   background:transparent !important;
   border-color:transparent !important;
 }
@@ -1590,7 +1590,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
   background: transparent;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
-  color:#120914 !important;
+  color:#ffffff !important;
   background:transparent !important;
   border-color:transparent !important;
 }
@@ -1606,7 +1606,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard 
   background: rgba(223,140,255,.08);
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
-  color:#061012 !important;
+  color:#ffffff !important;
   background:transparent !important;
   border-color:transparent !important;
 }

@@ -58,6 +58,7 @@ import {
   XP_AWARD_FX_DURATION_MS,
 } from "./client/xp-award-animation";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
+import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import "./tasktimer.css";
 
 type TaskTimerMainAppClientProps = {
@@ -151,21 +152,6 @@ function getLeaderboardAvatarRenderSrc(profile: LeaderboardProfile): string {
 function prefersReducedMotion() {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function getVisibleXpTargetRect() {
-  if (typeof document === "undefined") return null;
-  const candidates = ["appShellHeaderXpValue", "taskLaunchTopbarXpValue"]
-    .map((id) => document.getElementById(id))
-    .filter((element): element is HTMLElement => !!element);
-  for (const element of candidates) {
-    const rect = element.getBoundingClientRect();
-    if (!(rect.width > 0) || !(rect.height > 0)) continue;
-    const style = window.getComputedStyle(element);
-    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) continue;
-    return rect;
-  }
-  return null;
 }
 
 function buildBeamStyle(sourceRect: PendingXpAward["sourceRect"], targetRect: DOMRect): CSSProperties | null {
@@ -328,14 +314,25 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
 
     const reducedMotion = prefersReducedMotion();
-    const targetRect = typeof window !== "undefined" ? getVisibleXpTargetRect() : null;
-    const beamStyle = !reducedMotion && targetRect ? buildBeamStyle(activeAward.sourceRect, targetRect) : null;
-    const deltaStyle = targetRect
-      ? {
-          left: `${targetRect.left + targetRect.width / 2}px`,
-          top: `${targetRect.top + targetRect.height / 2}px`,
-        }
-      : null;
+    let targetRect: DOMRect | null = null;
+    let beamStyle: CSSProperties | null = null;
+    let deltaStyle: CSSProperties | null = null;
+
+    try {
+      targetRect = typeof document !== "undefined" ? getVisibleXpTargetRectFromDocument(document) : null;
+      beamStyle = !reducedMotion && targetRect ? buildBeamStyle(activeAward.sourceRect, targetRect) : null;
+      deltaStyle = targetRect
+        ? {
+            left: `${targetRect.left + targetRect.width / 2}px`,
+            top: `${targetRect.top + targetRect.height / 2}px`,
+          }
+        : null;
+    } catch {
+      targetRect = null;
+      beamStyle = null;
+      deltaStyle = null;
+    }
+
     window.requestAnimationFrame(() => {
       setIsXpCountAnimating(false);
       setIsXpAwardSpotlightActive(true);
