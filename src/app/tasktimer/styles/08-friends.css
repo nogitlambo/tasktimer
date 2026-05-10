@@ -1478,13 +1478,48 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #leaderboardPositionOverlay{
   display: flex;
 }
+#leaderboardPositionOverlay .leaderboardPositionModalHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 2px;
+}
 #leaderboardPositionOverlay .leaderboardUserSummaryTitle{
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: #c9ff24 !important;
+}
+#leaderboardPositionOverlay .leaderboardRankInsignia{
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+#leaderboardPositionOverlay .leaderboardRankInsigniaImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+#leaderboardPositionOverlay .leaderboardRankInsigniaPlaceholder{
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.04);
+  color: rgba(233,252,255,.94);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 #leaderboardPositionOverlay .leaderboardPositionModalIdentity{
   display: flex;
@@ -1564,6 +1599,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #leaderboardPositionOverlay .leaderboardMiniRow strong{
   text-align: left;
   font-weight: 400;
+  font-size: 12px;
+  line-height: 1.3;
 }
 #leaderboardPositionOverlay .confirmBtns{
   margin-top: 16px;
@@ -1827,11 +1864,13 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTable{
     min-width: 0;
+    width: 100%;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableWrap{
     overflow-x: visible;
-    justify-content:center;
+    justify-content:stretch;
+    width: 100%;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableHead{
@@ -1842,6 +1881,7 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
     grid-template-columns: 42px minmax(0, 1fr) auto 34px;
     gap: 10px;
     min-height: 0;
+    width: 100%;
     padding: 2px 12px;
     justify-items:center;
   }

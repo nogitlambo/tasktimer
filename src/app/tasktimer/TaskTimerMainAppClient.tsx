@@ -1059,7 +1059,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           {selectedLeaderboardProfile ? (
             <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
               <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
-                <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
+                <div className="leaderboardPositionModalHeader">
+                  <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
+                  <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
+                </div>
                 <div className="leaderboardPositionModalIdentity">
                   <LeaderboardAvatar profile={selectedLeaderboardProfile} />
                   <div className="leaderboardPositionModalIdentityText">

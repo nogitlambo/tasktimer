@@ -710,6 +710,7 @@ type CreateRewardsHistoryOptionsArgs = {
   rewardSessionTrackersStorageKey: string;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
@@ -1584,6 +1585,7 @@ export function createTaskTimerRewardsHistoryContext(
     rewardSessionTrackersStorageKey: args.rewardSessionTrackersStorageKey,
     getTasks: args.getTasks,
     getHistoryByTaskId: args.getHistoryByTaskId,
+    setHistoryByTaskId: (value) => args.setHistoryByTaskId(value),
     getLiveSessionsByTaskId: () =>
       asType<Parameters<typeof createTaskTimerRewardsHistory>[0]["getLiveSessionsByTaskId"] extends () => infer T ? T : never>(
         args.getLiveSessionsByTaskId()

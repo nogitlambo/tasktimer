@@ -366,6 +366,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...historyByTaskId,
       [taskId]: [...currentTaskHistory, normalizedEntry],
     };
+    ctx.setHistoryByTaskId(nextHistoryByTaskId);
     ctx.appendHistoryEntry(taskId, normalizedEntry);
     ctx.saveHistoryLocally(nextHistoryByTaskId);
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});

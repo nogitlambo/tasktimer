@@ -1018,6 +1018,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       rewardSessionTrackersStorageKey: REWARD_SESSION_TRACKERS_KEY,
       getTasks: taskCollectionBindings.getTasks,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
+      setHistoryByTaskId: (value) => {
+        taskCollectionBindings.setHistoryByTaskId(value as TaskTimerMutableState["historyByTaskId"]);
+      },
       getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
       setLiveSessionsByTaskId: (value) => {
         taskCollectionBindings.setLiveSessionsByTaskId(value as TaskTimerMutableState["liveSessionsByTaskId"]);

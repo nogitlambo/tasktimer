@@ -28,6 +28,7 @@ function createHarness(
   const calls: string[] = [];
   const tasks = [task()];
   let historyByTaskId: HistoryByTaskId = overrides.historyByTaskId || {};
+  let storedHistoryByTaskId: HistoryByTaskId = overrides.historyByTaskId || {};
   const savedHistoryArgs: HistoryByTaskId[] = [];
   let liveSessionsByTaskId: LiveSessionsByTaskId = overrides.liveSessionsByTaskId || {};
   let rewardProgress = normalizeRewardProgress(DEFAULT_REWARD_PROGRESS);
@@ -47,6 +48,9 @@ function createHarness(
     rewardSessionTrackersStorageKey: "taskticker_tasks_v1:rewardSessionTrackers",
     getTasks: () => tasks,
     getHistoryByTaskId: () => historyByTaskId,
+    setHistoryByTaskId: (value) => {
+      historyByTaskId = value;
+    },
     getLiveSessionsByTaskId: () => liveSessionsByTaskId,
     setLiveSessionsByTaskId: (value) => {
       liveSessionsByTaskId = value;
@@ -81,7 +85,7 @@ function createHarness(
     clearLiveSession: (taskId) => calls.push(`clear-live-session:${taskId}`),
     saveHistoryLocally: (history) => {
       savedHistoryArgs.push(history);
-      historyByTaskId = history;
+      storedHistoryByTaskId = history;
       calls.push("save-history");
     },
     buildDefaultCloudPreferences: () =>
@@ -106,6 +110,7 @@ function createHarness(
     calls,
     tasks,
     getHistoryByTaskId: () => historyByTaskId,
+    getStoredHistoryByTaskId: () => storedHistoryByTaskId,
     savedHistoryArgs,
     getLiveSessionsByTaskId: () => liveSessionsByTaskId,
     setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => {
@@ -223,6 +228,23 @@ describe("task timer rewards history", () => {
     expect(harness.savedHistoryArgs[0]?.["task-1"]).not.toBe(initialRows);
     expect(harness.savedHistoryArgs[0]?.["task-1"]).toHaveLength(2);
     expect(initialRows).toHaveLength(1);
+  });
+
+  it("updates runtime history state before persisting the local snapshot", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const initialHistory: HistoryByTaskId = {
+      "task-1": [{ ts: Date.now() - 1_000, name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+    };
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      historyByTaskId: initialHistory,
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(2);
+    expect(harness.getStoredHistoryByTaskId()["task-1"]).toHaveLength(2);
+    expect(harness.getHistoryByTaskId()).toBe(harness.savedHistoryArgs[0]);
   });
 
   it("throttles repeated live-session sync writes until the interval elapses", () => {

@@ -119,6 +119,7 @@ export type TaskTimerRewardsHistoryContext = {
   rewardSessionTrackersStorageKey: string;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
