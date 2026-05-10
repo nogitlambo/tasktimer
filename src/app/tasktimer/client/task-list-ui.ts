@@ -118,7 +118,9 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
   function jumpToTaskAndHighlight(taskId: string) {
     if (!taskId) return;
-    window.setTimeout(() => {
+    const attemptDelaysMs = [0, 48, 120, 240];
+    let attemptIndex = 0;
+    const tryHighlightTask = () => {
       const list = els.taskList as HTMLElement | null;
       if (!list) return;
       let taskEl: HTMLElement | null = null;
@@ -131,7 +133,13 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
       } catch {
         taskEl = list.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
       }
-      if (!taskEl) return;
+      if (!taskEl) {
+        attemptIndex += 1;
+        if (attemptIndex < attemptDelaysMs.length) {
+          window.setTimeout(tryHighlightTask, attemptDelaysMs[attemptIndex]);
+        }
+        return;
+      }
       try {
         taskEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       } catch {
@@ -145,7 +153,8 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
         taskEl?.classList.remove("isNewTaskGlow");
         runtime.newTaskHighlightTimer = null;
       }, 3000);
-    }, 0);
+    };
+    window.setTimeout(tryHighlightTask, attemptDelaysMs[attemptIndex]);
   }
 
   function handleTaskMenuDocumentClick(event: any) {

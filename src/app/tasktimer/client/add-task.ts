@@ -332,6 +332,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncAddTaskMilestonesUi();
   }
 
+  function getAddTaskCheckpointAccentColor() {
+    return normalizeTaskColor(selectedColor) || "#58e1ff";
+  }
+
   function renderAddTaskMilestoneEditor() {
     if (!els.addTaskMsList) return;
     els.addTaskMsList.innerHTML = "";
@@ -350,6 +354,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       m.hours = clamped.value;
       const row = document.createElement("div");
       row.className = "msRow";
+      row.style.setProperty("--checkpoint-slider-accent", getAddTaskCheckpointAccentColor());
       (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
       row.innerHTML = `
         <div class="msSliderCluster">
@@ -415,10 +420,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
     if (els.addTaskMsToggle) {
       els.addTaskMsToggle.checked = checkpointsEnabled;
+      els.addTaskMsToggle.disabled = !hasActiveTimeGoal;
+      els.addTaskMsToggle.setAttribute("aria-disabled", !hasActiveTimeGoal ? "true" : "false");
     }
     els.addTaskMsArea?.classList.remove("isHidden");
     els.addTaskMsArea?.classList.toggle("on", checkpointsEnabled);
     els.addTaskMsArea?.classList.toggle("isDisabled", !checkpointsEnabled);
+    els.addTaskMsArea?.classList.toggle("isGoalRequired", !hasActiveTimeGoal);
     if (els.addTaskCheckpointSoundModeSelect) {
       els.addTaskCheckpointSoundModeSelect.disabled = !checkpointsEnabled || !ctx.getCheckpointAlertSoundEnabled() || !derivedAlertState.soundEnabled;
     }
@@ -437,6 +445,14 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       renderAddTaskMilestoneEditor();
     }
     syncAddTaskCheckpointAlertUi();
+  }
+
+  function ensureAddTaskDefaultCheckpoint() {
+    if (getAddTaskTimeGoalMinutes() <= 0) return false;
+    if ((ctx.getAddTaskMilestones() || []).length > 0) return false;
+    ctx.setAddTaskMilestonesState([{ hours: 0, description: "" }]);
+    renderAddTaskMilestoneEditor();
+    return true;
   }
 
   function validateAddTaskAggregateTimeGoals() {
@@ -804,6 +820,14 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskCheckpointAlertUi();
       maybeAutoFillAddTaskPlannedStart();
     });
+    ctx.on(els.addTaskDurationValueInput, "focus", () => {
+      if (!els.addTaskDurationValueInput) return;
+      const currentValue = String(els.addTaskDurationValueInput.value || "").trim();
+      const parsedValue = Number(currentValue);
+      if (currentValue === "0" || parsedValue === 0) {
+        els.addTaskDurationValueInput.value = "";
+      }
+    });
     ctx.on(els.addTaskDurationValueInput, "change", () => {
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
@@ -881,6 +905,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       if (!button || !els.addTaskColorPalette?.contains(button)) return;
       selectedColorTouched = true;
       selectedColor = normalizeTaskColor(button.dataset.taskColor);
+      if ((ctx.getAddTaskMilestones() || []).length > 0) {
+        renderAddTaskMilestoneEditor();
+      }
       syncAddTaskColorPalette();
       setAddTaskColorPopoverOpen(false);
     });
@@ -890,7 +917,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         syncAddTaskCheckpointAlertUi();
         return;
       }
-      ctx.setAddTaskMilestonesEnabledState(!!els.addTaskMsToggle?.checked);
+      const enabled = !!els.addTaskMsToggle?.checked;
+      ctx.setAddTaskMilestonesEnabledState(enabled);
+      if (enabled) ensureAddTaskDefaultCheckpoint();
       clearAddTaskValidationState();
       syncAddTaskMilestonesUi();
     });

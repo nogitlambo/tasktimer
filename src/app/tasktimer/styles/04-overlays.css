@@ -1268,6 +1268,11 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   cursor:pointer;
 }
 
+#editOverlay .milestones.isGoalRequired .editTaskCheckpointToggleWrap{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
 #editOverlay .milestonesSummaryControls{
   display:flex;
   align-items:center;
@@ -1758,8 +1763,8 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   flex:1 1 auto;
   min-width:0;
   padding:6px 8px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
+  border:0;
+  background:transparent;
   border-radius:0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
@@ -1806,7 +1811,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 #addTaskOverlay .msRow .msSliderInput{
   width:100%;
   margin:0;
-  accent-color:#58e1ff;
+  accent-color:var(--checkpoint-slider-accent, #58e1ff);
   background:transparent;
 }
 
@@ -1814,7 +1819,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track{
   height:6px;
   border-radius:999px;
-  background:linear-gradient(90deg, rgba(88,225,255,.55), rgba(255,255,255,.12));
+  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #58e1ff), rgba(255,255,255,.12));
 }
 
 #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
@@ -1825,7 +1830,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   height:18px;
   margin-top:-6px;
   border:1px solid rgba(255,255,255,.18);
-  background:#58e1ff;
+  background:var(--checkpoint-slider-accent, #58e1ff);
   box-shadow:0 0 0 2px rgba(13,15,19,.72);
   clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
 }
@@ -1835,7 +1840,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   height:6px;
   border:none;
   border-radius:999px;
-  background:linear-gradient(90deg, rgba(88,225,255,.55), rgba(255,255,255,.12));
+  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #58e1ff), rgba(255,255,255,.12));
 }
 
 #editOverlay .msRow .msSliderInput::-moz-range-thumb,
@@ -1844,7 +1849,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   height:18px;
   border:1px solid rgba(255,255,255,.18);
   border-radius:0;
-  background:#58e1ff;
+  background:var(--checkpoint-slider-accent, #58e1ff);
   box-shadow:0 0 0 2px rgba(13,15,19,.72);
 }
 
@@ -3136,6 +3141,11 @@ body[data-theme="purple"] .rewardsInfoText{
   cursor: pointer;
 }
 
+#addTaskOverlay .milestones.isGoalRequired .editTaskCheckpointToggleWrap{
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 #addTaskOverlay .editTaskTimeGoalToggleWrap input[type="checkbox"],
 #addTaskOverlay .editTaskCheckpointToggleWrap input[type="checkbox"],
 #addTaskOverlay .editTaskInlineCheckboxLabel input[type="checkbox"]{
@@ -3143,6 +3153,11 @@ body[data-theme="purple"] .rewardsInfoText{
   height: 18px;
   margin: 0;
   accent-color: #c9ff24;
+}
+
+#editOverlay .milestones.isGoalRequired .editTaskCheckpointToggleWrap input[type="checkbox"],
+#addTaskOverlay .milestones.isGoalRequired .editTaskCheckpointToggleWrap input[type="checkbox"]{
+  cursor: not-allowed;
 }
 
 #addTaskOverlay .toggleRow,
@@ -4152,21 +4167,21 @@ body[data-theme="cyan"] #addTaskOverlay optgroup{
 
 body[data-theme="cyan"] #editOverlay .msRow .msSliderInput,
 body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput{
-  accent-color:#58e1ff;
+  accent-color:var(--checkpoint-slider-accent, #58e1ff);
 }
 
 body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
 body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
 body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-track,
 body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
-  background:linear-gradient(90deg, rgba(88,225,255,.7), rgba(172,246,255,.18));
+  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #58e1ff), rgba(172,246,255,.18));
 }
 
 body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
 body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
 body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
 body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
-  background:#58e1ff;
+  background:var(--checkpoint-slider-accent, #58e1ff);
 }
 
 body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:hover,
@@ -5076,21 +5091,21 @@ body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn.isOn{
 
 body[data-theme="purple"] #editOverlay .msRow .msSliderInput,
 body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput{
-  accent-color:#7fe7ff;
+  accent-color:var(--checkpoint-slider-accent, #7fe7ff);
 }
 
 body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
 body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
 body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-track,
 body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
-  background:linear-gradient(90deg, rgba(127,231,255,.6), rgba(255,255,255,.12));
+  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #7fe7ff), rgba(255,255,255,.12));
 }
 
 body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
 body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
 body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
 body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
-  background:#7fe7ff;
+  background:var(--checkpoint-slider-accent, #7fe7ff);
 }
 
 body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary,

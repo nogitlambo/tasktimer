@@ -361,4 +361,47 @@ describe("task list ui drag ordering", () => {
 
     expect(taskIds(harness.list)).toEqual(["a", "c", "d", "b"]);
   });
+
+  it("retries highlighting when the new task card is not immediately in the DOM", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness();
+      const scrollIntoView = vi.fn();
+      const delayedTaskCard = new FakeElement("div") as FakeElement & { scrollIntoView: typeof scrollIntoView };
+      delayedTaskCard.classList.add("task");
+      delayedTaskCard.dataset.taskId = "late-task";
+      delayedTaskCard.scrollIntoView = scrollIntoView;
+      const querySelector = vi
+        .spyOn(harness.list, "querySelector")
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(delayedTaskCard as unknown as FakeElement);
+
+      const ui = createTaskTimerTaskListUi({
+        els: { taskList: harness.list as unknown as HTMLElement } as { taskList: HTMLElement },
+        on: (() => {}) as never,
+        runtime: { newTaskHighlightTimer: null } as never,
+        getTasks: () => harness.tasks,
+        setTasks: () => {},
+        getCurrentAppPage: () => "tasks",
+        getTaskView: () => "tile",
+        getTaskOrderBy: () => "custom",
+        getTaskDragEl: () => null,
+        setTaskDragEl: () => {},
+        getFlippedTaskIds: () => new Set<string>(),
+        getLastRenderedTaskFlipView: () => null,
+        setLastRenderedTaskFlipView: () => {},
+        save: vi.fn(),
+        render: vi.fn(),
+      });
+
+      ui.jumpToTaskAndHighlight("late-task");
+      vi.runAllTimers();
+
+      expect(querySelector).toHaveBeenCalledTimes(2);
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(delayedTaskCard.classList.contains("isNewTaskGlow")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

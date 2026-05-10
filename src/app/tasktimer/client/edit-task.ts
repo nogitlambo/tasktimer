@@ -444,6 +444,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const checkpointControlsDisabled = !hasActiveTimeGoal;
     els.msArea?.classList.toggle("isHidden", checkpointControlsDisabled);
     els.msArea?.classList.toggle("isDisabled", checkpointControlsDisabled || !currentTask?.milestonesEnabled);
+    els.msArea?.classList.toggle("isGoalRequired", checkpointControlsDisabled);
     if (els.msToggle) {
       els.msToggle.toggleAttribute("disabled", checkpointControlsDisabled);
       els.msToggle.setAttribute("aria-disabled", checkpointControlsDisabled ? "true" : "false");
@@ -691,6 +692,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return !!task?.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.some((milestone) => milestone?.alertsEnabled !== false);
   }
 
+  function getEditTaskCheckpointAccentColor(task: Task | null | undefined) {
+    return normalizeTaskColor(task?.color) || "#58e1ff";
+  }
+
   function renderMilestoneEditor(t: Task) {
     if (!els.msList) return;
     els.msList.innerHTML = "";
@@ -705,6 +710,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       m.hours = clamped.value;
       const row = document.createElement("div");
       row.className = "msRow";
+      row.style.setProperty("--checkpoint-slider-accent", getEditTaskCheckpointAccentColor(t));
       (row as HTMLElement & { dataset: DOMStringMap }).dataset.msIndex = String(idx);
 
       row.innerHTML = `
@@ -859,14 +865,30 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const enabled = !!t.milestonesEnabled && hasActiveTimeGoal;
     if (els.msToggle instanceof HTMLInputElement && els.msToggle.type === "checkbox") {
       els.msToggle.checked = enabled;
+      els.msToggle.disabled = !hasActiveTimeGoal;
     } else {
       els.msToggle?.classList.toggle("on", enabled);
     }
     els.msToggle?.setAttribute("aria-checked", String(enabled));
+    els.msToggle?.setAttribute("aria-disabled", !hasActiveTimeGoal ? "true" : "false");
     els.msArea?.classList.toggle("on", enabled);
     els.msArea?.classList.remove("isHidden");
     els.msArea?.classList.toggle("isDisabled", !enabled);
+    els.msArea?.classList.toggle("isGoalRequired", !hasActiveTimeGoal);
     els.msList?.parentElement?.classList.toggle("isHidden", !enabled);
+  }
+
+  function ensureEditDefaultCheckpoint(t: Task) {
+    if (!editTaskHasActiveTimeGoal()) return false;
+    if (Array.isArray(t.milestones) && t.milestones.length > 0) return false;
+    t.milestones = t.milestones || [];
+    sharedTasks.ensureMilestoneIdentity(t);
+    const nextSeq = sharedTasks.getPresetIntervalNextSeqNum(t);
+    t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "", alertsEnabled: true });
+    t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
+    t.presetIntervalNextSeq = nextSeq + 1;
+    renderMilestoneEditor(t);
+    return true;
   }
 
   function refreshEditCheckpointEditorForTimeGoalChange(task?: Task | null) {
@@ -1239,6 +1261,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const button = (event?.target as HTMLElement | null)?.closest?.("[data-task-color]") as HTMLElement | null;
       if (!button || !t || !els.editTaskColorPalette?.contains(button)) return;
       t.color = normalizeTaskColor(button.dataset.taskColor);
+      if (Array.isArray(t.milestones) && t.milestones.length > 0) {
+        renderMilestoneEditor(t);
+      }
       syncEditTaskColorPalette(t);
       syncEditSaveAvailability(t);
       setEditTaskColorPopoverOpen(false);
@@ -1366,6 +1391,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       if (!t || !ctx.editTaskHasActiveTimeGoal()) return;
       t.milestonesEnabled =
         els.msToggle instanceof HTMLInputElement && els.msToggle.type === "checkbox" ? els.msToggle.checked : !t.milestonesEnabled;
+      if (t.milestonesEnabled) ensureEditDefaultCheckpoint(t);
       ctx.syncEditMilestoneSectionUi(t);
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
