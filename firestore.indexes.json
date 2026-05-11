@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "leaderboardProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "rewardCurrentRankId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "rewardTotalXp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "leaderboardProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "rewardCurrentRankId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "rewardTotalXp",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import AppImg from "@/components/AppImg";
 import { buildRewardsHeaderViewModel } from "@/app/tasktimer/lib/rewards";
+import { playDeleteAlertAudio } from "@/app/tasktimer/client/delete-alert-audio";
 import RankLadderModal from "../RankLadderModal";
 import RankThumbnail from "../RankThumbnail";
 import { InlineConfirmModal } from "./InlineConfirmModal";
@@ -37,6 +38,10 @@ export function SettingsAccountPane({
 }) {
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
+  }, [account.showDeleteAccountConfirm]);
 
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Account" subtitle="">

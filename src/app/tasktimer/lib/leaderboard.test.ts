@@ -1,9 +1,43 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const firestoreMocks = vi.hoisted(() => {
+  const getDocs = vi.fn();
+  const getDoc = vi.fn();
+  return {
+    collection: vi.fn((_db, path: string) => ({ path })),
+    doc: vi.fn((_db, path: string, id: string) => ({ path, id })),
+    getDoc,
+    getDocs,
+    limit: vi.fn((value: number) => ({ type: "limit", value })),
+    orderBy: vi.fn((field: string, direction?: string) => ({ type: "orderBy", field, direction })),
+    query: vi.fn((source: unknown, ...constraints: unknown[]) => ({ source, constraints })),
+    serverTimestamp: vi.fn(() => ({ serverTimestamp: true })),
+    setDoc: vi.fn(() => Promise.resolve()),
+    updateDoc: vi.fn(() => Promise.resolve()),
+    where: vi.fn((field: string, op: string, value: unknown) => ({ type: "where", field, op, value })),
+  };
+});
+
+vi.mock("firebase/firestore", () => firestoreMocks);
+vi.mock("@/lib/firebaseClient", () => ({
+  getFirebaseAuthClient: vi.fn(() => ({ currentUser: { uid: "uid-1", photoURL: null, metadata: {} } })),
+}));
+vi.mock("@/lib/firebaseFirestoreClient", () => ({
+  getFirebaseFirestoreClient: vi.fn(() => ({})),
+}));
+vi.mock("./accountProfileStorage", () => ({
+  findStoredCustomAvatarUploadSrc: vi.fn(() => ""),
+  googleAvatarIdForUid: vi.fn((uid: string) => `google/profile-photo:${uid}`),
+  isCustomAvatarIdForUid: vi.fn(() => false),
+  readStoredAvatarId: vi.fn(() => ""),
+  readStoredCustomAvatarSrc: vi.fn(() => ""),
+}));
 
 import {
   buildWeeklyLeaderboardRows,
   getLeaderboardResolvedRank,
   isWeeklyLeaderboardPlaceholderProfile,
+  loadLeaderboardScreenData,
   type LeaderboardProfile,
 } from "./leaderboard";
 import { getRankThumbnailDescriptor } from "./rewards";
@@ -25,6 +59,22 @@ function createProfile(overrides: Partial<LeaderboardProfile> = {}): Leaderboard
     memberSinceMs: null,
     schemaVersion: 1,
     ...overrides,
+  };
+}
+
+function docSnap(id: string, data: Record<string, unknown>) {
+  return {
+    id,
+    data: () => data,
+    get: (key: string) => data[key],
+    exists: () => true,
+  };
+}
+
+function querySnap(docs: Array<ReturnType<typeof docSnap>>) {
+  return {
+    docs,
+    size: docs.length,
   };
 }
 
@@ -182,5 +232,57 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
     expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+  });
+});
+
+describe("loadLeaderboardScreenData", () => {
+  it("returns available leaderboard data when optional rivals queries need missing indexes", async () => {
+    const currentProfile = createProfile({
+      uid: "uid-1",
+      username: "pilot",
+      displayLabel: "pilot",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyXpGain: 20,
+    });
+    const peerProfile = createProfile({
+      uid: "uid-2",
+      username: "peer",
+      displayLabel: "peer",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 220,
+      streakDays: 3,
+      totalFocusMs: 120_000,
+      weeklyXpGain: 30,
+    });
+    const currentDoc = docSnap("uid-1", currentProfile);
+    const peerDoc = docSnap("uid-2", peerProfile);
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(currentDoc);
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([peerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockRejectedValueOnce(new Error("missing index"))
+      .mockRejectedValueOnce(new Error("missing index"))
+      .mockResolvedValueOnce(querySnap([peerDoc]));
+
+    const result = await loadLeaderboardScreenData("uid-1");
+
+    expect(result.topEntries.map((entry) => entry.uid)).toEqual(["uid-2", "uid-1"]);
+    expect(result.weeklyEntries.map((entry) => entry.uid)).toEqual(["uid-2", "uid-1"]);
+    expect(result.currentUserEntry?.uid).toBe("uid-1");
+    expect(result.rivalEntries).toEqual([]);
+    expect(result.currentUserRank).toBe(2);
+    expect(result.currentUserRivalRank).toBeNull();
+    expect(result.currentUserWeeklyRank).toBe(2);
   });
 });

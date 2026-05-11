@@ -109,6 +109,116 @@
 
 .hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 
+#historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:0;
+  padding:3px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.045);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn,
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:hover,
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:focus-visible,
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:active{
+  min-height:38px;
+  height:38px;
+  padding:0 13px;
+  gap:7px;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:rgba(245,248,244,.96) !important;
+  opacity:.42;
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn + .taskScreenHeaderBtn{
+  margin-left:2px;
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:not(.isOn):hover,
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:not(.isOn):focus-visible{
+  background:rgba(255,255,255,.045) !important;
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn.isOn,
+#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn[aria-selected="true"]{
+  opacity:1;
+  color:#f7fdff !important;
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenTabLabel{
+  display:block;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  letter-spacing:.08em !important;
+  line-height:normal !important;
+  white-space:nowrap;
+  text-transform:none !important;
+}
+
+#historyManagerScreen .hmTaskViewTabs :is(.taskScreenIconBtnImage, .taskScreenIconBtnSvg){
+  width:18px;
+  height:18px;
+  display:block;
+  margin:0 4px 0 0;
+  flex:0 0 auto;
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenIconBtnImage{
+  object-fit:contain;
+  object-position:center;
+  filter:brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,.16));
+}
+
+#historyManagerScreen .hmTaskViewTabs .taskScreenIconBtnSvg{
+  fill:none;
+  stroke:#f7fdff;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.24));
+}
+
+body[data-theme="cyan"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
+  border-color:rgba(126,242,255,.22);
+  background:rgba(13,198,224,.08);
+}
+
+body[data-theme="purple"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
+  border-color:rgba(194,160,255,.24);
+  background:rgba(142,94,255,.09);
+}
+
+body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
+  border-color:rgba(196,255,127,.22);
+  background:rgba(139,226,74,.08);
+}
+
+@media (max-width: 640px){
+  #historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
+    width:100%;
+  }
+
+  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn,
+  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:hover,
+  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:focus-visible,
+  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:active{
+    flex:1 1 0;
+    min-width:0;
+    padding:0 8px;
+  }
+
+  #historyManagerScreen .hmTaskViewTabs .taskScreenTabLabel{
+    font-size:10px !important;
+    letter-spacing:.05em !important;
+  }
+}
+
 .hmList{
   display:flex;
   flex-direction:column;

@@ -1956,6 +1956,7 @@ export function appendHistoryEntry(taskId: string, entry: HistoryEntry): void {
   mergeDirectAppendIntoQueuedHistoryReplace(normalizedTaskId, normalizedEntry);
   const uid = currentUid();
   if (!uid) return;
+  scheduleLeaderboardProfileSync(uid);
   void appendHistoryEntryToCloud(uid, normalizedTaskId, normalizedEntry).catch(() => {
     // Keep local history state when direct cloud append is denied/unavailable.
   });
@@ -2043,12 +2044,14 @@ export async function flushPendingCloudWrites(): Promise<void> {
     if (queuedHistoryReplacementsByTaskId.size) flushQueuedHistorySync(uid);
     if (queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) flushQueuedLiveSessionSync(uid);
     if (queuedPreferencesSyncSnapshot) flushQueuedCloudPreferences(uid);
+    if (queuedLeaderboardProfileSync) flushQueuedLeaderboardProfileSync(uid);
   }
   const pending: Promise<unknown>[] = [];
   if (inFlightTaskQueueSync) pending.push(inFlightTaskQueueSync);
   if (inFlightHistoryQueueSync) pending.push(inFlightHistoryQueueSync);
   if (inFlightLiveSessionQueueSync) pending.push(inFlightLiveSessionQueueSync);
   if (inFlightPreferencesSync) pending.push(inFlightPreferencesSync);
+  if (inFlightLeaderboardProfileSync) pending.push(inFlightLeaderboardProfileSync);
   if (pending.length) await Promise.allSettled(pending);
 }
 

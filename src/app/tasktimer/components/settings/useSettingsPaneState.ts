@@ -36,14 +36,7 @@ function isSettingsPaneKey(value: string): value is SettingsPaneKey {
 
 export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
   const [initialState] = useState<{ activePane: SettingsPaneKey | null; mobileDetailOpen: boolean }>(() => {
-    if (typeof window === "undefined") return { activePane: initialPane, mobileDetailOpen: !!initialPane };
-    const queryPaneRaw = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
-    const requestedPane = isSettingsPaneKey(queryPaneRaw) ? queryPaneRaw : initialPane;
-    if (requestedPane) {
-      return { activePane: requestedPane, mobileDetailOpen: true };
-    }
-    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
-    return { activePane: isMobileViewport ? null : ("general" as SettingsPaneKey), mobileDetailOpen: false };
+    return { activePane: initialPane, mobileDetailOpen: !!initialPane };
   });
   const [activePane, setActivePane] = useState<SettingsPaneKey | null>(initialState.activePane);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(initialState.mobileDetailOpen);
@@ -56,6 +49,23 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
       if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      const queryPaneRaw = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
+      const requestedPane = isSettingsPaneKey(queryPaneRaw) ? queryPaneRaw : initialPane;
+      if (requestedPane) {
+        setActivePane(requestedPane);
+        setMobileDetailOpen(true);
+        return;
+      }
+      const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
+      if (!isMobileViewport) {
+        setActivePane("general");
+      }
+    }, 0);
+    return () => window.clearTimeout(timerId);
+  }, [initialPane]);
 
   function clearPaneTransitionLater(nextExitingPane: SettingsPaneKey | null) {
     if (typeof window === "undefined") return;

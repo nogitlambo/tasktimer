@@ -1152,6 +1152,14 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
 
   #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRank{
     max-width:88px;
+    padding-left:12px;
+  }
+
+  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack,
+  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack::before,
+  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill,
+  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill::after{
+    border-radius:0;
   }
 
   #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpUserName{

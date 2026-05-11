@@ -2,6 +2,7 @@ import { buildTaskStatusMeta, type DeletedTaskMeta, type Task } from "../lib/typ
 import { nowMs } from "../lib/time";
 import { buildDeleteTaskConfirmOptions } from "./confirm-actions";
 import type { TaskTimerConfirmOptions } from "./context";
+import { playDeleteAlertAudio } from "./delete-alert-audio";
 
 type CreateTaskDeleteOptions = {
   getTasks: () => Task[];
@@ -74,5 +75,6 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
 
     options.confirm(confirmConfig.title, confirmConfig.text, confirmConfig.options);
     options.getConfirmOverlay()?.classList.add("isDeleteTaskConfirm");
+    playDeleteAlertAudio();
   };
 }

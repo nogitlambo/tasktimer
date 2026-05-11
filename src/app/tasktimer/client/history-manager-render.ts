@@ -10,6 +10,7 @@ import {
 
 type HistoryManagerSortKey = "ts" | "ms";
 type HistoryManagerSortDir = "asc" | "desc";
+export type HistoryManagerTaskView = "active" | "archived";
 
 type RenderArgs = {
   existingListEl: HTMLElement;
@@ -20,6 +21,7 @@ type RenderArgs = {
   hmBulkEditMode: boolean;
   hmSortKey: HistoryManagerSortKey;
   hmSortDir: HistoryManagerSortDir;
+  taskView: HistoryManagerTaskView;
   hmExpandedTaskGroups: Set<string>;
   hmExpandedDateGroups: Set<string>;
   formatTwo: (value: number) => string;
@@ -102,6 +104,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     hmBulkEditMode,
     hmSortKey,
     hmSortDir,
+    taskView,
     hmExpandedTaskGroups,
     hmExpandedDateGroups,
     formatTwo,
@@ -123,7 +126,9 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     const entries = historyByTaskId[id];
     return Array.isArray(entries) && entries.length;
   });
-  const filteredIds = taskIdFilter ? idsWithHistory.filter((id) => String(id) === String(taskIdFilter)) : idsWithHistory;
+  const filteredIds = taskIdFilter
+    ? idsWithHistory.filter((id) => String(id) === String(taskIdFilter))
+    : idsWithHistory.filter((id) => getTaskMetaForHistoryId(id).state === taskView);
 
   if (!filteredIds.length) {
     return {
@@ -136,7 +141,9 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
       isEmpty: true,
       emptyHtml: taskIdFilter
         ? '<div class="hmEmpty">No history entries found for this task.</div>'
-        : '<div class="hmEmpty">No history entries found.</div>',
+        : taskView === "archived"
+          ? '<div class="hmEmpty">No archived task history entries found.</div>'
+          : '<div class="hmEmpty">No active task history entries found.</div>',
     };
   }
 
@@ -277,35 +284,9 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
       `;
     };
 
-  const activeTaskIds: string[] = [];
-  const archivedTaskIds: string[] = [];
-  const deletedTaskIds: string[] = [];
-  filteredIds.forEach((taskId) => {
-    const state = getTaskMetaForHistoryId(taskId).state;
-    if (state === "archived") archivedTaskIds.push(taskId);
-    else if (state === "deleted") deletedTaskIds.push(taskId);
-    else activeTaskIds.push(taskId);
-  });
-
-  const renderSection = (title: string, taskIds: string[]) => {
-    if (!taskIds.length) return "";
-    return `
-      <section class="hmSection" aria-label="${escapeHtmlHM(title)}">
-        <div class="hmSectionTitle">${escapeHtmlHM(title)}</div>
-        ${taskIds.map((taskId) => renderTaskGroupHtml(taskId)).join("")}
-      </section>
-    `;
-  };
-
   const html = taskIdFilter
     ? filteredIds.map((taskId) => renderTaskGroupHtml(taskId)).join("")
-    : [
-        activeTaskIds.map((taskId) => renderTaskGroupHtml(taskId)).join(""),
-        renderSection("Archived Tasks", archivedTaskIds),
-        renderSection("Deleted Tasks", deletedTaskIds),
-      ]
-        .filter(Boolean)
-        .join("");
+    : filteredIds.map((taskId) => renderTaskGroupHtml(taskId)).join("");
 
   return {
     html,

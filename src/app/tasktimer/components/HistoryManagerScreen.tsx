@@ -19,6 +19,37 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
           <div className="hmHead">
             <div className="hmTitle">History Manager</div>
             <div className="hmHeadActions">
+              <div className="taskScreenPillGroup hmTaskViewTabs" role="tablist" aria-label="History task view switch">
+                <button
+                  className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
+                  data-hm-task-view="active"
+                  aria-selected="true"
+                  aria-label="Active Tasks"
+                  title="Active Tasks"
+                  role="tab"
+                  type="button"
+                >
+                  <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
+                  <span className="taskScreenTabLabel">Active Tasks</span>
+                </button>
+                <button
+                  className="iconBtn taskScreenPill taskScreenHeaderBtn"
+                  data-hm-task-view="archived"
+                  aria-selected="false"
+                  aria-label="Archived Tasks"
+                  title="Archived Tasks"
+                  role="tab"
+                  type="button"
+                >
+                  <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 7.5h16" />
+                    <path d="M6 7.5v11h12v-11" />
+                    <path d="M8.5 4.5h7l1.5 3h-10z" />
+                    <path d="M9.5 12h5" />
+                  </svg>
+                  <span className="taskScreenTabLabel">Archived Tasks</span>
+                </button>
+              </div>
               <button className="btn btn-ghost small" id="historyManagerGenerateBtn" type="button">
                 Generate Test Data
               </button>

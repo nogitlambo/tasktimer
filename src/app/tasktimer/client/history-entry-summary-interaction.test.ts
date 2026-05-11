@@ -186,6 +186,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     ]);
 
     expect(h.body.innerHTML.match(/data-history-summary-action="trigger-xp-award"/g)).toHaveLength(3);
+    expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
     expect(h.body.innerHTML).toContain('data-history-summary-xp="20"');
     expect(h.body.innerHTML).toContain('data-history-summary-xp="12"');
     expect(h.body.innerHTML).toContain('data-history-summary-xp="8"');
@@ -355,6 +356,52 @@ describe("createHistoryEntrySummaryInteraction", () => {
       sourceRect: { left: 10, top: 20, width: 30, height: 12 },
     });
     expect(h.closed).toEqual([h.overlay]);
+    vi.unstubAllGlobals();
+  });
+
+  it("uses the XP value as the dev replay animation source when it is available", () => {
+    const dispatchEvent = vi.fn();
+    class CustomEventStub<T = unknown> {
+      type: string;
+      detail: T;
+
+      constructor(type: string, init?: { detail?: T }) {
+        this.type = type;
+        this.detail = init?.detail as T;
+      }
+    }
+    vi.stubGlobal("window", { dispatchEvent });
+    vi.stubGlobal("CustomEvent", CustomEventStub);
+    const rewardProgress = {
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 120,
+      awardLedger: [{ ts: 1000, xp: 12, reason: "session", taskId: "task-1" }],
+    };
+    const h = createHarness({ rewardProgress });
+    const sourceElement = {
+      getBoundingClientRect: vi.fn(() => ({ left: 40, top: 50, width: 70, height: 18 })),
+    } as unknown as HTMLElement;
+    const field = {
+      querySelector: vi.fn((selector: string) => (selector === "[data-history-summary-xp-source]" ? sourceElement : null)),
+    };
+    const trigger = {
+      getAttribute: vi.fn((name: string) => {
+        if (name === "data-history-summary-xp") return "12";
+        if (name === "data-history-summary-task-id") return "task-1";
+        return null;
+      }),
+      closest: vi.fn((selector: string) => (selector === ".historyEntrySummaryField" ? field : null)),
+      getBoundingClientRect: vi.fn(() => ({ left: 10, top: 20, width: 30, height: 12 })),
+    } as unknown as HTMLElement;
+
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+
+    expect(h.interaction.triggerDevXpAward(trigger)).toBe(true);
+    const queuedEvent = dispatchEvent.mock.calls[0]?.[0] as CustomEventStub | undefined;
+    expect(queuedEvent?.detail).toMatchObject({
+      sourceElementKey: "historyEntrySummaryXpValue",
+      sourceRect: { left: 40, top: 50, width: 70, height: 18 },
+    });
     vi.unstubAllGlobals();
   });
 });

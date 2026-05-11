@@ -77,10 +77,12 @@ import {
   ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS,
   appendHistoryEntry,
   hydrateStorageFromCloud,
+  flushPendingCloudWrites,
   loadCachedPreferences,
   saveCloudDashboard,
   saveCloudTaskUi,
   saveHistory,
+  saveHistoryLocally,
   saveLiveSession,
   saveTasks,
 } from "./storage";
@@ -376,6 +378,29 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       [row1, row2, completedRow],
       { allowDestructiveReplace: false }
     );
+  });
+
+  it("flushes queued leaderboard profile generation with pending cloud writes", async () => {
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [task("task-1", "Focus")],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: { ...buildDefaultCloudPreferences(), updatedAtMs: Date.now() },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+    leaderboardMocks.saveLeaderboardProfile.mockClear();
+
+    saveHistoryLocally({
+      "task-1": [{ ts: Date.parse("2026-05-05T09:00:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+    });
+    await flushPendingCloudWrites();
+
+    expect(leaderboardMocks.saveLeaderboardProfile).toHaveBeenCalledWith("uid-1", expect.any(Object));
   });
 
   it("throttles queued task retries after a failed cloud write", async () => {

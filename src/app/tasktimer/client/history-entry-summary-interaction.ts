@@ -60,6 +60,11 @@ function normalizeName(raw: unknown) {
   return String(raw || "").trim();
 }
 
+function getXpReplaySourceElement(trigger: HTMLElement) {
+  const field = typeof trigger.closest === "function" ? trigger.closest(".historyEntrySummaryField") : null;
+  return (field?.querySelector("[data-history-summary-xp-source]") as HTMLElement | null) || trigger;
+}
+
 function findEntryByIdentity(
   entries: HistoryEntrySummarySource[],
   identity: { ts: number; ms: number; name: string }
@@ -269,6 +274,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const rewardProgress = options.getRewardProgress();
     const currentTotalXp = Math.max(0, Math.floor(Number(rewardProgress?.totalXp || 0)));
     const taskId = String(trigger.getAttribute("data-history-summary-task-id") || overlay.dataset.historyEntryTaskId || "").trim();
+    const sourceElement = getXpReplaySourceElement(trigger);
 
     dispatchPendingXpAwardEvent(window, {
       fromXp: Math.max(0, currentTotalXp - awardedXp),
@@ -277,8 +283,8 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       sourceModal: "historyEntrySummaryTest",
       sourceTaskId: taskId || null,
       sourceOverlayId: "historyEntryNoteOverlay",
-      sourceElementKey: "historyEntrySummaryXpReplayBtn",
-      sourceRect: captureXpAwardRectSnapshot(trigger),
+      sourceElementKey: sourceElement === trigger ? "historyEntrySummaryXpReplayBtn" : "historyEntrySummaryXpValue",
+      sourceRect: captureXpAwardRectSnapshot(sourceElement),
     });
     options.closeOverlay(overlay);
     return true;

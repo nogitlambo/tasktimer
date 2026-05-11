@@ -324,7 +324,7 @@ export function renderHistoryEntrySummaryHtml(
     return `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
-        <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
+        <div class="historyEntrySummaryValue" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
         ${replayButtonHtml}
       </div>
     </div>`;

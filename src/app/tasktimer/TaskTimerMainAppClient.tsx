@@ -1009,7 +1009,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
                               <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
-                              <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                              <span className="leaderboardWeeklyPodiumPlayer">
+                                <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                              </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                             <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
@@ -1097,7 +1100,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
                               <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
-                              <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                              <span className="leaderboardWeeklyPodiumPlayer">
+                                <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                              </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                             <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
@@ -1183,7 +1189,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
                               <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
-                              <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                              <span className="leaderboardWeeklyPodiumPlayer">
+                                <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                              </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                             <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">

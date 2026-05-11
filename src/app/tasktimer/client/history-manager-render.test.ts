@@ -20,6 +20,7 @@ describe("history manager render", () => {
       hmBulkEditMode: false,
       hmSortKey: "ts",
       hmSortDir: "desc",
+      taskView: "active",
       hmExpandedTaskGroups: new Set<string>(),
       hmExpandedDateGroups: new Set<string>(),
       formatTwo: (value) => String(value).padStart(2, "0"),
@@ -35,14 +36,40 @@ describe("history manager render", () => {
     });
   }
 
-  it("renders archived and deleted tasks in separate sections", () => {
+  it("renders active task history by default and excludes archived and deleted tasks", () => {
     const result = render();
 
-    expect(result.html).toContain("Archived Tasks");
-    expect(result.html).toContain("Deleted Tasks");
+    expect(result.html).toContain("Active Task");
+    expect(result.html).not.toContain("Archived Task");
+    expect(result.html).not.toContain("Deleted Task");
+    expect(result.html).not.toContain("hmUnarchiveBtn");
+  });
+
+  it("renders archived task history in the archived view and excludes active and deleted tasks", () => {
+    const result = render({ taskView: "archived" });
+
+    expect(result.html).not.toContain("Active Task");
+    expect(result.html).toContain("Archived Task");
+    expect(result.html).not.toContain("Deleted Task");
     expect(result.html).toContain(">Archived<");
-    expect(result.html).toContain(">Deleted<");
     expect(result.html).toContain("hmUnarchiveBtn");
+  });
+
+  it("shows view-specific empty states", () => {
+    const activeResult = render({
+      historyByTaskId: {
+        archived: [{ ts: 2, ms: 2_000, name: "Archived Task" }],
+      },
+    });
+    const archivedResult = render({
+      taskView: "archived",
+      historyByTaskId: {
+        active: [{ ts: 3, ms: 1_000, name: "Active Task" }],
+      },
+    });
+
+    expect(activeResult.emptyHtml).toContain("No active task history entries found.");
+    expect(archivedResult.emptyHtml).toContain("No archived task history entries found.");
   });
 
   it("treats filtered legacy preserved-history rows as deleted when no explicit state is provided", () => {

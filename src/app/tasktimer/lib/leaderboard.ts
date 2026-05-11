@@ -162,6 +162,16 @@ function asLeaderboardProfile(docSnap: QueryDocumentSnapshot | null): Leaderboar
   return normalizeLeaderboardProfileRecord(docSnap.id, docSnap.data() as Record<string, unknown>);
 }
 
+function docsFromSettledQuery<T extends { docs: QueryDocumentSnapshot[] }>(
+  result: PromiseSettledResult<T>
+): QueryDocumentSnapshot[] {
+  return result.status === "fulfilled" ? result.value.docs : [];
+}
+
+function sizeFromSettledQuery<T extends { size: number }>(result: PromiseSettledResult<T>): number | null {
+  return result.status === "fulfilled" ? result.value.size : null;
+}
+
 function buildProjectedHistory(historyByTaskId: HistoryByTaskId, liveSessionsByTaskId: LiveSessionsByTaskId): HistoryByTaskId {
   const projected: HistoryByTaskId = {};
   const taskIds = new Set<string>([
@@ -589,13 +599,16 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   }
 
   const currentUserRankId = currentUserEntryWithIdentity.rewardCurrentRankId || getRankForXp(currentUserEntryWithIdentity.rewardTotalXp).id;
-  const [higherXpSnap, aboveSnap, rivalSnap, higherRivalSnap, higherWeeklySnap] = await Promise.all([
+  const [higherXpResult, aboveResult, rivalResult, higherRivalResult, higherWeeklyResult] = await Promise.allSettled([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),
     getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(10))),
     getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
+  const higherXpSize = sizeFromSettledQuery(higherXpResult);
+  const higherRivalSize = sizeFromSettledQuery(higherRivalResult);
+  const higherWeeklySize = sizeFromSettledQuery(higherWeeklyResult);
 
   const risingEntries = filterCurrentUid(
     risingSnap.docs
@@ -604,12 +617,12 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
       .map((row) => applyOwnIdentity(row, currentUid, ownIdentity)),
     currentUid
   );
-  const aboveEntries = aboveSnap.docs
+  const aboveEntries = docsFromSettledQuery(aboveResult)
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
     .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
     .filter((row) => row.uid !== currentUid);
-  const rivalEntries = rivalSnap.docs
+  const rivalEntries = docsFromSettledQuery(rivalResult)
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
     .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
@@ -622,11 +635,11 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     rivalEntries,
     weeklyEntries,
     currentUserEntry: currentUserEntryWithIdentity,
-    currentUserRank: higherXpSnap.size + 1,
+    currentUserRank: higherXpSize == null ? null : higherXpSize + 1,
     currentUserGapToNextXp,
-    currentUserRivalRank: higherRivalSnap.size + 1,
+    currentUserRivalRank: higherRivalSize == null ? null : higherRivalSize + 1,
     currentUserWeeklyEntry: currentUserEntryWithIdentity,
-    currentUserWeeklyRank: higherWeeklySnap.size + 1,
+    currentUserWeeklyRank: higherWeeklySize == null ? null : higherWeeklySize + 1,
   };
 }
 

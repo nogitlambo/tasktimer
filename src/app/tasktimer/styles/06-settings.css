@@ -2941,6 +2941,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsNavTile.
   color: rgba(232,244,250,.92);
   font-size: 15px;
   font-weight: 700;
+  text-transform: none;
 }
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsAccountProfileRow.settingsAccountIdCardBody > .settingsAccountIdCardMetaGrid{
   grid-area: meta;
