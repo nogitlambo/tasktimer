@@ -223,7 +223,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       requiredPlan: requiredPlan === "pro" ? "pro" : "pro",
       closeConfirm,
       openPlans: () => {
-        window.location.href = "/settings?pane=general";
+        window.location.href = "/account";
       },
     });
     confirm(confirmConfig.title, confirmConfig.text, confirmConfig.options);

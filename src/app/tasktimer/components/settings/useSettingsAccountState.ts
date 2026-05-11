@@ -304,7 +304,7 @@ export function useSettingsAccountState(): {
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
             uid,
-            returnPath: "/settings?pane=general",
+            returnPath: "/account",
           }),
         });
         const data = (await res.json()) as { url?: string; error?: string };

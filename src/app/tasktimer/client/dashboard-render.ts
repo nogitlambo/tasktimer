@@ -7,7 +7,7 @@ import {
   startOfCurrentWeekMs,
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
-import { sessionColorForTaskMs } from "../lib/colors";
+import { fillBackgroundForPct, sessionColorForTaskMs } from "../lib/colors";
 import { computeMomentumSnapshot, getMomentumBandLabel } from "../lib/momentum";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import {
@@ -1022,9 +1022,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
       if (totalCount <= 0) {
         centerEl.innerHTML = '<span class="dashboardTasksCompletedCenterLabel">No daily tasks due</span>';
+        centerEl.style.removeProperty("--dashboard-task-progress-color");
         return;
       }
 
+      centerEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(Math.max(0, Math.min(100, totalProgress * 100))));
       centerEl.innerHTML = totalProgress > 0
         ? `<span class="dashboardTasksCompletedCenterLabel">Task focus</span><span class="dashboardTasksCompletedCenterSubtext">${Math.round(totalProgress * 100)}% total progress</span>`
         : '<span class="dashboardTasksCompletedCenterLabel">No progress yet</span><span class="dashboardTasksCompletedCenterSubtext">Start a due task</span>';
@@ -1125,11 +1127,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         }
 
         const linkEl = document.createElement("span");
-        linkEl.className = `dashboardTasksCompletedLabel${isRightSide ? " isRight" : " isLeft"}${item.complete ? " isComplete" : ""}${item.running ? " isRunning" : ""}`;
+        linkEl.className = `dashboardTasksCompletedLabel${isRightSide ? " isRight" : " isLeft"}${item.complete ? " isComplete" : ""}${item.progress > 0 && item.progress < 1 ? " isPartial" : ""}${item.running ? " isRunning" : ""}`;
         linkEl.setAttribute("role", "listitem");
         linkEl.style.left = `${labelX}px`;
         linkEl.style.top = `${labelY}px`;
         linkEl.style.setProperty("--dashboard-task-label-color", item.color);
+        linkEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(item.progress * 100));
         linkEl.innerHTML = `<span class="dashboardTasksCompletedLabelName">${ctx.escapeHtmlUI(item.name)}</span><span class="dashboardTasksCompletedLabelStatus">${ctx.escapeHtmlUI(statusLabel)}</span>`;
         labelsEl.appendChild(linkEl);
         runningOffset += slicePct + DASHBOARD_COMPLETED_SEGMENT_GAP_PCT;

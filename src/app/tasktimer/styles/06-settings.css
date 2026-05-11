@@ -4300,3 +4300,314 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Settings"] .settingsDetailPa
   }
 }
 
+#app[aria-label="TaskLaunch Account"]{
+  min-height: 100vh;
+  background:
+    radial-gradient(80% 80% at 50% 0%, rgba(53,232,255,.10), rgba(0,0,0,0) 42%),
+    linear-gradient(180deg, #11151d 0%, #0d0f13 46%, #090b0f 100%);
+  color: rgba(244,250,255,.94);
+}
+
+#app[aria-label="TaskLaunch Account"] .topbar{
+  background: rgba(8,10,14,.78);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+#app[aria-label="TaskLaunch Account"] .accountRouteMain{
+  min-height: calc(100vh - 88px);
+  display: flex;
+  justify-content: center;
+  padding: 34px 18px 48px;
+}
+
+.accountProfilePage{
+  width: min(430px, 100%);
+  min-height: min(820px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 36px 34px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)),
+    #1a1c1f;
+  box-shadow: 0 32px 80px rgba(0,0,0,.38);
+}
+
+.accountProfileTopbar{
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.accountProfileTopbar h1{
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-tight);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.accountProfileBackBtn{
+  color: rgba(255,255,255,.92);
+  background: transparent;
+  border-color: transparent;
+}
+
+.accountProfileHero{
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.accountProfileAvatarBtn{
+  width: 126px;
+  height: 126px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.accountProfileAvatarRing{
+  width: 126px;
+  height: 126px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 5px solid #ffc400;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+  box-shadow: 0 0 0 6px rgba(255,196,0,.08);
+}
+
+.accountProfileAvatarImg{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.accountProfileAvatarFallback{
+  font-family: var(--font-orbitron);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.accountProfileIdentity{
+  display: grid;
+  gap: 8px;
+}
+
+.accountProfileIdentity h2{
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 850;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.accountProfileEmail{
+  margin: 0;
+  color: #ffc400;
+  font-family: var(--font-tight);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.accountProfileBio{
+  max-width: 280px;
+  margin: 6px auto 0;
+  color: rgba(238,242,246,.68);
+  line-height: 1.45;
+}
+
+.accountProfileAliasEdit{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px 38px;
+  gap: 8px;
+  align-items: center;
+}
+
+.accountProfileAliasInput{
+  min-width: 0;
+}
+
+.accountProfileStats{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.accountProfileStats div,
+.accountProfileStats button{
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.accountProfileStats button{
+  cursor: pointer;
+}
+
+.accountProfileStats button:hover,
+.accountProfileStats button:focus-visible{
+  outline: none;
+  background: rgba(255,255,255,.045);
+}
+
+.accountProfileStats strong{
+  max-width: 100%;
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 26px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountProfileStats span{
+  color: rgba(238,242,246,.55);
+  font-size: 12px;
+}
+
+.accountProfileStatus{
+  min-height: 24px;
+  display: grid;
+  gap: 8px;
+}
+
+.accountProfileActions{
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.accountProfileAction{
+  width: 100%;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 10px 8px;
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,.94);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.accountProfileAction:disabled{
+  cursor: wait;
+  opacity: .72;
+}
+
+.accountProfileAction:hover,
+.accountProfileAction:focus-visible{
+  outline: none;
+  background: rgba(255,255,255,.045);
+}
+
+.accountProfileAction img{
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: sepia(1) saturate(5) hue-rotate(355deg) brightness(1.2);
+}
+
+.accountProfileAction span{
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.accountProfileAction strong{
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 850;
+}
+
+.accountProfileAction small{
+  color: rgba(238,242,246,.58);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.accountProfileActionDanger strong{
+  color: #ff8c8c;
+}
+
+body[data-theme="purple"] #app[aria-label="TaskLaunch Account"] .accountProfileAvatarRing,
+body[data-theme="purple"] #app[aria-label="TaskLaunch Account"] .accountProfileEmail{
+  border-color: #ffc400;
+  color: #ffc400;
+}
+
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAvatarRing{
+  border-color: rgba(53,232,255,.96);
+  box-shadow: 0 0 0 6px rgba(53,232,255,.08);
+}
+
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileEmail{
+  color: rgba(53,232,255,.96);
+}
+
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAction img{
+  filter: none;
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch Account"] .desktopAppShell{
+    min-height: calc(100vh - 88px);
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppMain{
+    margin-left: min(470px, calc(100vw - 48px));
+  }
+}
+
+@media (max-width: 640px){
+  #app[aria-label="TaskLaunch Account"] .accountRouteMain{
+    min-height: calc(100vh - 76px);
+    padding: 0;
+  }
+
+  .accountProfilePage{
+    width: 100%;
+    min-height: calc(100vh - 76px);
+    padding: 24px 28px 30px;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .accountProfileIdentity h2{
+    font-size: 29px;
+  }
+
+  .accountProfileStats strong{
+    font-size: 23px;
+  }
+}
+

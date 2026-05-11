@@ -73,6 +73,7 @@ export default function TaskTimerAppFrame({
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";
+  const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
 
   useEffect(() => {
@@ -128,7 +129,7 @@ export default function TaskTimerAppFrame({
 
   const handleOpenMobileAccount = useCallback(() => {
     if (typeof window === "undefined") return;
-    window.location.href = resolveTaskTimerRouteHref("/settings?pane=general");
+    window.location.href = resolveTaskTimerRouteHref("/account");
   }, []);
 
   return (
@@ -159,8 +160,8 @@ export default function TaskTimerAppFrame({
                     </span>
                   </button>
                   <span className="taskLaunchTopbarXpMeta">
-                    <span className="taskLaunchTopbarXpUserName" title={currentUserLabel}>
-                      {currentUserLabel}
+                    <span className="taskLaunchTopbarXpUserName" title={topbarUserLabel}>
+                      {topbarUserLabel}
                     </span>
                     <button
                       className="taskLaunchTopbarXpStatsTrigger taskLaunchTopbarXpTrigger"
@@ -226,6 +227,20 @@ export default function TaskTimerAppFrame({
             <span className="taskLaunchMobileMenuHeaderText">TASKLAUNCH</span>
           </div>
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
+            <a
+              className="menuItem taskLaunchMobileMenuItem"
+              href={resolveTaskTimerRouteHref("/account")}
+              role="menuitem"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <AppImg
+                className="taskLaunchMobileMenuItemIcon"
+                src="/Settings.svg"
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="taskLaunchMobileMenuItemText">Account</span>
+            </a>
             <a
               className="menuItem taskLaunchMobileMenuItem"
               href={resolveTaskTimerRouteHref("/settings")}

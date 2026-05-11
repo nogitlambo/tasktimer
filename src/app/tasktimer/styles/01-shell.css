@@ -554,7 +554,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   flex:0 0 auto;
   display:inline-flex;
   align-items:center;
-  font-family:var(--font-orbitron);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  text-transform:none !important;
   font-size:12px;
   line-height:1;
   letter-spacing:.08em;
@@ -729,7 +730,8 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   flex:0 0 auto;
   display:inline-flex;
   align-items:center;
-  font-family:var(--font-orbitron);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  text-transform:none !important;
   font-size:12px;
   line-height:1;
   letter-spacing:.08em;
@@ -814,6 +816,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   text-overflow:ellipsis;
   white-space:nowrap;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  text-transform:lowercase !important;
   font-size:12px;
   font-weight:700 !important;
   line-height:1.1;

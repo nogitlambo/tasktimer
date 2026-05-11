@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       code: "stripe/billing-portal-rate-limited",
       message: "Too many billing portal attempts recently. Please wait before trying again.",
     });
-    const returnPath = asString(body.returnPath) || "/settings?pane=general";
+    const returnPath = asString(body.returnPath) || "/account";
 
     const customerId = await loadStripeCustomerIdForUser(uid);
 

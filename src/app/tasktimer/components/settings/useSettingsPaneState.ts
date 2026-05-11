@@ -17,7 +17,6 @@ const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
 ];
 
 const SETTINGS_VISIBLE_PANE_KEYS: SettingsPaneKey[] = [
-  "general",
   "preferences",
   "appearance",
   "notifications",
@@ -54,14 +53,14 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
     const timerId = window.setTimeout(() => {
       const queryPaneRaw = String(new URLSearchParams(window.location.search).get("pane") || "").trim();
       const requestedPane = isSettingsPaneKey(queryPaneRaw) ? queryPaneRaw : initialPane;
-      if (requestedPane) {
+      if (requestedPane && requestedPane !== "general") {
         setActivePane(requestedPane);
         setMobileDetailOpen(true);
         return;
       }
       const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
       if (!isMobileViewport) {
-        setActivePane("general");
+        setActivePane("preferences");
       }
     }, 0);
     return () => window.clearTimeout(timerId);
@@ -109,7 +108,6 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
 
 export function getSettingsNavItems(): SettingsNavItem[] {
   return [
-    { key: "general", label: "Account", icon: "/Settings.svg" },
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
     { key: "notifications", label: "Notifications", icon: "/Settings.svg" },

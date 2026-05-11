@@ -191,9 +191,7 @@ export async function handleDeleteAccountFlow(user: User) {
 
     const provider = new GoogleAuthProvider();
     const loginHint = String(user.email || "").trim();
-    if (loginHint) {
-      provider.setCustomParameters({ login_hint: loginHint });
-    }
+    provider.setCustomParameters(loginHint ? { prompt: "select_account", login_hint: loginHint } : { prompt: "select_account" });
     if (shouldUseRedirectAuth()) {
       const ref = accountStateDocRef(user.uid);
       if (ref) await setDoc(ref, { deleteReauthPending: true, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});

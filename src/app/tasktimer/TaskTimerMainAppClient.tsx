@@ -873,70 +873,66 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           <DashboardPageContent active={initialPage === "dashboard"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
-            {isAuthenticated ? (
-              <div className="dashboardShell" id="groupsFriendsSection">
-                <div className="dashboardTopRow">
-                  <div className="dashboardEditActions">
-                    <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button">
-                      <AppImg
-                        className="friendRequestBtnIcon"
-                        src="/icons/icons_default/add-friend.png"
-                        alt=""
-                        aria-hidden="true"
-                      />
-                      Add Friend
-                    </button>
+            <div className="dashboardShell" id="groupsFriendsSection">
+              <div className="dashboardTopRow">
+                <div className="dashboardEditActions">
+                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
+                    <AppImg
+                      className="friendRequestBtnIcon"
+                      src="/icons/icons_default/add-friend.png"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    Add Friend
+                  </button>
+                </div>
+              </div>
+
+              <div className="dashboardGrid">
+                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
+
+                <section className="dashboardCard" aria-label="Friends list">
+                  <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
+                    {isAuthenticated
+                      ? "You have not added any friends yet"
+                      : "You will need to create an account or sign in to use Friends."}
                   </div>
-                </div>
+                </section>
 
-                <div className="dashboardGrid">
-                  <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
-
-                  <section className="dashboardCard" aria-label="Friends list">
-                    <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
-                      You have not added any friends yet
+                <section className="dashboardCard" aria-label="Tasks shared by you">
+                  <details id="groupsSharedByYouDetails">
+                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
+                      0 shared by you
+                    </summary>
+                    <div id="groupsSharedByYouList" className="settingsDetailNote">
+                      No shared tasks.
                     </div>
-                  </section>
+                  </details>
+                </section>
 
-                  <section className="dashboardCard" aria-label="Tasks shared by you">
-                    <details id="groupsSharedByYouDetails">
-                      <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
-                        0 shared by you
-                      </summary>
-                      <div id="groupsSharedByYouList" className="settingsDetailNote">
-                        No shared tasks.
-                      </div>
-                    </details>
-                  </section>
+                <section className="dashboardCard" aria-label="Incoming requests">
+                  <details id="groupsIncomingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
+                      0 Incoming Requests
+                    </summary>
+                    <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                      No incoming requests.
+                    </div>
+                  </details>
+                </section>
 
-                  <section className="dashboardCard" aria-label="Incoming requests">
-                    <details id="groupsIncomingRequestsDetails">
-                      <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
-                        0 Incoming Requests
-                      </summary>
-                      <div id="groupsIncomingRequestsList" className="settingsDetailNote">
-                        No incoming requests.
-                      </div>
-                    </details>
-                  </section>
-
-                  <section className="dashboardCard" aria-label="Outgoing requests">
-                    <details id="groupsOutgoingRequestsDetails">
-                      <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
-                        0 Outgoing Requests
-                      </summary>
-                      <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
-                        No outgoing requests.
-                      </div>
-                    </details>
-                  </section>
-                </div>
+                <section className="dashboardCard" aria-label="Outgoing requests">
+                  <details id="groupsOutgoingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
+                      0 Outgoing Requests
+                    </summary>
+                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                      No outgoing requests.
+                    </div>
+                  </details>
+                </section>
               </div>
-            ) : (
-              <div className="dashboardShell" id="groupsFriendsSection">
-                <div className="settingsDetailNote">You will need to create an account or sign in to use Friends.</div>
-              </div>
-            )}
+            </div>
           </section>
 
           <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboard page">

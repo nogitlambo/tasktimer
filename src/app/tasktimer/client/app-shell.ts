@@ -41,6 +41,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       path === "/dashboard" ||
       path === "/friends" ||
       path === "/leaderboard" ||
+      path === "/account" ||
       path === "/settings" ||
       path === "/history-manager" ||
       path === "/feedback"
@@ -177,6 +178,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     let normalized = withoutQuery.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
     normalized = normalized.replace(/\/index\.html$/i, "");
     if (/\/settings(?:\/index)?$/i.test(normalized) || /\/settings\.html$/i.test(normalized)) return "/settings";
+    if (/\/account(?:\/index)?$/i.test(normalized) || /\/account\.html$/i.test(normalized)) return "/account";
     if (/\/history-manager(?:\/index)?$/i.test(normalized) || /\/history-manager\.html$/i.test(normalized)) return "/history-manager";
     if (/\/feedback(?:\/index)?$/i.test(normalized) || /\/feedback\.html$/i.test(normalized)) return "/feedback";
     if (/\/dashboard(?:\/index)?$/i.test(normalized)) return "/dashboard";
@@ -190,6 +192,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const path = normalizeTaskTimerRoutePath(pathRaw);
     return (
       path === "/tasklaunch" ||
+      path === "/account" ||
       path === "/settings" ||
       path === "/history-manager" ||
       path === "/feedback"
@@ -644,7 +647,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       const badge = e?.target?.closest?.("#signedInHeaderBadge");
       if (!badge) return;
       e?.preventDefault?.();
-      navigateToAppRoute("/settings?pane=general");
+      navigateToAppRoute("/account");
     });
   }
 

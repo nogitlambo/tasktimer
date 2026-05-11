@@ -25,7 +25,7 @@ import {
 } from "../lib/accountProfileStorage";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
-type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "history" | "settings" | "none";
+type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -93,6 +93,16 @@ const NAV_ITEMS: NavItem[] = [
     showInMobileFooter: false,
   },
   {
+    page: "account",
+    label: "Account",
+    ariaLabel: "Account",
+    iconSrc: "/Settings.svg",
+    desktopId: "commandCenterAccountBtn",
+    mobileId: "footerAccountBtn",
+    href: "/account",
+    showInMobileFooter: false,
+  },
+  {
     page: "settings",
     label: "Settings",
     ariaLabel: "Settings",
@@ -104,7 +114,12 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "history" && item.page !== "settings");
+const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings");
+const PROFILE_MENU_PAGES = ["account", "settings", "history"] as const;
+
+export function getDesktopRailProfileMenuItems() {
+  return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
+}
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
@@ -112,8 +127,9 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "tasks") return 1;
   if (page === "friends") return 2;
   if (page === "leaderboard") return 3;
-  if (page === "history") return 4;
+  if (page === "account") return 4;
   if (page === "settings") return 5;
+  if (page === "history") return 6;
   return -1;
 }
 
@@ -549,7 +565,7 @@ export default function DesktopAppRail({
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({
           uid,
-          returnPath: "/settings?pane=general",
+          returnPath: "/account",
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -629,16 +645,13 @@ export default function DesktopAppRail({
                     <span className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</span>
                   )}
                   <span className="dashboardRailProfileIdentity">
-                    <span className="dashboardProfileName">{profileLabel}</span>
+                    <span className="dashboardProfileName">{profileLabel.toLocaleLowerCase()}</span>
                     {profileEmail ? <span className="dashboardProfileMeta dashboardRailProfileEmail">{profileEmail}</span> : null}
                   </span>
                 </span>
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
-                {(["settings", "history"] as const)
-                  .map((page) => NAV_ITEMS.find((item) => item.page === page))
-                  .filter((item): item is NavItem => !!item)
-                  .map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
+                {getDesktopRailProfileMenuItems().map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
                 {renderProfileHelpMenu()}
                 {renderProfileSignOutButton(signOutBusy, handleProfileSignOut)}
                 {signOutError ? (

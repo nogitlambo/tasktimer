@@ -412,7 +412,7 @@ export default function PrivacyPolicyPage() {
                 You can control web and mobile push preferences inside the app where those features are available.
               </Clause>
               <Clause letter="c">
-                You can delete your account from <strong>Settings &gt; Account &gt; Delete Account</strong>.
+                You can delete your account from <strong>Account &gt; Delete Account</strong>.
               </Clause>
               <Clause letter="d">
                 You can reset local app data from <strong>Settings &gt; Reset All Data</strong>.

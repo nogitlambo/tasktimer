@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { SettingsNav } from "./settings/SettingsShared";
-import { SettingsAccountPane } from "./settings/SettingsAccountPane";
 import { SettingsAppearancePane } from "./settings/SettingsAppearancePane";
 import { SettingsDataPane } from "./settings/SettingsDataPane";
 import { SettingsFeedbackPane } from "./settings/SettingsFeedbackPane";
@@ -13,7 +12,6 @@ import { SettingsPrivacyPane } from "./settings/SettingsPrivacyPane";
 import { SettingsAboutPane } from "./settings/SettingsAboutPane";
 import type { SettingsFeedbackState, SettingsPaneKey } from "./settings/types";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
-import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
 import { useSettingsNavItems, useSettingsPaneState } from "./settings/useSettingsPaneState";
 
 export type { SettingsPaneKey } from "./settings/types";
@@ -29,14 +27,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const navItems = useSettingsNavItems();
   const paneState = useSettingsPaneState(initialPane);
   const accountState = useSettingsAccountState();
-  const avatarState = useSettingsAvatarState({
-    authUserUid: accountState.authUserUid,
-    authUserEmail: accountState.authUserEmail,
-    authHasGoogleProvider: accountState.authHasGoogleProvider,
-    authGooglePhotoUrl: accountState.authGooglePhotoUrl,
-    setAuthError: accountState.setAuthError,
-    setAuthStatus: accountState.setAuthStatus,
-  });
   const [feedback, setFeedback] = useState<SettingsFeedbackState>(EMPTY_FEEDBACK);
 
   const canSubmitFeedback = useMemo(() => {
@@ -82,7 +72,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             </div>
           ) : null}
 
-          <SettingsAccountPane active={paneState.activePane === "general"} exiting={paneState.exitingPane === "general"} account={accountState.account} avatar={avatarState} />
           <SettingsPreferencesPane active={paneState.activePane === "preferences"} exiting={paneState.exitingPane === "preferences"} />
           <SettingsAppearancePane active={paneState.activePane === "appearance"} exiting={paneState.exitingPane === "appearance"} />
           <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />

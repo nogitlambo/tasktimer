@@ -3,34 +3,24 @@
 import { useCallback, useEffect } from "react";
 import GlobalTaskAlerts from "../tasktimer/components/GlobalTaskAlerts";
 import InfoOverlays from "../tasktimer/components/InfoOverlays";
-import SettingsScreen from "../tasktimer/components/SettingsScreen";
+import AccountScreen from "../tasktimer/components/AccountScreen";
 import { initTaskTimerSettingsClient } from "../tasktimer/tasktimerClient";
 import { useTaskTimerRouteClient } from "../tasktimer/useTaskTimerRouteClient";
 import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
-import { resolveTaskTimerRouteHref } from "../tasktimer/lib/routeHref";
-import { getSettingsRouteRedirect } from "../tasktimer/lib/settingsRoute";
 import "../tasktimer/tasktimer.css";
 
-export default function SettingsPage() {
+export default function AccountPage() {
   const initClient = useCallback(() => initTaskTimerSettingsClient(), []);
   useTaskTimerRouteClient(initClient);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const searchParams = new URLSearchParams(window.location.search);
-    const redirectPath = getSettingsRouteRedirect(searchParams);
-    if (!redirectPath) return;
-    window.location.replace(resolveTaskTimerRouteHref(redirectPath));
-  }, []);
-
-  useEffect(() => {
-    void trackScreen("settings");
-    void trackEvent("settings_opened");
+    void trackScreen("account");
+    void trackEvent("account_opened");
   }, []);
 
   return (
     <>
-      <SettingsScreen />
+      <AccountScreen />
       <InfoOverlays />
       <GlobalTaskAlerts />
     </>

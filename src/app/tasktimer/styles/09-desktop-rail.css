@@ -42,6 +42,167 @@
 
 /* Responsive desktop rail shell and base navigation structure migrated from 10-responsive.css. */
 @media (min-width: 981px){
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail{
+    display: grid;
+    position: fixed;
+    left: 18px;
+    top: calc(88px + var(--safe-top));
+    bottom: 18px;
+    width: min(435px, calc(100vw - 48px));
+    padding: 18px 18px 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-content: start;
+    border: 1px solid rgba(121,226,255,.16);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(0,224,255,.10), rgba(0,0,0,0) 36%),
+      radial-gradient(120% 120% at 100% 0%, rgba(240,110,224,.16), rgba(0,0,0,0) 34%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+      #05080f;
+    box-shadow:
+      0 26px 60px rgba(0,0,0,.48),
+      inset 0 0 0 1px rgba(255,255,255,.04),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+    z-index: 7;
+    overflow-y: auto;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailTopSection,
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailBottomSection{
+    display: grid;
+    gap: 16px;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailMiddleSection{
+    min-height: 0;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailBrandLockup{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailBrandIcon{
+    width: 34px;
+    height: 34px;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailHeaderDivider{
+    height: 1px;
+    background: rgba(255,255,255,.08);
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailSectionLabel{
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(198,223,237,.64);
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailNav{
+    display: grid;
+    gap: 10px;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailMenuBtn{
+    --desktop-nav-hover-accent: rgba(117,231,255,.94);
+    width: 100%;
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    color: rgba(233,246,252,.84);
+    text-decoration: none;
+    background: transparent;
+    font-family: var(--font-tight);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+    position: relative;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailMenuBtn:hover,
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailMenuBtn:focus-visible,
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailMenuBtn.isOn{
+    border-color: rgba(117,231,255,.22);
+    color: #fff;
+    background: linear-gradient(90deg, rgba(53,232,255,.14), rgba(255,255,255,.03));
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailMenuIconImage{
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex: 0 0 auto;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileSummary{
+    width: 100%;
+    cursor: pointer;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileHead{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileAvatar{
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(53,232,255,.14);
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileAvatarImage{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileIdentity{
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardProfileName,
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .dashboardRailProfileEmail{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker{
+    display: none;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailProfileMenuDropdown{
+    display: none;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuDropdown,
+  #app[aria-label="TaskLaunch Account"] .desktopAppRail[data-profile-menu-open="true"] .desktopRailProfileMenuDropdown{
+    display: grid;
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail{
     display: grid;
@@ -1759,6 +1920,10 @@
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileGrid .dashboardProfileMetric strong,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileGrid .dashboardProfileMetric strong{
     font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  }
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardProfileName,
+  #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileIdentity .dashboardProfileName{
+    text-transform: lowercase !important;
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileEditLink,
   #app[aria-label="TaskLaunch Settings"] .desktopAppRail .dashboardRailProfileEditLink{

@@ -1,0 +1,10 @@
+
+> tasklaunch@1.0.1 dev:turbo
+> next dev -p 3001
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://10.2.0.2:3001
+- Environments: .env.local
+✓ Ready in 452ms
+[?25h

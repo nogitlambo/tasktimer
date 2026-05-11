@@ -1158,7 +1158,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     renderGroupsRequestsList(els.groupsOutgoingRequestsList as HTMLElement | null, ctx.getGroupsOutgoingRequests(), { incoming: false });
     renderGroupsFriendsList();
     renderGroupsSharedByYouList();
-    if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = ctx.getGroupsLoading();
+    if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = ctx.getGroupsLoading() || !ctx.getCurrentUid();
     if (els.friendRequestSendBtn) els.friendRequestSendBtn.disabled = ctx.getGroupsLoading();
     if (els.friendProfileDeleteBtn) els.friendProfileDeleteBtn.disabled = ctx.getGroupsLoading();
   }

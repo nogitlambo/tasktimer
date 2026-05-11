@@ -28,6 +28,12 @@ import { getEmailLinkActionCodeSettings, getEmailLinkSendErrorMessage } from "./
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
+function createGoogleSignInProvider() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  return provider;
+}
+
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
@@ -498,7 +504,7 @@ function WebSignInPageContent() {
           );
         }
       }
-      const provider = new GoogleAuthProvider();
+      const provider = createGoogleSignInProvider();
       setGooglePopupPending(true);
       await signInWithPopup(auth, provider);
       setGooglePopupPending(false);

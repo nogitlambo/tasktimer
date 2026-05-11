@@ -167,17 +167,19 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       okLabel: "Archive",
       cancelLabel: "Cancel",
       onOk: () => {
-        tasks.splice(index, 1);
+        const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
         const nextDeletedTaskMeta = {
           ...(ctx.getDeletedTaskMeta() || {}),
           [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
         };
+        ctx.setTasks(nextTasks);
         ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
         ctx.saveDeletedMeta(nextDeletedTaskMeta);
         ctx.save({ deletedTaskIds: taskId ? [taskId] : [] });
         void ctx.deleteSharedTaskSummariesForTask(String(ctx.getCurrentUid() || ""), taskId).catch(() => {});
         void ctx.refreshOwnSharedSummaries().catch(() => {});
         if (shouldCloseFocusMode) ctx.closeFocusMode();
+        renderTasksPage();
         ctx.render();
         ctx.closeConfirm();
       },
