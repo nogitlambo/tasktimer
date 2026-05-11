@@ -1470,8 +1470,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyAddBtn:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyAddBtn:focus-visible,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyAddBtn:active{
-  background:#d9d9d9 !important;
-  background-color:#d9d9d9 !important;
+  background:rgba(225,230,236,.16) !important;
+  background-color:rgba(225,230,236,.16) !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyInlineList{
   display:flex;
@@ -2675,7 +2675,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn:active,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:active{
-  background:#d9d9d9 !important;
+  background:rgba(225,230,236,.16) !important;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenHeaderBtnText{
   display:block;
@@ -2858,7 +2858,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:hover,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:active{
-  background:#d9d9d9 !important;
+  background:rgba(225,230,236,.16) !important;
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .taskScreenHeaderBtnText,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .taskScreenTabLabel{
@@ -3202,8 +3202,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #ope
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:hover,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:active{
-  background:#d9d9d9 !important;
-  background-color:#d9d9d9 !important;
+  background:rgba(225,230,236,.16) !important;
+  background-color:rgba(225,230,236,.16) !important;
 }
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks :is(.taskScreenIconBtnSvg, .taskScreenIconBtnPlus){
   stroke:#fbffe3;

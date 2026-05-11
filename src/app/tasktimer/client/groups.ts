@@ -25,6 +25,73 @@ type GroupsBusyResult<T> =
   | { ok: true; value: T; timedOut: false }
   | { ok: false; message: string; timedOut: boolean; error?: unknown };
 
+type GroupsSnapshotLoaders = {
+  loadIncomingRequests: typeof loadIncomingRequests;
+  loadOutgoingRequests: typeof loadOutgoingRequests;
+  loadFriendships: typeof loadFriendships;
+  loadFriendProfile: typeof loadFriendProfile;
+  loadSharedTaskSummariesForViewer: typeof loadSharedTaskSummariesForViewer;
+  loadSharedTaskSummariesForOwner: typeof loadSharedTaskSummariesForOwner;
+};
+
+const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
+  loadIncomingRequests,
+  loadOutgoingRequests,
+  loadFriendships,
+  loadFriendProfile,
+  loadSharedTaskSummariesForViewer,
+  loadSharedTaskSummariesForOwner,
+};
+
+export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnapshotLoaders = defaultGroupsSnapshotLoaders) {
+  const [incomingResult, outgoingResult, friendshipsResult] = await Promise.allSettled([
+    loaders.loadIncomingRequests(uid),
+    loaders.loadOutgoingRequests(uid),
+    loaders.loadFriendships(uid),
+  ]);
+  const incoming = incomingResult.status === "fulfilled" ? incomingResult.value || [] : [];
+  const outgoing = outgoingResult.status === "fulfilled" ? outgoingResult.value || [] : [];
+  const friendships = friendshipsResult.status === "fulfilled" ? friendshipsResult.value || [] : [];
+  const requestPeerUids = [...incoming, ...outgoing]
+    .map((row) => (row.senderUid === uid ? row.receiverUid : row.senderUid))
+    .map((peerUid) => String(peerUid || "").trim())
+    .filter(Boolean);
+  const profileUids = Array.from(
+    new Set([
+      ...friendships
+        .map((row) => (row.users[0] === uid ? row.users[1] : row.users[0]))
+        .map((peerUid) => String(peerUid || "").trim())
+        .filter(Boolean),
+      ...requestPeerUids,
+    ])
+  );
+  const profileEntries = await Promise.allSettled(
+    profileUids.map(async (peerUid) => {
+      const profile = await loaders.loadFriendProfile(peerUid);
+      return [peerUid, profile] as const;
+    })
+  );
+  const nextFriendProfileCache = {} as Record<string, Awaited<ReturnType<typeof loadFriendProfile>>>;
+  profileEntries.forEach((result) => {
+    if (result.status !== "fulfilled" || !result.value) return;
+    const [peerUid, profile] = result.value;
+    if (!peerUid) return;
+    nextFriendProfileCache[peerUid] = profile;
+  });
+  const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
+    loaders.loadSharedTaskSummariesForViewer(uid),
+    loaders.loadSharedTaskSummariesForOwner(uid),
+  ]);
+  return {
+    incoming,
+    outgoing,
+    friendships,
+    friendProfileCache: nextFriendProfileCache,
+    sharedSummaries: sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [],
+    ownSharedSummaries: sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [],
+  };
+}
+
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
 
@@ -776,49 +843,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   async function loadGroupsSnapshot(uid: string) {
-    const [incoming, outgoing, friendships] = await Promise.all([
-      loadIncomingRequests(uid),
-      loadOutgoingRequests(uid),
-      loadFriendships(uid),
-    ]);
-    const requestPeerUids = [...incoming, ...outgoing]
-      .map((row) => (row.senderUid === uid ? row.receiverUid : row.senderUid))
-      .map((peerUid) => String(peerUid || "").trim())
-      .filter(Boolean);
-    const profileUids = Array.from(
-      new Set([
-        ...friendships
-          .map((row) => (row.users[0] === uid ? row.users[1] : row.users[0]))
-          .map((peerUid) => String(peerUid || "").trim())
-          .filter(Boolean),
-        ...requestPeerUids,
-      ])
-    );
-    const profileEntries = await Promise.allSettled(
-      profileUids.map(async (peerUid) => {
-        const profile = await loadFriendProfile(peerUid);
-        return [peerUid, profile] as const;
-      })
-    );
-    const nextFriendProfileCache = {} as ReturnType<TaskTimerGroupsContext["getFriendProfileCacheByUid"]>;
-    profileEntries.forEach((result) => {
-      if (result.status !== "fulfilled" || !result.value) return;
-      const [peerUid, profile] = result.value;
-      if (!peerUid) return;
-      nextFriendProfileCache[peerUid] = profile;
-    });
-    const [sharedForViewerResult, sharedForOwnerResult] = await Promise.allSettled([
-      loadSharedTaskSummariesForViewer(uid),
-      loadSharedTaskSummariesForOwner(uid),
-    ]);
-    return {
-      incoming,
-      outgoing,
-      friendships,
-      friendProfileCache: nextFriendProfileCache,
-      sharedSummaries: sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [],
-      ownSharedSummaries: sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [],
-    };
+    return loadGroupsSnapshotForUid(uid);
   }
 
   function applyGroupsSnapshot(snapshot: Awaited<ReturnType<typeof loadGroupsSnapshot>>) {
