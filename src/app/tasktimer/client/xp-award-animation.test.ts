@@ -3,6 +3,8 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAward,
+  getXpAwardCountRange,
+  getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
   type PendingXpAward,
   XP_AWARD_COUNT_DURATION_MS,
@@ -92,5 +94,38 @@ describe("xp award animation state", () => {
     });
 
     expect(clearActiveXpAward(merged)).toEqual(createXpAwardAnimationState());
+  });
+
+  it("starts a fresh count-up from the award source xp instead of the already-saved total", () => {
+    expect(
+      getXpAwardCountRange(award({ fromXp: 40, toXp: 52 }), {
+        wasIdle: true,
+        displayedXp: 52,
+      })
+    ).toEqual({
+      startXp: 40,
+      endXp: 52,
+    });
+  });
+
+  it("continues merged active awards from the current displayed xp", () => {
+    expect(
+      getXpAwardCountRange(award({ fromXp: 40, toXp: 60 }), {
+        wasIdle: false,
+        displayedXp: 52,
+      })
+    ).toEqual({
+      startXp: 52,
+      endXp: 60,
+    });
+  });
+
+  it("keeps the payload flight delay for new awards before the count starts", () => {
+    expect(getXpAwardCountStartDelayMs({ wasIdle: true, countAnimationStarted: false, fxDurationMs: 1600 })).toBe(1600);
+    expect(getXpAwardCountStartDelayMs({ wasIdle: false, countAnimationStarted: false, fxDurationMs: 1600 })).toBe(1600);
+  });
+
+  it("starts merged active awards immediately when a count-up is already running", () => {
+    expect(getXpAwardCountStartDelayMs({ wasIdle: false, countAnimationStarted: true, fxDurationMs: 1600 })).toBe(0);
   });
 });

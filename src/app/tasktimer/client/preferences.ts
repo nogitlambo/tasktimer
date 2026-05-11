@@ -154,35 +154,35 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return "Custom";
   }
 
-  function getLiveTaskOrderByMenu() {
-    return document.getElementById("taskOrderByMenu") as HTMLDetailsElement | null;
+  function getLiveTaskOrderByMenus() {
+    return Array.from(document.querySelectorAll<HTMLDetailsElement>(".tasksModeMenu"));
   }
 
-  function getLiveTaskOrderByMenuButton() {
-    return document.getElementById("taskOrderByMenuBtn") as HTMLElement | null;
+  function getLiveTaskOrderByMenuButtons() {
+    return Array.from(document.querySelectorAll<HTMLElement>(".tasksModeMenuBtn"));
   }
 
-  function getLiveTaskOrderByValue() {
-    return document.getElementById("taskOrderByValue");
+  function getLiveTaskOrderByValues() {
+    return Array.from(document.querySelectorAll<HTMLElement>(".tasksModeMenuBtn #taskOrderByValue"));
   }
 
   function syncTaskOrderByMenuUi() {
     const taskOrderBy = ctx.getTaskOrderBy();
-    const taskOrderByValueEl = getLiveTaskOrderByValue();
-    const taskOrderByMenuBtnEl = getLiveTaskOrderByMenuButton();
-    const taskOrderByMenuEl = getLiveTaskOrderByMenu();
-    if (taskOrderByValueEl) taskOrderByValueEl.textContent = getTaskOrderByLabel(taskOrderBy);
-    if (taskOrderByMenuBtnEl) {
-      taskOrderByMenuBtnEl.setAttribute("aria-label", `Order By: ${getTaskOrderByLabel(taskOrderBy)}`);
-    }
-    if (taskOrderByMenuEl) {
-      Array.from(taskOrderByMenuEl.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
+    const taskOrderByLabel = getTaskOrderByLabel(taskOrderBy);
+    getLiveTaskOrderByValues().forEach((valueEl) => {
+      valueEl.textContent = taskOrderByLabel;
+    });
+    getLiveTaskOrderByMenuButtons().forEach((buttonEl) => {
+      buttonEl.setAttribute("aria-label", `Order By: ${taskOrderByLabel}`);
+    });
+    getLiveTaskOrderByMenus().forEach((menuEl) => {
+      Array.from(menuEl.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
         const itemValue = item.dataset.taskOrderBy === "alpha" ? "alpha" : item.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
         const isOn = itemValue === taskOrderBy;
         item.classList.toggle("isOn", isOn);
         item.setAttribute("aria-pressed", isOn ? "true" : "false");
       });
-    }
+    });
   }
 
   function applyTaskOrderByPreference(next: TaskOrderBy) {
@@ -551,9 +551,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(document, "click", (event) => {
       const target = event.target as HTMLElement | null;
-      const menu = getLiveTaskOrderByMenu();
-      const button = target?.closest?.("#taskOrderByMenu .tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
-      if (button && menu && !menu.contains(button)) return;
+      const button = target?.closest?.(".tasksModeMenu .tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
       if (!button) return;
       const nextValue = button.dataset.taskOrderBy === "alpha" ? "alpha" : button.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
       applyTaskOrderByPreference(nextValue);
@@ -561,14 +559,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.render();
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
-      if (menu) menu.open = false;
+      getLiveTaskOrderByMenus().forEach((menu) => {
+        menu.open = false;
+      });
     });
     ctx.on(document, "pointerdown", (event: Event) => {
-      const menu = getLiveTaskOrderByMenu();
-      if (!menu?.open) return;
       const target = event.target as Node | null;
-      if (target && menu.contains(target)) return;
-      menu.open = false;
+      getLiveTaskOrderByMenus().forEach((menu) => {
+        if (!menu.open) return;
+        if (target && menu.contains(target)) return;
+        menu.open = false;
+      });
     });
     bindToggleRow({
       on: ctx.on,

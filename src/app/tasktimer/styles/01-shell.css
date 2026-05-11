@@ -713,6 +713,18 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   outline:1px solid rgba(53,232,255,.7);
   outline-offset:4px;
 }
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarTrigger{
+  flex:0 0 auto;
+  border-radius:999px;
+}
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStatsTrigger{
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+}
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpValue{
   flex:0 0 auto;
   display:inline-flex;
@@ -1127,7 +1139,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     min-width: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpTrigger,
+  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpStatsTrigger,
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBottomRow{
     flex: 1 1 auto;
     min-width: 0;

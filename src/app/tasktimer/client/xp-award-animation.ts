@@ -94,3 +94,25 @@ export function clearActiveXpAward(state: XpAwardAnimationState): XpAwardAnimati
     active: null,
   };
 }
+
+export function getXpAwardCountRange(
+  award: PendingXpAward,
+  opts?: { wasIdle?: boolean; displayedXp?: number }
+): { startXp: number; endXp: number } {
+  const normalizedAward = normalizeAward(award);
+  const displayedXp = Math.max(0, Math.floor(Number(opts?.displayedXp) || 0));
+  return {
+    startXp: opts?.wasIdle === false ? displayedXp : normalizedAward.fromXp,
+    endXp: normalizedAward.toXp,
+  };
+}
+
+export function getXpAwardCountStartDelayMs(opts?: {
+  wasIdle?: boolean;
+  countAnimationStarted?: boolean;
+  fxDurationMs?: number;
+}): number {
+  if (opts?.wasIdle === false && opts?.countAnimationStarted) return 0;
+  const fxDurationMs = Math.max(0, Math.floor(Number(opts?.fxDurationMs) || 0));
+  return fxDurationMs;
+}

@@ -32,8 +32,7 @@ type TaskTimerAppFrameProps = {
   isXpAwardSpotlightActive?: boolean;
   xpAwardFx?: {
     visible: boolean;
-    beamStyle: CSSProperties | null;
-    deltaStyle: CSSProperties | null;
+    payloadStyle: CSSProperties | null;
     deltaText: string | null;
   };
 };
@@ -127,6 +126,11 @@ export default function TaskTimerAppFrame({
     }
   }, [signOutBusy]);
 
+  const handleOpenMobileAccount = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.location.href = resolveTaskTimerRouteHref("/settings?pane=general");
+  }, []);
+
   return (
     <div className={`wrap${isXpAwardSpotlightActive ? " isXpAwardSpotlightActive" : ""}`} id="app" aria-label="TaskLaunch App">
       <div className="topbar topbarBrandOnly taskLaunchAppTopbar">
@@ -139,24 +143,31 @@ export default function TaskTimerAppFrame({
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
           <section className={`taskLaunchTopbarXp${isXpAwardSpotlightActive ? " isXpAwardSpotlightTarget" : ""}`} aria-label="XP progress">
               <div className="taskLaunchTopbarXpBody">
-                <button
-                  className="taskLaunchTopbarXpBottomRow taskLaunchTopbarXpTrigger"
-                  type="button"
-                  aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                  onClick={() => setShowRankLadderModal(true)}
-                >
-                  <span className="taskLaunchTopbarXpAvatarWrap" aria-hidden="true">
-                    {currentUserAvatarSrc ? (
-                      <AppImg className="taskLaunchTopbarXpAvatarImg" src={currentUserAvatarSrc} alt="" referrerPolicy={/^https?:\/\//i.test(currentUserAvatarSrc) ? "no-referrer" : undefined} />
-                    ) : (
-                      <span className="taskLaunchTopbarXpAvatarFallback">{currentUserAvatarInitials}</span>
-                    )}
-                  </span>
+                <div className="taskLaunchTopbarXpBottomRow">
+                  <button
+                    className="taskLaunchTopbarXpAvatarTrigger taskLaunchTopbarXpTrigger"
+                    type="button"
+                    aria-label="Open account settings"
+                    onClick={handleOpenMobileAccount}
+                  >
+                    <span className="taskLaunchTopbarXpAvatarWrap" aria-hidden="true">
+                      {currentUserAvatarSrc ? (
+                        <AppImg className="taskLaunchTopbarXpAvatarImg" src={currentUserAvatarSrc} alt="" referrerPolicy={/^https?:\/\//i.test(currentUserAvatarSrc) ? "no-referrer" : undefined} />
+                      ) : (
+                        <span className="taskLaunchTopbarXpAvatarFallback">{currentUserAvatarInitials}</span>
+                      )}
+                    </span>
+                  </button>
                   <span className="taskLaunchTopbarXpMeta">
                     <span className="taskLaunchTopbarXpUserName" title={currentUserLabel}>
                       {currentUserLabel}
                     </span>
-                    <span className="taskLaunchTopbarXpStatsRow">
+                    <button
+                      className="taskLaunchTopbarXpStatsTrigger taskLaunchTopbarXpTrigger"
+                      type="button"
+                      aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                      onClick={() => setShowRankLadderModal(true)}
+                    >
                       <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
                         <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
                       </span>
@@ -177,9 +188,9 @@ export default function TaskTimerAppFrame({
                         {formatXpNumber(rewardsHeader.totalXp)} XP
                         {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
                       </strong>
-                    </span>
+                    </button>
                   </span>
-                </button>
+                </div>
               </div>
             </section>
         </div>
@@ -321,9 +332,8 @@ export default function TaskTimerAppFrame({
       {isXpAwardSpotlightActive ? <div className="xpAwardSpotlightLayer" aria-hidden="true" /> : null}
       {xpAwardFx?.visible ? (
         <div className="xpAwardFxLayer" aria-hidden="true">
-          {xpAwardFx.beamStyle ? <span className="xpAwardFxBeam" style={xpAwardFx.beamStyle} /> : null}
-          {xpAwardFx.deltaStyle && xpAwardFx.deltaText ? (
-            <span className="xpAwardFxDelta" style={xpAwardFx.deltaStyle}>
+          {xpAwardFx.payloadStyle && xpAwardFx.deltaText ? (
+            <span className="xpAwardFxPayload" style={xpAwardFx.payloadStyle}>
               {xpAwardFx.deltaText}
             </span>
           ) : null}

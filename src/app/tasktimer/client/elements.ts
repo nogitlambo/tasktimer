@@ -372,6 +372,10 @@ const els = {
   timeGoalCompleteNoteText: documentRef.getElementById("timeGoalCompleteNoteText"),
   timeGoalCompleteNoteInput: documentRef.getElementById("timeGoalCompleteNoteInput") as HTMLTextAreaElement | null,
   timeGoalCompleteNoteDoneBtn: documentRef.getElementById("timeGoalCompleteNoteDoneBtn") as HTMLButtonElement | null,
+  rankPromotionOverlay: documentRef.getElementById("rankPromotionOverlay"),
+  rankPromotionConfettiStage: documentRef.getElementById("rankPromotionConfettiStage") as HTMLElement | null,
+  rankPromotionText: documentRef.getElementById("rankPromotionText"),
+  rankPromotionCloseBtn: documentRef.getElementById("rankPromotionCloseBtn") as HTMLButtonElement | null,
 
   confirmChkRow2: documentRef.getElementById("confirmChkRow2"),
   confirmChkLabel2: documentRef.getElementById("confirmChkLabel2"),

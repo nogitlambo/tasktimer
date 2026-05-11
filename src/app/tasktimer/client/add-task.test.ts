@@ -8,6 +8,11 @@ function createHarness(initialValue: string) {
   const documentStub = {};
   vi.stubGlobal("document", documentStub);
   let addTaskMilestones: Array<{ hours: number; description: string }> = [];
+  const addTaskName = {
+    value: "New Task",
+    classList: { remove: vi.fn(), toggle: vi.fn() },
+    focus: vi.fn(),
+  } as unknown as HTMLInputElement;
   const addTaskDurationValueInput = {
     value: initialValue,
     classList: { remove: vi.fn(), toggle: vi.fn() },
@@ -29,11 +34,11 @@ function createHarness(initialValue: string) {
     els: {
       addTaskDurationValueInput,
       addTaskError: null,
-      addTaskName: null,
+      addTaskName,
       addTaskMsArea: null,
       addTaskMsList: null,
       addTaskCancelBtn: null,
-      addTaskForm: null,
+      addTaskForm: {} as HTMLFormElement,
       addTaskTypeRecurringBtn: null,
       addTaskTypeOnceOffBtn: null,
       addTaskOnceOffDaySelect: null,
@@ -72,7 +77,24 @@ function createHarness(initialValue: string) {
       deriveCheckpointAlertEnabledState: vi.fn(() => ({ soundEnabled: false, toastEnabled: false })),
       hasNonPositiveCheckpoint: vi.fn(() => false),
       hasCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
-      makeTask: vi.fn(),
+      makeTask: vi.fn((name: string, order: number) => ({
+        id: `task-${order}`,
+        name,
+        order,
+        accumulatedMs: 0,
+        running: false,
+        startMs: null,
+        collapsed: false,
+        milestonesEnabled: false,
+        milestoneTimeUnit: "hour",
+        milestones: [],
+        hasStarted: false,
+        timeGoalEnabled: false,
+        timeGoalValue: 0,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 0,
+      })),
     },
     on,
     getAddTaskType: () => "recurring",
@@ -117,15 +139,21 @@ function createHarness(initialValue: string) {
     getSuppressAddTaskNameFocusOpen: () => false,
     getCurrentAppPage: () => "tasks",
     jumpToTaskAndHighlight: vi.fn(),
-  } as Parameters<typeof createTaskTimerAddTask>[0];
+  } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
   const api = createTaskTimerAddTask(ctx);
   api.registerAddTaskEvents();
+
+  const submitHandler = () =>
+    on.mock.calls.find(([target, type]) => target === ctx.els.addTaskForm && type === "submit")?.[2] as
+      | ((event?: Event) => void)
+      | undefined;
 
   return {
     addTaskDurationValueInput,
     addTaskMsToggle,
     ctx,
+    submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
     toggleCheckpoints: () => handlers.get(addTaskMsToggle)?.get("change")?.(),
@@ -167,5 +195,27 @@ describe("createTaskTimerAddTask", () => {
 
     expect(harness.ctx.setAddTaskMilestonesEnabledState).toHaveBeenCalledWith(true);
     expect(harness.ctx.setAddTaskMilestonesState).toHaveBeenCalledWith([{ hours: 0, description: "" }]);
+  });
+
+  it("re-renders the task list immediately after a task is created", () => {
+    const harness = createHarness("1");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = harness.ctx.setTasks as any;
+    const renderMock = harness.ctx.render as any;
+    const saveMock = harness.ctx.save as any;
+
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "task-1",
+        name: "New Task",
+      }),
+    ]);
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    expect(saveMock).toHaveBeenCalledTimes(1);
+    expect(renderMock.mock.invocationCallOrder[0]).toBeGreaterThan(setTasksMock.mock.invocationCallOrder[0]);
+    expect(saveMock.mock.invocationCallOrder[0]).toBeGreaterThan(renderMock.mock.invocationCallOrder[0]);
+    expect(harness.ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("task-1");
   });
 });

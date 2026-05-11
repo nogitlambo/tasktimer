@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import AppImg from "@/components/AppImg";
@@ -19,6 +19,7 @@ import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
 import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
+import RankPromotionOverlay from "./components/RankPromotionOverlay";
 import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
@@ -52,6 +53,8 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAward,
+  getXpAwardCountRange,
+  getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
   type PendingXpAward,
   XP_AWARD_COUNT_DURATION_MS,
@@ -59,6 +62,13 @@ import {
 } from "./client/xp-award-animation";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
+import {
+  getRankPromotion,
+  hasBlockingPromotionOverlay,
+  startRankPromotionCelebration,
+  stopRankPromotionCelebration,
+  type RankPromotion,
+} from "./client/rank-promotion";
 import "./tasktimer.css";
 
 type TaskTimerMainAppClientProps = {
@@ -154,22 +164,16 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function buildBeamStyle(sourceRect: PendingXpAward["sourceRect"], targetRect: DOMRect): CSSProperties | null {
-  if (!sourceRect) return null;
-  const sourceX = sourceRect.left + sourceRect.width / 2;
-  const sourceY = sourceRect.top + sourceRect.height / 2;
+function buildXpPayloadStyle(sourceRect: PendingXpAward["sourceRect"], targetRect: DOMRect): CSSProperties | null {
+  const sourceX = sourceRect ? sourceRect.left + sourceRect.width / 2 : targetRect.left + targetRect.width / 2;
+  const sourceY = sourceRect ? sourceRect.top + sourceRect.height / 2 : targetRect.top + targetRect.height / 2;
   const targetX = targetRect.left + targetRect.width / 2;
   const targetY = targetRect.top + targetRect.height / 2;
-  const deltaX = targetX - sourceX;
-  const deltaY = targetY - sourceY;
-  const length = Math.hypot(deltaX, deltaY);
-  if (!(length > 0)) return null;
-  const angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
   return {
     left: `${sourceX}px`,
     top: `${sourceY}px`,
-    width: `${length}px`,
-    transform: `rotate(${angle}deg)`,
+    ["--xp-award-dx" as keyof CSSProperties]: `${targetX - sourceX}px`,
+    ["--xp-award-dy" as keyof CSSProperties]: `${targetY - sourceY}px`,
   };
 }
 
@@ -187,21 +191,34 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
   );
 }
 
+function stopXpIncreaseAudio(audio: HTMLAudioElement | null) {
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch {
+    // Ignore audio stop failures.
+  }
+}
+
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!getFirebaseAuthClient()?.currentUser);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [rewardProgressHydrated, setRewardProgressHydrated] = useState(false);
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
   const [xpAwardFx, setXpAwardFx] = useState<{
     visible: boolean;
-    beamStyle: CSSProperties | null;
-    deltaStyle: CSSProperties | null;
+    payloadStyle: CSSProperties | null;
     deltaText: string | null;
-  }>({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+  }>({ visible: false, payloadStyle: null, deltaText: null });
   const [xpAnimationState, setXpAnimationState] = useState(() => createXpAwardAnimationState());
   const [isXpCountAnimating, setIsXpCountAnimating] = useState(false);
   const [isXpAwardSpotlightActive, setIsXpAwardSpotlightActive] = useState(false);
+  const [pendingRankPromotion, setPendingRankPromotion] = useState<RankPromotion | null>(null);
+  const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
+  const [promotionOverlayRetrySeq, setPromotionOverlayRetrySeq] = useState(0);
   const [dismissedHighlightParam, setDismissedHighlightParam] = useState<string | null>(null);
   const [leaderboardState, setLeaderboardState] = useState<LeaderboardLoadState>("error");
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
@@ -214,6 +231,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationFrameRef = useRef<number | null>(null);
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
+  const xpCountAnimationStartedRef = useRef(false);
+  const xpIncreaseAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastObservedRankIdRef = useRef<string | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -274,8 +294,52 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+      setRewardProgressHydrated(true);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!rewardProgressHydrated) return;
+    const nextRankId = String(rewardProgress.currentRankId || "").trim();
+    const previousRankId = lastObservedRankIdRef.current;
+    if (!previousRankId) {
+      lastObservedRankIdRef.current = nextRankId;
+      return;
+    }
+    const promotion = getRankPromotion(previousRankId, nextRankId);
+    lastObservedRankIdRef.current = nextRankId;
+    if (promotion) setPendingRankPromotion(promotion);
+  }, [rewardProgress.currentRankId, rewardProgressHydrated]);
+
+  useEffect(() => {
+    if (!pendingRankPromotion || activeRankPromotion || typeof document === "undefined") return;
+    if (hasBlockingPromotionOverlay(document)) return;
+    const openTimer = window.setTimeout(() => {
+      setActiveRankPromotion(pendingRankPromotion);
+      setPendingRankPromotion(null);
+    }, 0);
+    return () => window.clearTimeout(openTimer);
+  }, [activeRankPromotion, pendingRankPromotion, promotionOverlayRetrySeq]);
+
+  useEffect(() => {
+    if (!activeRankPromotion || typeof document === "undefined") return;
+    startRankPromotionCelebration(document);
+    return () => {
+      stopRankPromotionCelebration(document);
+    };
+  }, [activeRankPromotion]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const audio = new Audio("/increase.wav");
+    audio.preload = "auto";
+    xpIncreaseAudioRef.current = audio;
+    return () => {
+      const currentAudio = xpIncreaseAudioRef.current;
+      xpIncreaseAudioRef.current = null;
+      stopXpIncreaseAudio(currentAudio);
+    };
   }, []);
 
   useEffect(() => {
@@ -289,6 +353,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const overlayId = String((event as CustomEvent<{ overlayId?: string }>).detail?.overlayId || "").trim();
       if (!overlayId) return;
       setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, overlayId));
+      setPromotionOverlayRetrySeq((current) => current + 1);
     };
     window.addEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
     window.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
@@ -306,47 +371,45 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+      xpCountAnimationStartedRef.current = false;
+      stopXpIncreaseAudio(xpIncreaseAudioRef.current);
       return;
     }
 
     if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+    stopXpIncreaseAudio(xpIncreaseAudioRef.current);
+    const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
     let targetRect: DOMRect | null = null;
-    let beamStyle: CSSProperties | null = null;
-    let deltaStyle: CSSProperties | null = null;
+    let payloadStyle: CSSProperties | null = null;
 
     try {
       targetRect = typeof document !== "undefined" ? getVisibleXpTargetRectFromDocument(document) : null;
-      beamStyle = !reducedMotion && targetRect ? buildBeamStyle(activeAward.sourceRect, targetRect) : null;
-      deltaStyle = targetRect
-        ? {
-            left: `${targetRect.left + targetRect.width / 2}px`,
-            top: `${targetRect.top + targetRect.height / 2}px`,
-          }
-        : null;
+      payloadStyle = targetRect ? buildXpPayloadStyle(!reducedMotion ? activeAward.sourceRect : null, targetRect) : null;
     } catch {
       targetRect = null;
-      beamStyle = null;
-      deltaStyle = null;
+      payloadStyle = null;
     }
 
+    const { startXp, endXp } = getXpAwardCountRange(activeAward, {
+      wasIdle,
+      displayedXp: displayedXpRef.current,
+    });
+    displayedXpRef.current = startXp;
+
     window.requestAnimationFrame(() => {
+      setDisplayedXp(startXp);
       setIsXpCountAnimating(false);
       setIsXpAwardSpotlightActive(true);
       setXpAwardFx({
         visible: true,
-        beamStyle,
-        deltaStyle,
+        payloadStyle,
         deltaText: activeAward.awardedXp > 0 ? `+${activeAward.awardedXp} XP` : null,
       });
     });
-
-    const startXp = wasIdle ? activeAward.fromXp : displayedXpRef.current;
-    const endXp = activeAward.toXp;
-    displayedXpRef.current = startXp;
 
     if (startXp === endXp) {
       window.requestAnimationFrame(() => {
@@ -354,7 +417,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
           setIsXpCountAnimating(false);
           setIsXpAwardSpotlightActive(false);
-          setXpAwardFx({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+          setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
           setXpAnimationState((current) => clearActiveXpAward(current));
         }, reducedMotion ? 160 : 360);
       });
@@ -362,7 +425,20 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }
 
     const startCountAnimation = () => {
+      xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
+      const audio = xpIncreaseAudioRef.current;
+      if (audio) {
+        try {
+          audio.currentTime = 0;
+          const playback = audio.play();
+          if (playback && typeof playback.catch === "function") {
+            playback.catch(() => {});
+          }
+        } catch {
+          // Ignore playback failures from browser autoplay rules.
+        }
+      }
       const durationMs = XP_AWARD_COUNT_DURATION_MS;
       const startedAt = performance.now();
 
@@ -373,12 +449,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         displayedXpRef.current = nextXp;
         setDisplayedXp(nextXp);
         if (progress >= 1) {
+          xpCountAnimationStartedRef.current = false;
+          stopXpIncreaseAudio(xpIncreaseAudioRef.current);
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
           setIsXpCountAnimating(false);
           xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
             setIsXpAwardSpotlightActive(false);
-            setXpAwardFx({ visible: false, beamStyle: null, deltaStyle: null, deltaText: null });
+            setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
             setXpAnimationState((current) => clearActiveXpAward(current));
           }, reducedMotion ? 180 : 420);
           return;
@@ -389,14 +467,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
     };
 
+    const countStartDelayMs = getXpAwardCountStartDelayMs({
+      wasIdle,
+      countAnimationStarted,
+      fxDurationMs: XP_AWARD_FX_DURATION_MS,
+    });
     xpAnimationStartTimerRef.current = window.setTimeout(() => {
       xpAnimationStartTimerRef.current = null;
       startCountAnimation();
-    }, XP_AWARD_FX_DURATION_MS);
+    }, countStartDelayMs);
 
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+      xpCountAnimationStartedRef.current = countAnimationStarted;
+      stopXpIncreaseAudio(xpIncreaseAudioRef.current);
     };
   }, [xpAnimationState.active]);
 
@@ -576,13 +661,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
-  const handleTaskOrderMenuSummaryClick = useCallback((event: MouseEvent<HTMLElement>) => {
-    event.preventDefault();
-    const menu = event.currentTarget.closest("#taskOrderByMenu") as HTMLDetailsElement | null;
-    if (!menu) return;
-    menu.open = !menu.open;
-  }, []);
-
   const mobileToolbar: ReactNode = useMemo(() => {
     if (!isMobileViewport) return null;
     return (
@@ -606,12 +684,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               <span className="taskScreenTabLabel">Schedule</span>
             </button>
           </div>
-          <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="New Task" title="New Task" type="button">
-            <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+          <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="Add Task" title="Add Task" type="button">
+            <span className="openAddTaskBtnContent">
+              <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+              <span className="taskScreenHeaderBtnText">Add Task</span>
+            </span>
           </button>
           <div className="tasksModeControlGroup" aria-label="Task ordering controls">
             <details className="tasksModeMenu" id="taskOrderByMenu">
-              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks" onClick={handleTaskOrderMenuSummaryClick}>
+              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
                 <span id="taskOrderByValue" className="sr-only">Custom</span>
                 <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M4 6.5h16" />
@@ -630,7 +711,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         </div>
       </div>
     );
-  }, [handleTaskOrderMenuSummaryClick, isMobileViewport]);
+  }, [isMobileViewport]);
 
   return (
     <>
@@ -689,15 +770,18 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <button
                   className="iconBtn taskScreenPill taskScreenHeaderBtn"
                   id="openAddTaskBtn"
-                  aria-label="New Task"
-                  title="New Task"
+                  aria-label="Add Task"
+                  title="Add Task"
                   type="button"
                 >
-                  <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+                  <span className="openAddTaskBtnContent">
+                    <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+                    <span className="taskScreenHeaderBtnText">Add Task</span>
+                  </span>
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
-                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks" onClick={handleTaskOrderMenuSummaryClick}>
+                    <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
                       <span id="taskOrderByValue" className="sr-only">Custom</span>
                       <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M4 6.5h16" />
@@ -1122,6 +1206,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       <HistoryAnalysisOverlay />
       <HistoryEntryNoteOverlay />
       <FriendsOverlays />
+      {activeRankPromotion ? (
+        <RankPromotionOverlay
+          rankLabel={activeRankPromotion.rankLabel}
+          onClose={() => {
+            stopRankPromotionCelebration(document);
+            setActiveRankPromotion(null);
+            setPromotionOverlayRetrySeq((current) => current + 1);
+          }}
+        />
+      ) : null}
     </>
   );
 }

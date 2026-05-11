@@ -38,9 +38,18 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
   const addTaskNamePlaceholder = "Enter a description for this task";
+  const ADD_TASK_OVERLAY_CLOSE_MS = 480;
   let selectedColor: string | null = null;
   let selectedColorTouched = false;
   let addTaskPlannedStartTouched = false;
+  let addTaskOverlayHideTimer: number | null = null;
+
+  function clearAddTaskOverlayHideTimer() {
+    if (addTaskOverlayHideTimer != null && typeof window !== "undefined") {
+      window.clearTimeout(addTaskOverlayHideTimer);
+    }
+    addTaskOverlayHideTimer = null;
+  }
 
   function canUseAdvancedTaskConfig() {
     return true;
@@ -655,13 +664,17 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function openAddTaskModal() {
+    const overlay = els.addTaskOverlay as HTMLElement | null;
+    if (!overlay) return;
+    clearAddTaskOverlayHideTimer();
     resetAddTaskState();
     renderAddTaskNameMenu("");
     setAddTaskNameMenuOpen(false);
     ctx.setSuppressAddTaskNameFocusOpenState(true);
-    ctx.openOverlay(els.addTaskOverlay as HTMLElement | null);
-    els.addTaskOverlay?.classList.remove("isClosing");
-    els.addTaskOverlay?.classList.add("isOpen");
+    ctx.openOverlay(overlay);
+    overlay.classList.remove("isOpen", "isClosing");
+    void overlay.offsetHeight;
+    overlay.classList.add("isOpen");
     setTimeout(() => {
       try {
         els.addTaskName?.focus();
@@ -671,10 +684,18 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function closeAddTaskModal() {
-    els.addTaskOverlay?.classList.remove("isOpen", "isClosing");
-    ctx.closeOverlay(els.addTaskOverlay as HTMLElement | null);
-    resetAddTaskState();
-    setAddTaskNameMenuOpen(false);
+    const overlay = els.addTaskOverlay as HTMLElement | null;
+    if (!overlay) return;
+    clearAddTaskOverlayHideTimer();
+    overlay.classList.remove("isOpen");
+    overlay.classList.add("isClosing");
+    addTaskOverlayHideTimer = window.setTimeout(() => {
+      overlay.classList.remove("isClosing");
+      ctx.closeOverlay(overlay);
+      resetAddTaskState();
+      setAddTaskNameMenuOpen(false);
+      addTaskOverlayHideTimer = null;
+    }, ADD_TASK_OVERLAY_CLOSE_MS);
   }
 
   function createTask() {
@@ -745,9 +766,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }
 
     ctx.setTasks([...tasks, newTask]);
+    ctx.render();
     closeAddTaskModal();
     ctx.save();
-    ctx.render();
     void trackEvent("task_created", {
       source_page: ctx.getCurrentAppPage(),
       has_time_goal: newTask.timeGoalEnabled && newTask.timeGoalMinutes > 0,

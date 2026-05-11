@@ -7,6 +7,10 @@ type ConfettiPiece = {
   style: CSSProperties;
 };
 
+function formatCssNumber(value: number, digits = 3): string {
+  return Number(value.toFixed(digits)).toString();
+}
+
 function buildConfettiPieces(): ConfettiPiece[] {
   const colors = ["#ff3b72", "#ffd21e", "#1e90ff", "#00bcd4", "#8e44ad", "#ff8c00", "#22c55e", "#e11d48", "#14b8a6"];
   let seed = 21;
@@ -25,14 +29,14 @@ function buildConfettiPieces(): ConfettiPiece[] {
     return {
       className,
       style: {
-        "--x": `${Math.cos(angle) * dist}px`,
-        "--y": `${Math.sin(angle) * dist + gravity}px`,
-        "--w": `${width}px`,
-        "--h": `${height}px`,
+        "--x": `${formatCssNumber(Math.cos(angle) * dist)}px`,
+        "--y": `${formatCssNumber(Math.sin(angle) * dist + gravity)}px`,
+        "--w": `${formatCssNumber(width)}px`,
+        "--h": `${formatCssNumber(height)}px`,
         "--c": colors[Math.floor(rand() * colors.length)],
         "--rot": `${Math.floor(rand() * 360)}deg`,
         "--spin": `${Math.floor(rand() * 720 - 360)}deg`,
-        "--d": `${rand() * 0.22}s`,
+        "--d": `${formatCssNumber(rand() * 0.22, 4)}s`,
       } as CSSProperties,
     };
   });

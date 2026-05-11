@@ -792,6 +792,33 @@ body[data-theme="purple"] .rankLadderItemFlag{
     transform .26s cubic-bezier(.16,.84,.24,1);
 }
 
+#editOverlay .modal{
+  transform: translateY(18px);
+}
+
+#addTaskOverlay .modal{
+  transform: translateX(-72px);
+  transition-duration: .56s, .56s;
+}
+
+#addTaskOverlay .editTaskModalFrame,
+#addTaskOverlay .addTaskFooterBtns,
+#addTaskOverlay .editTaskColorPopover{
+  opacity: 0;
+  transition:
+    opacity .18s ease,
+    transform .18s ease;
+}
+
+#addTaskOverlay .editTaskModalFrame,
+#addTaskOverlay .addTaskFooterBtns{
+  transform: translateX(-10px);
+}
+
+#addTaskOverlay .editTaskColorPopover{
+  transform: translateY(4px);
+}
+
 #editOverlay.isMorphingFromTask .modal{
   opacity: .18;
   transform:
@@ -805,10 +832,44 @@ body[data-theme="purple"] .rankLadderItemFlag{
   transform: translate(0, 0) scale(1, 1);
 }
 
+#addTaskOverlay.isOpen .editTaskModalFrame,
+#addTaskOverlay.isOpen .addTaskFooterBtns,
+#addTaskOverlay.isOpen .editTaskColorPopover{
+  opacity: 1;
+  transform: none;
+  transition-delay: .28s;
+}
+
 #editOverlay.isClosing .modal,
 #addTaskOverlay.isClosing .modal{
   opacity: 0;
+}
+
+#editOverlay.isClosing .modal{
   transform: translateY(18px);
+}
+
+#addTaskOverlay.isClosing .modal{
+  transform: translateX(-72px);
+  transition-duration: .3s, .3s;
+  transition-delay: .18s, .18s;
+}
+
+#addTaskOverlay.isClosing .editTaskModalFrame,
+#addTaskOverlay.isClosing .addTaskFooterBtns,
+#addTaskOverlay.isClosing .editTaskColorPopover{
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+#addTaskOverlay.isClosing .editTaskModalFrame,
+#addTaskOverlay.isClosing .addTaskFooterBtns{
+  transform: translateX(-10px);
+}
+
+#addTaskOverlay.isClosing .editTaskColorPopover{
+  transform: translateY(4px);
+  transition-delay: 0s;
 }
 
 #editOverlay.isMorphingFromTask.isClosing .modal{
@@ -835,6 +896,20 @@ body[data-theme="purple"] .rankLadderItemFlag{
   #addTaskOverlay.isOpen .modal,
   #addTaskOverlay.isClosing .modal{
     transform: none;
+  }
+
+  #addTaskOverlay .editTaskModalFrame,
+  #addTaskOverlay .addTaskFooterBtns,
+  #addTaskOverlay .editTaskColorPopover,
+  #addTaskOverlay.isOpen .editTaskModalFrame,
+  #addTaskOverlay.isOpen .addTaskFooterBtns,
+  #addTaskOverlay.isOpen .editTaskColorPopover,
+  #addTaskOverlay.isClosing .editTaskModalFrame,
+  #addTaskOverlay.isClosing .addTaskFooterBtns,
+  #addTaskOverlay.isClosing .editTaskColorPopover{
+    opacity: 1;
+    transform: none;
+    transition-delay: 0s;
   }
 }
 
@@ -3395,6 +3470,26 @@ body[data-theme="purple"] .rewardsInfoText{
   justify-content: center;
 }
 
+#addTaskOverlay #addTaskCancelBtn{
+  border-color: rgba(165, 172, 182, .66);
+}
+
+#addTaskOverlay #addTaskCancelBtn:hover:not(:disabled),
+#addTaskOverlay #addTaskCancelBtn:focus-visible:not(:disabled){
+  border-color: rgba(194, 201, 211, .86);
+}
+
+#addTaskOverlay #addTaskConfirmBtn{
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+}
+
+#addTaskOverlay #addTaskConfirmBtn:hover:not(:disabled),
+#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled){
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+}
+
 #taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
 #taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible,
 #historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:hover,
@@ -4400,6 +4495,132 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   }
 }
 
+#rankPromotionOverlay .modal{
+  position: relative;
+  z-index: 2;
+  background: #0d0f13;
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(53,232,255,.28);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.08);
+}
+
+#rankPromotionOverlay .timeGoalCompleteConfettiStage{
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#rankPromotionOverlay .timeGoalCompleteConfettiStage::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd84c, transparent 70%);
+  opacity: 0;
+  transform: translate(-50%,-50%) scale(.1);
+}
+
+#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying{
+  opacity: 1;
+}
+
+#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying::before{
+  animation: timeGoalConfettiPulse 2.4s ease-out 5 both;
+}
+
+#rankPromotionOverlay .timeGoalConfettiPiece{
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: var(--w);
+  height: var(--h);
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.2) rotate(var(--rot));
+}
+
+#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
+  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 5 both;
+  animation-delay: var(--d);
+}
+
+#rankPromotionOverlay .timeGoalConfettiDot{
+  border-radius: 999px;
+}
+
+#rankPromotionOverlay .timeGoalConfettiStar{
+  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+
+#rankPromotionOverlay h2{
+  margin: 0 0 8px;
+  color: #c9ff24;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#rankPromotionOverlay #rankPromotionText{
+  margin: 0;
+  color: rgba(245,248,244,.94);
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+#rankPromotionOverlay .confirmBtns{
+  justify-content: center;
+}
+
+#rankPromotionOverlay #rankPromotionCloseBtn{
+  min-width: 132px;
+  justify-content: center;
+}
+
+body[data-theme="purple"] #rankPromotionOverlay .modal{
+  border-color: rgba(233,134,245,.34);
+  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,190,252,.08);
+}
+
+body[data-theme="purple"] #rankPromotionOverlay h2{
+  color: #f4a7ff;
+}
+
+body[data-theme="purple"] #rankPromotionOverlay #rankPromotionText{
+  color: rgba(250,240,255,.96);
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .modal{
+  border-color: rgba(214,214,214,.34);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(18,20,24,.96);
+}
+
+body[data-theme="lime"] #rankPromotionOverlay h2{
+  color: #f3ff7a;
+}
+
+body[data-theme="lime"] #rankPromotionOverlay #rankPromotionText{
+  color: rgba(243,255,198,.92);
+}
+
+@media (prefers-reduced-motion: reduce){
+  #rankPromotionOverlay .timeGoalCompleteConfettiStage{
+    display: none;
+  }
+}
+
 #timeGoalCompleteOverlay h2{
   margin: 0 0 8px;
   font-size: 18px;
@@ -5279,9 +5500,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #cancelEditBtn,
 #editOverlay #cancelEditBtn:hover,
 #editOverlay #cancelEditBtn:focus-visible{
-  border-color: rgba(180,188,198,.34) !important;
+  font-family: var(--font-orbitron) !important;
+  border-color: rgba(165, 172, 182, .66) !important;
   color: rgba(245,248,244,.88) !important;
   background: transparent !important;
+}
+
+#editOverlay #cancelEditBtn:hover,
+#editOverlay #cancelEditBtn:focus-visible{
+  border-color: rgba(194, 201, 211, .86) !important;
 }
 
 #taskManualEntryOverlay #taskManualEntryCancelBtn,
@@ -5295,10 +5522,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #editOverlay #saveEditBtn,
 #editOverlay #saveEditBtn:hover,
-#editOverlay #saveEditBtn:focus-visible{
-  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
-  color: #02060d !important;
-  border-color: rgba(201,255,36,.86) !important;
+#editOverlay #saveEditBtn:focus-visible,
+body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
+  font-family: var(--font-orbitron) !important;
+  color: #c9ff24 !important;
+  border-color: #c9ff24 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.22),
     0 0 16px rgba(201,255,36,.2) !important;
@@ -5653,34 +5881,22 @@ body[data-theme="purple"] .confirmAwardText {
   z-index: 1200;
 }
 
-.xpAwardFxBeam {
-  --xp-beam-color: rgba(53, 232, 255, 0.92);
-  --xp-beam-glow: rgba(53, 232, 255, 0.38);
+.xpAwardFxPayload {
+  --xp-payload-color: #c9ff24;
+  --xp-payload-border: rgba(201, 255, 36, 0.92);
+  --xp-payload-glow: rgba(53, 232, 255, 0.28);
   position: fixed;
-  height: 4px;
-  margin-top: -2px;
-  transform-origin: 0 50%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), var(--xp-beam-color) 30%, rgba(255, 255, 255, 0.9) 100%);
-  box-shadow: 0 0 12px var(--xp-beam-glow);
-  animation: xpAwardBeamPulse 1400ms cubic-bezier(.18,.72,.18,1) forwards;
-}
-
-body[data-theme="purple"] .xpAwardFxBeam {
-  --xp-beam-color: rgba(240, 110, 224, 0.95);
-  --xp-beam-glow: rgba(240, 110, 224, 0.34);
-}
-
-.xpAwardFxDelta {
-  --xp-delta-color: #c9ff24;
-  position: fixed;
-  transform: translate3d(-50%, -50%, 0) scale(0.94);
+  left: 0;
+  top: 0;
+  transform: translate3d(-50%, -50%, 0);
   padding: 4px 10px;
-  border: 1px solid #c9ff24;
+  border: 1px solid var(--xp-payload-border);
   border-radius: 0;
-  background: rgba(6, 18, 24, 0.9);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-  color: var(--xp-delta-color);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+    rgba(6, 18, 24, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 0 18px var(--xp-payload-glow);
+  color: var(--xp-payload-color);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -5688,62 +5904,37 @@ body[data-theme="purple"] .xpAwardFxBeam {
   transform-origin: 50% 50%;
   backface-visibility: hidden;
   will-change: transform, opacity;
-  animation: xpAwardDeltaStamp 1600ms cubic-bezier(.2,.7,.2,1) forwards;
+  animation: xpAwardPayloadLaunch 1600ms cubic-bezier(.2,.72,.18,1) forwards;
 }
 
-body[data-theme="purple"] .xpAwardFxDelta {
-  --xp-delta-color: #c9ff24;
-  border-color: #c9ff24;
-  background: rgba(20, 11, 30, 0.92);
+body[data-theme="purple"] .xpAwardFxPayload {
+  --xp-payload-color: #c9ff24;
+  --xp-payload-border: rgba(244, 167, 255, 0.94);
+  --xp-payload-glow: rgba(240, 110, 224, 0.26);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+    rgba(20, 11, 30, 0.94);
 }
 
-@keyframes xpAwardBeamPulse {
+@keyframes xpAwardPayloadLaunch {
   0% {
     opacity: 0;
-    filter: blur(6px);
+    transform: translate3d(-50%, -50%, 0) scale(0.86);
+    filter: blur(4px);
   }
-  14% {
+  12% {
     opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
     filter: blur(0);
   }
-  62% {
-    opacity: 0.94;
-    filter: blur(.2px);
-  }
   100% {
     opacity: 0;
+    transform: translate3d(
+      calc(-50% + var(--xp-award-dx, 0px)),
+      calc(-50% + var(--xp-award-dy, 0px)),
+      0
+    ) scale(0.28);
     filter: blur(2px);
-  }
-}
-
-@keyframes xpAwardDeltaStamp {
-  0% {
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(0.94);
-  }
-  18% {
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(0.94);
-  }
-  34% {
-    opacity: 0.9;
-    transform: translate3d(-50%, -50%, 0) scale(1);
-  }
-  42% {
-    opacity: 1;
-    transform: translate3d(-50%, -50%, 0) scale(1.04);
-  }
-  58% {
-    opacity: 0.96;
-    transform: translate3d(-50%, -50%, 0) scale(1.01);
-  }
-  76% {
-    opacity: 0.72;
-    transform: translate3d(-50%, -50%, 0) scale(0.94);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(0.82);
   }
 }
 
