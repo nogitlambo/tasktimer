@@ -541,10 +541,10 @@ canvas {
 .landingV2 .landingV2HeroTitle {
   margin: 0;
   max-width: 10ch;
-  font-size: clamp(3.35rem, 8vw, 7rem);
+  font-size: clamp(2.5125rem, 6vw, 5.25rem);
   font-weight: 300;
   line-height: 0.92;
-  letter-spacing: -0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--landing-text);
 }
@@ -1698,7 +1698,7 @@ canvas {
   }
 
   .landingV2 .landingV2HeroTitle {
-    font-size: clamp(2.6rem, 10vw, 4.4rem);
+    font-size: clamp(1.95rem, 7.5vw, 3.3rem);
   }
 
   .landingV2 .landingV2HeroMain {

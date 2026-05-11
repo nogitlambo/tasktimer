@@ -120,11 +120,11 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               <span>Focus-aware planning and task tracking</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Task tracking made easy</h1>
+            <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt spiral</h1>
 
             <p className="landingV2HeroCopy">
-              Move from scattered task capture to a calmer daily workflow with smarter defaults, better timing, and
-              less manual upkeep.
+              A smarter productivity app that helps neurodivergent minds overcome task paralysis, build momentum, and
+              turn intention into meaningful action without exhausting productivity rules.
             </p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
