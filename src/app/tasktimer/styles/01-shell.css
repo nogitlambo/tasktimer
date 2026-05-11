@@ -1246,11 +1246,40 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+    padding-left: 0;
     transform: translateY(0);
     transition:
       opacity .24s ease,
       transform .28s cubic-bezier(.22,1,.36,1),
       visibility 0s linear 0s;
+  }
+
+  .taskLaunchMobileMenuHeader{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 24px;
+    text-align: center;
+  }
+
+  .taskLaunchMobileMenuHeaderIcon{
+    display: block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    object-fit: contain;
+  }
+
+  .taskLaunchMobileMenuHeaderText{
+    font-family: var(--font-orbitron);
+    font-size: 13.12px;
+    font-weight: 400;
+    letter-spacing: .16em;
+    line-height: normal;
+    color: rgba(245, 248, 244, .96);
+    text-transform: uppercase;
   }
 
   .taskLaunchMobileMenuList{

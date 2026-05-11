@@ -1080,6 +1080,11 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankRibbon{
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankRibbonLabel{
+  display: inline-block;
+  min-width: 20px;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankRibbonImg{
   width: 28px;

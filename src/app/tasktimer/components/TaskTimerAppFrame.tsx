@@ -216,6 +216,15 @@ export default function TaskTimerAppFrame({
           id="mobileSettingsMenu"
           aria-hidden={mobileMenuOpen ? "false" : "true"}
         >
+          <div className="taskLaunchMobileMenuHeader" aria-label="TaskLaunch">
+            <AppImg
+              className="taskLaunchMobileMenuHeaderIcon"
+              src="/logo/launch-icon-original-transparent.png"
+              alt=""
+              aria-hidden="true"
+            />
+            <span className="taskLaunchMobileMenuHeaderText">TASKLAUNCH</span>
+          </div>
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
             <a
               className="menuItem taskLaunchMobileMenuItem"

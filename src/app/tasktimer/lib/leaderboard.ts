@@ -62,6 +62,7 @@ export type LeaderboardScreenData = {
   currentUserEntry: LeaderboardProfile | null;
   currentUserRank: number | null;
   currentUserGapToNextXp: number | null;
+  currentUserRivalRank: number | null;
   currentUserWeeklyEntry: LeaderboardProfile | null;
   currentUserWeeklyRank: number | null;
 };
@@ -538,6 +539,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
+      currentUserRivalRank: null,
       currentUserWeeklyEntry: null,
       currentUserWeeklyRank: null,
     };
@@ -546,7 +548,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const ownIdentity = await loadOwnLeaderboardIdentity(currentUid).catch(() => null);
   const profiles = collection(db, "leaderboardProfiles");
   const [topSnap, risingSnap, weeklySnap, currentUserSnap] = await Promise.all([
-    getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(6))),
+    getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(10))),
     getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(3))),
     getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(10))),
     getDoc(doc(db, "leaderboardProfiles", currentUid)),
@@ -580,15 +582,18 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
+      currentUserRivalRank: null,
       currentUserWeeklyEntry: null,
       currentUserWeeklyRank: null,
     };
   }
 
-  const [higherXpSnap, aboveSnap, belowSnap, higherWeeklySnap] = await Promise.all([
+  const currentUserRankId = currentUserEntryWithIdentity.rewardCurrentRankId || getRankForXp(currentUserEntryWithIdentity.rewardTotalXp).id;
+  const [higherXpSnap, aboveSnap, rivalSnap, higherRivalSnap, higherWeeklySnap] = await Promise.all([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
-    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(2))),
-    getDocs(query(profiles, where("rewardTotalXp", "<", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "desc"), limit(2))),
+    getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),
+    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(10))),
+    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
 
@@ -604,12 +609,10 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     .filter((row): row is LeaderboardProfile => !!row)
     .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
     .filter((row) => row.uid !== currentUid);
-  const belowEntries = belowSnap.docs
+  const rivalEntries = rivalSnap.docs
     .map((row) => asLeaderboardProfile(row))
     .filter((row): row is LeaderboardProfile => !!row)
-    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
-    .filter((row) => row.uid !== currentUid);
-  const rivalEntries = [...aboveEntries, ...belowEntries].slice(0, 3);
+    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
   const currentUserGapToNextXp =
     aboveEntries.length > 0 ? Math.max(0, aboveEntries[0]!.rewardTotalXp - currentUserEntryWithIdentity.rewardTotalXp) : null;
 
@@ -621,6 +624,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     currentUserEntry: currentUserEntryWithIdentity,
     currentUserRank: higherXpSnap.size + 1,
     currentUserGapToNextXp,
+    currentUserRivalRank: higherRivalSnap.size + 1,
     currentUserWeeklyEntry: currentUserEntryWithIdentity,
     currentUserWeeklyRank: higherWeeklySnap.size + 1,
   };
