@@ -3,7 +3,13 @@
 import type { FirebaseError } from "firebase/app";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
-import { bootstrapFirebaseWebAppCheck, getFirebaseAppClient, getFirebaseAuthClient } from "@/lib/firebaseClient";
+import {
+  bootstrapFirebaseWebAppCheck,
+  getFirebaseAppClient,
+  getFirebaseAuthClient,
+  hasFirebaseAppCheckClientConfig,
+  isNativeOrFileRuntime,
+} from "@/lib/firebaseClient";
 import {
   normalizeTaskTimerPlan,
   readTaskTimerPlanFromStorage,
@@ -71,6 +77,21 @@ export async function syncCurrentUserPlanCache(uid?: string | null): Promise<Tas
   }
   const inFlight = inFlightPlanSyncByUid.get(effectiveUid);
   if (inFlight) return inFlight;
+  if (
+    process.env.NODE_ENV !== "production" &&
+    typeof window !== "undefined" &&
+    !isNativeOrFileRuntime() &&
+    !hasFirebaseAppCheckClientConfig()
+  ) {
+    const cachedPlan = readTaskTimerPlanFromStorage();
+    logFunctionsDiagnostic("Skipping syncCurrentUserPlan because local web App Check is not configured", {
+      region: FUNCTIONS_REGION,
+      uidPresent: Boolean(effectiveUid),
+      appCheckConfigured: false,
+    });
+    writeTaskTimerPlanToStorage(cachedPlan, { uid: effectiveUid || null });
+    return cachedPlan;
+  }
   await bootstrapFirebaseWebAppCheck();
   const app = getFirebaseAppClient();
   if (!app) {

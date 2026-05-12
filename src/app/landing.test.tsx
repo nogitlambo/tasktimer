@@ -6,7 +6,7 @@ describe("Landing", () => {
   it("renders the decorative hero artwork without removing the primary actions", () => {
     const html = renderToStaticMarkup(<Landing showTitlePhase={true} showActions={true} />);
 
-    expect(html).toContain('src="/landing/tasklaunch-hero-neuro-profile.png"');
+    expect(html).toContain('src="/landing/broken-dial-transparent.png"');
     expect(html).toContain('class="landingV2HeroVisual"');
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('alt=""');

@@ -132,7 +132,7 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows.slice(3).every((row) => row.isPlaceholder)).toBe(true);
   });
 
-  it("pins the current user as unranked when they are outside the weekly board with no weekly XP", () => {
+  it("pins the current user with their ladder rank when they are outside the weekly board with no weekly XP", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 240 }),
@@ -144,7 +144,7 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows[0]).toMatchObject({
       isCurrentUser: true,
-      rankLabel: "Unranked",
+      rankLabel: "#12",
       playerLabel: "You",
       isPlaceholder: false,
     });

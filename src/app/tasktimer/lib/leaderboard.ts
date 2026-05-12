@@ -441,8 +441,8 @@ function sortWeeklyEntries(entries: LeaderboardProfile[]): LeaderboardProfile[] 
   });
 }
 
-function formatWeeklyRankLabel(rank: number | null, profile: LeaderboardProfile): string {
-  if (!rank || rank < 1 || normalizeInt(profile.weeklyXpGain) <= 0) return "Unranked";
+function formatWeeklyRankLabel(rank: number | null): string {
+  if (!rank || rank < 1) return "Unranked";
   return `#${rank}`;
 }
 
@@ -488,7 +488,7 @@ export function buildWeeklyLeaderboardRows(input: {
     return {
       profile,
       rank,
-      rankLabel: formatWeeklyRankLabel(rank, profile),
+      rankLabel: formatWeeklyRankLabel(rank),
       playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
       isCurrentUser,
       isPlaceholder: false,
@@ -501,7 +501,7 @@ export function buildWeeklyLeaderboardRows(input: {
     rows.push({
       profile,
       rank,
-      rankLabel: formatWeeklyRankLabel(rank, profile),
+      rankLabel: formatWeeklyRankLabel(rank),
       playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
       isCurrentUser: false,
       isPlaceholder: true,
@@ -514,7 +514,7 @@ export function buildWeeklyLeaderboardRows(input: {
     {
       profile: input.currentUserEntry,
       rank: input.currentUserWeeklyRank,
-      rankLabel: formatWeeklyRankLabel(input.currentUserWeeklyRank, input.currentUserEntry),
+      rankLabel: formatWeeklyRankLabel(input.currentUserWeeklyRank),
       playerLabel: "You",
       isCurrentUser: true,
       isPlaceholder: false,

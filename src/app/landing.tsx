@@ -122,11 +122,7 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
 
             <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
 
-            <p className="landingV2HeroCopy">
-              TaskLaunch is a flexible productivity tool designed for the neurodivergent mind, forgiving inconsistency
-              instead of punishing it, helping you to re-focus quickly after difficult days, maintain momentum without
-              perfectionism, and grow sustainably over time.
-            </p>
+            <p className="landingV2HeroCopy">Flexible task management</p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
               <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
@@ -143,11 +139,11 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
 
           <div className="landingV2HeroVisual" aria-hidden="true">
             <AppImg
-              src="/landing/tasklaunch-hero-neuro-profile.png"
+              src="/landing/broken-dial-transparent.png"
               alt=""
               className="landingV2HeroImage"
-              width={900}
-              height={1100}
+              width={1280}
+              height={1280}
             />
           </div>
         </section>

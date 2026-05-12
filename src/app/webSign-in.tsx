@@ -92,7 +92,7 @@ export default function WebSignIn(props: WebSignInProps) {
           >
             <div className="relative">
               <p className="webSignInKicker text-center text-[12px] uppercase tracking-[0.22em]">
-                YOUR DAILY PRODUCTIVITY ENGINE
+                Flexible task management
               </p>
             </div>
 
