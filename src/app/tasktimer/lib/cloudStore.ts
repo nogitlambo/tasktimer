@@ -279,6 +279,12 @@ function tasksCollection(uid: string) {
   return collection(db, "users", uid, "tasks");
 }
 
+function userHistoryCollection(uid: string) {
+  const db = dbOrNull();
+  if (!db) return null;
+  return collection(db, "users", uid, "historyEntries");
+}
+
 function taskHistoryCollection(uid: string, taskId: string) {
   const db = dbOrNull();
   if (!db) return null;
@@ -309,6 +315,15 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   return next;
 }
 
+function normalizeCanonicalHistoryEntryRecord(row: unknown): { taskId: string; entry: HistoryEntry } | null {
+  if (!row || typeof row !== "object") return null;
+  const taskId = String((row as { taskId?: unknown }).taskId || "").trim();
+  if (!taskId) return null;
+  const entry = normalizeHistoryEntryRecord(row);
+  if (!entry) return null;
+  return { taskId, entry };
+}
+
 function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTaskSession | null {
   if (!row || typeof row !== "object") return null;
   const taskId = String((row as LiveTaskSession).taskId || taskIdRaw || "").trim();
@@ -333,6 +348,83 @@ function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTa
     ...(note ? { note } : {}),
     ...(color ? { color } : {}),
   };
+}
+
+function mergeCanonicalAndLegacyHistory(canonical: HistoryByTaskId, legacy: HistoryByTaskId): HistoryByTaskId {
+  const next: HistoryByTaskId = {};
+  const taskIds = new Set([...Object.keys(canonical || {}), ...Object.keys(legacy || {})].filter(Boolean));
+  taskIds.forEach((taskId) => {
+    const rows: HistoryEntry[] = [];
+    const seen = new Set<string>();
+    [...(Array.isArray(canonical?.[taskId]) ? canonical[taskId] : []), ...(Array.isArray(legacy?.[taskId]) ? legacy[taskId] : [])].forEach((row) => {
+      const normalized = normalizeHistoryEntryRecord(row);
+      if (!normalized) return;
+      const key = buildCanonicalHistoryEntryDocId(taskId, normalized);
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push(normalized);
+    });
+    rows.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+    if (rows.length) next[taskId] = rows;
+  });
+  return next;
+}
+
+async function migrateLegacyHistoryToCanonical(
+  uid: string,
+  legacyHistoryByTaskId: HistoryByTaskId,
+  existingCanonicalDocIds: Set<string>
+): Promise<void> {
+  const col = userHistoryCollection(uid);
+  const db = dbOrNull();
+  if (!col || !db) return;
+  const writes: Array<{ id: string; payload: HistoryDocPayload }> = [];
+  Object.entries(legacyHistoryByTaskId || {}).forEach(([taskId, rows]) => {
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const normalized = normalizeHistoryEntryRecord(row);
+      if (!normalized) return;
+      const id = buildCanonicalHistoryEntryDocId(taskId, normalized);
+      if (existingCanonicalDocIds.has(id)) return;
+      existingCanonicalDocIds.add(id);
+      writes.push({ id, payload: buildHistoryDocPayload(taskId, normalized) });
+    });
+  });
+  const maxOpsPerBatch = 400;
+  for (let index = 0; index < writes.length; index += maxOpsPerBatch) {
+    const batch = writeBatch(db);
+    writes.slice(index, index + maxOpsPerBatch).forEach((write) => {
+      batch.set(doc(col, write.id), {
+        ...write.payload,
+        createdAt: serverTimestamp(),
+      });
+    });
+    await batch.commit();
+  }
+}
+
+async function deleteRemovedLegacyHistoryRows(uid: string, taskId: string, desiredCanonicalIds: Set<string>): Promise<void> {
+  const legacyCol = taskHistoryCollection(uid, taskId);
+  const db = dbOrNull();
+  if (!legacyCol || !db) return;
+  const legacy = await safeGetDocsArray(
+    () => getDocs(legacyCol),
+    "legacy task history cleanup",
+    { uid, taskId }
+  );
+  const refsToDelete = legacy
+    .map((row) => {
+      const normalized = normalizeHistoryEntryRecord(row.data());
+      if (!normalized) return null;
+      const canonicalId = buildCanonicalHistoryEntryDocId(taskId, normalized);
+      return desiredCanonicalIds.has(canonicalId) ? null : doc(legacyCol, row.id);
+    })
+    .filter((ref): ref is NonNullable<typeof ref> => !!ref);
+  const maxOpsPerBatch = 400;
+  for (let index = 0; index < refsToDelete.length; index += maxOpsPerBatch) {
+    const batch = writeBatch(db);
+    refsToDelete.slice(index, index + maxOpsPerBatch).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
 }
 
 function deletedTaskDoc(uid: string, taskId: string) {
@@ -1231,7 +1323,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     { uid }
   );
   const tasks: Task[] = [];
-  const historyByTaskId: HistoryByTaskId = {};
+  const legacyHistoryByTaskId: HistoryByTaskId = {};
   const liveSessionsByTaskId: LiveSessionsByTaskId = {};
   const historyLoads = taskDocs.map(async (d) => {
     const task = mapTaskFromFirestore(d.id, d.data() as Record<string, unknown>);
@@ -1257,8 +1349,13 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
     return { task, taskId: d.id, history, liveSession };
   });
 
-  const [historyRows, deletedSnap, prefSnap, dashboardSnap, taskUiSnap, userRootSnap] = await Promise.all([
+  const [historyRows, canonicalHistoryDocs, deletedSnap, prefSnap, dashboardSnap, taskUiSnap, userRootSnap] = await Promise.all([
     Promise.all(historyLoads),
+    safeGetDocsArray(
+      () => getDocs(collection(db, "users", uid, "historyEntries")),
+      "canonical history collection",
+      { uid }
+    ),
     safeGetDocsArray(
       () => getDocs(collection(db, "users", uid, "deletedTasks")),
       "deleted tasks collection",
@@ -1300,8 +1397,26 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
 
   historyRows.forEach((row) => {
     tasks.push(row.task);
-    historyByTaskId[row.taskId] = row.history;
+    legacyHistoryByTaskId[row.taskId] = row.history;
     if (row.liveSession) liveSessionsByTaskId[row.taskId] = row.liveSession;
+  });
+  const canonicalHistoryByTaskId: HistoryByTaskId = {};
+  const canonicalHistoryDocIds = new Set<string>();
+  canonicalHistoryDocs.forEach((row) => {
+    canonicalHistoryDocIds.add(row.id);
+    const normalized = normalizeCanonicalHistoryEntryRecord(row.data());
+    if (!normalized) return;
+    if (!Array.isArray(canonicalHistoryByTaskId[normalized.taskId])) canonicalHistoryByTaskId[normalized.taskId] = [];
+    canonicalHistoryByTaskId[normalized.taskId].push(normalized.entry);
+  });
+  const historyByTaskId = mergeCanonicalAndLegacyHistory(canonicalHistoryByTaskId, legacyHistoryByTaskId);
+  await migrateLegacyHistoryToCanonical(uid, legacyHistoryByTaskId, canonicalHistoryDocIds).catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[tasktimer-cloud] Legacy history migration skipped", {
+        uid,
+        error: describeError(error),
+      });
+    }
   });
 
   const deletedTaskMeta: DeletedTaskMeta = {};
@@ -1590,22 +1705,19 @@ export async function deleteTask(uid: string, taskId: string): Promise<void> {
 }
 
 export async function appendHistoryEntry(uid: string, taskId: string, entry: HistoryEntry): Promise<void> {
-  const col = taskHistoryCollection(uid, taskId);
-  if (!col) return;
-  const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : Date.now();
-  const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
-  const name = String(entry?.name || "");
-  const color = entry?.color == null ? null : String(entry.color);
-  const note = typeof entry?.note === "string" ? entry.note.trim() : "";
-  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
-  const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
-  const entryId = sessionId ? `session-${fnv1a32(`${taskId}|${sessionId}`)}` : `${ts}-${Math.max(0, Math.floor(Math.random() * 1_000_000))}`;
-  const payload: Record<string, unknown> = { ts, ms, name, createdAt: serverTimestamp() };
-  if (color) payload.color = color;
-  if (note) payload.note = note;
-  if (sessionId) payload.sessionId = sessionId;
-  if (completionDifficulty) payload.completionDifficulty = completionDifficulty;
-  await setDoc(doc(col, entryId), payload);
+  const col = userHistoryCollection(uid);
+  const normalizedTaskId = String(taskId || "").trim();
+  const normalizedEntry = normalizeHistoryEntryRecord(entry);
+  if (!col || !normalizedTaskId || !normalizedEntry) return;
+  const entryId = buildCanonicalHistoryEntryDocId(normalizedTaskId, normalizedEntry);
+  await setDoc(
+    doc(col, entryId),
+    {
+      ...buildHistoryDocPayload(normalizedTaskId, normalizedEntry),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 }
 
 export async function saveLiveSession(uid: string, session: LiveTaskSession): Promise<void> {
@@ -1634,14 +1746,34 @@ export async function clearLiveSession(uid: string, taskId: string): Promise<voi
   await deleteDoc(ref);
 }
 
-function historyEntryFingerprint(entry: HistoryEntry): string {
+export async function finalizeLiveSessionHistory(uid: string, taskId: string, entry: HistoryEntry): Promise<void> {
+  const historyCol = userHistoryCollection(uid);
+  const liveSessionRef = taskLiveSessionDoc(uid, taskId);
+  const db = dbOrNull();
+  const normalizedTaskId = String(taskId || "").trim();
+  const normalizedEntry = normalizeHistoryEntryRecord(entry);
+  if (!historyCol || !liveSessionRef || !db || !normalizedTaskId || !normalizedEntry) return;
+  const batch = writeBatch(db);
+  batch.set(
+    doc(historyCol, buildCanonicalHistoryEntryDocId(normalizedTaskId, normalizedEntry)),
+    {
+      ...buildHistoryDocPayload(normalizedTaskId, normalizedEntry),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  batch.delete(liveSessionRef);
+  await batch.commit();
+}
+
+function historyEntryIdentityFingerprint(taskId: string, entry: HistoryEntry): string {
+  const normalizedTaskId = String(taskId || "").trim();
+  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
+  if (sessionId) return `${normalizedTaskId}|session|${sessionId}`;
   const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
   const name = String(entry?.name || "");
-  const note = typeof entry?.note === "string" ? entry.note.trim() : "";
-  const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty) || "";
-  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
-  return `${ts}|${ms}|${name}|${note}|${completionDifficulty}|${sessionId}`;
+  return `${normalizedTaskId}|entry|${ts}|${ms}|${name}`;
 }
 
 function fnv1a32(input: string): string {
@@ -1653,13 +1785,17 @@ function fnv1a32(input: string): string {
   return (h >>> 0).toString(36);
 }
 
-function stableHistoryEntryDocId(entry: HistoryEntry): string {
+export function buildCanonicalHistoryEntryDocId(taskId: string, entry: HistoryEntry): string {
   const ts = Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0;
   const ms = Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0;
-  return `${ts}-${ms}-${fnv1a32(historyEntryFingerprint(entry))}`;
+  const normalizedTaskId = String(taskId || "").trim();
+  const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
+  if (sessionId) return `${normalizedTaskId}-session-${fnv1a32(historyEntryIdentityFingerprint(taskId, entry))}`;
+  return `${normalizedTaskId}-${ts}-${ms}-${fnv1a32(historyEntryIdentityFingerprint(taskId, entry))}`;
 }
 
 type HistoryDocPayload = {
+  taskId: string;
   ts: number;
   ms: number;
   name: string;
@@ -1674,8 +1810,9 @@ type HistorySyncPlan = {
   deleteIds: string[];
 };
 
-function buildHistoryDocPayload(entry: HistoryEntry): HistoryDocPayload {
+function buildHistoryDocPayload(taskId: string, entry: HistoryEntry): HistoryDocPayload {
   return {
+    taskId: String(taskId || "").trim(),
     ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
     ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
     name: String(entry?.name || ""),
@@ -1690,6 +1827,7 @@ function buildHistoryDocPayload(entry: HistoryEntry): HistoryDocPayload {
 
 function normalizeComparableHistoryPayload(row: Record<string, unknown> | HistoryDocPayload): HistoryDocPayload {
   return {
+    taskId: String(row.taskId || ""),
     ts: Number.isFinite(Number(row.ts)) ? Math.floor(Number(row.ts)) : 0,
     ms: Number.isFinite(Number(row.ms)) ? Math.max(0, Math.floor(Number(row.ms))) : 0,
     name: String(row.name || ""),
@@ -1721,6 +1859,16 @@ export function planHistorySyncOperations(
   return { upsertIds, deleteIds };
 }
 
+export function applyHistoryReplaceModeToSyncPlan(
+  plan: HistorySyncPlan,
+  opts?: { allowDestructiveReplace?: boolean }
+): HistorySyncPlan {
+  return {
+    upsertIds: plan.upsertIds,
+    deleteIds: opts?.allowDestructiveReplace === true ? plan.deleteIds : [],
+  };
+}
+
 export function isLargeImplicitHistoryDelete(currentCount: number, nextCount: number): boolean {
   const safeCurrentCount = Math.max(0, Math.floor(Number(currentCount || 0) || 0));
   const safeNextCount = Math.max(0, Math.floor(Number(nextCount || 0) || 0));
@@ -1734,9 +1882,10 @@ export async function replaceTaskHistory(
   entries: HistoryEntry[],
   opts?: { allowDestructiveReplace?: boolean }
 ): Promise<void> {
-  const col = taskHistoryCollection(uid, taskId);
+  const col = userHistoryCollection(uid);
   const db = dbOrNull();
-  if (!col || !db) return;
+  const normalizedTaskId = String(taskId || "").trim();
+  if (!col || !db || !normalizedTaskId) return;
   const deduped: HistoryEntry[] = [];
   const seen = new Set<string>();
   (entries || []).forEach((entry) => {
@@ -1755,24 +1904,27 @@ export async function replaceTaskHistory(
         ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }
         : {}),
     };
-    const key = historyEntryFingerprint(normalized);
+    const key = historyEntryIdentityFingerprint(normalizedTaskId, normalized);
     if (seen.has(key)) return;
     seen.add(key);
     deduped.push(normalized);
   });
-  const current = await getDocs(col);
+  const current = await getDocs(query(col));
   const desiredRowsById: Record<string, HistoryDocPayload> = {};
   deduped.forEach((entry) => {
-    desiredRowsById[stableHistoryEntryDocId(entry)] = buildHistoryDocPayload(entry);
+    desiredRowsById[buildCanonicalHistoryEntryDocId(normalizedTaskId, entry)] = buildHistoryDocPayload(normalizedTaskId, entry);
   });
   const currentRowsById: Record<string, Record<string, unknown>> = {};
   current.docs.forEach((row) => {
-    currentRowsById[row.id] = row.data() as Record<string, unknown>;
+    const data = row.data() as Record<string, unknown>;
+    if (String(data.taskId || "").trim() === normalizedTaskId) currentRowsById[row.id] = data;
   });
-  const plan = planHistorySyncOperations(currentRowsById, desiredRowsById);
-  if (isLargeImplicitHistoryDelete(current.docs.length, deduped.length) && !opts?.allowDestructiveReplace) {
+  const rawPlan = planHistorySyncOperations(currentRowsById, desiredRowsById);
+  const plan = applyHistoryReplaceModeToSyncPlan(rawPlan, opts);
+  const currentTaskCount = Object.keys(currentRowsById).length;
+  if (plan.deleteIds.length && isLargeImplicitHistoryDelete(currentTaskCount, deduped.length) && !opts?.allowDestructiveReplace) {
     throw new Error(
-      `Refusing implicit destructive history replacement for task ${taskId}: ${current.docs.length} cloud rows would become ${deduped.length}.`
+      `Refusing implicit destructive history replacement for task ${taskId}: ${currentTaskCount} cloud rows would become ${deduped.length}.`
     );
   }
   if (!plan.deleteIds.length && !plan.upsertIds.length) return;
@@ -1795,6 +1947,9 @@ export async function replaceTaskHistory(
       });
     });
     await batch.commit();
+  }
+  if (opts?.allowDestructiveReplace === true) {
+    await deleteRemovedLegacyHistoryRows(uid, normalizedTaskId, new Set(Object.keys(desiredRowsById)));
   }
 }
 

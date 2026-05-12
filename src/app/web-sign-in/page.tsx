@@ -57,14 +57,6 @@ function isMissingNativeFirebaseAuthPluginError(err: unknown) {
   );
 }
 
-function isNativeGoogleCredentialUnavailableError(err: unknown) {
-  const message =
-    err && typeof err === "object" && "message" in err
-      ? String((err as { message?: unknown }).message || "").toLowerCase()
-      : String(err || "").toLowerCase();
-  return message.includes("no credentials available") || message.includes("no credential available");
-}
-
 function isNativeFirebaseAuthPluginAvailable() {
   try {
     return Capacitor.isPluginAvailable("FirebaseAuthentication");
@@ -75,6 +67,15 @@ function isNativeFirebaseAuthPluginAvailable() {
 
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
+}
+
+function shouldDisableAndroidCredentialManager() {
+  if (!isNativeOrFileRuntime()) return false;
+  try {
+    return Capacitor.getPlatform() === "android";
+  } catch {
+    return false;
+  }
 }
 
 async function resolveAuthUser(auth: Auth): Promise<User | null> {
@@ -474,18 +475,10 @@ function WebSignInPageContent() {
       if (shouldUseRedirectAuth()) {
         try {
           const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
-          let nativeResult;
-          try {
-            nativeResult = await FirebaseAuthentication.signInWithGoogle({
-              skipNativeAuth: true,
-            });
-          } catch (nativeErr: unknown) {
-            if (!isNativeGoogleCredentialUnavailableError(nativeErr)) throw nativeErr;
-            nativeResult = await FirebaseAuthentication.signInWithGoogle({
-              skipNativeAuth: true,
-              useCredentialManager: false,
-            });
-          }
+          const nativeResult = await FirebaseAuthentication.signInWithGoogle({
+            skipNativeAuth: true,
+            ...(shouldDisableAndroidCredentialManager() ? { useCredentialManager: false } : {}),
+          });
           const idToken = nativeResult.credential?.idToken;
           const accessToken = nativeResult.credential?.accessToken;
           if (!idToken && !accessToken) {

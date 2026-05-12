@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildIdentitySyncResponseError, isLargeImplicitHistoryDelete, planHistorySyncOperations } from "./cloudStore";
+import {
+  applyHistoryReplaceModeToSyncPlan,
+  buildCanonicalHistoryEntryDocId,
+  buildIdentitySyncResponseError,
+  isLargeImplicitHistoryDelete,
+  planHistorySyncOperations,
+} from "./cloudStore";
 
 describe("buildIdentitySyncResponseError", () => {
   it("preserves reportable identity sync response fields", async () => {
@@ -40,10 +46,10 @@ describe("planHistorySyncOperations", () => {
     expect(
       planHistorySyncOperations(
         {
-          row1: { ts: 100, ms: 200, name: "Focus", createdAt: {} },
+          row1: { taskId: "task-1", ts: 100, ms: 200, name: "Focus", createdAt: {} },
         },
         {
-          row1: { ts: 100, ms: 200, name: "Focus" },
+          row1: { taskId: "task-1", ts: 100, ms: 200, name: "Focus" },
         }
       )
     ).toEqual({ upsertIds: [], deleteIds: [] });
@@ -53,14 +59,37 @@ describe("planHistorySyncOperations", () => {
     expect(
       planHistorySyncOperations(
         {
-          row1: { ts: 100, ms: 200, name: "Focus" },
-          row2: { ts: 300, ms: 400, name: "Old" },
+          row1: { taskId: "task-1", ts: 100, ms: 200, name: "Focus" },
+          row2: { taskId: "task-1", ts: 300, ms: 400, name: "Old" },
         },
         {
-          row1: { ts: 100, ms: 250, name: "Focus" },
-          row3: { ts: 500, ms: 600, name: "New" },
+          row1: { taskId: "task-1", ts: 100, ms: 250, name: "Focus" },
+          row3: { taskId: "task-1", ts: 500, ms: 600, name: "New" },
         }
       )
     ).toEqual({ upsertIds: ["row1", "row3"], deleteIds: ["row2"] });
+  });
+
+  it("suppresses deletes unless the caller explicitly allows destructive replacement", () => {
+    const plan = { upsertIds: ["row3"], deleteIds: ["row2"] };
+
+    expect(applyHistoryReplaceModeToSyncPlan(plan)).toEqual({ upsertIds: ["row3"], deleteIds: [] });
+    expect(applyHistoryReplaceModeToSyncPlan(plan, { allowDestructiveReplace: true })).toEqual(plan);
+  });
+});
+
+describe("buildCanonicalHistoryEntryDocId", () => {
+  it("keeps note edits on the same canonical row", () => {
+    const base = buildCanonicalHistoryEntryDocId("task-1", { ts: 100, ms: 200, name: "Focus" });
+    const edited = buildCanonicalHistoryEntryDocId("task-1", { ts: 100, ms: 200, name: "Focus", note: "done" });
+
+    expect(edited).toBe(base);
+  });
+
+  it("keys completed live sessions by session id", () => {
+    const first = buildCanonicalHistoryEntryDocId("task-1", { ts: 100, ms: 200, name: "Focus", sessionId: "session-1" });
+    const retried = buildCanonicalHistoryEntryDocId("task-1", { ts: 300, ms: 400, name: "Renamed", sessionId: "session-1" });
+
+    expect(retried).toBe(first);
   });
 });

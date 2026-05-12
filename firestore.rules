@@ -391,6 +391,8 @@ service cloud.firestore {
         "color",
         "note",
         "xpDisqualifiedUntilReset",
+        "sessionId",
+        "taskId",
         "completionDifficulty",
         "createdAt"
       ])
@@ -400,6 +402,8 @@ service cloud.firestore {
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
       && (!("note" in request.resource.data) || request.resource.data.note == null || request.resource.data.note is string)
       && (!("xpDisqualifiedUntilReset" in request.resource.data) || request.resource.data.xpDisqualifiedUntilReset is bool)
+      && (!("sessionId" in request.resource.data) || request.resource.data.sessionId is string)
+      && (!("taskId" in request.resource.data) || request.resource.data.taskId is string)
       && (!("completionDifficulty" in request.resource.data) || (
         request.resource.data.completionDifficulty is int
         && request.resource.data.completionDifficulty in [1, 2, 3, 4, 5]
@@ -847,6 +851,12 @@ service cloud.firestore {
         allow create, update: if isOwner(userId) && sessionId == "current" && isLiveSessionDoc(taskId);
         allow delete: if isOwner(userId) && sessionId == "current";
       }
+    }
+
+    match /users/{userId}/historyEntries/{entryId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isHistoryDoc() && request.resource.data.taskId is string;
+      allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/deletedTasks/{taskId} {

@@ -363,29 +363,36 @@ Runtime mapping notes (`cloudStore.ts`):
 
 - App `Task` and Firestore now both persist `checkpoints*` and `milestones*` fields.
 
-Subcollection:
+Legacy subcollection:
 
-- `history/{entryId}`
+- `history/{entryId}` (read for migration compatibility; canonical history is now `users/{userId}/historyEntries/{entryId}`)
 
 ---
 
-### `users/{userId}/tasks/{taskId}/history/{entryId}`
+### `users/{userId}/historyEntries/{entryId}`
 
 Doc ID patterns:
 
-- Append path: `${ts}-${randomInt}`
-- Replace path: `${ts}-${ms}-${fnv1a32(ts|ms|name|note|xpDisqualifiedUntilReset|completionDifficulty)}`
+- Session path: stable hash of `taskId + sessionId`
+- Entry path: stable hash of `taskId + ts + ms + name`
 
 Allowed fields (`isHistoryDoc`):
 
+- `taskId: string`
 - `ts: int`
 - `name: string`
 - `ms: int`
 - `color: string | null`
 - `note: string | null`
 - `xpDisqualifiedUntilReset: bool`
+- `sessionId: string`
 - `completionDifficulty: 1 | 2 | 3 | 4 | 5`
 - `createdAt: timestamp`
+
+Runtime mapping notes (`cloudStore.ts`):
+
+- Hydration reads canonical `historyEntries` and legacy nested `tasks/{taskId}/history`, merges by stable identity, and backfills missing legacy rows into the canonical collection.
+- New writes use `historyEntries`; legacy nested history is only cleaned during explicit destructive history deletion to prevent migrated rows from reappearing.
 
 ---
 

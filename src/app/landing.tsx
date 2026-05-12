@@ -117,14 +117,15 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />
-              <span>Focus-aware planning and task tracking</span>
+              <span>Progress without punishment</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt spiral</h1>
+            <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
 
             <p className="landingV2HeroCopy">
-              A smarter productivity app that helps neurodivergent minds overcome task paralysis, build momentum, and
-              turn intention into meaningful action without exhausting productivity rules.
+              Built for neurodivergent minds, TaskLaunch is a flexible productivity tool that supports inconsistency
+              instead of punishing it, meaning you can restart quickly after difficult days, maintain momentum without
+              perfectionism, and grow sustainably over time.
             </p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
@@ -138,6 +139,16 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
                 Watch Demo
               </Link>
             </div>
+          </div>
+
+          <div className="landingV2HeroVisual" aria-hidden="true">
+            <AppImg
+              src="/landing/tasklaunch-hero-neuro-profile.png"
+              alt=""
+              className="landingV2HeroImage"
+              width={900}
+              height={1100}
+            />
           </div>
         </section>
 

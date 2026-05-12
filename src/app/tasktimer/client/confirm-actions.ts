@@ -52,7 +52,7 @@ export function buildDeleteTaskConfirmOptions(args: {
       okLabel: "Delete",
       cancelLabel: "Cancel",
       checkboxLabel: "Delete history entries",
-      checkboxChecked: true,
+      checkboxChecked: false,
       onOk: args.onDelete,
       onCancel: args.onCancel,
     } satisfies TaskTimerConfirmOptions,

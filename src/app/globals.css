@@ -542,11 +542,12 @@ canvas {
   margin: 0;
   max-width: 10ch;
   font-size: clamp(2.5125rem, 6vw, 5.25rem);
-  font-weight: 300;
+  font-weight: 900;
   line-height: 0.92;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--landing-text);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.38), 0 0 22px rgba(255, 255, 255, 0.08);
 }
 
 .landingV2 .landingV2HeroCopy {
@@ -574,6 +575,51 @@ canvas {
   gap: 34px;
   min-height: 100%;
   padding: 68px 0 20px;
+}
+
+.landingV2 .landingV2HeroVisual {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: clamp(520px, 72svh, 820px);
+  isolation: isolate;
+}
+
+.landingV2 .landingV2HeroVisual::before {
+  content: "";
+  position: absolute;
+  inset: 14% 2% 3% 5%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 52% 25%, rgba(201, 255, 36, 0.18), transparent 34%),
+    radial-gradient(circle at 52% 58%, rgba(67, 221, 196, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 64%);
+  filter: blur(34px);
+  opacity: 0.9;
+}
+
+.landingV2 .landingV2HeroVisual::after {
+  content: "";
+  position: absolute;
+  right: 4%;
+  bottom: 0;
+  left: 4%;
+  z-index: -1;
+  height: 28%;
+  background: linear-gradient(180deg, transparent, #121212 76%);
+  pointer-events: none;
+}
+
+.landingV2 .landingV2HeroImage {
+  display: block;
+  width: min(100%, 620px);
+  height: auto;
+  max-height: min(78svh, 820px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 28px rgba(201, 255, 36, 0.16)) drop-shadow(0 28px 60px rgba(0, 0, 0, 0.48));
 }
 
 .landingV2 .landingV2HeroTag {
@@ -1650,6 +1696,16 @@ canvas {
     grid-template-columns: 1fr;
   }
 
+  .landingV2 .landingV2HeroVisual {
+    min-height: clamp(360px, 58svh, 620px);
+    align-self: center;
+  }
+
+  .landingV2 .landingV2HeroImage {
+    width: min(86vw, 560px);
+    max-height: 620px;
+  }
+
   .landingV2 .landingV2HeroProof {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1695,6 +1751,20 @@ canvas {
     min-height: auto;
     gap: 30px;
     padding: 40px 24px 34px;
+  }
+
+  .landingV2 .landingV2HeroVisual {
+    min-height: clamp(300px, 56svh, 520px);
+  }
+
+  .landingV2 .landingV2HeroVisual::before {
+    inset: 12% 7% 5%;
+    filter: blur(26px);
+  }
+
+  .landingV2 .landingV2HeroImage {
+    width: min(88vw, 460px);
+    max-height: 520px;
   }
 
   .landingV2 .landingV2HeroTitle {
@@ -1757,6 +1827,15 @@ canvas {
   .landingV2 .landingV2Footer {
     padding-right: 18px;
     padding-left: 18px;
+  }
+
+  .landingV2 .landingV2HeroVisual {
+    min-height: 320px;
+  }
+
+  .landingV2 .landingV2HeroImage {
+    width: min(96vw, 360px);
+    max-height: 380px;
   }
 
   .landingV2 .landingV2PreviewTopbar,

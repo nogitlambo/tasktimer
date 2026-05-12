@@ -20,6 +20,7 @@ const cloudStoreMocks = vi.hoisted(() => ({
   subscribeToTaskLiveSessionDocs: vi.fn(() => vi.fn()),
   appendHistoryEntry: vi.fn(() => Promise.resolve()),
   clearLiveSession: vi.fn(() => Promise.resolve()),
+  finalizeLiveSessionHistory: vi.fn(() => Promise.resolve()),
   deleteDeletedTaskMeta: vi.fn(() => Promise.resolve()),
   deleteTask: vi.fn(() => Promise.resolve()),
   getTask: vi.fn(),
@@ -50,6 +51,7 @@ vi.mock("./cloudStore", () => ({
   appendHistoryEntry: cloudStoreMocks.appendHistoryEntry,
   buildDefaultCloudPreferences: vi.fn(),
   clearLiveSession: cloudStoreMocks.clearLiveSession,
+  finalizeLiveSessionHistory: cloudStoreMocks.finalizeLiveSessionHistory,
   deleteDeletedTaskMeta: cloudStoreMocks.deleteDeletedTaskMeta,
   deleteTask: cloudStoreMocks.deleteTask,
   loadDashboard: cloudStoreMocks.loadDashboard,
@@ -74,6 +76,7 @@ import { DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, rebuildRewardP
 import {
   buildDefaultCloudPreferences,
   clearScopedStorageState,
+  clearLiveSession,
   ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS,
   appendHistoryEntry,
   hydrateStorageFromCloud,
@@ -378,6 +381,24 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       [row1, row2, completedRow],
       { allowDestructiveReplace: false }
     );
+  });
+
+  it("finalizes completed live-session history and clears the live session in one cloud operation", async () => {
+    const completedRow = {
+      ts: Date.parse("2026-05-05T09:20:00.000Z"),
+      name: "Focus",
+      ms: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      sessionId: "session-1",
+    };
+
+    appendHistoryEntry("task-1", completedRow);
+    clearLiveSession("task-1", { forceCloudFlush: true, reason: "finalize" });
+
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.finalizeLiveSessionHistory).toHaveBeenCalledWith("uid-1", "task-1", completedRow);
+    });
+    expect(cloudStoreMocks.appendHistoryEntry).not.toHaveBeenCalled();
+    expect(cloudStoreMocks.clearLiveSession).not.toHaveBeenCalled();
   });
 
   it("flushes queued leaderboard profile generation with pending cloud writes", async () => {
