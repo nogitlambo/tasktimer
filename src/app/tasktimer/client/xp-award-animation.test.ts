@@ -4,6 +4,7 @@ import {
   createXpAwardAnimationState,
   enqueuePendingXpAward,
   getXpAwardCountRange,
+  getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
   type PendingXpAward,
@@ -127,5 +128,14 @@ describe("xp award animation state", () => {
 
   it("starts merged active awards immediately when a count-up is already running", () => {
     expect(getXpAwardCountStartDelayMs({ wasIdle: false, countAnimationStarted: true, fxDurationMs: 1600 })).toBe(0);
+  });
+
+  it("preserves a count-up that started during the active award effect cleanup", () => {
+    expect(
+      getXpAwardCountStartedAfterEffectCleanup({
+        wasStartedBeforeEffect: false,
+        startedDuringEffect: true,
+      })
+    ).toBe(true);
   });
 });

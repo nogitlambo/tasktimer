@@ -617,6 +617,108 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
   padding: 0 2px;
 }
 
+#taskManualEntryOverlay .hmManualEntryModal{
+  border-color: rgba(165, 172, 182, .62);
+  border-radius: 0;
+  clip-path: none;
+}
+
+#taskManualEntryOverlay .hmManualEntryInput,
+#taskManualEntryOverlay .hmManualEntryDateTimeBtn,
+#taskManualEntryOverlay .hmManualEntrySentimentIconWrap{
+  border-color: rgba(165, 172, 182, .46);
+  border-radius: 0;
+  clip-path: none;
+}
+
+#taskManualEntryOverlay .hmManualEntryInput:focus,
+#taskManualEntryOverlay .hmManualEntryDateTimeBtn:hover,
+#taskManualEntryOverlay .hmManualEntryDateTimeBtn:focus-visible{
+  border-color: rgba(194, 201, 211, .86);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05),
+    0 0 0 1px rgba(194, 201, 211, .18);
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficulty{
+  border: 0;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficulty legend{
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  color: rgba(226,246,255,.92);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: none;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIcons{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn{
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconWrap{
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.01);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIcon{
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyLabel{
+  display: block;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyIconWrap,
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyIconWrap,
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyIconWrap{
+  background: linear-gradient(180deg, rgba(194, 201, 211, .2), rgba(165, 172, 182, .08));
+  border-color: rgba(194, 201, 211, .86);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05),
+    0 0 14px rgba(194, 201, 211, .18);
+  transform: translateY(-1px);
+}
+
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyLabel,
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyLabel,
+#taskManualEntryOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyLabel{
+  color: rgba(255,255,255,.98);
+}
+
 .hmTable{
   width:100%;
   border-collapse: collapse;

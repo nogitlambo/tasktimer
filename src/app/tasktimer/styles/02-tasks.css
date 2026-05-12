@@ -2843,6 +2843,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn{
   order:1;
   margin-left:0;
+  margin-right:auto;
   flex:0 0 auto;
   min-width:0;
   height:40px;
@@ -2854,6 +2855,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   box-shadow:none !important;
   opacity:1 !important;
   color:#fff !important;
+  justify-content:flex-start !important;
 }
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:hover,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,

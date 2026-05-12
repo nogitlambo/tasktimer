@@ -87,14 +87,14 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />
-              <span>Progress without punishment</span>
+              <span>Built for life</span>
             </div>
 
             <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
 
             <p className="landingV2HeroCopy">
-              Built for neurodivergent minds, TaskLaunch is a flexible productivity tool that supports inconsistency
-              instead of punishing it, meaning you can restart quickly after difficult days, maintain momentum without
+              TaskLaunch is a flexible productivity tool designed for the neurodivergent mind, forgiving inconsistency
+              instead of punishing it, helping you to re-focus quickly after difficult days, maintain momentum without
               perfectionism, and grow sustainably over time.
             </p>
 

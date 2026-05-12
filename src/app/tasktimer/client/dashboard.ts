@@ -1,5 +1,5 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardCardPlacement, DashboardCardSize, DashboardRenderOptions } from "./types";
+import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions } from "./types";
 import {
   clampDashboardPlacement,
   getDashboardGridColumnValue,
@@ -401,19 +401,16 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const columnCount = getDashboardGridColumnCount(grid);
     const resolvedPlacements = resolveDashboardCardPlacements(layoutItems, columnCount);
     const layoutItemById = new Map(layoutItems.map((item) => [item.id, item]));
-    const nextPlacements: Record<string, DashboardCardPlacement> = {};
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
       const card = el as HTMLElement;
       const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
       const placement = resolvedPlacements[cardId];
       if (!cardId || !placement) return;
-      nextPlacements[cardId] = placement;
       card.dataset.dashboardCol = String(placement.col);
       card.dataset.dashboardRow = String(placement.row);
       card.style.gridColumn = getDashboardGridColumnValue(placement, layoutItemById.get(cardId)?.size ?? null, columnCount);
       card.style.gridRowStart = String(placement.row);
     });
-    ctx.setDashboardCardPlacements(nextPlacements);
   }
 
   function ensureDashboardCardSizeControls() {

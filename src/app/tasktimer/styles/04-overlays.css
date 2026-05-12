@@ -5548,6 +5548,22 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   font-weight: 800;
 }
 
+#taskManualEntryOverlay #taskManualEntryCancelBtn,
+#taskManualEntryOverlay #taskManualEntryCancelBtn:hover,
+#taskManualEntryOverlay #taskManualEntryCancelBtn:focus-visible,
+#taskManualEntryOverlay #taskManualEntrySaveBtn,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible{
+  border-color: rgba(165, 172, 182, .66) !important;
+}
+
+#taskManualEntryOverlay #taskManualEntryCancelBtn:hover,
+#taskManualEntryOverlay #taskManualEntryCancelBtn:focus-visible,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
+#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible{
+  border-color: rgba(194, 201, 211, .86) !important;
+}
+
 /* Migrated from tasktimer.css tail: overlay and confirm authority rules. */
 #editOverlay .field input,
 #editOverlay .field select,

@@ -283,7 +283,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       sourceModal: "historyEntrySummaryTest",
       sourceTaskId: taskId || null,
       sourceOverlayId: "historyEntryNoteOverlay",
-      sourceElementKey: sourceElement === trigger ? "historyEntrySummaryXpReplayBtn" : "historyEntrySummaryXpValue",
+      sourceElementKey: sourceElement === trigger ? "historyEntrySummaryXpReplayFallback" : "historyEntrySummaryXpValue",
       sourceRect: captureXpAwardRectSnapshot(sourceElement),
     });
     options.closeOverlay(overlay);

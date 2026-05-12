@@ -392,6 +392,7 @@ canvas {
   --landing-muted: rgba(245, 248, 244, 0.74);
   --landing-line: rgba(201, 255, 36, 0.78);
   --landing-safe-top: max(22px, env(safe-area-inset-top, 0px));
+  --landing-native-nav-offset: 18px;
   --landing-foreground-shift: clamp(18px, 7svh, 82px);
   --landing-hero-pad-top: clamp(18px, 5svh, 42px);
   --landing-copy-gap: clamp(24px, 7svh, 90px);
@@ -416,7 +417,7 @@ canvas {
   align-items: center;
   gap: 28px;
   min-height: 68px;
-  padding: max(18px, env(safe-area-inset-top, 0px)) 48px 18px;
+  padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 48px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(8, 9, 10, 0.9);
   backdrop-filter: blur(16px);
@@ -543,8 +544,8 @@ canvas {
   max-width: 10ch;
   font-size: clamp(2.5125rem, 6vw, 5.25rem);
   font-weight: 900;
-  line-height: 0.92;
-  letter-spacing: 0.02em;
+  line-height: 1.1;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--landing-text);
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.38), 0 0 22px rgba(255, 255, 255, 0.08);
@@ -1768,7 +1769,7 @@ canvas {
   }
 
   .landingV2 .landingV2HeroTitle {
-    font-size: clamp(1.95rem, 7.5vw, 3.3rem);
+    font-size: clamp(2.35rem, 10vw, 3.8rem);
   }
 
   .landingV2 .landingV2HeroMain {
@@ -1808,7 +1809,7 @@ canvas {
   .landingV2 .landingV2Header {
     grid-template-columns: 1fr;
     justify-items: start;
-    padding: max(16px, env(safe-area-inset-top, 0px)) 18px 16px;
+    padding: calc(max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 18px 16px;
   }
 
   .landingV2 .landingV2HeaderActions {

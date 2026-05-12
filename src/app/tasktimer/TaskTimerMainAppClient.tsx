@@ -54,6 +54,7 @@ import {
   createXpAwardAnimationState,
   enqueuePendingXpAward,
   getXpAwardCountRange,
+  getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
   type PendingXpAward,
@@ -64,6 +65,7 @@ import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
   getRankPromotion,
+  hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   startRankPromotionCelebration,
   stopRankPromotionCelebration,
@@ -315,13 +317,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   useEffect(() => {
     if (!pendingRankPromotion || activeRankPromotion || typeof document === "undefined") return;
+    if (hasBlockingPromotionXpAnimation(xpAnimationState)) return;
     if (hasBlockingPromotionOverlay(document)) return;
     const openTimer = window.setTimeout(() => {
       setActiveRankPromotion(pendingRankPromotion);
       setPendingRankPromotion(null);
     }, 0);
     return () => window.clearTimeout(openTimer);
-  }, [activeRankPromotion, pendingRankPromotion, promotionOverlayRetrySeq]);
+  }, [activeRankPromotion, pendingRankPromotion, promotionOverlayRetrySeq, xpAnimationState]);
 
   useEffect(() => {
     if (!activeRankPromotion || typeof document === "undefined") return;
@@ -426,6 +429,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }
 
     const startCountAnimation = () => {
+      countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
       const audio = xpIncreaseAudioRef.current;
@@ -468,6 +472,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
     };
 
+    let countAnimationStartedDuringEffect = false;
     const countStartDelayMs = getXpAwardCountStartDelayMs({
       wasIdle,
       countAnimationStarted,
@@ -481,7 +486,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
-      xpCountAnimationStartedRef.current = countAnimationStarted;
+      xpCountAnimationStartedRef.current = getXpAwardCountStartedAfterEffectCleanup({
+        wasStartedBeforeEffect: countAnimationStarted,
+        startedDuringEffect: countAnimationStartedDuringEffect,
+      });
       stopXpIncreaseAudio(xpIncreaseAudioRef.current);
     };
   }, [xpAnimationState.active]);

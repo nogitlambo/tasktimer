@@ -55,4 +55,21 @@ describe("dashboard layout helpers", () => {
     expect(placements.momentum).toEqual({ col: 1, row: 2 });
     expect(placements.heatmap).toEqual({ col: 7, row: 2 });
   });
+
+  it("keeps requested placement intent separate from collision resolution", () => {
+    const requested = {
+      today: { col: 1, row: 1 },
+      week: { col: 1, row: 1 },
+    };
+    const placements = resolveDashboardCardPlacements(
+      [
+        { id: "today", size: "quarter", requested: requested.today, orderIndex: 0 },
+        { id: "week", size: "quarter", requested: requested.week, orderIndex: 1 },
+      ],
+      12
+    );
+
+    expect(placements.week).toEqual({ col: 4, row: 1 });
+    expect(requested.week).toEqual({ col: 1, row: 1 });
+  });
 });

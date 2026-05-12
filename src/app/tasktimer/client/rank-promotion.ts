@@ -1,5 +1,6 @@
 import { RANK_LADDER, type RankDefinition } from "../lib/rewards";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import type { XpAwardAnimationState } from "./xp-award-animation";
 
 export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
@@ -45,6 +46,10 @@ export function hasBlockingPromotionOverlay(documentRef: Pick<Document, "querySe
     if (typeof getComputedStyle === "function") return getComputedStyle(node).display !== "none";
     return node.style.display !== "none";
   });
+}
+
+export function hasBlockingPromotionXpAnimation(state: XpAwardAnimationState): boolean {
+  return !!state.pending || !!state.active;
 }
 
 export function getRankPromotionConfettiStage(overlay: HTMLElement | null | undefined) {

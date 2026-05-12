@@ -116,3 +116,10 @@ export function getXpAwardCountStartDelayMs(opts?: {
   const fxDurationMs = Math.max(0, Math.floor(Number(opts?.fxDurationMs) || 0));
   return fxDurationMs;
 }
+
+export function getXpAwardCountStartedAfterEffectCleanup(opts?: {
+  wasStartedBeforeEffect?: boolean;
+  startedDuringEffect?: boolean;
+}): boolean {
+  return !!opts?.wasStartedBeforeEffect || !!opts?.startedDuringEffect;
+}

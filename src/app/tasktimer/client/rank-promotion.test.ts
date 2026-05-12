@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   getRankPromotion,
+  hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   RANK_PROMOTION_AUDIO_SRC,
   startRankPromotionCelebration,
@@ -57,6 +58,23 @@ describe("rank promotion celebration", () => {
     } as unknown as Document;
 
     expect(hasBlockingPromotionOverlay(documentRef)).toBe(false);
+  });
+
+  it("waits while an xp award is queued or actively animating", () => {
+    const pendingAward = {
+      fromXp: 10,
+      toXp: 22,
+      awardedXp: 12,
+      sourceModal: "timeGoalComplete" as const,
+      sourceTaskId: "task-1",
+      sourceOverlayId: "timeGoalCompleteOverlay",
+      sourceElementKey: "timeGoalCompleteAwardText",
+      sourceRect: null,
+    };
+
+    expect(hasBlockingPromotionXpAnimation({ pending: pendingAward, active: null })).toBe(true);
+    expect(hasBlockingPromotionXpAnimation({ pending: null, active: pendingAward })).toBe(true);
+    expect(hasBlockingPromotionXpAnimation({ pending: null, active: null })).toBe(false);
   });
 
   it("opens the modal, starts confetti, and plays the promotion audio", () => {

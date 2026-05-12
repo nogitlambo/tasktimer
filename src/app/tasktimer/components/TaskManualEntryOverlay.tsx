@@ -64,12 +64,12 @@ export default function TaskManualEntryOverlay() {
             </div>
           </div>
 
-          <fieldset className="hmManualEntrySentiment">
+          <fieldset className="hmManualEntrySentiment timeGoalCompleteDifficulty">
             <legend className="hmManualEntryLabel" id="taskManualEntrySentimentQuestion">
-              Sentiment
+              Effort required to complete this task today?
             </legend>
             <div
-              className="hmManualEntrySentimentOptions"
+              className="hmManualEntrySentimentOptions timeGoalCompleteDifficultyIcons"
               id="taskManualEntryDifficultyGroup"
               role="radiogroup"
               aria-labelledby="taskManualEntrySentimentQuestion"
@@ -77,23 +77,23 @@ export default function TaskManualEntryOverlay() {
               {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
                 <button
                   aria-checked="false"
-                  className="hmManualEntrySentimentBtn"
+                  className="hmManualEntrySentimentBtn timeGoalCompleteDifficultyIconBtn"
                   data-completion-difficulty={option.value}
                   key={option.value}
                   role="radio"
                   type="button"
                 >
-                  <span className="hmManualEntrySentimentIconWrap" aria-hidden="true">
+                  <span className="hmManualEntrySentimentIconWrap timeGoalCompleteDifficultyIconWrap" aria-hidden="true">
                     <AppImg
                       alt=""
-                      className="hmManualEntrySentimentIcon"
+                      className="hmManualEntrySentimentIcon timeGoalCompleteDifficultyIcon"
                       draggable={false}
-                      height={42}
+                      height={44}
                       src={option.iconSrc}
-                      width={42}
+                      width={44}
                     />
                   </span>
-                  <span className="hmManualEntrySentimentLabel">{option.label}</span>
+                  <span className="hmManualEntrySentimentLabel timeGoalCompleteDifficultyLabel">{option.label}</span>
                 </button>
               ))}
             </div>
